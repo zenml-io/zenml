@@ -294,13 +294,29 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 run_command = f"sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
                 down = settings.down
                 idle_minutes_to_autostop = settings.idle_minutes_to_autostop
+
+            # Merge envs from settings with existing task_envs
+            merged_envs = {}
+            # First add user-provided envs
+            if settings.envs:
+                merged_envs.update(settings.envs)
+            # Then add task_envs which take precedence
+            if task_envs:
+                merged_envs.update(task_envs)
+
+            # Create the Task with all parameters
             task = sky.Task(
                 run=run_command,
                 setup=setup,
-                envs=task_envs,
+                envs=merged_envs,
+                name=settings.task_name or f"{orchestrator_run_name}",
+                workdir=settings.workdir,
+                file_mounts=settings.file_mounts,
             )
+
             logger.debug(f"Running run: {run_command}")
 
+            # Set resources with all parameters
             task = task.set_resources(
                 sky.Resources(
                     cloud=self.cloud,
@@ -318,12 +334,19 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     else settings.image_id,
                     disk_size=settings.disk_size,
                     disk_tier=settings.disk_tier,
+                    ports=settings.ports,
+                    labels=settings.labels,
+                    any_of=settings.any_of,
+                    ordered=settings.ordered,
                 )
             )
+
             # Do not detach run if logs are being streamed
             # Otherwise, the logs will not be streamed after the task is submitted
-            # Could also be a parameter in the settings to control this behavior
             detach_run = not settings.stream_logs
+
+            # Use num_nodes from settings or default to 1
+            num_nodes = settings.num_nodes or 1
 
             launch_new_cluster = True
             if settings.cluster_name:
@@ -360,6 +383,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     backend=None,
                     detach_setup=True,
                     detach_run=detach_run,
+                    num_nodes=num_nodes,
                 )
             else:
                 # Make sure the cluster is up -

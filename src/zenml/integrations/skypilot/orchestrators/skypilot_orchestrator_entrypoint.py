@@ -195,12 +195,27 @@ def main() -> None:
         # Set up the task
         run_command = f"docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
         task_name = f"{deployment.id}-{step_name}-{time.time()}"
+
+        # Merge envs from settings with existing task_envs
+        merged_envs = {}
+        # First add user-provided envs
+        if settings.envs:
+            merged_envs.update(settings.envs)
+        # Then add task_envs which take precedence
+        if task_envs:
+            merged_envs.update(task_envs)
+
+        # Create the Task with all parameters
         task = sky.Task(
             run=run_command,
             setup=setup,
-            envs=task_envs,
+            envs=merged_envs,
             name=task_name,
+            workdir=settings.workdir,
+            file_mounts=settings.file_mounts,
         )
+
+        # Set resources with all parameters
         task = task.set_resources(
             sky.Resources(
                 cloud=orchestrator.cloud,
@@ -217,8 +232,15 @@ def main() -> None:
                 region=settings.region,
                 zone=settings.zone,
                 image_id=settings.image_id,
+                ports=settings.ports,
+                labels=settings.labels,
+                any_of=settings.any_of,
+                ordered=settings.ordered,
             )
         )
+
+        # Use num_nodes from settings or default to 1
+        num_nodes = settings.num_nodes or 1
 
         sky.launch(
             task,
@@ -227,8 +249,10 @@ def main() -> None:
             idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
             down=settings.down,
             stream_logs=settings.stream_logs,
+            backend=None,
             detach_setup=True,
             detach_run=True,
+            num_nodes=num_nodes,
         )
 
         # Wait for pod to finish.
