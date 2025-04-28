@@ -20,7 +20,7 @@ from zenml.integrations.gcp import (
     VERTEX_MODEL_REGISTRY_FLAVOR,
 )
 from zenml.integrations.gcp.flavors.vertex_base_config import (
-    VertexAIModelConfig,
+    VertexAIBaseSettings,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -40,14 +40,14 @@ if TYPE_CHECKING:
 class VertexAIModelRegistryConfig(
     BaseModelRegistryConfig,
     GoogleCredentialsConfigMixin,
-    VertexAIModelConfig,
+    VertexAIBaseSettings,
 ):
     """Configuration for the VertexAI model registry.
 
     This configuration combines:
     - Base model registry configuration
     - Google Cloud authentication
-    - Vertex AI model configuration
+    - Vertex AI Base configuration
     """
 
 

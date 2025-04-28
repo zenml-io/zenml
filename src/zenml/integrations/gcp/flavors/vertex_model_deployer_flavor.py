@@ -20,7 +20,7 @@ from zenml.integrations.gcp import (
     VERTEX_MODEL_DEPLOYER_FLAVOR,
 )
 from zenml.integrations.gcp.flavors.vertex_base_config import (
-    VertexAIEndpointConfig,
+    VertexAIBaseSettings,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -42,14 +42,14 @@ if TYPE_CHECKING:
 class VertexModelDeployerConfig(
     BaseModelDeployerConfig,
     GoogleCredentialsConfigMixin,
-    VertexAIEndpointConfig,
+    VertexAIBaseSettings,
 ):
     """Configuration for the Vertex AI model deployer.
 
     This configuration combines:
     - Base model deployer configuration
     - Google Cloud authentication
-    - Vertex AI endpoint configuration
+    - Vertex AI Base configuration
     """
 
 

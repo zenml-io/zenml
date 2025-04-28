@@ -14,19 +14,21 @@
 """Vertex AI model registry integration for ZenML."""
 
 import base64
-import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 from google.cloud import aiplatform
 
-from zenml.client import Client
+from zenml.integrations.gcp.flavors.vertex_base_config import (
+    VertexAIModelConfig,
+)
 from zenml.integrations.gcp.flavors.vertex_model_registry_flavor import (
     VertexAIModelRegistryConfig,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
+from zenml.integrations.gcp.utils import sanitize_vertex_label
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     BaseModelRegistry,
@@ -45,6 +47,14 @@ MAX_LABEL_VALUE_LENGTH = 63
 MAX_DISPLAY_NAME_LENGTH = 128
 
 
+# Helper function to safely get values from metadata dict
+def _get_metadata_value(
+    metadata: Dict[str, Any], key: str, default: Any = None
+) -> Any:
+    """Safely retrieves a value from a dictionary."""
+    return metadata.get(key, default)
+
+
 class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     """Register models using Vertex AI."""
 
@@ -56,50 +66,6 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             The configuration.
         """
         return cast(VertexAIModelRegistryConfig, self._config)
-
-    def _sanitize_label(self, value: str) -> str:
-        """Sanitize a label value to comply with Vertex AI requirements.
-
-        Args:
-            value: The label value to sanitize
-
-        Returns:
-            Sanitized label value
-        """
-        if not value:
-            return ""
-
-        # Convert to lowercase
-        value = value.lower()
-
-        # Replace any character that's not lowercase letter, number, dash or underscore
-        value = re.sub(r"[^a-z0-9\-_]", "-", value)
-
-        # Ensure it starts with a letter/number by prepending 'x' if needed
-        if not value[0].isalnum():
-            value = f"x{value}"
-
-        # Truncate to 63 chars to stay under limit
-        return value[:63]
-
-    def _get_deployer_id(self) -> str:
-        """Get the current ZenML server/deployer ID for multi-tenancy support.
-
-        Returns:
-            The deployer ID string
-
-        Raises:
-            ValueError: If VertexModelDeployer is not active in the stack
-        """
-        from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
-            VertexModelDeployer,
-        )
-
-        client = Client()
-        model_deployer = client.active_stack.model_deployer
-        if not isinstance(model_deployer, VertexModelDeployer):
-            raise ValueError("VertexModelDeployer is not active in the stack.")
-        return str(model_deployer.id)
 
     def _encode_name_version(self, name: str, version: str) -> str:
         """Encode model name and version into a Vertex AI compatible format.
@@ -160,33 +126,16 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         # Add base labels
         labels["managed_by"] = "zenml"
-        labels["deployer_id"] = self._sanitize_label(self._get_deployer_id())
-
         # Add stage if provided
         if stage:
-            labels["stage"] = self._sanitize_label(stage.value)
+            labels["stage"] = sanitize_vertex_label(stage.value)
 
         # Process metadata if provided
         if metadata:
-            # If metadata is not a dict (e.g. a pydantic model), convert it using .dict()
-            if not isinstance(metadata, dict):
-                try:
-                    metadata = metadata.dict()
-                except Exception as e:
-                    logger.warning(f"Unable to convert metadata to dict: {e}")
-                    metadata = {}
             for key, value in metadata.items():
-                # Skip None values
-                if value is None:
-                    continue
-                # Convert complex objects to string
-                if isinstance(value, (dict, list)):
-                    value = (
-                        "x"  # Simplify complex objects to avoid length issues
-                    )
                 # Sanitize both key and value
-                sanitized_key = self._sanitize_label(str(key))
-                sanitized_value = self._sanitize_label(str(value))
+                sanitized_key = sanitize_vertex_label(str(key))
+                sanitized_value = sanitize_vertex_label(str(value))
                 # Only add if both key and value are valid
                 if sanitized_key and sanitized_value:
                     labels[sanitized_key] = sanitized_value
@@ -195,9 +144,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         if len(labels) > 64:
             # Keep essential labels and truncate the rest
             essential_labels = {
-                k: labels[k]
-                for k in ["managed_by", "deployer_id", "stage"]
-                if k in labels
+                k: labels[k] for k in ["managed_by", "stage"] if k in labels
             }
             # Add remaining labels up to limit
             remaining_slots = 64 - len(essential_labels)
@@ -264,7 +211,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             # Attempt to find an existing model by display_name
             existing_models = aiplatform.Model.list(
                 filter=f"display_name={name}",
-                project=self.config.project_id or project_id,
+                project=self.config.project or project_id,
                 location=location,
             )
             if existing_models:
@@ -413,6 +360,77 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         except Exception as e:
             raise RuntimeError(f"Failed to list models: {str(e)}")
 
+    def _extract_vertex_config_from_metadata(
+        self, metadata: Dict[str, Any]
+    ) -> "VertexAIModelConfig":
+        """Extracts Vertex AI specific configuration from metadata dictionary.
+
+        Args:
+            metadata: The metadata dictionary potentially containing config overrides.
+
+        Returns:
+            A VertexAIModelConfig instance populated from metadata.
+        """
+        # Use the module-level helper function
+        container_config_dict = _get_metadata_value(metadata, "container", {})
+        container_config = None
+        if isinstance(container_config_dict, dict) and container_config_dict:
+            from zenml.integrations.gcp.flavors.vertex_base_config import (
+                VertexAIContainerSpec,
+            )
+
+            container_config = VertexAIContainerSpec(**container_config_dict)
+
+        explanation_config_dict = _get_metadata_value(
+            metadata, "explanation", {}
+        )
+        explanation_config = None
+        if (
+            isinstance(explanation_config_dict, dict)
+            and explanation_config_dict
+        ):
+            from zenml.integrations.gcp.flavors.vertex_base_config import (
+                VertexAIExplanationSpec,
+            )
+
+            explanation_config = VertexAIExplanationSpec(
+                **explanation_config_dict
+            )
+
+        # Use the module-level helper function and correct instantiation
+        return VertexAIModelConfig(
+            # Model metadata overrides
+            display_name=_get_metadata_value(metadata, "display_name"),
+            description=_get_metadata_value(metadata, "description"),
+            version_description=_get_metadata_value(
+                metadata, "version_description"
+            ),
+            version_aliases=_get_metadata_value(metadata, "version_aliases"),
+            # Model artifacts overrides
+            artifact_uri=_get_metadata_value(metadata, "artifact_uri"),
+            # Model versioning overrides
+            is_default_version=_get_metadata_value(
+                metadata, "is_default_version"
+            ),
+            # Model formats overrides (less likely used here, but for completeness)
+            supported_deployment_resources_types=_get_metadata_value(
+                metadata, "supported_deployment_resources_types"
+            ),
+            supported_input_storage_formats=_get_metadata_value(
+                metadata, "supported_input_storage_formats"
+            ),
+            supported_output_storage_formats=_get_metadata_value(
+                metadata, "supported_output_storage_formats"
+            ),
+            # Container and Explanation config (parsed above)
+            container=container_config,
+            explanation=explanation_config,
+            # GCP Base config (from component config)
+            encryption_spec_key_name=_get_metadata_value(
+                metadata, "encryption_spec_key_name"
+            ),
+        )
+
     def register_model_version(
         self,
         name: str,
@@ -427,10 +445,13 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         Args:
             name: Model name
             version: Model version
-            model_source_uri: URI to model artifacts
-            description: Model description
+            model_source_uri: URI to model artifacts (overrides metadata if provided)
+            description: Model description (overrides metadata if provided)
             metadata: Model metadata (expected to be a ModelRegistryModelMetadata or
-                      equivalent serializable dict)
+                      equivalent serializable dict). Can contain overrides for
+                      Vertex AI model parameters like 'display_name', 'artifact_uri',
+                      'version_description', 'container', 'explanation', etc.
+            config: Vertex AI model configuration overrides.
             **kwargs: Additional arguments
 
         Returns:
@@ -440,67 +461,89 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata_dict = metadata.model_dump() if metadata else {}
         labels = self._prepare_labels(metadata_dict)
         if version:
-            labels["user_version"] = self._sanitize_label(version)
+            labels["user_version"] = sanitize_vertex_label(version)
 
-        # Get the container image from the config if available, otherwise fallback to metadata
-        if (
-            hasattr(self.config, "container")
-            and self.config.container
-            and self.config.container.image_uri
-        ):
-            serving_container_image_uri = self.config.container.image_uri
-        else:
-            serving_container_image_uri = metadata_dict.get(
-                "serving_container_image_uri",
-                "europe-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest",
+        # Extract Vertex AI specific config overrides from metadata
+        vertex_config = self._extract_vertex_config_from_metadata(
+            metadata_dict
+        )
+
+        # Use a consistently sanitized display name. Prioritize metadata, then name arg.
+        model_display_name_override = vertex_config.display_name
+        model_display_name = (
+            model_display_name_override
+            or self._sanitize_model_display_name(name)
+        )
+
+        # Determine serving container image URI: prioritize metadata container config,
+        # then metadata direct key, then default.
+        serving_container_image_uri = "europe-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest"  # Default
+        if "serving_container_image_uri" in metadata_dict:
+            serving_container_image_uri = metadata_dict[
+                "serving_container_image_uri"
+            ]
+        if vertex_config.container and vertex_config.container.image_uri:
+            serving_container_image_uri = vertex_config.container.image_uri
+
+        # Determine artifact URI: prioritize direct argument, then metadata, then log warning.
+        final_artifact_uri = model_source_uri or vertex_config.artifact_uri
+        if not final_artifact_uri:
+            logger.warning(
+                "No 'artifact_uri' provided in function arguments or metadata. "
+                "Model registration might fail or use an unexpected artifact source."
             )
 
-        # Use a consistently sanitized display name instead of the raw model name
-        model_display_name = self._sanitize_model_display_name(name)
+        # Determine description: prioritize direct argument, then metadata.
+        final_description = description or vertex_config.description
 
         # Build extended upload arguments for vertex.Model.upload,
-        # leveraging extra settings from self.config.
+        # leveraging extracted config from metadata and component config for core details.
         upload_arguments = {
-            "serving_container_image_uri": serving_container_image_uri,
-            "artifact_uri": model_source_uri or self.config.artifact_uri,
-            "is_default_version": self.config.is_default_version
-            if self.config.is_default_version is not None
+            # Core GCP config from component
+            "project": self.config.project_id or self.config.project,
+            "location": self.config.location or vertex_config.location,
+            # Model identification and artifacts
+            "display_name": model_display_name,
+            "artifact_uri": final_artifact_uri,
+            # Description and Versioning - prioritize metadata
+            "description": final_description,
+            "version_description": vertex_config.version_description,
+            "version_aliases": vertex_config.version_aliases,
+            "is_default_version": vertex_config.is_default_version
+            if vertex_config.is_default_version is not None
             else True,
-            "version_aliases": self.config.version_aliases,
-            "version_description": self.config.version_description,
-            "serving_container_predict_route": self.config.container.predict_route
-            if self.config.container
+            # Container configuration from metadata
+            "serving_container_image_uri": serving_container_image_uri,
+            "serving_container_predict_route": vertex_config.container.predict_route
+            if vertex_config.container
             else None,
-            "serving_container_health_route": self.config.container.health_route
-            if self.config.container
+            "serving_container_health_route": vertex_config.container.health_route
+            if vertex_config.container
             else None,
-            "description": description or self.config.description,
-            "serving_container_command": self.config.container.command
-            if self.config.container
+            "serving_container_command": vertex_config.container.command
+            if vertex_config.container
             else None,
-            "serving_container_args": self.config.container.args
-            if self.config.container
+            "serving_container_args": vertex_config.container.args
+            if vertex_config.container
             else None,
-            "serving_container_environment_variables": self.config.container.env
-            if self.config.container
+            "serving_container_environment_variables": vertex_config.container.env
+            if vertex_config.container
             else None,
-            "serving_container_ports": self.config.container.ports
-            if self.config.container
+            "serving_container_ports": vertex_config.container.ports
+            if vertex_config.container
             else None,
-            "display_name": self.config.display_name or model_display_name,
-            "project": self.config.project_id,
-            "location": self.config.location,
+            # Labels and Encryption
             "labels": labels,
-            "encryption_spec_key_name": self.config.encryption_spec_key_name,
+            "encryption_spec_key_name": vertex_config.encryption_spec_key_name,
         }
 
-        # Include explanation settings if provided in the config.
-        if self.config.explanation:
+        # Include explanation settings if provided in metadata config.
+        if vertex_config.explanation:
             upload_arguments["explanation_metadata"] = (
-                self.config.explanation.metadata
+                vertex_config.explanation.metadata
             )
             upload_arguments["explanation_parameters"] = (
-                self.config.explanation.parameters
+                vertex_config.explanation.parameters
             )
 
         # Remove any parameters that are None to avoid passing them to upload.
@@ -509,22 +552,49 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         }
 
         # Try to get existing parent model, but don't fail if it doesn't exist
+        # Use the actual model name `name` for lookup, not the potentially overridden display name
         parent_model = self._init_vertex_model(name=name, version=version)
 
         # If parent model exists and has same URI, return existing version
-        if parent_model and parent_model.uri == model_source_uri:
+        # Check against final_artifact_uri used for upload
+        if parent_model and parent_model.uri == final_artifact_uri:
             logger.info(
-                f"Model version {version} already exists, skipping upload..."
+                f"Model version {version} targeting artifact URI "
+                f"'{final_artifact_uri}' already exists, skipping upload..."
             )
             return self._vertex_model_to_registry_version(parent_model)
 
         # Set parent model resource name if it exists
         if parent_model:
+            # Ensure the display_name matches the parent model if it exists,
+            # otherwise upload might create a *new* model instead of a version.
+            # Use the parent model's display name for the upload.
+            upload_arguments["display_name"] = parent_model.display_name
             upload_arguments["parent_model"] = parent_model.resource_name
+            logger.info(
+                f"Found existing parent model '{parent_model.display_name}' "
+                f"({parent_model.resource_name}). Uploading as a new version."
+            )
+        else:
+            logger.info(
+                f"No existing parent model found for name '{name}'. "
+                f"A new model named '{upload_arguments['display_name']}' will be created."
+            )
 
         # Upload the model
-        model = aiplatform.Model.upload(**upload_arguments)
-        logger.info(f"Uploaded new model version with labels: {model.labels}")
+        try:
+            logger.info(
+                f"Uploading model to Vertex AI with arguments: { {k: v for k, v in upload_arguments.items() if k != 'labels'} }"
+            )  # Don't log potentially large labels dict
+            model = aiplatform.Model.upload(**upload_arguments)
+            logger.info(
+                f"Uploaded new model version with labels: {model.labels}"
+            )
+        except Exception as e:
+            logger.error(f"Failed to upload model to Vertex AI: {e}")
+            # Log the arguments again on failure for easier debugging
+            logger.error(f"Failed upload arguments: {upload_arguments}")
+            raise
 
         return self._vertex_model_to_registry_version(model)
 
@@ -544,7 +614,10 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         """
         try:
             model = self._init_vertex_model(name=name, version=version)
-            assert isinstance(model, aiplatform.Model)
+            if model is None:
+                raise RuntimeError(
+                    f"Model version '{version}' for '{name}' not found."
+                )
             model.versioning_registry.delete_version(version)
             logger.info(f"Deleted model version: {name} version {version}")
         except Exception as e:
@@ -577,8 +650,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         """
         try:
             parent_model = self._init_vertex_model(name=name, version=version)
-            assert isinstance(parent_model, aiplatform.Model)
-            sanitized_version = self._sanitize_label(version)
+            sanitized_version = sanitize_vertex_label(version)
             target_version = None
             for v in parent_model.list():
                 if v.labels.get("user_version") == sanitized_version:
@@ -592,12 +664,12 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             if metadata:
                 metadata_dict = metadata.model_dump()
                 for key, value in metadata_dict.items():
-                    labels[self._sanitize_label(key)] = self._sanitize_label(
+                    labels[sanitize_vertex_label(key)] = sanitize_vertex_label(
                         str(value)
                     )
             if remove_metadata:
                 for key in remove_metadata:
-                    labels.pop(self._sanitize_label(key), None)
+                    labels.pop(sanitize_vertex_label(key), None)
             if stage:
                 labels["stage"] = stage.value.lower()
             target_version.update(description=description, labels=labels)
@@ -622,7 +694,10 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         """
         try:
             parent_model = self._init_vertex_model(name=name, version=version)
-            assert isinstance(parent_model, aiplatform.Model)
+            if parent_model is None:
+                raise RuntimeError(
+                    f"Model version '{version}' for '{name}' not found."
+                )
             return self._vertex_model_to_registry_version(parent_model)
         except Exception as e:
             raise RuntimeError(f"Failed to get model version: {str(e)}")
@@ -668,7 +743,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         if metadata:
             for key, value in metadata.dict().items():
                 filter_expr.append(
-                    f"labels.{self._sanitize_label(key)}={self._sanitize_label(str(value))}"
+                    f"labels.{sanitize_vertex_label(key)}={sanitize_vertex_label(str(value))}"
                 )
         if created_after:
             filter_expr.append(f"create_time>{created_after.isoformat()}")
@@ -793,8 +868,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         Returns:
             The sanitized model name.
         """
-        # Use our existing sanitizer (which converts to lowercase, replaces invalid characters, etc.)
-        name = self._sanitize_label(name)
+        name = sanitize_vertex_label(name)
         if len(name) > MAX_DISPLAY_NAME_LENGTH:
             logger.warning(
                 f"Model name '{name}' exceeds {MAX_DISPLAY_NAME_LENGTH} characters; truncating."

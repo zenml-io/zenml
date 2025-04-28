@@ -132,9 +132,6 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         Returns:
             The VertexDeploymentService instance
         """
-        # Initialize client with fresh credentials
-        self._init_vertex_client()
-
         # Create service instance
         service = VertexDeploymentService(uuid=id, config=config)
         logger.info("Creating Vertex AI deployment service with ID %s", id)
@@ -197,9 +194,6 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         Returns:
             The stopped service
         """
-        # Initialize client with fresh credentials
-        self._init_vertex_client()
-
         service.stop(timeout=timeout, force=force)
         return service
 
@@ -217,9 +211,6 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         Returns:
             The started service
         """
-        # Initialize client with fresh credentials
-        self._init_vertex_client()
-
         service.start(timeout=timeout)
         return service
 
@@ -236,9 +227,6 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
             timeout: Timeout for delete operation
             force: Whether to force delete
         """
-        # Initialize client with fresh credentials
-        self._init_vertex_client()
-
         service = cast(VertexDeploymentService, service)
         service.stop(timeout=timeout, force=force)
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the Vertex AI Deployment service."""
 
-import re
 from datetime import datetime
 from typing import Any, Dict, Generator, List, Optional, Tuple, cast
 
@@ -26,6 +25,7 @@ from zenml.enums import ServiceState
 from zenml.integrations.gcp.flavors.vertex_base_config import (
     VertexAIEndpointConfig,
 )
+from zenml.integrations.gcp.utils import sanitize_vertex_label
 from zenml.logger import get_logger
 from zenml.models.v2.misc.service import ServiceType
 from zenml.services import ServiceStatus
@@ -50,29 +50,6 @@ retry_config = retry.Retry(
     deadline=RETRY_DEADLINE,
     predicate=retry.if_transient_error,
 )
-
-
-def sanitize_vertex_label(value: str) -> str:
-    """Sanitize a label value to comply with Vertex AI requirements.
-
-    Args:
-        value: The label value to sanitize
-
-    Returns:
-        Sanitized label value
-    """
-    if not value:
-        return ""
-
-    # Convert to lowercase
-    value = value.lower()
-    # Replace any character that's not lowercase letter, number, dash or underscore
-    value = re.sub(r"[^a-z0-9\-_]", "-", value)
-    # Ensure it starts with a letter/number by prepending 'x' if needed
-    if not value[0].isalnum():
-        value = f"x{value}"
-    # Truncate to 63 chars to stay under limit
-    return value[:63]
 
 
 class VertexDeploymentConfig(VertexAIEndpointConfig, ServiceConfig):
