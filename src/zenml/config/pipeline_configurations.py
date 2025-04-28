@@ -60,6 +60,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
         Args:
             start_time: Start time of the pipeline run.
             inplace: Whether to update the substitutions in place.
+
         Returns:
             The full substitutions dict including date and time.
         """
