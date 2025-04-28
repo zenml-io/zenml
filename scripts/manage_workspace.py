@@ -135,28 +135,6 @@ def get_token(client_id: str, client_secret: str) -> str:
     return response.json()["access_token"]
 
 
-def get_user(token: str) -> dict:
-    """Get the user.
-
-    Args:
-        token: The access token for authentication.
-
-    Returns:
-        The user as a dictionary.
-    """
-    url = "https://staging.cloudapi.zenml.io/users/me"
-
-    response = requests.get(url, headers=_get_headers(token))
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        raise RuntimeError(
-            f"Request failed with response content: {response.text}"
-        )
-
-    return response.json()
-
-
 def get_workspace(token: str, workspace_name_or_id: str) -> dict:
     """Get a workspace by name or ID.
 
@@ -212,7 +190,6 @@ def create_workspace(
 
     data = {
         "name": workspace_name,
-        "owner_id": get_user(token)["id"],
         "organization_id": organization_id,
         "zenml_service": {
             "configuration": _build_configuration(
@@ -321,7 +298,7 @@ def main(
     client_token = os.environ.get("CLOUD_STAGING_CLIENT_TOKEN")
 
     # Get organization and workspace from environment variables if not provided
-    organization_id = organization_id or os.environ.get("ORGANIZATION_ID")
+    organization_id = organization_id or os.environ.get("CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID")
     workspace_name_or_id = workspace_name_or_id or os.environ.get("WORKSPACE_NAME_OR_ID")
 
     # Get configuration from environment variables if not provided

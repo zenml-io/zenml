@@ -172,7 +172,7 @@ jobs:
           CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
           CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
           WORKSPACE_NAME_OR_ID: ${{ needs.set-branch-info.outputs.branch_name }}
-          ORGANIZATION_ID: ${{ secrets.STAGING_ORGANIZATION_ID }}
+          ORGANIZATION_ID: ${{ secrets.CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID }}
           DOCKER_IMAGE: zenml/zenml-server:dev-${{ needs.set-branch-info.outputs.branch_name }}
           ZENML_VERSION: ${{ env.ZENML_VERSION }}
         run: python scripts/manage_workspace.py
