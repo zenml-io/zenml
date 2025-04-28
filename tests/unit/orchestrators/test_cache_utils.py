@@ -21,6 +21,7 @@ import pytest
 from typing_extensions import Annotated
 
 from zenml.config.compiler import Compiler
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, SorterOps
@@ -52,12 +53,9 @@ def _compile_step(step: BaseStep) -> Step:
     compiler = Compiler()
     return compiler._compile_step_invocation(
         invocation=invocation,
-        pipeline_settings={},
-        pipeline_extra={},
         stack=Client().active_stack,
         step_config=None,
-        pipeline_failure_hook_source=None,
-        pipeline_success_hook_source=None,
+        pipeline_configuration=PipelineConfiguration(),
     )
 
 

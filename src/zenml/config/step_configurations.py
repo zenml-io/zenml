@@ -380,7 +380,9 @@ class Step(StrictBaseModel):
             config = StepConfiguration.model_validate(
                 data["step_config_overrides"]
             )
-            config.apply_pipeline_configuration(pipeline_configuration)
+            config = config.apply_pipeline_configuration(
+                pipeline_configuration
+            )
             data["config"] = config
 
         return cls.model_validate(data)
