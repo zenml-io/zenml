@@ -205,54 +205,77 @@ def main() -> None:
         if task_envs:
             merged_envs.update(task_envs)
 
-        # Create the Task with all parameters
-        task = sky.Task(
-            run=run_command,
-            setup=setup,
-            envs=merged_envs,
-            name=task_name,
-            workdir=settings.workdir,
-            file_mounts=settings.file_mounts,
-        )
+        # Create the Task with all parameters and additional task settings
+        task_kwargs = {
+            "run": run_command,
+            "setup": setup,
+            "envs": merged_envs,
+            "name": task_name,
+            "workdir": settings.workdir,
+            "file_mounts": settings.file_mounts,
+            **settings.task_settings,  # Add any arbitrary task settings
+        }
 
-        # Set resources with all parameters
-        task = task.set_resources(
-            sky.Resources(
-                cloud=orchestrator.cloud,
-                instance_type=settings.instance_type
-                or orchestrator.DEFAULT_INSTANCE_TYPE,
-                cpus=settings.cpus,
-                memory=settings.memory,
-                disk_size=settings.disk_size,
-                disk_tier=settings.disk_tier,
-                accelerators=settings.accelerators,
-                accelerator_args=settings.accelerator_args,
-                use_spot=settings.use_spot,
-                job_recovery=settings.job_recovery,
-                region=settings.region,
-                zone=settings.zone,
-                image_id=settings.image_id,
-                ports=settings.ports,
-                labels=settings.labels,
-                any_of=settings.any_of,
-                ordered=settings.ordered,
-            )
-        )
+        # Remove None values to avoid overriding SkyPilot defaults
+        task_kwargs = {k: v for k, v in task_kwargs.items() if v is not None}
+
+        task = sky.Task(**task_kwargs)
+
+        # Set resources with all parameters and additional resource settings
+        resources_kwargs = {
+            "cloud": orchestrator.cloud,
+            "instance_type": settings.instance_type
+            or orchestrator.DEFAULT_INSTANCE_TYPE,
+            "cpus": settings.cpus,
+            "memory": settings.memory,
+            "disk_size": settings.disk_size,
+            "disk_tier": settings.disk_tier,
+            "accelerators": settings.accelerators,
+            "accelerator_args": settings.accelerator_args,
+            "use_spot": settings.use_spot,
+            "job_recovery": settings.job_recovery,
+            "region": settings.region,
+            "zone": settings.zone,
+            "image_id": settings.image_id,
+            "ports": settings.ports,
+            "labels": settings.labels,
+            "any_of": settings.any_of,
+            "ordered": settings.ordered,
+            **settings.resources_settings,  # Add any arbitrary resource settings
+        }
+
+        # Remove None values to avoid overriding SkyPilot defaults
+        resources_kwargs = {
+            k: v for k, v in resources_kwargs.items() if v is not None
+        }
+
+        task = task.set_resources(sky.Resources(**resources_kwargs))
 
         # Use num_nodes from settings or default to 1
         num_nodes = settings.num_nodes or 1
 
+        # Prepare launch parameters with additional launch settings
+        launch_kwargs = {
+            "retry_until_up": settings.retry_until_up,
+            "idle_minutes_to_autostop": settings.idle_minutes_to_autostop,
+            "down": settings.down,
+            "stream_logs": settings.stream_logs,
+            "backend": None,
+            "detach_setup": True,
+            "detach_run": True,
+            "num_nodes": num_nodes,
+            **settings.launch_settings,  # Add any arbitrary launch settings
+        }
+
+        # Remove None values to avoid overriding SkyPilot defaults
+        launch_kwargs = {
+            k: v for k, v in launch_kwargs.items() if v is not None
+        }
+
         sky.launch(
             task,
             cluster_name,
-            retry_until_up=settings.retry_until_up,
-            idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
-            down=settings.down,
-            stream_logs=settings.stream_logs,
-            backend=None,
-            detach_setup=True,
-            detach_run=True,
-            num_nodes=num_nodes,
+            **launch_kwargs,
         )
 
         # Wait for pod to finish.

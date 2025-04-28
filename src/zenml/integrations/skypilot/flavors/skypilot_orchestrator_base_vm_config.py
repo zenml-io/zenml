@@ -99,6 +99,15 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
         num_nodes: Number of nodes to launch (including the head node).
         file_mounts: File and storage mounts configuration for remote cluster.
         envs: Environment variables for the task. Accessible in setup/run.
+        task_settings: Dictionary of arbitrary settings to pass to sky.Task().
+            This allows passing future parameters added by SkyPilot without
+            requiring updates to ZenML.
+        resources_settings: Dictionary of arbitrary settings to pass to
+            sky.Resources(). This allows passing future parameters added
+            by SkyPilot without requiring updates to ZenML.
+        launch_settings: Dictionary of arbitrary settings to pass to
+            sky.launch(). This allows passing future parameters added
+            by SkyPilot without requiring updates to ZenML.
     """
 
     # Resources
@@ -135,6 +144,11 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     num_nodes: Optional[int] = None
     file_mounts: Optional[Dict[str, Any]] = None
     envs: Optional[Dict[str, str]] = None
+
+    # Future-proofing settings dictionaries
+    task_settings: Dict[str, Any] = {}
+    resources_settings: Dict[str, Any] = {}
+    launch_settings: Dict[str, Any] = {}
 
 
 class SkypilotBaseOrchestratorConfig(

@@ -304,42 +304,55 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             if task_envs:
                 merged_envs.update(task_envs)
 
-            # Create the Task with all parameters
-            task = sky.Task(
-                run=run_command,
-                setup=setup,
-                envs=merged_envs,
-                name=settings.task_name or f"{orchestrator_run_name}",
-                workdir=settings.workdir,
-                file_mounts=settings.file_mounts,
-            )
+            # Create the Task with all parameters and additional task settings
+            task_kwargs = {
+                "run": run_command,
+                "setup": setup,
+                "envs": merged_envs,
+                "name": settings.task_name or f"{orchestrator_run_name}",
+                "workdir": settings.workdir,
+                "file_mounts": settings.file_mounts,
+                **settings.task_settings,  # Add any arbitrary task settings
+            }
 
+            # Remove None values to avoid overriding SkyPilot defaults
+            task_kwargs = {
+                k: v for k, v in task_kwargs.items() if v is not None
+            }
+
+            task = sky.Task(**task_kwargs)
             logger.debug(f"Running run: {run_command}")
 
-            # Set resources with all parameters
-            task = task.set_resources(
-                sky.Resources(
-                    cloud=self.cloud,
-                    instance_type=instance_type,
-                    cpus=settings.cpus,
-                    memory=settings.memory,
-                    accelerators=settings.accelerators,
-                    accelerator_args=settings.accelerator_args,
-                    use_spot=settings.use_spot,
-                    job_recovery=settings.job_recovery,
-                    region=settings.region,
-                    zone=settings.zone,
-                    image_id=image
-                    if isinstance(self.cloud, sky.clouds.Kubernetes)
-                    else settings.image_id,
-                    disk_size=settings.disk_size,
-                    disk_tier=settings.disk_tier,
-                    ports=settings.ports,
-                    labels=settings.labels,
-                    any_of=settings.any_of,
-                    ordered=settings.ordered,
-                )
-            )
+            # Set resources with all parameters and additional resource settings
+            resources_kwargs = {
+                "cloud": self.cloud,
+                "instance_type": instance_type,
+                "cpus": settings.cpus,
+                "memory": settings.memory,
+                "accelerators": settings.accelerators,
+                "accelerator_args": settings.accelerator_args,
+                "use_spot": settings.use_spot,
+                "job_recovery": settings.job_recovery,
+                "region": settings.region,
+                "zone": settings.zone,
+                "image_id": image
+                if isinstance(self.cloud, sky.clouds.Kubernetes)
+                else settings.image_id,
+                "disk_size": settings.disk_size,
+                "disk_tier": settings.disk_tier,
+                "ports": settings.ports,
+                "labels": settings.labels,
+                "any_of": settings.any_of,
+                "ordered": settings.ordered,
+                **settings.resources_settings,  # Add any arbitrary resource settings
+            }
+
+            # Remove None values to avoid overriding SkyPilot defaults
+            resources_kwargs = {
+                k: v for k, v in resources_kwargs.items() if v is not None
+            }
+
+            task = task.set_resources(sky.Resources(**resources_kwargs))
 
             # Do not detach run if logs are being streamed
             # Otherwise, the logs will not be streamed after the task is submitted
@@ -373,19 +386,44 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 )
 
             if launch_new_cluster:
+                # Prepare launch parameters with additional launch settings
+                launch_kwargs = {
+                    "retry_until_up": settings.retry_until_up,
+                    "idle_minutes_to_autostop": idle_minutes_to_autostop,
+                    "down": down,
+                    "stream_logs": settings.stream_logs,
+                    "backend": None,
+                    "detach_setup": True,
+                    "detach_run": detach_run,
+                    "num_nodes": num_nodes,
+                    **settings.launch_settings,  # Add any arbitrary launch settings
+                }
+
+                # Remove None values to avoid overriding SkyPilot defaults
+                launch_kwargs = {
+                    k: v for k, v in launch_kwargs.items() if v is not None
+                }
+
                 sky.launch(
                     task,
                     cluster_name,
-                    retry_until_up=settings.retry_until_up,
-                    idle_minutes_to_autostop=idle_minutes_to_autostop,
-                    down=down,
-                    stream_logs=settings.stream_logs,
-                    backend=None,
-                    detach_setup=True,
-                    detach_run=detach_run,
-                    num_nodes=num_nodes,
+                    **launch_kwargs,
                 )
             else:
+                # Prepare exec parameters with additional launch settings
+                exec_kwargs = {
+                    "down": down,
+                    "stream_logs": settings.stream_logs,
+                    "backend": None,
+                    "detach_run": detach_run,
+                    **settings.launch_settings,  # Can reuse same settings for exec
+                }
+
+                # Remove None values to avoid overriding SkyPilot defaults
+                exec_kwargs = {
+                    k: v for k, v in exec_kwargs.items() if v is not None
+                }
+
                 # Make sure the cluster is up -
                 # If the cluster is already up, this will not do anything
                 sky.start(
@@ -397,10 +435,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 sky.exec(
                     task,
                     settings.cluster_name,
-                    down=down,
-                    stream_logs=settings.stream_logs,
-                    backend=None,
-                    detach_run=detach_run,
+                    **exec_kwargs,
                 )
 
         except Exception as e:
