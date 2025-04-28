@@ -143,7 +143,7 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=pull_request_cloudbuild.yaml \
-            --substitutions=ZENML_BRANCH_NAME=${{ needs.set-branch-info.outputs.branch_name }}
+            --substitutions=_ZENML_BRANCH_NAME=${{ needs.set-branch-info.outputs.branch_name }}
   
   manage-tenant:
     needs: [build-images, set-branch-info]
