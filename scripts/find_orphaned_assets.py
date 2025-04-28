@@ -245,8 +245,6 @@ def print_default_format(orphaned_assets, total_assets):
 
 def print_readable_format(orphaned_assets, total_assets):
     """Print in a readable format with clickable links for analysis."""
-    workspace_dir = os.path.dirname(DOCS_DIR)
-
     # Calculate stats
     orphaned_count = len(orphaned_assets)
     referenced_count = total_assets - orphaned_count
