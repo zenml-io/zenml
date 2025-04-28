@@ -210,7 +210,7 @@ class BaseContainerRegistry(AuthenticationMixin):
         except Exception:
             return None
 
-        return metadata.id.split(":")[1]
+        return metadata.id.split(":")[-1]
 
 
 class BaseContainerRegistryFlavor(Flavor):
