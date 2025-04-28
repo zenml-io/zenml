@@ -130,6 +130,9 @@ The Kubernetes orchestrator will by default use a Kubernetes namespace called `z
 * `pod_failure_retry_delay`: The delay (in seconds) between retries to create a step pod that fails to start.
 * `pod_failure_max_retries`: The maximum number of retries to create a step pod that fails to start.
 * `pod_failure_backoff`: The backoff factor to use for retrying to create a step pod that fails to start.
+* `max_parallelism`: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For
+pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used
+to specify the maximum amount of steps pods that can be running at any time.
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
