@@ -48,9 +48,14 @@ def get_run_environment_dict() -> Dict[str, Any]:
     }
 
     try:
-        env_dict["python_packages"] = Environment.get_python_packages()
+        python_packages = Environment.get_python_packages()
     except RuntimeError:
         logger.warning("Failed to get list of installed Python packages")
+    else:
+        # TODO: We send the python packages as a string right now to keep
+        # backwards compatibility with old versions. We should update this to
+        # be a list of strings eventually.
+        env_dict["python_packages"] = "\n".join(python_packages)
 
     return env_dict
 
