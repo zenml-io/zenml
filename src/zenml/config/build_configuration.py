@@ -102,8 +102,8 @@ class BuildConfiguration(BaseModel):
             with open(self.settings.dockerfile, "rb") as f:
                 hash_.update(f.read())
 
-        if self.settings.parent_image:
-            digest = self.container_registry.get_image_digest(
+        if self.settings.parent_image and stack.container_registry:
+            digest = stack.container_registry.get_image_digest(
                 self.settings.parent_image
             )
             if digest:
