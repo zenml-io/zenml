@@ -194,6 +194,24 @@ class BaseContainerRegistry(AuthenticationMixin):
             image_name, docker_client=self.docker_client
         )
 
+    def get_image_digest(self, image_name: str) -> Optional[str]:
+        """Get the digest of an image.
+
+        Args:
+            image_name: The name of the image.
+
+        Returns:
+            The digest of the image.
+        """
+        if not image_name.startswith(self.config.uri):
+            return None
+        try:
+            metadata = self.docker_client.images.get_registry_data(image_name)
+        except Exception:
+            return None
+
+        return metadata.id
+
 
 class BaseContainerRegistryFlavor(Flavor):
     """Base flavor for container registries."""
