@@ -247,6 +247,9 @@ class StepConfiguration(PartialStepConfiguration):
 
         Args:
             pipeline_configuration: The pipeline configuration to apply.
+
+        Returns:
+            The updated step configuration.
         """
         pipeline_values = pipeline_configuration.model_dump(
             include={
