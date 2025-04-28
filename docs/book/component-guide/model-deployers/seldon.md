@@ -24,7 +24,7 @@ You should use the Seldon Core Model Deployer:
 * If you want to handle the lifecycle of the deployed model with no downtime, including updating the runtime graph, scaling, monitoring, and security.
 * Looking for more advanced API endpoints to interact with the deployed model, including REST and GRPC endpoints.
 * If you want more advanced deployment strategies like A/B testing, canary deployments, and more.
-* if you have a need for a more complex deployment process that can be customized by the advanced inference graph that includes custom [TRANSFORMER](https://docs.seldon.io/projects/seldon-core/en/latest/workflow/overview.html) and [ROUTER](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/routers.html?highlight=routers).
+* if you have a need for a more complex deployment process that can be customized by the advanced inference graph that includes custom [TRANSFORMER](https://docs.seldon.ai/seldon-core-2/installation/advanced-configurations/pipeline) and [ROUTER](https://docs.seldon.ai/seldon-core-2/about/concepts).
 
 If you are looking for a more easy way to deploy your models locally, you can use the [MLflow Model Deployer](mlflow.md) flavor.
 
@@ -465,7 +465,7 @@ def seldon_deployment_pipeline():
 #### Advanced Custom Code Deployment with Seldon Core Integration
 
 {% hint style="warning" %}
-Before creating your custom model class, you should take a look at the [custom Python model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python_wrapping_docker.html) section of the Seldon Core documentation.
+Before creating your custom model class, you should take a look at the [custom Python model](https://docs.seldon.ai/seldon-core-2/about/concepts) section of the Seldon Core documentation.
 {% endhint %}
 
 The built-in Seldon Core custom deployment step is a good starting point for deploying your custom models. However, if you want to deploy more than the trained model, you can create your own custom class and a custom step to achieve this.

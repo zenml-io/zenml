@@ -416,6 +416,25 @@ class Compiler:
                     f"The settings class {settings_instance.__class__} can not "
                     f"be specified on a {configuration_level.name} level."
                 )
+
+            if settings_instance.model_extra:
+                logger.warning(
+                    "Ignoring invalid setting attributes `%s` defined for key `%s`.",
+                    list(settings_instance.model_extra),
+                    key,
+                )
+                settings_instance = settings_instance.model_validate(
+                    settings_instance.model_dump(
+                        exclude=set(settings_instance.model_extra),
+                        exclude_unset=True,
+                    )
+                )
+
+            if not settings_instance.model_fields_set:
+                # There are no values defined on the settings instance, don't
+                # include them in the deployment
+                continue
+
             validated_settings[key] = settings_instance
 
         return validated_settings

@@ -125,7 +125,7 @@ def annotation_approach() -> str:
     return "string"
 
 
-# There are other was to attach this information to different versions of your 
+# There are other ways to attach this information to different versions of your
 # artifacts as well. For instance, you will see a step with a single output below.
 # If you modify the call to include the `infer_artifact` flag, these functions
 # will attach this information to the artifact version instead.
@@ -151,7 +151,7 @@ The tool offers two complementary views for analyzing your metadata:
 #### Table View
 The tabular view provides a structured comparison of metadata across runs:
 
-![Comparing metadata values across different pipeline runs in table view.](../../../book/.gitbook/assets/table-view.png)
+![Comparing metadata values across different pipeline runs in table view.](../../.gitbook/assets/table-view.png)
 
 This view automatically calculates changes between runs and allows you to:
 
@@ -162,7 +162,7 @@ This view automatically calculates changes between runs and allows you to:
 #### Parallel Coordinates View
 The parallel coordinates visualization helps identify relationships between different metadata parameters:
 
-![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../../book/.gitbook/assets/coordinates-view.png)
+![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../.gitbook/assets/coordinates-view.png)
 
 This view is particularly useful for:
 
@@ -252,7 +252,7 @@ Using an `ExternalArtifact` for your step automatically disables caching for the
 
 ## Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID
@@ -398,7 +398,7 @@ For more details and use-cases check-out detailed docs page [Register Existing D
 
 ## Logging metadata for an artifact
 
-One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/fetching-pipelines#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
+One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or the size of an image alongside a PNG file.
 
@@ -431,10 +431,10 @@ The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization fe
 {% endtab %}
 {% endtabs %}
 
-A user can also add metadata to an artifact within a step directly using the `log_artifact_metadata` method:
+A user can also add metadata to an artifact directly within a step using the `log_metadata` method:
 
 ```python
-from zenml import step, log_artifact_metadata
+from zenml import step, log_metadata
 
 @step
 def model_finetuner_step(
@@ -447,13 +447,16 @@ def model_finetuner_step(
     accuracy = model.score(dataset[0], dataset[1])
 
     
-    log_artifact_metadata(
-        # Artifact name can be omitted if step returns only one output
-        artifact_name="my_model",
-        # Passing None or omitting this will use the `latest` version
-        version=None,
+    log_metadata(
         # Metadata should be a dictionary of JSON-serializable values
-        metadata={"accuracy": float(accuracy)}
+        metadata={"accuracy": float(accuracy)},
+        # Using infer_artifact=True automatically attaches metadata to the
+        # artifact produced by this step. Since this step has only one output,
+        # we don't need to specify the artifact_name
+        infer_artifact=True
+        # If the step had multiple outputs, we would need to specify which one:
+        # artifact_name="my_model", infer_artifact=True
+
         # A dictionary of dictionaries can also be passed to group metadata
         #  in the dashboard
         # metadata = {"metrics": {"accuracy": accuracy}}
@@ -481,7 +484,7 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.svm import SVC
-from zenml import ArtifactConfig, pipeline, step, log_artifact_metadata
+from zenml import ArtifactConfig, pipeline, step, log_metadata
 from zenml import save_artifact, load_artifact
 from zenml.client import Client
 
@@ -511,7 +514,7 @@ def model_finetuner_step(
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])
     accuracy = model.score(dataset[0], dataset[1])
-    log_artifact_metadata(metadata={"accuracy": float(accuracy)})
+    log_metadata(metadata={"accuracy": float(accuracy)})
     return model
 
 

@@ -23,7 +23,7 @@ The orchestrator then takes over responsibility for executing the pipeline\
 according to the schedule.
 
 {% hint style="info" %}
-For our full reference documentation on schedules, see the [Schedule a Pipeline](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline) page.
+For our full reference documentation on schedules, see the [Schedule a Pipeline](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) page.
 {% endhint %}
 
 ### Prerequisites

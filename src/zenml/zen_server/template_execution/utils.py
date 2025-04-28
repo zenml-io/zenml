@@ -21,7 +21,9 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
+    ENV_ZENML_RUNNER_POD_TIMEOUT,
     handle_bool_env_var,
+    handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
@@ -192,6 +194,10 @@ def run_template(
             message="Starting pipeline run.",
         )
 
+        runner_timeout = handle_int_env_var(
+            ENV_ZENML_RUNNER_POD_TIMEOUT, default=60
+        )
+
         # could do this same thing with a step operator, but we need some
         # minor changes to the abstract interface to support that.
         workload_manager().run(
@@ -200,7 +206,7 @@ def run_template(
             command=command,
             arguments=args,
             environment=environment,
-            timeout_in_seconds=30,
+            timeout_in_seconds=runner_timeout,
             sync=True,
         )
         workload_manager().log(

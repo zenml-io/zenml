@@ -9,7 +9,7 @@ pipeline is relatively straightforward. The reranker will take the retrieved
 documents from the initial retrieval step and reorder them in terms of the query
 that was used to retrieve them.
 
-![](/docs/book/.gitbook/assets/reranking-workflow.png)
+![](../../../.gitbook/assets/reranking-workflow.png)
 
 ## How and where to add reranking
 

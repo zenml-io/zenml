@@ -1,18 +1,19 @@
 ---
 description: Creating an external integration and contributing to ZenML
+icon: cubes
 ---
 
-# Implement a custom integration
+# Custom Integration
 
-![ZenML integrates with a number of tools from the MLOps landscape](../../../.gitbook/assets/sam-side-by-side-full-text.png)
+![ZenML integrates with a number of tools from the MLOps landscape](../../.gitbook/assets/sam-side-by-side-full-text.png)
 
-One of the main goals of ZenML is to find some semblance of order in the ever-growing MLOps landscape. ZenML already provides [numerous integrations](https://zenml.io/integrations) into many popular tools, and allows you to come up with ways to [implement your own stack component flavors](../infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) in order to fill in any gaps that are remaining.
+One of the main goals of ZenML is to find some semblance of order in the ever-growing MLOps landscape. ZenML already provides [numerous integrations](https://zenml.io/integrations) into many popular tools, and allows you to come up with ways to [implement your own stack component flavors](../../component-guide/contribute/custom-stack-component.md) in order to fill in any gaps that are remaining.
 
 _However, what if you want to make your extension of ZenML part of the main codebase, to share it with others?_ If you are such a person, e.g., a tooling provider in the ML/MLOps space, or just want to contribute a tooling integration to ZenML, this guide is intended for you.
 
 ### Step 1: Plan out your integration
 
-In [the previous page](../infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](https://docs.zenml.io/stacks) as well.
+In [the previous page](../../component-guide/contribute/custom-stack-component.md), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](https://docs.zenml.io/stacks) as well.
 
 Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](https://docs.zenml.io/stacks/container-registries), [artifact stores](https://docs.zenml.io/stacks/artifact-stores) etc.
 
@@ -27,7 +28,7 @@ zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../project-setup-and-management/setting-up-a-project-repository/README.md) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](https://docs.zenml.io/user-guides/best-practices/set-up-your-repository) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually it's better to not have to rely on this mechanism, and initialize zenml at the root.
 {% endhint %}
@@ -113,11 +114,11 @@ class ExampleIntegration(Integration):
 ExampleIntegration.check_installation() # this checks if the requirements are installed
 ```
 
-Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/\_\_init\_\_.py) as an example for how it is done.
+Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/__init__.py) as an example for how it is done.
 
 **5. Import in all the right places**
 
-The Integration itself must be imported within [`src/zenml/integrations/__init__.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/\_\_init\_\_.py).
+The Integration itself must be imported within [`src/zenml/integrations/__init__.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/__init__.py).
 
 ### Step 4: Create a PR and celebrate :tada:
 
