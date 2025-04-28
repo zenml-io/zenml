@@ -347,18 +347,10 @@ def main(
         token = get_token(client_id, client_secret)
 
     # Get or create workspace
+    exists = True
     try:
         workspace = get_workspace(token, workspace_name_or_id)
-        update_workspace(
-            token,
-            workspace["id"],
-            zenml_version,
-            image_repository,
-            image_tag,
-            helm_chart_version,
-        )
     except RuntimeError:
-        assert isinstance(workspace_name_or_id, str)
         create_workspace(
             token=token,
             workspace_name=workspace_name_or_id,
@@ -368,7 +360,17 @@ def main(
             image_tag=image_tag,
             helm_chart_version=helm_chart_version,
         )
+        exists = False
 
+    if exists:
+        update_workspace(
+            token,
+            workspace["id"],
+            zenml_version,
+            image_repository,
+            image_tag,
+            helm_chart_version,
+        )
     # Check the status using a deadline-based approach
     deadline = time.time() + timeout
     workspace = get_workspace(token, workspace_name_or_id)

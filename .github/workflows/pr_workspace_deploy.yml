@@ -1,0 +1,173 @@
+---
+name: PR Workspace Deploy
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to checkout and deploy'
+        required: true
+        type: string
+env:
+  ZENML_ANALYTICS_OPT_IN: false
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  check-label:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    steps:
+      # using this instead of contains(github.event.pull_request.labels.*.name, 'staging-workspace')
+      # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
+      # With dynamic approach dev can set label and rerun this flow to make it running.
+      - name: Get PR labels
+        id: pr-labels
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+            });
+            const labelNames = labels.map(label => label.name);
+            core.setOutput('all-labels', labelNames.join(','));
+      - name: Label not set
+        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'staging-workspace') }}
+        run: |
+          echo "Please add the 'staging-workspace' label if you want to deploy a staging workspace."
+          exit 1
+  
+  set-deployment-id:
+    runs-on: ubuntu-latest
+    outputs:
+      deployment_id: ${{ steps.set-id.outputs.deployment_id }}
+      zenml_version: ${{ steps.set-id.outputs.zenml_version }}
+    steps:
+      - name: Checkout for branch info
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      
+      - name: Set deployment ID
+        id: set-id
+        run: |
+          # Function to slugify a branch name
+          slugify() {
+            echo "$1" | tr '/' '-' | tr ' ' '-' | tr '[:upper:]' '[:lower:]'
+          }
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Get the branch name for PR
+            BRANCH_NAME="${{ github.head_ref }}"
+          else
+            # For manual trigger, use the provided branch
+            BRANCH_NAME="${{ github.event.inputs.branch }}"
+          fi
+          
+          # Create a slug from the branch name
+          BRANCH_SLUG=$(slugify "$BRANCH_NAME")
+          echo "deployment_id=${BRANCH_SLUG}" >> $GITHUB_OUTPUT
+          
+          # Get ZenML version from pyproject.toml
+          if [ -f "pyproject.toml" ]; then
+            ZENML_VERSION=$(grep -o 'version = "[^"]*"' pyproject.toml | cut -d'"' -f2)
+            echo "zenml_version=${ZENML_VERSION}" >> $GITHUB_OUTPUT
+          else
+            echo "zenml_version=dev" >> $GITHUB_OUTPUT
+          fi
+
+  build-images:
+    needs: [set-deployment-id, check-label]
+    if: |
+      always() && 
+      (
+        (github.event_name == 'pull_request' && needs.check-label.result == 'success') || 
+        (github.event_name == 'workflow_dispatch')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # Check out the appropriate branch
+      - name: Checkout code (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4.2.2
+      
+      - name: Checkout code (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      # Sign in to Google
+      - uses: google-github-actions/setup-gcloud@v0
+        with:
+          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
+
+      # Submit the Cloudbuild job
+      - name: Build docker images
+        run: |
+          gcloud builds submit \
+            --quiet \
+            --config=pull_request_cloudbuild.yaml \
+            --substitutions=ZENML_PR_TAG=${{ needs.set-deployment-id.outputs.deployment_id }}
+  
+  manage-tenant:
+    needs: [build-images, set-deployment-id]
+    if: always() && needs.build-images.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      ZENML_VERSION: ${{ needs.set-deployment-id.outputs.zenml_version }}
+    steps:
+      - name: Checkout code (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4.2.2
+      
+      - name: Checkout code (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      
+      - name: Set workspace information
+        run: |
+          echo "WORKSPACE_ID=branch-${{ needs.set-deployment-id.outputs.deployment_id }}" >> $GITHUB_ENV
+          echo "DOCKER_TAG=dev-${{ needs.set-deployment-id.outputs.deployment_id }}" >> $GITHUB_ENV
+      
+      - name: Manage workspace
+        env:
+          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+          WORKSPACE_NAME_OR_ID: ${{ env.WORKSPACE_ID }}
+          ORGANIZATION_ID: ${{ secrets.STAGING_ORGANIZATION_ID }}
+          DOCKER_IMAGE: zenml/zenml-server:${{ env.DOCKER_TAG }}
+          ZENML_VERSION: ${{ env.ZENML_VERSION }}
+        run: python scripts/manage_workspace.py
+      
+      - name: Set tenant URL
+        run: echo "TENANT_URL=https://${{ env.WORKSPACE_ID }}.app.zenml.io" >> $GITHUB_ENV
+      
+      - name: Add comment with tenant URL (PR)
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        run: |-
+          gh pr comment ${{ github.event.pull_request.number }} --body "✅ Branch tenant has been deployed! Access it at: ${{ env.TENANT_URL }}"
+      
+      - name: Output tenant URL (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |-
+          echo "✅ Branch tenant has been deployed! Access it at: ${{ env.TENANT_URL }}"
