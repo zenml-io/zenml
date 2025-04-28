@@ -95,13 +95,16 @@ jobs:
       - name: Get ZenML version
         id: get-version
         run: |
-          # Get ZenML version from pyproject.toml in the checked out branch
-          if [ -f "pyproject.toml" ]; then
-            ZENML_VERSION=$(grep -o 'version = "[^"]*"' pyproject.toml | cut -d'"' -f2)
+          # Get ZenML version from src/zenml/VERSION file
+          if [ -f "src/zenml/VERSION" ]; then
+            # Read the version but remove any whitespace
+            ZENML_VERSION=$(cat src/zenml/VERSION | tr -d '[:space:]')
+            echo "Version detected: ${ZENML_VERSION}"
             echo "zenml_version=${ZENML_VERSION}" >> $GITHUB_OUTPUT
           else
-            echo "pyproject.toml not found, using 'dev' as version"
-            echo "zenml_version=dev" >> $GITHUB_OUTPUT
+            echo "ERROR: VERSION file not found at src/zenml/VERSION"
+            echo "This is required for deployment. Please ensure you're using a valid branch."
+            exit 1
           fi
 
   build-images:
@@ -163,8 +166,8 @@ jobs:
         env:
           CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
           CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
-          ORGANIZATION_ID: ${{ secrets.STAGING_ORGANIZATION_ID }}
           WORKSPACE_NAME_OR_ID: ${{ needs.set-branch-info.outputs.branch_name }}
+          ORGANIZATION_ID: ${{ secrets.STAGING_ORGANIZATION_ID }}
           DOCKER_IMAGE: zenml/zenml-server:dev-${{ needs.set-branch-info.outputs.branch_name }}
           ZENML_VERSION: ${{ env.ZENML_VERSION }}
         run: python scripts/manage_workspace.py
