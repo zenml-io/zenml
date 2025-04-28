@@ -31,6 +31,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
@@ -59,6 +60,7 @@ from zenml.utils import (
     materializer_utils,
     notebook_utils,
     pydantic_utils,
+    secret_utils,
     settings_utils,
     source_code_utils,
     source_utils,
@@ -111,7 +113,7 @@ class BaseStep:
             "OutputMaterializersSpecification"
         ] = None,
         environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[str]] = None,
+        secrets: Optional[List[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -608,7 +610,7 @@ class BaseStep:
             "OutputMaterializersSpecification"
         ] = None,
         environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[str]] = None,
+        secrets: Optional[List[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -714,7 +716,8 @@ class BaseStep:
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + secrets
 
-        # TODO: we should probably convert to secret IDs here?
+        if secrets:
+            secrets = secret_utils.convert_to_secret_ids(secrets)
 
         values = dict_utils.remove_none_values(
             {
@@ -754,7 +757,7 @@ class BaseStep:
             "OutputMaterializersSpecification"
         ] = None,
         environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[str]] = None,
+        secrets: Optional[List[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,

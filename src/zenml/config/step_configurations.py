@@ -24,6 +24,7 @@ from typing import (
     Tuple,
     Union,
 )
+from uuid import UUID
 
 from pydantic import (
     ConfigDict,
@@ -150,7 +151,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     experiment_tracker: Optional[str] = None
     parameters: Dict[str, Any] = {}
     environment: Dict[str, Any] = {}
-    secrets: List[str] = []
+    secrets: List[Union[str, UUID]] = []
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[SourceWithValidator] = None
