@@ -10773,32 +10773,6 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate, include_resources=True
             )
 
-    def _set_filter_model_id(
-        self,
-        filter_model: ModelVersionFilter,
-        session: Session,
-    ) -> None:
-        """Set the model ID on a filter model.
-
-        Args:
-            filter_model: The filter model to set the model ID on.
-            session: The DB session to use to use for queries.
-
-        Raises:
-            ValueError: if the filter is not scoped to a model.
-        """
-        if filter_model.model:
-            model = self._get_schema_by_name_or_id(
-                object_name_or_id=filter_model.model,
-                schema_class=ModelSchema,
-                project_name_or_id=filter_model.project,
-                session=session,
-            )
-        else:
-            raise ValueError("Model ID missing from the filter")
-
-        filter_model.model = model.id
-
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilter,
@@ -10820,11 +10794,6 @@ class SqlZenStore(BaseZenStore):
                 filter_model=model_version_filter_model,
                 session=session,
             )
-            self._set_filter_model_id(
-                filter_model=model_version_filter_model,
-                session=session,
-            )
-
             query = select(ModelVersionSchema)
 
             return self.filter_and_paginate(
