@@ -144,10 +144,10 @@ def training_pipeline(gamma: float = 0.002):
 
 ## Logging metadata to the `Model` object
 
-[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), models too can take a dictionary of key-value pairs to capture their metadata. This is achieved using the `log_model_metadata` method:
+[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), models too can take a dictionary of key-value pairs to capture their metadata. This is achieved using the `log_metadata` method:
 
 ```python
-from zenml import get_step_context, step, log_model_metadata 
+from zenml import get_step_context, step, log_metadata
 
 @step
 def svc_trainer(
@@ -162,13 +162,15 @@ def svc_trainer(
 
     model = get_step_context().model
     
-    log_model_metadata(
-        # Model name can be omitted if specified in the step or pipeline context
-        model_name="iris_classifier",
-        # Passing None or omitting this will use the `latest` version
-        version=None,
+    log_metadata(
         # Metadata should be a dictionary of JSON-serializable values
-        metadata={"accuracy": float(accuracy)}
+        metadata={"accuracy": float(accuracy)},
+        # Using infer_model=True automatically attaches metadata to the model
+        # configured for this step
+        infer_model=True
+        # If not running within a step with model configured, specify:
+        # model_name="iris_classifier", model_version="my_version"
+
         # A dictionary of dictionaries can also be passed to group metadata
         #  in the dashboard
         # metadata = {"metrics": {"accuracy": accuracy}}

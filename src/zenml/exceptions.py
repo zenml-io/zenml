@@ -70,40 +70,6 @@ class DoesNotExistException(ZenMLBaseException):
         super().__init__(message)
 
 
-class PipelineNotSucceededException(ZenMLBaseException):
-    """Raises exception when trying to fetch artifacts from a not succeeded pipeline."""
-
-    def __init__(
-        self,
-        name: str = "",
-        message: str = "{} is not yet completed successfully.",
-    ):
-        """Initializes the exception.
-
-        Args:
-            name: Name of the pipeline.
-            message: Message with details of exception.
-        """
-        super().__init__(message.format(name))
-
-
-class GitException(ZenMLBaseException):
-    """Raises exception when a problem occurs in git resolution."""
-
-    def __init__(
-        self,
-        message: str = "There is a problem with git resolution. "
-        "Please make sure that all relevant files "
-        "are committed.",
-    ):
-        """Initializes the exception.
-
-        Args:
-            message: Message with details of exception.
-        """
-        super().__init__(message)
-
-
 class StepInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the Step interface in an unsupported way."""
 
@@ -116,48 +82,16 @@ class StepContextError(ZenMLBaseException):
     """Raises exception when interacting with a StepContext in an unsupported way."""
 
 
-class PipelineInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Pipeline interface in an unsupported way."""
-
-
-class ArtifactInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Artifact interface in an unsupported way."""
-
-
 class StackComponentInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the stack components in an unsupported way."""
-
-
-class StackComponentDeploymentError(ZenMLBaseException):
-    """Raises exception when deploying a stack component fails."""
 
 
 class ArtifactStoreInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the Artifact Store interface in an unsupported way."""
 
 
-class PipelineConfigurationError(ZenMLBaseException):
-    """Raises exceptions when a pipeline configuration contains invalid values."""
-
-
 class IntegrationError(ZenMLBaseException):
     """Raises exceptions when a requested integration can not be activated."""
-
-
-class DuplicateRunNameError(RuntimeError):
-    """Raises exception when a run with the same name already exists."""
-
-    def __init__(
-        self,
-        message: str = "Unable to run a pipeline with a run name that "
-        "already exists.",
-    ):
-        """Initializes the exception.
-
-        Args:
-            message: Message with details of exception.
-        """
-        super().__init__(message)
 
 
 class ValidationError(ZenMLBaseException):
@@ -180,20 +114,8 @@ class StackValidationError(ZenMLBaseException):
     """Raised when a stack configuration is not valid."""
 
 
-class StackComponentValidationError(ZenMLBaseException):
-    """Raised when a stack component configuration is not valid."""
-
-
-class ProvisioningError(ZenMLBaseException):
-    """Raised when an error occurs when provisioning resources for a StackComponent."""
-
-
 class GitNotFoundError(ImportError):
     """Raised when ZenML CLI is used to interact with examples on a machine with no git installation."""
-
-
-class DuplicatedConfigurationError(ZenMLBaseException):
-    """Raised when a configuration parameter is set twice."""
 
 
 class IllegalOperationError(ZenMLBaseException):

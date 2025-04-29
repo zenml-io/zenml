@@ -28,6 +28,9 @@ from zenml.integrations.airflow.orchestrators.dag_generator import (
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def add_local_stores_mount(
@@ -243,6 +246,24 @@ def add_pod_settings(
 
     if settings.host_ipc:
         pod_spec.host_ipc = settings.host_ipc
+
+    if settings.scheduler_name:
+        pod_spec.scheduler_name = settings.scheduler_name
+
+    for key, value in settings.additional_pod_spec_args.items():
+        if not hasattr(pod_spec, key):
+            logger.warning(f"Ignoring invalid Pod Spec argument `{key}`.")
+        else:
+            if value is None:
+                continue
+
+            existing_value = getattr(pod_spec, key)
+            if isinstance(existing_value, list):
+                existing_value.extend(value)
+            elif isinstance(existing_value, dict):
+                existing_value.update(value)
+            else:
+                setattr(pod_spec, key, value)
 
 
 def build_cron_job_manifest(

@@ -524,36 +524,16 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 node_selector_constraint: Optional[Tuple[str, str]] = None
                 pod_settings = step_settings.pod_settings
                 if pod_settings:
-                    if pod_settings.host_ipc:
+                    ignored_fields = pod_settings.model_fields_set - {
+                        "node_selectors"
+                    }
+                    if ignored_fields:
                         logger.warning(
-                            "Host IPC is set to `True` but not supported in "
-                            "this orchestrator. Ignoring..."
+                            f"The following pod settings are not supported in "
+                            f"Tekton with Tekton Pipelines 2.x and will be "
+                            f"ignored: {list(ignored_fields)}."
                         )
-                    if pod_settings.affinity:
-                        logger.warning(
-                            "Affinity is set but not supported in Tekton with "
-                            "Tekton Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.tolerations:
-                        logger.warning(
-                            "Tolerations are set but not supported in "
-                            "Tekton with Tekton Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.volumes:
-                        logger.warning(
-                            "Volumes are set but not supported in Tekton with "
-                            "Tekton Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.volume_mounts:
-                        logger.warning(
-                            "Volume mounts are set but not supported in "
-                            "Tekton with Tekton Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.env or pod_settings.env_from:
-                        logger.warning(
-                            "Environment variables are set but not supported "
-                            "in Tekton with Tekton Pipelines 2.x. Ignoring..."
-                        )
+
                     # apply pod settings
                     if (
                         KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL

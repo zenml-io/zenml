@@ -56,7 +56,7 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
     else \
       PACKAGE_NAME="zenml"; \
     fi \
-    && pip install --upgrade pip \
+    && pip install --upgrade pip setuptools \
     && pip install ${PACKAGE_NAME}${ZENML_VERSION:+==$ZENML_VERSION} \
     && pip freeze > requirements.txt
 
