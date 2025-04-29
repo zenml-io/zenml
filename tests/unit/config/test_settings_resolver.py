@@ -18,7 +18,6 @@ import pytest
 from zenml.config import DockerSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.settings_resolver import SettingsResolver
-from zenml.exceptions import SettingsResolvingError
 
 
 def test_settings_resolver_fails_when_using_invalid_settings_key(mocker):
@@ -80,12 +79,13 @@ def test_resolving_fails_if_no_stack_component_settings_exist_for_the_given_key(
         resolver.resolve(stack=local_stack)
 
 
-def test_resolving_fails_if_the_settings_cant_be_converted(local_stack):
-    """Tests that resolving fails if the given settings can't be converted to
-    the expected settings class."""
+def test_resolving_succeeds_if_the_settings_contain_extra_attributes(
+    local_stack,
+):
+    """Tests that resolving succeeds if the given settings contain extra attributes."""
     settings = BaseSettings(not_a_docker_settings_key=1)
 
     resolver = SettingsResolver(key="docker", settings=settings)
 
-    with pytest.raises(SettingsResolvingError):
+    with does_not_raise():
         resolver.resolve(stack=local_stack)
