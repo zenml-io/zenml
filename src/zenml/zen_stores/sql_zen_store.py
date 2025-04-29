@@ -5074,7 +5074,10 @@ class SqlZenStore(BaseZenStore):
         return new_run.to_model(include_metadata=True, include_resources=True)
 
     def get_run(
-        self, run_id: UUID, hydrate: bool = True
+        self,
+        run_id: UUID,
+        hydrate: bool = True,
+        include_python_packages: bool = False,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -5082,6 +5085,8 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_python_packages: Flag deciding whether to include the
+                python packages in the response.
 
         Returns:
             The pipeline run.
@@ -5093,7 +5098,9 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             return run.to_model(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                include_python_packages=include_python_packages,
             )
 
     def _replace_placeholder_run(
