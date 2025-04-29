@@ -148,9 +148,6 @@ def list_model_versions(
 
     Returns:
         The model versions according to query filters.
-
-    Raises:
-        ValueError: If the model is missing from the filter.
     """
     # A project scoped request must always be scoped to a specific
     # project. This is required for the RBAC check to work.
