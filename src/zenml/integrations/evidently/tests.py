@@ -345,4 +345,4 @@ class EvidentlyTestConfig(BaseModel):
                 f"`{self.class_path}`: {str(e)}"
             )
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")

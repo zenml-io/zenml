@@ -161,6 +161,7 @@ def get_run(
     run_id: UUID,
     hydrate: bool = True,
     refresh_status: bool = False,
+    include_python_packages: bool = False,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
@@ -171,6 +172,8 @@ def get_run(
             by including metadata fields in the response.
         refresh_status: Flag deciding whether we should try to refresh
             the status of the pipeline run using its orchestrator.
+        include_python_packages: Flag deciding whether to include the
+            Python packages in the response.
 
     Returns:
         The pipeline run.
@@ -179,7 +182,10 @@ def get_run(
         RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
     run = verify_permissions_and_get_entity(
-        id=run_id, get_method=zen_store().get_run, hydrate=hydrate
+        id=run_id,
+        get_method=zen_store().get_run,
+        hydrate=hydrate,
+        include_python_packages=include_python_packages,
     )
     if refresh_status:
         try:

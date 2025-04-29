@@ -24,7 +24,8 @@ from sqlmodel import Field, Relationship
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.logger import get_logger
 from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
@@ -46,6 +47,8 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+
+logger = get_logger(__name__)
 
 
 class PipelineDeploymentSchema(BaseSchema, table=True):
@@ -184,10 +187,21 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentSchema`.
         """
+        # Don't include the merged config in the step configurations, we
+        # reconstruct it in the `to_model` method using the pipeline
+        # configuration.
         step_configurations = {
             invocation_id: step.model_dump(mode="json", exclude={"config"})
             for invocation_id, step in request.step_configurations.items()
         }
+
+        client_env = json.dumps(request.client_environment)
+        if len(client_env) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                "Client environment is too large to be stored in the database. "
+                "Skipping."
+            )
+            client_env = "{}"
 
         return cls(
             stack_id=request.stack,
@@ -204,7 +218,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 step_configurations,
                 sort_keys=False,
             ),
-            client_environment=json.dumps(request.client_environment),
+            client_environment=client_env,
             client_version=request.client_version,
             server_version=request.server_version,
             pipeline_version_hash=request.pipeline_version_hash,
@@ -220,6 +234,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        include_python_packages: bool = False,
         **kwargs: Any,
     ) -> PipelineDeploymentResponse:
         """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponse`.
@@ -227,6 +242,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            include_python_packages: Whether the python packages will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -249,13 +265,17 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                     step, pipeline_configuration
                 )
 
+            client_environment = json.loads(self.client_environment)
+            if not include_python_packages:
+                client_environment.pop("python_packages", None)
+
             metadata = PipelineDeploymentResponseMetadata(
                 project=self.project.to_model(),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 raw_step_configurations=step_configurations,
                 step_configurations=step_configurations,
-                client_environment=json.loads(self.client_environment),
+                client_environment=client_environment,
                 client_version=self.client_version,
                 server_version=self.server_version,
                 pipeline=self.pipeline.to_model() if self.pipeline else None,

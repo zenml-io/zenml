@@ -15,6 +15,11 @@
 
 This materializer handles pandas DataFrame and Series objects.
 
+Special features:
+    - Handles pandas DataFrames and Series with various data types
+    - Provides helpful error messages for custom data type errors
+    - Warns when custom data types are detected that might need additional libraries
+
 Environment Variables:
     ZENML_PANDAS_SAMPLE_ROWS: Controls the number of sample rows to include in
         visualizations. Defaults to 10 if not set.
@@ -40,6 +45,32 @@ CSV_FILENAME = "df.csv"
 
 # Default number of sample rows to display in visualizations
 DEFAULT_SAMPLE_ROWS = 10
+
+# List of standard pandas/numpy dtype prefixes for type checking
+STANDARD_DTYPE_PREFIXES = [
+    "int",
+    "float",
+    "bool",
+    "datetime",
+    "timedelta",
+    "object",
+    "category",
+    "string",
+    "complex",
+]
+
+
+def is_standard_dtype(dtype_str: str) -> bool:
+    """Check if a dtype string represents a standard pandas/numpy dtype.
+
+    Args:
+        dtype_str: String representation of the dtype
+
+    Returns:
+        bool: True if it's a standard dtype, False otherwise
+    """
+    dtype_str = dtype_str.lower()
+    return any(prefix in dtype_str for prefix in STANDARD_DTYPE_PREFIXES)
 
 
 class PandasMaterializer(BaseMaterializer):
@@ -86,27 +117,60 @@ class PandasMaterializer(BaseMaterializer):
 
         Raises:
             ImportError: If pyarrow or fastparquet is not installed.
+            TypeError: Raised if there is an error when reading parquet files.
+            zenml_type_error: If the data type is a custom data type.
 
         Returns:
             The pandas dataframe or series.
         """
-        if self.artifact_store.exists(self.parquet_path):
-            if self.pyarrow_exists:
-                with self.artifact_store.open(
-                    self.parquet_path, mode="rb"
-                ) as f:
-                    df = pd.read_parquet(f)
+        try:
+            # First try normal loading
+            if self.artifact_store.exists(self.parquet_path):
+                if self.pyarrow_exists:
+                    with self.artifact_store.open(
+                        self.parquet_path, mode="rb"
+                    ) as f:
+                        df = pd.read_parquet(f)
+                else:
+                    raise ImportError(
+                        "You have an old version of a `PandasMaterializer` "
+                        "data artifact stored in the artifact store "
+                        "as a `.parquet` file, which requires `pyarrow` "
+                        "for reading, You can install `pyarrow` by running "
+                        "'`pip install pyarrow fastparquet`'."
+                    )
             else:
-                raise ImportError(
-                    "You have an old version of a `PandasMaterializer` "
-                    "data artifact stored in the artifact store "
-                    "as a `.parquet` file, which requires `pyarrow` "
-                    "for reading, You can install `pyarrow` by running "
-                    "'`pip install pyarrow fastparquet`'."
+                with self.artifact_store.open(self.csv_path, mode="rb") as f:
+                    df = pd.read_csv(f, index_col=0, parse_dates=True)
+        except TypeError as e:
+            # Check for common data type error patterns
+            error_str = str(e).lower()
+            is_dtype_error = (
+                "not understood" in error_str
+                or "no type" in error_str
+                or "cannot deserialize" in error_str
+                or "data type" in error_str
+            )
+
+            if is_dtype_error:
+                # If the error is due to a custom data type, raise a ZenML TypeError
+                # This is to avoid the original error from being swallowed
+                # and to provide a more helpful error message
+                zenml_type_error = TypeError(
+                    "Encountered an error with custom data types. This may be due to "
+                    "missing libraries that were used when the data was originally created. "
+                    "For example, you might need to install libraries like 'geopandas' for "
+                    "GeoPandas data types, 'pandas-gbq' for BigQuery data types, or "
+                    "'pyarrow' for Arrow data types. Make sure to import these libraries "
+                    "in your step code as well as adding them to your step requirements, "
+                    "even if you're not directly using them in your code. Pandas needs "
+                    "these libraries to be imported to properly load the custom data types. "
+                    "Try installing any packages that were used in previous pipeline steps "
+                    "but might not be available in the current environment."
                 )
-        else:
-            with self.artifact_store.open(self.csv_path, mode="rb") as f:
-                df = pd.read_csv(f, index_col=0, parse_dates=True)
+                raise zenml_type_error from e
+            # We don't know how to handle this error, so re-raise the original error
+            raise e
 
         # validate the type of the data.
         def is_dataframe_or_series(
@@ -204,14 +268,46 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        pandas_metadata: Dict[str, "MetadataType"] = {"shape": df.shape}
+        # Store whether it's a Series for later reference
+        is_series = isinstance(df, pd.Series)
 
-        if isinstance(df, pd.Series):
-            pandas_metadata["dtype"] = DType(df.dtype.type)
-            pandas_metadata["mean"] = float(df.mean().item())
-            pandas_metadata["std"] = float(df.std().item())
-            pandas_metadata["min"] = float(df.min().item())
-            pandas_metadata["max"] = float(df.max().item())
+        # Store original shape before conversion
+        original_shape = df.shape
+
+        # Convert Series to DataFrame for consistent handling of dtypes
+        if is_series:
+            series_obj = df  # Keep original Series for some calculations
+            df = df.to_frame(name="series")
+
+        pandas_metadata: Dict[str, "MetadataType"] = {"shape": original_shape}
+
+        # Add information about custom data types to metadata
+        custom_types = {}
+        try:
+            for col, dtype in df.dtypes.items():
+                dtype_str = str(dtype)
+                if not is_standard_dtype(dtype_str):
+                    col_name = "series" if is_series else str(col)
+                    custom_types[col_name] = dtype_str
+                    # Try to get module information if available
+                    try:
+                        module_name = dtype.type.__module__
+                        custom_types[f"{col_name}_module"] = module_name
+                    except (AttributeError, TypeError):
+                        pass
+
+            if custom_types:
+                pandas_metadata["custom_types"] = custom_types
+        except Exception as e:
+            logger.debug(f"Error extracting custom type metadata: {e}")
+
+        if is_series:
+            # For Series, use the original series object for statistics
+            pandas_metadata["dtype"] = DType(series_obj.dtype.type)
+            pandas_metadata["mean"] = float(series_obj.mean().item())
+            pandas_metadata["std"] = float(series_obj.std().item())
+            pandas_metadata["min"] = float(series_obj.min().item())
+            pandas_metadata["max"] = float(series_obj.max().item())
 
         else:
             pandas_metadata["dtype"] = {
