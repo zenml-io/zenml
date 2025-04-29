@@ -228,6 +228,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        include_python_packages: bool = False,
         **kwargs: Any,
     ) -> PipelineDeploymentResponse:
         """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponse`.
@@ -235,6 +236,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            include_python_packages: Whether the python packages will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -256,7 +258,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 step_configurations[s] = Step.model_validate(c)
 
             client_environment = json.loads(self.client_environment)
-            client_environment.pop("python_packages", None)
+            if not include_python_packages:
+                client_environment.pop("python_packages", None)
 
             metadata = PipelineDeploymentResponseMetadata(
                 project=self.project.to_model(),

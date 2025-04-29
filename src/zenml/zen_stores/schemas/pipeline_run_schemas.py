@@ -311,7 +311,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             RuntimeError: if the model creation fails.
         """
         if self.deployment is not None:
-            deployment = self.deployment.to_model(include_metadata=True)
+            deployment = self.deployment.to_model(
+                include_metadata=True,
+                include_python_packages=include_python_packages,
+            )
 
             config = deployment.pipeline_configuration
             new_substitutions = config._get_full_substitutions(self.start_time)
