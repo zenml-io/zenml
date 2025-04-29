@@ -255,12 +255,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             for s, c in step_configurations.items():
                 step_configurations[s] = Step.model_validate(c)
 
+            client_environment = json.loads(self.client_environment)
+            client_environment.pop("python_packages", None)
+
             metadata = PipelineDeploymentResponseMetadata(
                 project=self.project.to_model(),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
-                client_environment=json.loads(self.client_environment),
+                client_environment=client_environment,
                 client_version=self.client_version,
                 server_version=self.server_version,
                 pipeline=self.pipeline.to_model() if self.pipeline else None,

@@ -292,6 +292,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        include_python_packages: bool = False,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -299,6 +300,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            include_python_packages: Whether the python packages will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -393,6 +395,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.orchestrator_environment
                 else {}
             )
+
+            if not include_python_packages:
+                client_environment.pop("python_packages", None)
+                orchestrator_environment.pop("python_packages", None)
+
             metadata = PipelineRunResponseMetadata(
                 project=self.project.to_model(),
                 run_metadata=self.fetch_metadata(),
