@@ -303,7 +303,8 @@ class ZenMLCloudConnection:
         self._token_expires_at = utc_now() + timedelta(seconds=expires_in)
         self._token = access_token
 
-        return access_token
+        assert self._token is not None
+        return self._token
 
 
 def cloud_connection() -> ZenMLCloudConnection:
