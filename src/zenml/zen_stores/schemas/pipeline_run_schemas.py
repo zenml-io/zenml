@@ -23,11 +23,13 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
+from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -63,6 +65,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+
+logger = get_logger(__name__)
 
 
 class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -239,6 +243,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The created `PipelineRunSchema`.
         """
         orchestrator_environment = json.dumps(request.orchestrator_environment)
+        if len(orchestrator_environment) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                "Orchestrator environment is too large to be stored in the "
+                "database. Skipping."
+            )
+            orchestrator_environment = "{}"
 
         return cls(
             project_id=request.project,
@@ -282,6 +292,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        include_python_packages: bool = False,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -289,6 +300,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            include_python_packages: Whether the python packages will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -299,7 +311,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             RuntimeError: if the model creation fails.
         """
         if self.deployment is not None:
-            deployment = self.deployment.to_model(include_metadata=True)
+            deployment = self.deployment.to_model(
+                include_metadata=True,
+                include_python_packages=include_python_packages,
+            )
 
             config = deployment.pipeline_configuration
             new_substitutions = config._get_full_substitutions(self.start_time)
@@ -383,6 +398,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.orchestrator_environment
                 else {}
             )
+
+            if not include_python_packages:
+                client_environment.pop("python_packages", None)
+                orchestrator_environment.pop("python_packages", None)
+
             metadata = PipelineRunResponseMetadata(
                 project=self.project.to_model(),
                 run_metadata=self.fetch_metadata(),

@@ -31,7 +31,6 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, ModelStages
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -47,11 +46,15 @@ from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.model.model import Model
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-    from zenml.zen_stores.schemas import BaseSchema
+    from zenml.zen_stores.schemas import (
+        BaseSchema,
+    )
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -585,7 +588,6 @@ class ModelVersionFilter(
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
-        "model",
     ]
     API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
@@ -615,41 +617,34 @@ class ModelVersionFilter(
         union_mode="left_to_right",
     )
 
-    def apply_filter(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Applies the filter to a query.
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List[Union["ColumnElement[bool]"]]:
+        """Get custom filters.
 
         Args:
-            query: The query to which to apply the filter.
             table: The query table.
 
         Returns:
-            The query with filter applied.
-
-        Raises:
-            ValueError: if the filter is not scoped to a model.
+            A list of custom filters.
         """
-        query = super().apply_filter(query=query, table=table)
+        from sqlalchemy import and_
 
-        # The model scope must always be set and must be a UUID. If the
-        # client sets this to a string, the server will try to resolve it to a
-        # model ID.
-        #
-        # If not set by the client, the server will raise a ValueError.
-        #
-        # See: SqlZenStore._set_filter_model_id
+        from zenml.zen_stores.schemas import (
+            ModelSchema,
+            ModelVersionSchema,
+        )
 
-        if not self.model:
-            raise ValueError("Model scope missing from the filter.")
+        custom_filters = super().get_custom_filters(table)
 
-        if not isinstance(self.model, UUID):
-            raise ValueError(
-                f"Model scope must be a UUID, got {type(self.model)}."
+        if self.model:
+            value, operator = self._resolve_operator(self.model)
+            model_filter = and_(
+                ModelVersionSchema.model_id == ModelSchema.id,  # type: ignore[arg-type]
+                self.generate_name_or_id_query_conditions(
+                    value=self.model, table=ModelSchema
+                ),
             )
+            custom_filters.append(model_filter)
 
-        query = query.where(getattr(table, "model_id") == self.model)
-
-        return query
+        return custom_filters

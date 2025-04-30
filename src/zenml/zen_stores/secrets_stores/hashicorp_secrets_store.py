@@ -68,7 +68,7 @@ class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
     vault_namespace: Optional[str] = None
     mount_point: Optional[str] = None
     max_versions: int = 1
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
 
 class HashiCorpVaultSecretsStore(BaseSecretsStore):
