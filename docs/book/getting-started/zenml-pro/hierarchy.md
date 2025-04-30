@@ -3,6 +3,11 @@ description: Understanding ZenML's hierarchical structure
 icon: ball-pile
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Hierarchy
 
 In ZenML Pro, there is a slightly different entity hierarchy as compared to the open-source ZenML\
