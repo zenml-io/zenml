@@ -21,6 +21,7 @@ from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
+    ENV_ZENML_MAX_CONCURRENT_TEMPLATE_RUNS,
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
     handle_bool_env_var,
@@ -58,7 +59,9 @@ logger = get_logger(__name__)
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
-concurrent_template_runs_semaphore = threading.Semaphore(1)
+concurrent_template_runs_semaphore = threading.Semaphore(
+    handle_int_env_var(ENV_ZENML_MAX_CONCURRENT_TEMPLATE_RUNS, default=3)
+)
 
 
 def run_template(
