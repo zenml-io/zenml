@@ -18,9 +18,7 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
-    HTTPException,
     Security,
 )
 
@@ -232,7 +230,6 @@ if server_config().workload_manager_enabled:
     @handle_exceptions
     def create_template_run(
         template_id: UUID,
-        background_tasks: BackgroundTasks,
         config: Optional[PipelineRunConfiguration] = None,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
@@ -240,58 +237,41 @@ if server_config().workload_manager_enabled:
 
         Args:
             template_id: The ID of the template.
-            background_tasks: Background tasks.
             config: Configuration for the pipeline run.
             auth_context: Authentication context.
 
         Returns:
             The created pipeline run.
-
-        Raises:
-            HTTPException: If too many concurrent runs are happening.
         """
         from zenml.zen_server.template_execution.utils import (
-            concurrent_template_runs_semaphore,
             run_template,
         )
 
-        if not concurrent_template_runs_semaphore.acquire(blocking=False):
-            raise HTTPException(
-                status_code=429,
-                detail=f"Only {server_config().max_concurrent_template_runs} "
-                "concurrent template runs are allowed at a time.",
+        with track_handler(
+            event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
+        ) as analytics_handler:
+            template = verify_permissions_and_get_entity(
+                id=template_id,
+                get_method=zen_store().get_run_template,
+                hydrate=True,
+            )
+            analytics_handler.metadata = {
+                "project_id": template.project.id,
+            }
+
+            verify_permission(
+                resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+                action=Action.CREATE,
+                project_id=template.project.id,
+            )
+            verify_permission(
+                resource_type=ResourceType.PIPELINE_RUN,
+                action=Action.CREATE,
+                project_id=template.project.id,
             )
 
-        try:
-            with track_handler(
-                event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
-            ) as analytics_handler:
-                template = verify_permissions_and_get_entity(
-                    id=template_id,
-                    get_method=zen_store().get_run_template,
-                    hydrate=True,
-                )
-                analytics_handler.metadata = {
-                    "project_id": template.project.id,
-                }
-
-                verify_permission(
-                    resource_type=ResourceType.PIPELINE_DEPLOYMENT,
-                    action=Action.CREATE,
-                    project_id=template.project.id,
-                )
-                verify_permission(
-                    resource_type=ResourceType.PIPELINE_RUN,
-                    action=Action.CREATE,
-                    project_id=template.project.id,
-                )
-
-                return run_template(
-                    template=template,
-                    auth_context=auth_context,
-                    background_tasks=background_tasks,
-                    run_config=config,
-                )
-        except:
-            concurrent_template_runs_semaphore.release()
-            raise
+            return run_template(
+                template=template,
+                auth_context=auth_context,
+                run_config=config,
+            )

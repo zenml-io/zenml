@@ -3,11 +3,10 @@
 import copy
 import hashlib
 import sys
-import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import BackgroundTasks
 from packaging import version
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -21,7 +20,6 @@ from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
-    ENV_ZENML_MAX_CONCURRENT_TEMPLATE_RUNS,
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
     handle_bool_env_var,
@@ -58,25 +56,24 @@ logger = get_logger(__name__)
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
-
-concurrent_template_runs_semaphore = threading.Semaphore(
-    handle_int_env_var(ENV_ZENML_MAX_CONCURRENT_TEMPLATE_RUNS, default=3)
+run_template_executor = ThreadPoolExecutor(
+    max_workers=server_config().max_concurrent_template_runs
 )
 
 
 def run_template(
     template: RunTemplateResponse,
     auth_context: AuthContext,
-    background_tasks: Optional[BackgroundTasks] = None,
     run_config: Optional[PipelineRunConfiguration] = None,
+    sync: bool = False,
 ) -> PipelineRunResponse:
     """Run a pipeline from a template.
 
     Args:
         template: The template to run.
         auth_context: Authentication context.
-        background_tasks: Background tasks.
         run_config: The run configuration.
+        sync: Whether to run the template synchronously.
 
     Raises:
         ValueError: If the template can not be run.
@@ -247,16 +244,11 @@ def run_template(
                     ),
                 )
                 raise
-            finally:
-                concurrent_template_runs_semaphore.release()
 
-    if background_tasks:
-        background_tasks.add_task(_task_with_analytics_and_error_handling)
-    else:
-        # Run synchronously if no background tasks were passed. This is probably
-        # when coming from a trigger which itself is already running in the
-        # background
+    if sync:
         _task_with_analytics_and_error_handling()
+    else:
+        run_template_executor.submit(_task_with_analytics_and_error_handling)
 
     return placeholder_run
 
