@@ -65,7 +65,7 @@ The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator
 * Docs: Migrate to unified log_metadata method in starter guide by @marwan37 in https://github.com/zenml-io/zenml/pull/3603
 * Add docs for run template TTL env var by @schustmi in https://github.com/zenml-io/zenml/pull/3604
 * Make runner timeout easily configurable by @schustmi in https://github.com/zenml-io/zenml/pull/3589
-* Disable default project behaviour for pro workspaces by @schustmi in https://github.com/zenml-io/zenml/pull/3605
+* Disable default project behavior for pro workspaces by @schustmi in https://github.com/zenml-io/zenml/pull/3605
 * Remove unnecessary and invalid settings by @schustmi in https://github.com/zenml-io/zenml/pull/3548
 * Update image paths for ZenML pipeline screenshots by @htahir1 in https://github.com/zenml-io/zenml/pull/3611
 * Update NumPy integration to work with 1.x and 2.x versions of the library by @htahir1 in https://github.com/zenml-io/zenml/pull/3532
