@@ -1,5 +1,48 @@
 <!-- markdown-link-check-disable -->
 
+# 0.82.0
+
+## What's Changed
+* Adding 0.80.2 to legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3547
+* Add 0.81.0 to migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3546
+* Document self-hosted run templates by @stefannica in https://github.com/zenml-io/zenml/pull/3552
+* Adjusted github code repo regex pattern matching to work in more cases by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3550
+* Documentation revamp by @bcdurak in https://github.com/zenml-io/zenml/pull/3524
+* Remove outdated redirects and sections by @htahir1 in https://github.com/zenml-io/zenml/pull/3564
+* Removed orphan assets by @htahir1 in https://github.com/zenml-io/zenml/pull/3567
+* Fixed broken absolute links and brought back some sections by @htahir1 in https://github.com/zenml-io/zenml/pull/3585
+* Fix listing run templates by @schustmi in https://github.com/zenml-io/zenml/pull/3587
+* Don't log missing active project warnings preemtively  by @schustmi in https://github.com/zenml-io/zenml/pull/3586
+* Docs fixes by @strickvl in https://github.com/zenml-io/zenml/pull/3565
+* More docs changes  by @htahir1 in https://github.com/zenml-io/zenml/pull/3592
+* Update scikit-learn requirement in SklearnIntegration by @htahir1 in https://github.com/zenml-io/zenml/pull/3551
+* Small docs fixes by @strickvl in https://github.com/zenml-io/zenml/pull/3584
+* More small docs fixes by @strickvl in https://github.com/zenml-io/zenml/pull/3601
+* Docs: Migrate to unified log_metadata method in starter guide by @marwan37 in https://github.com/zenml-io/zenml/pull/3603
+* Add docs for run template TTL env var by @schustmi in https://github.com/zenml-io/zenml/pull/3604
+* Make runner timeout easily configurable by @schustmi in https://github.com/zenml-io/zenml/pull/3589
+* Disable default project behaviour for pro workspaces by @schustmi in https://github.com/zenml-io/zenml/pull/3605
+* Remove unnecessary and invalid settings by @schustmi in https://github.com/zenml-io/zenml/pull/3548
+* Update image paths for ZenML pipeline screenshots by @htahir1 in https://github.com/zenml-io/zenml/pull/3611
+* Update NumPy integration to work with 1.x and 2.x versions of the library by @htahir1 in https://github.com/zenml-io/zenml/pull/3532
+* Invalidate the build when parent dockerfile changes by @schustmi in https://github.com/zenml-io/zenml/pull/3607
+* Ignore existing directories during code download by @schustmi in https://github.com/zenml-io/zenml/pull/3609
+* Max parallelism option for kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/3606
+* Add option to specify pod name prefix and add scheduler by @schustmi in https://github.com/zenml-io/zenml/pull/3591
+* Fix CVE-2024-6345 CVE-2024-6345 CVE-2022-40897 and CVE-2025-0508 by @stefannica in https://github.com/zenml-io/zenml/pull/3610
+* Docs: Starter guide fixes by @marwan37 in https://github.com/zenml-io/zenml/pull/3616
+* Remove some unused code by @schustmi in https://github.com/zenml-io/zenml/pull/3614
+* Add option to set a private service connect to the Vertex AI orchestrator by @stefannica in https://github.com/zenml-io/zenml/pull/3613
+* Add Pandas custom data type error handling and logging by @htahir1 in https://github.com/zenml-io/zenml/pull/3539
+* Allowing listing model versions without models by @bcdurak in https://github.com/zenml-io/zenml/pull/3593
+* Store list of python packages by @schustmi in https://github.com/zenml-io/zenml/pull/3608
+* Allow (and ignore) extra attributes in all ZenML models by @stefannica in https://github.com/zenml-io/zenml/pull/3620
+* Utilizing uv in the quickstart dockerfiles by @bcdurak in https://github.com/zenml-io/zenml/pull/3623
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.81.0...0.82.0
+
+
 # 0.81.0
 
 The `0.81.0` release focuses on significant improvements to artifact management, enhanced security features, and advanced resource sharing capabilities. Key highlights include a new Path materializer for directory and file uploads, artifact visualization enhancements, client-side pipeline run logs storage, and support for resource sharing between teams and external users. This release also improves logging, adds security protections, and enhances orchestration capabilities across multiple cloud platforms.
