@@ -258,7 +258,8 @@ if server_config().workload_manager_enabled:
         if not concurrent_template_runs_semaphore.acquire(blocking=False):
             raise HTTPException(
                 status_code=429,
-                detail="Too many concurrent template runs.",
+                detail=f"Only {server_config().max_concurrent_template_runs} "
+                "concurrent template runs are allowed at a time.",
             )
 
         try:
