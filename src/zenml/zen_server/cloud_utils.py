@@ -1,6 +1,7 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
 from datetime import datetime, timedelta
+from threading import RLock
 from typing import Any, Dict, Optional
 
 import requests
@@ -26,6 +27,7 @@ class ZenMLCloudConnection:
         self._session: Optional[requests.Session] = None
         self._token: Optional[str] = None
         self._token_expires_at: Optional[datetime] = None
+        self._lock = RLock()
 
     def request(
         self,
@@ -55,13 +57,21 @@ class ZenMLCloudConnection:
         url = self._config.api_url + endpoint
 
         response = self.session.request(
-            method=method, url=url, params=params, json=data, timeout=7
+            method=method,
+            url=url,
+            params=params,
+            json=data,
+            timeout=self._config.http_timeout,
         )
         if response.status_code == 401:
             # Refresh the auth token and try again
-            self._clear_session()
+            self._reset_login()
             response = self.session.request(
-                method=method, url=url, params=params, json=data, timeout=7
+                method=method,
+                url=url,
+                params=params,
+                json=data,
+                timeout=self._config.http_timeout,
             )
 
         try:
@@ -164,57 +174,90 @@ class ZenMLCloudConnection:
         Returns:
             A requests session with the authentication token.
         """
-        if self._session is None:
-            # Set up the session's connection pool size to match the server's
-            # thread pool size. This allows the server to cache one connection
-            # per thread, which means we can keep connections open for longer
-            # and avoid the overhead of setting up a new connection for each
-            # request.
-            conn_pool_size = server_config().thread_pool_size
+        with self._lock:
+            if self._session is None:
+                # Set up the session's connection pool size to match the server's
+                # thread pool size. This allows the server to cache one connection
+                # per thread, which means we can keep connections open for longer
+                # and avoid the overhead of setting up a new connection for each
+                # request.
+                conn_pool_size = server_config().thread_pool_size
 
-            self._session = requests.Session()
-            token = self._fetch_auth_token()
-            self._session.headers.update({"Authorization": "Bearer " + token})
-            # Add the ZenML specific headers
-            self._session.headers.update(get_zenml_headers())
+                self._session = requests.Session()
+                # Add the ZenML specific headers
+                self._session.headers.update(get_zenml_headers())
 
-            retries = Retry(
-                total=5, backoff_factor=0.1, status_forcelist=[502, 504]
+                retries = Retry(
+                    connect=5,
+                    read=8,
+                    redirect=3,
+                    status=10,
+                    allowed_methods=[
+                        "HEAD",
+                        "GET",
+                        "PUT",
+                        "PATCH",
+                        "POST",
+                        "DELETE",
+                        "OPTIONS",
+                    ],
+                    status_forcelist=[
+                        408,  # Request Timeout
+                        429,  # Too Many Requests
+                        502,  # Bad Gateway
+                        503,  # Service Unavailable
+                        504,  # Gateway Timeout
+                    ],
+                    other=3,
+                    backoff_factor=0.5,
+                )
+
+                self._session.mount(
+                    "https://",
+                    HTTPAdapter(
+                        max_retries=retries,
+                        # We only use one connection pool to be cached because we
+                        # only communicate with one remote server (the control
+                        # plane)
+                        pool_connections=1,
+                        pool_maxsize=conn_pool_size,
+                    ),
+                )
+
+            # Login to the ZenML Pro Management Plane. Calling this will fetch
+            # the active session token. It will also refresh the token if it is
+            # going to expire soon or if it is already expired.
+            access_token = self._fetch_auth_token(session=self._session)
+            self._session.headers.update(
+                {"Authorization": "Bearer " + access_token}
             )
-            self._session.mount(
-                "https://",
-                HTTPAdapter(
-                    max_retries=retries,
-                    # We only use one connection pool to be cached because we
-                    # only communicate with one remote server (the control
-                    # plane)
-                    pool_connections=1,
-                    pool_maxsize=conn_pool_size,
-                ),
-            )
 
-        return self._session
+            return self._session
 
-    def _clear_session(self) -> None:
-        """Clear the authentication session."""
-        self._session = None
-        self._token = None
-        self._token_expires_at = None
+    def _reset_login(self) -> None:
+        """Force a new login to the ZenML Pro Management Plane."""
+        with self._lock:
+            self._token = None
+            self._token_expires_at = None
 
-    def _fetch_auth_token(self) -> str:
+    def _fetch_auth_token(self, session: requests.Session) -> str:
         """Fetch an auth token from the Cloud API.
+
+        Args:
+            session: The session to use to fetch the auth token.
+
+        Returns:
+            The auth token.
 
         Raises:
             RuntimeError: If the auth token can't be fetched.
-
-        Returns:
-            Auth token.
         """
         if (
             self._token is not None
             and self._token_expires_at is not None
             and utc_now() + timedelta(minutes=5) < self._token_expires_at
         ):
+            # Already logged in and token is still valid
             return self._token
 
         # Get an auth token from the Cloud API
@@ -229,9 +272,13 @@ class ZenMLCloudConnection:
             "audience": self._config.oauth2_audience,
             "grant_type": "client_credentials",
         }
+
         try:
-            response = requests.post(
-                login_url, headers=headers, data=payload, timeout=7
+            response = session.post(
+                login_url,
+                headers=headers,
+                data=payload,
+                timeout=self._config.http_timeout,
             )
             response.raise_for_status()
         except Exception as e:
@@ -253,11 +300,10 @@ class ZenMLCloudConnection:
                 "Could not fetch auth token from the Cloud API."
             )
 
-        self._token = access_token
         self._token_expires_at = utc_now() + timedelta(seconds=expires_in)
+        self._token = access_token
 
-        assert self._token is not None
-        return self._token
+        return access_token
 
 
 def cloud_connection() -> ZenMLCloudConnection:
