@@ -2,49 +2,49 @@
 
 # 0.82.0
 
- The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes), enhanced documentation, and numerous fixes to improve overall stability and performance. Key highlights include configurable max parallelism for Kubernetes orchestrator, customizable pod name prefixes and scheduler options, improved runner timeouts, and support for private service connections in Vertex AI. This release also includes comprehensive documentation updates, and library compatibility improvements for NumPy and Pandas.
+The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes), enhanced documentation, and numerous fixes to improve overall stability and performance. Key highlights include configurable max parallelism for Kubernetes orchestrator, customizable pod name prefixes and scheduler options, improved runner timeouts, and support for private service connections in Vertex AI. This release also includes comprehensive documentation updates, and library compatibility improvements for NumPy and Pandas.
 
- # Features
+# Features
 
- - Added max parallelism option for [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)
- - Added support for pod name prefixes and scheduler configuration
- - Added private service connect option for [Vertex AI orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/vertex)
- - Made runner timeout easily configurable
- - Added storage for list of Python packages
- - Added an ability to deep refresh the status of your run from the dashboard
+- Added max parallelism option for [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)
+- Added support for pod name prefixes and scheduler configuration
+- Added private service connect option for [Vertex AI orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/vertex)
+- Made runner timeout easily configurable
+- Added storage for list of Python packages
+- Added an ability to deep refresh the status of your run from the dashboard
 
- # Improvements
+# Improvements
 
- - Adjusted GitHub code repo regex pattern for better compatibility
- - Improved build invalidation when parent Dockerfile changes
- - Enhanced directory handling during code download
- - Added ability to list model versions without models
- - Added support for extra attributes in all ZenML models
- - Disabled default project behavior for pro workspaces
+- Adjusted GitHub code repo regex pattern for better compatibility
+- Improved build invalidation when parent Dockerfile changes
+- Enhanced directory handling during code download
+- Added ability to list model versions without models
+- Added support for extra attributes in all ZenML models
+- Disabled default project behavior for pro workspaces
 
- # Fixes
+# Fixes
 
- - Fixed run templates listing
- - Eliminated premature active project warning logs
- - Updated scikit-learn requirement in SklearnIntegration
- - Updated NumPy integration to work with both 1.x and 2.x library versions
- - Added Pandas custom data type error handling and logging
- - Removed unnecessary and invalid settings
- - Various frontend bug fixes
+- Fixed run templates listing
+- Eliminated premature active project warning logs
+- Updated scikit-learn requirement in SklearnIntegration
+- Updated NumPy integration to work with both 1.x and 2.x library versions
+- Added Pandas custom data type error handling and logging
+- Removed unnecessary and invalid settings
+- Various frontend bug fixes
 
- # Documentation
+# Documentation
 
- - Completed comprehensive documentation revamp
- - Added documentation for [self-hosted run templates](https://docs.zenml.io/pro/deployments/self-hosted#enabling-run-templates-support)
- - Removed outdated redirects and sections
- - Fixed broken absolute links and restored missing sections
- - Added documentation for run template TTL environment variable
- - Updated image paths for ZenML pipeline screenshots
- - Migrated starter guide to unified log_metadata method
+- Completed comprehensive documentation revamp
+- Added documentation for [self-hosted run templates](https://docs.zenml.io/pro/deployments/self-hosted#enabling-run-templates-support)
+- Removed outdated redirects and sections
+- Fixed broken absolute links and restored missing sections
+- Added documentation for run template TTL environment variable
+- Updated image paths for ZenML pipeline screenshots
+- Migrated starter guide to unified log_metadata method
 
- # Breaking Changes
+# Breaking Changes
 
- - Removed `scikit-image` as a requirement of the sklearn integration
+- Removed `scikit-image` as a requirement of the sklearn integration
 
 ## What's Changed
 * Adding 0.80.2 to legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3547
