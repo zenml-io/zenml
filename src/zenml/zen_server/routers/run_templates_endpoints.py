@@ -16,7 +16,13 @@
 from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Security
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Security,
+)
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
@@ -220,6 +226,7 @@ if server_config().workload_manager_enabled:
             401: error_response,
             404: error_response,
             422: error_response,
+            429: error_response,
         },
     )
     @handle_exceptions
@@ -239,35 +246,51 @@ if server_config().workload_manager_enabled:
 
         Returns:
             The created pipeline run.
+
+        Raises:
+            HTTPException: If too many concurrent runs are happening.
         """
-        from zenml.zen_server.template_execution.utils import run_template
+        from zenml.zen_server.template_execution.utils import (
+            concurrent_template_runs_semaphore,
+            run_template,
+        )
 
-        with track_handler(
-            event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
-        ) as analytics_handler:
-            template = verify_permissions_and_get_entity(
-                id=template_id,
-                get_method=zen_store().get_run_template,
-                hydrate=True,
-            )
-            analytics_handler.metadata = {
-                "project_id": template.project.id,
-            }
-
-            verify_permission(
-                resource_type=ResourceType.PIPELINE_DEPLOYMENT,
-                action=Action.CREATE,
-                project_id=template.project.id,
-            )
-            verify_permission(
-                resource_type=ResourceType.PIPELINE_RUN,
-                action=Action.CREATE,
-                project_id=template.project.id,
+        if not concurrent_template_runs_semaphore.acquire(blocking=False):
+            raise HTTPException(
+                status_code=429,
+                detail="Too many concurrent template runs.",
             )
 
-            return run_template(
-                template=template,
-                auth_context=auth_context,
-                background_tasks=background_tasks,
-                run_config=config,
-            )
+        try:
+            with track_handler(
+                event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
+            ) as analytics_handler:
+                template = verify_permissions_and_get_entity(
+                    id=template_id,
+                    get_method=zen_store().get_run_template,
+                    hydrate=True,
+                )
+                analytics_handler.metadata = {
+                    "project_id": template.project.id,
+                }
+
+                verify_permission(
+                    resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+                    action=Action.CREATE,
+                    project_id=template.project.id,
+                )
+                verify_permission(
+                    resource_type=ResourceType.PIPELINE_RUN,
+                    action=Action.CREATE,
+                    project_id=template.project.id,
+                )
+
+                return run_template(
+                    template=template,
+                    auth_context=auth_context,
+                    background_tasks=background_tasks,
+                    run_config=config,
+                )
+        except:
+            concurrent_template_runs_semaphore.release()
+            raise

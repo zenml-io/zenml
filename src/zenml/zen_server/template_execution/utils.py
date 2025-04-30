@@ -3,6 +3,7 @@
 import copy
 import hashlib
 import sys
+import threading
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -55,6 +56,9 @@ from zenml.zen_server.utils import server_config, workload_manager, zen_store
 logger = get_logger(__name__)
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
+
+
+concurrent_template_runs_semaphore = threading.Semaphore(1)
 
 
 def run_template(
@@ -240,6 +244,8 @@ def run_template(
                     ),
                 )
                 raise
+            finally:
+                concurrent_template_runs_semaphore.release()
 
     if background_tasks:
         background_tasks.add_task(_task_with_analytics_and_error_handling)
