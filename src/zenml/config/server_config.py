@@ -152,6 +152,9 @@ class ServerConfiguration(BaseModel):
             server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
+        max_concurrent_template_runs: The maximum number of concurrent template
+            runs that can be executed on the server. If not specified, the
+            default value of 1/4 of the thread pool size will be used.
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
             server.
@@ -290,6 +293,7 @@ class ServerConfiguration(BaseModel):
     feature_gate_implementation_source: Optional[str] = None
     reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
+    max_concurrent_template_runs: int
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
     )
@@ -436,6 +440,14 @@ class ServerConfiguration(BaseModel):
                     f"{key} {value}" for key, value in merged_csp_dict.items()
                 )
                 data["secure_headers_csp"] = merged_csp_str
+
+        if data.get("max_concurrent_template_runs", None) is None:
+            # Block a maximum of 1/4 of the thread pool size for concurrent
+            # template runs
+            thread_pool_size = data.get(
+                "thread_pool_size", DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
+            )
+            data["max_concurrent_template_runs"] = int(thread_pool_size) // 4
 
         return data
 
