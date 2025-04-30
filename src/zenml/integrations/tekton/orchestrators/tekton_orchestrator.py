@@ -243,7 +243,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 f"Error while trying to fetch tekoton cookie: {errh}"
             )
-        cookie_dict: Dict[str, str] = session.cookies.get_dict()
+        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call, unused-ignore]
 
         if "authservice_session" not in cookie_dict:
             raise RuntimeError("Invalid username and/or password!")
