@@ -59,6 +59,7 @@
 
 ## Best practices
 
+* [5-minute Quick Wins](best-practices/quick-wins.md)
 * [Keep Your Dashboard Clean](best-practices/keep-your-dashboard-server-clean.md)
 * [Configure Python environments](best-practices/configure-python-environments.md)
 * [Shared Components for  Teams](best-practices/shared-components-for-teams.md)
