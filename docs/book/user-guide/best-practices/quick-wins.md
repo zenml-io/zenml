@@ -66,9 +66,7 @@ log_metadata({
 *Metadata becomes the foundation for the Experiment Comparison tool and other
 dashboard views.* (Learn more: [Metadata |
 ZenML](https://docs.zenml.io/concepts/metadata), [Tracking Metrics with
-Metadata](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata))  
-
----
+Metadata](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata))
 
 ## 2 Activate the **Experiment Comparison** view (ZenML Pro)
 
@@ -90,8 +88,6 @@ Metadata](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-me
 - Track how metrics evolve across iterations of your pipeline
 
 (Learn more: [Metadata | ZenML - Bridging the gap between ML & Ops](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata), [New Dashboard Feature: Compare Your Experiments - ZenML Blog](https://www.zenml.io/blog/new-dashboard-feature-compare-your-experiments))
-
----
 
 ## 3 Drop-in **Experiment Tracker Autologging**
 
