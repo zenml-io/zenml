@@ -182,7 +182,7 @@ def pipeline_with_alerts():
 * **Channel flexibility** to target different teams with specific alerts
 * **Custom approval options** to configure which responses count as approvals/rejections
 
-Learn more: [Full Slack alerter documentation](https://docs.zenml.io/stack-components/alerters/slack-alerter), [Alerters overview](https://docs.zenml.io/stack-components/alerters)
+Learn more: [Full Slack alerter documentation](https://docs.zenml.io/stack-components/alerters/slack), [Alerters overview](https://docs.zenml.io/stack-components/alerters)
 
 ## 5 Schedule the pipeline on a cron
 
