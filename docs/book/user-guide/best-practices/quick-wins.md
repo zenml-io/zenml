@@ -14,12 +14,16 @@ micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 | [Log rich metadata](#1-log-rich-metadata-on-every-run) | Track params, metrics, and properties on every run | Foundation for reproducibility and analytics |
 | [Experiment comparison](#2-activate-the-experiment-comparison-view-zenml-pro) | Visualize and compare runs with parallel plots | Identify patterns and optimize faster |
 | [Autologging](#3-drop-in-experiment-tracker-autologging) | Automatic metric and artifact tracking | Zero-effort experiment tracking |
-| [Slack/Discord alerts](#4-instant-slack-alerts-for-successesfailures) | Instant notifications for pipeline events | Stay informed without checking dashboards |
+| [Slack/Discord alerts](#4-instant-alerter-notifications-for-successesfailures) | Instant notifications for pipeline events | Stay informed without checking dashboards |
 | [Cron scheduling](#5-schedule-the-pipeline-on-a-cron) | Run pipelines automatically on schedule | Promote notebooks to production workflows |
 | [Warm pools/resources](#6-kill-cold-starts-with-sagemaker-warm-pools--vertex-persistent-resources) | Eliminate cold starts in cloud environments | Reduce iteration time from minutes to seconds |
 | [Secret management](#7-centralise-secrets-tokens-db-creds-s3-keys) | Centralize credentials and tokens | Keep sensitive data out of code |
-| [Git repo hooks](#8-hook-your-git-repo-to-every-run) | Track code state with every run | Perfect reproducibility and faster builds |
-| [HTML reports](#9-simple-html-reports) | Create rich visualizations effortlessly | Beautiful stakeholder-friendly outputs |
+| [Local smoke tests](#8-run-smoke-tests-locally-before-going-to-the-cloud) | Faster iteration on Docker before cloud | Quick feedback without cloud waiting times |
+| [Organize with tags](#9-organize-with-tags) | Classify and filter ML assets | Find and relate your ML assets with ease |
+| [Git repo hooks](#10-hook-your-git-repo-to-every-run) | Track code state with every run | Perfect reproducibility and faster builds |
+| [HTML reports](#11-simple-html-reports) | Create rich visualizations effortlessly | Beautiful stakeholder-friendly outputs |
+| [Model Control Plane](#12-register-models-in-the-model-control-plane) | Track models and their lifecycle | Central hub for model lineage and governance |
+| [Parent Docker images](#13-create-a-parent-docker-image-for-faster-builds) | Pre-configure your dependencies in a base image | Faster builds and consistent environments |
 
 
 ## 1 Log rich metadata on every run
@@ -89,7 +93,8 @@ Metadata](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-me
 
 (Learn more: [Metadata | ZenML - Bridging the gap between ML & Ops](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata), [New Dashboard Feature: Compare Your Experiments - ZenML Blog](https://www.zenml.io/blog/new-dashboard-feature-compare-your-experiments))
 
-## 3 Drop-in **Experiment Tracker Autologging**
+
+## 3 Drop-in Experiment Tracker Autologging
 
 **Why** -- Stream metrics, system stats, model files, and artifacts—all without modifying step code. Different experiment trackers offer varying levels of automatic tracking to simplify your MLOps workflows.
 **Setup**
@@ -111,8 +116,23 @@ The experiment tracker's autologging capabilities kick in based on your tracker'
 | **Neptune** | Requires explicit logging for most frameworks but provides automatic tracking of hardware metrics, environment information, and various model artifacts. |
 | **Comet** | Automatic tracking of hardware metrics, hyperparameters, model artifacts, and source code. Framework-specific autologging similar to MLflow. |
 
+**Example: Enable autologging in steps**
+
+```python
+# Get tracker from active stack
+from zenml.client import Client
+experiment_tracker = Client().active_stack.experiment_tracker
+
+# Apply to specific steps that need tracking
+@step(experiment_tracker=experiment_tracker.name)
+def train_model(data):
+    # Framework-specific training code
+    # metrics and artifacts are automatically logged
+    return model
+```
+
 **Best Practices**
-* Store API keys in ZenML secrets (see quick win #8) to prevent exposure in Git.
+* Store API keys in ZenML secrets (see quick win #7) to prevent exposure in Git.
 * Configure the experiment tracker settings in your steps for more granular control.
 * For MLflow, use `@step(experiment_tracker="mlflow")` to enable autologging in specific steps only.
 * Disable MLflow autologging when needed, e.g.: `experiment_tracker.disable_autologging()`.
@@ -123,22 +143,22 @@ The experiment tracker's autologging capabilities kick in based on your tracker'
 * [Neptune Integration](https://www.zenml.io/integrations/neptune)
 * [Comet Integration](https://www.zenml.io/integrations/comet)
 
-## 4 Instant **Slack alerts** for successes/failures
+## 4 Instant **alerter notifications** for successes/failures
 
 **Why** -- get immediate notifications when pipelines succeed or fail, enabling
-faster response times and improved collaboration. Slack notifications ensure
+faster response times and improved collaboration. Alerter notifications ensure
 your team is always aware of critical model training status, data drift alerts,
-and deployment changes.
+and deployment changes without constantly checking dashboards.
 
 {% hint style="info" %}
-You can use the Discord alerter instead of Slack.
+ZenML supports multiple alerter flavors including Slack and Discord. The example below uses Slack, but the pattern is similar for other alerters.
 {% endhint %}
 
 ```bash
-# Install the Slack integration
-zenml integration install slack -y
+# Install your preferred alerter integration
+zenml integration install slack -y  # or discord, -y
 
-# Register the alerter with your bot token and default channel
+# Register the alerter with your credentials
 zenml alerter register slack_alerter \
     --flavor=slack \
     --slack_token=<SLACK_TOKEN> \
@@ -178,8 +198,8 @@ def pipeline_with_alerts():
 
 **Key features**
 * **Rich message formatting** with custom blocks, embedded metadata and pipeline artifacts
-* **Human-in-the-loop approval** using the `slack_alerter_ask_step` for critical deployment decisions
-* **Channel flexibility** to target different teams with specific alerts
+* **Human-in-the-loop approval** using alerter ask steps for critical deployment decisions
+* **Flexible targeting** to notify different teams with specific alerts
 * **Custom approval options** to configure which responses count as approvals/rejections
 
 Learn more: [Full Slack alerter documentation](https://docs.zenml.io/stack-components/alerters/slack), [Alerters overview](https://docs.zenml.io/stack-components/alerters)
@@ -321,7 +341,163 @@ zenml artifact-store register my_store \
 
 Learn more: [Secret Management](https://docs.zenml.io/getting-started/deploying-zenml/secret-management), [Working with Secrets](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets)
 
-## 8 Hook your Git repo to every run
+## 8 Run smoke tests locally before going to the cloud
+
+**Why** -- significantly reduce iteration and debugging time by testing your pipelines with a local Docker orchestrator before deploying to remote cloud infrastructure. This approach gives you fast feedback cycles for containerized execution without waiting for cloud provisioning, job scheduling, and data transfer—ideal for development, troubleshooting, and quick feature validation.
+
+```bash
+# Install the local Docker orchestrator (if not already installed)
+zenml integration install docker -y
+
+# Create a smoke-test stack with the local Docker orchestrator
+zenml orchestrator register local_docker_orch --flavor=local_docker
+zenml stack register smoke_test_stack -o local_docker_orch \
+    --artifact-store=<YOUR_ARTIFACT_STORE> \
+    --container-registry=<YOUR_CONTAINER_REGISTRY>
+zenml stack set smoke_test_stack
+```
+
+```python
+from zenml import pipeline, step
+from typing import Dict
+
+# 1. Create a configuration-aware pipeline 
+@pipeline
+def training_pipeline(sample_fraction: float = 0.01):
+    """Pipeline that can work with sample data for local testing."""
+    # Sample a small subset of your data
+    train_data = load_data_step(sample_fraction=sample_fraction)
+    model = train_model_step(train_data, epochs=2)  # Reduce epochs for testing
+    evaluate_model_step(model, train_data)
+
+# 2. Separate load step that supports sampling
+@step
+def load_data_step(sample_fraction: float) -> Dict:
+    """Load data with sampling for faster smoke tests."""
+    # Your data loading code with sampling logic
+    full_data = load_your_dataset()
+    
+    # Only use a small fraction during smoke testing
+    if sample_fraction < 1.0:
+        sampled_data = sample_dataset(full_data, sample_fraction)
+        print(f"SMOKE TEST MODE: Using {sample_fraction*100}% of data")
+        return sampled_data
+    
+    return full_data
+
+# 3. Run pipeline with the local Docker orchestrator
+training_pipeline(sample_fraction=0.01)
+```
+
+**When to switch back to cloud**
+```bash
+# When your smoke tests pass, switch back to your cloud stack
+zenml stack set production_stack  # Your cloud-based stack
+
+# Run the same pipeline with full data
+training_pipeline(sample_fraction=1.0)  # Use full dataset
+```
+
+**Key benefits**
+* **Fast feedback cycles** - Get results in minutes instead of hours
+* **Cost savings** - Test on your local machine instead of paying for cloud resources
+* **Simplified debugging** - Easier access to logs and containers
+* **Consistent environments** - Same Docker containerization as production
+* **Reduced friction** - No cloud provisioning delays or permission issues during development
+
+**Best practices**
+* Create a small representative dataset for smoke testing
+* Use configuration parameters to enable smoke-test mode
+* Keep dependencies identical between smoke tests and production
+* Run the exact same pipeline code locally and in the cloud
+* Store sample data in version control for reliable testing
+* Use `prints` or logging to clearly indicate when running in smoke-test mode
+
+This approach works best when you design your pipelines to be configurable from the start, allowing them to run with reduced data size, shorter training cycles, or simplified processing steps during development.
+
+Learn more: [Local Docker Orchestrator](https://docs.zenml.io/stack-components/orchestrators/local-docker)
+
+## 9 Organize with tags
+
+**Why** -- add flexible, searchable labels to your ML assets that bring order to chaos as your project grows. Tags provide a lightweight organizational system that helps you filter pipelines, artifacts, and models by domain, status, version, or any custom category—making it easy to find what you're looking for in seconds.
+
+```python
+from zenml import pipeline, step, add_tags, Tag
+
+# 1. Tag your pipelines with meaningful categories
+@pipeline(tags=["fraud-detection", "training", "financial"])
+def training_pipeline():
+    # Your pipeline steps
+    preprocess_step(...)
+    train_step(...)
+    evaluate_step(...)
+
+# 2. Create "exclusive" tags for state management
+@pipeline(tags=[
+    Tag(name="production", exclusive=True),  # Only one pipeline can be "production"
+    "financial"
+])
+def production_pipeline():
+    pass
+
+# 3. Tag artifacts programmatically from within steps
+@step
+def evaluate_step():
+    # Your evaluation code here
+    accuracy = 0.95
+    
+    # Tag based on performance
+    if accuracy > 0.9:
+        add_tags(tags=["high-accuracy"], infer_artifact=True)
+    
+    # Tag with metadata values
+    add_tags(tags=[f"accuracy-{int(accuracy*100)}"], infer_artifact=True)
+    
+    return accuracy
+
+# 4. Use cascade tags to apply pipeline tags to all artifacts
+@pipeline(tags=[Tag(name="experiment-12", cascade=True)])
+def experiment_pipeline():
+    # All artifacts created in this pipeline will also have the "experiment-12" tag
+    pass
+```
+
+**Key features**
+* **Filter and search** - Quickly find all assets related to a specific domain or project
+* **Exclusive tags** - Create tags where only one entity can have the tag at a time (perfect for "production" status)
+* **Cascade tags** - Apply pipeline tags automatically to all artifacts created during execution
+* **Flexible organization** - Create any tagging system that makes sense for your projects
+* **Multiple entity types** - Tag pipelines, runs, artifacts, models, and run templates
+
+**Common tag operations**
+```python
+from zenml.client import Client
+
+# Find all models with specific tags
+production_models = Client().list_models(tags=["production", "classification"])
+
+# Find artifacts from a specific domain
+financial_datasets = Client().list_artifacts(tags=["financial", "cleaned"])
+
+# Advanced filtering with prefix/contains
+experimental_runs = Client().list_runs(tags=["startswith:experiment-"])
+validation_artifacts = Client().list_artifacts(tags=["contains:valid"])
+
+# Remove tags when no longer needed
+Client().delete_run_tags(run_name_or_id="my_run", tags=["test", "debug"])
+```
+
+**Best practices**
+* Create consistent tag categories (environment, domain, status, version, etc.)
+* Use a tag registry to standardize tag names across your team
+* Use exclusive tags for state management (only one "production" model)
+* Combine prefix patterns for better organization (e.g., "domain-financial", "status-approved")
+* Update tags as assets progress through your workflow
+* Document your tagging strategy for team alignment
+
+Learn more: [Tags | ZenML](https://docs.zenml.io/how-to/project-setup-and-management/tag-management)
+
+## 10 Hook your Git repo to every run
 
 **Why** -- capture exact code state for reproducibility, automatic model versioning, and faster Docker builds. Connecting your Git repo transforms data science from local experiments to production-ready workflows with minimal effort:
 
@@ -342,6 +518,8 @@ zenml code-repository register project_repo \
     --token=<GITHUB_TOKEN>  # use {{github_secret.token}} for stored secrets
 ```
 
+![Git SHA for code repository](../.gitbook/assets/code-repository-sha.png)
+
 **How it works**
 1. When you run a pipeline, ZenML checks if your code is tracked in a registered repository
 2. Your current commit and any uncommitted changes are detected and stored
@@ -358,7 +536,7 @@ This simple setup can save hours of engineering time compared to manually tracki
 
 Learn more: [Code Repositories | ZenML - Bridging the gap between ML & Ops](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository)
 
-## 9 Simple HTML reports
+## 11 Simple HTML reports
 
 **Why** -- create beautiful, interactive visualizations and reports with minimal effort using ZenML's HTMLString type and LLM assistance. HTML reports are perfect for sharing insights, summarizing pipeline results, and making your ML projects more accessible to stakeholders.
 
@@ -431,6 +609,9 @@ Include:
 Provide only the HTML code without explanations. The HTML will be used with ZenML's HTMLString type.
 ```
 
+![HTML Report](../.gitbook/assets/htmlstring-visualization.gif)
+
+
 **Key features**
 * **Rich formatting** - Full HTML/CSS support for beautiful reports
 * **Interactive elements** - Add charts, tables, and responsive design
@@ -447,3 +628,170 @@ Provide only the HTML code without explanations. The HTML will be used with ZenM
 Simply return an `HTMLString` from any step, and your visualization will automatically appear in the ZenML dashboard for that step's artifacts.
 
 Learn more: [Visualizations | ZenML - Bridging the gap between ML & Ops](https://docs.zenml.io/concepts/artifacts/visualizations)
+
+## 12 Register models in the Model Control Plane
+
+**Why** -- create a central hub for organizing all resources related to a particular ML feature or capability. The Model Control Plane (MCP) treats a "model" as more than just code—it's a namespace that connects pipelines, artifacts, metadata, and workflows for a specific ML solution, providing seamless lineage tracking and governance that's essential for reproducibility, auditability, and collaboration.
+
+```python
+from zenml import pipeline, step, Model, log_metadata
+
+# 1. Create a model entity in the Control Plane
+model = Model(
+    name="my_classifier",
+    description="Classification model for customer data",
+    license="Apache 2.0",
+    tags=["classification", "production"]
+)
+
+# 2. Associate the model with your pipeline
+@pipeline(model=model)
+def training_pipeline():
+    # Your pipeline steps
+    train_step()
+    eval_step()
+
+# 3. Log important metadata to the model from within steps
+@step
+def eval_step():
+    # Your evaluation code
+    accuracy = 0.92
+    
+    # Automatically attach to the current model
+    log_metadata(
+        {"accuracy": accuracy, "f1_score": 0.89},
+        infer_model=True  # Automatically finds pipeline's model
+    )
+```
+
+**Key features**
+* **Namespace organization** - group related pipelines, artifacts, and resources under a single entity
+* **Version tracking** - automatically version your ML solutions with each pipeline run
+* **Lineage management** - trace all components back to training pipelines, datasets, and code
+* **Stage promotion** - promote solutions through lifecycle stages (dev → staging → production)
+* **Metadata association** - attach any metrics or parameters to track performance over time
+* **Workflow integration** - connect training, evaluation, and deployment pipelines in a unified view
+
+**Common model operations**
+```python
+from zenml import Model
+from zenml.client import Client
+
+# Get all models in your project
+models = Client().list_models()
+
+# Get a specific model version
+model = Client().get_model_version("my_classifier", "latest")
+
+# Promote a model to production
+model = Model(name="my_classifier", version="v2")
+model.set_stage(stage="production", force=True)
+
+# Compare models with their metadata
+model_v1 = Client().get_model_version("my_classifier", "v1")
+model_v2 = Client().get_model_version("my_classifier", "v2")
+print(f"Accuracy v1: {model_v1.run_metadata['accuracy'].value}")
+print(f"Accuracy v2: {model_v2.run_metadata['accuracy'].value}")
+```
+
+**Best practices**
+* Create models with meaningful names that reflect the ML capability or business feature they represent
+* Use consistent metadata keys across versions for better comparison and tracking
+* Tag models with relevant attributes for easier filtering and organization
+* Set up model stages to track which ML solutions are in which environments
+* Use a single model entity to group all iterations of a particular ML capability, even when the underlying technical implementation changes
+
+Learn more: [Models | ZenML](https://docs.zenml.io/how-to/model-management-metrics/models)
+
+## 13 Create a parent Docker image for faster builds
+
+**Why** -- reduce Docker build times from minutes to seconds and avoid dependency headaches by pre-installing common libraries in a custom parent image. This approach gives you faster iteration cycles, consistent environments across your team, and simplified dependency management—especially valuable for large projects with complex requirements.
+
+```bash
+# 1. Create a Dockerfile for your parent image
+cat > Dockerfile.parent << EOF
+FROM python:3.9-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies that rarely change
+RUN pip install --no-cache-dir \
+    zenml==0.54.0 \
+    tensorflow==2.12.0 \
+    torch==2.0.0 \
+    scikit-learn==1.2.2 \
+    pandas==2.0.0 \
+    numpy==1.24.3 \
+    matplotlib==3.7.1
+
+# Create app directory (ZenML expects this)
+WORKDIR /app
+EOF
+
+# 2. Build and push your parent image
+docker build -t your-registry.io/zenml-parent:latest -f Dockerfile.parent .
+docker push your-registry.io/zenml-parent:latest
+```
+
+**Using your parent image in pipelines**
+
+```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
+# Configure your pipeline to use the parent image
+docker_settings = DockerSettings(
+    parent_image="your-registry.io/zenml-parent:latest",
+    # Only install project-specific requirements
+    requirements=["your-custom-package==1.0.0"]
+)
+
+@pipeline(settings={"docker": docker_settings})
+def training_pipeline():
+    # Your pipeline steps
+    pass
+```
+
+**Boost team productivity with a shared image**
+
+```python
+# For team settings, register a stack with the parent image configuration
+from zenml.config import DockerSettings
+
+# Create a DockerSettings object for your team's common environment
+team_docker_settings = DockerSettings(
+    parent_image="your-registry.io/zenml-parent:latest"
+)
+
+# Share these settings via your stack configuration YAML file
+# stack_config.yaml
+"""
+settings:
+  docker:
+    parent_image: your-registry.io/zenml-parent:latest
+"""
+```
+
+**Key benefits**
+* **Dramatically faster builds** - Only project-specific packages need installation
+* **Consistent environments** - Everyone uses the same base libraries
+* **Simplified dependency management** - Core dependencies defined once
+* **Reduced cloud costs** - Spend less on compute for image building
+* **Lower network usage** - Download common large packages just once
+
+**Best practices**
+* Include all heavy dependencies that change infrequently in your parent image
+* Version your parent image (e.g., `zenml-parent:0.54.0`) to track changes
+* Document included packages with a version listing in a requirements.txt
+* Use multi-stage builds if your parent image needs compiled dependencies
+* Periodically update the parent image to incorporate security patches
+* Consider multiple specialized parent images for different types of workloads
+
+For projects with heavy dependencies like deep learning frameworks, this approach can cut build times by 80-90%, turning a 5-minute build into a 30-second one. This is especially valuable in cloud environments where you pay for build time.
+
+Learn more: [Containerization | ZenML](https://docs.zenml.io/how-to/containerization/containerization#using-custom-parent-images)
