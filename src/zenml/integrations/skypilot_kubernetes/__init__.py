@@ -47,4 +47,3 @@ class SkypilotKubernetesIntegration(Integration):
         )
 
         return [SkypilotKubernetesOrchestratorFlavor]
-

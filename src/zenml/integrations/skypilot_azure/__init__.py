@@ -46,4 +46,3 @@ class SkypilotAzureIntegration(Integration):
         )
 
         return [SkypilotAzureOrchestratorFlavor]
-

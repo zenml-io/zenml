@@ -45,4 +45,3 @@ class SkypilotLambdaIntegration(Integration):
         )
 
         return [SkypilotLambdaOrchestratorFlavor]
-

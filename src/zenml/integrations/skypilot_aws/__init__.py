@@ -47,4 +47,3 @@ class SkypilotAWSIntegration(Integration):
         )
 
         return [SkypilotAWSOrchestratorFlavor]
-
