@@ -26,7 +26,7 @@ def test_sanitize_cluster_name():
     # Test with special characters
     assert (
         sanitize_cluster_name("test!@#$%^&*()cluster")
-        == "test---------cluster"
+        == "test----------cluster"
     )
 
     # Test with leading/trailing hyphens
