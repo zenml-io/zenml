@@ -34,6 +34,7 @@ class SkypilotKubernetesIntegration(Integration):
     # all 0.6.x versions of skypilot[kubernetes] are compatible
     REQUIREMENTS = ["skypilot[kubernetes]~=0.9.2", "omegaconf>=2.4.0.dev3"]
     APT_PACKAGES = ["openssh-client", "rsync"]
+    INSTALL_COMMAND_ARGS = ["--prerelease=allow"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

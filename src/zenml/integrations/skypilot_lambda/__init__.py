@@ -32,6 +32,7 @@ class SkypilotLambdaIntegration(Integration):
 
     NAME = SKYPILOT_LAMBDA
     REQUIREMENTS = ["skypilot[lambda]~=0.9.2", "omegaconf>=2.4.0.dev3"]
+    INSTALL_COMMAND_ARGS = ["--prerelease=allow"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
