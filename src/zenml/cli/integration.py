@@ -336,6 +336,8 @@ def install(
 
     requirements = []
     integrations_to_install = []
+    install_command_args = []
+
     for integration_name in integration_set:
         try:
             if force or not integration_registry.is_installed(
@@ -345,6 +347,10 @@ def install(
                     integration_registry.select_integration_requirements(
                         integration_name
                     )
+                )
+                # Get additional installation command args
+                install_command_args += integration_registry.select_integration_install_command_args(
+                    integration_name
                 )
                 integrations_to_install.append(integration_name)
             else:
@@ -364,7 +370,19 @@ def install(
         )
     ):
         with console.status("Installing integrations..."):
-            install_packages(requirements, use_uv=uv)
+            # Remove duplicate args while preserving order
+            unique_install_command_args = []
+            for arg in install_command_args:
+                if arg not in unique_install_command_args:
+                    unique_install_command_args.append(arg)
+
+            install_packages(
+                requirements,
+                use_uv=uv,
+                additional_args=unique_install_command_args
+                if unique_install_command_args
+                else None,
+            )
 
 
 @integration.command(
@@ -501,6 +519,8 @@ def upgrade(
 
     requirements = []
     integrations_to_install = []
+    install_command_args = []
+
     for integration_name in integrations:
         try:
             if integration_registry.is_installed(integration_name):
@@ -508,6 +528,10 @@ def upgrade(
                     integration_registry.select_integration_requirements(
                         integration_name
                     )
+                )
+                # Get additional installation command args
+                install_command_args += integration_registry.select_integration_install_command_args(
+                    integration_name
                 )
                 integrations_to_install.append(integration_name)
             else:
@@ -527,4 +551,17 @@ def upgrade(
         )
     ):
         with console.status("Upgrading integrations..."):
-            install_packages(requirements, upgrade=True, use_uv=uv)
+            # Remove duplicate args while preserving order
+            unique_install_command_args = []
+            for arg in install_command_args:
+                if arg not in unique_install_command_args:
+                    unique_install_command_args.append(arg)
+
+            install_packages(
+                requirements,
+                upgrade=True,
+                use_uv=uv,
+                additional_args=unique_install_command_args
+                if unique_install_command_args
+                else None,
+            )

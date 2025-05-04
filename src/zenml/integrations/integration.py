@@ -61,6 +61,7 @@ class Integration(metaclass=IntegrationMeta):
     REQUIREMENTS: List[str] = []
     APT_PACKAGES: List[str] = []
     REQUIREMENTS_IGNORED_ON_UNINSTALL: List[str] = []
+    INSTALL_COMMAND_ARGS: List[str] = []
 
     @classmethod
     def check_installation(cls) -> bool:
@@ -171,6 +172,15 @@ class Integration(metaclass=IntegrationMeta):
             if not is_ignored:
                 ret.append(each)
         return ret
+
+    @classmethod
+    def get_install_command_args(cls) -> List[str]:
+        """Method to get additional arguments for the package installer command.
+
+        Returns:
+            A list of additional arguments for the package installer.
+        """
+        return cls.INSTALL_COMMAND_ARGS
 
     @classmethod
     def activate(cls) -> None:

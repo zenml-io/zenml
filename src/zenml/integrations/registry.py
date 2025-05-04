@@ -155,6 +155,42 @@ class IntegrationRegistry(object):
                 )
             ]
 
+    def select_integration_install_command_args(
+        self,
+        integration_name: Optional[str] = None,
+    ) -> List[str]:
+        """Select the install command args for a given integration.
+
+        Args:
+            integration_name: Name of the integration to check.
+
+        Returns:
+            List of additional command arguments for the integration installation.
+
+        Raises:
+            KeyError: If the integration is not found.
+        """
+        self._initialize()
+        if integration_name:
+            if integration_name in self.list_integration_names:
+                return self._integrations[
+                    integration_name
+                ].get_install_command_args()
+            else:
+                raise KeyError(
+                    f"Integration {integration_name} does not exist. "
+                    f"Currently the following integrations are implemented. "
+                    f"{self.list_integration_names}"
+                )
+        else:
+            # For multiple integrations, combine all unique install command args
+            all_args = set()
+            for name in self.list_integration_names:
+                all_args.update(
+                    self._integrations[name].get_install_command_args()
+                )
+            return list(all_args)
+
     def select_uninstall_requirements(
         self,
         integration_name: Optional[str] = None,

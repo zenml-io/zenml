@@ -1020,6 +1020,7 @@ def install_packages(
     packages: List[str],
     upgrade: bool = False,
     use_uv: bool = False,
+    additional_args: Optional[List[str]] = None,
 ) -> None:
     """Installs pypi packages into the current environment with pip or uv.
 
@@ -1029,6 +1030,7 @@ def install_packages(
         packages: List of packages to install.
         upgrade: Whether to upgrade the packages if they are already installed.
         use_uv: Whether to use uv for package installation.
+        additional_args: Additional arguments to pass to the install command.
 
     Raises:
         e: If the package installation fails.
@@ -1062,6 +1064,10 @@ def install_packages(
 
     if upgrade:
         command += ["--upgrade"]
+
+    # Add any additional command arguments
+    if additional_args:
+        command += additional_args
 
     command += packages
 
