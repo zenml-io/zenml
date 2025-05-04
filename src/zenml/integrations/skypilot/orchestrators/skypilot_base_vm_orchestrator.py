@@ -14,7 +14,6 @@
 """Implementation of the Skypilot base VM orchestrator."""
 
 import os
-import re
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from uuid import uuid4
@@ -30,6 +29,14 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
 )
 from zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint_configuration import (
     SkypilotOrchestratorEntrypointConfiguration,
+)
+from zenml.integrations.skypilot.utils import (
+    create_docker_run_command,
+    prepare_docker_setup,
+    prepare_launch_kwargs,
+    prepare_resources_kwargs,
+    prepare_task_kwargs,
+    sanitize_cluster_name,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import (
@@ -252,15 +259,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         entrypoint_str = " ".join(command)
         arguments_str = " ".join(args)
 
-        task_envs = environment
-        docker_environment_str = " ".join(
-            f"-e {k}={v}" for k, v in environment.items()
-        )
-        custom_run_args = " ".join(settings.docker_run_args)
-        if custom_run_args:
-            custom_run_args += " "
-
-        instance_type = settings.instance_type or self.DEFAULT_INSTANCE_TYPE
+        task_envs = environment.copy()
 
         # Set up credentials
         self.setup_credentials()
@@ -268,16 +267,15 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         # Guaranteed by stack validation
         assert stack is not None and stack.container_registry is not None
 
-        if docker_creds := stack.container_registry.credentials:
-            docker_username, docker_password = docker_creds
-            setup = (
-                f"sudo docker login --username $DOCKER_USERNAME --password "
-                f"$DOCKER_PASSWORD {stack.container_registry.config.uri}"
-            )
-            task_envs["DOCKER_USERNAME"] = docker_username
-            task_envs["DOCKER_PASSWORD"] = docker_password
-        else:
-            setup = None
+        # Prepare Docker setup
+        setup, docker_creds_envs = prepare_docker_setup(
+            container_registry_uri=stack.container_registry.config.uri,
+            credentials=stack.container_registry.credentials,
+        )
+
+        # Update task_envs with Docker credentials
+        if docker_creds_envs:
+            task_envs.update(docker_creds_envs)
 
         # Run the entire pipeline
 
@@ -291,72 +289,39 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 down = False
                 idle_minutes_to_autostop = None
             else:
-                run_command = f"sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+                run_command = create_docker_run_command(
+                    image=image,
+                    entrypoint_str=entrypoint_str,
+                    arguments_str=arguments_str,
+                    environment=task_envs,
+                    docker_run_args=settings.docker_run_args,
+                )
                 down = settings.down
                 idle_minutes_to_autostop = settings.idle_minutes_to_autostop
 
-            # Merge envs from settings with existing task_envs
-            merged_envs = {}
-            # First add user-provided envs
-            if settings.envs:
-                merged_envs.update(settings.envs)
-            # Then add task_envs which take precedence
-            if task_envs:
-                merged_envs.update(task_envs)
-
-            # Create the Task with all parameters and additional task settings
-            task_kwargs = {
-                "run": run_command,
-                "setup": setup,
-                "envs": merged_envs,
-                "name": settings.task_name or f"{orchestrator_run_name}",
-                "workdir": settings.workdir,
-                "file_mounts": settings.file_mounts,
-                **settings.task_settings,  # Add any arbitrary task settings
-            }
-
-            # Remove None values to avoid overriding SkyPilot defaults
-            task_kwargs = {
-                k: v for k, v in task_kwargs.items() if v is not None
-            }
+            # Create the Task with all parameters and task settings
+            task_kwargs = prepare_task_kwargs(
+                settings=settings,
+                run_command=run_command,
+                setup=setup,
+                task_envs=task_envs,
+                task_name=f"{orchestrator_run_name}",
+            )
 
             task = sky.Task(**task_kwargs)
             logger.debug(f"Running run: {run_command}")
 
-            # Set resources with all parameters and additional resource settings
-            resources_kwargs = {
-                "cloud": self.cloud,
-                "instance_type": instance_type,
-                "cpus": settings.cpus,
-                "memory": settings.memory,
-                "accelerators": settings.accelerators,
-                "accelerator_args": settings.accelerator_args,
-                "use_spot": settings.use_spot,
-                "job_recovery": settings.job_recovery,
-                "region": settings.region,
-                "zone": settings.zone,
-                "image_id": image
+            # Set resources with all parameters and resource settings
+            resources_kwargs = prepare_resources_kwargs(
+                cloud=self.cloud,
+                settings=settings,
+                default_instance_type=self.DEFAULT_INSTANCE_TYPE,
+                kubernetes_image=image
                 if isinstance(self.cloud, sky.clouds.Kubernetes)
-                else settings.image_id,
-                "disk_size": settings.disk_size,
-                "disk_tier": settings.disk_tier,
-                "ports": settings.ports,
-                "labels": settings.labels,
-                "any_of": settings.any_of,
-                "ordered": settings.ordered,
-                **settings.resources_settings,  # Add any arbitrary resource settings
-            }
-
-            # Remove None values to avoid overriding SkyPilot defaults
-            resources_kwargs = {
-                k: v for k, v in resources_kwargs.items() if v is not None
-            }
+                else None,
+            )
 
             task = task.set_resources(sky.Resources(**resources_kwargs))
-
-            # Do not detach run if logs are being streamed
-            # Otherwise, the logs will not be streamed after the task is submitted
-            detach_run = not settings.stream_logs
 
             # Use num_nodes from settings or default to 1
             num_nodes = settings.num_nodes or 1
@@ -378,7 +343,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     )
                     cluster_name = settings.cluster_name
             else:
-                cluster_name = self.sanitize_cluster_name(
+                cluster_name = sanitize_cluster_name(
                     f"{orchestrator_run_name}"
                 )
                 logger.info(
@@ -387,22 +352,13 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
             if launch_new_cluster:
                 # Prepare launch parameters with additional launch settings
-                launch_kwargs = {
-                    "retry_until_up": settings.retry_until_up,
-                    "idle_minutes_to_autostop": idle_minutes_to_autostop,
-                    "down": down,
-                    "stream_logs": settings.stream_logs,
-                    "backend": None,
-                    "detach_setup": True,
-                    "detach_run": detach_run,
-                    "num_nodes": num_nodes,
-                    **settings.launch_settings,  # Add any arbitrary launch settings
-                }
-
-                # Remove None values to avoid overriding SkyPilot defaults
-                launch_kwargs = {
-                    k: v for k, v in launch_kwargs.items() if v is not None
-                }
+                launch_kwargs = prepare_launch_kwargs(
+                    settings=settings,
+                    stream_logs=settings.stream_logs,
+                    down=down,
+                    idle_minutes_to_autostop=idle_minutes_to_autostop,
+                    num_nodes=num_nodes,
+                )
 
                 sky.launch(
                     task,
@@ -415,7 +371,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     "down": down,
                     "stream_logs": settings.stream_logs,
                     "backend": None,
-                    "detach_run": detach_run,
+                    "detach_run": not settings.stream_logs,  # detach_run is opposite of stream_logs
                     **settings.launch_settings,  # Can reuse same settings for exec
                 }
 
@@ -445,19 +401,3 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         finally:
             # Unset the service connector AWS profile ENV variable
             self.prepare_environment_variable(set=False)
-
-    def sanitize_cluster_name(self, name: str) -> str:
-        """Sanitize the value to be used in a cluster name.
-
-        Args:
-            name: Arbitrary input cluster name.
-
-        Returns:
-            Sanitized cluster name.
-        """
-        name = re.sub(
-            r"[^a-z0-9-]", "-", name.lower()
-        )  # replaces any character that is not a lowercase letter, digit, or hyphen with a hyphen
-        name = re.sub(r"^[-]+", "", name)  # trim leading hyphens
-        name = re.sub(r"[-]+$", "", name)  # trim trailing hyphens
-        return name

@@ -32,6 +32,14 @@ from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator imp
     ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID,
     SkypilotBaseOrchestrator,
 )
+from zenml.integrations.skypilot.utils import (
+    create_docker_run_command,
+    prepare_docker_setup,
+    prepare_launch_kwargs,
+    prepare_resources_kwargs,
+    prepare_task_kwargs,
+    sanitize_cluster_name,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.orchestrators.utils import get_config_environment_vars
@@ -102,19 +110,11 @@ def main() -> None:
     if container_registry is None:
         raise ValueError("Container registry cannot be None.")
 
-    if docker_creds := container_registry.credentials:
-        docker_username, docker_password = docker_creds
-        setup = (
-            f"docker login --username $DOCKER_USERNAME --password "
-            f"$DOCKER_PASSWORD {container_registry.config.uri}"
-        )
-        task_envs = {
-            "DOCKER_USERNAME": docker_username,
-            "DOCKER_PASSWORD": docker_password,
-        }
-    else:
-        setup = None
-        task_envs = None
+    # Prepare Docker setup
+    setup, task_envs = prepare_docker_setup(
+        container_registry_uri=container_registry.config.uri,
+        credentials=container_registry.credentials,
+    )
 
     unique_resource_configs: Dict[str, str] = {}
     for step_name, step in deployment.step_configurations.items():
@@ -142,7 +142,7 @@ def main() -> None:
             accelerators_hashable,
         )
         cluster_name_parts = [
-            orchestrator.sanitize_cluster_name(str(part))
+            sanitize_cluster_name(str(part))
             for part in resource_config
             if part is not None
         ]
@@ -185,92 +185,43 @@ def main() -> None:
         env = get_config_environment_vars()
         env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
-        docker_environment_str = " ".join(
-            f"-e {k}={v}" for k, v in env.items()
+        # Create the Docker run command
+        run_command = create_docker_run_command(
+            image=image,
+            entrypoint_str=entrypoint_str,
+            arguments_str=arguments_str,
+            environment=env,
+            docker_run_args=settings.docker_run_args,
         )
-        custom_run_args = " ".join(settings.docker_run_args)
-        if custom_run_args:
-            custom_run_args += " "
 
-        # Set up the task
-        run_command = f"docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
         task_name = f"{deployment.id}-{step_name}-{time.time()}"
 
-        # Merge envs from settings with existing task_envs
-        merged_envs = {}
-        # First add user-provided envs
-        if settings.envs:
-            merged_envs.update(settings.envs)
-        # Then add task_envs which take precedence
-        if task_envs:
-            merged_envs.update(task_envs)
-
-        # Create the Task with all parameters and additional task settings
-        task_kwargs = {
-            "run": run_command,
-            "setup": setup,
-            "envs": merged_envs,
-            "name": task_name,
-            "workdir": settings.workdir,
-            "file_mounts": settings.file_mounts,
-            **settings.task_settings,  # Add any arbitrary task settings
-        }
-
-        # Remove None values to avoid overriding SkyPilot defaults
-        task_kwargs = {k: v for k, v in task_kwargs.items() if v is not None}
+        # Create task kwargs
+        task_kwargs = prepare_task_kwargs(
+            settings=settings,
+            run_command=run_command,
+            setup=setup,
+            task_envs=task_envs,
+            task_name=task_name,
+        )
 
         task = sky.Task(**task_kwargs)
 
-        # Set resources with all parameters and additional resource settings
-        resources_kwargs = {
-            "cloud": orchestrator.cloud,
-            "instance_type": settings.instance_type
-            or orchestrator.DEFAULT_INSTANCE_TYPE,
-            "cpus": settings.cpus,
-            "memory": settings.memory,
-            "disk_size": settings.disk_size,
-            "disk_tier": settings.disk_tier,
-            "accelerators": settings.accelerators,
-            "accelerator_args": settings.accelerator_args,
-            "use_spot": settings.use_spot,
-            "job_recovery": settings.job_recovery,
-            "region": settings.region,
-            "zone": settings.zone,
-            "image_id": settings.image_id,
-            "ports": settings.ports,
-            "labels": settings.labels,
-            "any_of": settings.any_of,
-            "ordered": settings.ordered,
-            **settings.resources_settings,  # Add any arbitrary resource settings
-        }
-
-        # Remove None values to avoid overriding SkyPilot defaults
-        resources_kwargs = {
-            k: v for k, v in resources_kwargs.items() if v is not None
-        }
+        # Set resources
+        resources_kwargs = prepare_resources_kwargs(
+            cloud=orchestrator.cloud,
+            settings=settings,
+            default_instance_type=orchestrator.DEFAULT_INSTANCE_TYPE,
+        )
 
         task = task.set_resources(sky.Resources(**resources_kwargs))
 
-        # Use num_nodes from settings or default to 1
-        num_nodes = settings.num_nodes or 1
-
-        # Prepare launch parameters with additional launch settings
-        launch_kwargs = {
-            "retry_until_up": settings.retry_until_up,
-            "idle_minutes_to_autostop": settings.idle_minutes_to_autostop,
-            "down": settings.down,
-            "stream_logs": settings.stream_logs,
-            "backend": None,
-            "detach_setup": True,
-            "detach_run": True,
-            "num_nodes": num_nodes,
-            **settings.launch_settings,  # Add any arbitrary launch settings
-        }
-
-        # Remove None values to avoid overriding SkyPilot defaults
-        launch_kwargs = {
-            k: v for k, v in launch_kwargs.items() if v is not None
-        }
+        # Prepare launch parameters
+        launch_kwargs = prepare_launch_kwargs(
+            settings=settings,
+            stream_logs=settings.stream_logs,
+            num_nodes=settings.num_nodes,
+        )
 
         sky.launch(
             task,
