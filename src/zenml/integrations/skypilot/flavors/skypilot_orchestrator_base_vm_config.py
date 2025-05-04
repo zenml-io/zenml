@@ -15,6 +15,8 @@
 
 from typing import Any, Dict, List, Literal, Optional, Union
 
+from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig
@@ -112,23 +114,29 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
 
     # Resources
     instance_type: Optional[str] = None
-    cpus: Union[None, int, float, str] = None
-    memory: Union[None, int, float, str] = None
-    accelerators: Union[None, str, Dict[str, int], List[str]] = None
+    cpus: Union[None, int, float, str] = Field(
+        default=None, union_mode="left_to_right"
+    )
+    memory: Union[None, int, float, str] = Field(
+        default=None, union_mode="left_to_right"
+    )
+    accelerators: Union[None, str, Dict[str, int], List[str]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     accelerator_args: Optional[Dict[str, Any]] = None
     use_spot: Optional[bool] = None
-    job_recovery: Union[None, str, Dict[str, Any]] = None
+    job_recovery: Union[None, str, Dict[str, Any]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     region: Optional[str] = None
     zone: Optional[str] = None
-    image_id: Union[Dict[str, str], str, None] = None
+    image_id: Union[Dict[str, str], str, None] = Field(
+        default=None, union_mode="left_to_right"
+    )
     disk_size: Optional[int] = None
     disk_tier: Optional[Literal["high", "medium", "low", "ultra", "best"]] = (
         None
     )
-    ports: Union[None, int, str, List[Union[int, str]]] = None
-    labels: Optional[Dict[str, str]] = None
-    any_of: Optional[List[Dict[str, Any]]] = None
-    ordered: Optional[List[Dict[str, Any]]] = None
 
     # Run settings
     cluster_name: Optional[str] = None
@@ -139,6 +147,12 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     docker_run_args: List[str] = []
 
     # Additional SkyPilot features
+    ports: Union[None, int, str, List[Union[int, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
+    labels: Optional[Dict[str, str]] = None
+    any_of: Optional[List[Dict[str, Any]]] = None
+    ordered: Optional[List[Dict[str, Any]]] = None
     workdir: Optional[str] = None
     task_name: Optional[str] = None
     num_nodes: Optional[int] = None
