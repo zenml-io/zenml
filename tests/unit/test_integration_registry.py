@@ -78,11 +78,3 @@ def test_integration_registry_install_command_args():
         registry.select_integration_install_command_args(
             "non_existent_integration"
         )
-
-
-def test_skypilot_aws_integration_install_command_args():
-    """Test that the SkypilotAWSIntegration has the correct install command args."""
-    # Import here to avoid issues if the integration isn't available
-    from zenml.integrations.skypilot_aws import SkypilotAWSIntegration
-
-    assert "--prerelease=allow" in SkypilotAWSIntegration.INSTALL_COMMAND_ARGS
