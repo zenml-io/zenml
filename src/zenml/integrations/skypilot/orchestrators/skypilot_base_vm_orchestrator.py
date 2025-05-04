@@ -271,6 +271,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         setup, docker_creds_envs = prepare_docker_setup(
             container_registry_uri=stack.container_registry.config.uri,
             credentials=stack.container_registry.credentials,
+            use_sudo=True,  # Base orchestrator uses sudo
         )
 
         # Update task_envs with Docker credentials
@@ -295,6 +296,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     arguments_str=arguments_str,
                     environment=task_envs,
                     docker_run_args=settings.docker_run_args,
+                    use_sudo=True,  # Base orchestrator uses sudo
                 )
                 down = settings.down
                 idle_minutes_to_autostop = settings.idle_minutes_to_autostop

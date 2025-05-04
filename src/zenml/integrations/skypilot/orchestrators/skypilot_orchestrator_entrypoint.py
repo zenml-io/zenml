@@ -114,6 +114,7 @@ def main() -> None:
     setup, task_envs = prepare_docker_setup(
         container_registry_uri=container_registry.config.uri,
         credentials=container_registry.credentials,
+        use_sudo=False,  # Entrypoint doesn't use sudo
     )
 
     unique_resource_configs: Dict[str, str] = {}
@@ -192,6 +193,7 @@ def main() -> None:
             arguments_str=arguments_str,
             environment=env,
             docker_run_args=settings.docker_run_args,
+            use_sudo=False,  # Entrypoint doesn't use sudo
         )
 
         task_name = f"{deployment.id}-{step_name}-{time.time()}"
@@ -221,6 +223,7 @@ def main() -> None:
             settings=settings,
             stream_logs=settings.stream_logs,
             num_nodes=settings.num_nodes,
+            detach_run=True,  # Entrypoint always detaches
         )
 
         sky.launch(

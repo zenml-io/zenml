@@ -35,15 +35,26 @@ def test_sanitize_cluster_name():
 
 def test_prepare_docker_setup():
     """Test the prepare_docker_setup function."""
-    # Test with credentials
+    # Test with credentials and sudo
     setup, envs = prepare_docker_setup(
         container_registry_uri="registry.example.com",
         credentials=("username", "password"),
+        use_sudo=True,
     )
     assert "sudo docker login" in setup
     assert "registry.example.com" in setup
     assert envs["DOCKER_USERNAME"] == "username"
     assert envs["DOCKER_PASSWORD"] == "password"
+
+    # Test with credentials and no sudo
+    setup, envs = prepare_docker_setup(
+        container_registry_uri="registry.example.com",
+        credentials=("username", "password"),
+        use_sudo=False,
+    )
+    assert "docker login" in setup
+    assert "sudo" not in setup
+    assert "registry.example.com" in setup
 
     # Test without credentials
     setup, envs = prepare_docker_setup(
@@ -55,12 +66,14 @@ def test_prepare_docker_setup():
 
 def test_create_docker_run_command():
     """Test the create_docker_run_command function."""
+    # Test with sudo
     command = create_docker_run_command(
         image="test-image:latest",
         entrypoint_str="python -m app",
         arguments_str="--arg1 value1 --arg2 value2",
         environment={"ENV1": "val1", "ENV2": "val2"},
         docker_run_args=["--network=host", "--privileged"],
+        use_sudo=True,
     )
 
     assert "sudo docker run" in command
@@ -71,6 +84,19 @@ def test_create_docker_run_command():
     assert "test-image:latest" in command
     assert "python -m app" in command
     assert "--arg1 value1 --arg2 value2" in command
+
+    # Test without sudo
+    command = create_docker_run_command(
+        image="test-image:latest",
+        entrypoint_str="python -m app",
+        arguments_str="--arg1 value1 --arg2 value2",
+        environment={"ENV1": "val1", "ENV2": "val2"},
+        docker_run_args=["--network=host", "--privileged"],
+        use_sudo=False,
+    )
+
+    assert "docker run" in command
+    assert "sudo" not in command
 
 
 def test_prepare_task_kwargs():
@@ -141,6 +167,7 @@ def test_prepare_launch_kwargs():
         launch_settings={"custom_launch": "value"},
     )
 
+    # Test default behavior (detach_run opposite of stream_logs)
     launch_kwargs = prepare_launch_kwargs(
         settings=settings,
         stream_logs=True,
@@ -153,6 +180,18 @@ def test_prepare_launch_kwargs():
     assert launch_kwargs["detach_run"] is False  # opposite of stream_logs
     assert launch_kwargs["num_nodes"] == 3
     assert launch_kwargs["custom_launch"] == "value"
+
+    # Test with explicit detach_run override
+    launch_kwargs = prepare_launch_kwargs(
+        settings=settings,
+        stream_logs=True,
+        detach_run=True,  # Explicitly override
+    )
+
+    assert launch_kwargs["stream_logs"] is True
+    assert (
+        launch_kwargs["detach_run"] is True
+    )  # Explicitly set, not derived from stream_logs
 
     # Test with override values
     launch_kwargs = prepare_launch_kwargs(
