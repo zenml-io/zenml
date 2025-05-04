@@ -15,7 +15,8 @@
 
 import os
 import platform
-from typing import Dict
+import subprocess
+from typing import Any, Dict, List
 
 import distro
 
@@ -27,7 +28,7 @@ from zenml.utils.singleton import SingletonMetaClass
 logger = get_logger(__name__)
 
 
-def get_run_environment_dict() -> Dict[str, str]:
+def get_run_environment_dict() -> Dict[str, Any]:
     """Returns a dictionary of the current run environment.
 
     Everything that is returned here will be saved in the DB as
@@ -38,11 +39,23 @@ def get_run_environment_dict() -> Dict[str, str]:
     Returns:
         A dictionary of the current run environment.
     """
-    return {
-        "environment": get_environment(),
+    env_dict: Dict[str, Any] = {
+        "environment": str(get_environment()),
         **Environment.get_system_info(),
         "python_version": Environment.python_version(),
     }
+
+    try:
+        python_packages = Environment.get_python_packages()
+    except RuntimeError:
+        logger.warning("Failed to get list of installed Python packages")
+    else:
+        # TODO: We send the python packages as a string right now to keep
+        # backwards compatibility with old versions. We should update this to
+        # be a list of strings eventually.
+        env_dict["python_packages"] = "\n".join(python_packages)
+
+    return env_dict
 
 
 def get_environment() -> str:
@@ -337,3 +350,22 @@ class Environment(metaclass=SingletonMetaClass):
             "LIGHTNING_CLOUD_URL" in os.environ
             and "LIGHTNING_CLOUDSPACE_HOST" in os.environ
         )
+
+    @staticmethod
+    def get_python_packages() -> List[str]:
+        """Returns a list of installed Python packages.
+
+        Raises:
+            RuntimeError: If the process to get the list of installed packages
+                fails.
+
+        Returns:
+            List of installed packages in pip freeze format.
+        """
+        try:
+            output = subprocess.check_output(["pip", "freeze"]).decode()
+            return output.strip().split("\n")
+        except subprocess.CalledProcessError:
+            raise RuntimeError(
+                "Failed to get list of installed Python packages"
+            )

@@ -19,11 +19,11 @@ RUN uv pip install zenml${ZENML_VERSION:+==$ZENML_VERSION} notebook pyarrow data
 RUN echo "Cloud Provider: $CLOUD_PROVIDER";
 # Install cloud-specific ZenML integrations
 RUN if [ "$CLOUD_PROVIDER" = "aws" ]; then \
-        zenml integration install aws s3 -y; \
+        zenml integration install aws s3 --uv -y; \
     elif [ "$CLOUD_PROVIDER" = "azure" ]; then \
-        zenml integration install azure -y; \
+        zenml integration install azure --uv -y; \
     elif [ "$CLOUD_PROVIDER" = "gcp" ]; then \
-        zenml integration install gcp -y; \
+        zenml integration install gcp --uv -y; \
     else \
         echo "No specific cloud integration installed"; \
     fi
