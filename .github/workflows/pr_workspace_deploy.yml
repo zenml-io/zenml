@@ -170,8 +170,20 @@ jobs:
       - name: Set tenant URL
         run: echo "TENANT_URL=https://staging.cloud.zenml.io/workspaces/${{ needs.set-branch-info.outputs.branch_name }}/projects"
           >> $GITHUB_ENV
+      - name: Check if deployment comment exists
+        id: check-comment
+        if: github.event_name == 'pull_request'
+        run: |
+          # Search for comments containing the workspace URL
+          COMMENT_COUNT=$(gh pr view ${{ github.event.pull_request.number }} --json comments --jq '.comments[].body | select(contains("Branch tenant has been deployed"))' | wc -l)
+          if [ "$COMMENT_COUNT" -gt 0 ]; then
+            echo "has_comment=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_comment=false" >> $GITHUB_OUTPUT
+          fi
       - name: Add comment with tenant URL (PR)
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        if: github.event_name == 'pull_request' && steps.check-comment.outputs.has_comment
+          == 'false'
         run: |-
           gh pr comment ${{ github.event.pull_request.number }} --body "✅ Branch tenant has been deployed! Access it at: ${{ env.TENANT_URL }}"
       - name: Output tenant URL (Manual)
