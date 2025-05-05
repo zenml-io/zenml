@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to checkout and deploy'
+        description: Branch to checkout and deploy
         required: true
         type: string
 env:
@@ -15,7 +15,8 @@ env:
 jobs:
   check-label:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
+      false
     outputs:
       should_deploy: ${{ steps.check-label.outputs.has_label }}
     steps:
@@ -35,7 +36,6 @@ jobs:
             });
             const labelNames = labels.map(label => label.name);
             core.setOutput('all-labels', labelNames.join(','));
-      
       - name: Check if staging-workspace label is set
         id: check-label
         run: |
@@ -46,10 +46,10 @@ jobs:
             echo "Label 'staging-workspace' not found, skipping workspace deployment"
             echo "has_label=false" >> $GITHUB_OUTPUT
           fi
-  
   set-branch-info:
     needs: check-label
-    if: github.event_name == 'workflow_dispatch' || needs.check-label.outputs.should_deploy == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.check-label.outputs.should_deploy
+      == 'true'
     runs-on: ubuntu-latest
     outputs:
       branch_name: ${{ steps.slugify-branch.outputs.branch_slug }}  # Docker-compatible tag
@@ -66,26 +66,23 @@ jobs:
             # For manual trigger, use the provided branch
             echo "branch=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
           fi
-      
       - name: Checkout repository with correct branch
         uses: actions/checkout@v4.2.2
         with:
           ref: ${{ steps.determine-branch.outputs.branch }}
           fetch-depth: 0
-      
       - name: Slugify branch name
         id: slugify-branch
         run: |
           # Create a Docker-compatible tag from branch name
           BRANCH_NAME="${{ steps.determine-branch.outputs.branch }}"
-          
+
           # 1. Convert to lowercase
           # 2. Replace invalid chars with dashes
           # 3. Remove leading non-alphanumeric chars (Docker tags must start with a letter or number)
           # 4. Replace multiple consecutive dashes with a single dash
           # 5. Remove trailing dashes (Docker tags can't end with a dash)
           # 6. Limit to 128 chars max (Docker's limit)
-          
           BRANCH_SLUG=$(echo "$BRANCH_NAME" | \
             tr '[:upper:]' '[:lower:]' | \
             tr -c 'a-z0-9_.-' '-' | \
@@ -93,15 +90,13 @@ jobs:
             sed -E 's/-+/-/g' | \
             sed -E 's/-$//' | \
             cut -c 1-128)
-          
+
           # If we end up with an empty string (unlikely but possible), use "dev" as fallback
           if [ -z "$BRANCH_SLUG" ]; then
             BRANCH_SLUG="dev"
           fi
-          
           echo "Created Docker-compatible tag: $BRANCH_SLUG"
           echo "branch_slug=${BRANCH_SLUG}" >> $GITHUB_OUTPUT
-      
       - name: Get ZenML version
         id: get-version
         run: |
@@ -116,10 +111,10 @@ jobs:
             echo "This is required for deployment. Please ensure you're using a valid branch."
             exit 1
           fi
-
   build-images:
     needs: [set-branch-info, check-label]
-    if: always() && (github.event_name == 'workflow_dispatch' || needs.check-label.outputs.should_deploy == 'true') && needs.set-branch-info.result == 'success'
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.check-label.outputs.should_deploy
+      == 'true') && needs.set-branch-info.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -144,7 +139,6 @@ jobs:
             --quiet \
             --config=pull_request_cloudbuild.yaml \
             --substitutions=_ZENML_BRANCH_NAME=${{ needs.set-branch-info.outputs.branch_name }}
-  
   manage-tenant:
     needs: [build-images, set-branch-info]
     if: always() && needs.build-images.result == 'success'
@@ -156,17 +150,14 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
-          
       - name: Set up Python
         uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.11'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests
-      
       - name: Manage workspace
         env:
           CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
@@ -176,15 +167,13 @@ jobs:
           DOCKER_IMAGE: zenml/zenml-server:dev-${{ needs.set-branch-info.outputs.branch_name }}
           ZENML_VERSION: ${{ env.ZENML_VERSION }}
         run: python scripts/manage_workspace.py
-      
       - name: Set tenant URL
-        run: echo "TENANT_URL=https://staging.cloud.zenml.io/workspaces/${{ needs.set-branch-info.outputs.branch_name }}/projects" >> $GITHUB_ENV
-      
+        run: echo "TENANT_URL=https://staging.cloud.zenml.io/workspaces/${{ needs.set-branch-info.outputs.branch_name }}/projects"
+          >> $GITHUB_ENV
       - name: Add comment with tenant URL (PR)
         if: github.event_name == 'pull_request' && github.event.action == 'opened'
         run: |-
           gh pr comment ${{ github.event.pull_request.number }} --body "✅ Branch tenant has been deployed! Access it at: ${{ env.TENANT_URL }}"
-      
       - name: Output tenant URL (Manual)
         if: github.event_name == 'workflow_dispatch'
         run: |-
