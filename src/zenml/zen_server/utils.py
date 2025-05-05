@@ -52,9 +52,6 @@ from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
-from zenml.zen_server.template_execution.utils import (
-    BoundedThreadPoolExecutor,
-)
 from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
@@ -63,6 +60,9 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.zen_server.template_execution.utils import (
+        BoundedThreadPoolExecutor,
+    )
 
 logger = get_logger(__name__)
 
@@ -70,7 +70,7 @@ _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
-_run_template_executor: Optional[BoundedThreadPoolExecutor] = None
+_run_template_executor: Optional["BoundedThreadPoolExecutor"] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
 
@@ -200,7 +200,7 @@ def initialize_workload_manager() -> None:
             _workload_manager = workload_manager_class()
 
 
-def run_template_executor() -> BoundedThreadPoolExecutor:
+def run_template_executor() -> "BoundedThreadPoolExecutor":
     """Return the initialized run template executor.
 
     Raises:
@@ -219,6 +219,9 @@ def run_template_executor() -> BoundedThreadPoolExecutor:
 def initialize_run_template_executor() -> None:
     """Initialize the run template executor."""
     global _run_template_executor
+    from zenml.zen_server.template_execution.utils import (
+        BoundedThreadPoolExecutor,
+    )
 
     _run_template_executor = BoundedThreadPoolExecutor(
         max_queue_size=server_config().thread_pool_size,
