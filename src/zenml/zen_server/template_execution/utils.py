@@ -74,6 +74,7 @@ class BoundedThreadPoolExecutor:
         Args:
             max_queue_size: The maximum number of tasks in the queue.
             max_workers: The maximum number of workers.
+            **kwargs: Arguments to pass to the thread pool executor.
         """
         self._executor = ThreadPoolExecutor(max_workers=max_workers, **kwargs)
         self._semaphore = threading.BoundedSemaphore(
@@ -89,6 +90,9 @@ class BoundedThreadPoolExecutor:
             fn: The function to execute.
             *args: The arguments to pass to the function.
             **kwargs: The keyword arguments to pass to the function.
+
+        Raises:
+            Exception: If the task submission fails.
 
         Returns:
             The future of the task.
