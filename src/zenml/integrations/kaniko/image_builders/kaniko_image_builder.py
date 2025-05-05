@@ -28,6 +28,7 @@ from zenml.stack import StackValidator
 from zenml.utils.archivable import ArchiveType
 from zenml.service_connectors.service_connector import ServiceConnector
 import kubernetes.client
+import kubernetes
 from kubernetes.client.rest import ApiException
 
 if TYPE_CHECKING:
@@ -227,7 +228,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             },
         }
 
-    def _run_kaniko_build_with_kubeconnect(
+    def _run_kaniko_build(
         self,
         pod_name: str,
         spec_overrides: Dict[str, Any],
@@ -263,7 +264,52 @@ class KanikoImageBuilder(BaseImageBuilder):
                 vloume_mounts=self.config.volume_mounts,
                 env=self.config.env,
             )
-    def _run_kaniko_build(
+            pod_spec = kubernetes.client.V1PodSpec(
+                containers=[container],
+                restart_policy="Never",
+                service_account_name=self.config.service_account_name
+            )
+            pod = kubernetes.client.V1Pod(metadata=kubernetes.client.V1ObjectMeta(name = pod_name),
+                                          spec = pod_spec)
+            
+            # now lets create the pod
+            try:
+                core_api.create_namespace(
+                    namespace=self.config.kubernetes_namespace,
+                    body=pod
+                )
+                logger.info(f"Kaniko pod {pod_name} created")
+            except ApiException as e:
+                raise RuntimeError(f"Failed to create the pod {pod_name}: {e}")
+            # Stream the context if needed
+            if not self.config.store_context_in_artifact_store:
+                logger.info("streaming build context into kaniko pod.")
+                kubernetes.k8s_utils.stream_file_to_pod(
+                    core_api,
+                    namespcae=self.config.kubernetes_namespace,
+                    pod_name=pod_name,
+                    container_name="kaniko",
+                    source_path=build_context,
+                    destination_parh="/workspace"
+                )
+            # wait for the pod completion
+            kubernetes.k8s_utils.wait_pod(
+                core_api, 
+                pod_name=pod_name,
+                namespace=self.config.kubernetes_namespace,
+                exit_condition_lambda = kubernetes.k8s_utils.pod_is_done,
+                timeout_sec = self.config.pod_running_timeout
+            )
+
+            #cleanup the pod
+            logger.info(f"Deleting the pod {pod_name}")
+            core_api.delete_namespaced_pod(name=pod_name,
+                                            namespace=self.config.kubernetes_namespace
+            )
+        else:
+            logger.info("Connector not found continuing build with kubectl")
+            self._run_kaniko_build_kubectl(pod_name, spec_overrides, build_context)
+    def _run_kaniko_build_kubectl(
         self,
         pod_name: str,
         spec_overrides: Dict[str, Any],
