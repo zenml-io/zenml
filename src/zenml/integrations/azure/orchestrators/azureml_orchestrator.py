@@ -202,7 +202,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on AzureML.
@@ -243,6 +243,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # Create components
         components = {}
         for step_name, step in deployment.step_configurations.items():
+            step_environment = environment[step_name]
             # Get the image for each step
             image = self.get_image(deployment=deployment, step_name=step_name)
 
@@ -252,7 +253,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 AzureMLEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
                     deployment_id=deployment.id,
-                    zenml_env_variables=b64_encode(json.dumps(environment)),
+                    zenml_env_variables=b64_encode(
+                        json.dumps(step_environment)
+                    ),
                 )
             )
 

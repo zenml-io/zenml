@@ -189,15 +189,12 @@ class StepRunner:
             )
 
             step_failed = False
-            environment = env_utils.get_step_environment(
-                step_config=step_run.config, stack=self._stack
-            )
+
             secret_environment = env_utils.get_step_secret_environment(
                 step_config=step_run.config, stack=self._stack
             )
-            environment.update(secret_environment)
 
-            with env_utils.temporary_environment(environment):
+            with env_utils.temporary_environment(secret_environment):
                 try:
                     return_values = step_instance.call_entrypoint(
                         **function_params

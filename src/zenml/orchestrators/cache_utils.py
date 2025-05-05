@@ -15,14 +15,13 @@
 
 import hashlib
 from typing import TYPE_CHECKING, Dict, Optional
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
     from zenml.models import StepRunResponse

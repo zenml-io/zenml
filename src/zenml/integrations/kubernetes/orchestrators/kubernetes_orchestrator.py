@@ -392,7 +392,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs the pipeline in Kubernetes.
@@ -501,6 +501,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 }
             )
 
+        # Use the env from any step for the orchestrator pod
+        orchestrator_pod_env = environment.popitem()[1]
+
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
             if not deployment.schedule.cron_expression:
@@ -521,7 +524,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 service_account_name=service_account_name,
                 privileged=False,
                 pod_settings=orchestrator_pod_settings,
-                env=environment,
+                env=orchestrator_pod_env,
                 mount_local_stores=self.config.is_local,
             )
 
@@ -546,7 +549,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 privileged=False,
                 pod_settings=orchestrator_pod_settings,
                 service_account_name=service_account_name,
-                env=environment,
+                env=orchestrator_pod_env,
                 mount_local_stores=self.config.is_local,
             )
 

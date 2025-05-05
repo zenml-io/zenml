@@ -139,7 +139,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """The method needs to be implemented by the respective orchestrator.
@@ -205,7 +205,7 @@ class BaseOrchestrator(StackComponent, ABC):
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
-        environment = get_config_environment_vars(
+        shared_environment = get_config_environment_vars(
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
         )
@@ -246,6 +246,19 @@ class BaseOrchestrator(StackComponent, ABC):
                 return
         else:
             logger.debug("Skipping client-side caching.")
+
+        environment = {}
+        for invocation_id, step in deployment.step_configurations.items():
+            from zenml.utils.env_utils import get_step_environment
+
+            step_environment = get_step_environment(
+                step_config=step.config,
+                stack=stack,
+            )
+
+            combined_environment = shared_environment.copy()
+            combined_environment.update(step_environment)
+            environment[invocation_id] = combined_environment
 
         try:
             if metadata_iterator := self.prepare_or_run_pipeline(

@@ -222,6 +222,9 @@ def get_step_environment(
     environment.update(stack.environment)
     environment.update(step_config.environment)
 
+    for key, value in environment.items():
+        environment[key] = str(value)
+
     return environment
 
 

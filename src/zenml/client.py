@@ -1529,12 +1529,6 @@ class Client(metaclass=ClientMetaClass):
 
             stack_id = GlobalConfiguration().get_active_stack_id()
 
-        if not stack_id:
-            raise RuntimeError(
-                "No active stack is configured. Run "
-                "`zenml stack set STACK_NAME` to set the active stack."
-            )
-
         return self.get_stack(stack_id)
 
     def activate_stack(

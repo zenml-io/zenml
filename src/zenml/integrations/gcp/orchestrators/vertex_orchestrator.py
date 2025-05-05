@@ -558,6 +558,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         step_settings.custom_job_parameters is not None
                     )
 
+                    step_environment = environment[component_name]
+
                     if use_custom_training_job:
                         if not step.config.resource_settings.empty:
                             logger.warning(
@@ -576,7 +578,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         component = self._convert_to_custom_training_job(
                             component,
                             settings=step_settings,
-                            environment=environment,
+                            environment=step_environment,
                         )
                         task = (
                             component()
@@ -593,7 +595,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                             .set_caching_options(enable_caching=False)
                             .after(*upstream_step_components)
                         )
-                        for key, value in environment.items():
+                        for key, value in step_environment.items():
                             task = task.set_env_variable(name=key, value=value)
 
                         pod_settings = step_settings.pod_settings

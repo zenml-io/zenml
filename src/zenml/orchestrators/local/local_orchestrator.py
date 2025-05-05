@@ -25,6 +25,7 @@ from zenml.orchestrators.base_orchestrator import (
 )
 from zenml.stack import Stack
 from zenml.utils import string_utils
+from zenml.utils.env_utils import temporary_environment
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
@@ -45,7 +46,7 @@ class LocalOrchestrator(BaseOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Iterates through all steps and executes them sequentially.
@@ -67,7 +68,6 @@ class LocalOrchestrator(BaseOrchestrator):
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()
 
-        # Run each step
         for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
@@ -77,9 +77,9 @@ class LocalOrchestrator(BaseOrchestrator):
                     step_name,
                 )
 
-            self.run_step(
-                step=step,
-            )
+            step_environment = environment[step_name]
+            with temporary_environment(step_environment):
+                self.run_step(step=step)
 
         run_duration = time.time() - start_time
         logger.info(

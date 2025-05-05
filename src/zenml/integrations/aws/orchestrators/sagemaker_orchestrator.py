@@ -266,7 +266,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on Sagemaker.
@@ -299,23 +299,24 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         session = self._get_sagemaker_session()
 
-        # Sagemaker does not allow environment variables longer than 256
-        # characters to be passed to Processor steps. If an environment variable
-        # is longer than 256 characters, we split it into multiple environment
-        # variables (chunks) and re-construct it on the other side using the
-        # custom entrypoint configuration.
-        split_environment_variables(
-            size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
-            env=environment,
-        )
-
-        environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
-            ExecutionVariables.PIPELINE_EXECUTION_ARN
-        )
-
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
-            step_environment = environment.copy()
+            step_environment = environment[step_name]
+
+            # Sagemaker does not allow environment variables longer than 256
+            # characters to be passed to Processor steps. If an environment variable
+            # is longer than 256 characters, we split it into multiple environment
+            # variables (chunks) and re-construct it on the other side using the
+            # custom entrypoint configuration.
+            split_environment_variables(
+                size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+                env=step_environment,
+            )
+
+            step_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
+                ExecutionVariables.PIPELINE_EXECUTION_ARN
+            )
+
             image = self.get_image(deployment=deployment, step_name=step_name)
             command = SagemakerEntrypointConfiguration.get_entrypoint_command()
             arguments = (

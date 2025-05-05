@@ -45,6 +45,7 @@ from zenml.orchestrators.utils import (
     get_config_environment_vars,
     get_orchestrator_run_name,
 )
+from zenml.utils import env_utils
 
 logger = get_logger(__name__)
 
@@ -94,8 +95,8 @@ def main() -> None:
     kube_client = orchestrator.get_kube_client(incluster=True)
     core_api = k8s_client.CoreV1Api(kube_client)
 
-    env = get_config_environment_vars()
-    env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
+    shared_env = get_config_environment_vars()
+    shared_env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -110,6 +111,13 @@ def main() -> None:
         settings = step_config.settings.get("orchestrator.kubernetes", None)
         settings = KubernetesOrchestratorSettings.model_validate(
             settings.model_dump() if settings else {}
+        )
+
+        step_env = shared_env.copy()
+        step_env.update(
+            env_utils.get_step_environment(
+                step_config=step_config, stack=active_stack
+            )
         )
 
         if settings.pod_name_prefix and not orchestrator_run_id.startswith(
