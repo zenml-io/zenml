@@ -883,7 +883,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 f"Error while trying to fetch kubeflow cookie: {errh}"
             )
 
-        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call]
+        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call, unused-ignore]
 
         if "authservice_session" not in cookie_dict:
             raise RuntimeError("Invalid username and/or password!")
