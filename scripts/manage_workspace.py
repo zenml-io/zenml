@@ -167,7 +167,7 @@ def create_workspace(
     workspace_name: str,
     organization_id: str,
     configuration: Dict[str, Any],
-) -> None:
+) -> dict:
     """Creating a workspace.
 
     Args:
@@ -175,6 +175,9 @@ def create_workspace(
         workspace_name: The name of the workspace to create.
         organization_id: The ID of the organization to create the workspace in.
         configuration: The configuration for the workspace.
+
+    Returns:
+        The created workspace as a dictionary.
 
     Raises:
         requests.HTTPError: If the API request fails.
@@ -196,6 +199,8 @@ def create_workspace(
         raise RuntimeError(
             f"Request failed with response content: {response.text}"
         )
+
+    return response.json()
 
 
 def update_workspace(
@@ -291,7 +296,7 @@ def main(
         assert client_secret is not None, "Client secret must be provided"
 
         token = get_token(client_id, client_secret)
-    
+
     # Get organization and workspace from environment variables if not provided
     organization_id = organization_id or os.environ.get(
         "CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID"
@@ -301,7 +306,9 @@ def main(
     )
 
     # Check for missing required values
-    assert workspace_name_or_id is not None, "Workspace name or ID must be provided"
+    assert workspace_name_or_id is not None, (
+        "Workspace name or ID must be provided"
+    )
     assert organization_id is not None, "Organization ID must be provided"
 
     # Get configuration from environment variables if not provided
@@ -322,7 +329,7 @@ def main(
     try:
         workspace = get_workspace(token, workspace_name_or_id)
     except RuntimeError:
-        create_workspace(
+        workspace = create_workspace(
             token=token,
             workspace_name=workspace_name_or_id,
             organization_id=organization_id,
@@ -333,7 +340,7 @@ def main(
     if exists:
         update_workspace(
             token=token,
-            workspace_name_or_id=workspace_name_or_id,
+            workspace_name_or_id=workspace["id"],
             configuration=configuration,
         )
     # Check the status using a deadline-based approach
