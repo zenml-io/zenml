@@ -103,7 +103,7 @@ class BuildConfiguration(BaseModel):
                 hash_.update(f.read())
 
         if self.settings.parent_image and stack.container_registry:
-            digest = stack.container_registry.get_image_digest(
+            digest = stack.container_registry.get_image_repo_digest(
                 self.settings.parent_image
             )
             if digest:
