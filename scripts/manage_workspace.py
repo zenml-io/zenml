@@ -13,20 +13,20 @@
 #  permissions and limitations under the License.
 """A script to manage a ZenML workspace.
 
-This script allows you to create or update ZenML workspaces.It handles 
+This script allows you to create or update ZenML workspaces.It handles
 authentication, workspace creation/updating, and monitoring the workspace
 status until it becomes available.
 
 Usage:
-   
-    python manage_workspace.py --workspace my-workspace --organization org-123 
+
+    python manage_workspace.py --workspace my-workspace --organization org-123
         --zenml-version 0.81.0 --docker-image my/custom:image
-    
+
 Environment Variables:
     Authentication (one of the following sets is required):
         CLOUD_STAGING_CLIENT_ID, CLOUD_STAGING_CLIENT_SECRET - Client credentials
         CLOUD_STAGING_CLIENT_TOKEN - Client token
-        
+
     Workspace Configuration (can be overridden by function parameters):
         WORKSPACE_NAME_OR_ID - Name or ID of the workspace
         ORGANIZATION_ID - ID of the organization that owns the workspace
@@ -90,7 +90,7 @@ def _build_configuration(
     Returns:
         The configuration as a dictionary.
     """
-    configuration = {"version": zenml_version}
+    configuration: dict = {"version": zenml_version}
 
     if any([image_repository, image_tag, helm_chart_version]):
         configuration["admin"] = {}
@@ -266,10 +266,10 @@ def main(
     2. Checks if the workspace exists
     3. Creates or updates the workspace with the specified configuration
     4. Monitors the workspace status until it becomes available
-    
+
     The function prioritizes parameters passed directly to it, falling back
     to environment variables if any parameters are not provided.
-    
+
     Authentication is always done via environment variables.
 
     Args:
@@ -283,7 +283,7 @@ def main(
             Falls back to HELM_CHART_VERSION environment variable.
         docker_image: The Docker image to use for the workspace (format: repository:tag).
             Falls back to DOCKER_IMAGE environment variable.
-            
+
     Raises:
         ValueError: If authentication credentials are not provided or are invalid.
         RuntimeError: If the workspace creation fails or times out.
@@ -298,13 +298,38 @@ def main(
     client_token = os.environ.get("CLOUD_STAGING_CLIENT_TOKEN")
 
     # Get organization and workspace from environment variables if not provided
-    organization_id = organization_id or os.environ.get("CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID")
-    workspace_name_or_id = workspace_name_or_id or os.environ.get("WORKSPACE_NAME_OR_ID")
+    organization_id = organization_id or os.environ.get(
+        "CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID"
+    )
+    workspace_name_or_id = workspace_name_or_id or os.environ.get(
+        "WORKSPACE_NAME_OR_ID"
+    )
 
     # Get configuration from environment variables if not provided
     zenml_version = zenml_version or os.environ.get("ZENML_VERSION")
-    helm_chart_version = helm_chart_version or os.environ.get("HELM_CHART_VERSION")
+    helm_chart_version = helm_chart_version or os.environ.get(
+        "HELM_CHART_VERSION"
+    )
     docker_image = docker_image or os.environ.get("DOCKER_IMAGE")
+
+    # Check for missing required values
+    missing_values = []
+    if workspace_name_or_id is None:
+        missing_values.append("Workspace name or ID")
+    if organization_id is None:
+        missing_values.append("Organization ID")
+    if zenml_version is None:
+        missing_values.append("ZenML version")
+    if docker_image is None:
+        missing_values.append("Docker image")
+    if helm_chart_version is None:
+        missing_values.append("Helm chart version")
+
+    if missing_values:
+        raise ValueError(
+            f"The following required values are missing: {', '.join(missing_values)}"
+        )
+
     image_repository, image_tag = _disect_docker_image_parts(docker_image)
 
     # Either client_id and client_secret or client_token must be provided
@@ -316,9 +341,15 @@ def main(
 
         token = client_token
     else:
-        if not all([client_id, client_secret]):
+        missing_credentials = []
+        if client_id is None:
+            missing_credentials.append("Client ID")
+        if client_secret is None:
+            missing_credentials.append("Client secret")
+
+        if missing_credentials:
             raise ValueError(
-                "Either client_id and client_secret or client_token must be provided"
+                f"The following credentials are missing: {', '.join(missing_credentials)}"
             )
 
         token = get_token(client_id, client_secret)
@@ -351,33 +382,34 @@ def main(
     # Check the status using a deadline-based approach
     deadline = time.time() + timeout
     workspace = get_workspace(token, workspace_name_or_id)
-    
+
     while workspace["status"] == "pending":
         print(f"Waiting... Current workspace status: {workspace['status']}.")
-        
+
         if time.time() > deadline:
             raise RuntimeError(
                 "Timed out! The workspace could be stuck in a `pending` state."
             )
-            
+
         time.sleep(sleep_period)
         workspace = get_workspace(token, workspace_name_or_id)
 
     if workspace["status"] != "available":
         raise RuntimeError("Workspace creation failed.")
 
+
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Manage a ZenML workspace.")
     parser.add_argument("--workspace", help="Workspace name or ID")
     parser.add_argument("--organization", help="Organization ID")
     parser.add_argument("--zenml-version", help="ZenML version")
     parser.add_argument("--helm-chart-version", help="Helm chart version")
     parser.add_argument("--docker-image", help="Docker image")
-    
+
     args = parser.parse_args()
-    
+
     main(
         workspace_name_or_id=args.workspace,
         organization_id=args.organization,
