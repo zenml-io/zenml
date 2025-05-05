@@ -287,12 +287,16 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 
     docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
     ```
-5.  **Control Stack Requirements**:\
+5.  **Control Stack Requirements**:
     By default, ZenML installs the requirements needed by your active stack. You can disable this behavior if needed:
 
     ```python
     docker_settings = DockerSettings(install_stack_requirements=False)
     ```
+6.  **Local Library Installation**:
+    In cases where your project contains some local python library that your pipeline relies on, you will need to build it into the 
+    docker image explicitely. Here is a small minimal repo that shows you how you can go about this as this requires some nuance: https://github.com/zenml-io/zenml-patterns/tree/main/docker-local-pkg
+
 
 {% hint style="info" %}
 You can combine these methods but do make sure that your list of requirements does not overlap with ones specified explicitly in the Docker settings to avoid version conflicts.
@@ -300,7 +304,7 @@ You can combine these methods but do make sure that your list of requirements do
 
 Depending on the options specified in your Docker settings, ZenML installs the requirements in the following order (each step optional):
 
-1. The packages installed in your local Python environment
+1. The Pypi packages installed in your local Python environment
 2. The packages required by the stack (unless disabled by setting `install_stack_requirements=False`)
 3. The packages specified via the `required_integrations`
 4. The packages specified via the `requirements` attribute
