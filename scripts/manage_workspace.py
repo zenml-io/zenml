@@ -31,13 +31,13 @@ Environment Variables:
         WORKSPACE_NAME_OR_ID - Name or ID of the workspace
         ORGANIZATION_ID - ID of the organization that owns the workspace
         ZENML_VERSION - Version of ZenML to use
-        HELM_CHART_VERSION - Version of the Helm chart to use
+        HELM_VERSION - Version of the Helm chart to use
         DOCKER_IMAGE - Docker image to use (format: repository:tag)
 """
 
 import os
 import time
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import requests
 
@@ -75,30 +75,29 @@ def _get_headers(token: str) -> dict:
 
 def _build_configuration(
     zenml_version: str,
-    image_repository: Optional[str] = None,
-    image_tag: Optional[str] = None,
+    docker_image: Optional[str] = None,
     helm_chart_version: Optional[str] = None,
 ) -> dict:
     """Build the configuration for the workspace.
 
     Args:
         zenml_version: The version of ZenML to use for the workspace.
-        image_repository: The repository of the Docker image to use for the workspace.
-        image_tag: The tag of the Docker image to use for the workspace.
-        helm_chart_version: The version of the Helm chart to use for the workspace.
+        docker_image: The Docker image to use for the workspace.
+        helm_version: The version of the Helm chart to use for the workspace.
 
     Returns:
         The configuration as a dictionary.
     """
     configuration: dict = {"version": zenml_version}
 
-    if any([image_repository, image_tag, helm_chart_version]):
+    if any([docker_image, helm_chart_version]):
         configuration["admin"] = {}
 
-    if image_repository is not None:
+    if docker_image is not None:
+        image_repository, image_tag = _disect_docker_image_parts(docker_image)
         configuration["admin"]["image_repository"] = image_repository
-    if image_tag is not None:
         configuration["admin"]["image_tag"] = image_tag
+
     if helm_chart_version is not None:
         configuration["admin"]["helm_chart_version"] = helm_chart_version
 
@@ -167,10 +166,7 @@ def create_workspace(
     token: str,
     workspace_name: str,
     organization_id: str,
-    zenml_version: str,
-    image_repository: Optional[str] = None,
-    image_tag: Optional[str] = None,
-    helm_chart_version: Optional[str] = None,
+    configuration: Dict[str, Any],
 ) -> None:
     """Creating a workspace.
 
@@ -178,10 +174,7 @@ def create_workspace(
         token: The access token for authentication.
         workspace_name: The name of the workspace to create.
         organization_id: The ID of the organization to create the workspace in.
-        zenml_version: The version of ZenML to use for the workspace.
-        image_repository: The repository of the Docker image to use for the workspace.
-        image_tag: The tag of the Docker image to use for the workspace.
-        helm_chart_version: The version of the Helm chart to use for the workspace.
+        configuration: The configuration for the workspace.
 
     Raises:
         requests.HTTPError: If the API request fails.
@@ -192,9 +185,7 @@ def create_workspace(
         "name": workspace_name,
         "organization_id": organization_id,
         "zenml_service": {
-            "configuration": _build_configuration(
-                zenml_version, image_repository, image_tag, helm_chart_version
-            )
+            "configuration": configuration,
         },
     }
     response = requests.post(url, headers=_get_headers(token), json=data)
@@ -210,20 +201,14 @@ def create_workspace(
 def update_workspace(
     token: str,
     workspace_name_or_id: str,
-    zenml_version: str,
-    image_repository: str,
-    image_tag: str,
-    helm_chart_version: str,
+    configuration: Dict[str, Any],
 ) -> None:
     """Updating a workspace.
 
     Args:
         token: The access token for authentication.
         workspace_name_or_id: The name or ID of the workspace to update.
-        zenml_version: The version of ZenML to use for the workspace.
-        image_repository: The repository of the Docker image to use for the workspace.
-        image_tag: The tag of the Docker image to use for the workspace.
-        helm_chart_version: The version of the Helm chart to use for the workspace.
+        configuration: The configuration for the workspace.
 
     Raises:
         requests.HTTPError: If the API request fails.
@@ -233,11 +218,7 @@ def update_workspace(
     )
 
     data = {
-        "zenml_service": {
-            "configuration": _build_configuration(
-                zenml_version, image_repository, image_tag, helm_chart_version
-            )
-        },
+        "zenml_service": {"configuration": configuration},
         "desired_state": "available",
     }
 
@@ -256,7 +237,7 @@ def main(
     workspace_name_or_id: Optional[str] = None,
     organization_id: Optional[str] = None,
     zenml_version: Optional[str] = None,
-    helm_chart_version: Optional[str] = None,
+    helm_version: Optional[str] = None,
     docker_image: Optional[str] = None,
 ) -> None:
     """Create or update a ZenML workspace and wait for it to become available.
@@ -279,7 +260,7 @@ def main(
             Falls back to ORGANIZATION_ID environment variable.
         zenml_version: The version of ZenML to use for the workspace.
             Falls back to ZENML_VERSION environment variable.
-        helm_chart_version: The version of the Helm chart to use for the workspace.
+        helm_version: The version of the Helm chart to use for the workspace.
             Falls back to HELM_CHART_VERSION environment variable.
         docker_image: The Docker image to use for the workspace (format: repository:tag).
             Falls back to DOCKER_IMAGE environment variable.
@@ -297,42 +278,7 @@ def main(
     client_secret = os.environ.get("CLOUD_STAGING_CLIENT_SECRET")
     client_token = os.environ.get("CLOUD_STAGING_CLIENT_TOKEN")
 
-    # Get organization and workspace from environment variables if not provided
-    organization_id = organization_id or os.environ.get(
-        "CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID"
-    )
-    workspace_name_or_id = workspace_name_or_id or os.environ.get(
-        "WORKSPACE_NAME_OR_ID"
-    )
-
-    # Get configuration from environment variables if not provided
-    zenml_version = zenml_version or os.environ.get("ZENML_VERSION")
-    helm_chart_version = helm_chart_version or os.environ.get(
-        "HELM_CHART_VERSION"
-    )
-    docker_image = docker_image or os.environ.get("DOCKER_IMAGE")
-
-    # Check for missing required values
-    missing_values = []
-    if workspace_name_or_id is None:
-        missing_values.append("Workspace name or ID")
-    if organization_id is None:
-        missing_values.append("Organization ID")
-    if zenml_version is None:
-        missing_values.append("ZenML version")
-    if docker_image is None:
-        missing_values.append("Docker image")
-    if helm_chart_version is None:
-        missing_values.append("Helm chart version")
-
-    if missing_values:
-        raise ValueError(
-            f"The following required values are missing: {', '.join(missing_values)}"
-        )
-
-    image_repository, image_tag = _disect_docker_image_parts(docker_image)
-
-    # Either client_id and client_secret or client_token must be provided
+    # Fetch token
     if client_token:
         if client_id or client_secret:
             raise ValueError(
@@ -341,18 +287,35 @@ def main(
 
         token = client_token
     else:
-        missing_credentials = []
-        if client_id is None:
-            missing_credentials.append("Client ID")
-        if client_secret is None:
-            missing_credentials.append("Client secret")
-
-        if missing_credentials:
-            raise ValueError(
-                f"The following credentials are missing: {', '.join(missing_credentials)}"
-            )
+        assert client_id is not None, "Client ID must be provided"
+        assert client_secret is not None, "Client secret must be provided"
 
         token = get_token(client_id, client_secret)
+    
+    # Get organization and workspace from environment variables if not provided
+    organization_id = organization_id or os.environ.get(
+        "CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID"
+    )
+    workspace_name_or_id = workspace_name_or_id or os.environ.get(
+        "WORKSPACE_NAME_OR_ID"
+    )
+
+    # Check for missing required values
+    assert workspace_name_or_id is not None, "Workspace name or ID must be provided"
+    assert organization_id is not None, "Organization ID must be provided"
+
+    # Get configuration from environment variables if not provided
+    zenml_version = zenml_version or os.environ.get("ZENML_VERSION")
+    helm_version = helm_version or os.environ.get("HELM_CHART_VERSION")
+    docker_image = docker_image or os.environ.get("DOCKER_IMAGE")
+
+    assert zenml_version is not None, "ZenML version must be provided"
+
+    configuration = _build_configuration(
+        zenml_version=zenml_version,
+        docker_image=docker_image,
+        helm_chart_version=helm_version,
+    )
 
     # Get or create workspace
     exists = True
@@ -363,21 +326,15 @@ def main(
             token=token,
             workspace_name=workspace_name_or_id,
             organization_id=organization_id,
-            zenml_version=zenml_version,
-            image_repository=image_repository,
-            image_tag=image_tag,
-            helm_chart_version=helm_chart_version,
+            configuration=configuration,
         )
         exists = False
 
     if exists:
         update_workspace(
-            token,
-            workspace["id"],
-            zenml_version,
-            image_repository,
-            image_tag,
-            helm_chart_version,
+            token=token,
+            workspace_name_or_id=workspace_name_or_id,
+            configuration=configuration,
         )
     # Check the status using a deadline-based approach
     deadline = time.time() + timeout
@@ -405,7 +362,7 @@ if __name__ == "__main__":
     parser.add_argument("--workspace", help="Workspace name or ID")
     parser.add_argument("--organization", help="Organization ID")
     parser.add_argument("--zenml-version", help="ZenML version")
-    parser.add_argument("--helm-chart-version", help="Helm chart version")
+    parser.add_argument("--helm-version", help="Helm chart version")
     parser.add_argument("--docker-image", help="Docker image")
 
     args = parser.parse_args()
@@ -414,6 +371,6 @@ if __name__ == "__main__":
         workspace_name_or_id=args.workspace,
         organization_id=args.organization,
         zenml_version=args.zenml_version,
-        helm_chart_version=args.helm_chart_version,
+        helm_version=args.helm_version,
         docker_image=args.docker_image,
     )
