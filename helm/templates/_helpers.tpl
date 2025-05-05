@@ -41,21 +41,17 @@ app.kubernetes.io/version: {{ .Chart.Version | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
-{{- define "zenml.metadataLabels" -}}
-helm.sh/chart: {{ include "zenml.chart" . }}
-{{ include "zenml.metadataSelectorLabels" . }}
-{{- if .Chart.Version }}
-app.kubernetes.io/version: {{ .Chart.Version | quote }}
-{{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end }}
 
 {{/*
 Selector labels
 */}}
 {{- define "zenml.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "zenml.name" . }}
+{{- if .Values.zenml.instanceLabel }}
+app.kubernetes.io/instance: {{ .Values.zenml.instanceLabel | quote }}
+{{- else }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
 {{- end }}
 
 {{/*
