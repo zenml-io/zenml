@@ -19,4 +19,4 @@ from pydantic import BaseModel, ConfigDict
 class StrictBaseModel(BaseModel):
     """Immutable pydantic model which prevents extra attributes."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="ignore")

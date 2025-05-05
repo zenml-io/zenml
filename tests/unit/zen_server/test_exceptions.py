@@ -23,7 +23,6 @@ from pydantic import ValidationError as PydanticValidationError
 from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
-    DuplicateRunNameError,
     EntityExistsError,
     IllegalOperationError,
     ValidationError,
@@ -58,7 +57,6 @@ def get_exception(exception_type: Type[Exception]) -> Exception:
         EntityExistsError,
         EntityExistsError,
         EntityExistsError,
-        DuplicateRunNameError,
         EntityExistsError,
         IllegalOperationError,
         AuthorizationException,
@@ -105,7 +103,6 @@ def test_http_exception_reconstruction(exception_type: Type[Exception]):
         EntityExistsError,
         EntityExistsError,
         EntityExistsError,
-        DuplicateRunNameError,
         EntityExistsError,
         IllegalOperationError,
         AuthorizationException,

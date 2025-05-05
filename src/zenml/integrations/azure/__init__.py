@@ -53,6 +53,9 @@ class AzureIntegration(Integration):
         # an attribute that was removed in Numpy 2.0. However, AzureML itself
         # does not have a limitation on numpy.
         "numpy<2.0",
+        # Marshmallow>4.0 leads to the following error with the AzureML SDK:
+        # ImportError: cannot import name 'FieldInstanceResolutionError' from 'marshmallow.utils'
+        "marshmallow<4.0.0",
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes", "numpy"]
 
