@@ -164,7 +164,7 @@ jobs:
           CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
           CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID: ${{ secrets.CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID }}
           WORKSPACE_NAME_OR_ID: ${{ needs.set-branch-info.outputs.branch_name }}
-          DOCKER_IMAGE: zenml/zenml-server-dev:${{ needs.set-branch-info.outputs.branch_name }}
+          DOCKER_IMAGE: zenmldocker/zenml-server-dev:${{ needs.set-branch-info.outputs.branch_name }}
           ZENML_VERSION: ${{ env.ZENML_VERSION }}
         run: python scripts/manage_workspace.py
       - name: Set tenant URL
