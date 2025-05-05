@@ -37,16 +37,11 @@ from zenml.config.step_configurations import (
     StepConfigurationUpdate,
     StepSpec,
 )
-from zenml.constants import (
-    ENV_ZENML_ACTIVE_PROJECT_ID,
-    ENV_ZENML_ACTIVE_STACK_ID,
-    ENV_ZENML_STORE_PREFIX,
-)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineDeploymentBase
 from zenml.pipelines.run_utils import get_default_run_name
-from zenml.utils import pydantic_utils, settings_utils
+from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
@@ -115,7 +110,9 @@ class Compiler:
         pipeline_environment = finalize_environment_variables(
             pipeline.configuration.environment
         )
-        pipeline_secrets = pipeline.configuration.secrets.copy()
+        pipeline_secrets = secret_utils.resolve_and_verify_secrets(
+            pipeline.configuration.secrets
+        )
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
             configuration_level=ConfigurationLevel.PIPELINE,
@@ -509,10 +506,10 @@ class Compiler:
             step.configuration.settings, stack=stack
         )
         step_spec = self._get_step_spec(invocation=invocation)
-        step_environment = finalize_environment_variables(
-            step.configuration.environment
+        step_environment = step.configuration.environment
+        step_secrets = secret_utils.resolve_and_verify_secrets(
+            step.configuration.secrets
         )
-        step_secrets = step.configuration.secrets
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
@@ -722,17 +719,4 @@ def finalize_environment_variables(
             else:
                 environment[key_without_prefix] = value
 
-    finalized_env = {}
-
-    for key, value in environment.items():
-        if key.upper().startswith(ENV_ZENML_STORE_PREFIX) or key.upper() in [
-            ENV_ZENML_ACTIVE_PROJECT_ID,
-            ENV_ZENML_ACTIVE_STACK_ID,
-        ]:
-            logger.warning(
-                "Not allowed to set `%s` config environment variable.", key
-            )
-            continue
-        finalized_env[key] = str(value)
-
-    return finalized_env
+    return environment

@@ -203,10 +203,10 @@ def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
                     os.environ[key] = previous_value
 
 
-def gather_step_environment(
+def get_step_environment(
     step_config: "StepConfiguration", stack: "Stack"
 ) -> Dict[str, str]:
-    """Gather the environment variables for a step.
+    """Get the environment variables for a step.
 
     Args:
         step_config: The step configuration.
@@ -216,28 +216,46 @@ def gather_step_environment(
         A dictionary of environment variables.
     """
     environment = {}
-    secrets = []
     for component in stack.components.values():
         environment.update(component.environment)
-        secrets.extend(component.secrets)
 
     environment.update(stack.environment)
+    environment.update(step_config.environment)
+
+    return environment
+
+
+def get_step_secret_environment(
+    step_config: "StepConfiguration", stack: "Stack"
+) -> Dict[str, str]:
+    """Get the environment variables for a step.
+
+    Args:
+        step_config: The step configuration.
+        stack: The stack on which the step will run.
+
+    Returns:
+        A dictionary of environment variables.
+    """
+    secrets = step_config.secrets
     secrets.extend(stack.secrets)
 
-    environment.update(step_config.environment)
-    secrets.extend(step_config.secrets)
+    for component in stack.components.values():
+        secrets.extend(component.secrets)
 
-    # Remove duplicates while preserving order, only the last occurrence of
-    # each secret will be used to handle overrides
-    secrets = list(reversed(dict.fromkeys(reversed(secrets))))
+    # Removes duplicates while preserving order, only the first occurrence of
+    # each secret will be kept. We then reverse the list to make sure the
+    # overrides are applied in the correct order.
+    secrets = list(reversed(dict.fromkeys(secrets)))
 
+    environment = {}
     for secret_name_or_id in secrets:
         try:
             secret = Client().get_secret(secret_name_or_id)
         except Exception as e:
             logger.warning(
                 "Failed to get secret `%s` with error: %s. Skipping setting "
-                "environment variable for this secret.",
+                "environment variables for this secret.",
                 secret_name_or_id,
                 e,
             )
@@ -247,7 +265,7 @@ def gather_step_environment(
             logger.warning(
                 "Did not find any secret values for secret `%s`. This might be "
                 "because you do not have permissions to read the secret "
-                "values. Skipping setting environment variable for this "
+                "values. Skipping setting environment variables for this "
                 "secret.",
                 secret_name_or_id,
             )

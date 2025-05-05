@@ -45,7 +45,12 @@ from zenml.pipelines.run_utils import (
     validate_stack_is_runnable_from_server,
 )
 from zenml.stack.flavor import Flavor
-from zenml.utils import dict_utils, requirements_utils, settings_utils
+from zenml.utils import (
+    dict_utils,
+    requirements_utils,
+    secret_utils,
+    settings_utils,
+)
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
@@ -369,11 +374,18 @@ def deployment_request_from_template(
     """
     deployment = template.source_deployment
     assert deployment
+    pipeline_update_dict = config.model_dump(
+        include=set(PipelineConfiguration.model_fields),
+        exclude={"name", "parameters"},
+    )
+    if pipeline_secrets := pipeline_update_dict.get("secrets", []):
+        pipeline_update_dict["secrets"] = (
+            secret_utils.resolve_and_verify_secrets(
+                pipeline_secrets, zen_store=zen_store()
+            )
+        )
     pipeline_configuration = PipelineConfiguration(
-        **config.model_dump(
-            include=set(PipelineConfiguration.model_fields),
-            exclude={"name", "parameters"},
-        ),
+        **pipeline_update_dict,
         name=deployment.pipeline_configuration.name,
         parameters=deployment.pipeline_configuration.parameters,
     )
@@ -408,6 +420,14 @@ def deployment_request_from_template(
             # Get rid of deprecated name to prevent overriding the step name
             # with `None`.
             update_dict.pop("name", None)
+
+            if step_secrets := update_dict.get("secrets", []):
+                update_dict["secrets"] = (
+                    secret_utils.resolve_and_verify_secrets(
+                        step_secrets, zen_store=zen_store()
+                    )
+                )
+
             configured_parameters = set(update.parameters)
             step_config_dict = dict_utils.recursive_update(
                 step_config_dict, update=update_dict

@@ -15,6 +15,7 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from uuid import UUID
 
 from pydantic import SerializeAsAny, field_validator
 
@@ -42,7 +43,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     environment: Dict[str, Any] = {}
-    secrets: List[str] = []
+    secrets: List[Union[str, UUID]] = []
     enable_pipeline_logs: Optional[bool] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None

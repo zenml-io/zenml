@@ -6228,6 +6228,27 @@ class SqlZenStore(BaseZenStore):
 
         return secret_model
 
+    def get_secret_by_name(self, secret_name: str) -> SecretResponse:
+        """Get a secret by name.
+
+        Args:
+            secret_name: The name of the secret to fetch.
+
+        Returns:
+            The secret.
+        """
+        with Session(self.engine) as session:
+            secret_in_db = self._get_schema_by_name_or_id(
+                secret_name, schema_class=SecretSchema, session=session
+            )
+            secret_model = secret_in_db.to_model(
+                include_metadata=True, include_resources=True
+            )
+        secret_model.set_secrets(
+            self._get_secret_values(secret_id=secret_in_db.id)
+        )
+        return secret_model
+
     def list_secrets(
         self, secret_filter_model: SecretFilter, hydrate: bool = False
     ) -> Page[SecretResponse]:

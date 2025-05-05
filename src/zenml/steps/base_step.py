@@ -60,7 +60,6 @@ from zenml.utils import (
     materializer_utils,
     notebook_utils,
     pydantic_utils,
-    secret_utils,
     settings_utils,
     source_code_utils,
     source_utils,
@@ -715,9 +714,6 @@ class BaseStep:
 
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + secrets
-
-        if secrets:
-            secrets = secret_utils.convert_to_secret_ids(secrets)
 
         values = dict_utils.remove_none_values(
             {
