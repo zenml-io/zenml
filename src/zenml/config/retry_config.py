@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Retry configuration for a step."""
 
-from zenml.config.strict_base_model import StrictBaseModel
+from zenml.config.strict_base_model import FrozenBaseModel
 
 
-class StepRetryConfig(StrictBaseModel):
+class StepRetryConfig(FrozenBaseModel):
     """Retry configuration for a step.
 
     Delay is an integer (specified in seconds).

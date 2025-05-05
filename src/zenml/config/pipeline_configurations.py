@@ -22,7 +22,7 @@ from pydantic import SerializeAsAny, field_validator
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
-from zenml.config.strict_base_model import StrictBaseModel
+from zenml.config.strict_base_model import FrozenBaseModel
 from zenml.model.model import Model
 from zenml.utils.tag_utils import Tag
 from zenml.utils.time_utils import utc_now
@@ -35,7 +35,7 @@ from zenml.config.base_settings import BaseSettings, SettingsOrDict
 DISALLOWED_PIPELINE_NAMES = ["unlisted"]
 
 
-class PipelineConfigurationUpdate(StrictBaseModel):
+class PipelineConfigurationUpdate(FrozenBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None

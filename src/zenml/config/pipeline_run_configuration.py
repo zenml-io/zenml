@@ -23,7 +23,7 @@ from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.source import SourceWithValidator
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.config.strict_base_model import StrictBaseModel
+from zenml.config.strict_base_model import FrozenBaseModel
 from zenml.model.model import Model
 from zenml.models import PipelineBuildBase
 from zenml.utils import pydantic_utils
@@ -31,7 +31,7 @@ from zenml.utils.tag_utils import Tag
 
 
 class PipelineRunConfiguration(
-    StrictBaseModel, pydantic_utils.YAMLSerializationMixin
+    FrozenBaseModel, pydantic_utils.YAMLSerializationMixin
 ):
     """Class for pipeline run configurations."""
 
