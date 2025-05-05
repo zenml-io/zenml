@@ -74,7 +74,8 @@ To use the SkyPilot VM Orchestrator, you need:
 We need first to install the SkyPilot integration for AWS and the AWS connectors extra, using the following command:
 
 ```shell
-  pip install "zenml[connectors-aws]" "skypilot[lambda]~=0.9.2" "aws-profile-manager" "boto3"
+  # Installs dependencies for Skypilot AWS, AWS Container Registry, and S3 Artifact Store
+  pip install "zenml[connectors-aws]" "skypilot[lambda]~=0.9.2" "aws-profile-manager" boto3 argparse fsspec
 ```
 
 {% hint style="warning" %}
