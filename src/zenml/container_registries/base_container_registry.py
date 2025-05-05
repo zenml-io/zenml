@@ -160,6 +160,25 @@ class BaseContainerRegistry(AuthenticationMixin):
 
         return self._docker_client
 
+    def is_valid_image_name_for_registry(self, image_name: str) -> bool:
+        """Check if the image name is valid for the container registry.
+
+        Args:
+            image_name: The name of the image.
+
+        Returns:
+            `True` if the image name is valid for the container registry,
+            `False` otherwise.
+        """
+        # Remove prefixes to make sure this logic also works for DockerHub
+        image_name = image_name.removeprefix("index.docker.io/")
+        image_name = image_name.removeprefix("docker.io/")
+
+        registry_uri = self.config.uri.removeprefix("index.docker.io/")
+        registry_uri = registry_uri.removeprefix("docker.io/")
+
+        return image_name.startswith(registry_uri)
+
     def prepare_image_push(self, image_name: str) -> None:
         """Preparation before an image gets pushed.
 
@@ -183,7 +202,7 @@ class BaseContainerRegistry(AuthenticationMixin):
             ValueError: If the image name is not associated with this
                 container registry.
         """
-        if not image_name.startswith(self.config.uri):
+        if not self.is_valid_image_name_for_registry(image_name):
             raise ValueError(
                 f"Docker image `{image_name}` does not belong to container "
                 f"registry `{self.config.uri}`."
@@ -203,8 +222,9 @@ class BaseContainerRegistry(AuthenticationMixin):
         Returns:
             The repository digest of the image.
         """
-        if not image_name.startswith(self.config.uri):
+        if not self.is_valid_image_name_for_registry(image_name):
             return None
+
         try:
             metadata = self.docker_client.images.get_registry_data(image_name)
         except Exception:
