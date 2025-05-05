@@ -64,6 +64,8 @@ RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
 class BoundedThreadPoolExecutor:
+    """Thread pool executor with a queue size limit."""
+
     def __init__(
         self, max_queue_size: int, max_workers: int, **kwargs: Any
     ) -> None:
