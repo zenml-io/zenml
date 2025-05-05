@@ -151,11 +151,6 @@ class ComponentUpdate(BaseUpdate):
         default=None,
         title="Environment variables to set when running on this component.",
     )
-    secrets: Optional[List[UUID]] = Field(
-        default=None,
-        title="Secrets to set as environment variables when running on this "
-        "component.",
-    )
     connector_resource_id: Optional[str] = Field(
         description="The ID of a specific resource instance to "
         "gain access to through the connector",

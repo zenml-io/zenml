@@ -171,11 +171,6 @@ class StackUpdate(BaseUpdate):
         default=None,
         title="Environment variables to set when running on this stack.",
     )
-    secrets: Optional[List[UUID]] = Field(
-        default=None,
-        title="Secrets to set as environment variables when running on this "
-        "stack.",
-    )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack labels.",
