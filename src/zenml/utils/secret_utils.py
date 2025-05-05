@@ -218,13 +218,15 @@ def resolve_and_verify_secrets(
                 resolved_secrets.append(secret.id)
             else:
                 filter_model = SecretFilter(name=secret_name_or_id)
-                secrets = zen_store.list_secrets(filter_model=filter_model)
-                if not secrets:
+                secret_page = zen_store.list_secrets(
+                    secret_filter_model=filter_model
+                )
+                if not secret_page.items:
                     raise KeyError(
                         f"Secret with name {secret_name_or_id} not found."
                     )
 
-                resolved_secrets.append(secrets[0].id)
+                resolved_secrets.append(secret_page.items[0].id)
 
         return resolved_secrets
     else:

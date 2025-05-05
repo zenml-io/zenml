@@ -795,6 +795,7 @@ class Stack:
                 user=Client().active_user.id,
                 created=now,
                 updated=now,
+                secrets=[],
             )
 
             self._image_builder = image_builder

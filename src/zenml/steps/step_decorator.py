@@ -27,6 +27,7 @@ from typing import (
     Union,
     overload,
 )
+from uuid import UUID
 
 from zenml.logger import get_logger
 
@@ -69,7 +70,7 @@ def step(
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     environment: Optional[Dict[str, Any]] = None,
-    secrets: Optional[List[str]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -92,7 +93,7 @@ def step(
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     environment: Optional[Dict[str, Any]] = None,
-    secrets: Optional[List[str]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,

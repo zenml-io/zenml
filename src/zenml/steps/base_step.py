@@ -609,7 +609,7 @@ class BaseStep:
             "OutputMaterializersSpecification"
         ] = None,
         environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[Union[str, UUID]]] = None,
+        secrets: Optional[Sequence[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -713,7 +713,7 @@ class BaseStep:
             success_hook_source = resolve_and_validate_hook(on_success)
 
         if merge and secrets and self._configuration.secrets:
-            secrets = self._configuration.secrets + secrets
+            secrets = self._configuration.secrets + list(secrets)
 
         values = dict_utils.remove_none_values(
             {

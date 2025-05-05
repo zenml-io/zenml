@@ -28,6 +28,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Set,
     Tuple,
     TypeVar,
@@ -136,7 +137,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[str]] = None,
+        secrets: Optional[List[Union[UUID, str]]] = None,
         enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -310,7 +311,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[str]] = None,
+        secrets: Optional[Sequence[Union[UUID, str]]] = None,
         enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -384,7 +385,7 @@ class Pipeline:
             tags = self._configuration.tags + tags
 
         if merge and secrets and self._configuration.secrets:
-            secrets = self._configuration.secrets + secrets
+            secrets = self._configuration.secrets + list(secrets)
 
         values = dict_utils.remove_none_values(
             {

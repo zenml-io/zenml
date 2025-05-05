@@ -28,6 +28,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -1183,7 +1184,7 @@ class Client(metaclass=ClientMetaClass):
         components: Mapping[StackComponentType, Union[str, UUID]],
         stack_spec_file: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[Union[UUID, str]]] = None,
+        secrets: Optional[Sequence[Union[UUID, str]]] = None,
     ) -> StackResponse:
         """Registers a stack and its components.
 
@@ -1318,8 +1319,8 @@ class Client(metaclass=ClientMetaClass):
         component_updates: Optional[
             Dict[StackComponentType, List[Union[UUID, str]]]
         ] = None,
-        add_secrets: Optional[List[Union[UUID, str]]] = None,
-        remove_secrets: Optional[List[Union[UUID, str]]] = None,
+        add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
+        remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
     ) -> StackResponse:
         """Updates a stack and its components.
 
@@ -2009,7 +2010,7 @@ class Client(metaclass=ClientMetaClass):
         component_type: StackComponentType,
         configuration: Dict[str, str],
         labels: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[Union[UUID, str]]] = None,
+        secrets: Optional[Sequence[Union[UUID, str]]] = None,
     ) -> "ComponentResponse":
         """Registers a stack component.
 
@@ -2066,8 +2067,8 @@ class Client(metaclass=ClientMetaClass):
         disconnect: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
-        add_secrets: Optional[List[Union[UUID, str]]] = None,
-        remove_secrets: Optional[List[Union[UUID, str]]] = None,
+        add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
+        remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
     ) -> ComponentResponse:
         """Updates a stack component.
 

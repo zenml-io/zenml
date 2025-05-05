@@ -24,6 +24,7 @@ from typing import (
     Union,
     overload,
 )
+from uuid import UUID
 
 from zenml.logger import get_logger
 
@@ -51,7 +52,7 @@ def pipeline(
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
-    secrets: Optional[List[str]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
     enable_pipeline_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -71,7 +72,7 @@ def pipeline(
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
-    secrets: Optional[List[str]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
     enable_pipeline_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     tags: Optional[List[Union[str, "Tag"]]] = None,

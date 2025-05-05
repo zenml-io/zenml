@@ -97,6 +97,7 @@ __all__ = [
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
+    "SecretResourceSchema",
     "ServerSettingsSchema",
     "ServiceConnectorSchema",
     "ServiceSchema",

@@ -17,6 +17,7 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from pydantic import BaseModel
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
@@ -85,7 +86,7 @@ def create_stack_component(
     Returns:
         The created stack component.
     """
-    rbac_read_checks = []
+    rbac_read_checks: List[BaseModel] = []
     if component.connector:
         service_connector = zen_store().get_service_connector(
             component.connector
@@ -216,16 +217,16 @@ def update_stack_component(
             validate_custom_flavors=False,
         )
 
-    rbac_read_checks = []
+    rbac_read_checks: List[BaseModel] = []
     if component_update.connector:
         service_connector = zen_store().get_service_connector(
             component_update.connector
         )
         rbac_read_checks.append(service_connector)
 
-    if component_update.secrets:
+    if component_update.add_secrets:
         rbac_read_checks.extend(
-            [zen_store().get_secret(id) for id in component_update.secrets]
+            [zen_store().get_secret(id) for id in component_update.add_secrets]
         )
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)

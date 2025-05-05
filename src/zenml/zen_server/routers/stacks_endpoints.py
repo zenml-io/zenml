@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for stacks."""
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from pydantic import BaseModel
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.models import (
@@ -82,7 +83,7 @@ def create_stack(
     Returns:
         The created stack.
     """
-    rbac_read_checks = []
+    rbac_read_checks: List[BaseModel] = []
 
     # Check the service connector creation
     is_connector_create_needed = False
@@ -212,7 +213,7 @@ def update_stack(
     Returns:
         The updated stack.
     """
-    rbac_read_checks = []
+    rbac_read_checks: List[BaseModel] = []
     if stack_update.components:
         rbac_read_checks.extend(
             [

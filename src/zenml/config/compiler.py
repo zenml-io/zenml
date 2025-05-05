@@ -23,8 +23,11 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
+    Union,
 )
+from uuid import UUID
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
@@ -466,7 +469,7 @@ class Compiler:
         self,
         invocation: "StepInvocation",
         pipeline_environment: Optional[Dict[str, Any]],
-        pipeline_secrets: List[str],
+        pipeline_secrets: Sequence[Union[UUID, str]],
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
