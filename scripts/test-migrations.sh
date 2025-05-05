@@ -231,7 +231,7 @@ function test_upgrade_to_version() {
     source ".venv-upgrade/bin/activate"
 
     # Install the specific version
-    uv pip install -U setuptools wheel pip
+    uv pip install -U wheel pip
 
     if [ "$VERSION" == "current" ]; then
         uv pip install -e ".[templates,server]"
