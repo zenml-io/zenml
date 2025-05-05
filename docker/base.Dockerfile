@@ -56,8 +56,9 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
     else \
       PACKAGE_NAME="zenml"; \
     fi \
-    && pip install --upgrade pip \
-    && pip install ${PACKAGE_NAME}${ZENML_VERSION:+==$ZENML_VERSION} \
+    && pip install --upgrade pip setuptools \
+    && pip install --upgrade uv \
+    && uv pip install ${PACKAGE_NAME}${ZENML_VERSION:+==$ZENML_VERSION} \
     && pip freeze > requirements.txt
 
 FROM builder as server-builder
@@ -76,7 +77,8 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
       PACKAGE_NAME="zenml"; \
     fi \
     && pip install --upgrade pip \
-    && pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" \
+    && pip install --upgrade uv \
+    && uv pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" \
     && pip freeze > requirements.txt
 
 FROM base as client

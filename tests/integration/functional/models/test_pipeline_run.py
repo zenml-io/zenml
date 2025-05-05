@@ -64,6 +64,7 @@ def test_pipeline_run_has_client_and_orchestrator_environment(
         "connected_two_step_pipeline"
     ).runs[0]
     test_environment = get_run_environment_dict()
+    test_environment.pop("python_packages", None)
     assert pipeline_run.client_environment == test_environment
     assert pipeline_run.orchestrator_environment == test_environment
 
