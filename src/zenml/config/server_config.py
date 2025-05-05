@@ -39,6 +39,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
+    DEFAULT_ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
@@ -293,7 +294,9 @@ class ServerConfiguration(BaseModel):
     feature_gate_implementation_source: Optional[str] = None
     reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
-    max_concurrent_template_runs: int
+    max_concurrent_template_runs: int = (
+        DEFAULT_ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS
+    )
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
     )
@@ -440,14 +443,6 @@ class ServerConfiguration(BaseModel):
                     f"{key} {value}" for key, value in merged_csp_dict.items()
                 )
                 data["secure_headers_csp"] = merged_csp_str
-
-        if data.get("max_concurrent_template_runs", None) is None:
-            # Block a maximum of 1/4 of the thread pool size for concurrent
-            # template runs
-            thread_pool_size = data.get(
-                "thread_pool_size", DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
-            )
-            data["max_concurrent_template_runs"] = int(thread_pool_size) // 4
 
         return data
 

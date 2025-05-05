@@ -3,8 +3,9 @@
 import copy
 import hashlib
 import sys
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional
+import threading
+from concurrent.futures import Future, ThreadPoolExecutor
+from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
 from packaging import version
@@ -50,15 +51,64 @@ from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
-from zenml.zen_server.utils import server_config, workload_manager, zen_store
+from zenml.zen_server.utils import (
+    run_template_executor,
+    server_config,
+    workload_manager,
+    zen_store,
+)
 
 logger = get_logger(__name__)
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
-run_template_executor = ThreadPoolExecutor(
-    max_workers=server_config().max_concurrent_template_runs
-)
+
+class BoundedThreadPoolExecutor:
+    def __init__(
+        self, max_queue_size: int, max_workers: int, **kwargs: Any
+    ) -> None:
+        """Initialize the executor.
+
+        Args:
+            max_queue_size: The maximum number of tasks in the queue.
+            max_workers: The maximum number of workers.
+        """
+        self._executor = ThreadPoolExecutor(max_workers=max_workers, **kwargs)
+        self._semaphore = threading.BoundedSemaphore(
+            value=max_queue_size + max_workers
+        )
+
+    def submit(
+        self, fn: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Future[Any]:
+        """Submit a task to the executor.
+
+        Args:
+            fn: The function to execute.
+            *args: The arguments to pass to the function.
+            **kwargs: The keyword arguments to pass to the function.
+
+        Returns:
+            The future of the task.
+        """
+        self._semaphore.acquire()
+        try:
+            future = self._executor.submit(fn, *args, **kwargs)
+        except Exception:
+            self._semaphore.release()
+            raise
+        else:
+            future.add_done_callback(lambda _: self._semaphore.release())
+            return future
+
+    def shutdown(self, **kwargs: Any) -> None:
+        """Shutdown the executor.
+
+        Args:
+            **kwargs: Keyword arguments to pass to the shutdown method of the
+                executor.
+        """
+        self._executor.shutdown(**kwargs)
 
 
 def run_template(
@@ -248,7 +298,7 @@ def run_template(
     if sync:
         _task_with_analytics_and_error_handling()
     else:
-        run_template_executor.submit(_task_with_analytics_and_error_handling)
+        run_template_executor().submit(_task_with_analytics_and_error_handling)
 
     return placeholder_run
 

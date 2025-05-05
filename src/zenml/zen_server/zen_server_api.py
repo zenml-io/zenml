@@ -102,6 +102,7 @@ from zenml.zen_server.utils import (
     initialize_memcache,
     initialize_plugins,
     initialize_rbac,
+    initialize_run_template_executor,
     initialize_workload_manager,
     initialize_zen_store,
     is_user_request,
@@ -390,6 +391,7 @@ def initialize() -> None:
     initialize_rbac()
     initialize_feature_gate()
     initialize_workload_manager()
+    initialize_run_template_executor()
     initialize_plugins()
     initialize_secure_headers()
     initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
