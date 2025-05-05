@@ -309,8 +309,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             env=environment,
         )
 
+        environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
+            ExecutionVariables.PIPELINE_EXECUTION_ARN
+        )
+
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
+            step_environment = environment.copy()
             image = self.get_image(deployment=deployment, step_name=step_name)
             command = SagemakerEntrypointConfiguration.get_entrypoint_command()
             arguments = (
@@ -324,12 +329,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
 
-            environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
-                ExecutionVariables.PIPELINE_EXECUTION_ARN
-            )
-
             if step_settings.environment:
-                step_environment = step_settings.environment.copy()
+                user_defined_environment = step_settings.environment.copy()
                 # Sagemaker does not allow environment variables longer than 256
                 # characters to be passed to Processor steps. If an environment variable
                 # is longer than 256 characters, we split it into multiple environment
@@ -337,9 +338,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 # custom entrypoint configuration.
                 split_environment_variables(
                     size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
-                    env=step_environment,
+                    env=user_defined_environment,
                 )
-                environment.update(step_environment)
+                step_environment.update(user_defined_environment)
 
             use_training_step = (
                 step_settings.use_training_step
@@ -476,11 +477,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
 
             # Convert environment to a dict of strings
-            environment = {
+            step_environment = {
                 key: str(value)
                 if not isinstance(value, ExecutionVariable)
                 else value
-                for key, value in environment.items()
+                for key, value in step_environment.items()
             }
 
             if use_training_step:
@@ -488,7 +489,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 estimator = sagemaker.estimator.Estimator(
                     keep_alive_period_in_seconds=step_settings.keep_alive_period_in_seconds,
                     output_path=output_path,
-                    environment=environment,
+                    environment=step_environment,
                     container_entry_point=entrypoint,
                     **args_for_step_executor,
                 )
@@ -502,7 +503,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 # Create Processor and ProcessingStep
                 processor = sagemaker.processing.Processor(
                     entrypoint=entrypoint,
-                    env=environment,
+                    env=step_environment,
                     **args_for_step_executor,
                 )
 
