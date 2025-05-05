@@ -1,5 +1,5 @@
 ---
-icon: paw
+icon: code
 description: Setting your team up for success with a well-architected ZenML project.
 ---
 
@@ -115,19 +115,10 @@ While it doesn't matter how you structure your ZenML project, here is a recommen
 └── run.py
 ```
 
-All ZenML [Project
-templates](using-project-templates.md#generating-project-from-a-project-template)
-are modeled around this basic structure. The `steps` and `pipelines` folders
-contain the steps and pipelines defined in your project. If your project is
-simpler you can also just keep your steps at the top level of the `steps` folder
-without the need so structure them in subfolders.
+All ZenML [Project templates](using-project-templates.md#generating-project-from-a-project-template) are modeled around this basic structure. The `steps` and `pipelines` folders contain the steps and pipelines defined in your project. If your project is simpler you can also just keep your steps at the top level of the `steps` folder without the need so structure them in subfolders.
 
 {% hint style="info" %}
-It might also make sense to register your repository as a code repository. These
-enable ZenML to keep track of the code version that you use for your pipeline
-runs. Additionally, running a pipeline that is tracked in [a registered code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) can speed up the Docker image building for containerized stack
-components by eliminating the need to rebuild Docker images each time you change
-one of your source code files. Learn more about these in [connecting your Git repository](https://docs.zenml.io/concepts/code-repositories).
+It might also make sense to register your repository as a code repository. These enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in [a registered code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) can speed up the Docker image building for containerized stack components by eliminating the need to rebuild Docker images each time you change one of your source code files. Learn more about these in [connecting your Git repository](https://docs.zenml.io/concepts/code-repositories).
 {% endhint %}
 
 #### Steps
@@ -181,8 +172,7 @@ Collect all your notebooks in one place.
 
 By running `zenml init` at the root of your project, you define the project scope for ZenML. In ZenML terms, this will be called your "source root". This will be used to resolve import paths and store configurations.
 - When running Jupyter notebooks, it is required that you have a `.zen` directory initialized in one of the parent directories of your notebook.
-- When running regular Python scripts, it is still **highly** recommended that you have a `.zen` directory initialized in the root of your project. If that is not the case,
-ZenML will look for a `.zen` directory in the parent directories, which might cause issues if one is found (The import paths will not be relative to the source root anymore for example). If no `.zen` directory is found, the parent directory of the Python file that you're executing will be used as the implicit source root.
+- When running regular Python scripts, it is still **highly** recommended that you have a `.zen` directory initialized in the root of your project. If that is not the case, ZenML will look for a `.zen` directory in the parent directories, which might cause issues if one is found (The import paths will not be relative to the source root anymore for example). If no `.zen` directory is found, the parent directory of the Python file that you're executing will be used as the implicit source root.
 
 {% hint style="warning" %}
 All of your import paths should be relative to the source root.
