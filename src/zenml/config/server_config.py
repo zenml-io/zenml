@@ -29,6 +29,7 @@ from pydantic import (
 )
 
 from zenml.constants import (
+    DEFAULT_HTTP_TIMEOUT,
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
@@ -679,6 +680,7 @@ class ServerProConfiguration(BaseModel):
     organization_name: Optional[str] = None
     workspace_id: UUID
     workspace_name: Optional[str] = None
+    http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
     @field_validator("api_url", "dashboard_url")
     @classmethod
