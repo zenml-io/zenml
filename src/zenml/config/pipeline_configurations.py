@@ -20,9 +20,9 @@ from uuid import UUID
 from pydantic import SerializeAsAny, field_validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
+from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
-from zenml.config.strict_base_model import FrozenBaseModel
 from zenml.model.model import Model
 from zenml.utils.tag_utils import Tag
 from zenml.utils.time_utils import utc_now

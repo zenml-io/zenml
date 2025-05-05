@@ -6228,8 +6228,10 @@ class SqlZenStore(BaseZenStore):
 
         return secret_model
 
-    def get_secret_by_name(self, secret_name: str) -> SecretResponse:
-        """Get a secret by name.
+    def get_secret_by_name_or_id(
+        self, secret_name_or_id: Union[str, UUID]
+    ) -> SecretResponse:
+        """Get a secret by name or ID.
 
         Args:
             secret_name: The name of the secret to fetch.
@@ -6239,7 +6241,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             secret_in_db = self._get_schema_by_name_or_id(
-                secret_name, schema_class=SecretSchema, session=session
+                secret_name_or_id, schema_class=SecretSchema, session=session
             )
             secret_model = secret_in_db.to_model(
                 include_metadata=True, include_resources=True

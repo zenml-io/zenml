@@ -19,11 +19,11 @@ from uuid import UUID
 from pydantic import Field, SerializeAsAny
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.source import SourceWithValidator
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.config.strict_base_model import FrozenBaseModel
 from zenml.model.model import Model
 from zenml.models import PipelineBuildBase
 from zenml.utils import pydantic_utils

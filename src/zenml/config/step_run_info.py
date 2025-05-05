@@ -16,9 +16,9 @@
 from typing import Any, Callable
 from uuid import UUID
 
+from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
-from zenml.config.strict_base_model import FrozenBaseModel
 
 
 class StepRunInfo(FrozenBaseModel):

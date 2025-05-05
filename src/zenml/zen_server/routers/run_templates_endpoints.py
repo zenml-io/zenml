@@ -40,7 +40,10 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    verify_permission,
+)
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -242,6 +245,8 @@ if server_config().workload_manager_enabled:
         """
         from zenml.zen_server.template_execution.utils import run_template
 
+        rbac_read_checks = []
+
         with track_handler(
             event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
         ) as analytics_handler:
@@ -264,6 +269,28 @@ if server_config().workload_manager_enabled:
                 action=Action.CREATE,
                 project_id=template.project.id,
             )
+
+            if config:
+                rbac_read_checks.extend(
+                    [
+                        zen_store().get_secret_by_name_or_id(id)
+                        for id in config.secrets
+                    ]
+                )
+
+                for _, step in config.steps.items():
+                    if step.secrets:
+                        rbac_read_checks.extend(
+                            [
+                                zen_store().get_secret_by_name_or_id(id)
+                                for id in step.secrets
+                            ]
+                        )
+
+            if rbac_read_checks:
+                batch_verify_permissions_for_models(
+                    rbac_read_checks, action=Action.READ
+                )
 
             return run_template(
                 template=template,

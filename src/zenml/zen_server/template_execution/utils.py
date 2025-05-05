@@ -48,7 +48,6 @@ from zenml.stack.flavor import Flavor
 from zenml.utils import (
     dict_utils,
     requirements_utils,
-    secret_utils,
     settings_utils,
 )
 from zenml.zen_server.auth import AuthContext, generate_access_token
@@ -379,11 +378,10 @@ def deployment_request_from_template(
         exclude={"name", "parameters"},
     )
     if pipeline_secrets := pipeline_update_dict.get("secrets", []):
-        pipeline_update_dict["secrets"] = (
-            secret_utils.resolve_and_verify_secrets(
-                pipeline_secrets, zen_store=zen_store()
-            )
-        )
+        pipeline_update_dict["secrets"] = [
+            zen_store().get_secret_by_name_or_id(secret)
+            for secret in pipeline_secrets
+        ]
     pipeline_configuration = PipelineConfiguration(
         **pipeline_update_dict,
         name=deployment.pipeline_configuration.name,
@@ -422,11 +420,10 @@ def deployment_request_from_template(
             update_dict.pop("name", None)
 
             if step_secrets := update_dict.get("secrets", []):
-                update_dict["secrets"] = (
-                    secret_utils.resolve_and_verify_secrets(
-                        step_secrets, zen_store=zen_store()
-                    )
-                )
+                update_dict["secrets"] = [
+                    zen_store().get_secret_by_name_or_id(secret)
+                    for secret in step_secrets
+                ]
 
             configured_parameters = set(update.parameters)
             step_config_dict = dict_utils.recursive_update(

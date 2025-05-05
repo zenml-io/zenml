@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Retry configuration for a step."""
 
-from zenml.config.strict_base_model import FrozenBaseModel
+from zenml.config.frozen_base_model import FrozenBaseModel
 
 
 class StepRetryConfig(FrozenBaseModel):

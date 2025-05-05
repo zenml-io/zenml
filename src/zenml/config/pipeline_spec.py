@@ -16,9 +16,9 @@
 import json
 from typing import Any, Dict, List, Optional
 
+from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.source import Source, SourceWithValidator
 from zenml.config.step_configurations import StepSpec
-from zenml.config.strict_base_model import FrozenBaseModel
 from zenml.utils.json_utils import pydantic_encoder
 
 
