@@ -31,7 +31,7 @@ class SkypilotGCPIntegration(Integration):
     """Definition of Skypilot (GCP) Integration for ZenML."""
 
     NAME = SKYPILOT_GCP
-    REQUIREMENTS = ["skypilot[gcp]~=0.9.2", "omegaconf>=2.4.0.dev3"]
+    REQUIREMENTS = ["skypilot[gcp]~=0.9.2"]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod

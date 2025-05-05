@@ -1,9 +1,7 @@
 """Utility functions for Skypilot orchestrators."""
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
-
-import sky
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorSettings,
@@ -11,6 +9,9 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from sky.clouds.cloud import Cloud
 
 
 def sanitize_cluster_name(name: str) -> str:
@@ -138,7 +139,7 @@ def prepare_task_kwargs(
 
 
 def prepare_resources_kwargs(
-    cloud: sky.clouds.Cloud,
+    cloud: "Cloud",
     settings: SkypilotBaseOrchestratorSettings,
     default_instance_type: Optional[str] = None,
     kubernetes_image: Optional[str] = None,
@@ -166,7 +167,7 @@ def prepare_resources_kwargs(
         "region": settings.region,
         "zone": settings.zone,
         "image_id": kubernetes_image
-        if isinstance(cloud, sky.clouds.Kubernetes)
+        if kubernetes_image
         else settings.image_id,
         "disk_size": settings.disk_size,
         "disk_tier": settings.disk_tier,
