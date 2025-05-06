@@ -83,7 +83,7 @@ When local resources become insufficient, cloud virtual machines (VMs) or server
 
 ### Kubernetes
 
-Kubernetes provides a platform for automating deployment, scaling, and operations of application containers.
+Kubernetes provides a platform for automating the deployment, scaling, and operations of application containers.
 
 <table>
 <tr>
