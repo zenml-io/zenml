@@ -337,8 +337,9 @@ def validate_urls(
     results = {}
 
     # Count and report GitHub links that will be skipped in validation
-    github_urls = [url for url in urls if "github.com" in url]
-    other_urls = [url for url in urls if "github.com" not in url]
+    from urllib.parse import urlparse
+    github_urls = [url for url in urls if urlparse(url).hostname and urlparse(url).hostname.endswith("github.com")]
+    other_urls = [url for url in urls if urlparse(url).hostname and not urlparse(url).hostname.endswith("github.com")]
     
     print(f"Validating {len(urls)} links...")
     print(f"Note: {len(github_urls)} GitHub links will be automatically marked as valid (skipping validation)")
