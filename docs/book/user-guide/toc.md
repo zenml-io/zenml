@@ -70,6 +70,7 @@
 * [Using VS Code extension](best-practices/vscode-extension.md)
 * [Leveraging MCP](best-practices/mcp-chat-with-server.md)
 * [Debugging and Solving Issues](best-practices/debug-and-solve-issues.md)
+* [Choosing an Orchestrator](best-practices/access-management.md)
 
 ## Examples
 
