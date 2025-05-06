@@ -39,7 +39,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y bc
-          python -m pip install --upgrade setuptools wheel pip uv
+          python -m pip install --upgrade wheel pip uv
       - name: Get target branch name
         id: get-target-branch
         run: |

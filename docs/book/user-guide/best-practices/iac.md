@@ -1,4 +1,5 @@
 ---
+icon: cubes
 description: Best practices for using IaC with ZenML
 ---
 
