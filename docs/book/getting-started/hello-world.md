@@ -56,7 +56,7 @@ Run this pipeline locally with `python run.py`. ZenML automatically tracks the e
 
 Create a [ZenML Pro account](https://zenml.io/pro) with a 14-day free trial (no payment information required). It will provide you with a dashboard to visualize pipelines, manage infrastructure, and collaborate with team members.
 
-<figure><img src="../.gitbook/assets/dcp_walkthrough%20(1).gif" alt="ZenML Pro Dashboard"><figcaption><p>The ZenML Pro Dashboard</p></figcaption></figure>
+<figure><img src="../.gitbook/assets/dcp_walkthrough.gif" alt="ZenML Pro Dashboard"><figcaption><p>The ZenML Pro Dashboard</p></figcaption></figure>
 
 First-time users will need to set up a workspace and project. This process might take a few minutes. In the meanwhile, feel free to check out the [Core Concepts](core-concepts.md) page to get familiar with the main ideas ZenML is built on. Once ready, connect your local environment:
 
@@ -74,7 +74,7 @@ zenml project set <PROJECT_NAME>
 
 A "stack" in ZenML represents the infrastructure where your pipelines run. Moving from local to cloud resources is where ZenML truly shines.
 
-<figure><img src="../.gitbook/assets/Screenshot%202025-04-09%20at%2014.56.35.png" alt="ZenML Stack Deployment Options"><figcaption><p>Stack deployment options</p></figcaption></figure>
+<figure><img src="../.gitbook/assets/stack-deployment-options.png" alt="ZenML Stack Deployment Options"><figcaption><p>Stack deployment options</p></figcaption></figure>
 
 The fastest way to create a cloud stack is through the **Infrastructure-as-Code** option. This uses Terraform to deploy cloud resources and register them as a ZenML stack.
 
@@ -106,7 +106,7 @@ python run.py
 
 ZenML handles packaging code, building containers, orchestrating execution, and tracking artifacts automatically.
 
-<figure><img src="../.gitbook/assets/Screenshot%202025-04-09%20at%2015.02.42.png" alt="Pipeline Run in ZenML Dashboard"><figcaption><p>Your pipeline in the ZenML dashboard</p></figcaption></figure>
+<figure><img src="../.gitbook/assets/pipeline-run-on-the-dashboard.png" alt="Pipeline Run in ZenML Dashboard"><figcaption><p>Your pipeline in the ZenML dashboard</p></figcaption></figure>
 {% endstep %}
 
 {% step %}
