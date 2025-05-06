@@ -106,6 +106,7 @@ from zenml.zen_server.utils import (
     initialize_workload_manager,
     initialize_zen_store,
     is_user_request,
+    run_template_executor,
     server_config,
     zen_store,
 )
@@ -399,6 +400,12 @@ def initialize() -> None:
         # Send a workspace status update to the Cloud API to indicate that the
         # ZenML server is running or to update the version and server URL.
         send_pro_workspace_status_update()
+
+
+@app.on_event("shutdown")
+def shutdown() -> None:
+    """Shutdown the ZenML server."""
+    run_template_executor().shutdown(wait=True)
 
 
 DASHBOARD_REDIRECT_URL = None

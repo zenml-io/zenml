@@ -27,6 +27,7 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.exceptions import MaxConcurrentTasksError
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
@@ -64,22 +65,17 @@ RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
 class BoundedThreadPoolExecutor:
-    """Thread pool executor with a queue size limit."""
+    """Thread pool executor which only allows a maximum number of concurrent tasks."""
 
-    def __init__(
-        self, max_queue_size: int, max_workers: int, **kwargs: Any
-    ) -> None:
+    def __init__(self, max_workers: int, **kwargs: Any) -> None:
         """Initialize the executor.
 
         Args:
-            max_queue_size: The maximum number of tasks in the queue.
             max_workers: The maximum number of workers.
             **kwargs: Arguments to pass to the thread pool executor.
         """
         self._executor = ThreadPoolExecutor(max_workers=max_workers, **kwargs)
-        self._semaphore = threading.BoundedSemaphore(
-            value=max_queue_size + max_workers
-        )
+        self._semaphore = threading.BoundedSemaphore(value=max_workers)
 
     def submit(
         self, fn: Callable[..., Any], *args: Any, **kwargs: Any
@@ -93,11 +89,17 @@ class BoundedThreadPoolExecutor:
 
         Raises:
             Exception: If the task submission fails.
+            MaxConcurrentTasksError: If the maximum number of concurrent tasks
+                is reached.
 
         Returns:
             The future of the task.
         """
-        self._semaphore.acquire()
+        if not self._semaphore.acquire(blocking=False):
+            raise MaxConcurrentTasksError(
+                "Maximum number of concurrent tasks reached."
+            )
+
         try:
             future = self._executor.submit(fn, *args, **kwargs)
         except Exception:
@@ -304,7 +306,14 @@ def run_template(
     if sync:
         _task_with_analytics_and_error_handling()
     else:
-        run_template_executor().submit(_task_with_analytics_and_error_handling)
+        try:
+            run_template_executor().submit(
+                _task_with_analytics_and_error_handling
+            )
+        except MaxConcurrentTasksError:
+            raise MaxConcurrentTasksError(
+                "Maximum number of concurrent run template tasks reached."
+            ) from None
 
     return placeholder_run
 

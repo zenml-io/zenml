@@ -224,7 +224,6 @@ def initialize_run_template_executor() -> None:
     )
 
     _run_template_executor = BoundedThreadPoolExecutor(
-        max_queue_size=server_config().thread_pool_size,
         max_workers=server_config().max_concurrent_template_runs,
         thread_name_prefix="zenml-run-template-executor",
     )
