@@ -77,36 +77,44 @@ jobs:
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"
       # Create the migration test version if necessary
-      - name: Create docs update PR
+      - name: Create migration test version
         shell: bash
         run: |-
           git pull
           bash scripts/add-migration-test-version.sh ${{ github.event.inputs.latest_version }} ${{ github.event.inputs.new_version }}
-  order-gitbook-release-spaces:
+  add-legacy-docs-version:
     runs-on: ubuntu-latest
     steps:
+      # Configure Git
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
       # Check out develop
       - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
           ref: develop
-      # Setting up the Python
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      # Install requests
-      - name: Install dependencies
+      # Run script to add version to legacy docs
+      - name: Add version to legacy docs
         run: |
-          python -m pip install --upgrade pip
-          pip install requests
-      # Adjust the docs
-      - name: Adjust gitbook docs
-        env:
-          ZENML_NEW_VERSION: ${{ github.event.inputs.new_version }}
-          ZENML_OLD_VERSION: ${{ github.event.inputs.latest_version }}
-          GITBOOK_API_KEY: ${{secrets.GITBOOK_API_KEY}}
-          GITBOOK_ORGANIZATION: ${{secrets.GITBOOK_ORGANIZATION}}
-          GITBOOK_DOCS_COLLECTION: ${{secrets.GITBOOK_DOCS_COLLECTION}}
-          GITBOOK_LEGACY_COLLECTION: ${{secrets.GITBOOK_LEGACY_COLLECTION}}
-        run: python scripts/sync-gitbook-release-spaces.py
+          git checkout -b legacy_docs_update_${{ github.event.inputs.latest_version }}
+          python zenml/scripts/add_version_to_legacy_docs.py ${{ github.event.inputs.latest_version }}
+      # Commit and push changes
+      - name: Commit and push changes
+        run: |
+          git add docs/book/reference/legacy-docs.md
+          git commit -m "Add version ${{ github.event.inputs.latest_version }} to legacy docs"
+          git push --set-upstream origin legacy_docs_update_${{ github.event.inputs.latest_version }}
+      # Create PR
+      - name: Create PR
+        run: |
+          gh pr create --title "Add version ${{ github.event.inputs.latest_version }} to legacy docs" \
+                      --body "This PR adds version ${{ github.event.inputs.latest_version }} to the legacy documentation reference table." \
+                      --base develop \
+                      --head legacy_docs_update_${{ github.event.inputs.latest_version }}
