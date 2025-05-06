@@ -311,6 +311,7 @@ def run_template(
                 _task_with_analytics_and_error_handling
             )
         except MaxConcurrentTasksError:
+            zen_store().delete_run(run_id=placeholder_run.id)
             raise MaxConcurrentTasksError(
                 "Maximum number of concurrent run template tasks reached."
             ) from None
