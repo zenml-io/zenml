@@ -1,3 +1,8 @@
+---
+description: How to choose the right orchestration environment
+icon: server
+---
+
 # Choosing the right Orchestration Environment
 
 When embarking on a machine learning project, one of the most critical early decisions is where to run your pipelines. This choice impacts development speed, costs, and the eventual path to production. In this post, we'll explore the most common environments for running initial ML experiments, helping you make an informed decision based on your specific needs.
