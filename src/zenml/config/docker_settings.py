@@ -218,6 +218,7 @@ class DockerSettings(BaseSettings):
     )
     required_integrations: List[str] = []
     install_stack_requirements: bool = True
+    local_project_install_command: Optional[str] = None
     apt_packages: List[str] = []
     environment: Dict[str, Any] = {}
     user: Optional[str] = None
@@ -320,6 +321,30 @@ class DockerSettings(BaseSettings):
                 "contain a `parent_image`. This parent image will be used "
                 "to run the steps of your pipeline directly without additional "
                 "Docker builds on top of it."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def _validate_code_files_included_if_installing_local_project(
+        self,
+    ) -> "DockerSettings":
+        """Ensures that files are included when installing a local package.
+
+        Raises:
+            ValueError: If files are not included in the Docker image
+                when trying to install a local package.
+
+        Returns:
+            The validated settings values.
+        """
+        if (
+            self.local_project_install_command
+            and not self.allow_including_files_in_images
+        ):
+            raise ValueError(
+                "Files must be included in the Docker image when trying to "
+                "install a local python package."
             )
 
         return self

@@ -68,10 +68,9 @@ PIP_DEFAULT_ARGS = {
 }
 UV_DEFAULT_ARGS = {"no-cache-dir": None}
 
-# TODO: these don't actually install any extras. Should we include all extras? No extras? Exclude dev extras?
 DEFAULT_PYPROJECT_EXPORT_COMMANDS = [
-    "uv export --format=requirements-txt --directory={directory}",
-    "poetry export --format=requirements.txt --directory={directory}",
+    "uv export --format=requirements-txt --directory={directory} --no-hashes --no-emit-project",
+    "poetry export --format=requirements.txt --directory={directory} --without-hashes",
 ]
 
 
@@ -162,10 +161,11 @@ class PipelineDockerImageBuilder:
         requires_zenml_build = any(
             [
                 docker_settings.requirements,
+                docker_settings.pyproject_path,
                 docker_settings.required_integrations,
-                docker_settings.required_hub_plugins,
                 docker_settings.replicate_local_python_environment,
                 docker_settings.install_stack_requirements,
+                docker_settings.local_project_install_command,
                 docker_settings.apt_packages,
                 docker_settings.environment,
                 include_files,
@@ -734,6 +734,11 @@ class PipelineDockerImageBuilder:
 
         lines.append("COPY . .")
         lines.append("RUN chmod -R a+rw .")
+
+        if docker_settings.local_project_install_command:
+            lines.append(
+                f"RUN {docker_settings.local_project_install_command}"
+            )
 
         if docker_settings.user:
             # Change file ownership to specified user
