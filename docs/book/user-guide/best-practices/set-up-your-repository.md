@@ -115,7 +115,7 @@ While it doesn't matter how you structure your ZenML project, here is a recommen
 └── run.py
 ```
 
-All ZenML [Project templates](using-project-templates.md#generating-project-from-a-project-template) are modeled around this basic structure. The `steps` and `pipelines` folders contain the steps and pipelines defined in your project. If your project is simpler you can also just keep your steps at the top level of the `steps` folder without the need so structure them in subfolders.
+All ZenML [Project templates](https://docs.zenml.io/user-guides/best-practices/project-templates) are modeled around this basic structure. The `steps` and `pipelines` folders contain the steps and pipelines defined in your project. If your project is simpler you can also just keep your steps at the top level of the `steps` folder without the need so structure them in subfolders.
 
 {% hint style="info" %}
 It might also make sense to register your repository as a code repository. These enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in [a registered code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) can speed up the Docker image building for containerized stack components by eliminating the need to rebuild Docker images each time you change one of your source code files. Learn more about these in [connecting your Git repository](https://docs.zenml.io/concepts/code-repositories).
