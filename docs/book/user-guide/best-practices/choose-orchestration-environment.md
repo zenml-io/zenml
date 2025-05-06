@@ -118,7 +118,7 @@ Kubernetes provides a platform for automating the deployment, scaling, and opera
 - Teams already using Kubernetes for production
 - Experiments that need to be distributed across machines
 - Projects requiring strict environment isolation
-- ML workflows that benefit from microservices architecture
+- ML workflows that benefit from a microservices architecture
 - Organizations with dedicated DevOps support
 
 ### Databricks
