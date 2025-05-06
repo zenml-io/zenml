@@ -6,7 +6,7 @@ description: Understand and adjust how ZenML versions your data.
 
 Data sits at the heart of every machine learning workflow. Managing and versioning this data correctly is essential for reproducibility and traceability within your ML pipelines. ZenML takes a proactive approach to data versioning, ensuring that every artifact—be it data, models, or evaluations—is automatically tracked and versioned upon pipeline execution.
 
-![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/dcp\_walkthrough.gif)
+![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/dcp_walkthrough.gif)
 
 This guide will delve into artifact versioning and management, showing you how to efficiently name, organize, and utilize your data with the ZenML framework.
 
@@ -68,7 +68,7 @@ To prevent visual clutter, make sure to assign names to your most important arti
 
 ZenML automatically versions all created artifacts using auto-incremented numbering. I.e., if you have defined a step creating an artifact named `iris_dataset` as shown above, the first execution of the step will create an artifact with this name and version "1", the second execution will create version "2", and so on.
 
-While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-model/#zenml.model.artifact\_config.DataArtifactConfig). This may come into play during critical runs like production releases.
+While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model.html#zenml.model.artifact_config). This may come into play during critical runs like production releases.
 
 ```python
 from zenml import step, ArtifactConfig
@@ -107,65 +107,38 @@ The Cloud dashboard visualizes version history for your review.
 {% endtab %}
 {% endtabs %}
 
-### Add metadata and tags to artifacts
+### Add metadata and tags 
 
-If you would like to extend your artifacts with extra metadata or tags you can do so by following the patterns demonstrated below:
+If you would like to extend your artifacts and runs with extra metadata or tags you can do so by following the patterns demonstrated below:
 
 ```python
-from zenml import step, get_step_context, ArtifactConfig
-from typing_extensions import Annotated
+from zenml import step, log_metadata, add_tags
 
 
-# below we annotate output with `ArtifactConfig` giving it a name,
-# run_metadata and tags. As a result, the created artifact
-# `artifact_name` will get configured with metadata and tags
+# In the following step, we use the utility functions `log_metadata` and `add_tags`.
+# Since we are calling these functions directly from a step, both will attach
+# the additional information to the current run.
 @step
-def annotation_approach() -> (
-    Annotated[
-        str,
-        ArtifactConfig(
-            name="artifact_name",
-            run_metadata={"metadata_key": "metadata_value"},
-            tags=["tag_name"],
-        ),
-    ]
-):
+def annotation_approach() -> str:
+    log_metadata(metadata={"metadata_key": "metadata_value"})
+    add_tags(tags=["tag_name"])
     return "string"
 
 
-# below we annotate output using functional approach with
-# run_metadata and tags. As a result, the created artifact 
-# `artifact_name` will get configured with metadata and tags
+# There are other ways to attach this information to different versions of your
+# artifacts as well. For instance, you will see a step with a single output below.
+# If you modify the call to include the `infer_artifact` flag, these functions
+# will attach this information to the artifact version instead.
 @step
-def annotation_approach() -> Annotated[str, "artifact_name"]:
-    step_context = get_step_context()
-    step_context.add_output_metadata(
-        output_name="artifact_name", metadata={"metadata_key": "metadata_value"}
-    )
-    step_context.add_output_tags(output_name="artifact_name", tags=["tag_name"])
-    return "string"
-
-
-# below we combine both approaches, so the artifact will get
-# metadata and tags from both sources
-@step
-def annotation_approach() -> (
-    Annotated[
-        str,
-        ArtifactConfig(
-            name="artifact_name",
-            run_metadata={"metadata_key": "metadata_value"},
-            tags=["tag_name"],
-        ),
-    ]
-):
-    step_context = get_step_context()
-    step_context.add_output_metadata(
-        output_name="artifact_name", metadata={"metadata_key2": "metadata_value2"}
-    )
-    step_context.add_output_tags(output_name="artifact_name", tags=["tag_name2"])
+def annotation_approach() -> str:
+    log_metadata(metadata={"metadata_key": "metadata_value"}, infer_artifact=True)
+    add_tags(tags=["tag_name"], infer_artifact=True)
     return "string"
 ```
+
+{% hint style="info" %}
+There are multiple ways to interact with tags and metadata in ZenML. If you would like to how to use this information in different scenarios please check the respective guides on [tags](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging) and [metadata](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata).
+{% endhint %}
 
 ## Comparing metadata across runs (Pro)
 
@@ -178,7 +151,7 @@ The tool offers two complementary views for analyzing your metadata:
 #### Table View
 The tabular view provides a structured comparison of metadata across runs:
 
-![Comparing metadata values across different pipeline runs in table view.](../../../book/.gitbook/assets/table-view.png)
+![Comparing metadata values across different pipeline runs in table view.](../../.gitbook/assets/table-view.png)
 
 This view automatically calculates changes between runs and allows you to:
 
@@ -189,7 +162,7 @@ This view automatically calculates changes between runs and allows you to:
 #### Parallel Coordinates View
 The parallel coordinates visualization helps identify relationships between different metadata parameters:
 
-![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../../book/.gitbook/assets/coordinates-view.png)
+![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../.gitbook/assets/coordinates-view.png)
 
 This view is particularly useful for:
 
@@ -271,7 +244,7 @@ if __name__ == "__main__":
     printing_pipeline()
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifacts/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts.html#zenml.artifacts.external_artifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
@@ -279,7 +252,7 @@ Using an `ExternalArtifact` for your step automatically disables caching for the
 
 ## Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID
@@ -317,7 +290,7 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../../how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md) behind the scenes.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory) behind the scenes.
 {% endhint %}
 
 If you would like to bypass materialization entirely and just download the data or files associated with a particular artifact version, you can use the `.download_files` method:
@@ -421,11 +394,11 @@ The artifact produced from the preexisting data will have a `pathlib.Path` type,
 
 Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
 
-For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/data-artifact-management/complex-usecases/registering-existing-data.md).
+For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](https://docs.zenml.io/how-to/data-artifact-management/complex-usecases/registering-existing-data).
 
 ## Logging metadata for an artifact
 
-One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
+One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or the size of an image alongside a PNG file.
 
@@ -458,10 +431,10 @@ The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization fe
 {% endtab %}
 {% endtabs %}
 
-A user can also add metadata to an artifact within a step directly using the `log_artifact_metadata` method:
+A user can also add metadata to an artifact directly within a step using the `log_metadata` method:
 
 ```python
-from zenml import step, log_artifact_metadata
+from zenml import step, log_metadata
 
 @step
 def model_finetuner_step(
@@ -474,13 +447,16 @@ def model_finetuner_step(
     accuracy = model.score(dataset[0], dataset[1])
 
     
-    log_artifact_metadata(
-        # Artifact name can be omitted if step returns only one output
-        artifact_name="my_model",
-        # Passing None or omitting this will use the `latest` version
-        version=None,
+    log_metadata(
         # Metadata should be a dictionary of JSON-serializable values
-        metadata={"accuracy": float(accuracy)}
+        metadata={"accuracy": float(accuracy)},
+        # Using infer_artifact=True automatically attaches metadata to the
+        # artifact produced by this step. Since this step has only one output,
+        # we don't need to specify the artifact_name
+        infer_artifact=True
+        # If the step had multiple outputs, we would need to specify which one:
+        # artifact_name="my_model", infer_artifact=True
+
         # A dictionary of dictionaries can also be passed to group metadata
         #  in the dashboard
         # metadata = {"metrics": {"accuracy": accuracy}}
@@ -488,9 +464,9 @@ def model_finetuner_step(
     return model
 ```
 
-For further depth, there is an [advanced metadata logging guide](../../how-to/model-management-metrics/track-metrics-metadata/README.md) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata) that goes more into detail about logging metadata in ZenML.
 
-Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](../../how-to/handle-data-artifacts/) for more information.
+Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](https://docs.zenml.io/how-to/data-artifact-management) for more information.
 
 ## Code example
 
@@ -508,7 +484,7 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.svm import SVC
-from zenml import ArtifactConfig, pipeline, step, log_artifact_metadata
+from zenml import ArtifactConfig, pipeline, step, log_metadata
 from zenml import save_artifact, load_artifact
 from zenml.client import Client
 
@@ -538,7 +514,7 @@ def model_finetuner_step(
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])
     accuracy = model.score(dataset[0], dataset[1])
-    log_artifact_metadata(metadata={"accuracy": float(accuracy)})
+    log_metadata(metadata={"accuracy": float(accuracy)})
     return model
 
 

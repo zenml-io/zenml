@@ -18,6 +18,7 @@ import json
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 from typing import (
@@ -57,7 +58,7 @@ from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
 )
-from zenml.enums import GenericFilterOps, StackComponentType
+from zenml.enums import GenericFilterOps, ServiceState, StackComponentType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     RegisteredModel,
@@ -74,12 +75,13 @@ from zenml.models import (
     UUIDFilter,
 )
 from zenml.models.v2.base.filter import FilterGenerator
-from zenml.services import BaseService, ServiceState
+from zenml.services import BaseService
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
 from zenml.utils.time_utils import expires_in
+from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -306,13 +308,13 @@ def print_pydantic_models(
             if isinstance(model, BaseIdentifiedResponse):
                 include_columns = ["id"]
 
-                if "name" in model.model_fields:
+                if "name" in type(model).model_fields:
                     include_columns.append("name")
 
                 include_columns.extend(
                     [
                         k
-                        for k in model.get_body().model_fields.keys()
+                        for k in type(model.get_body()).model_fields.keys()
                         if k not in exclude_columns
                     ]
                 )
@@ -321,7 +323,9 @@ def print_pydantic_models(
                     include_columns.extend(
                         [
                             k
-                            for k in model.get_metadata().model_fields.keys()
+                            for k in type(
+                                model.get_metadata()
+                            ).model_fields.keys()
                             if k not in exclude_columns
                         ]
                     )
@@ -345,7 +349,7 @@ def print_pydantic_models(
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
             if isinstance(value, BaseIdentifiedResponse):
-                if "name" in value.model_fields:
+                if "name" in type(value).model_fields:
                     items[k] = str(getattr(value, "name"))
                 else:
                     items[k] = str(value.id)
@@ -355,7 +359,7 @@ def print_pydantic_models(
             elif isinstance(value, list):
                 for v in value:
                     if isinstance(v, BaseIdentifiedResponse):
-                        if "name" in v.model_fields:
+                        if "name" in type(v).model_fields:
                             items.setdefault(k, []).append(
                                 str(getattr(v, "name"))
                             )
@@ -446,13 +450,13 @@ def print_pydantic_model(
         if isinstance(model, BaseIdentifiedResponse):
             include_columns = ["id"]
 
-            if "name" in model.model_fields:
+            if "name" in type(model).model_fields:
                 include_columns.append("name")
 
             include_columns.extend(
                 [
                     k
-                    for k in model.get_body().model_fields.keys()
+                    for k in type(model.get_body()).model_fields.keys()
                     if k not in exclude_columns
                 ]
             )
@@ -461,7 +465,7 @@ def print_pydantic_model(
                 include_columns.extend(
                     [
                         k
-                        for k in model.get_metadata().model_fields.keys()
+                        for k in type(model.get_metadata()).model_fields.keys()
                         if k not in exclude_columns
                     ]
                 )
@@ -480,7 +484,7 @@ def print_pydantic_model(
     for k in include_columns:
         value = getattr(model, k)
         if isinstance(value, BaseIdentifiedResponse):
-            if "name" in value.model_fields:
+            if "name" in type(value).model_fields:
                 items[k] = str(getattr(value, "name"))
             else:
                 items[k] = str(value.id)
@@ -490,7 +494,7 @@ def print_pydantic_model(
         elif isinstance(value, list):
             for v in value:
                 if isinstance(v, BaseIdentifiedResponse):
-                    if "name" in v.model_fields:
+                    if "name" in type(v).model_fields:
                         items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:
                         items.setdefault(k, []).append(str(v.id))
@@ -1048,22 +1052,18 @@ def install_packages(
         # just return without doing anything
         return
 
-    pip_command = ["uv", "pip"] if use_uv else ["pip"]
-    if upgrade:
-        command = (
-            [
-                sys.executable,
-                "-m",
-            ]
-            + pip_command
-            + [
-                "install",
-                "--upgrade",
-            ]
-            + packages
-        )
+    if use_uv and not is_installed_in_python_environment("uv"):
+        # If uv is installed globally, don't run as a python module
+        command = []
     else:
-        command = [sys.executable, "-m"] + pip_command + ["install"] + packages
+        command = [sys.executable, "-m"]
+
+    command += ["uv", "pip", "install"] if use_uv else ["pip", "install"]
+
+    if upgrade:
+        command += ["--upgrade"]
+
+    command += packages
 
     if not IS_DEBUG_ENV:
         quiet_flag = "-q" if use_uv else "-qqq"
@@ -1094,49 +1094,45 @@ def uninstall_package(package: str, use_uv: bool = False) -> None:
         package: The package to uninstall.
         use_uv: Whether to use uv for package uninstallation.
     """
-    pip_command = ["uv", "pip"] if use_uv else ["pip"]
-    quiet_flag = "-q" if use_uv else "-qqq"
-
-    if use_uv:
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-            ]
-            + pip_command
-            + [
-                "uninstall",
-                quiet_flag,
-                package,
-            ]
-        )
+    if use_uv and not is_installed_in_python_environment("uv"):
+        # If uv is installed globally, don't run as a python module
+        command = []
     else:
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-            ]
-            + pip_command
-            + [
-                "uninstall",
-                quiet_flag,
-                "-y",
-                package,
-            ]
-        )
+        command = [sys.executable, "-m"]
+
+    command += (
+        ["uv", "pip", "uninstall", "-q"]
+        if use_uv
+        else ["pip", "uninstall", "-y", "-qqq"]
+    )
+    command += [package]
+
+    subprocess.check_call(command)
+
+
+def is_installed_in_python_environment(package: str) -> bool:
+    """Check if a package is installed in the current python environment.
+
+    Args:
+        package: The package to check.
+
+    Returns:
+        True if the package is installed, False otherwise.
+    """
+    try:
+        pkg_resources.get_distribution(package)
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
 
 
 def is_uv_installed() -> bool:
-    """Check if uv is installed in the current environment.
+    """Check if uv is installed.
 
     Returns:
         True if uv is installed, False otherwise.
     """
-    try:
-        pkg_resources.get_distribution("uv")
-        return True
-    except pkg_resources.DistributionNotFound:
-        return False
+    return shutil.which("uv") is not None
 
 
 def is_pip_installed() -> bool:
@@ -1145,11 +1141,7 @@ def is_pip_installed() -> bool:
     Returns:
         True if pip is installed, False otherwise.
     """
-    try:
-        pkg_resources.get_distribution("pip")
-        return True
-    except pkg_resources.DistributionNotFound:
-        return False
+    return is_installed_in_python_environment("pip")
 
 
 def pretty_print_secret(
@@ -1209,7 +1201,7 @@ def get_service_state_emoji(state: "ServiceState") -> str:
     Returns:
         String representing the emoji.
     """
-    from zenml.services.service_status import ServiceState
+    from zenml.enums import ServiceState
 
     if state == ServiceState.ACTIVE:
         return ":white_check_mark:"
@@ -1430,7 +1422,7 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
                     prop_type = prop_schema["type"]
                 elif "anyOf" in prop_schema.keys():
                     prop_type = ", ".join(
-                        [p["type"] for p in prop_schema["anyOf"]]
+                        [p.get("type", "object") for p in prop_schema["anyOf"]]
                     )
                     prop_type = f"one of: {prop_type}"
                 else:
@@ -1789,7 +1781,6 @@ def print_service_connector_configuration(
             "AUTH METHOD": connector.auth_method,
             "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
             "RESOURCE NAME": connector.resource_id or "<multiple>",
-            "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
             "EXPIRES IN": (
                 expires_in(
@@ -1806,7 +1797,6 @@ def print_service_connector_configuration(
                 else "N/A"
             ),
             "OWNER": user_name,
-            "WORKSPACE": connector.workspace.name,
             "CREATED_AT": connector.created,
             "UPDATED_AT": connector.updated,
         }
@@ -2150,7 +2140,7 @@ def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
         A configuration with secret values removed.
     """
     config_dict = {}
-    config_fields = config.__class__.model_fields
+    config_fields = type(config).model_fields
     for key, value in config_fields.items():
         if getattr(config, key):
             if secret_utils.is_secret_field(value):
@@ -2172,9 +2162,6 @@ def print_debug_stack() -> None:
     console.print(f"ID: {str(stack.id)}")
     if stack.user and stack.user.name and stack.user.id:  # mypy check
         console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
-    console.print(
-        f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
-    )
 
     for component_type, components in stack.components.items():
         component = components[0]
@@ -2201,9 +2188,6 @@ def print_debug_stack() -> None:
             console.print(
                 f"User: {component_response.user.name} / {str(component_response.user.id)}"
             )
-        console.print(
-            f"Workspace: {component_response.workspace.name} / {str(component_response.workspace.id)}"
-        )
 
 
 def _component_display_name(
@@ -2286,22 +2270,13 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def warn_unsupported_non_default_workspace() -> None:
-    """Warning for unsupported non-default workspace."""
-    from zenml.constants import (
-        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS,
-        handle_bool_env_var,
-    )
-
-    disable_warnings = handle_bool_env_var(
-        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS, False
-    )
-    if not disable_warnings:
+def check_zenml_pro_project_availability() -> None:
+    """Check if the ZenML Pro project feature is available."""
+    client = Client()
+    if not client.zen_store.get_store_info().is_pro_server():
         warning(
-            "Currently the concept of `workspace` is not supported "
-            "within the Dashboard. The Project functionality will be "
-            "completed in the coming weeks. For the time being it "
-            "is recommended to stay within the `default` workspace."
+            "The ZenML projects feature is available only on ZenML Pro. "
+            "Please visit https://zenml.io/pro to learn more."
         )
 
 
@@ -2413,6 +2388,23 @@ def create_data_type_help_text(
         return f"{field}"
 
 
+def _is_list_field(field_info: Any) -> bool:
+    """Check if a field is a list field.
+
+    Args:
+        field_info: The field info to check.
+
+    Returns:
+        True if the field is a list field, False otherwise.
+    """
+    field_type = field_info.annotation
+    origin = get_origin(field_type)
+    return origin is list or (
+        is_union(origin)
+        and any(get_origin(arg) is list for arg in field_type.__args__)
+    )
+
+
 def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of filter parameters.
 
@@ -2441,6 +2433,7 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                         type=str,
                         default=v.default,
                         required=False,
+                        multiple=_is_list_field(v),
                         help=create_filter_help_text(filter_model, k),
                     )
                 )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -29,9 +29,11 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
+from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     Page,
     PipelineRunFilter,
+    PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
     StepRunFilter,
@@ -42,14 +44,20 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
+    verify_permissions_and_get_or_create_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission_for_model
+from zenml.zen_server.rbac.utils import (
+    verify_permission_for_model,
+)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
+    workload_manager,
     zen_store,
 )
 
@@ -63,16 +71,62 @@ router = APIRouter(
 logger = get_logger(__name__)
 
 
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + RUNS,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["runs"],
+)
+@handle_exceptions
+def get_or_create_pipeline_run(
+    pipeline_run: PipelineRunRequest,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> Tuple[PipelineRunResponse, bool]:
+    """Get or create a pipeline run.
+
+    Args:
+        pipeline_run: Pipeline run to create.
+        project_name_or_id: Optional name or ID of the project.
+
+    Returns:
+        The pipeline run and a boolean indicating whether the run was created
+        or not.
+    """
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        pipeline_run.project = project.id
+
+    return verify_permissions_and_get_or_create_entity(
+        request_model=pipeline_run,
+        get_or_create_method=zen_store().get_or_create_run,
+    )
+
+
 @router.get(
     "",
-    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.get(
+    "/{project_name_or_id}" + RUNS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["runs"],
 )
 @handle_exceptions
 def list_runs(
     runs_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)
     ),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineRunResponse]:
@@ -80,12 +134,16 @@ def list_runs(
 
     Args:
         runs_filter_model: Filter model used for pagination, sorting, filtering.
+        project_name_or_id: Optional name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.
     """
+    if project_name_or_id:
+        runs_filter_model.project = project_name_or_id
+
     return verify_permissions_and_list_entities(
         filter_model=runs_filter_model,
         resource_type=ResourceType.PIPELINE_RUN,
@@ -96,7 +154,6 @@ def list_runs(
 
 @router.get(
     "/{run_id}",
-    response_model=PipelineRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -104,6 +161,7 @@ def get_run(
     run_id: UUID,
     hydrate: bool = True,
     refresh_status: bool = False,
+    include_python_packages: bool = False,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
@@ -114,6 +172,8 @@ def get_run(
             by including metadata fields in the response.
         refresh_status: Flag deciding whether we should try to refresh
             the status of the pipeline run using its orchestrator.
+        include_python_packages: Flag deciding whether to include the
+            Python packages in the response.
 
     Returns:
         The pipeline run.
@@ -122,7 +182,10 @@ def get_run(
         RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
     run = verify_permissions_and_get_entity(
-        id=run_id, get_method=zen_store().get_run, hydrate=hydrate
+        id=run_id,
+        get_method=zen_store().get_run,
+        hydrate=hydrate,
+        include_python_packages=include_python_packages,
     )
     if refresh_status:
         try:
@@ -157,7 +220,6 @@ def get_run(
 
 @router.put(
     "/{run_id}",
-    response_model=PipelineRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -206,7 +268,6 @@ def delete_run(
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=Page[StepRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -236,7 +297,6 @@ def get_run_steps(
 
 @router.get(
     "/{run_id}" + PIPELINE_CONFIGURATION,
-    response_model=Dict[str, Any],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -260,7 +320,6 @@ def get_pipeline_configuration(
 
 @router.get(
     "/{run_id}" + STATUS,
-    response_model=ExecutionStatus,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -325,3 +384,57 @@ def refresh_run_status(
             f"The stack, the run '{run.id}' was executed on, is deleted."
         )
     run.refresh_run_status()
+
+
+@router.get(
+    "/{run_id}/logs",
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def run_logs(
+    run_id: UUID,
+    offset: int = 0,
+    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get pipeline run logs.
+
+    Args:
+        run_id: ID of the pipeline run.
+        offset: The offset from which to start reading.
+        length: The amount of bytes that should be read.
+
+    Returns:
+        The pipeline run logs.
+
+    Raises:
+        KeyError: If no logs are available for the pipeline run.
+    """
+    store = zen_store()
+
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=store.get_run,
+        hydrate=True,
+    )
+
+    if run.deployment_id:
+        deployment = store.get_deployment(run.deployment_id)
+        if deployment.template_id and server_config().workload_manager_enabled:
+            return workload_manager().get_logs(workload_id=deployment.id)
+
+    logs = run.logs
+    if logs is None:
+        raise KeyError("No logs available for this pipeline run")
+
+    return fetch_logs(
+        zen_store=store,
+        artifact_store_id=logs.artifact_store_id,
+        logs_uri=logs.uri,
+        offset=offset,
+        length=length,
+    )

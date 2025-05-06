@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for code repositories."""
 
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -20,6 +21,7 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, CODE_REPOSITORIES, VERSION_1
 from zenml.models import (
     CodeRepositoryFilter,
+    CodeRepositoryRequest,
     CodeRepositoryResponse,
     CodeRepositoryUpdate,
     Page,
@@ -27,12 +29,14 @@ from zenml.models import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -46,16 +50,61 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + CODE_REPOSITORIES,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["code_repositories"],
+)
+@handle_exceptions
+def create_code_repository(
+    code_repository: CodeRepositoryRequest,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> CodeRepositoryResponse:
+    """Creates a code repository.
+
+    Args:
+        code_repository: Code repository to create.
+        project_name_or_id: Optional name or ID of the project.
+
+    Returns:
+        The created code repository.
+    """
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        code_repository.project = project.id
+
+    return verify_permissions_and_create_entity(
+        request_model=code_repository,
+        create_method=zen_store().create_code_repository,
+    )
+
+
 @router.get(
     "",
-    response_model=Page[CodeRepositoryResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.get(
+    "/{project_name_or_id}" + CODE_REPOSITORIES,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["code_repositories"],
 )
 @handle_exceptions
 def list_code_repositories(
     filter_model: CodeRepositoryFilter = Depends(
         make_dependable(CodeRepositoryFilter)
     ),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[CodeRepositoryResponse]:
@@ -64,12 +113,16 @@ def list_code_repositories(
     Args:
         filter_model: Filter model used for pagination, sorting,
             filtering.
+        project_name_or_id: Optional name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         Page of code repository objects.
     """
+    if project_name_or_id:
+        filter_model.project = project_name_or_id
+
     return verify_permissions_and_list_entities(
         filter_model=filter_model,
         resource_type=ResourceType.CODE_REPOSITORY,
@@ -80,7 +133,6 @@ def list_code_repositories(
 
 @router.get(
     "/{code_repository_id}",
-    response_model=CodeRepositoryResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -108,7 +160,6 @@ def get_code_repository(
 
 @router.put(
     "/{code_repository_id}",
-    response_model=CodeRepositoryResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

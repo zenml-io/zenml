@@ -25,7 +25,8 @@ from zenml.constants import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken, ServerCredentials, ServerType
-from zenml.login.pro.tenant.models import TenantRead
+from zenml.login.pro.constants import ZENML_PRO_API_URL
+from zenml.login.pro.workspace.models import WorkspaceRead
 from zenml.models import OAuthTokenResponse, ServerModel
 from zenml.utils import yaml_utils
 from zenml.utils.singleton import SingletonMetaClass
@@ -75,7 +76,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     Alongside credentials, the Credentials Store is also used to store
     additional server information:
-        * ZenML Pro tenant information populated by the `zenml login` command
+        * ZenML Pro workspace information populated by the `zenml login` command
         * ZenML server information populated by the REST zen store by fetching
         the server's information endpoint after authenticating
 
@@ -341,7 +342,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         self.clear_token(pro_api_url)
 
     def clear_all_pro_tokens(
-        self, pro_api_url: str
+        self, pro_api_url: Optional[str] = None
     ) -> List[ServerCredentials]:
         """Delete all tokens from the store for ZenML Pro servers connected to a given API server.
 
@@ -356,7 +357,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             if (
                 server.type == ServerType.PRO
                 and server.pro_api_url
-                and server.pro_api_url == pro_api_url
+                and (pro_api_url is None or server.pro_api_url == pro_api_url)
             ):
                 if server.api_key:
                     continue
@@ -395,6 +396,36 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             bool: True if a valid token is stored, False otherwise.
         """
         return self.get_pro_token(pro_api_url) is not None
+
+    def can_login(self, server_url: str) -> bool:
+        """Check if credentials to login to the given server exist.
+
+        Args:
+            server_url: The server URL for which to check the authentication.
+
+        Returns:
+            True if the credentials store contains credentials that can be used
+            to login to the given server URL, False otherwise.
+        """
+        self.check_and_reload_from_file()
+        credentials = self.get_credentials(server_url)
+        if not credentials:
+            return False
+
+        if credentials.api_key is not None:
+            return True
+        elif (
+            credentials.username is not None
+            and credentials.password is not None
+        ):
+            return True
+        elif credentials.type == ServerType.PRO:
+            pro_api_url = credentials.pro_api_url or ZENML_PRO_API_URL
+            pro_token = self.get_pro_token(pro_api_url, allow_expired=False)
+            if pro_token:
+                return True
+
+        return False
 
     def set_api_key(
         self,
@@ -556,7 +587,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
     def update_server_info(
         self,
         server_url: str,
-        server_info: Union[ServerModel, TenantRead],
+        server_info: Union[ServerModel, WorkspaceRead],
     ) -> None:
         """Update the server information stored for a specific server URL.
 

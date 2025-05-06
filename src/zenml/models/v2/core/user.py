@@ -36,7 +36,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseZenModel,
+    BaseUpdate,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
@@ -169,14 +169,14 @@ class UserRequest(UserBase, BaseRequest):
         # Validate attributes when assigning them
         validate_assignment=True,
         # Forbid extra attributes to prevent unexpected behavior
-        extra="forbid",
+        extra="ignore",
     )
 
 
 # ------------------ Update Model ------------------
 
 
-class UserUpdate(UserBase, BaseZenModel):
+class UserUpdate(UserBase, BaseUpdate):
     """Update model for users."""
 
     name: Optional[str] = Field(
@@ -202,6 +202,10 @@ class UserUpdate(UserBase, BaseZenModel):
         title="The previous password for the user. Only relevant for user "
         "accounts. Required when updating the password.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    default_project_id: Optional[UUID] = Field(
+        default=None,
+        title="The default project ID for the user.",
     )
 
     @model_validator(mode="after")
@@ -278,6 +282,10 @@ class UserResponseBody(BaseDatedResponseBody):
     )
     is_admin: bool = Field(
         title="Whether the account is an administrator.",
+    )
+    default_project_id: Optional[UUID] = Field(
+        default=None,
+        title="The default project ID for the user.",
     )
 
 
@@ -421,6 +429,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_metadata().user_metadata
+
+    @property
+    def default_project_id(self) -> Optional[UUID]:
+        """The `default_project_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().default_project_id
 
     # Helper methods
     @classmethod

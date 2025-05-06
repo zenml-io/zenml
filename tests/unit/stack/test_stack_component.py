@@ -58,14 +58,14 @@ def test_stack_component_public_attributes_are_immutable(
         stub_component_config._some_private_attribute_name = "Woof"
 
 
-def test_stack_component_prevents_extra_attributes(stub_component_config):
-    """Tests that passing extra attributes to a StackComponent fails."""
+def test_stack_component_allows_extra_attributes(stub_component_config):
+    """Tests that passing extra attributes to a StackComponent is allowed."""
     component_class = stub_component_config.__class__
 
     with does_not_raise():
         component_class(some_public_attribute_name="test")
 
-    with pytest.raises(ValidationError):
+    with does_not_raise():
         component_class(not_an_attribute_name="test")
 
 
@@ -112,7 +112,6 @@ def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequest:
         flavor="TEST",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4() if repo is None else repo.active_user.id,
-        workspace=uuid4() if repo is None else repo.active_workspace.id,
     )
 
 

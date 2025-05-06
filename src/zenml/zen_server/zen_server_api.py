@@ -55,7 +55,7 @@ from zenml.constants import (
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.models import ServerDeploymentType
 from zenml.utils.time_utils import utc_now
-from zenml.zen_server.cloud_utils import send_pro_tenant_status_update
+from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     actions_endpoints,
@@ -73,6 +73,8 @@ from zenml.zen_server.routers import (
     pipeline_deployments_endpoints,
     pipelines_endpoints,
     plugin_endpoints,
+    projects_endpoints,
+    run_metadata_endpoints,
     run_templates_endpoints,
     runs_endpoints,
     schedule_endpoints,
@@ -85,11 +87,11 @@ from zenml.zen_server.routers import (
     stack_deployment_endpoints,
     stacks_endpoints,
     steps_endpoints,
+    tag_resource_endpoints,
     tags_endpoints,
     triggers_endpoints,
     users_endpoints,
     webhook_endpoints,
-    workspaces_endpoints,
 )
 from zenml.zen_server.secure_headers import (
     initialize_secure_headers,
@@ -392,9 +394,9 @@ def initialize() -> None:
     initialize_secure_headers()
     initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
-        # Send a tenant status update to the Cloud API to indicate that the
+        # Send a workspace status update to the Cloud API to indicate that the
         # ZenML server is running or to update the version and server URL.
-        send_pro_tenant_status_update()
+        send_pro_workspace_status_update()
 
 
 DASHBOARD_REDIRECT_URL = None
@@ -472,6 +474,7 @@ app.include_router(pipelines_endpoints.router)
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(run_metadata_endpoints.router)
 app.include_router(run_templates_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
@@ -487,11 +490,13 @@ app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
 app.include_router(tags_endpoints.router)
+app.include_router(tag_resource_endpoints.router)
 app.include_router(triggers_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(webhook_endpoints.router)
-app.include_router(workspaces_endpoints.router)
+app.include_router(projects_endpoints.workspace_router)
+app.include_router(projects_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.

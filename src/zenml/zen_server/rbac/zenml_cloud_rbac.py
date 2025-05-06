@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """Cloud RBAC implementation."""
 
-from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.rbac.models import Action, Resource
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
-from zenml.zen_server.utils import server_config
 
 if TYPE_CHECKING:
     from zenml.models import UserResponse
@@ -27,51 +26,7 @@ if TYPE_CHECKING:
 PERMISSIONS_ENDPOINT = "/rbac/check_permissions"
 ALLOWED_RESOURCE_IDS_ENDPOINT = "/rbac/allowed_resource_ids"
 RESOURCE_MEMBERSHIP_ENDPOINT = "/rbac/resource_members"
-
-SERVER_SCOPE_IDENTIFIER = "server"
-
-SERVER_ID = server_config().external_server_id
-
-
-def _convert_to_cloud_resource(resource: Resource) -> str:
-    """Convert a resource to a ZenML Pro Management Plane resource.
-
-    Args:
-        resource: The resource to convert.
-
-    Returns:
-        The converted resource.
-    """
-    resource_string = f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}:{resource.type}"
-
-    if resource.id:
-        resource_string += f"/{resource.id}"
-
-    return resource_string
-
-
-def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
-    """Convert a cloud resource to a ZenML server resource.
-
-    Args:
-        cloud_resource: The cloud resource to convert.
-
-    Raises:
-        ValueError: If the cloud resource is invalid for this server.
-
-    Returns:
-        The converted resource.
-    """
-    scope, resource_type_and_id = cloud_resource.rsplit(":", maxsplit=1)
-
-    if scope != f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}":
-        raise ValueError("Invalid scope for server resource.")
-
-    if "/" in resource_type_and_id:
-        resource_type, resource_id = resource_type_and_id.split("/")
-        return Resource(type=resource_type, id=resource_id)
-    else:
-        return Resource(type=resource_type_and_id)
+RESOURCES_ENDPOINT = "/rbac/resources"
 
 
 class ZenMLCloudRBAC(RBACInterface):
@@ -109,9 +64,7 @@ class ZenMLCloudRBAC(RBACInterface):
 
         params = {
             "user_id": str(user.external_user_id),
-            "resources": [
-                _convert_to_cloud_resource(resource) for resource in resources
-            ],
+            "resources": resources,
             "action": str(action),
         }
         response = self._connection.get(
@@ -120,7 +73,7 @@ class ZenMLCloudRBAC(RBACInterface):
         value = response.json()
 
         assert isinstance(value, dict)
-        return {_convert_from_cloud_resource(k): v for k, v in value.items()}
+        return {Resource.parse(k): v for k, v in value.items()}
 
     def list_allowed_resource_ids(
         self, user: "UserResponse", resource: Resource, action: Action
@@ -150,7 +103,7 @@ class ZenMLCloudRBAC(RBACInterface):
         assert user.external_user_id
         params = {
             "user_id": str(user.external_user_id),
-            "resource": _convert_to_cloud_resource(resource),
+            "resource": str(resource),
             "action": str(action),
         }
         response = self._connection.get(
@@ -164,23 +117,41 @@ class ZenMLCloudRBAC(RBACInterface):
         return full_resource_access, allowed_ids
 
     def update_resource_membership(
-        self, user: "UserResponse", resource: Resource, actions: List[Action]
+        self,
+        sharing_user: "UserResponse",
+        resource: Resource,
+        actions: List[Action],
+        user_id: Optional[str] = None,
+        team_id: Optional[str] = None,
     ) -> None:
         """Update the resource membership of a user.
 
         Args:
-            user: User for which the resource membership should be updated.
+            sharing_user: User that is sharing the resource.
             resource: The resource.
             actions: The actions that the user should be able to perform on the
                 resource.
+            user_id: ID of the user for which to update the membership.
+            team_id: ID of the team for which to update the membership.
         """
-        if user.is_service_account:
-            # Service accounts have full permissions for now
-            return
-
+        assert sharing_user.external_user_id
         data = {
-            "user_id": str(user.external_user_id),
-            "resource": _convert_to_cloud_resource(resource),
+            "user_id": user_id,
+            "team_id": team_id,
+            "sharing_user_id": str(sharing_user.external_user_id),
+            "resource": str(resource),
             "actions": [str(action) for action in actions],
         }
         self._connection.post(endpoint=RESOURCE_MEMBERSHIP_ENDPOINT, data=data)
+
+    def delete_resources(self, resources: List[Resource]) -> None:
+        """Delete resource membership information for a list of resources.
+
+        Args:
+            resources: The resources for which to delete the resource membership
+                information.
+        """
+        params = {
+            "resources": [str(resource) for resource in resources],
+        }
+        self._connection.delete(endpoint=RESOURCES_ENDPOINT, params=params)

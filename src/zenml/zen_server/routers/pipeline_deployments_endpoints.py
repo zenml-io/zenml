@@ -13,24 +13,30 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for deployments."""
 
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
+from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     Page,
     PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineRunFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -46,30 +52,79 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + PIPELINE_DEPLOYMENTS,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["deployments"],
+)
+@handle_exceptions
+def create_deployment(
+    deployment: PipelineDeploymentRequest,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> PipelineDeploymentResponse:
+    """Creates a deployment.
+
+    Args:
+        deployment: Deployment to create.
+        project_name_or_id: Optional name or ID of the project.
+
+    Returns:
+        The created deployment.
+    """
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        deployment.project = project.id
+
+    return verify_permissions_and_create_entity(
+        request_model=deployment,
+        create_method=zen_store().create_deployment,
+    )
+
+
 @router.get(
     "",
-    response_model=Page[PipelineDeploymentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.get(
+    "/{project_name_or_id}" + PIPELINE_DEPLOYMENTS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["deployments"],
 )
 @handle_exceptions
 def list_deployments(
     deployment_filter_model: PipelineDeploymentFilter = Depends(
         make_dependable(PipelineDeploymentFilter)
     ),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineDeploymentResponse]:
-    """Gets a list of deployment.
+    """Gets a list of deployments.
 
     Args:
         deployment_filter_model: Filter model used for pagination, sorting,
             filtering.
+        project_name_or_id: Optional name or ID of the project to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        List of deployment objects.
+        List of deployment objects matching the filter criteria.
     """
+    if project_name_or_id:
+        deployment_filter_model.project = project_name_or_id
+
     return verify_permissions_and_list_entities(
         filter_model=deployment_filter_model,
         resource_type=ResourceType.PIPELINE_DEPLOYMENT,
@@ -80,7 +135,6 @@ def list_deployments(
 
 @router.get(
     "/{deployment_id}",
-    response_model=PipelineDeploymentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -127,33 +181,68 @@ def delete_deployment(
     )
 
 
-if server_config().workload_manager_enabled:
+@router.get(
+    "/{deployment_id}/logs",
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def deployment_logs(
+    deployment_id: UUID,
+    offset: int = 0,
+    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get deployment logs.
 
-    @router.get(
-        "/{deployment_id}/logs",
-        responses={
-            401: error_response,
-            404: error_response,
-            422: error_response,
-        },
+    Args:
+        deployment_id: ID of the deployment.
+        offset: The offset from which to start reading.
+        length: The amount of bytes that should be read.
+
+    Returns:
+        The deployment logs.
+
+    Raises:
+        KeyError: If no logs are available for the deployment.
+    """
+    store = zen_store()
+
+    deployment = verify_permissions_and_get_entity(
+        id=deployment_id,
+        get_method=store.get_deployment,
+        hydrate=True,
     )
-    @handle_exceptions
-    def deployment_logs(
-        deployment_id: UUID,
-        _: AuthContext = Security(authorize),
-    ) -> str:
-        """Get deployment logs.
 
-        Args:
-            deployment_id: ID of the deployment.
-
-        Returns:
-            The deployment logs.
-        """
-        deployment = verify_permissions_and_get_entity(
-            id=deployment_id,
-            get_method=zen_store().get_deployment,
-            hydrate=True,
-        )
-
+    if deployment.template_id and server_config().workload_manager_enabled:
         return workload_manager().get_logs(workload_id=deployment.id)
+
+    # Get the last pipeline run for this deployment
+    pipeline_runs = store.list_runs(
+        runs_filter_model=PipelineRunFilter(
+            project=deployment.project.id,
+            sort_by="asc:created",
+            size=1,
+            deployment_id=deployment.id,
+        )
+    )
+
+    if len(pipeline_runs.items) == 0:
+        return ""
+
+    run = pipeline_runs.items[0]
+
+    logs = run.logs
+    if logs is None:
+        raise KeyError("No logs available for this deployment")
+
+    return fetch_logs(
+        zen_store=store,
+        artifact_store_id=logs.artifact_store_id,
+        logs_uri=logs.uri,
+        offset=offset,
+        length=length,
+    )

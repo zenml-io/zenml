@@ -15,6 +15,7 @@
 
 import hashlib
 import platform
+import time
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -214,8 +215,7 @@ def reuse_or_create_pipeline_build(
         build_model = Client().zen_store.get_build(build_id=build)
     else:
         build_request = PipelineBuildRequest(
-            user=Client().active_user.id,
-            workspace=Client().active_workspace.id,
+            project=Client().active_project.id,
             stack=Client().active_stack_model.id,
             pipeline=pipeline_id,
             **build.model_dump(),
@@ -327,6 +327,7 @@ def create_pipeline_build(
         "Building Docker image(s) for pipeline `%s`.",
         deployment.pipeline_configuration.name,
     )
+    start_time = time.time()
 
     docker_image_builder = PipelineDockerImageBuilder()
     images: Dict[str, BuildItem] = {}
@@ -409,6 +410,7 @@ def create_pipeline_build(
 
     logger.info("Finished building Docker image(s).")
 
+    duration = round(time.time() - start_time)
     is_local = stack.container_registry is None
     contains_code = any(item.contains_code for item in images.values())
     build_checksum = compute_build_checksum(
@@ -416,8 +418,7 @@ def create_pipeline_build(
     )
     stack_checksum = compute_stack_checksum(stack=stack_model)
     build_request = PipelineBuildRequest(
-        user=client.active_user.id,
-        workspace=client.active_workspace.id,
+        project=client.active_project.id,
         stack=stack_model.id,
         pipeline=pipeline_id,
         is_local=is_local,
@@ -427,6 +428,7 @@ def create_pipeline_build(
         python_version=platform.python_version(),
         checksum=build_checksum,
         stack_checksum=stack_checksum,
+        duration=duration,
     )
     return client.zen_store.create_build(build_request)
 

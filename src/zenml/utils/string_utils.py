@@ -101,7 +101,7 @@ def b64_decode(input_: str) -> str:
 
 
 def random_str(length: int) -> str:
-    """Generate a random human readable string of given length.
+    """Generate a random human-readable string of given length.
 
     Args:
         length: Length of string

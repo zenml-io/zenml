@@ -23,6 +23,9 @@ from zenml.integrations.gcp import (
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
+from zenml.integrations.gcp.vertex_custom_job_parameters import (
+    VertexCustomJobParameters,
+)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -61,6 +64,8 @@ class VertexOrchestratorSettings(BaseSettings):
     node_selector_constraint: Optional[Tuple[str, str]] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
+    custom_job_parameters: Optional[VertexCustomJobParameters] = None
+
     _node_selector_deprecation = (
         deprecation_utils.deprecate_pydantic_attributes(
             "node_selector_constraint"
@@ -86,7 +91,7 @@ class VertexOrchestratorConfig(
             then a subdirectory of the artifact store will be used.
         encryption_spec_key_name: The Cloud KMS resource identifier of the
             customer managed encryption key used to protect the job. Has the form:
-            `projects/<PRJCT>/locations/<REGION>/keyRings/<KR>/cryptoKeys/<KEY>`
+            `projects/<PROJECT>/locations/<REGION>/keyRings/<KR>/cryptoKeys/<KEY>`
             . The key needs to be in the same region as where the compute
             resource is created.
         workload_service_account: the service account for workload run-as
@@ -107,6 +112,11 @@ class VertexOrchestratorConfig(
         network: the full name of the Compute Engine Network to which the job
             should be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
+        private_service_connect: the full name of a Private Service Connect
+            endpoint to which the job should be peered. For example,
+            `projects/12345/regions/us-central1/networkAttachments/NETWORK_ATTACHMENT_NAME`
+            If not provided, the job will not be peered with any private service
+            connect endpoint.
         cpu_limit: The maximum CPU limit for this operator. This string value
             can be a number (integer value for number of CPUs) as string,
             or a number followed by "m", which means 1/1000. You can specify
@@ -124,13 +134,15 @@ class VertexOrchestratorConfig(
     pipeline_root: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
-    function_service_account: Optional[str] = None
-    scheduler_service_account: Optional[str] = None
     network: Optional[str] = None
+    private_service_connect: Optional[str] = None
 
+    # Deprecated
     cpu_limit: Optional[str] = None
     memory_limit: Optional[str] = None
     gpu_limit: Optional[int] = None
+    function_service_account: Optional[str] = None
+    scheduler_service_account: Optional[str] = None
 
     _resource_deprecation = deprecation_utils.deprecate_pydantic_attributes(
         "cpu_limit",

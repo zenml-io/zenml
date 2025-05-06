@@ -28,5 +28,3 @@ class XgboostIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.xgboost import materializers  # noqa
 
-
-XgboostIntegration.check_installation()

@@ -14,7 +14,7 @@
 """RBAC interface definition."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from zenml.zen_server.rbac.models import Action, Resource
 
@@ -63,13 +63,29 @@ class RBACInterface(ABC):
 
     @abstractmethod
     def update_resource_membership(
-        self, user: "UserResponse", resource: Resource, actions: List[Action]
+        self,
+        sharing_user: "UserResponse",
+        resource: Resource,
+        actions: List[Action],
+        user_id: Optional[str] = None,
+        team_id: Optional[str] = None,
     ) -> None:
         """Update the resource membership of a user.
 
         Args:
-            user: User for which the resource membership should be updated.
+            sharing_user: User that is sharing the resource.
             resource: The resource.
             actions: The actions that the user should be able to perform on the
                 resource.
+            user_id: ID of the user for which to update the membership.
+            team_id: ID of the team for which to update the membership.
+        """
+
+    @abstractmethod
+    def delete_resources(self, resources: List[Resource]) -> None:
+        """Delete resource membership information for a list of resources.
+
+        Args:
+            resources: The resources for which to delete the resource membership
+                information.
         """

@@ -39,7 +39,6 @@ from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
     PluginSubType,
-    SecretScope,
     StackComponentType,
 )
 from zenml.exceptions import IllegalOperationError
@@ -84,6 +83,9 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectUpdate,
     ResourceTypeModel,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -107,9 +109,6 @@ from zenml.models import (
     UserFilter,
     UserRequest,
     UserUpdate,
-    WorkspaceFilter,
-    WorkspaceRequest,
-    WorkspaceUpdate,
 )
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
@@ -415,11 +414,9 @@ class StackContext:
         self,
         components: Dict[StackComponentType, List[uuid.UUID]],
         stack_name: str = "aria",
-        user_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.stack_name = sample_name(stack_name)
-        self.user_id = user_id
         self.components = components
         self.client = Client()
         self.store = self.client.zen_store
@@ -427,8 +424,6 @@ class StackContext:
 
     def __enter__(self):
         new_stack = StackRequest(
-            user=self.user_id if self.user_id else self.client.active_user.id,
-            workspace=self.client.active_workspace.id,
             name=self.stack_name,
             components=self.components,
         )
@@ -453,22 +448,18 @@ class ComponentContext:
         config: Dict[str, Any],
         flavor: str,
         component_name: str = "aria",
-        user_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.component_name = sample_name(component_name)
         self.flavor = flavor
         self.component_type = c_type
         self.config = config
-        self.user_id = user_id
         self.client = Client()
         self.store = self.client.zen_store
         self.delete = delete
 
     def __enter__(self):
         new_component = ComponentRequest(
-            user=self.user_id if self.user_id else self.client.active_user.id,
-            workspace=self.client.active_workspace.id,
             name=self.component_name,
             type=self.component_type,
             flavor=self.flavor,
@@ -490,15 +481,15 @@ class ComponentContext:
             self.cleanup()
 
 
-class WorkspaceContext:
+class ProjectContext:
     def __init__(
         self,
-        workspace_name: str = "super_axl",
+        project_name: str = "super_axl",
         create: bool = True,
         activate: bool = False,
     ):
-        self.workspace_name = (
-            sample_name(workspace_name) if create else workspace_name
+        self.project_name = (
+            sample_name(project_name) if create else project_name
         )
         self.client = Client()
         self.store = self.client.zen_store
@@ -507,22 +498,22 @@ class WorkspaceContext:
 
     def __enter__(self):
         if self.create:
-            new_workspace = WorkspaceRequest(name=self.workspace_name)
-            self.workspace = self.store.create_workspace(new_workspace)
+            new_project = ProjectRequest(name=self.project_name)
+            self.project = self.store.create_project(new_project)
         else:
-            self.workspace = self.store.get_workspace(self.workspace_name)
+            self.project = self.store.get_project(self.project_name)
 
         if self.activate:
-            self.original_workspace = self.client.active_workspace
-            self.client.set_active_workspace(self.workspace.id)
-        return self.workspace
+            self.original_project = self.client.active_project
+            self.client.set_active_project(self.project.id)
+        return self.project
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.activate:
-            self.client.set_active_workspace(self.original_workspace.id)
+            self.client.set_active_project(self.original_project.id)
         if self.create:
             try:
-                self.store.delete_workspace(self.workspace.id)
+                self.store.delete_project(self.project.id)
             except KeyError:
                 pass
 
@@ -531,23 +522,19 @@ class SecretContext:
     def __init__(
         self,
         secret_name: Optional[str] = None,
-        scope: SecretScope = SecretScope.WORKSPACE,
+        private: bool = False,
         values: Dict[str, str] = {
             "sleep": "yes",
             "food": "hell yeah",
             "bath": "NO!",
         },
-        user_id: Optional[uuid.UUID] = None,
-        workspace_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.secret_name = (
             sample_name("axls-secrets") if not secret_name else secret_name
         )
-        self.scope = scope
+        self.private = private
         self.values = values
-        self.user_id = user_id
-        self.workspace_id = workspace_id
         self.client = Client()
         self.store = self.client.zen_store
         self.delete = delete
@@ -555,10 +542,8 @@ class SecretContext:
     def __enter__(self):
         new_secret = SecretRequest(
             name=self.secret_name,
-            scope=self.scope,
+            private=self.private,
             values=self.values,
-            user=self.user_id or self.client.active_user.id,
-            workspace=self.workspace_id or self.client.active_workspace.id,
         )
         self.created_secret = self.store.create_secret(new_secret)
         return self.created_secret
@@ -577,13 +562,11 @@ class SecretContext:
 class CodeRepositoryContext:
     def __init__(
         self,
-        user_id: Optional[uuid.UUID] = None,
-        workspace_id: Optional[uuid.UUID] = None,
+        project_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.code_repo_name = sample_name("code_repo")
-        self.user_id = user_id
-        self.workspace_id = workspace_id
+        self.project_id = project_id
         self.client = Client()
         self.store = self.client.zen_store
         self.delete = delete
@@ -597,8 +580,7 @@ class CodeRepositoryContext:
                 "attribute": "StubCodeRepository",
                 "type": "user",
             },
-            user=self.user_id or self.client.active_user.id,
-            workspace=self.workspace_id or self.client.active_workspace.id,
+            project=self.project_id or self.client.active_project.id,
         )
 
         self.repo = self.store.create_code_repository(request)
@@ -628,8 +610,6 @@ class ServiceConnectorContext:
         expires_at: Optional[datetime] = None,
         expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
-        user_id: Optional[uuid.UUID] = None,
-        workspace_id: Optional[uuid.UUID] = None,
         labels: Optional[Dict[str, str]] = None,
         client: Optional[Client] = None,
         delete: bool = True,
@@ -644,8 +624,6 @@ class ServiceConnectorContext:
         self.expires_at = expires_at
         self.expires_skew_tolerance = expires_skew_tolerance
         self.expiration_seconds = expiration_seconds
-        self.user_id = user_id
-        self.workspace_id = workspace_id
         self.labels = labels
         self.client = client or Client()
         self.store = self.client.zen_store
@@ -664,8 +642,6 @@ class ServiceConnectorContext:
             expires_skew_tolerance=self.expires_skew_tolerance,
             expiration_seconds=self.expiration_seconds,
             labels=self.labels or {},
-            user=self.user_id or self.client.active_user.id,
-            workspace=self.workspace_id or self.client.active_workspace.id,
         )
 
         self.connector = self.store.create_service_connector(request)
@@ -688,13 +664,11 @@ class ModelContext:
         create_version: bool = False,
         create_artifacts: int = 0,
         create_prs: int = 0,
-        user_id: Optional[uuid.UUID] = None,
         artifact_types: Optional[List[ArtifactType]] = None,
         delete: bool = True,
     ):
         client = Client()
-        self.workspace = client.active_workspace.id
-        self.user = user_id or client.active_user.id
+        self.project = client.active_project.id
         self.model = sample_name("su_model")
         self.model_version = "2.0.0"
 
@@ -716,8 +690,7 @@ class ModelContext:
 
     def __enter__(self):
         client = Client()
-        ws = client.get_workspace(self.workspace)
-        user = client.get_user(self.user)
+        ws = client.get_project(self.project)
         stack = client.active_stack
         try:
             model = client.get_model(self.model)
@@ -729,8 +702,7 @@ class ModelContext:
             except KeyError:
                 mv = client.zen_store.create_model_version(
                     ModelVersionRequest(
-                        user=user.id,
-                        workspace=ws.id,
+                        project=ws.id,
                         model=model.id,
                         name=self.model_version,
                     )
@@ -741,6 +713,7 @@ class ModelContext:
                 ArtifactRequest(
                     name=sample_name("sample_artifact"),
                     has_custom_name=True,
+                    project=ws.id,
                 )
             )
             client.get_artifact(artifact.id)
@@ -753,8 +726,7 @@ class ModelContext:
                     materializer="module.class",
                     type=self.artifact_types[i],
                     uri="",
-                    user=user.id,
-                    workspace=ws.id,
+                    project=ws.id,
                     save_type=ArtifactSaveType.STEP_OUTPUT,
                 )
             )
@@ -762,8 +734,7 @@ class ModelContext:
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    user=user.id,
-                    workspace=ws.id,
+                    project=ws.id,
                     stack=stack.id,
                     run_name_template="",
                     pipeline_configuration={"name": "pipeline_name"},
@@ -773,17 +744,15 @@ class ModelContext:
             )
             self.deployments.append(deployment)
             self.prs.append(
-                client.zen_store.create_run(
+                client.zen_store.get_or_create_run(
                     PipelineRunRequest(
-                        id=uuid.uuid4(),
                         name=sample_name("sample_pipeline_run"),
                         status="running",
                         config=PipelineConfiguration(name="aria_pipeline"),
-                        user=user.id,
-                        workspace=ws.id,
+                        project=ws.id,
                         deployment=deployment.id,
                     )
-                )
+                )[0]
             )
         if self.create_version:
             if self.create_artifacts:
@@ -1000,12 +969,12 @@ class CrudTestConfig:
         """Creates the entity."""
         create_model = self.create_model
 
-        # Set active user, workspace, and stack if applicable
+        # Set active user, project, and stack if applicable
         client = Client()
         if hasattr(create_model, "user"):
             create_model.user = client.active_user.id
-        if hasattr(create_model, "workspace"):
-            create_model.workspace = client.active_workspace.id
+        if hasattr(create_model, "project"):
+            create_model.project = client.active_project.id
         if hasattr(create_model, "stack"):
             create_model.stack = client.active_stack_model.id
 
@@ -1079,11 +1048,11 @@ class CrudTestConfig:
                     c.cleanup()
 
 
-workspace_crud_test_config = CrudTestConfig(
-    create_model=WorkspaceRequest(name=sample_name("sample_workspace")),
-    update_model=WorkspaceUpdate(name=sample_name("updated_sample_workspace")),
-    filter_model=WorkspaceFilter,
-    entity_name="workspace",
+project_crud_test_config = CrudTestConfig(
+    create_model=ProjectRequest(name=sample_name("sample_project")),
+    update_model=ProjectUpdate(name=sample_name("updated_sample_project")),
+    filter_model=ProjectFilter,
+    entity_name="project",
 )
 user_crud_test_config = CrudTestConfig(
     create_model=UserRequest(name=sample_name("sample_user"), is_admin=True),
@@ -1098,8 +1067,6 @@ flavor_crud_test_config = CrudTestConfig(
         integration="",
         source="",
         config_schema={},
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
     ),
     filter_model=FlavorFilter,
     entity_name="flavor",
@@ -1110,8 +1077,6 @@ component_crud_test_config = CrudTestConfig(
         type=StackComponentType.ORCHESTRATOR,
         flavor="local",
         configuration={},
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
     ),
     update_model=ComponentUpdate(name=sample_name("updated_sample_component")),
     filter_model=ComponentFilter,
@@ -1120,8 +1085,7 @@ component_crud_test_config = CrudTestConfig(
 pipeline_crud_test_config = CrudTestConfig(
     create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         description="Pipeline description",
     ),
     update_model=PipelineUpdate(description="Updated pipeline description"),
@@ -1136,8 +1100,8 @@ pipeline_crud_test_config = CrudTestConfig(
 #         name=sample_name("sample_pipeline_run"),
 #         status=ExecutionStatus.RUNNING,
 #         config=PipelineConfiguration(name="aria_pipeline"),
-#         user=uuid.uuid4(),
-#         workspace=uuid.uuid4(),
+#
+#         project=uuid.uuid4(),
 #     ),
 #     update_model=PipelineRunUpdateModel(status=ExecutionStatus.COMPLETED),
 #     filter_model=PipelineRunFilterModel,
@@ -1146,6 +1110,7 @@ pipeline_crud_test_config = CrudTestConfig(
 artifact_crud_test_config = CrudTestConfig(
     entity_name="artifact",
     create_model=ArtifactRequest(
+        project=uuid.uuid4(),
         name=sample_name("sample_artifact"),
         has_custom_name=True,
     ),
@@ -1164,8 +1129,7 @@ artifact_version_crud_test_config = CrudTestConfig(
         materializer="module.class",
         type=ArtifactType.DATA,
         uri="",
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         save_type=ArtifactSaveType.STEP_OUTPUT,
     ),
     filter_model=ArtifactVersionFilter,
@@ -1176,8 +1140,6 @@ secret_crud_test_config = CrudTestConfig(
     create_model=SecretRequest(
         name=sample_name("sample_secret"),
         values={"key": "value"},
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
     ),
     filter_model=SecretFilter,
     entity_name="secret",
@@ -1188,8 +1150,6 @@ remote_orchestrator_crud_test_config = CrudTestConfig(
         type=StackComponentType.ORCHESTRATOR,
         flavor="kubernetes",
         configuration={},
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
     ),
     filter_model=ComponentFilter,
     entity_name="stack_component",
@@ -1200,16 +1160,12 @@ remote_artifact_store_crud_test_config = CrudTestConfig(
         type=StackComponentType.ARTIFACT_STORE,
         flavor="s3",
         configuration={"path": "s3://bucket"},
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
     ),
     filter_model=ComponentFilter,
     entity_name="stack_component",
 )
 remote_stack_crud_test_config = CrudTestConfig(
     create_model=StackRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
         name=sample_name("remote_stack"),
         components={},
     ),
@@ -1222,8 +1178,7 @@ remote_stack_crud_test_config = CrudTestConfig(
 )
 build_crud_test_config = CrudTestConfig(
     create_model=PipelineBuildRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         images={},
         is_local=False,
         contains_code=True,
@@ -1234,8 +1189,7 @@ build_crud_test_config = CrudTestConfig(
 )
 deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         stack=uuid.uuid4(),
         run_name_template="template",
         pipeline_configuration={"name": "pipeline_name"},
@@ -1249,8 +1203,7 @@ deployment_crud_test_config = CrudTestConfig(
 )
 code_repository_crud_test_config = CrudTestConfig(
     create_model=CodeRepositoryRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         name=sample_name("sample_code_repository"),
         config={},
         source={"module": "module", "type": "user"},
@@ -1275,8 +1228,6 @@ service_account_crud_test_config = CrudTestConfig(
 )
 service_connector_crud_test_config = CrudTestConfig(
     create_model=ServiceConnectorRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
         name=sample_name("sample_service_connector"),
         connector_type="docker",
         auth_method="password",
@@ -1293,8 +1244,7 @@ service_connector_crud_test_config = CrudTestConfig(
 )
 model_crud_test_config = CrudTestConfig(
     create_model=ModelRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         name=sample_name("super_model"),
         license="who cares",
         description="cool stuff",
@@ -1315,8 +1265,7 @@ model_crud_test_config = CrudTestConfig(
 )
 remote_deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         stack=uuid.uuid4(),
         build=uuid.uuid4(),  # will be overridden in create()
         run_name_template="template",
@@ -1337,8 +1286,7 @@ run_template_test_config = CrudTestConfig(
         name=sample_name("run_template"),
         description="Test run template.",
         source_deployment_id=uuid.uuid4(),  # will be overridden in create()
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
     ),
     update_model=RunTemplateUpdate(name=sample_name("updated_run_template")),
     filter_model=RunTemplateFilter,
@@ -1354,8 +1302,7 @@ event_source_crud_test_config = CrudTestConfig(
         description="Best event source ever",
         flavor="github",  # TODO: Implementations can be parametrized later
         plugin_subtype=PluginSubType.WEBHOOK,
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
     ),
     update_model=EventSourceUpdate(
         name=sample_name("updated_sample_component")
@@ -1372,8 +1319,7 @@ action_crud_test_config = CrudTestConfig(
         configuration={"template_id": uuid.uuid4()},
         plugin_subtype=PluginSubType.PIPELINE_RUN,
         flavor="builtin",
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
     ),
     update_model=ActionUpdate(name=sample_name("updated_blupus_feeder")),
     filter_model=ActionFilter,
@@ -1391,8 +1337,7 @@ trigger_crud_test_config = CrudTestConfig(
         action_id=uuid.uuid4(),  # will be overridden in create()
         event_filter={},
         event_source_id=uuid.uuid4(),  # will be overridden in create()
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
     ),
     update_model=TriggerUpdate(name=sample_name("updated_sample_component")),
     filter_model=TriggerFilter,
@@ -1412,8 +1357,8 @@ trigger_crud_test_config = CrudTestConfig(
 #             config=StepConfiguration(name="sample_step_run")
 #         ),
 #         status=ExecutionStatus.RUNNING,
-#         user=uuid.uuid4(),
-#         workspace=uuid.uuid4(),
+#
+#         project=uuid.uuid4(),
 #         pipeline_run_id=uuid.uuid4()   # Pipeline run with id needs to exist
 #     ),
 #     update_model=StepRunUpdateModel(status=ExecutionStatus.COMPLETED),
@@ -1423,7 +1368,7 @@ trigger_crud_test_config = CrudTestConfig(
 
 
 list_of_entities = [
-    workspace_crud_test_config,
+    project_crud_test_config,
     user_crud_test_config,
     flavor_crud_test_config,
     component_crud_test_config,

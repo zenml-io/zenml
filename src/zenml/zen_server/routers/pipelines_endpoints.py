@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipelines."""
 
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -26,6 +27,7 @@ from zenml.constants import (
 from zenml.models import (
     Page,
     PipelineFilter,
+    PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
     PipelineRunResponse,
@@ -33,14 +35,18 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.feature_gate.endpoint_utils import report_decrement
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    report_decrement,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -55,15 +61,70 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + PIPELINES,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["pipelines"],
+)
+@handle_exceptions
+def create_pipeline(
+    pipeline: PipelineRequest,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> PipelineResponse:
+    """Creates a pipeline.
+
+    Args:
+        pipeline: Pipeline to create.
+        project_name_or_id: Optional name or ID of the project.
+
+    Returns:
+        The created pipeline.
+    """
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        pipeline.project = project.id
+
+    # We limit pipeline namespaces, not pipeline versions
+    skip_entitlements = (
+        zen_store().count_pipelines(
+            PipelineFilter(name=pipeline.name, project=pipeline.project)
+        )
+        > 0
+    )
+
+    return verify_permissions_and_create_entity(
+        request_model=pipeline,
+        create_method=zen_store().create_pipeline,
+        skip_entitlements=skip_entitlements,
+    )
+
+
 @router.get(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.get(
+    "/{project_name_or_id}" + PIPELINES,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["pipelines"],
 )
 @handle_exceptions
 def list_pipelines(
     pipeline_filter_model: PipelineFilter = Depends(
         make_dependable(PipelineFilter)
     ),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineResponse]:
@@ -72,12 +133,16 @@ def list_pipelines(
     Args:
         pipeline_filter_model: Filter model used for pagination, sorting,
             filtering.
+        project_name_or_id: Optional name or ID of the project to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        List of pipeline objects.
+        List of pipeline objects matching the filter criteria.
     """
+    if project_name_or_id:
+        pipeline_filter_model.project = project_name_or_id
+
     return verify_permissions_and_list_entities(
         filter_model=pipeline_filter_model,
         resource_type=ResourceType.PIPELINE,
@@ -160,7 +225,9 @@ def delete_pipeline(
 
     should_decrement = (
         ResourceType.PIPELINE in server_config().reportable_resources
-        and zen_store().count_pipelines(PipelineFilter(name=pipeline.name))
+        and zen_store().count_pipelines(
+            PipelineFilter(name=pipeline.name, project=pipeline.project.id)
+        )
         == 0
     )
     if should_decrement:

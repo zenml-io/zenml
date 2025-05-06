@@ -27,6 +27,7 @@ from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model import Model
 from zenml.models import PipelineBuildBase
 from zenml.utils import pydantic_utils
+from zenml.utils.tag_utils import Tag
 
 
 class PipelineRunConfiguration(
@@ -39,13 +40,14 @@ class PipelineRunConfiguration(
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
+    enable_pipeline_logs: Optional[bool] = None
     schedule: Optional[Schedule] = None
     build: Union[PipelineBuildBase, UUID, None] = Field(
         default=None, union_mode="left_to_right"
     )
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
-    tags: Optional[List[str]] = None
+    tags: Optional[List[Union[str, Tag]]] = None
     extra: Dict[str, Any] = {}
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None

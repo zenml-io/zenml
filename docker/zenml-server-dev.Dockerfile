@@ -1,24 +1,59 @@
 ARG PYTHON_VERSION=3.11
+ARG VIRTUAL_ENV=/opt/venv
+ARG USERNAME=zenml
+ARG USER_UID=1000
+ARG USER_GID=1000
+ARG INSTALL_DEBUG_TOOLS=false
 
 # Use a minimal base image to reduce the attack surface
 FROM python:${PYTHON_VERSION}-slim-bookworm AS base
 
+# Redeclaring ARGs because Docker is not smart enough to inherit them from the
+# global scope
+ARG VIRTUAL_ENV
+ARG USERNAME
+ARG USER_UID
+ARG USER_GID
+ARG INSTALL_DEBUG_TOOLS
+
 # Update the system packages to latest versions to reduce vulnerabilities, then
-# clean up to reduce the image size
+# clean up to reduce the image size.
 #
-# NOTE: System packages required for the build stage should be installed in the
-# build stage itself to avoid bloating the final image. Packages required for
-# the final image should be installed in the final stage.
-RUN set -ex \
-  && apt-get update \
-  && apt-get upgrade -y \
-  && apt-get autoremove -y \
-  && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/*
+# Install some utilities for debugging and development only if
+# INSTALL_DEBUG_TOOLS is true.
+RUN set -ex && \
+  apt-get update && \
+  apt-get upgrade -y && \
+  if [ "$INSTALL_DEBUG_TOOLS" = "true" ]; then \
+    apt-get install -y curl net-tools nmap inetutils-ping default-mysql-client mariadb-client git ; \
+  fi && \
+  apt-get autoremove -y && \
+  apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/*
+
+# Create the user and group which will be used to run the ZenML server.
+RUN groupadd --gid $USER_GID $USERNAME && \
+  useradd --uid $USER_UID --gid $USER_GID -m $USERNAME && \
+  mkdir -p $VIRTUAL_ENV && \
+  chown -R $USER_UID:$USER_GID $VIRTUAL_ENV
+
+WORKDIR /zenml
+
+RUN chown -R $USER_UID:$USER_GID .
+
+# Switch to non-privileged user
+USER $USERNAME
+
+ENV PATH="$VIRTUAL_ENV/bin:/home/$USERNAME/.local/bin:$PATH"
 
 FROM base AS builder
 
-ARG VIRTUAL_ENV=/opt/venv
+# Redeclaring ARGs because Docker is not smart enough to inherit them from the
+# global scope
+ARG VIRTUAL_ENV
+ARG USERNAME
+ARG USER_UID
+ARG USER_GID
 
 ENV \
   # Set up virtual environment
@@ -31,8 +66,6 @@ ENV \
   # Cache is useless in docker image, so disable to reduce image size
   PIP_NO_CACHE_DIR=1
 
-WORKDIR /zenml
-
 # Install build dependencies
 #
 # NOTE: System packages required for the build stage should be installed here
@@ -40,36 +73,34 @@ WORKDIR /zenml
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-COPY README.md pyproject.toml ./
+COPY --chown=$USERNAME:$USER_GID  README.md pyproject.toml ./
 
 # We first copy the __init__.py file to allow pip install-ing the Python
 # dependencies as a separate cache layer. This way, we can avoid re-installing
 # the dependencies when the source code changes but the dependencies don't.
-COPY src/zenml/__init__.py ./src/zenml/
+COPY --chown=$USERNAME:$USER_GID src/zenml/__init__.py ./src/zenml/
 
 # Run pip install before copying the source files to install dependencies in
 # the virtual environment. Also create a requirements.txt file to keep track of
 # dependencies for reproducibility and debugging.
-# NOTE: we need to uninstall zenml at the end to remove the incomplete
-# installation
+# NOTE: we uninstall zenml at the end because we install it separately in the
+# final stage
 RUN pip install --upgrade pip \
-  && pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
-  && pip freeze > requirements.txt
-
-# Copy the source code
-COPY src src
-
-# Run pip install again to install the source code in the virtual environment
-RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]
+    && pip install uv \
+    && uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
+    && uv pip uninstall zenml \
+    && uv pip freeze > requirements.txt
 
 # Inherit from the base image which has the minimal set of updated system
 # software packages
-FROM base AS final
+FROM base AS common-runtime
 
-ARG VIRTUAL_ENV=/opt/venv
-ARG USERNAME=zenml
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
+# Redeclaring ARGs because Docker is not smart enough to inherit them from the
+# global scope
+ARG VIRTUAL_ENV
+ARG USERNAME
+ARG USER_UID
+ARG USER_GID
 
 ENV \
   # Allow statements and log messages to immediately appear
@@ -95,37 +126,37 @@ ENV \
   # Set the ZenML server login rate limit to 100 requests per minute
   ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE=100
 
-WORKDIR /zenml
-
 # Install runtime dependencies
 #
 # NOTE: System packages required at runtime should be installed here
 
-# Install some utilities for debugging and development
-RUN set -ex \
-  && apt-get update \
-  && apt-get install -y curl net-tools nmap inetutils-ping default-mysql-client mariadb-client git \
-  && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/*
-
-# Copy the virtual environment from the builder stage
-COPY --from=builder /opt/venv /opt/venv
+# Copy the virtual environment with all dependencies
+COPY --chown=$USERNAME:$USER_GID --from=builder /opt/venv /opt/venv
 # Copy the requirements.txt file from the builder stage
-COPY --from=builder /zenml/requirements.txt /zenml/requirements.txt
+COPY --chown=$USERNAME:$USER_GID --from=builder /zenml/requirements.txt /zenml/requirements.txt
 
-# Create the user and group which will be used to run the ZenML server
-# and set the ownership of the workdir directory to the user.
-# Create the local stores directory beforehand and ensure it is owned by the
-# user.
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && mkdir -p /zenml/.zenconfig/local_stores/default_zen_store \
-    && chown -R $USER_UID:$USER_GID /zenml
+# Copy source code
+COPY --chown=$USERNAME:$USER_GID README.md pyproject.toml ./
+COPY --chown=$USERNAME:$USER_GID src src
 
-ENV PATH="$VIRTUAL_ENV/bin:/home/$USERNAME/.local/bin:$PATH"
+FROM common-runtime AS local-runtime
 
-# Switch to non-privileged user
-USER $USERNAME
+# Run pip install again to install the source code in the virtual environment
+# in editable mode
+RUN pip install --no-deps --no-cache -e .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]
+
+EXPOSE 8080
+
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload"]
+CMD ["--port", "8080", "--host",  "0.0.0.0"]
+
+
+FROM common-runtime AS runtime
+
+# Run pip install again to install the source code in the virtual environment
+# and then remove the sources
+RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
+    && rm -rf src README.md pyproject.toml
 
 EXPOSE 8080
 

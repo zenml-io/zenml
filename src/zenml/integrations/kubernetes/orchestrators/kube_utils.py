@@ -34,7 +34,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 import enum
 import re
 import time
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -43,6 +43,7 @@ from kubernetes.client.rest import ApiException
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_namespace_manifest,
     build_role_binding_manifest_for_service_account,
+    build_secret_manifest,
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
@@ -263,6 +264,9 @@ def wait_pod(
 
         resp = get_pod(core_api, pod_name, namespace)
 
+        if resp is None:
+            raise RuntimeError(f"Pod `{namespace}:{pod_name}` not found.")
+
         # Stream logs to `zenml.logger.info()`.
         # TODO: can we do this without parsing all logs every time?
         if stream_logs and pod_is_not_pending(resp):
@@ -371,3 +375,182 @@ def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
     """
     manifest = build_namespace_manifest(namespace)
     _if_not_exists(core_api.create_namespace)(body=manifest)
+
+
+def create_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    data: Dict[str, Optional[str]],
+) -> None:
+    """Create a Kubernetes secret.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to create the secret.
+        secret_name: The name of the secret to create.
+        data: The secret data.
+    """
+    core_api.create_namespaced_secret(
+        namespace=namespace,
+        body=build_secret_manifest(name=secret_name, data=data),
+    )
+
+
+def update_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    data: Dict[str, Optional[str]],
+) -> None:
+    """Update a Kubernetes secret.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to update the secret.
+        secret_name: The name of the secret to update.
+        data: The secret data. If the value is None, the key will be removed
+            from the secret.
+    """
+    core_api.patch_namespaced_secret(
+        namespace=namespace,
+        name=secret_name,
+        body=build_secret_manifest(name=secret_name, data=data),
+    )
+
+
+def create_or_update_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    data: Dict[str, Optional[str]],
+) -> None:
+    """Create a Kubernetes secret if it doesn't exist, or update it if it does.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to create or update the secret.
+        secret_name: The name of the secret to create or update.
+        data: The secret data. If the value is None, the key will be removed
+            from the secret.
+
+    Raises:
+        ApiException: If the secret creation failed for any reason other than
+            the secret already existing.
+    """
+    try:
+        create_secret(core_api, namespace, secret_name, data)
+    except ApiException as e:
+        if e.status != 409:
+            raise
+        update_secret(core_api, namespace, secret_name, data)
+
+
+def delete_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+) -> None:
+    """Delete a Kubernetes secret.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to delete the secret.
+        secret_name: The name of the secret to delete.
+    """
+    core_api.delete_namespaced_secret(
+        name=secret_name,
+        namespace=namespace,
+    )
+
+
+def create_and_wait_for_pod_to_start(
+    core_api: k8s_client.CoreV1Api,
+    pod_display_name: str,
+    pod_name: str,
+    pod_manifest: k8s_client.V1Pod,
+    namespace: str,
+    startup_max_retries: int,
+    startup_failure_delay: float,
+    startup_failure_backoff: float,
+    startup_timeout: float,
+) -> None:
+    """Create a pod and wait for it to reach a desired state.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        pod_display_name: The display name of the pod to use in logs.
+        pod_name: The name of the pod to create.
+        pod_manifest: The manifest of the pod to create.
+        namespace: The namespace in which to create the pod.
+        startup_max_retries: The maximum number of retries for the pod startup.
+        startup_failure_delay: The delay between retries for the pod startup.
+        startup_failure_backoff: The backoff factor for the pod startup.
+        startup_timeout: The maximum time to wait for the pod to start.
+
+    Raises:
+        TimeoutError: If the pod is still in a pending state after the maximum
+            wait time has elapsed.
+        Exception: If the pod fails to start after the maximum number of
+            retries.
+    """
+    retries = 0
+
+    while retries < startup_max_retries:
+        try:
+            # Create and run pod.
+            core_api.create_namespaced_pod(
+                namespace=namespace,
+                body=pod_manifest,
+            )
+            break
+        except Exception as e:
+            retries += 1
+            if retries < startup_max_retries:
+                logger.debug(f"The {pod_display_name} failed to start: {e}")
+                logger.error(
+                    f"Failed to create {pod_display_name}. "
+                    f"Retrying in {startup_failure_delay} seconds..."
+                )
+                time.sleep(startup_failure_delay)
+                startup_failure_delay *= startup_failure_backoff
+            else:
+                logger.error(
+                    f"Failed to create {pod_display_name} after "
+                    f"{startup_max_retries} retries. Exiting."
+                )
+                raise
+
+    # Wait for pod to start
+    logger.info(f"Waiting for {pod_display_name} to start...")
+    max_wait = startup_timeout
+    total_wait: float = 0
+    delay = startup_failure_delay
+    while True:
+        pod = get_pod(
+            core_api=core_api,
+            pod_name=pod_name,
+            namespace=namespace,
+        )
+        if not pod or pod_is_not_pending(pod):
+            break
+        if total_wait >= max_wait:
+            # Have to delete the pending pod so it doesn't start running
+            # later on.
+            try:
+                core_api.delete_namespaced_pod(
+                    name=pod_name,
+                    namespace=namespace,
+                )
+            except Exception:
+                pass
+            raise TimeoutError(
+                f"The {pod_display_name} is still in a pending state "
+                f"after {total_wait} seconds. Exiting."
+            )
+
+        if total_wait + delay > max_wait:
+            delay = max_wait - total_wait
+        total_wait += delay
+        time.sleep(delay)
+        delay *= startup_failure_backoff

@@ -226,24 +226,8 @@ def test_model_version_list(clean_client_with_models: "Client"):
     """Test that zenml model version list does not fail."""
     runner = CliRunner(mix_stderr=False)
     list_command = cli.commands["model"].commands["version"].commands["list"]
-    result = runner.invoke(
-        list_command,
-        args=["-n", NAME],
-    )
+    result = runner.invoke(list_command, args=[f"--model={NAME}"])
     assert result.exit_code == 0, result.stderr
-
-
-def test_model_version_list_fails_on_bad_model(
-    clean_client_with_models: "Client",
-):
-    """Test that zenml model version list fails."""
-    runner = CliRunner(mix_stderr=False)
-    list_command = cli.commands["model"].commands["version"].commands["list"]
-    result = runner.invoke(
-        list_command,
-        args=["-n", "foo"],
-    )
-    assert result.exit_code != 0, result.stderr
 
 
 def test_model_version_delete_found(clean_client_with_models: "Client"):

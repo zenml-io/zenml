@@ -85,62 +85,10 @@ def test_update_stack_component_for_nonexistent_component_fails(
     assert result.exit_code == 1
 
 
-def test_update_stack_component_with_name_or_uuid_fails(
+def test_update_stack_component_with_non_configured_property_succeeds(
     clean_client: "Client",
 ) -> None:
-    """Test that updating stack component name or uuid fails."""
-    register_container_registry_command = cli.commands[
-        "container-registry"
-    ].commands["register"]
-
-    runner = CliRunner()
-    register_result = runner.invoke(
-        register_container_registry_command,
-        [
-            "new_container_registry",
-            "--flavor",
-            "default",
-            "--uri=some_random_uri.com",
-        ],
-    )
-    assert register_result.exit_code == 0
-
-    update_container_registry_command = cli.commands[
-        "container-registry"
-    ].commands["update"]
-    update_result1 = runner.invoke(
-        update_container_registry_command,
-        [
-            "new_container_registry",
-            "--name=aria",
-        ],
-    )
-    assert update_result1.exit_code == 1
-    with does_not_raise():
-        clean_client.get_stack_component(
-            name_id_or_prefix="new_container_registry",
-            component_type=StackComponentType.CONTAINER_REGISTRY,
-        )
-
-    update_result2 = runner.invoke(
-        update_container_registry_command,
-        [
-            "new_container_registry",
-            "--uuid=aria_uuid",
-        ],
-    )
-    assert update_result2.exit_code == 1
-    with does_not_raise():
-        clean_client.get_stack_component(
-            name_id_or_prefix="new_container_registry",
-            component_type=StackComponentType.CONTAINER_REGISTRY,
-        )
-
-
-def test_update_stack_component_with_non_configured_property_fails(
-    clean_client: "Client",
-) -> None:
-    """Updating stack component with aa non-configured property fails."""
+    """Updating stack component with a non-configured property succeeds."""
     register_container_registry_command = cli.commands[
         "container-registry"
     ].commands["register"]
@@ -167,7 +115,7 @@ def test_update_stack_component_with_non_configured_property_fails(
             "--favorite_cat=aria",
         ],
     )
-    assert update_result.exit_code == 1
+    assert update_result.exit_code == 0
     with pytest.raises(AttributeError):
         clean_client.get_stack_component(
             name_id_or_prefix="new_container_registry",

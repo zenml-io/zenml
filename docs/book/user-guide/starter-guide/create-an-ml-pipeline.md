@@ -11,12 +11,15 @@ Leveraging ZenML, you can create and manage robust, scalable machine learning (M
 <figure><img src="../../.gitbook/assets/pipeline_showcase.png" alt=""><figcaption><p>ZenML pipelines are simple Python code</p></figcaption></figure>
 
 {% hint style="info" %}
-Before starting this guide, make sure you have [installed ZenML](../../getting-started/installation.md):
+Before starting this guide, make sure you have [installed ZenML](https://docs.zenml.io/getting-started/installation):
 
 ```shell
 pip install "zenml[server]"
 zenml login --local  # Will launch the dashboard locally
 ```
+
+It is also highly recommended that you run [`zenml init`](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository#zen) at your project root directory when starting a new project. This will tell ZenML which files to include when
+running your pipelines remotely.
 {% endhint %}
 
 ## Start with a simple ML pipeline
@@ -268,7 +271,11 @@ If you are unsure how to format this config file, you can generate a template co
 training_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-Check out [this section](../../how-to/pipeline-development/use-configuration-files/README.md) for advanced configuration options.
+Check out [this section](https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration) for advanced configuration options.
+
+{% hint style="info" %}
+If you ever want to learn more about individual ZenML functions or classes, check out the [SDK Docs](https://sdkdocs.zenml.io/)
+{% endhint %}
 
 ## Full Code Example
 

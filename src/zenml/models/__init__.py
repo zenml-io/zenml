@@ -28,18 +28,20 @@ from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
 )
 from zenml.models.v2.base.scoped import (
+    TaggableFilter,
+    RunMetadataFilterMixin,
     UserScopedRequest,
     UserScopedFilter,
     UserScopedResponse,
     UserScopedResponseBody,
     UserScopedResponseMetadata,
-    WorkspaceScopedRequest,
-    WorkspaceScopedFilter,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
+    ProjectScopedRequest,
+    ProjectScopedFilter,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    ProjectScopedFilter,
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -132,7 +134,8 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
-    ComponentResponseResources
+    ComponentResponseResources,
+    DefaultComponentRequest,
 )
 from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponse,
@@ -274,12 +277,17 @@ from zenml.models.v2.core.service_connector import (
     ServiceConnectorResponseMetadata,
 )
 from zenml.models.v2.core.stack import (
+    DefaultStackRequest,
     StackRequest,
     StackUpdate,
     StackFilter,
     StackResponse,
     StackResponseBody,
     StackResponseMetadata,
+)
+from zenml.models.v2.misc.statistics import (
+    ProjectStatistics,
+    ServerStatistics,
 )
 from zenml.models.v2.core.step_run import (
     StepRunRequest,
@@ -294,6 +302,7 @@ from zenml.models.v2.core.tag import (
     TagFilter,
     TagResponse,
     TagResponseBody,
+    TagResponseMetadata,
     TagRequest,
     TagUpdate,
 )
@@ -310,13 +319,13 @@ from zenml.models.v2.core.user import (
     UserResponseBody,
     UserResponseMetadata,
 )
-from zenml.models.v2.core.workspace import (
-    WorkspaceRequest,
-    WorkspaceUpdate,
-    WorkspaceFilter,
-    WorkspaceResponse,
-    WorkspaceResponseBody,
-    WorkspaceResponseMetadata,
+from zenml.models.v2.core.project import (
+    ProjectRequest,
+    ProjectUpdate,
+    ProjectFilter,
+    ProjectResponse,
+    ProjectResponseBody,
+    ProjectResponseMetadata,
 )
 
 # V2 Misc
@@ -381,6 +390,7 @@ from zenml.models.v2.misc.server_models import (
     ServerDatabaseType,
     ServerDeploymentType,
 )
+from zenml.models.v2.misc.service import ServiceType
 from zenml.models.v2.core.server_settings import (
     ServerActivationRequest,
     ServerSettingsResponse,
@@ -394,6 +404,9 @@ from zenml.models.v2.misc.stack_deployment import (
     StackDeploymentConfig,
     StackDeploymentInfo,
 )
+from zenml.models.v2.misc.tag import (
+    TagResource,
+)
 from zenml.models.v2.misc.info_models import (
     ComponentInfo,
     ServiceConnectorInfo,
@@ -405,7 +418,11 @@ from zenml.models.v2.misc.info_models import (
 
 # V2
 ActionResponseResources.model_rebuild()
+ActionResponseMetadata.model_rebuild()
 APIKeyResponseBody.model_rebuild()
+ArtifactResponse.model_rebuild()
+ArtifactResponseBody.model_rebuild()
+ArtifactResponseMetadata.model_rebuild()
 ArtifactVersionRequest.model_rebuild()
 ArtifactVersionResponseBody.model_rebuild()
 ArtifactVersionResponseMetadata.model_rebuild()
@@ -439,6 +456,7 @@ PipelineDeploymentRequest.model_rebuild()
 PipelineDeploymentResponseBody.model_rebuild()
 PipelineDeploymentResponseMetadata.model_rebuild()
 PipelineDeploymentResponseResources.model_rebuild()
+PipelineRunRequest.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
 PipelineRunResponseResources.model_rebuild()
@@ -463,6 +481,7 @@ StepRunRequest.model_rebuild()
 StepRunResponseBody.model_rebuild()
 StepRunResponseMetadata.model_rebuild()
 StepRunResponseResources.model_rebuild()
+TagResponseBody.model_rebuild()
 TriggerExecutionResponseResources.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -491,18 +510,20 @@ __all__ = [
     "UserScopedResponse",
     "UserScopedResponseBody",
     "UserScopedResponseMetadata",
-    "WorkspaceScopedRequest",
-    "WorkspaceScopedFilter",
-    "WorkspaceScopedResponse",
-    "WorkspaceScopedResponseBody",
-    "WorkspaceScopedResponseMetadata",
-    "WorkspaceScopedResponseResources",
-    "WorkspaceScopedTaggableFilter",
+    "ProjectScopedRequest",
+    "ProjectScopedFilter",
+    "ProjectScopedResponse",
+    "ProjectScopedResponseBody",
+    "ProjectScopedResponseMetadata",
+    "ProjectScopedResponseResources",
+    "ProjectScopedFilter",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",
     "NumericFilter",
     "UUIDFilter",
+    "TaggableFilter",
+    "RunMetadataFilterMixin",
     "Page",
     # V2 Core
     "ActionFilter",
@@ -560,6 +581,8 @@ __all__ = [
     "ComponentResponseBody",
     "ComponentResponseMetadata",
     "ComponentResponseResources",
+    "DefaultComponentRequest",
+    "DefaultStackRequest",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
@@ -693,6 +716,7 @@ __all__ = [
     "TagResourceRequest",
     "TagResponse",
     "TagResponseBody",
+    "TagResponseMetadata",
     "TagRequest",
     "TagUpdate",
     "TriggerResponse",
@@ -721,12 +745,12 @@ __all__ = [
     "UserResponse",
     "UserResponseBody",
     "UserResponseMetadata",
-    "WorkspaceRequest",
-    "WorkspaceUpdate",
-    "WorkspaceFilter",
-    "WorkspaceResponse",
-    "WorkspaceResponseBody",
-    "WorkspaceResponseMetadata",
+    "ProjectRequest",
+    "ProjectUpdate",
+    "ProjectFilter",
+    "ProjectResponse",
+    "ProjectResponseBody",
+    "ProjectResponseMetadata",
     # V2 Misc
     "AuthenticationMethodModel",
     "DeployedStack",
@@ -743,6 +767,8 @@ __all__ = [
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
+    "ServerStatistics",
+    "ServiceType",
     "StackDeploymentConfig",
     "StackDeploymentInfo",
     "OAuthDeviceAuthorizationRequest",
@@ -755,7 +781,9 @@ __all__ = [
     "ComponentInfo",
     "ServiceConnectorInfo",
     "ServiceConnectorResourcesInfo",
+    "TagResource",
     "ResourcesInfo",
     "RunMetadataEntry",
     "RunMetadataResource",
+    "ProjectStatistics",
 ]

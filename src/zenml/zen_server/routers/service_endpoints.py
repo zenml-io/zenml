@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for services."""
 
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -35,6 +36,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -50,32 +52,43 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=ServiceResponse,
     responses={401: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + SERVICES,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["services"],
 )
 @handle_exceptions
 def create_service(
     service: ServiceRequest,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> ServiceResponse:
     """Creates a new service.
 
     Args:
-        service: The model containing the attributes of the new service.
+        service: The service to create.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
-        The created service object.
+        The created service.
     """
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        service.project = project.id
+
     return verify_permissions_and_create_entity(
         request_model=service,
         create_method=zen_store().create_service,
-        resource_type=ResourceType.SERVICE,
     )
 
 
 @router.get(
     "",
-    response_model=Page[ServiceResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -105,7 +118,6 @@ def list_services(
 
 @router.get(
     "/{service_id}",
-    response_model=ServiceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -133,7 +145,6 @@ def get_service(
 
 @router.put(
     "/{service_id}",
-    response_model=ServiceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

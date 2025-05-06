@@ -22,14 +22,10 @@ from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
     DoesNotExistException,
-    DuplicateRunNameError,
     EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
     MethodNotAllowedError,
-    SecretExistsError,
-    StackComponentExistsError,
-    StackExistsError,
     SubscriptionUpgradeRequiredError,
     ValidationError,
     ZenKeyError,
@@ -72,10 +68,6 @@ error_response = dict(model=ErrorModel)
 # different status codes (e.g. `ValueError` and the 400 and 422 status codes).
 REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 409 Conflict
-    (StackExistsError, 409),
-    (StackComponentExistsError, 409),
-    (SecretExistsError, 409),
-    (DuplicateRunNameError, 409),
     (EntityExistsError, 409),
     # 403 Forbidden
     (IllegalOperationError, 403),

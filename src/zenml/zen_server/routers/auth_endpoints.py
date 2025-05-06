@@ -66,7 +66,10 @@ from zenml.zen_server.auth import (
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rate_limit import rate_limit_requests
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission
+from zenml.zen_server.rbac.utils import (
+    verify_permission,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     get_ip_location,
     handle_exceptions,
@@ -474,7 +477,6 @@ def api_token(
     expires_in: Optional[int] = None,
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
-    step_run_id: Optional[UUID] = None,
     auth_context: AuthContext = Security(authorize),
 ) -> str:
     """Generate an API token for the current user.
@@ -503,7 +505,6 @@ def api_token(
         schedule_id: The ID of the schedule to scope the workload API token to.
         pipeline_run_id: The ID of the pipeline run to scope the workload API
             token to.
-        step_run_id: The ID of the step run to scope the workload API token to.
         auth_context: The authentication context.
 
     Returns:
@@ -519,10 +520,10 @@ def api_token(
         raise AuthorizationException("Not authenticated.")
 
     if token_type == APITokenType.GENERIC:
-        if schedule_id or pipeline_run_id or step_run_id:
+        if schedule_id or pipeline_run_id:
             raise ValueError(
-                "Generic API tokens cannot be scoped to a schedule, pipeline "
-                "run or step run."
+                "Generic API tokens cannot be scoped to a schedule or pipeline "
+                "run."
             )
 
         config = server_config()
@@ -544,18 +545,12 @@ def api_token(
             response=None,
         ).access_token
 
-    verify_permission(
-        resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
-    )
-
     schedule_id = schedule_id or token.schedule_id
     pipeline_run_id = pipeline_run_id or token.pipeline_run_id
-    step_run_id = step_run_id or token.step_run_id
 
-    if not pipeline_run_id and not schedule_id and not step_run_id:
+    if not pipeline_run_id and not schedule_id:
         raise ValueError(
-            "Workload API tokens must be scoped to a schedule, pipeline run "
-            "or step run."
+            "Workload API tokens must be scoped to a schedule or pipeline run."
         )
 
     if schedule_id and token.schedule_id and schedule_id != token.schedule_id:
@@ -576,22 +571,18 @@ def api_token(
             f"pipeline run {token.pipeline_run_id}."
         )
 
-    if step_run_id and token.step_run_id and step_run_id != token.step_run_id:
-        raise AuthorizationException(
-            f"Unable to scope API token to step run {step_run_id}. The "
-            f"token used to authorize this request is already scoped to "
-            f"step run {token.step_run_id}."
-        )
+    project_id: Optional[UUID] = None
 
     if schedule_id:
         # The schedule must exist
         try:
-            schedule = zen_store().get_schedule(schedule_id, hydrate=False)
+            schedule = zen_store().get_schedule(schedule_id, hydrate=True)
         except KeyError:
             raise ValueError(
                 f"Schedule {schedule_id} does not exist and API tokens cannot "
                 "be generated for non-existent schedules for security reasons."
             )
+        project_id = schedule.project.id
 
         if not schedule.active:
             raise ValueError(
@@ -602,13 +593,17 @@ def api_token(
     if pipeline_run_id:
         # The pipeline run must exist and the run must not be concluded
         try:
-            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=False)
+            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=True)
         except KeyError:
             raise ValueError(
                 f"Pipeline run {pipeline_run_id} does not exist and API tokens "
                 "cannot be generated for non-existent pipeline runs for "
                 "security reasons."
             )
+
+        verify_permission_for_model(model=pipeline_run, action=Action.READ)
+
+        project_id = pipeline_run.project.id
 
         if pipeline_run.status.is_finished:
             raise ValueError(
@@ -617,22 +612,12 @@ def api_token(
                 "for security reasons."
             )
 
-    if step_run_id:
-        # The step run must exist and the step must not be concluded
-        try:
-            step_run = zen_store().get_run_step(step_run_id, hydrate=False)
-        except KeyError:
-            raise ValueError(
-                f"Step run {step_run_id} does not exist and API tokens cannot "
-                "be generated for non-existent step runs for security reasons."
-            )
-
-        if step_run.status.is_finished:
-            raise ValueError(
-                f"The execution of step run {step_run_id} has already "
-                "concluded and API tokens can no longer be generated for it "
-                "for security reasons."
-            )
+    assert project_id is not None
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_RUN,
+        action=Action.CREATE,
+        project_id=project_id,
+    )
 
     return generate_access_token(
         user_id=token.user_id,
@@ -641,7 +626,6 @@ def api_token(
         device=auth_context.device,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
-        step_run_id=step_run_id,
         # Don't include the access token as a cookie in the response
         response=None,
         # Never expire the token

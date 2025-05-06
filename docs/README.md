@@ -47,6 +47,62 @@ rm -rf src/zenml/zen_stores/migrations/script.py.mako
 running it from elsewhere can lead to unexpected errors. This script will compose the docs hierarchy
 and serve it (http://127.0.0.1:<PORT>/).
 
+## Link Checker Tool
+
+The `link_checker.py` script is a utility tool for managing and validating links in our documentation.
+It helps maintain the quality of our documentation by:
+
+* Finding broken or outdated links
+* Converting relative links to absolute URLs
+* Validating link accessibility
+* Supporting both directory-wide and file-specific scanning
+
+### Usage
+
+The script supports several modes of operation:
+
+```bash
+# Find all links containing 'docs.zenml.io' in a directory
+python link_checker.py --dir docs/book --substring docs.zenml.io
+
+# Check specific files for links containing 'how-to'
+python link_checker.py --files file1.md file2.md --substring how-to
+
+# Preview link replacements without making changes
+python link_checker.py --files file1.md --replace-links --dry-run
+
+# Replace and validate links
+python link_checker.py --files file1.md --replace-links --validate-links
+
+# Transform paths using custom URL mappings
+python link_checker.py --dir docs/book --replace-links --url-mapping user-guide=user-guides
+```
+
+### Features
+
+1. **Link Detection**:
+   - Scans for various link types (inline, reference-style, HTML, bare URLs)
+   - Supports substring-based filtering
+   - Works with both directories and individual files
+
+2. **Link Transformation**:
+   - Converts relative documentation links to absolute URLs
+   - Handles README.md files and various link formats
+   - Preserves fragments and query parameters
+   - Supports custom URL path mappings to transform specific path segments
+
+3. **Link Validation**:
+   - Validates links via HTTP requests
+   - Parallel validation for better performance
+   - Detailed error reporting
+
+### Requirements
+
+For link validation functionality, the `requests` package is required:
+```bash
+pip install requests
+```
+
 ## Contributors
 
 We welcome and recognize all contributions. You can see a list of current contributors [here](https://github.com/zenml-io/zenml/graphs/contributors).

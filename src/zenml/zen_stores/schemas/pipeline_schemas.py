@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import object_session
+from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import TaggableResourceTypes
 from zenml.models import (
@@ -30,9 +31,9 @@ from zenml.models import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_build_schemas import (
@@ -53,18 +54,18 @@ class PipelineSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_pipeline_name_in_workspace",
+            "project_id",
+            name="unique_pipeline_name_in_project",
         ),
     )
     # Fields
     description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     # Foreign keys
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -80,14 +81,10 @@ class PipelineSchema(NamedSchema, table=True):
 
     # Relationships
     user: Optional["UserSchema"] = Relationship(back_populates="pipelines")
-    workspace: "WorkspaceSchema" = Relationship(back_populates="pipelines")
+    project: "ProjectSchema" = Relationship(back_populates="pipelines")
 
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
-    )
-    runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="pipeline",
-        sa_relationship_kwargs={"order_by": "PipelineRunSchema.created"},
     )
     builds: List["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
@@ -105,6 +102,34 @@ class PipelineSchema(NamedSchema, table=True):
         ),
     )
 
+    @property
+    def latest_run(self) -> Optional["PipelineRunSchema"]:
+        """Fetch the latest run for this pipeline.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest run for this pipeline.
+        """
+        from zenml.zen_stores.schemas import PipelineRunSchema
+
+        if session := object_session(self):
+            return (
+                session.execute(
+                    select(PipelineRunSchema)
+                    .where(PipelineRunSchema.pipeline_id == self.id)
+                    .order_by(desc(PipelineRunSchema.created))
+                    .limit(1)
+                )
+                .scalars()
+                .one_or_none()
+            )
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest run for pipeline."
+            )
+
     @classmethod
     def from_request(
         cls,
@@ -121,7 +146,7 @@ class PipelineSchema(NamedSchema, table=True):
         return cls(
             name=pipeline_request.name,
             description=pipeline_request.description,
-            workspace_id=pipeline_request.workspace,
+            project_id=pipeline_request.project,
             user_id=pipeline_request.user,
         )
 
@@ -141,10 +166,12 @@ class PipelineSchema(NamedSchema, table=True):
         Returns:
             The created PipelineResponse.
         """
+        latest_run = self.latest_run
+
         body = PipelineResponseBody(
             user=self.user.to_model() if self.user else None,
-            latest_run_id=self.runs[-1].id if self.runs else None,
-            latest_run_status=self.runs[-1].status if self.runs else None,
+            latest_run_id=latest_run.id if latest_run else None,
+            latest_run_status=latest_run.status if latest_run else None,
             created=self.created,
             updated=self.updated,
         )
@@ -152,13 +179,13 @@ class PipelineSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = PipelineResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 description=self.description,
             )
 
         resources = None
         if include_resources:
-            latest_run_user = self.runs[-1].user if self.runs else None
+            latest_run_user = latest_run.user if latest_run else None
 
             resources = PipelineResponseResources(
                 latest_run_user=latest_run_user.to_model()

@@ -38,5 +38,3 @@ class LangchainIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.langchain import materializers  # noqa
 
-
-LangchainIntegration.check_installation()

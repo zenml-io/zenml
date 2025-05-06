@@ -15,10 +15,10 @@
 import re
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
-from mock import MagicMock
 
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp.experiment_trackers.vertex_experiment_tracker import (
@@ -40,7 +40,6 @@ def vertex_experiment_tracker() -> VertexExperimentTracker:
         flavor="vertex",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

@@ -105,7 +105,7 @@ def test_pipeline_run_status_computation(
 
 def test_publish_pipeline_run_metadata(mocker):
     """Unit test for `publish_pipeline_run_metadata`."""
-    mock_create_run = mocker.patch(
+    mock_get_or_create_run = mocker.patch(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run_metadata",
     )
     pipeline_run_id = uuid4()
@@ -117,12 +117,12 @@ def test_publish_pipeline_run_metadata(mocker):
         pipeline_run_id=pipeline_run_id,
         pipeline_run_metadata=pipeline_run_metadata,
     )
-    assert mock_create_run.call_count == 2  # once per run
+    assert mock_get_or_create_run.call_count == 2  # once per run
 
 
 def test_publish_step_run_metadata(mocker):
     """Unit test for `publish_step_run_metadata`."""
-    mock_create_run = mocker.patch(
+    mock_get_or_create_run = mocker.patch(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run_metadata",
     )
     step_run_id = uuid4()
@@ -134,4 +134,4 @@ def test_publish_step_run_metadata(mocker):
         step_run_id=step_run_id,
         step_run_metadata=step_run_metadata,
     )
-    assert mock_create_run.call_count == 2  # once per run
+    assert mock_get_or_create_run.call_count == 2  # once per run

@@ -77,6 +77,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+
 # ----------
 # Public API
 # ----------
@@ -182,8 +183,7 @@ def _store_artifact_data_and_prepare_request(
         uri=materializer.uri,
         materializer=source_utils.resolve(materializer.__class__),
         data_type=source_utils.resolve(data_type),
-        user=Client().active_user.id,
-        workspace=Client().active_workspace.id,
+        project=Client().active_project.id,
         artifact_store_id=artifact_store.id,
         visualizations=visualizations,
         has_custom_name=has_custom_name,
@@ -321,7 +321,7 @@ def register_artifact(
         The saved artifact response.
 
     Raises:
-        FileNotFoundError: If the folder URI is outside of the artifact store
+        FileNotFoundError: If the folder URI is outside the artifact store
             bounds.
     """
     client = Client()
@@ -350,8 +350,7 @@ def register_artifact(
         uri=folder_or_file_uri,
         materializer=source_utils.resolve(PreexistingDataMaterializer),
         data_type=source_utils.resolve(Path),
-        user=Client().active_user.id,
-        workspace=Client().active_workspace.id,
+        project=Client().active_project.id,
         artifact_store_id=artifact_store.id,
         has_custom_name=has_custom_name,
         metadata=validate_metadata(artifact_metadata)

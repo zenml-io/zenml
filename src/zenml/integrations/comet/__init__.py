@@ -45,5 +45,3 @@ class CometIntegration(Integration):
 
         return [CometExperimentTrackerFlavor]
 
-
-CometIntegration.check_installation()

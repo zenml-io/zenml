@@ -25,20 +25,22 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ModelStages
+from zenml.enums import ArtifactType, ModelStages
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models.v2.base.filter import AnyQuery
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    RunMetadataFilterMixin,
+    TaggableFilter,
 )
 from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
@@ -50,7 +52,9 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-    from zenml.zen_stores.schemas import BaseSchema
+    from zenml.zen_stores.schemas import (
+        BaseSchema,
+    )
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -58,7 +62,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ModelVersionRequest(WorkspaceScopedRequest):
+class ModelVersionRequest(ProjectScopedRequest):
     """Request model for model versions."""
 
     name: Optional[str] = Field(
@@ -89,12 +93,9 @@ class ModelVersionRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ModelVersionUpdate(BaseModel):
+class ModelVersionUpdate(BaseUpdate):
     """Update model for model versions."""
 
-    model: UUID = Field(
-        description="The ID of the model containing version",
-    )
     stage: Optional[Union[str, ModelStages]] = Field(
         description="Target model version stage to be set",
         default=None,
@@ -136,7 +137,7 @@ class ModelVersionUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class ModelVersionResponseBody(WorkspaceScopedResponseBody):
+class ModelVersionResponseBody(ProjectScopedResponseBody):
     """Response body for model versions."""
 
     stage: Optional[str] = Field(
@@ -179,7 +180,7 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
+class ModelVersionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for model versions."""
 
     description: Optional[str] = Field(
@@ -193,7 +194,7 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ModelVersionResponseResources(WorkspaceScopedResponseResources):
+class ModelVersionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the model version entity."""
 
     services: Page[ServiceResponse] = Field(
@@ -202,7 +203,7 @@ class ModelVersionResponseResources(WorkspaceScopedResponseResources):
 
 
 class ModelVersionResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         ModelVersionResponseBody,
         ModelVersionResponseMetadata,
         ModelVersionResponseResources,
@@ -425,32 +426,36 @@ class ModelVersionResponse(
 
     def _get_linked_object(
         self,
-        collection: Dict[str, Dict[str, UUID]],
         name: str,
         version: Optional[str] = None,
+        type: Optional[ArtifactType] = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version given type.
 
         Args:
-            collection: The collection to search in (one of
-                self.model_artifact_ids, self.data_artifact_ids,
-                self.deployment_artifact_ids)
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for
                 latest/non-versioned)
+            type: The type of the artifact to filter by.
 
         Returns:
             Specific version of an artifact from collection or None
         """
         from zenml.client import Client
 
-        client = Client()
+        artifact_versions = Client().list_artifact_versions(
+            sort_by="desc:created",
+            size=1,
+            artifact=name,
+            version=version,
+            model_version_id=self.id,
+            type=type,
+            hydrate=True,
+        )
 
-        if name not in collection:
+        if not artifact_versions.items:
             return None
-        if version is None:
-            version = max(collection[name].keys())
-        return client.get_artifact_version(collection[name][version])
+        return artifact_versions.items[0]
 
     def get_artifact(
         self,
@@ -467,12 +472,7 @@ class ModelVersionResponse(
         Returns:
             Specific version of an artifact or None
         """
-        all_artifact_ids = {
-            **self.model_artifact_ids,
-            **self.data_artifact_ids,
-            **self.deployment_artifact_ids,
-        }
-        return self._get_linked_object(all_artifact_ids, name, version)
+        return self._get_linked_object(name, version)
 
     def get_model_artifact(
         self,
@@ -489,7 +489,7 @@ class ModelVersionResponse(
         Returns:
             Specific version of the model artifact or None
         """
-        return self._get_linked_object(self.model_artifact_ids, name, version)
+        return self._get_linked_object(name, version, ArtifactType.MODEL)
 
     def get_data_artifact(
         self,
@@ -506,11 +506,7 @@ class ModelVersionResponse(
         Returns:
             Specific version of the data artifact or None
         """
-        return self._get_linked_object(
-            self.data_artifact_ids,
-            name,
-            version,
-        )
+        return self._get_linked_object(name, version, ArtifactType.DATA)
 
     def get_deployment_artifact(
         self,
@@ -527,11 +523,7 @@ class ModelVersionResponse(
         Returns:
             Specific version of the deployment artifact or None
         """
-        return self._get_linked_object(
-            self.deployment_artifact_ids,
-            name,
-            version,
-        )
+        return self._get_linked_object(name, version, ArtifactType.SERVICE)
 
     def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
         """Get pipeline run linked to this version.
@@ -576,12 +568,31 @@ class ModelVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionFilter(WorkspaceScopedTaggableFilter):
+class ModelVersionFilter(
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
+):
     """Filter model for model versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
-        "run_metadata",
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
+        "model",
+    ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
+        *TaggableFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
@@ -597,31 +608,18 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
         default=None,
         union_mode="left_to_right",
     )
-    run_metadata: Optional[Dict[str, str]] = Field(
+    model: Optional[Union[str, UUID]] = Field(
         default=None,
-        description="The run_metadata to filter the model versions by.",
+        description="The name or ID of the model which the search is scoped "
+        "to. This field must always be set and is always applied in addition "
+        "to the other filters, regardless of the value of the "
+        "logical_operator field.",
+        union_mode="left_to_right",
     )
-
-    _model_id: UUID = PrivateAttr(None)
-
-    def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
-        """Set the model to scope this response.
-
-        Args:
-            model_name_or_id: The model to scope this response to.
-        """
-        try:
-            model_id = UUID(str(model_name_or_id))
-        except ValueError:
-            from zenml.client import Client
-
-            model_id = Client().get_model(model_name_or_id).id
-
-        self._model_id = model_id
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+    ) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
 
         Args:
@@ -630,54 +628,23 @@ class ModelVersionFilter(WorkspaceScopedTaggableFilter):
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters(table)
-
-        from sqlmodel import and_
+        from sqlalchemy import and_
 
         from zenml.zen_stores.schemas import (
+            ModelSchema,
             ModelVersionSchema,
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
         )
 
-        if self.run_metadata is not None:
-            from zenml.enums import MetadataResourceTypes
+        custom_filters = super().get_custom_filters(table)
 
-            for key, value in self.run_metadata.items():
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id
-                    == ModelVersionSchema.id,
-                    RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.MODEL_VERSION,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                    ),
-                )
-                custom_filters.append(additional_filter)
+        if self.model:
+            value, operator = self._resolve_operator(self.model)
+            model_filter = and_(
+                ModelVersionSchema.model_id == ModelSchema.id,  # type: ignore[arg-type]
+                self.generate_name_or_id_query_conditions(
+                    value=self.model, table=ModelSchema
+                ),
+            )
+            custom_filters.append(model_filter)
 
         return custom_filters
-
-    def apply_filter(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        query = super().apply_filter(query=query, table=table)
-
-        if self._model_id:
-            query = query.where(getattr(table, "model_id") == self._model_id)
-
-        return query

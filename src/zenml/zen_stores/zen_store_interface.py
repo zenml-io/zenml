@@ -90,6 +90,10 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectUpdate,
     RunMetadataRequest,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -132,6 +136,8 @@ from zenml.models import (
     StepRunUpdate,
     TagFilter,
     TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -144,10 +150,6 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    WorkspaceFilter,
-    WorkspaceRequest,
-    WorkspaceResponse,
-    WorkspaceUpdate,
 )
 
 
@@ -194,24 +196,19 @@ class ZenStoreInterface(ABC):
       them call the generic get or list method in this interface.
       * keep the logic required to convert between ZenML domain Model classes
       and internal store representations outside the ZenML domain Model classes
-      * methods for resources that have two or more unique keys (e.g. a Workspace
+      * methods for resources that have two or more unique keys (e.g. a project
       is uniquely identified by its name as well as its UUID) should reflect
       that in the method variants and/or method arguments:
         * methods that take in a resource identifier as argument should accept
-        all variants of the identifier (e.g. `workspace_name_or_uuid` for methods
-        that get/list/update/delete Workspaces)
+        all variants of the identifier (e.g. `project_name_or_uuid` for methods
+        that get/list/update/delete projects)
         * if a compound key is involved, separate get methods should be
         implemented (e.g. `get_pipeline` to get a pipeline by ID and
-        `get_pipeline_in_workspace` to get a pipeline by its name and the ID of
-        the workspace it belongs to)
+        `get_pipeline_in_project` to get a pipeline by its name and the ID of
+        the project it belongs to)
       * methods for resources that are scoped as children of other resources
-      (e.g. a Stack is always owned by a Workspace) should reflect the
-      key(s) of the parent resource in the provided methods and method
-      arguments:
-        * create methods should take the parent resource UUID(s) as an argument
-        (e.g. `create_stack` takes in the workspace ID)
-        * get methods should be provided to retrieve a resource by the compound
-        key that includes the parent resource key(s)
+      (e.g. a pipeline is always owned by a project) should reflect the
+      key(s) of the parent resource in the provided method arguments:
         * list methods should feature optional filter arguments that reflect
         the parent resource key(s)
     """
@@ -744,11 +741,14 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def prune_artifact_versions(
         self,
+        project_name_or_id: Union[str, UUID],
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
 
         Args:
+            project_name_or_id: The project name or ID to prune artifact
+                versions for.
             only_versions: Only delete artifact versions, keeping artifacts
         """
 
@@ -889,8 +889,8 @@ class ZenStoreInterface(ABC):
             The created stack component.
 
         Raises:
-            StackComponentExistsError: If a stack component with the same name
-                and type is already owned by this user in this workspace.
+            EntityExistsError: If a stack component with the same name
+                and type already exists.
         """
 
     @abstractmethod
@@ -1043,7 +1043,7 @@ class ZenStoreInterface(ABC):
 
         Raises:
             EntityExistsError: If a flavor with the same name and type
-                is already owned by this user in this workspace.
+                already exists.
         """
 
     @abstractmethod
@@ -1131,7 +1131,7 @@ class ZenStoreInterface(ABC):
         self,
         pipeline: PipelineRequest,
     ) -> PipelineResponse:
-        """Creates a new pipeline in a workspace.
+        """Creates a new pipeline.
 
         Args:
             pipeline: The pipeline to create.
@@ -1140,7 +1140,6 @@ class ZenStoreInterface(ABC):
             The newly created pipeline.
 
         Raises:
-            KeyError: if the workspace does not exist.
             EntityExistsError: If an identical pipeline already exists.
         """
 
@@ -1217,7 +1216,7 @@ class ZenStoreInterface(ABC):
         self,
         build: PipelineBuildRequest,
     ) -> PipelineBuildResponse:
-        """Creates a new build in a workspace.
+        """Creates a new build.
 
         Args:
             build: The build to create.
@@ -1226,7 +1225,6 @@ class ZenStoreInterface(ABC):
             The newly created build.
 
         Raises:
-            KeyError: If the workspace does not exist.
             EntityExistsError: If an identical build already exists.
         """
 
@@ -1284,7 +1282,7 @@ class ZenStoreInterface(ABC):
         self,
         deployment: PipelineDeploymentRequest,
     ) -> PipelineDeploymentResponse:
-        """Creates a new deployment in a workspace.
+        """Creates a new deployment.
 
         Args:
             deployment: The deployment to create.
@@ -1293,7 +1291,6 @@ class ZenStoreInterface(ABC):
             The newly created deployment.
 
         Raises:
-            KeyError: If the workspace does not exist.
             EntityExistsError: If an identical deployment already exists.
         """
 
@@ -1531,30 +1528,30 @@ class ZenStoreInterface(ABC):
     # -------------------- Pipeline runs --------------------
 
     @abstractmethod
-    def create_run(
+    def get_or_create_run(
         self, pipeline_run: PipelineRunRequest
-    ) -> PipelineRunResponse:
-        """Creates a pipeline run.
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
 
         Args:
-            pipeline_run: The pipeline run to create.
+            pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
-            KeyError: If the pipeline does not exist.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
 
     @abstractmethod
     def get_run(
-        self, run_name_or_id: Union[str, UUID], hydrate: bool = True
+        self, run_id: UUID, hydrate: bool = True
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
         Args:
-            run_name_or_id: The name or ID of the pipeline run to get.
+            run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -1611,23 +1608,6 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    @abstractmethod
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
-    ) -> Tuple[PipelineRunResponse, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
-        """
-
     # -------------------- Run metadata --------------------
 
     @abstractmethod
@@ -1678,7 +1658,7 @@ class ZenStoreInterface(ABC):
         schedule_filter_model: ScheduleFilter,
         hydrate: bool = False,
     ) -> Page[ScheduleResponse]:
-        """List all schedules in the workspace.
+        """List all schedules.
 
         Args:
             schedule_filter_model: All filter parameters including pagination
@@ -1732,10 +1712,8 @@ class ZenStoreInterface(ABC):
         The new secret is also validated against the scoping rules enforced in
         the secrets store:
 
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+          - only one private secret with the given name can exist.
+          - only one public secret with the given name can exist.
 
         Args:
             secret: The secret to create.
@@ -1744,7 +1722,7 @@ class ZenStoreInterface(ABC):
             The newly created secret.
 
         Raises:
-            KeyError: if the user or workspace does not exist.
+            KeyError: if the user does not exist.
             EntityExistsError: If a secret with the same name already exists in
                 the same scope.
         """
@@ -1806,10 +1784,8 @@ class ZenStoreInterface(ABC):
         If the update includes a change of name or scope, the scoping rules
         enforced in the secrets store are used to validate the update:
 
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+          - only one private secret with the given name can exist.
+          - only one public secret with the given name can exist.
 
         Args:
             secret_id: The ID of the secret to be updated.
@@ -1985,7 +1961,7 @@ class ZenStoreInterface(ABC):
 
         Raises:
             EntityExistsError: If a service connector with the given name
-                is already owned by this user in this workspace.
+                already exists.
         """
 
     @abstractmethod
@@ -2147,18 +2123,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_service_connector_resources(
         self,
-        workspace_name_or_id: Union[str, UUID],
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        filter_model: ServiceConnectorFilter,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
-            workspace_name_or_id: The name or ID of the workspace to scope to.
-            connector_type: The type of service connector to scope to.
-            resource_type: The type of resource to scope to.
-            resource_id: The ID of the resource to scope to.
+            filter_model: The filter model to use when fetching service
+                connectors.
 
         Returns:
             The matching list of resources that available service
@@ -2213,11 +2184,8 @@ class ZenStoreInterface(ABC):
             The created stack.
 
         Raises:
-            EntityExistsError: If a service connector with the same name
-                already exists.
-            StackComponentExistsError: If a stack component with the same name
-                already exists.
-            StackExistsError: If a stack with the same name already exists.
+            EntityExistsError: If a stack, stack component or service connector
+                with the same name already exists.
         """
 
     @abstractmethod
@@ -2499,7 +2467,7 @@ class ZenStoreInterface(ABC):
         trigger_execution_id: UUID,
         hydrate: bool = True,
     ) -> TriggerExecutionResponse:
-        """Get an trigger execution by ID.
+        """Get a trigger execution by ID.
 
         Args:
             trigger_execution_id: The ID of the trigger execution to get.
@@ -2626,86 +2594,84 @@ class ZenStoreInterface(ABC):
             KeyError: If no user with the given ID exists.
         """
 
-    # -------------------- Workspaces --------------------
+    # -------------------- Projects --------------------
 
     @abstractmethod
-    def create_workspace(
-        self, workspace: WorkspaceRequest
-    ) -> WorkspaceResponse:
-        """Creates a new workspace.
+    def create_project(self, project: ProjectRequest) -> ProjectResponse:
+        """Creates a new project.
 
         Args:
-            workspace: The workspace to create.
+            project: The project to create.
 
         Returns:
-            The newly created workspace.
+            The newly created project.
 
         Raises:
-            EntityExistsError: If a workspace with the given name already exists.
+            EntityExistsError: If a project with the given name already exists.
         """
 
     @abstractmethod
-    def get_workspace(
-        self, workspace_name_or_id: Union[UUID, str], hydrate: bool = True
-    ) -> WorkspaceResponse:
-        """Get an existing workspace by name or ID.
+    def get_project(
+        self, project_name_or_id: Union[UUID, str], hydrate: bool = True
+    ) -> ProjectResponse:
+        """Get an existing project by name or ID.
 
         Args:
-            workspace_name_or_id: Name or ID of the workspace to get.
+            project_name_or_id: Name or ID of the project to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            The requested workspace.
+            The requested project.
 
         Raises:
-            KeyError: If there is no such workspace.
+            KeyError: If there is no such project.
         """
 
     @abstractmethod
-    def list_workspaces(
+    def list_projects(
         self,
-        workspace_filter_model: WorkspaceFilter,
+        project_filter_model: ProjectFilter,
         hydrate: bool = False,
-    ) -> Page[WorkspaceResponse]:
-        """List all workspace matching the given filter criteria.
+    ) -> Page[ProjectResponse]:
+        """List all projects matching the given filter criteria.
 
         Args:
-            workspace_filter_model: All filter parameters including pagination
+            project_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A list of all workspace matching the filter criteria.
+            A list of all projects matching the filter criteria.
         """
 
     @abstractmethod
-    def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
-    ) -> WorkspaceResponse:
-        """Update an existing workspace.
+    def update_project(
+        self, project_id: UUID, project_update: ProjectUpdate
+    ) -> ProjectResponse:
+        """Update an existing project.
 
         Args:
-            workspace_id: The ID of the workspace to be updated.
-            workspace_update: The update to be applied to the workspace.
+            project_id: The ID of the project to be updated.
+            project_update: The update to be applied to the project.
 
         Returns:
-            The updated workspace.
+            The updated project.
 
         Raises:
-            KeyError: if the workspace does not exist.
+            KeyError: if the project does not exist.
         """
 
     @abstractmethod
-    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a workspace.
+    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a project.
 
         Args:
-            workspace_name_or_id: Name or ID of the workspace to delete.
+            project_name_or_id: Name or ID of the project to delete.
 
         Raises:
-            KeyError: If no workspace with the given name exists.
+            KeyError: If no project with the given name exists.
         """
 
     # -------------------- Models --------------------
@@ -2725,14 +2691,14 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+    def delete_model(self, model_id: UUID) -> None:
         """Deletes a model.
 
         Args:
-            model_name_or_id: name or id of the model to be deleted.
+            model_id: id of the model to be deleted.
 
         Raises:
-            KeyError: specified ID or name not found.
+            KeyError: model with specified ID not found.
         """
 
     @abstractmethod
@@ -2752,13 +2718,11 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_model(
-        self, model_name_or_id: Union[str, UUID], hydrate: bool = True
-    ) -> ModelResponse:
+    def get_model(self, model_id: UUID, hydrate: bool = True) -> ModelResponse:
         """Get an existing model.
 
         Args:
-            model_name_or_id: name or id of the model to be retrieved.
+            model_id: id of the model to be retrieved.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2766,7 +2730,7 @@ class ZenStoreInterface(ABC):
             The model of interest.
 
         Raises:
-            KeyError: specified ID or name not found.
+            KeyError: model with specified ID not found.
         """
 
     @abstractmethod
@@ -2845,14 +2809,11 @@ class ZenStoreInterface(ABC):
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilter,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model
-                versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -3005,9 +2966,7 @@ class ZenStoreInterface(ABC):
             KeyError: specified ID not found.
         """
 
-    #################
-    # Tags
-    #################
+    # -------------------- Tags --------------------
 
     @abstractmethod
     def create_tag(self, tag: TagRequest) -> TagResponse:
@@ -3039,7 +2998,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_tag(
-        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+        self,
+        tag_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
@@ -3089,4 +3050,53 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the tag is not found
+        """
+
+    # -------------------- Tag Resources --------------------
+
+    @abstractmethod
+    def create_tag_resource(
+        self, tag_resource: TagResourceRequest
+    ) -> TagResourceResponse:
+        """Create a new tag resource relationship.
+
+        Args:
+            tag_resource: The tag resource relationship to be created.
+
+        Returns:
+            The newly created tag resource relationship.
+        """
+
+    @abstractmethod
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a new tag resource relationship.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+
+    @abstractmethod
+    def delete_tag_resource(
+        self,
+        tag_resource: TagResourceRequest,
+    ) -> None:
+        """Delete a tag resource relationship.
+
+        Args:
+            tag_resource: The tag resource relationship to delete.
+        """
+
+    @abstractmethod
+    def batch_delete_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> None:
+        """Delete a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
         """

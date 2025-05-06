@@ -4,7 +4,7 @@ description: Building container images locally.
 
 # Local Image Builder
 
-The local image builder is an [image builder](./image-builders.md) flavor that comes built-in with ZenML and uses the local Docker installation on your client machine to build container images.
+The local image builder is an [image builder](./) flavor that comes built-in with ZenML and uses the local Docker installation on your client machine to build container images.
 
 {% hint style="info" %}
 ZenML uses the official Docker Python library to build and push your images. This library loads its authentication credentials to push images from the default config location: `$HOME/.docker/config.json`. If your Docker configuration is stored in a different directory, you can use the environment variable `DOCKER_CONFIG` to override this behavior:
@@ -43,6 +43,6 @@ zenml image-builder register <NAME> --flavor=local
 zenml stack register <STACK_NAME> -i <NAME> ... --set
 ```
 
-For more information and a full list of configurable attributes of the local image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-image\_builders/#zenml.image\_builders.local\_image\_builder.LocalImageBuilder) .
+For more information and a full list of configurable attributes of the local image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-image_builders.html#zenml.image_builders.local_image_builder) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

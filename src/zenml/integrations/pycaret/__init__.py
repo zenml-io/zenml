@@ -40,5 +40,3 @@ class PyCaretIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.pycaret import materializers  # noqa
 
-
-PyCaretIntegration.check_installation()

@@ -4,9 +4,9 @@ description: Creating a full picture of a ML model using the Model Control Plane
 
 # Track ML models
 
-![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp_walkthrough.gif)
+![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp-walkthrough.gif)
 
-As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
+As discussed in the [Core Concepts](https://docs.zenml.io/getting-started/core-concepts), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
 ## What is a ZenML Model?
 
@@ -109,7 +109,7 @@ The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, tha
 
 ## Fetching the model in a pipeline
 
-When configured at the pipeline or step level, the model will be available through the [StepContext](../../how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline.md) or [PipelineContext](../../how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline.md).
+When configured at the pipeline or step level, the model will be available through the [StepContext](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline) or [PipelineContext](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline).
 
 ```python
 from zenml import get_step_context, get_pipeline_context, step, pipeline
@@ -144,10 +144,10 @@ def training_pipeline(gamma: float = 0.002):
 
 ## Logging metadata to the `Model` object
 
-[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), models too can take a dictionary of key-value pairs to capture their metadata. This is achieved using the `log_model_metadata` method:
+[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), models too can take a dictionary of key-value pairs to capture their metadata. This is achieved using the `log_metadata` method:
 
 ```python
-from zenml import get_step_context, step, log_model_metadata 
+from zenml import get_step_context, step, log_metadata
 
 @step
 def svc_trainer(
@@ -162,13 +162,15 @@ def svc_trainer(
 
     model = get_step_context().model
     
-    log_model_metadata(
-        # Model name can be omitted if specified in the step or pipeline context
-        model_name="iris_classifier",
-        # Passing None or omitting this will use the `latest` version
-        version=None,
+    log_metadata(
         # Metadata should be a dictionary of JSON-serializable values
-        metadata={"accuracy": float(accuracy)}
+        metadata={"accuracy": float(accuracy)},
+        # Using infer_model=True automatically attaches metadata to the model
+        # configured for this step
+        infer_model=True
+        # If not running within a step with model configured, specify:
+        # model_name="iris_classifier", model_version="my_version"
+
         # A dictionary of dictionaries can also be passed to group metadata
         #  in the dashboard
         # metadata = {"metrics": {"accuracy": accuracy}}
@@ -206,7 +208,7 @@ model = client.get_model_version("my_model", "my_version")
 print(model.run_metadata["metadata_key"].value)
 ```
 
-For further depth, there is an [advanced metadata logging guide](../../how-to/model-management-metrics/track-metrics-metadata/README.md) that goes more into detail about logging metadata in ZenML.
+For further depth, there is an [advanced metadata logging guide](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata) that goes more into detail about logging metadata in ZenML.
 
 ## Using the stages of a model
 
@@ -259,10 +261,10 @@ zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include easily changing the stage:
 
-![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp\_transition\_stage.gif)
+![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp_transition_stage.gif)
 {% endtab %}
 {% endtabs %}
 
-ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../../how-to/model-management-metrics/model-control-plane/README.md) guide.
+ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) guide.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

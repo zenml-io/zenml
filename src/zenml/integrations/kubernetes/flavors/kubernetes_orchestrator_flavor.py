@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import PositiveInt
+
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
@@ -47,6 +49,16 @@ class KubernetesOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply to pods executing the steps.
         orchestrator_pod_settings: Pod settings to apply to the pod which is
             launching the actual steps.
+        pod_name_prefix: Prefix to use for the pod name.
+        pod_startup_timeout: The maximum time to wait for a pending step pod to
+            start (in seconds).
+        pod_failure_max_retries: The maximum number of times to retry a step
+            pod if the step Kubernetes pod fails to start
+        pod_failure_retry_delay: The delay in seconds between pod
+            failure retries and pod startup retries (in seconds)
+        pod_failure_backoff: The backoff factor for pod failure retries and
+            pod startup retries.
+        max_parallelism: Maximum number of steps to run in parallel.
     """
 
     synchronous: bool = True
@@ -56,6 +68,12 @@ class KubernetesOrchestratorSettings(BaseSettings):
     privileged: bool = False
     pod_settings: Optional[KubernetesPodSettings] = None
     orchestrator_pod_settings: Optional[KubernetesPodSettings] = None
+    pod_name_prefix: Optional[str] = None
+    pod_startup_timeout: int = 60 * 10  # Default 10 minutes
+    pod_failure_max_retries: int = 3
+    pod_failure_retry_delay: int = 10
+    pod_failure_backoff: float = 1.0
+    max_parallelism: Optional[PositiveInt] = None
 
 
 class KubernetesOrchestratorConfig(
@@ -85,6 +103,9 @@ class KubernetesOrchestratorConfig(
         parallel_step_startup_waiting_period: How long to wait in between
             starting parallel steps. This can be used to distribute server
             load when running pipelines with a huge amount of parallel steps.
+        pass_zenml_token_as_secret: If `True`, the ZenML token will be passed
+            as a Kubernetes secret to the pods. For this to work, the Kubernetes
+            client must have permissions to create secrets in the namespace.
     """
 
     incluster: bool = False
@@ -93,6 +114,7 @@ class KubernetesOrchestratorConfig(
     local: bool = False
     skip_local_validations: bool = False
     parallel_step_startup_waiting_period: Optional[float] = None
+    pass_zenml_token_as_secret: bool = False
 
     @property
     def is_remote(self) -> bool:

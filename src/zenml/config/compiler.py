@@ -210,6 +210,7 @@ class Compiler:
                 enable_artifact_metadata=config.enable_artifact_metadata,
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
+                enable_pipeline_logs=config.enable_pipeline_logs,
                 settings=config.settings,
                 tags=config.tags,
                 extra=config.extra,
@@ -394,6 +395,25 @@ class Compiler:
                     f"The settings class {settings_instance.__class__} can not "
                     f"be specified on a {configuration_level.name} level."
                 )
+
+            if settings_instance.model_extra:
+                logger.warning(
+                    "Ignoring invalid setting attributes `%s` defined for key `%s`.",
+                    list(settings_instance.model_extra),
+                    key,
+                )
+                settings_instance = settings_instance.model_validate(
+                    settings_instance.model_dump(
+                        exclude=set(settings_instance.model_extra),
+                        exclude_unset=True,
+                    )
+                )
+
+            if not settings_instance.model_fields_set:
+                # There are no values defined on the settings instance, don't
+                # include them in the deployment
+                continue
+
             validated_settings[key] = settings_instance
 
         return validated_settings
@@ -599,7 +619,7 @@ class Compiler:
                 f"no steps. Please make sure that your steps are decorated "
                 "with `@step` and that at least one step is called within the "
                 "pipeline. For more information, see "
-                "https://docs.zenml.io/user-guide/starter-guide."
+                "https://docs.zenml.io/user-guides/starter-guide."
             )
 
         additional_spec_args: Dict[str, Any] = {

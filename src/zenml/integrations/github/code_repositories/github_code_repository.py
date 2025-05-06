@@ -16,10 +16,12 @@
 import os
 import re
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import requests
 from github import Consts, Github, GithubException
+from github.Auth import Token
 from github.Repository import Repository
 
 from zenml.code_repositories import (
@@ -145,9 +147,10 @@ class GitHubCodeRepository(BaseCodeRepository):
         """
         try:
             self._github_session = Github(
-                login_or_token=self.config.token,
                 base_url=self.config.api_url or Consts.DEFAULT_BASE_URL,
+                auth=Token(self.config.token) if self.config.token else None,
             )
+
             if self.config.token:
                 user = self._github_session.get_user().login
                 logger.debug(f"Logged in as {user}")
@@ -187,12 +190,29 @@ class GitHubCodeRepository(BaseCodeRepository):
                     directory=local_path,
                     repo_sub_directory=content.path,
                 )
+            # For symlinks, content.type is initially wrongly set to "file",
+            # which is why we need to read it from the raw data instead.
+            elif content.raw_data["type"] == "symlink":
+                try:
+                    os.symlink(src=content.raw_data["target"], dst=local_path)
+                except Exception as e:
+                    logger.error(
+                        "Failed to create symlink `%s` (%s): %s",
+                        content.path,
+                        content.html_url,
+                        e,
+                    )
             else:
                 try:
                     with open(local_path, "wb") as f:
                         f.write(content.decoded_content)
                 except (GithubException, IOError, AssertionError) as e:
-                    logger.error("Error processing %s: %s", content.path, e)
+                    logger.error(
+                        "Error processing `%s` (%s): %s",
+                        content.path,
+                        content.html_url,
+                        e,
+                    )
 
     def get_local_context(self, path: str) -> Optional[LocalRepositoryContext]:
         """Gets the local repository context.
@@ -218,14 +238,37 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://{self.config.host}/{self.config.owner}/{self.config.repository}.git"
-        if url == https_url:
-            return True
+        # Normalize repository information
+        host = self.config.host or "github.com"
+        host = host.rstrip("/")
+        owner = self.config.owner
+        repo = self.config.repository
 
-        ssh_regex = re.compile(
-            f".*@{self.config.host}:{self.config.owner}/{self.config.repository}.git"
-        )
-        if ssh_regex.fullmatch(url):
-            return True
+        # Clean the input URL by removing any trailing slashes
+        url = url.rstrip("/")
+
+        # Handle HTTPS URLs using urlparse
+        parsed_url = urlparse(url)
+        if parsed_url.scheme == "https":
+            expected_path = f"/{owner}/{repo}"
+            actual_path = parsed_url.path.removesuffix(".git")
+            return parsed_url.hostname == host and actual_path == expected_path
+
+        # Create regex patterns for non-HTTPS URL formats
+        patterns = [
+            # SSH format: git@github.com:owner/repo[.git]
+            rf"^[^@]+@{re.escape(host)}:{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
+            # Alternative SSH: ssh://git@github.com/owner/repo[.git]
+            rf"^ssh://[^@]+@{re.escape(host)}/{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
+            # Git protocol: git://github.com/owner/repo[.git]
+            rf"^git://{re.escape(host)}/{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
+            # GitHub CLI: gh:owner/repo
+            rf"^gh:{re.escape(owner)}/{re.escape(repo)}$",
+        ]
+
+        # Try matching against each pattern
+        for pattern in patterns:
+            if re.match(pattern, url):
+                return True
 
         return False

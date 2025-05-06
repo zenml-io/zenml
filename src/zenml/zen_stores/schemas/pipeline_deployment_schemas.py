@@ -24,7 +24,8 @@ from sqlmodel import Field, Relationship
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.logger import get_logger
 from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
@@ -38,15 +39,17 @@ from zenml.zen_stores.schemas.code_repository_schemas import (
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+
+logger = get_logger(__name__)
 
 
 class PipelineDeploymentSchema(BaseSchema, table=True):
@@ -95,10 +98,10 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -148,8 +151,10 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     template_id: Optional[UUID] = None
 
     # SQLModel Relationships
-    user: Optional["UserSchema"] = Relationship()
-    workspace: "WorkspaceSchema" = Relationship()
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="deployments",
+    )
+    project: "ProjectSchema" = Relationship()
     stack: Optional["StackSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
@@ -183,9 +188,17 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentSchema`.
         """
+        client_env = json.dumps(request.client_environment)
+        if len(client_env) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                "Client environment is too large to be stored in the database. "
+                "Skipping."
+            )
+            client_env = "{}"
+
         return cls(
             stack_id=request.stack,
-            workspace_id=request.workspace,
+            project_id=request.project,
             pipeline_id=request.pipeline,
             build_id=request.build,
             user_id=request.user,
@@ -199,7 +212,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 sort_keys=False,
                 default=pydantic_encoder,
             ),
-            client_environment=json.dumps(request.client_environment),
+            client_environment=client_env,
             client_version=request.client_version,
             server_version=request.server_version,
             pipeline_version_hash=request.pipeline_version_hash,
@@ -215,6 +228,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        include_python_packages: bool = False,
         **kwargs: Any,
     ) -> PipelineDeploymentResponse:
         """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponse`.
@@ -222,6 +236,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            include_python_packages: Whether the python packages will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -242,12 +257,16 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             for s, c in step_configurations.items():
                 step_configurations[s] = Step.model_validate(c)
 
+            client_environment = json.loads(self.client_environment)
+            if not include_python_packages:
+                client_environment.pop("python_packages", None)
+
             metadata = PipelineDeploymentResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
-                client_environment=json.loads(self.client_environment),
+                client_environment=client_environment,
                 client_version=self.client_version,
                 server_version=self.server_version,
                 pipeline=self.pipeline.to_model() if self.pipeline else None,

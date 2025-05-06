@@ -40,6 +40,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     handle_exceptions,
+    server_config,
 )
 
 router = APIRouter(
@@ -105,10 +106,17 @@ def get_stack_deployment_config(
     verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
 
     stack_deployment_class = get_stack_deployment_class(provider)
-    # Get the base server URL used to call this FastAPI endpoint
-    url = request.url.replace(path="").replace(query="")
-    # Use HTTPS for the URL
-    url = url.replace(scheme="https")
+
+    config = server_config()
+    if config.server_url:
+        url = config.server_url
+    else:
+        # Get the base server URL used to call this FastAPI endpoint
+        url = str(
+            request.url.replace(path="")
+            .replace(query="")
+            .replace(scheme="https")
+        )
 
     token = auth_context.access_token
     assert token is not None

@@ -17,7 +17,7 @@ import json
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
@@ -31,7 +31,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class FlavorSchema(NamedSchema, table=True):
@@ -45,6 +44,13 @@ class FlavorSchema(NamedSchema, table=True):
     """
 
     __tablename__ = "flavor"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "type",
+            name="unique_flavor_name_and_type",
+        ),
+    )
 
     type: str
     source: str
@@ -53,18 +59,6 @@ class FlavorSchema(NamedSchema, table=True):
     connector_type: Optional[str]
     connector_resource_type: Optional[str]
     connector_resource_id_attr: Optional[str]
-
-    workspace_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    workspace: Optional["WorkspaceSchema"] = Relationship(
-        back_populates="flavors"
-    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -84,7 +78,10 @@ class FlavorSchema(NamedSchema, table=True):
 
     is_custom: bool = Field(default=True)
 
-    def update(self, flavor_update: "FlavorUpdate") -> "FlavorSchema":
+    def update(
+        self,
+        flavor_update: "FlavorUpdate",
+    ) -> "FlavorSchema":
         """Update a `FlavorSchema` from a `FlavorUpdate`.
 
         Args:
@@ -94,7 +91,7 @@ class FlavorSchema(NamedSchema, table=True):
             The updated `FlavorSchema`.
         """
         for field, value in flavor_update.model_dump(
-            exclude_unset=True, exclude={"workspace", "user"}
+            exclude_unset=True, exclude={"user"}
         ).items():
             if field == "config_schema":
                 setattr(self, field, json.dumps(value))
@@ -129,22 +126,19 @@ class FlavorSchema(NamedSchema, table=True):
             integration=self.integration,
             source=self.source,
             logo_url=self.logo_url,
+            is_custom=self.is_custom,
             created=self.created,
             updated=self.updated,
         )
         metadata = None
         if include_metadata:
             metadata = FlavorResponseMetadata(
-                workspace=self.workspace.to_model()
-                if self.workspace
-                else None,
                 config_schema=json.loads(self.config_schema),
                 connector_type=self.connector_type,
                 connector_resource_type=self.connector_resource_type,
                 connector_resource_id_attr=self.connector_resource_id_attr,
                 docs_url=self.docs_url,
                 sdk_docs_url=self.sdk_docs_url,
-                is_custom=self.is_custom,
             )
         return FlavorResponse(
             id=self.id,

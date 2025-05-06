@@ -109,7 +109,7 @@ We can see here a specific example of a failure in the reranking evaluation. It'
 
 Since ZenML can display visualizations in its dashboard, we can showcase the results of our experiments in a visual format. For example, we can plot the failure rates of the retrieval system with and without reranking to see the impact of reranking on the performance.
 
-Our documentation explains how to set up your outputs so that they appear as visualizations in the ZenML dashboard. You can find more information [here](../../../how-to/data-artifact-management/visualize-artifacts/README.md). There are lots of options, but we've chosen to plot our failure rates as a bar chart and export them as a `PIL.Image` object. We also plotted the other evaluation scores so as to get a quick global overview of our performance.
+Our documentation explains how to set up your outputs so that they appear as visualizations in the ZenML dashboard. You can find more information [here](https://docs.zenml.io/how-to/data-artifact-management/visualize-artifacts). There are lots of options, but we've chosen to plot our failure rates as a bar chart and export them as a `PIL.Image` object. We also plotted the other evaluation scores so as to get a quick global overview of our performance.
 
 ```python
 # passing the results from all our previous evaluation steps
@@ -194,7 +194,7 @@ def visualize_evaluation_results(
 
 For one of my runs of the evaluation pipeline, this looked like the following in the dashboard:
 
-![Evaluation metrics for our RAG pipeline](../../../.gitbook/assets/reranker\_evaluation\_metrics.png)
+![Evaluation metrics for our RAG pipeline](../../../.gitbook/assets/reranker_evaluation_metrics.png)
 
 You can see that for the full retrieval evaluation we do see an improvement. Our small retrieval test, which as of writing only included five questions, showed a considerable degradation in performance. Since these were specific examples where we knew the answers, this would be something we'd want to look into to see why the reranking model was not performing as expected.
 

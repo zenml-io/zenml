@@ -32,7 +32,10 @@ import sagemaker
 from botocore.exceptions import WaiterError
 from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
-from sagemaker.workflow.execution_variables import ExecutionVariables
+from sagemaker.workflow.execution_variables import (
+    ExecutionVariable,
+    ExecutionVariables,
+)
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 from sagemaker.workflow.triggers import PipelineSchedule
@@ -264,6 +267,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on Sagemaker.
 
@@ -272,6 +276,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             stack: The stack to run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If there is an error creating or scheduling the
@@ -322,6 +327,19 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
                 ExecutionVariables.PIPELINE_EXECUTION_ARN
             )
+
+            if step_settings.environment:
+                step_environment = step_settings.environment.copy()
+                # Sagemaker does not allow environment variables longer than 256
+                # characters to be passed to Processor steps. If an environment variable
+                # is longer than 256 characters, we split it into multiple environment
+                # variables (chunks) and re-construct it on the other side using the
+                # custom entrypoint configuration.
+                split_environment_variables(
+                    size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+                    env=step_environment,
+                )
+                environment.update(step_environment)
 
             use_training_step = (
                 step_settings.use_training_step
@@ -456,6 +474,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                             s3_upload_mode=step_settings.output_data_s3_mode,
                         )
                     )
+
+            # Convert environment to a dict of strings
+            environment = {
+                key: str(value)
+                if not isinstance(value, ExecutionVariable)
+                else value
+                for key, value in environment.items()
+            }
 
             if use_training_step:
                 # Create Estimator and TrainingStep
@@ -846,9 +872,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
              the URL to the dashboard view in SageMaker.
         """
         try:
-            region_name, pipeline_name, execution_id = (
-                dissect_pipeline_execution_arn(execution_arn)
-            )
+            (
+                region_name,
+                pipeline_name,
+                execution_id,
+            ) = dissect_pipeline_execution_arn(execution_arn)
 
             # Get the Sagemaker session
             session = self._get_sagemaker_session()

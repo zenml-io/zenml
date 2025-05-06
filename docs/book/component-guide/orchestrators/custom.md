@@ -5,7 +5,7 @@ description: Learning how to develop a custom orchestrator.
 # Develop a custom orchestrator
 
 {% hint style="info" %}
-Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
 ### Base Implementation
@@ -16,7 +16,7 @@ ZenML aims to enable orchestration with any orchestration tool. This is where th
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Type
 
-from zenml.models import PipelineDeploymentResponseModel
+from zenml.models import PipelineDeploymentResponseModel, PipelineRunResponse
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent, StackComponentConfig, Stack, Flavor
 
@@ -34,6 +34,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: PipelineDeploymentResponseModel,
         stack: Stack,
         environment: Dict[str, str],
+        placeholder_run: Optional[PipelineRunResponse] = None,
     ) -> Any:
         """Prepares and runs the pipeline outright or returns an intermediate
         pipeline representation that gets deployed.
@@ -100,7 +101,7 @@ zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../how-to/infrastructure-deployment/infrastructure-as-code/best-practices.md) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](https://docs.zenml.io/user-guides/best-practices/iac) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually, it's better to not have to rely on this mechanism and initialize zenml at the root.
 {% endhint %}
@@ -150,7 +151,7 @@ There are some additional optional features that your orchestrator can implement
 from typing import Dict
 
 from zenml.entrypoints import StepEntrypointConfiguration
-from zenml.models import PipelineDeploymentResponseModel
+from zenml.models import PipelineDeploymentResponseModel, PipelineRunResponse
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.stack import Stack
 
@@ -169,6 +170,7 @@ class MyOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         # If your orchestrator supports scheduling, you should handle the schedule
         # configured by the user. Otherwise you might raise an exception or log a warning
@@ -215,6 +217,6 @@ To see a full end-to-end worked example of a custom orchestrator, [see here](htt
 
 ### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use your custom orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use your custom orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/user-guides/tutorial/distributed-training) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

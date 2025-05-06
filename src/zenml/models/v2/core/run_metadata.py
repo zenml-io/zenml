@@ -20,14 +20,14 @@ from pydantic import Field, model_validator
 
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedRequest,
+    ProjectScopedRequest,
 )
 from zenml.models.v2.misc.run_metadata import RunMetadataResource
 
 # ------------------ Request Model ------------------
 
 
-class RunMetadataRequest(WorkspaceScopedRequest):
+class RunMetadataRequest(ProjectScopedRequest):
     """Request model for run metadata."""
 
     resources: List[RunMetadataResource] = Field(

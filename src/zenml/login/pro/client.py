@@ -41,7 +41,7 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.login.pro.organization.client import OrganizationClient
-    from zenml.login.pro.tenant.client import TenantClient
+    from zenml.login.pro.workspace.client import WorkspaceClient
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
@@ -56,7 +56,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     _url: str
     _api_token: APIToken
     _session: Optional[requests.Session] = None
-    _tenant: Optional["TenantClient"] = None
+    _workspace: Optional["WorkspaceClient"] = None
     _organization: Optional["OrganizationClient"] = None
 
     def __init__(self, url: str, api_token: Optional[APIToken] = None) -> None:
@@ -89,17 +89,17 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
         self._api_token = api_token
 
     @property
-    def tenant(self) -> "TenantClient":
-        """Get the tenant client.
+    def workspace(self) -> "WorkspaceClient":
+        """Get the workspace client.
 
         Returns:
-            The tenant client.
+            The workspace client.
         """
-        if self._tenant is None:
-            from zenml.login.pro.tenant.client import TenantClient
+        if self._workspace is None:
+            from zenml.login.pro.workspace.client import WorkspaceClient
 
-            self._tenant = TenantClient(client=self)
-        return self._tenant
+            self._workspace = WorkspaceClient(client=self)
+        return self._workspace
 
     @property
     def organization(self) -> "OrganizationClient":

@@ -91,13 +91,11 @@ In most cases, you’ll need to change the following configuration values in `cu
 
 * the database configuration, if you mean to use an external database:
   * the database URL, formatted as `mysql://<username>:<password>@<hostname>:<port>/<database>`
-  * CA and/or client TLS certificates, if you’re using SSL to secure the connection to the database
+  * CA and/or client TLS certificates, if you’re using SSL to secure the connection to the database can be provided in the `database.sslCa`, `database.sslCert` and `database.sslKey` fields as either an inline value or a secret reference (in the latter case, the secret(s) must be created in the same namespace as the ZenML server before the deployment).
 * the Ingress configuration, if enabled:
   * enabling TLS
   * enabling self-signed certificates
   * configuring the hostname that will be used to access the ZenML server, if different from the IP address or hostname associated with the Ingress service installed in your cluster
-
-> **Note** All the file paths that you use in your helm chart (e.g. for certificates like `database.sslCa`) must be relative to the `./zenml` helm chart directory, meaning that you also have to copy these files there.
 
 ### Install the Helm chart
 
@@ -309,7 +307,7 @@ openssl rand -hex 32
 {% tab title="AWS" %}
 **Using the AWS Secrets Manager as a secrets store backend**
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks/service-connectors/connector-types/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -371,7 +369,7 @@ Example configuration for the AWS Secrets Store:
 {% tab title="GCP" %}
 **Using the GCP Secrets Manager as a secrets store backend**
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#authentication-methods) to authenticate with the GCP Secrets Manager API.
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](https://docs.zenml.io/stacks/service-connectors/connector-types/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -465,7 +463,7 @@ Example configuration for the GCP Secrets Store:
 {% tab title="Azure" %}
 **Using the Azure Key Vault as a secrets store backend**
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md#authentication-methods) to authenticate with the Azure Key Vault API.
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](https://docs.zenml.io/stacks/service-connectors/connector-types/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API.
 
 Example configuration for the Azure Key Vault Secrets Store:
 
@@ -657,5 +655,67 @@ The following example shows how to configure the ZenML server to use a persisten
 podSecurityContext:
   fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
 ```
+
+
+### Custom CA Certificates
+
+If you need to connect to services using HTTPS with certificates signed by custom Certificate Authorities (e.g., self-signed certificates), you can configure custom CA certificates. There are two ways to provide custom CA certificates:
+
+1. Direct injection in values.yaml:
+```yaml
+zenml:
+  certificates:
+    customCAs:
+      - name: "my-custom-ca"
+        certificate: |
+          -----BEGIN CERTIFICATE-----
+          MIIDXTCCAkWgAwIBAgIJAJC1HiIAZAiIMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+          ...
+          -----END CERTIFICATE-----
+```
+
+2. Reference existing Kubernetes secrets:
+```yaml
+zenml:
+  certificates:
+    secretRefs:
+      - name: "my-secret"
+        key: "ca.crt"
+```
+
+The certificates will be installed in the server container, allowing it to securely connect to services using these custom CA certificates.
+
+### HTTP Proxy Configuration
+
+If your environment requires a proxy for external connections, you can configure it using:
+
+```yaml
+zenml:
+  proxy:
+    enabled: true
+    httpProxy: "http://proxy.example.com:8080"
+    httpsProxy: "http://proxy.example.com:8080"
+    # Additional hostnames/domains/IPs/CIDRs to exclude from proxying
+    additionalNoProxy:
+      - "internal.example.com"
+      - "10.0.0.0/8"
+```
+
+By default, the following hostnames/domains are excluded from proxying:
+- `localhost`, `127.0.0.1`, `::1` (IPv4 and IPv6 localhost)
+- `fe80::/10` (IPv6 link-local addresses)
+- `.svc` and `.svc.cluster.local` (Kubernetes service DNS domains)
+- The hostname from `zenml.serverURL` if configured
+- The ingress hostname (`zenml.ingress.host`) if configured
+- Internal service names used for communication between components
+
+You can add additional exclusions using the `additionalNoProxy` list. The NO_PROXY environment variable accepts:
+- Hostnames (e.g., "zenml.example.com")
+- Domain names with leading dot for wildcards (e.g., ".example.com")
+- IPv4 addresses (e.g., "10.0.0.1")
+- IPv4 ranges in CIDR notation (e.g., "10.0.0.0/8")
+- IPv6 addresses (e.g., "::1")
+- IPv6 ranges in CIDR notation (e.g., "fe80::/10")
+
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

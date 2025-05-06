@@ -33,6 +33,7 @@ from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
+    ProjectScopedResponse,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -64,6 +65,11 @@ from zenml.zen_server.utils import (
 
 logger = get_logger(__name__)
 
+pass_change_limiter = RequestLimiter(
+    day_limit=server_config().login_rate_limit_day,
+    minute_limit=server_config().login_rate_limit_minute,
+)
+
 router = APIRouter(
     prefix=API + VERSION_1 + USERS,
     tags=["users"],
@@ -87,7 +93,6 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[UserResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -133,7 +138,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.post(
         "",
-        response_model=UserResponse,
         responses={
             401: error_response,
             409: error_response,
@@ -174,7 +178,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         # new_user = verify_permissions_and_create_entity(
         #     request_model=user,
-        #     resource_type=ResourceType.USER,
         #     create_method=zen_store().create_user,
         # )
         new_user = zen_store().create_user(user)
@@ -188,7 +191,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @router.get(
     "/{user_name_or_id}",
-    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -226,184 +228,9 @@ def get_user(
 # When the auth scheme is set to EXTERNAL, users cannot be updated via the
 # API.
 if server_config().auth_scheme != AuthScheme.EXTERNAL:
-    pass_change_limiter = RequestLimiter(
-        day_limit=server_config().login_rate_limit_day,
-        minute_limit=server_config().login_rate_limit_minute,
-    )
-
-    @router.put(
-        "/{user_name_or_id}",
-        response_model=UserResponse,
-        responses={
-            401: error_response,
-            404: error_response,
-            422: error_response,
-        },
-    )
-    @handle_exceptions
-    def update_user(
-        user_name_or_id: Union[str, UUID],
-        user_update: UserUpdate,
-        request: Request,
-        auth_context: AuthContext = Security(authorize),
-    ) -> UserResponse:
-        """Updates a specific user.
-
-        Args:
-            user_name_or_id: Name or ID of the user.
-            user_update: the user to use for the update.
-            request: The request object.
-            auth_context: Authentication context.
-
-        Returns:
-            The updated user.
-
-        Raises:
-            IllegalOperationError: if the user tries change admin status,
-                while not an admin, if the user tries to change the password
-                of another user, or if the user tries to change their own
-                password without providing the old password or providing
-                an incorrect old password.
-        """
-        user = zen_store().get_user(user_name_or_id)
-
-        # Use a separate object to compute the update that will be applied to
-        # the user to avoid giving the API requester direct control over the
-        # user attributes that are updated.
-        #
-        # Exclude attributes that cannot be updated through this endpoint:
-        #
-        # - activation_token
-        # - external_user_id
-        # - old_password
-        #
-        # Exclude things that are not always safe to update and need to be
-        # validated first:
-        #
-        # - admin
-        # - active
-        # - password
-        # - email_opted_in + email
-        #
-        safe_user_update = user_update.create_copy(
-            exclude={
-                "activation_token",
-                "external_user_id",
-                "is_admin",
-                "active",
-                "password",
-                "old_password",
-                "email_opted_in",
-                "email",
-            },
-        )
-
-        if user.id != auth_context.user.id:
-            verify_admin_status_if_no_rbac(
-                auth_context.user.is_admin, "update other user account"
-            )
-            # verify_permission_for_model(
-            #     user,
-            #     action=Action.UPDATE,
-            # )
-
-        # Validate a password change
-        if user_update.password is not None:
-            if user.id != auth_context.user.id:
-                raise IllegalOperationError(
-                    "Users cannot change the password of other users. Use the "
-                    "account deactivation and activation flow instead."
-                )
-
-            # If the user is updating their own password, we need to verify
-            # the old password
-            if user_update.old_password is None:
-                raise IllegalOperationError(
-                    "The current password must be supplied when changing the "
-                    "password."
-                )
-
-            with pass_change_limiter.limit_failed_requests(request):
-                auth_user = zen_store().get_auth_user(user_name_or_id)
-                if not UserAuthModel.verify_password(
-                    user_update.old_password, auth_user
-                ):
-                    raise IllegalOperationError(
-                        "The current password is incorrect."
-                    )
-
-            # Accept the password update
-            safe_user_update.password = user_update.password
-
-        # Validate an admin status change
-        if (
-            user_update.is_admin is not None
-            and user.is_admin != user_update.is_admin
-        ):
-            if user.id == auth_context.user.id:
-                raise IllegalOperationError(
-                    "Cannot change the admin status of your own user account."
-                )
-
-            if (
-                user.id != auth_context.user.id
-                and not auth_context.user.is_admin
-            ):
-                raise IllegalOperationError(
-                    "Only admins are allowed to change the admin status of "
-                    "other user accounts."
-                )
-
-            # Accept the admin status update
-            safe_user_update.is_admin = user_update.is_admin
-
-        # Validate an active status change
-        if (
-            user_update.active is not None
-            and user.active != user_update.active
-        ):
-            if user.id == auth_context.user.id:
-                raise IllegalOperationError(
-                    "Cannot change the active status of your own user account."
-                )
-
-            if (
-                user.id != auth_context.user.id
-                and not auth_context.user.is_admin
-            ):
-                raise IllegalOperationError(
-                    "Only admins are allowed to change the active status of "
-                    "other user accounts."
-                )
-
-            # Accept the admin status update
-            safe_user_update.is_admin = user_update.is_admin
-
-        # Validate changes to private user account information
-        if (
-            user_update.email_opted_in is not None
-            or user_update.email is not None
-        ):
-            if user.id != auth_context.user.id:
-                raise IllegalOperationError(
-                    "Cannot change the private user account information for "
-                    "another user account."
-                )
-
-            # Accept the private user account information update
-            if safe_user_update.email_opted_in is not None:
-                safe_user_update.email_opted_in = user_update.email_opted_in
-                safe_user_update.email = user_update.email
-
-        updated_user = zen_store().update_user(
-            user_id=user.id,
-            user_update=safe_user_update,
-        )
-        return dehydrate_response_model(updated_user)
 
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -464,7 +291,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + DEACTIVATE,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -555,7 +381,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + EMAIL_ANALYTICS,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -606,9 +431,172 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             )
 
 
+@router.put(
+    "/{user_name_or_id}",
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def update_user(
+    user_name_or_id: Union[str, UUID],
+    user_update: UserUpdate,
+    request: Request,
+    auth_context: AuthContext = Security(authorize),
+) -> UserResponse:
+    """Updates a specific user.
+
+    Args:
+        user_name_or_id: Name or ID of the user.
+        user_update: the user to use for the update.
+        request: The request object.
+        auth_context: Authentication context.
+
+    Returns:
+        The updated user.
+
+    Raises:
+        IllegalOperationError: if the user tries change admin status,
+            while not an admin, if the user tries to change the password
+            of another user, or if the user tries to change their own
+            password without providing the old password or providing
+            an incorrect old password.
+    """
+    if server_config().auth_scheme == AuthScheme.EXTERNAL:
+        # For external auth, we only allow updating the default project
+        user_update = UserUpdate(
+            default_project_id=user_update.default_project_id,
+        )
+
+    user = zen_store().get_user(user_name_or_id)
+
+    # Use a separate object to compute the update that will be applied to
+    # the user to avoid giving the API requester direct control over the
+    # user attributes that are updated.
+    #
+    # Exclude attributes that cannot be updated through this endpoint:
+    #
+    # - activation_token
+    # - external_user_id
+    # - old_password
+    #
+    # Exclude things that are not always safe to update and need to be
+    # validated first:
+    #
+    # - admin
+    # - active
+    # - password
+    # - email_opted_in + email
+    #
+    safe_user_update = user_update.create_copy(
+        exclude={
+            "activation_token",
+            "external_user_id",
+            "is_admin",
+            "active",
+            "password",
+            "old_password",
+            "email_opted_in",
+            "email",
+        },
+    )
+
+    if user.id != auth_context.user.id:
+        verify_admin_status_if_no_rbac(
+            auth_context.user.is_admin, "update other user account"
+        )
+        # verify_permission_for_model(
+        #     user,
+        #     action=Action.UPDATE,
+        # )
+
+    # Validate a password change
+    if user_update.password is not None:
+        if user.id != auth_context.user.id:
+            raise IllegalOperationError(
+                "Users cannot change the password of other users. Use the "
+                "account deactivation and activation flow instead."
+            )
+
+        # If the user is updating their own password, we need to verify
+        # the old password
+        if user_update.old_password is None:
+            raise IllegalOperationError(
+                "The current password must be supplied when changing the "
+                "password."
+            )
+
+        with pass_change_limiter.limit_failed_requests(request):
+            auth_user = zen_store().get_auth_user(user_name_or_id)
+            if not UserAuthModel.verify_password(
+                user_update.old_password, auth_user
+            ):
+                raise IllegalOperationError(
+                    "The current password is incorrect."
+                )
+
+        # Accept the password update
+        safe_user_update.password = user_update.password
+
+    # Validate an admin status change
+    if (
+        user_update.is_admin is not None
+        and user.is_admin != user_update.is_admin
+    ):
+        if user.id == auth_context.user.id:
+            raise IllegalOperationError(
+                "Cannot change the admin status of your own user account."
+            )
+
+        if user.id != auth_context.user.id and not auth_context.user.is_admin:
+            raise IllegalOperationError(
+                "Only admins are allowed to change the admin status of "
+                "other user accounts."
+            )
+
+        # Accept the admin status update
+        safe_user_update.is_admin = user_update.is_admin
+
+    # Validate an active status change
+    if user_update.active is not None and user.active != user_update.active:
+        if user.id == auth_context.user.id:
+            raise IllegalOperationError(
+                "Cannot change the active status of your own user account."
+            )
+
+        if user.id != auth_context.user.id and not auth_context.user.is_admin:
+            raise IllegalOperationError(
+                "Only admins are allowed to change the active status of "
+                "other user accounts."
+            )
+
+        # Accept the admin status update
+        safe_user_update.is_admin = user_update.is_admin
+
+    # Validate changes to private user account information
+    if user_update.email_opted_in is not None or user_update.email is not None:
+        if user.id != auth_context.user.id:
+            raise IllegalOperationError(
+                "Cannot change the private user account information for "
+                "another user account."
+            )
+
+        # Accept the private user account information update
+        if safe_user_update.email_opted_in is not None:
+            safe_user_update.email_opted_in = user_update.email_opted_in
+            safe_user_update.email = user_update.email
+
+    updated_user = zen_store().update_user(
+        user_id=user.id,
+        user_update=safe_user_update,
+    )
+    return dehydrate_response_model(updated_user)
+
+
 @current_user_router.get(
     "/current-user",
-    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -632,7 +620,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @current_user_router.put(
         "/current-user",
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -711,7 +698,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 if server_config().rbac_enabled:
 
     @router.post(
-        "/{user_name_or_id}/resource_membership",
+        "/resource_membership",
         responses={
             401: error_response,
             404: error_response,
@@ -720,16 +707,16 @@ if server_config().rbac_enabled:
     )
     @handle_exceptions
     def update_user_resource_membership(
-        user_name_or_id: Union[str, UUID],
         resource_type: str,
         resource_id: UUID,
         actions: List[str],
+        user_id: Optional[str] = None,
+        team_id: Optional[str] = None,
         auth_context: AuthContext = Security(authorize),
     ) -> None:
         """Updates resource memberships of a user.
 
         Args:
-            user_name_or_id: Name or ID of the user.
             resource_type: Type of the resource for which to update the
                 membership.
             resource_id: ID of the resource for which to update the membership.
@@ -737,23 +724,24 @@ if server_config().rbac_enabled:
                 the resource. If the user currently has permissions to perform
                 actions which are not passed in this list, the permissions will
                 be removed.
+            user_id: ID of the user for which to update the membership.
+            team_id: ID of the team for which to update the membership.
             auth_context: Authentication context.
 
         Raises:
             ValueError: If a user tries to update their own membership.
             KeyError: If no resource with the given type and ID exists.
         """
-        user = zen_store().get_user(user_name_or_id)
-        # verify_permission_for_model(user, action=Action.READ)
-
-        if user.id == auth_context.user.id:
+        if (
+            user_id
+            and auth_context.user.external_user_id
+            and user_id == str(auth_context.user.external_user_id)
+        ):
             raise ValueError(
                 "Not allowed to call endpoint with the authenticated user."
             )
 
         resource_type = ResourceType(resource_type)
-        resource = Resource(type=resource_type, id=resource_id)
-
         schema_class = get_schema_for_resource_type(resource_type)
         model = zen_store().get_entity_by_id(
             entity_id=resource_id, schema_class=schema_class
@@ -765,6 +753,14 @@ if server_config().rbac_enabled:
                 "not exist."
             )
 
+        project_id = None
+        if isinstance(model, ProjectScopedResponse):
+            project_id = model.project.id
+
+        resource = Resource(
+            type=resource_type, id=resource_id, project_id=project_id
+        )
+
         verify_permission_for_model(model=model, action=Action.SHARE)
         for action in actions:
             # Make sure users aren't able to share permissions they don't have
@@ -772,7 +768,9 @@ if server_config().rbac_enabled:
             verify_permission_for_model(model=model, action=Action(action))
 
         update_resource_membership(
-            user=user,
+            sharing_user=auth_context.user,
             resource=resource,
             actions=[Action(action) for action in actions],
+            user_id=user_id,
+            team_id=team_id,
         )

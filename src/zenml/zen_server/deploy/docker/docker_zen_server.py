@@ -38,11 +38,11 @@ from zenml.constants import (
 from zenml.enums import AuthScheme, StoreType
 from zenml.logger import get_logger
 from zenml.models import ServerDeploymentType
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
     ContainerService,
     ContainerServiceConfig,
     ContainerServiceEndpoint,
-    ServiceType,
 )
 from zenml.services.container.container_service import (
     SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
@@ -82,7 +82,7 @@ class DockerServerDeploymentConfig(LocalServerDeploymentConfig):
         """
         return f"http://{DEFAULT_LOCAL_SERVICE_IP_ADDRESS}:{self.port}"
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
 
 class DockerZenServerConfig(ContainerServiceConfig):

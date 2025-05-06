@@ -9,7 +9,7 @@ documents in the index store. We use some utility functions to make this happen
 but no external libraries are needed beyond an interface to the index store as
 well as the LLM itself.
 
-![](/docs/book/.gitbook/assets/rag-stage-4.png)
+![](../../../.gitbook/assets/rag-stage-4.png)
 
 If you've been following along with the guide, you should have some documents
 ingested already and you can pass a query in as a flag to the Python command
@@ -20,7 +20,7 @@ python run.py --rag-query "how do I use a custom materializer inside my own zenm
 steps? i.e. how do I set it? inside the @step decorator?" --model=gpt4
 ```
 
-![](/docs/book/.gitbook/assets/rag-inference.png)
+![](../../../.gitbook/assets/rag-inference.png)
 
 This inference query itself is not a ZenML pipeline, but rather a function call
 which uses the outputs and components of our pipeline to generate the response.

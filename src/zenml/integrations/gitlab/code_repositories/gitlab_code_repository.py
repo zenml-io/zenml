@@ -16,6 +16,7 @@
 import os
 import re
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from gitlab import Gitlab
@@ -53,7 +54,7 @@ class GitLabCodeRepositoryConfig(BaseCodeRepositoryConfig):
     group: str
     project: str
     host: Optional[str] = "gitlab.com"
-    token: str = SecretField()
+    token: Optional[str] = SecretField(default=None)
 
     url: Optional[str] = None
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
@@ -108,10 +109,11 @@ class GitLabCodeRepository(BaseCodeRepository):
             self._gitlab_session = Gitlab(
                 url=self.config.instance_url, private_token=self.config.token
             )
-            self._gitlab_session.auth()
-            user = self._gitlab_session.user or None
-            if user:
-                logger.debug(f"Logged in as {user.username}")
+
+            if self.config.token:
+                self._gitlab_session.auth()
+                if user := self._gitlab_session.user:
+                    logger.debug(f"Logged into GitLab as {user.username}")
         except Exception as e:
             raise RuntimeError(f"An error occurred while logging in: {str(e)}")
 
@@ -126,8 +128,7 @@ class GitLabCodeRepository(BaseCodeRepository):
             repo_sub_directory: The sub directory to download from.
         """
         contents = self.gitlab_project.repository_tree(
-            ref=commit,
-            path=repo_sub_directory or "",
+            ref=commit, path=repo_sub_directory or "", iterator=True
         )
         for content in contents:
             logger.debug(f"Processing {content['path']}")
@@ -175,17 +176,27 @@ class GitLabCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://{self.config.host}/{self.config.group}/{self.config.project}.git"
-        if url == https_url:
-            return True
+        host = self.config.host or "gitlab.com"
+        host = host.rstrip("/")
+        group = self.config.group
+        project = self.config.project
 
+        # Handle HTTPS URLs
+        parsed_url = urlparse(url)
+        if parsed_url.scheme == "https" and parsed_url.hostname == host:
+            # Remove .git suffix if present for comparison
+            expected_path = f"/{group}/{project}"
+            actual_path = parsed_url.path.removesuffix(".git")
+            return actual_path == expected_path
+
+        # Handle SSH URLs
         ssh_regex = re.compile(
             r"^(?P<scheme_with_delimiter>ssh://)?"
             r"(?P<userinfo>git)"
-            f"@{self.config.host}:"
+            f"@{host}:"
             r"(?P<port>\d+)?"
             r"(?(scheme_with_delimiter)/|/?)"
-            f"{self.config.group}/{self.config.project}.git$",
+            f"{group}/{project}(\.git)?$",
         )
         if ssh_regex.fullmatch(url):
             return True

@@ -1,0 +1,7 @@
+root: .
+structure:
+  readme: README.md
+  summary: toc.md
+
+redirects:
+  tutorials/organizing-pipelines-and-models: tutorial/organizing-pipelines-and-models.md

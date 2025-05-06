@@ -26,11 +26,12 @@ from zenml.materializers.built_in_materializer import (
 from zenml.materializers.cloudpickle_materializer import (
     CloudpickleMaterializer,
 )
+from zenml.materializers.path_materializer import PathMaterializer
+from zenml.materializers.pydantic_materializer import PydanticMaterializer
+from zenml.materializers.service_materializer import ServiceMaterializer
 from zenml.materializers.structured_string_materializer import (
     StructuredStringMaterializer,
 )
-from zenml.materializers.pydantic_materializer import PydanticMaterializer
-from zenml.materializers.service_materializer import ServiceMaterializer
 from zenml.materializers.uuid_materializer import UUIDMaterializer
 
 __all__ = [
@@ -42,4 +43,5 @@ __all__ = [
     "PydanticMaterializer",
     "ServiceMaterializer",
     "UUIDMaterializer",
+    "PathMaterializer",
 ]

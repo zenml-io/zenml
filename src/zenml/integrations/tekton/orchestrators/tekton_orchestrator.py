@@ -53,7 +53,7 @@ from zenml.utils import io_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 
@@ -243,7 +243,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 f"Error while trying to fetch tekoton cookie: {errh}"
             )
-        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call]
+        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call, unused-ignore]
 
         if "authservice_session" not in cookie_dict:
             raise RuntimeError("Invalid username and/or password!")
@@ -460,6 +460,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs the pipeline on Tekton.
 
@@ -471,6 +472,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook
@@ -522,31 +524,16 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 node_selector_constraint: Optional[Tuple[str, str]] = None
                 pod_settings = step_settings.pod_settings
                 if pod_settings:
-                    if pod_settings.host_ipc:
+                    ignored_fields = pod_settings.model_fields_set - {
+                        "node_selectors"
+                    }
+                    if ignored_fields:
                         logger.warning(
-                            "Host IPC is set to `True` but not supported in "
-                            "this orchestrator. Ignoring..."
+                            f"The following pod settings are not supported in "
+                            f"Tekton with Tekton Pipelines 2.x and will be "
+                            f"ignored: {list(ignored_fields)}."
                         )
-                    if pod_settings.affinity:
-                        logger.warning(
-                            "Affinity is set but not supported in Tekton with "
-                            "Tekton Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.tolerations:
-                        logger.warning(
-                            "Tolerations are set but not supported in "
-                            "Tekton with Tekton Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.volumes:
-                        logger.warning(
-                            "Volumes are set but not supported in Tekton with "
-                            "Tekton Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.volume_mounts:
-                        logger.warning(
-                            "Volume mounts are set but not supported in "
-                            "Tekton with Tekton Pipelines 2.x. Ignoring..."
-                        )
+
                     # apply pod settings
                     if (
                         KFP_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL

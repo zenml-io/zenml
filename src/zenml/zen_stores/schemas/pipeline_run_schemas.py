@@ -23,11 +23,13 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
+from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -45,13 +47,13 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
 )
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
@@ -63,6 +65,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+
+logger = get_logger(__name__)
 
 
 class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -77,8 +81,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_run_name_in_workspace",
+            "project_id",
+            name="unique_run_name_in_project",
         ),
     )
 
@@ -108,10 +112,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -137,7 +141,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline_runs"
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
+    project: "ProjectSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
@@ -208,7 +212,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     stack: Optional["StackSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
-    pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
+    pipeline: Optional["PipelineSchema"] = Relationship()
     trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
 
     services: List["ServiceSchema"] = Relationship(
@@ -239,9 +243,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The created `PipelineRunSchema`.
         """
         orchestrator_environment = json.dumps(request.orchestrator_environment)
+        if len(orchestrator_environment) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                "Orchestrator environment is too large to be stored in the "
+                "database. Skipping."
+            )
+            orchestrator_environment = "{}"
 
         return cls(
-            workspace_id=request.workspace,
+            project_id=request.project,
             user_id=request.user,
             name=request.name,
             orchestrator_run_id=request.orchestrator_run_id,
@@ -251,7 +261,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
-            model_version_id=request.model_version_id,
         )
 
     def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
@@ -283,6 +292,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        include_python_packages: bool = False,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -290,6 +300,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            include_python_packages: Whether the python packages will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -300,7 +311,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             RuntimeError: if the model creation fails.
         """
         if self.deployment is not None:
-            deployment = self.deployment.to_model(include_metadata=True)
+            deployment = self.deployment.to_model(
+                include_metadata=True,
+                include_python_packages=include_python_packages,
+            )
 
             config = deployment.pipeline_configuration
             new_substitutions = config._get_full_substitutions(self.start_time)
@@ -384,8 +398,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.orchestrator_environment
                 else {}
             )
+
+            if not include_python_packages:
+                client_environment.pop("python_packages", None)
+                orchestrator_environment.pop("python_packages", None)
+
             metadata = PipelineRunResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 run_metadata=self.fetch_metadata(),
                 config=config,
                 steps=steps,
@@ -413,6 +432,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             resources = PipelineRunResponseResources(
                 model_version=model_version,
                 tags=[tag.to_model() for tag in self.tags],
+                logs=self.logs.to_model() if self.logs else None,
             )
 
         return PipelineRunResponse(
@@ -435,8 +455,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if run_update.status:
             self.status = run_update.status.value
             self.end_time = run_update.end_time
-        if run_update.model_version_id and self.model_version_id is None:
-            self.model_version_id = run_update.model_version_id
 
         self.updated = utc_now()
         return self
