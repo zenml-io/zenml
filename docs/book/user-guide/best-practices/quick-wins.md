@@ -466,6 +466,8 @@ def experiment_pipeline():
 * **Flexible organization** - Create any tagging system that makes sense for your projects
 * **Multiple entity types** - Tag pipelines, runs, artifacts, models, and run templates
 
+![Filtering by tags](../.gitbook/assets/filtering-by-tags.png)
+
 **Common tag operations**
 ```python
 from zenml.client import Client
