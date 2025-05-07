@@ -157,7 +157,7 @@ def main() -> None:
         )
 
         if orchestrator.config.pass_zenml_token_as_secret:
-            env.pop("ZENML_STORE_API_TOKEN", None)
+            step_env.pop("ZENML_STORE_API_TOKEN", None)
             secret_name = orchestrator.get_token_secret_name(
                 deployment_config.id
             )
@@ -181,7 +181,7 @@ def main() -> None:
             image_name=image,
             command=step_command,
             args=step_args,
-            env=env,
+            env=step_env,
             privileged=settings.privileged,
             pod_settings=pod_settings,
             service_account_name=settings.step_pod_service_account_name

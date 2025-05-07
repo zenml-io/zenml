@@ -163,7 +163,8 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Sequentially runs all pipeline steps in Docker containers.
@@ -181,8 +182,11 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -198,9 +202,8 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         # Get deployment id
         deployment_id = deployment.id
 
-        # Set environment
+        # Set environment in os.environ
         os.environ[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
-        environment[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
 
         # Add each step as a service to the Docker Compose definition
         logger.info("Preparing pipeline steps for deployment.")
@@ -246,19 +249,19 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     }
                 }
 
+            # Add run ID to step environment variables
+            step_env = step_environments[step_name].copy()
+
             # Depending on whether it is a scheduled or a realtime pipeline, add
             # potential .env file to service definition for deployment ID override.
             if deployment.schedule:
-                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment but only if it is set
-                if ENV_ZENML_HYPERAI_RUN_ID in environment:
-                    del environment[ENV_ZENML_HYPERAI_RUN_ID]
                 compose_definition["services"][container_name]["env_file"] = [
                     ".env"
                 ]
+            else:
+                step_env[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
 
-            compose_definition["services"][container_name]["environment"] = (
-                environment
-            )
+            compose_definition["services"][container_name]["environment"] = step_env
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps

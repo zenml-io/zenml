@@ -34,7 +34,8 @@ class StubContainerizedOrchestrator(ContainerizedOrchestrator):
         self,
         deployment,
         stack,
-        environment,
+        base_environment,
+        step_environments,
         placeholder_run=None,
     ):
         pass

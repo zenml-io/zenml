@@ -392,7 +392,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, Dict[str, str]],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs the pipeline in Kubernetes.
@@ -400,8 +401,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -482,7 +486,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         if self.config.pass_zenml_token_as_secret:
             secret_name = self.get_token_secret_name(deployment.id)
-            token = environment.pop("ZENML_STORE_API_TOKEN")
+            token = base_environment.pop("ZENML_STORE_API_TOKEN")
             kube_utils.create_or_update_secret(
                 core_api=self._k8s_core_api,
                 namespace=self.config.kubernetes_namespace,
@@ -500,9 +504,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     },
                 }
             )
-
-        # Use the env from any step for the orchestrator pod
-        orchestrator_pod_env = environment.popitem()[1]
 
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
@@ -524,7 +525,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 service_account_name=service_account_name,
                 privileged=False,
                 pod_settings=orchestrator_pod_settings,
-                env=orchestrator_pod_env,
+                env=base_environment,
                 mount_local_stores=self.config.is_local,
             )
 
@@ -549,7 +550,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 privileged=False,
                 pod_settings=orchestrator_pod_settings,
                 service_account_name=service_account_name,
-                env=orchestrator_pod_env,
+                env=base_environment,
                 mount_local_stores=self.config.is_local,
             )
 

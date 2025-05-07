@@ -202,7 +202,8 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, Dict[str, str]],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on AzureML.
@@ -210,8 +211,11 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
-            environment: Environment variables to set in the orchestration
-                environment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -243,7 +247,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # Create components
         components = {}
         for step_name, step in deployment.step_configurations.items():
-            step_environment = environment[step_name]
+            step_environment = step_environments[step_name]
             # Get the image for each step
             image = self.get_image(deployment=deployment, step_name=step_name)
 

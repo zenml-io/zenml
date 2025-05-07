@@ -139,7 +139,8 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, Dict[str, str]],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """The method needs to be implemented by the respective orchestrator.
@@ -174,8 +175,11 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Yields:
@@ -205,7 +209,7 @@ class BaseOrchestrator(StackComponent, ABC):
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
-        shared_environment = get_config_environment_vars(
+        base_environment = get_config_environment_vars(
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
         )
@@ -247,7 +251,7 @@ class BaseOrchestrator(StackComponent, ABC):
         else:
             logger.debug("Skipping client-side caching.")
 
-        environment = {}
+        step_environments = {}
         for invocation_id, step in deployment.step_configurations.items():
             from zenml.utils.env_utils import get_step_environment
 
@@ -256,15 +260,16 @@ class BaseOrchestrator(StackComponent, ABC):
                 stack=stack,
             )
 
-            combined_environment = shared_environment.copy()
+            combined_environment = base_environment.copy()
             combined_environment.update(step_environment)
-            environment[invocation_id] = combined_environment
+            step_environments[invocation_id] = combined_environment
 
         try:
             if metadata_iterator := self.prepare_or_run_pipeline(
                 deployment=deployment,
                 stack=stack,
-                environment=environment,
+                base_environment=base_environment,
+                step_environments=step_environments,
                 placeholder_run=placeholder_run,
             ):
                 for metadata_dict in metadata_iterator:
