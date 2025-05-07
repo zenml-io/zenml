@@ -40,6 +40,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
+    DEFAULT_ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
@@ -153,6 +154,8 @@ class ServerConfiguration(BaseModel):
             server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
+        max_concurrent_template_runs: The maximum number of concurrent template
+            runs that can be executed on the server.
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
             server.
@@ -291,6 +294,9 @@ class ServerConfiguration(BaseModel):
     feature_gate_implementation_source: Optional[str] = None
     reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
+    max_concurrent_template_runs: int = (
+        DEFAULT_ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS
+    )
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
     )
