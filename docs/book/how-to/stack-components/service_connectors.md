@@ -55,7 +55,6 @@ ZenML supports connectors for major cloud providers and services:
 * **GCP**: For Google Cloud Platform (GCS, GCR, Vertex AI, etc.)
 * **Azure**: For Microsoft Azure (Blob Storage, ACR, AzureML, etc.)
 * **Kubernetes**: For Kubernetes clusters
-* **Other Services**: Docker registries, MLflow, etc.
 
 Each connector type supports authentication methods specific to that service.
 
