@@ -67,10 +67,7 @@ log_metadata({
 - Group related metadata using nested dictionaries
 - Use ZenML's special metadata types for standardized representation
 
-*Metadata becomes the foundation for the Experiment Comparison tool and other
-dashboard views.* (Learn more: [Metadata |
-ZenML](https://docs.zenml.io/concepts/metadata), [Tracking Metrics with
-Metadata](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata))
+*Metadata becomes the foundation for the Experiment Comparison tool and other dashboard views.* (Learn more: [Metadata](https://docs.zenml.io/concepts/metadata), [Tracking Metrics with Metadata](https://docs.zenml.io/concepts/models#tracking-metrics-and-metadata))
 
 ## 2 Activate the **Experiment Comparison** view (ZenML Pro)
 
@@ -91,7 +88,7 @@ Metadata](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-me
 - Identify which parameters have the greatest impact on performance
 - Track how metrics evolve across iterations of your pipeline
 
-(Learn more: [Metadata | ZenML - Bridging the gap between ML & Ops](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata), [New Dashboard Feature: Compare Your Experiments - ZenML Blog](https://www.zenml.io/blog/new-dashboard-feature-compare-your-experiments))
+(Learn more: [Metadata](https://docs.zenml.io/concepts/models#tracking-metrics-and-metadata), [New Dashboard Feature: Compare Your Experiments - ZenML Blog](https://www.zenml.io/blog/new-dashboard-feature-compare-your-experiments))
 
 
 ## 3 Drop-in Experiment Tracker Autologging
@@ -138,10 +135,10 @@ def train_model(data):
 * Disable MLflow autologging when needed, e.g.: `experiment_tracker.disable_autologging()`.
 
 **Resources**
-* [MLflow Experiment Tracking](https://docs.zenml.io/how-to/popular-integrations/mlflow)
-* [Weights & Biases Integration](https://www.zenml.io/integrations/wandb)
-* [Neptune Integration](https://www.zenml.io/integrations/neptune)
-* [Comet Integration](https://www.zenml.io/integrations/comet)
+* [MLflow Experiment Tracking](https://docs.zenml.io/stacks/stack-components/experiment-trackers/mlflow)
+* [Weights & Biases Integration](https://docs.zenml.io/stacks/stack-components/experiment-trackers/wandb)
+* [Neptune Integration](https://docs.zenml.io/stacks/stack-components/experiment-trackers/neptune)
+* [Comet Integration](https://docs.zenml.io/stacks/stack-components/experiment-trackers/comet)
 
 ## 4 Instant **alerter notifications** for successes/failures
 
@@ -202,7 +199,7 @@ def pipeline_with_alerts():
 * **Flexible targeting** to notify different teams with specific alerts
 * **Custom approval options** to configure which responses count as approvals/rejections
 
-Learn more: [Full Slack alerter documentation](https://docs.zenml.io/stack-components/alerters/slack), [Alerters overview](https://docs.zenml.io/stack-components/alerters)
+Learn more: [Full Slack alerter documentation](https://docs.zenml.io/stacks/stack-components/alerters/slack), [Alerters overview](https://docs.zenml.io/stacks/stack-components/alerters)
 
 ## 5 Schedule the pipeline on a cron
 
@@ -249,7 +246,7 @@ my_pipeline()
 * For cloud orchestrators, verify service account permissions
 * Remember that deleting a schedule from ZenML doesn't remove it from the orchestrator!
 
-Learn more: [Scheduling Pipelines](https://docs.zenml.io/how-to/build-pipelines/schedule-a-pipeline), [Managing Scheduled Pipelines](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
+Learn more: [Scheduling Pipelines](https://docs.zenml.io/concepts/steps_and_pipelines/scheduling), [Managing Scheduled Pipelines](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 
 ## 6 Kill cold-starts with **SageMaker Warm Pools / Vertex Persistent Resources**
 
@@ -292,7 +289,7 @@ zenml stack update your_stack_name -s vertex_persistent
 * For Vertex AI, set an appropriate persistent resource name for tracking
 * Resources need occasional recycling for updates or maintenance
 
-Learn more: [AWS SageMaker Orchestrator](https://docs.zenml.io/stack-components/orchestrators/sagemaker), [Google Cloud Vertex AI Step Operator](https://docs.zenml.io/stack-components/step-operators/vertex)
+Learn more: [AWS SageMaker Orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker), [Google Cloud Vertex AI Step Operator](https://docs.zenml.io/stacks/stack-components/step-operators/vertex)
 
 ## 7 Centralise secrets (tokens, DB creds, S3 keys)
 
@@ -339,7 +336,7 @@ zenml artifact-store register my_store \
 * Set up CI/CD to use service accounts with limited permissions
 * Regularly rotate sensitive credentials like API keys and access tokens
 
-Learn more: [Secret Management](https://docs.zenml.io/getting-started/deploying-zenml/secret-management), [Working with Secrets](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets)
+Learn more: [Secret Management](https://docs.zenml.io/concepts/secrets), [Working with Secrets](https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management)
 
 ## 8 Run smoke tests locally before going to the cloud
 
@@ -361,7 +358,7 @@ zenml stack set smoke_test_stack
 from zenml import pipeline, step
 from typing import Dict
 
-# 1. Create a configuration-aware pipeline 
+# 1. Create a configuration-aware pipeline
 @pipeline
 def training_pipeline(sample_fraction: float = 0.01):
     """Pipeline that can work with sample data for local testing."""
@@ -415,7 +412,7 @@ training_pipeline(sample_fraction=1.0)  # Use full dataset
 
 This approach works best when you design your pipelines to be configurable from the start, allowing them to run with reduced data size, shorter training cycles, or simplified processing steps during development.
 
-Learn more: [Local Docker Orchestrator](https://docs.zenml.io/stack-components/orchestrators/local-docker)
+Learn more: [Local Docker Orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/local-docker)
 
 ## 9 Organize with tags
 
@@ -495,7 +492,7 @@ Client().delete_run_tags(run_name_or_id="my_run", tags=["test", "debug"])
 * Update tags as assets progress through your workflow
 * Document your tagging strategy for team alignment
 
-Learn more: [Tags | ZenML](https://docs.zenml.io/how-to/project-setup-and-management/tag-management)
+Learn more: [Tags](https://docs.zenml.io/concepts/tags), [Tag Registry](https://docs.zenml.io/user-guides/best-practices/organizing-pipelines-and-models#create-a-tag-registry-for-consistency)
 
 ## 10 Hook your Git repo to every run
 
@@ -534,7 +531,7 @@ zenml code-repository register project_repo \
 
 This simple setup can save hours of engineering time compared to manually tracking code versions and managing Docker builds yourself.
 
-Learn more: [Code Repositories | ZenML - Bridging the gap between ML & Ops](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository)
+Learn more: [Code Repositories](https://docs.zenml.io/user-guides/production-guide/connect-code-repository)
 
 ## 11 Simple HTML reports
 
@@ -627,7 +624,7 @@ Provide only the HTML code without explanations. The HTML will be used with ZenM
 
 Simply return an `HTMLString` from any step, and your visualization will automatically appear in the ZenML dashboard for that step's artifacts.
 
-Learn more: [Visualizations | ZenML - Bridging the gap between ML & Ops](https://docs.zenml.io/concepts/artifacts/visualizations)
+Learn more: [Visualizations](https://docs.zenml.io/concepts/artifacts/visualizations)
 
 ## 12 Register models in the Model Control Plane
 
@@ -701,7 +698,7 @@ print(f"Accuracy v2: {model_v2.run_metadata['accuracy'].value}")
 * Set up model stages to track which ML solutions are in which environments
 * Use a single model entity to group all iterations of a particular ML capability, even when the underlying technical implementation changes
 
-Learn more: [Models | ZenML](https://docs.zenml.io/how-to/model-management-metrics/models)
+Learn more: [Models](https://docs.zenml.io/concepts/models#tracking-metrics-and-metadata)
 
 ## 13 Create a parent Docker image for faster builds
 
@@ -794,4 +791,4 @@ settings:
 
 For projects with heavy dependencies like deep learning frameworks, this approach can cut build times by 80-90%, turning a 5-minute build into a 30-second one. This is especially valuable in cloud environments where you pay for build time.
 
-Learn more: [Containerization | ZenML](https://docs.zenml.io/how-to/containerization/containerization#using-custom-parent-images)
+Learn more: [Containerization](https://docs.zenml.io/concepts/containerization)
