@@ -529,7 +529,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                                 key,
                             )
 
-                step_name_to_dynamic_component[step_name] = component                
+                step_name_to_dynamic_component[step_name] = component
 
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,

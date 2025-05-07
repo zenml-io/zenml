@@ -261,7 +261,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             else:
                 step_env[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
 
-            compose_definition["services"][container_name]["environment"] = step_env
+            compose_definition["services"][container_name]["environment"] = (
+                step_env
+            )
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps
