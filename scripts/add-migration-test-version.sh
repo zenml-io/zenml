@@ -12,8 +12,8 @@ fi
 OLD_VERSION=$1
 NEW_VERSION=$2
 
-# Fetch the last changes in the alembic history
-ALEMBIC_HISTORY=$(alembic history | head -n 1)
+# Fetch the last changes in the alembic history - ignore broken pipe errors
+ALEMBIC_HISTORY=$(alembic history 2>/dev/null | head -n 1 || true)
 
 # Check if the first line starts with the old version
 if [[ $ALEMBIC_HISTORY == "$OLD_VERSION"* ]]; then
