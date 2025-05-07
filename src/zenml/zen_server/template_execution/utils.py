@@ -136,6 +136,8 @@ def run_template(
     Raises:
         ValueError: If the template can not be run.
         RuntimeError: If the server URL is not set in the server configuration.
+        MaxConcurrentTasksError: If the maximum number of concurrent run
+            template tasks is reached.
 
     Returns:
         ID of the new pipeline run.
