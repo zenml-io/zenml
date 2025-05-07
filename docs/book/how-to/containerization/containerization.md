@@ -245,8 +245,7 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 
 ### Python Dependencies
 
-By default, ZenML automatically installs all packages required by your active ZenML stack. Additionally, it tries to look for
-`requirements.txt` and `pyproject.toml` files inside your current [source root](./which-files-are-built-into-the-image.md) and installs packages from the first one it finds.
+By default, ZenML automatically installs all packages required by your active ZenML stack. Additionally, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current [source root](./which-files-are-built-into-the-image.md) and installs packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`.
 
 1.  **Replicate Local Environment**:
     ```python

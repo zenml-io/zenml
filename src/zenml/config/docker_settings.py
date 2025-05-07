@@ -100,9 +100,11 @@ class DockerSettings(BaseSettings):
       `pyproject_path` attribute.
     - The packages specified via the `requirements` attribute
 
-    If none of the above are specified, ZenML will try to automatically find
-    a `requirements.txt` or `pyproject.toml` file in your current source root
-    and installs packages from the first one it finds.
+    If neither `replicate_local_python_environment`, `pyproject_path` or
+    `requirements` are specified, ZenML will try to automatically find a
+    requirements.txt or pyproject.toml file in your current source root
+    and installs packages from the first one it finds. You can disable this
+    behavior by setting `disable_automatic_requirements_detection=True`.
 
     Attributes:
         parent_image: Full name of the Docker image that should be
@@ -144,6 +146,9 @@ class DockerSettings(BaseSettings):
             packages.
         python_package_installer_args: Arguments to pass to the python package
             installer.
+        disable_automatic_requirements_detection: If set to True, ZenML will
+            not automatically detect requirements.txt files or pyproject.toml
+            files in your source root.
         replicate_local_python_environment: If set to True, ZenML will run
             `pip freeze` to gather the requirements of the local Python
             environment and then install them in the Docker image.
@@ -158,6 +163,12 @@ class DockerSettings(BaseSettings):
             command can contain a `{directory}` placeholder which will be
             replaced with the directory in which the pyproject.toml file is
             stored.
+            **Note**: This command will be run before any code files are copied
+            into the image. It is therefore not possible to install a local
+            project using this command. This command should exclude any local
+            projects, and you can specify a `local_project_install_command`
+            instead which will be run after the code files are copied into the
+            image.
         requirements: Path to a requirements file or a list of required pip
             packages. During the image build, these requirements will be
             installed using pip. If you need to use a different tool to
@@ -166,13 +177,16 @@ class DockerSettings(BaseSettings):
         required_integrations: List of ZenML integrations that should be
             installed. All requirements for the specified integrations will
             be installed inside the Docker image.
-        required_hub_plugins: DEPRECATED/UNUSED.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
             and install the corresponding requirements and apt packages.
             If you set this to `False` or use custom components in your stack,
             you need to make sure these get installed by specifying them in
             the `requirements` and `apt_packages` attributes.
+        local_project_install_command: Command to install a local project in
+            the Docker image. This is run after the code files are copied into
+            the image, and it is therefore only possible when code is included
+            in the image, not downloaded at runtime.
         apt_packages: APT packages to install inside the Docker image.
         environment: Dictionary of environment variables to set inside the
             Docker image.
@@ -187,14 +201,6 @@ class DockerSettings(BaseSettings):
             from a code repository if possible.
         allow_download_from_artifact_store: If `True`, code can be downloaded
             from the artifact store.
-        build_options: DEPRECATED, use parent_image_build_config.build_options
-            instead.
-        dockerignore: DEPRECATED, use build_config.dockerignore instead.
-        copy_files: DEPRECATED/UNUSED.
-        copy_global_config: DEPRECATED/UNUSED.
-        source_files: DEPRECATED. Use allow_including_files_in_images,
-            allow_download_from_code_repository and
-            allow_download_from_artifact_store instead.
     """
 
     parent_image: Optional[str] = None
@@ -208,6 +214,7 @@ class DockerSettings(BaseSettings):
         PythonPackageInstaller.PIP
     )
     python_package_installer_args: Dict[str, Any] = {}
+    disable_automatic_requirements_detection: bool = False
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod, bool]
     ] = Field(default=None, union_mode="left_to_right")
@@ -241,6 +248,8 @@ class DockerSettings(BaseSettings):
         "copy_global_config",
         "source_files",
         "required_hub_plugins",
+        "build_options",
+        "dockerignore",
     )
 
     @model_validator(mode="before")
@@ -367,7 +376,7 @@ class DockerSettings(BaseSettings):
                 "`DockerSettings.replicate_local_python_environment=True`. "
                 "If you want to export requirements from a pyproject.toml "
                 "file, use `DockerSettings.pyproject_path` and "
-                "`DockerSettings.pyproject_export_command`"
+                "`DockerSettings.pyproject_export_command` instead."
             )
 
         return self

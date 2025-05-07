@@ -449,10 +449,10 @@ class PipelineDockerImageBuilder:
 
         if not any(
             [
+                docker_settings.disable_automatic_requirements_detection,
                 docker_settings.replicate_local_python_environment,
-                docker_settings.required_integrations,
-                docker_settings.requirements,
-                docker_settings.pyproject_path,
+                requirements,
+                pyproject_path,
             ]
         ):
             root = source_utils.get_source_root()
