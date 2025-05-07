@@ -107,6 +107,7 @@ def build_pod_manifest(
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
+    owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -125,7 +126,7 @@ def build_pod_manifest(
         env: Environment variables to set.
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
-
+        owner_references: List of owner references for the pod.
     Returns:
         Pod manifest.
     """
@@ -180,6 +181,7 @@ def build_pod_manifest(
     pod_metadata = k8s_client.V1ObjectMeta(
         name=pod_name,
         labels=labels,
+        owner_references=owner_references,
     )
 
     if pod_settings and pod_settings.annotations:
