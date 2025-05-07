@@ -127,6 +127,7 @@ def build_pod_manifest(
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
         owner_references: List of owner references for the pod.
+
     Returns:
         Pod manifest.
     """
