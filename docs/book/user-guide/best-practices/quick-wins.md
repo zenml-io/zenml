@@ -1,6 +1,6 @@
 ---
 description: 5-minute Quick Wins
-icon: lightning
+icon: bolt
 ---
 
 # Quick Wins
