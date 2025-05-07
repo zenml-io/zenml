@@ -730,9 +730,18 @@ RUN pip install --no-cache-dir \
 
 # Create app directory (ZenML expects this)
 WORKDIR /app
+
+# Install stack component requirements
+# Use stack export-requirements to add stack dependencies
+# Example: zenml stack export-requirements my_stack --output-file stack_reqs.txt
+COPY stack_reqs.txt /tmp/stack_reqs.txt
+RUN pip install --no-cache-dir -r /tmp/stack_reqs.txt
 EOF
 
-# 2. Build and push your parent image
+# 2. Export requirements from your current stack
+zenml stack export-requirements --output-file stack_reqs.txt
+
+# 3. Build and push your parent image
 docker build -t your-registry.io/zenml-parent:latest -f Dockerfile.parent .
 docker push your-registry.io/zenml-parent:latest
 ```
@@ -784,7 +793,7 @@ settings:
 * **Lower network usage** - Download common large packages just once
 
 **Best practices**
-* Include all heavy dependencies that change infrequently in your parent image
+* Include all heavy dependencies and stack component requirements in your parent image
 * Version your parent image (e.g., `zenml-parent:0.54.0`) to track changes
 * Document included packages with a version listing in a requirements.txt
 * Use multi-stage builds if your parent image needs compiled dependencies
