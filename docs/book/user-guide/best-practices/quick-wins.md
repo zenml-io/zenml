@@ -1,6 +1,6 @@
 ---
 description: 5-minute Quick Wins
-icon: lightning
+icon: bolt
 ---
 
 # Quick Wins
@@ -11,19 +11,19 @@ micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 
 | Quick Win | What it does | Why you need it |
 |-----------|--------------|----------------|
-| [Log rich metadata](#1-log-rich-metadata-on-every-run) | Track params, metrics, and properties on every run | Foundation for reproducibility and analytics |
-| [Experiment comparison](#2-activate-the-experiment-comparison-view-zenml-pro) | Visualize and compare runs with parallel plots | Identify patterns and optimize faster |
-| [Autologging](#3-drop-in-experiment-tracker-autologging) | Automatic metric and artifact tracking | Zero-effort experiment tracking |
-| [Slack/Discord alerts](#4-instant-alerter-notifications-for-successesfailures) | Instant notifications for pipeline events | Stay informed without checking dashboards |
-| [Cron scheduling](#5-schedule-the-pipeline-on-a-cron) | Run pipelines automatically on schedule | Promote notebooks to production workflows |
-| [Warm pools/resources](#6-kill-cold-starts-with-sagemaker-warm-pools--vertex-persistent-resources) | Eliminate cold starts in cloud environments | Reduce iteration time from minutes to seconds |
-| [Secret management](#7-centralise-secrets-tokens-db-creds-s3-keys) | Centralize credentials and tokens | Keep sensitive data out of code |
-| [Local smoke tests](#8-run-smoke-tests-locally-before-going-to-the-cloud) | Faster iteration on Docker before cloud | Quick feedback without cloud waiting times |
-| [Organize with tags](#9-organize-with-tags) | Classify and filter ML assets | Find and relate your ML assets with ease |
-| [Git repo hooks](#10-hook-your-git-repo-to-every-run) | Track code state with every run | Perfect reproducibility and faster builds |
-| [HTML reports](#11-simple-html-reports) | Create rich visualizations effortlessly | Beautiful stakeholder-friendly outputs |
-| [Model Control Plane](#12-register-models-in-the-model-control-plane) | Track models and their lifecycle | Central hub for model lineage and governance |
-| [Parent Docker images](#13-create-a-parent-docker-image-for-faster-builds) | Pre-configure your dependencies in a base image | Faster builds and consistent environments |
+| [Log rich metadata](#id-1-log-rich-metadata-on-every-run) | Track params, metrics, and properties on every run | Foundation for reproducibility and analytics |
+| [Experiment comparison](#id-2-activate-the-experiment-comparison-view-zenml-pro) | Visualize and compare runs with parallel plots | Identify patterns and optimize faster |
+| [Autologging](#id-3-drop-in-experiment-tracker-autologging) | Automatic metric and artifact tracking | Zero-effort experiment tracking |
+| [Slack/Discord alerts](#id-4-instant-alerter-notifications-for-successesfailures) | Instant notifications for pipeline events | Stay informed without checking dashboards |
+| [Cron scheduling](#id-5-schedule-the-pipeline-on-a-cron) | Run pipelines automatically on schedule | Promote notebooks to production workflows |
+| [Warm pools/resources](#id-6-kill-cold-starts-with-sagemaker-warm-pools--vertex-persistent-resources) | Eliminate cold starts in cloud environments | Reduce iteration time from minutes to seconds |
+| [Secret management](#id-7-centralise-secrets-tokens-db-creds-s3-keys) | Centralize credentials and tokens | Keep sensitive data out of code |
+| [Local smoke tests](#id-8-run-smoke-tests-locally-before-going-to-the-cloud) | Faster iteration on Docker before cloud | Quick feedback without cloud waiting times |
+| [Organize with tags](#id-9-organize-with-tags) | Classify and filter ML assets | Find and relate your ML assets with ease |
+| [Git repo hooks](#id-10-hook-your-git-repo-to-every-run) | Track code state with every run | Perfect reproducibility and faster builds |
+| [HTML reports](#id-11-simple-html-reports) | Create rich visualizations effortlessly | Beautiful stakeholder-friendly outputs |
+| [Model Control Plane](#id-12-register-models-in-the-model-control-plane) | Track models and their lifecycle | Central hub for model lineage and governance |
+| [Parent Docker images](#id-13-create-a-parent-docker-image-for-faster-builds) | Pre-configure your dependencies in a base image | Faster builds and consistent environments |
 
 
 ## 1 Log rich metadata on every run
