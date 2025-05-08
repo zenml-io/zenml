@@ -6054,10 +6054,6 @@ class SqlZenStore(BaseZenStore):
             secrets: The list of secrets to link.
             resource: The resource to link the secrets to.
             session: The database session to use.
-
-        Raises:
-            ValueError: If a tag exists but doesn't match the same exclusive
-                setting.
         """
         if secrets is None:
             return
@@ -6229,12 +6225,16 @@ class SqlZenStore(BaseZenStore):
         return secret_model
 
     def get_secret_by_name_or_id(
-        self, secret_name_or_id: Union[str, UUID]
+        self,
+        secret_name_or_id: Union[str, UUID],
+        include_secret_values: bool = False,
     ) -> SecretResponse:
         """Get a secret by name or ID.
 
         Args:
-            secret_name: The name of the secret to fetch.
+            secret_name_or_id: The name or ID of the secret to fetch.
+            include_secret_values: Whether to include the secret values in the
+                response.
 
         Returns:
             The secret.
@@ -6246,9 +6246,12 @@ class SqlZenStore(BaseZenStore):
             secret_model = secret_in_db.to_model(
                 include_metadata=True, include_resources=True
             )
-        secret_model.set_secrets(
-            self._get_secret_values(secret_id=secret_in_db.id)
-        )
+
+        if include_secret_values:
+            secret_model.set_secrets(
+                self._get_secret_values(secret_id=secret_in_db.id)
+            )
+
         return secret_model
 
     def list_secrets(

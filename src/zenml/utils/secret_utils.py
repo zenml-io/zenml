@@ -199,6 +199,9 @@ def resolve_and_verify_secrets(
         secrets: A list of secret names or IDs.
         zen_store: The ZenML store to use to resolve the secrets.
 
+    Raises:
+        KeyError: If the secret is not found.
+
     Returns:
         A list of secret IDs.
     """

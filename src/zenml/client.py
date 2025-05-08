@@ -2012,6 +2012,7 @@ class Client(metaclass=ClientMetaClass):
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
             secrets: The secrets of the stack component.
+
         Returns:
             The model of the registered component.
         """
