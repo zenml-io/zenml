@@ -80,7 +80,7 @@ class DaemonServerDeploymentConfig(LocalServerDeploymentConfig):
         """
         return f"http://{self.ip_address}:{self.port}"
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
 
 class DaemonZenServerConfig(LocalDaemonServiceConfig):

@@ -1,5 +1,93 @@
 <!-- markdown-link-check-disable -->
 
+# 0.82.0
+
+The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes), enhanced documentation, and numerous fixes to improve overall stability and performance. Key highlights include configurable max parallelism for Kubernetes orchestrator, customizable pod name prefixes and scheduler options, improved runner timeouts, and support for private service connections in Vertex AI. This release also includes comprehensive documentation updates, and library compatibility improvements for NumPy and Pandas.
+
+# Features
+
+- Added max parallelism option for [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)
+- Added support for pod name prefixes and scheduler configuration
+- Added private service connect option for [Vertex AI orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/vertex)
+- Made runner timeout easily configurable
+- Added storage for list of Python packages
+- Added an ability to deep refresh the status of your run from the dashboard
+
+# Improvements
+
+- Adjusted GitHub code repo regex pattern for better compatibility
+- Improved build invalidation when parent Dockerfile changes
+- Enhanced directory handling during code download
+- Added ability to list model versions without models
+- Added support for extra attributes in all ZenML models
+- Disabled default project behavior for pro workspaces
+
+# Fixes
+
+- Fixed run templates listing
+- Eliminated premature active project warning logs
+- Updated scikit-learn requirement in SklearnIntegration
+- Updated NumPy integration to work with both 1.x and 2.x library versions
+- Added Pandas custom data type error handling and logging
+- Removed unnecessary and invalid settings
+- Various frontend bug fixes
+
+# Documentation
+
+- Completed comprehensive documentation revamp
+- Added documentation for [self-hosted run templates](https://docs.zenml.io/pro/deployments/self-hosted#enabling-run-templates-support)
+- Removed outdated redirects and sections
+- Fixed broken absolute links and restored missing sections
+- Added documentation for run template TTL environment variable
+- Updated image paths for ZenML pipeline screenshots
+- Migrated starter guide to unified log_metadata method
+
+# Breaking Changes
+
+- Removed `scikit-image` as a requirement of the sklearn integration
+
+## What's Changed
+* Adding 0.80.2 to legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3547
+* Add 0.81.0 to migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3546
+* Document self-hosted run templates by @stefannica in https://github.com/zenml-io/zenml/pull/3552
+* Adjusted github code repo regex pattern matching to work in more cases by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3550
+* Documentation revamp by @bcdurak in https://github.com/zenml-io/zenml/pull/3524
+* Remove outdated redirects and sections by @htahir1 in https://github.com/zenml-io/zenml/pull/3564
+* Removed orphan assets by @htahir1 in https://github.com/zenml-io/zenml/pull/3567
+* Fixed broken absolute links and brought back some sections by @htahir1 in https://github.com/zenml-io/zenml/pull/3585
+* Fix listing run templates by @schustmi in https://github.com/zenml-io/zenml/pull/3587
+* Don't log missing active project warnings preemtively  by @schustmi in https://github.com/zenml-io/zenml/pull/3586
+* Docs fixes by @strickvl in https://github.com/zenml-io/zenml/pull/3565
+* More docs changes  by @htahir1 in https://github.com/zenml-io/zenml/pull/3592
+* Update scikit-learn requirement in SklearnIntegration by @htahir1 in https://github.com/zenml-io/zenml/pull/3551
+* Small docs fixes by @strickvl in https://github.com/zenml-io/zenml/pull/3584
+* More small docs fixes by @strickvl in https://github.com/zenml-io/zenml/pull/3601
+* Docs: Migrate to unified log_metadata method in starter guide by @marwan37 in https://github.com/zenml-io/zenml/pull/3603
+* Add docs for run template TTL env var by @schustmi in https://github.com/zenml-io/zenml/pull/3604
+* Make runner timeout easily configurable by @schustmi in https://github.com/zenml-io/zenml/pull/3589
+* Disable default project behavior for pro workspaces by @schustmi in https://github.com/zenml-io/zenml/pull/3605
+* Remove unnecessary and invalid settings by @schustmi in https://github.com/zenml-io/zenml/pull/3548
+* Update image paths for ZenML pipeline screenshots by @htahir1 in https://github.com/zenml-io/zenml/pull/3611
+* Update NumPy integration to work with 1.x and 2.x versions of the library by @htahir1 in https://github.com/zenml-io/zenml/pull/3532
+* Invalidate the build when parent dockerfile changes by @schustmi in https://github.com/zenml-io/zenml/pull/3607
+* Ignore existing directories during code download by @schustmi in https://github.com/zenml-io/zenml/pull/3609
+* Max parallelism option for kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/3606
+* Add option to specify pod name prefix and add scheduler by @schustmi in https://github.com/zenml-io/zenml/pull/3591
+* Fix CVE-2024-6345 CVE-2024-6345 CVE-2022-40897 and CVE-2025-0508 by @stefannica in https://github.com/zenml-io/zenml/pull/3610
+* Docs: Starter guide fixes by @marwan37 in https://github.com/zenml-io/zenml/pull/3616
+* Remove some unused code by @schustmi in https://github.com/zenml-io/zenml/pull/3614
+* Add option to set a private service connect to the Vertex AI orchestrator by @stefannica in https://github.com/zenml-io/zenml/pull/3613
+* Add Pandas custom data type error handling and logging by @htahir1 in https://github.com/zenml-io/zenml/pull/3539
+* Allowing listing model versions without models by @bcdurak in https://github.com/zenml-io/zenml/pull/3593
+* Store list of python packages by @schustmi in https://github.com/zenml-io/zenml/pull/3608
+* Allow (and ignore) extra attributes in all ZenML models by @stefannica in https://github.com/zenml-io/zenml/pull/3620
+* Utilizing uv in the quickstart dockerfiles by @bcdurak in https://github.com/zenml-io/zenml/pull/3623
+* Fixing the azure integration and marshmallow by @bcdurak in https://github.com/zenml-io/zenml/pull/3626
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.81.0...0.82.0
+
+
 # 0.81.0
 
 The `0.81.0` release focuses on significant improvements to artifact management, enhanced security features, and advanced resource sharing capabilities. Key highlights include a new Path materializer for directory and file uploads, artifact visualization enhancements, client-side pipeline run logs storage, and support for resource sharing between teams and external users. This release also improves logging, adds security protections, and enhances orchestration capabilities across multiple cloud platforms.
@@ -203,7 +291,7 @@ The 0.80.0 release is one of our biggest updates in a while! This version introd
 - [Enhanced tagging system](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging) with resource type filtering and exclusive tag behavior
 - [Added persistent resource support for the Vertex orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex#using-persistent-resources-for-faster-development)
 - Store build duration information for better tracking
-- [Allow passing step artifacts to specify upstream steps](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/control-execution-order-of-steps)
+- [Allow passing step artifacts to specify upstream steps](https://docs.zenml.io/concepts/steps_and_pipelines/advanced_features#step-execution-order)
 - Support for environment variables in KubernetesPodSettings
 
 ## Improvements
@@ -5430,7 +5518,7 @@ zenml stack update new_default -c local2
 zenml stack describe new_default
 zenml stack remove-component -c
 ```
-More details are in the [CLI docs](https://apidocs.zenml.io/0.7.3/cli/). 
+More details are in the [CLI docs](https://sdkdocs.zenml.io/0.82.0/cli.html). 
 Users can add new stack components to a pre-existing stack, or they can modify 
 already-present stack components. They can also rename their stack and individual stack components.
 

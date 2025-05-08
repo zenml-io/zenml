@@ -214,7 +214,7 @@ for step_name, step_info in steps.items():
 ```
 
 {% hint style="info" %}
-If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id) to learn more about the invocation ID.
+If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines/advanced_features#custom-step-invocation-ids) to learn more about the invocation ID.
 {% endhint %}
 
 ### Inspecting Pipeline Runs with VS Code Extension

@@ -15,7 +15,16 @@
 
 import os
 from collections import Counter
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 import numpy as np
 
@@ -35,6 +44,48 @@ NUMPY_FILENAME = "data.npy"
 DATA_FILENAME = "data.parquet"
 SHAPE_FILENAME = "shape.json"
 DATA_VAR = "data_var"
+
+# Check NumPy version for compatibility handling
+IS_NUMPY_2 = np.lib.NumpyVersion(np.__version__) >= "2.0.0"
+
+# In NumPy 2.0, np.object_ is deprecated in favor of object
+# Let's use the right type based on the NumPy version
+NUMPY_OBJECT_TYPE = object if IS_NUMPY_2 else np.object_
+
+
+def _ensure_dtype_compatibility(arr: "NDArray[Any]") -> "NDArray[Any]":
+    """Ensure consistent dtype handling across NumPy versions.
+
+    Args:
+        arr: NumPy array to ensure compatible dtype handling
+
+    Returns:
+        NumPy array with consistent dtype behavior
+    """
+    if IS_NUMPY_2:
+        return arr  # NumPy 2.0 already preserves precision
+    else:
+        # For 1.x, explicitly preserve precision when needed
+        return arr.astype(arr.dtype, copy=False)
+
+
+def _create_array(
+    data: Any, dtype: Optional[Union["np.dtype[Any]", Type[Any]]] = None
+) -> "NDArray[Any]":
+    """Create arrays with consistent behavior across NumPy versions.
+
+    Args:
+        data: Data to convert to array
+        dtype: Optional dtype to use
+
+    Returns:
+        NumPy array with consistent creation behavior
+    """
+    if IS_NUMPY_2:
+        return np.asarray(data, dtype=dtype)
+    else:
+        # In NumPy 1.x, copy behavior is different
+        return np.array(data, dtype=dtype, copy=False)
 
 
 class NumpyMaterializer(BaseMaterializer):
@@ -60,7 +111,9 @@ class NumpyMaterializer(BaseMaterializer):
 
         if self.artifact_store.exists(numpy_file):
             with self.artifact_store.open(numpy_file, "rb") as f:
-                return np.load(f, allow_pickle=True)
+                arr = np.load(f, allow_pickle=True)
+                # Ensure consistent dtype handling
+                return _ensure_dtype_compatibility(arr)
         elif self.artifact_store.exists(os.path.join(self.uri, DATA_FILENAME)):
             logger.warning(
                 "A legacy artifact was found. "
@@ -86,7 +139,9 @@ class NumpyMaterializer(BaseMaterializer):
                     input_stream = pa.input_stream(f)
                     data = pq.read_table(input_stream)
                 vals = getattr(data.to_pandas(), DATA_VAR).values
-                return np.reshape(vals, shape_tuple)
+                arr = np.reshape(vals, shape_tuple)
+                # Ensure consistent dtype handling
+                return _ensure_dtype_compatibility(arr)
             except ImportError:
                 raise ImportError(
                     "You have an old version of a `NumpyMaterializer` ",
@@ -101,6 +156,9 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             arr: The numpy array to write.
         """
+        # Ensure consistent dtype handling before saving
+        arr = _ensure_dtype_compatibility(arr)
+
         with self.artifact_store.open(
             os.path.join(self.uri, NUMPY_FILENAME), "wb"
         ) as f:
@@ -186,8 +244,8 @@ class NumpyMaterializer(BaseMaterializer):
         """
         if np.issubdtype(arr.dtype, np.number):
             return self._extract_numeric_metadata(arr)
-        elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
-            arr.dtype, np.object_
+        elif np.issubdtype(arr.dtype, np.str_) or np.issubdtype(
+            arr.dtype, NUMPY_OBJECT_TYPE
         ):
             return self._extract_text_metadata(arr)
         else:
@@ -204,6 +262,9 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             A dictionary of metadata.
         """
+        # Ensure consistent precision handling
+        arr = _ensure_dtype_compatibility(arr)
+
         min_val = np.min(arr).item()
         max_val = np.max(arr).item()
 
@@ -228,7 +289,15 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             A dictionary of metadata.
         """
-        text = " ".join(arr)
+        # Convert all array elements to strings explicitly to handle
+        # mixed types and ensure NumPy 2.0 compatibility
+        str_items = [str(item) for item in arr.flat]
+        # Use dtype='U' (unicode string) instead of str to avoid type issues
+        str_arr = _create_array(str_items, dtype=np.dtype("U")).reshape(
+            arr.shape
+        )
+
+        text = " ".join(str_arr)
         words = text.split()
         word_counts = Counter(words)
         unique_words = len(word_counts)

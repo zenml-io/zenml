@@ -59,16 +59,19 @@
 
 ## Best practices
 
+* [5-minute Quick Wins](best-practices/quick-wins.md)
 * [Keep Your Dashboard Clean](best-practices/keep-your-dashboard-server-clean.md)
 * [Configure Python environments](best-practices/configure-python-environments.md)
 * [Shared Components for  Teams](best-practices/shared-components-for-teams.md)
 * [Organizing Stacks Pipelines Models](tutorial/organizing-pipelines-and-models.md)
 * [Access Management](best-practices/access-management.md)
 * [Setting up a Project Repository](best-practices/set-up-your-repository.md)
+* [Infrastructure as Code with Terraform](best-practices/iac.md)
 * [Creating Templates for ML Platform](best-practices/project-templates.md)
 * [Using VS Code extension](best-practices/vscode-extension.md)
 * [Leveraging MCP](best-practices/mcp-chat-with-server.md)
 * [Debugging and Solving Issues](best-practices/debug-and-solve-issues.md)
+* [Choosing an Orchestrator](best-practices/choose-orchestration-environment.md)
 
 ## Examples
 

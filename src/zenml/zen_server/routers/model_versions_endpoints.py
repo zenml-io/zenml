@@ -47,10 +47,11 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
 )
-from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     dehydrate_response_model,
+    get_allowed_resource_ids,
     verify_permission_for_model,
 )
 from zenml.zen_server.routers.models_endpoints import (
@@ -147,33 +148,23 @@ def list_model_versions(
 
     Returns:
         The model versions according to query filters.
-
-    Raises:
-        ValueError: If the model is missing from the filter.
     """
-    if model_name_or_id:
-        model_version_filter_model.model = model_name_or_id
-
-    if not model_version_filter_model.model:
-        raise ValueError("Model missing from the filter")
-
     # A project scoped request must always be scoped to a specific
     # project. This is required for the RBAC check to work.
     set_filter_project_scope(model_version_filter_model)
     assert isinstance(model_version_filter_model.project, UUID)
 
-    model = zen_store().get_model_by_name_or_id(
-        model_version_filter_model.model,
-        project=model_version_filter_model.project,
+    if model_name_or_id:
+        model_version_filter_model.model = model_name_or_id
+
+    allowed_model_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.MODEL,
+        project_id=model_version_filter_model.project,
     )
-
-    # Check read permissions on the model
-    verify_permission_for_model(model, action=Action.READ)
-
     model_version_filter_model.configure_rbac(
-        authenticated_user_id=auth_context.user.id
+        authenticated_user_id=auth_context.user.id,
+        model_id=allowed_model_ids,
     )
-
     model_versions = zen_store().list_model_versions(
         model_version_filter_model=model_version_filter_model,
         hydrate=hydrate,

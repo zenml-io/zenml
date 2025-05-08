@@ -3,10 +3,11 @@
 import copy
 import hashlib
 import sys
-from typing import Any, Dict, List, Optional
+import threading
+from concurrent.futures import Future, ThreadPoolExecutor
+from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import BackgroundTasks
 from packaging import version
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -21,9 +22,12 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
+    ENV_ZENML_RUNNER_POD_TIMEOUT,
     handle_bool_env_var,
+    handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.exceptions import MaxConcurrentTasksError
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
@@ -48,30 +52,92 @@ from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
-from zenml.zen_server.utils import server_config, workload_manager, zen_store
+from zenml.zen_server.utils import (
+    run_template_executor,
+    server_config,
+    workload_manager,
+    zen_store,
+)
 
 logger = get_logger(__name__)
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
+class BoundedThreadPoolExecutor:
+    """Thread pool executor which only allows a maximum number of concurrent tasks."""
+
+    def __init__(self, max_workers: int, **kwargs: Any) -> None:
+        """Initialize the executor.
+
+        Args:
+            max_workers: The maximum number of workers.
+            **kwargs: Arguments to pass to the thread pool executor.
+        """
+        self._executor = ThreadPoolExecutor(max_workers=max_workers, **kwargs)
+        self._semaphore = threading.BoundedSemaphore(value=max_workers)
+
+    def submit(
+        self, fn: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Future[Any]:
+        """Submit a task to the executor.
+
+        Args:
+            fn: The function to execute.
+            *args: The arguments to pass to the function.
+            **kwargs: The keyword arguments to pass to the function.
+
+        Raises:
+            Exception: If the task submission fails.
+            MaxConcurrentTasksError: If the maximum number of concurrent tasks
+                is reached.
+
+        Returns:
+            The future of the task.
+        """
+        if not self._semaphore.acquire(blocking=False):
+            raise MaxConcurrentTasksError(
+                "Maximum number of concurrent tasks reached."
+            )
+
+        try:
+            future = self._executor.submit(fn, *args, **kwargs)
+        except Exception:
+            self._semaphore.release()
+            raise
+        else:
+            future.add_done_callback(lambda _: self._semaphore.release())
+            return future
+
+    def shutdown(self, **kwargs: Any) -> None:
+        """Shutdown the executor.
+
+        Args:
+            **kwargs: Keyword arguments to pass to the shutdown method of the
+                executor.
+        """
+        self._executor.shutdown(**kwargs)
+
+
 def run_template(
     template: RunTemplateResponse,
     auth_context: AuthContext,
-    background_tasks: Optional[BackgroundTasks] = None,
     run_config: Optional[PipelineRunConfiguration] = None,
+    sync: bool = False,
 ) -> PipelineRunResponse:
     """Run a pipeline from a template.
 
     Args:
         template: The template to run.
         auth_context: Authentication context.
-        background_tasks: Background tasks.
         run_config: The run configuration.
+        sync: Whether to run the template synchronously.
 
     Raises:
         ValueError: If the template can not be run.
         RuntimeError: If the server URL is not set in the server configuration.
+        MaxConcurrentTasksError: If the maximum number of concurrent run
+            template tasks is reached.
 
     Returns:
         ID of the new pipeline run.
@@ -192,6 +258,10 @@ def run_template(
             message="Starting pipeline run.",
         )
 
+        runner_timeout = handle_int_env_var(
+            ENV_ZENML_RUNNER_POD_TIMEOUT, default=60
+        )
+
         # could do this same thing with a step operator, but we need some
         # minor changes to the abstract interface to support that.
         workload_manager().run(
@@ -200,7 +270,7 @@ def run_template(
             command=command,
             arguments=args,
             environment=environment,
-            timeout_in_seconds=30,
+            timeout_in_seconds=runner_timeout,
             sync=True,
         )
         workload_manager().log(
@@ -235,13 +305,18 @@ def run_template(
                 )
                 raise
 
-    if background_tasks:
-        background_tasks.add_task(_task_with_analytics_and_error_handling)
-    else:
-        # Run synchronously if no background tasks were passed. This is probably
-        # when coming from a trigger which itself is already running in the
-        # background
+    if sync:
         _task_with_analytics_and_error_handling()
+    else:
+        try:
+            run_template_executor().submit(
+                _task_with_analytics_and_error_handling
+            )
+        except MaxConcurrentTasksError:
+            zen_store().delete_run(run_id=placeholder_run.id)
+            raise MaxConcurrentTasksError(
+                "Maximum number of concurrent run template tasks reached."
+            ) from None
 
     return placeholder_run
 

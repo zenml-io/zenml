@@ -45,5 +45,5 @@ class BaseSecretSchema(BaseModel):
         # validate attribute assignments
         validate_assignment=True,
         # report extra attributes as validation failures
-        extra="forbid",
+        extra="ignore",
     )

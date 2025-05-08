@@ -112,6 +112,11 @@ class VertexOrchestratorConfig(
         network: the full name of the Compute Engine Network to which the job
             should be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
+        private_service_connect: the full name of a Private Service Connect
+            endpoint to which the job should be peered. For example,
+            `projects/12345/regions/us-central1/networkAttachments/NETWORK_ATTACHMENT_NAME`
+            If not provided, the job will not be peered with any private service
+            connect endpoint.
         cpu_limit: The maximum CPU limit for this operator. This string value
             can be a number (integer value for number of CPUs) as string,
             or a number followed by "m", which means 1/1000. You can specify
@@ -130,6 +135,7 @@ class VertexOrchestratorConfig(
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
     network: Optional[str] = None
+    private_service_connect: Optional[str] = None
 
     # Deprecated
     cpu_limit: Optional[str] = None
