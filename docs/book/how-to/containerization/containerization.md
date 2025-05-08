@@ -312,9 +312,18 @@ By default, ZenML automatically installs all packages required by your active Ze
     docker_settings = DockerSettings(install_stack_requirements=False)
     ```
 
-{% hint style="info" %}
-You can combine these methods but do make sure that your list of requirements does not overlap with ones specified explicitly in the Docker settings to avoid version conflicts.
-{% endhint %}
+7.  **Install Local Projects**:
+    If your code requires the installation of some local code files as a python package, you can specify a command
+    that installs it as follows:
+    ```python
+    docker_settings = DockerSettings(local_project_install_command="pip install . --no-deps")
+    ```
+
+    {% hint style="warning" %}
+    Installing a local python package only works if your code files are included in the Docker image, so make sure you have
+    `allow_including_files_in_images=True` in your Docker settings. If you want to instead use the [code download functionality](#source-code-management)
+    to avoid building new Docker images for each pipeline run, you can follow [this example](https://github.com/zenml-io/zenml-patterns/tree/main/docker-local-pkg). 
+    {% endhint %}
 
 Depending on the options specified in your Docker settings, ZenML installs the requirements in the following order (each step optional):
 
