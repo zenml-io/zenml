@@ -141,6 +141,9 @@ def code_download_possible(
         Whether code download is possible for the deployment.
     """
     for step in deployment.step_configurations.values():
+        if step.config.docker_settings.local_project_install_command:
+            return False
+
         if step.config.docker_settings.allow_download_from_artifact_store:
             continue
 

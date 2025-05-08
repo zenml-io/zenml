@@ -135,6 +135,9 @@ class BuildConfiguration(BaseModel):
         Returns:
             Whether files should be included in the image.
         """
+        if self.settings.local_project_install_command:
+            return True
+
         if self.should_download_files(code_repository=code_repository):
             return False
 
@@ -153,6 +156,9 @@ class BuildConfiguration(BaseModel):
         Returns:
             Whether files should be downloaded in the image.
         """
+        if self.settings.local_project_install_command:
+            return False
+
         if self.should_download_files_from_code_repository(
             code_repository=code_repository
         ):
@@ -176,6 +182,9 @@ class BuildConfiguration(BaseModel):
         Returns:
             Whether files should be downloaded from the code repository.
         """
+        if self.settings.local_project_install_command:
+            return False
+
         if (
             code_repository
             and self.settings.allow_download_from_code_repository
