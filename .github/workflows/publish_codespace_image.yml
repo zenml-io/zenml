@@ -1,0 +1,71 @@
+---
+name: Publish ZenML Codespace Docker image
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (leave empty for latest)'
+        required: false
+        type: string
+        default: ''
+  push:
+    tags:
+      - '*'
+    branches:
+      - main
+      - develop
+  pull_request:
+    paths:
+      - 'docker/zenml-codespace.Dockerfile'
+
+jobs:
+  publish_codespace_image:
+    name: Build and publish zenml-codespace Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4.2.2
+      
+      - name: Determine version
+        run: |-
+          if [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            CURRENT_VERSION=$(cat src/zenml/VERSION)
+            DATE=$(date +"%Y%m%d")
+            VERSION="${CURRENT_VERSION}.dev${DATE}"
+          fi
+          VERSION=$(echo $VERSION | sed 's/[^a-zA-Z0-9._-]/-/g')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Determined VERSION=$VERSION"
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+      
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v5.0.0
+        with:
+          context: .
+          file: ./docker/zenml-codespace.Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            zenmldocker/zenml-codespace:${{ env.VERSION }}
+            ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && 'zenmldocker/zenml-codespace:latest' || '' }}
+          build-args: |
+            ZENML_VERSION=${{ env.VERSION }}
+            PYTHON_VERSION=3.11 
