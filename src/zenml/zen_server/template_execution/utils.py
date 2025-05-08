@@ -379,7 +379,7 @@ def deployment_request_from_template(
     )
     if pipeline_secrets := pipeline_update_dict.get("secrets", []):
         pipeline_update_dict["secrets"] = [
-            zen_store().get_secret_by_name_or_id(secret)
+            zen_store().get_secret_by_name_or_id(secret).id
             for secret in pipeline_secrets
         ]
     pipeline_configuration = PipelineConfiguration(
@@ -421,9 +421,9 @@ def deployment_request_from_template(
 
             if step_secrets := update_dict.get("secrets", []):
                 update_dict["secrets"] = [
-                    zen_store().get_secret_by_name_or_id(secret)
+                    zen_store().get_secret_by_name_or_id(secret).id
                     for secret in step_secrets
-                ]
+                ] + step_config_dict_base.get("secrets", [])
 
             configured_parameters = set(update.parameters)
             step_config_dict = dict_utils.recursive_update(
