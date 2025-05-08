@@ -89,9 +89,16 @@ jobs:
     needs: wait-for-package-release
     uses: ./.github/workflows/publish_docker_image.yml
     secrets: inherit
-  publish-helm-chart:
+  publish-codespace-image:
     if: github.repository == 'zenml-io/zenml'
     needs: publish-docker-image
+    uses: ./.github/workflows/publish_codespace_image.yml
+    with:
+      version: ${{ github.ref_name }}
+    secrets: inherit
+  publish-helm-chart:
+    if: github.repository == 'zenml-io/zenml'
+    needs: publish-codespace-image
     uses: ./.github/workflows/publish_helm_chart.yml
     secrets: inherit
   wait-for-package-release-again:
