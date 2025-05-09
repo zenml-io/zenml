@@ -19,15 +19,7 @@ database connection.
 """
 
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
@@ -47,11 +39,7 @@ exclude_tables = ["sqlite_sequence"]
 
 
 def include_object(
-    object: Any,
-    name: Optional[str],
-    type_: str,
-    *args: Any,
-    **kwargs: Any,
+    object: Any, name: Optional[str], type_: str, *args: Any, **kwargs: Any
 ) -> bool:
     """Function used to exclude tables from the migration scripts.
 
