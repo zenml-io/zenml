@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import PositiveInt
+from pydantic import NonNegativeInt, PositiveInt
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -59,6 +59,14 @@ class KubernetesOrchestratorSettings(BaseSettings):
         pod_failure_backoff: The backoff factor for pod failure retries and
             pod startup retries.
         max_parallelism: Maximum number of steps to run in parallel.
+        successful_jobs_history_limit: The number of successful jobs
+            to retain. This only applies to jobs created when scheduling a
+            pipeline.
+        failed_jobs_history_limit: The number of failed jobs to retain.
+            This only applies to jobs created when scheduling a pipeline.
+        ttl_seconds_after_finished: The amount of seconds to keep finished jobs
+            before deleting them. This only applies to jobs created when
+            scheduling a pipeline.
     """
 
     synchronous: bool = True
@@ -74,6 +82,9 @@ class KubernetesOrchestratorSettings(BaseSettings):
     pod_failure_retry_delay: int = 10
     pod_failure_backoff: float = 1.0
     max_parallelism: Optional[PositiveInt] = None
+    successful_jobs_history_limit: Optional[NonNegativeInt] = None
+    failed_jobs_history_limit: Optional[NonNegativeInt] = None
+    ttl_seconds_after_finished: Optional[NonNegativeInt] = None
 
 
 class KubernetesOrchestratorConfig(

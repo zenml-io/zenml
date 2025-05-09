@@ -107,6 +107,7 @@ def build_pod_manifest(
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
+    owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -125,6 +126,7 @@ def build_pod_manifest(
         env: Environment variables to set.
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
+        owner_references: List of owner references for the pod.
 
     Returns:
         Pod manifest.
@@ -180,6 +182,7 @@ def build_pod_manifest(
     pod_metadata = k8s_client.V1ObjectMeta(
         name=pod_name,
         labels=labels,
+        owner_references=owner_references,
     )
 
     if pod_settings and pod_settings.annotations:
@@ -279,6 +282,9 @@ def build_cron_job_manifest(
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
+    successful_jobs_history_limit: Optional[int] = None,
+    failed_jobs_history_limit: Optional[int] = None,
+    ttl_seconds_after_finished: Optional[int] = None,
 ) -> k8s_client.V1CronJob:
     """Create a manifest for launching a pod as scheduled CRON job.
 
@@ -298,6 +304,10 @@ def build_cron_job_manifest(
         env: Environment variables to set.
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
+        successful_jobs_history_limit: The number of successful jobs to retain.
+        failed_jobs_history_limit: The number of failed jobs to retain.
+        ttl_seconds_after_finished: The amount of seconds to keep finished jobs
+            before deleting them.
 
     Returns:
         CRON job manifest.
@@ -318,6 +328,8 @@ def build_cron_job_manifest(
 
     job_spec = k8s_client.V1CronJobSpec(
         schedule=cron_expression,
+        successful_jobs_history_limit=successful_jobs_history_limit,
+        failed_jobs_history_limit=failed_jobs_history_limit,
         job_template=k8s_client.V1JobTemplateSpec(
             metadata=pod_manifest.metadata,
             spec=k8s_client.V1JobSpec(
@@ -325,6 +337,7 @@ def build_cron_job_manifest(
                     metadata=pod_manifest.metadata,
                     spec=pod_manifest.spec,
                 ),
+                ttl_seconds_after_finished=ttl_seconds_after_finished,
             ),
         ),
     )
