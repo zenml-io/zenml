@@ -39,7 +39,7 @@ exclude_tables = ["sqlite_sequence"]
 
 
 def include_object(
-    object: Any, name: str, type_: str, *args: Any, **kwargs: Any
+    object: Any, name: Optional[str], type_: str, *args: Any, **kwargs: Any
 ) -> bool:
     """Function used to exclude tables from the migration scripts.
 
