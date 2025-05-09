@@ -47,11 +47,11 @@ exclude_tables = ["sqlite_sequence"]
 
 
 def include_object(
-    object: Any,  # Use Any for backward compatibility
+    object: Any,
     name: Optional[str],
-    type_: str,  # Use string instead of Literal for backward compatibility
-    reflected: bool = False,
-    compare_to: Optional[Any] = None,
+    type_: str,
+    *args: Any,
+    **kwargs: Any,
 ) -> bool:
     """Function used to exclude tables from the migration scripts.
 
@@ -59,8 +59,8 @@ def include_object(
         object: The schema item object to check.
         name: The name of the object to check.
         type_: The type of the object to check.
-        reflected: Whether this object is being reflected.
-        compare_to: The object being compared against.
+        *args: Additional arguments.
+        **kwargs: Additional keyword arguments.    
 
     Returns:
         True if the object should be included, False otherwise.
