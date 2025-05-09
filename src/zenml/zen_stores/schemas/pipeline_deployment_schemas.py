@@ -287,6 +287,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             )
         return PipelineDeploymentResponse(
             id=self.id,
+            project_id=self.project_id,
             body=body,
             metadata=metadata,
         )

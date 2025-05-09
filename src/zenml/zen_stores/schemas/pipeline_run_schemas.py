@@ -437,6 +437,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return PipelineRunResponse(
             id=self.id,
+            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
