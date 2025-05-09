@@ -133,6 +133,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
             )
         return CodeRepositoryResponse(
             id=self.id,
+            project_id=self.project_id,
             name=self.name,
             metadata=metadata,
             body=body,
