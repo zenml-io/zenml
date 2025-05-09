@@ -60,7 +60,7 @@ def include_object(
         name: The name of the object to check.
         type_: The type of the object to check.
         *args: Additional arguments.
-        **kwargs: Additional keyword arguments.    
+        **kwargs: Additional keyword arguments.
 
     Returns:
         True if the object should be included, False otherwise.
