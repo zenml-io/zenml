@@ -48,15 +48,11 @@ from zenml.pipelines.run_utils import (
     validate_stack_is_runnable_from_server,
 )
 from zenml.stack.flavor import Flavor
-<<<<<<< HEAD
 from zenml.utils import (
-    dict_utils,
+    pydantic_utils,
     requirements_utils,
     settings_utils,
 )
-=======
-from zenml.utils import pydantic_utils, requirements_utils, settings_utils
->>>>>>> develop
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,

@@ -261,6 +261,8 @@ class StepConfiguration(PartialStepConfiguration):
                 "failure_hook_source",
                 "success_hook_source",
                 "substitutions",
+                "environment",
+                "secrets",
             },
             exclude_none=True,
         )
@@ -272,9 +274,15 @@ class StepConfiguration(PartialStepConfiguration):
                     "failure_hook_source",
                     "success_hook_source",
                     "substitutions",
+                    "environment",
+                    "secrets",
                 },
                 exclude_none=True,
             )
+
+            original_values["secrets"] = pipeline_values.get(
+                "secrets", []
+            ) + original_values.get("secrets", [])
 
             updated_config = self.model_copy(update=pipeline_values, deep=True)
             return update_model(updated_config, original_values)
