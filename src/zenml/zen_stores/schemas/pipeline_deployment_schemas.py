@@ -273,7 +273,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 project=self.project.to_model(),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
-                raw_step_configurations=step_configurations,
                 step_configurations=step_configurations,
                 client_environment=client_environment,
                 client_version=self.client_version,
