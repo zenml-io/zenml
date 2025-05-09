@@ -228,6 +228,7 @@ class ModelSchema(NamedSchema, table=True):
 
         return ModelResponse(
             id=self.id,
+            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
@@ -502,6 +503,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return ModelVersionResponse(
             id=self.id,
+            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
