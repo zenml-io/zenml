@@ -17,6 +17,7 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from pydantic import BaseModel
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
@@ -37,7 +38,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission_for_model
+from zenml.zen_server.rbac.utils import batch_verify_permissions_for_models
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -85,11 +86,19 @@ def create_stack_component(
     Returns:
         The created stack component.
     """
+    rbac_read_checks: List[BaseModel] = []
     if component.connector:
         service_connector = zen_store().get_service_connector(
             component.connector
         )
-        verify_permission_for_model(service_connector, action=Action.READ)
+        rbac_read_checks.append(service_connector)
+
+    if component.secrets:
+        rbac_read_checks.extend(
+            [zen_store().get_secret(id) for id in component.secrets]
+        )
+
+    batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
 
     from zenml.stack.utils import validate_stack_component_config
 
@@ -208,11 +217,19 @@ def update_stack_component(
             validate_custom_flavors=False,
         )
 
+    rbac_read_checks: List[BaseModel] = []
     if component_update.connector:
         service_connector = zen_store().get_service_connector(
             component_update.connector
         )
-        verify_permission_for_model(service_connector, action=Action.READ)
+        rbac_read_checks.append(service_connector)
+
+    if component_update.add_secrets:
+        rbac_read_checks.extend(
+            [zen_store().get_secret(id) for id in component_update.add_secrets]
+        )
+
+    batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
 
     return verify_permissions_and_update_entity(
         id=component_id,

@@ -43,7 +43,7 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
-from zenml.utils import string_utils
+from zenml.utils import env_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
@@ -422,6 +422,13 @@ class StepLauncher:
         environment = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
         )
+        environment.update(
+            env_utils.get_step_environment(
+                step_config=step_run_info.config,
+                stack=self._stack,
+            )
+        )
+
         if last_retry:
             environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(False)
         logger.info(

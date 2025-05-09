@@ -266,7 +266,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on Sagemaker.
@@ -274,8 +275,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
-            environment: Environment variables to set in the orchestration
-                environment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -299,18 +303,24 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         session = self._get_sagemaker_session()
 
-        # Sagemaker does not allow environment variables longer than 256
-        # characters to be passed to Processor steps. If an environment variable
-        # is longer than 256 characters, we split it into multiple environment
-        # variables (chunks) and re-construct it on the other side using the
-        # custom entrypoint configuration.
-        split_environment_variables(
-            size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
-            env=environment,
-        )
-
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
+            step_environment = step_environments[step_name]
+
+            # Sagemaker does not allow environment variables longer than 256
+            # characters to be passed to Processor steps. If an environment variable
+            # is longer than 256 characters, we split it into multiple environment
+            # variables (chunks) and re-construct it on the other side using the
+            # custom entrypoint configuration.
+            split_environment_variables(
+                size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+                env=step_environment,
+            )
+
+            step_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
+                ExecutionVariables.PIPELINE_EXECUTION_ARN
+            )
+
             image = self.get_image(deployment=deployment, step_name=step_name)
             command = SagemakerEntrypointConfiguration.get_entrypoint_command()
             arguments = (
@@ -324,12 +334,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
 
-            environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
-                ExecutionVariables.PIPELINE_EXECUTION_ARN
-            )
-
             if step_settings.environment:
-                step_environment = step_settings.environment.copy()
+                user_defined_environment = step_settings.environment.copy()
                 # Sagemaker does not allow environment variables longer than 256
                 # characters to be passed to Processor steps. If an environment variable
                 # is longer than 256 characters, we split it into multiple environment
@@ -337,9 +343,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 # custom entrypoint configuration.
                 split_environment_variables(
                     size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
-                    env=step_environment,
+                    env=user_defined_environment,
                 )
-                environment.update(step_environment)
+                step_environment.update(user_defined_environment)
 
             use_training_step = (
                 step_settings.use_training_step
@@ -476,11 +482,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
 
             # Convert environment to a dict of strings
-            environment = {
+            step_environment = {
                 key: str(value)
                 if not isinstance(value, ExecutionVariable)
                 else value
-                for key, value in environment.items()
+                for key, value in step_environment.items()
             }
 
             if use_training_step:
@@ -488,7 +494,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 estimator = sagemaker.estimator.Estimator(
                     keep_alive_period_in_seconds=step_settings.keep_alive_period_in_seconds,
                     output_path=output_path,
-                    environment=environment,
+                    environment=step_environment,
                     container_entry_point=entrypoint,
                     **args_for_step_executor,
                 )
@@ -502,7 +508,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 # Create Processor and ProcessingStep
                 processor = sagemaker.processing.Processor(
                     entrypoint=entrypoint,
-                    env=environment,
+                    env=step_environment,
                     **args_for_step_executor,
                 )
 

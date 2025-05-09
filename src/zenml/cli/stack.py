@@ -217,6 +217,14 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "--secret",
+    "secrets",
+    help="Secret to attach to the stack.",
+    type=str,
+    required=False,
+    multiple=True,
+)
 def register_stack(
     stack_name: str,
     artifact_store: Optional[str] = None,
@@ -234,6 +242,7 @@ def register_stack(
     set_stack: bool = False,
     provider: Optional[str] = None,
     connector: Optional[str] = None,
+    secrets: List[str] = [],
 ) -> None:
     """Register a stack.
 
@@ -254,6 +263,7 @@ def register_stack(
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
+        secrets: List of secrets to attach to the stack.
     """
     if (provider is None and connector is None) and (
         artifact_store is None or orchestrator is None
@@ -500,6 +510,12 @@ def register_stack(
                     ).id
                 ]
 
+        secret_ids = []
+        for secret in secrets:
+            if isinstance(secret, UUID):
+                secret_ids.append(secret)
+            else:
+                secret_ids.append(Client().get_secret(secret).id)
         try:
             created_stack = client.zen_store.create_stack(
                 stack=StackRequest(
@@ -509,6 +525,7 @@ def register_stack(
                     if service_connector
                     else [],
                     labels=labels,
+                    secrets=secret_ids,
                 )
             )
         except (KeyError, IllegalOperationError) as err:
@@ -659,6 +676,22 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "--secret",
+    "secrets",
+    help="Secrets to attach to the stack.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
+    "--remove-secret",
+    "remove_secrets",
+    help="Secrets to remove from the stack.",
+    type=str,
+    required=False,
+    multiple=True,
+)
 def update_stack(
     stack_name_or_id: Optional[str] = None,
     artifact_store: Optional[str] = None,
@@ -673,6 +706,8 @@ def update_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     model_registry: Optional[str] = None,
+    secrets: List[str] = [],
+    remove_secrets: List[str] = [],
 ) -> None:
     """Update a stack.
 
@@ -691,6 +726,8 @@ def update_stack(
         data_validator: Name of the new data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         model_registry: Name of the new model registry for this stack.
+        secrets: Secrets to attach to the stack.
+        remove_secrets: Secrets to remove from the stack.
     """
     client = Client()
 
@@ -729,6 +766,8 @@ def update_stack(
             updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=updates,
+                add_secrets=secrets,
+                remove_secrets=remove_secrets,
             )
 
         except (KeyError, IllegalOperationError) as err:

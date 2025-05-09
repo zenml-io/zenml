@@ -15,14 +15,13 @@
 
 import hashlib
 from typing import TYPE_CHECKING, Dict, Optional
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
     from zenml.models import StepRunResponse
@@ -50,6 +49,8 @@ def generate_cache_key(
     - the names and source codes of the output artifacts of the step,
     - the source codes of the output materializers of the step.
     - additional custom caching parameters of the step.
+    - the environment variables defined for the step.
+    - the secrets defined for the step.
 
     Args:
         step: The step to generate the cache key for.
@@ -98,6 +99,18 @@ def generate_cache_key(
     for key, value in sorted(step.config.caching_parameters.items()):
         hash_.update(key.encode())
         hash_.update(str(value).encode())
+
+    # User-defined environment variables
+    for key, value in sorted(step.config.environment.items()):
+        hash_.update(key.encode())
+        hash_.update(str(value).encode())
+
+    # User-defined secrets
+    for secret_name_or_id in sorted(step.config.secrets):
+        if isinstance(secret_name_or_id, UUID):
+            hash_.update(secret_name_or_id.bytes)
+        else:
+            hash_.update(secret_name_or_id.encode())
 
     return hash_.hexdigest()
 

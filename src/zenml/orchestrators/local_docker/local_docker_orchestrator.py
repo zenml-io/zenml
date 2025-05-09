@@ -95,7 +95,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Sequentially runs all pipeline steps in local Docker containers.
@@ -103,8 +104,11 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -131,8 +135,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             }
         }
         orchestrator_run_id = str(uuid4())
-        environment[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
-        environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
         start_time = time.time()
 
         # Run each step
@@ -144,6 +146,12 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                     "step %s.",
                     step_name,
                 )
+
+            step_environment = step_environments[step_name]
+            step_environment[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID] = (
+                orchestrator_run_id
+            )
+            step_environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
 
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name, deployment_id=deployment.id
@@ -162,7 +170,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
             run_args = copy.deepcopy(settings.run_args)
             docker_environment = run_args.pop("environment", {})
-            docker_environment.update(environment)
+            docker_environment.update(step_environment)
 
             docker_volumes = run_args.pop("volumes", {})
             docker_volumes.update(volumes)
