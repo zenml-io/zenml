@@ -746,6 +746,7 @@ def service_response(
     )
     return ServiceResponse(
         id=service_id,
+        project_id=sample_project_model.id,
         name=service_name,
         body=body,
         metadata=metadata,
