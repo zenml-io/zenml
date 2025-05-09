@@ -1,12 +1,13 @@
 """Utility functions to run a pipeline from the server."""
 
-import copy
 import hashlib
+import os
 import sys
-from typing import Any, Dict, List, Optional
+import threading
+from concurrent.futures import Future, ThreadPoolExecutor
+from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import BackgroundTasks
 from packaging import version
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -16,16 +17,18 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
 )
-from zenml.config.step_configurations import Step, StepConfiguration
+from zenml.config.step_configurations import Step, StepConfigurationUpdate
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
+    ENV_ZENML_RUNNER_PARENT_IMAGE,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
     handle_bool_env_var,
     handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.exceptions import MaxConcurrentTasksError
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
@@ -45,39 +48,105 @@ from zenml.pipelines.run_utils import (
     validate_stack_is_runnable_from_server,
 )
 from zenml.stack.flavor import Flavor
+<<<<<<< HEAD
 from zenml.utils import (
     dict_utils,
     requirements_utils,
     settings_utils,
 )
+=======
+from zenml.utils import pydantic_utils, requirements_utils, settings_utils
+>>>>>>> develop
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
-from zenml.zen_server.utils import server_config, workload_manager, zen_store
+from zenml.zen_server.utils import (
+    run_template_executor,
+    server_config,
+    workload_manager,
+    zen_store,
+)
 
 logger = get_logger(__name__)
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
+class BoundedThreadPoolExecutor:
+    """Thread pool executor which only allows a maximum number of concurrent tasks."""
+
+    def __init__(self, max_workers: int, **kwargs: Any) -> None:
+        """Initialize the executor.
+
+        Args:
+            max_workers: The maximum number of workers.
+            **kwargs: Arguments to pass to the thread pool executor.
+        """
+        self._executor = ThreadPoolExecutor(max_workers=max_workers, **kwargs)
+        self._semaphore = threading.BoundedSemaphore(value=max_workers)
+
+    def submit(
+        self, fn: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Future[Any]:
+        """Submit a task to the executor.
+
+        Args:
+            fn: The function to execute.
+            *args: The arguments to pass to the function.
+            **kwargs: The keyword arguments to pass to the function.
+
+        Raises:
+            Exception: If the task submission fails.
+            MaxConcurrentTasksError: If the maximum number of concurrent tasks
+                is reached.
+
+        Returns:
+            The future of the task.
+        """
+        if not self._semaphore.acquire(blocking=False):
+            raise MaxConcurrentTasksError(
+                "Maximum number of concurrent tasks reached."
+            )
+
+        try:
+            future = self._executor.submit(fn, *args, **kwargs)
+        except Exception:
+            self._semaphore.release()
+            raise
+        else:
+            future.add_done_callback(lambda _: self._semaphore.release())
+            return future
+
+    def shutdown(self, **kwargs: Any) -> None:
+        """Shutdown the executor.
+
+        Args:
+            **kwargs: Keyword arguments to pass to the shutdown method of the
+                executor.
+        """
+        self._executor.shutdown(**kwargs)
+
+
 def run_template(
     template: RunTemplateResponse,
     auth_context: AuthContext,
-    background_tasks: Optional[BackgroundTasks] = None,
     run_config: Optional[PipelineRunConfiguration] = None,
+    sync: bool = False,
 ) -> PipelineRunResponse:
     """Run a pipeline from a template.
 
     Args:
         template: The template to run.
         auth_context: Authentication context.
-        background_tasks: Background tasks.
         run_config: The run configuration.
+        sync: Whether to run the template synchronously.
 
     Raises:
         ValueError: If the template can not be run.
         RuntimeError: If the server URL is not set in the server configuration.
+        MaxConcurrentTasksError: If the maximum number of concurrent run
+            template tasks is reached.
 
     Returns:
         ID of the new pipeline run.
@@ -112,7 +181,6 @@ def run_template(
     deployment_request = deployment_request_from_template(
         template=template,
         config=run_config or PipelineRunConfiguration(),
-        user_id=auth_context.user.id,
     )
 
     ensure_async_orchestrator(deployment=deployment_request, stack=stack)
@@ -245,13 +313,18 @@ def run_template(
                 )
                 raise
 
-    if background_tasks:
-        background_tasks.add_task(_task_with_analytics_and_error_handling)
-    else:
-        # Run synchronously if no background tasks were passed. This is probably
-        # when coming from a trigger which itself is already running in the
-        # background
+    if sync:
         _task_with_analytics_and_error_handling()
+    else:
+        try:
+            run_template_executor().submit(
+                _task_with_analytics_and_error_handling
+            )
+        except MaxConcurrentTasksError:
+            zen_store().delete_run(run_id=placeholder_run.id)
+            raise MaxConcurrentTasksError(
+                "Maximum number of concurrent run template tasks reached."
+            ) from None
 
     return placeholder_run
 
@@ -321,7 +394,10 @@ def generate_dockerfile(
     Returns:
         The Dockerfile.
     """
-    parent_image = f"zenmldocker/zenml:{zenml_version}-py{python_version}"
+    parent_image = os.environ.get(
+        ENV_ZENML_RUNNER_PARENT_IMAGE,
+        f"zenmldocker/zenml:{zenml_version}-py{python_version}",
+    )
 
     lines = [f"FROM {parent_image}"]
     if apt_packages:
@@ -355,14 +431,12 @@ def generate_dockerfile(
 def deployment_request_from_template(
     template: RunTemplateResponse,
     config: PipelineRunConfiguration,
-    user_id: UUID,
 ) -> "PipelineDeploymentRequest":
     """Generate a deployment request from a template.
 
     Args:
         template: The template from which to create the deployment request.
         config: The run configuration.
-        user_id: ID of the user that is trying to run the template.
 
     Raises:
         ValueError: If there are missing/extra step parameters in the run
@@ -373,62 +447,47 @@ def deployment_request_from_template(
     """
     deployment = template.source_deployment
     assert deployment
-    pipeline_update_dict = config.model_dump(
+
+    pipeline_update = config.model_dump(
         include=set(PipelineConfiguration.model_fields),
         exclude={"name", "parameters"},
+        exclude_unset=True,
+        exclude_none=True,
     )
-    if pipeline_secrets := pipeline_update_dict.get("secrets", []):
-        pipeline_update_dict["secrets"] = [
+    if pipeline_secrets := pipeline_update.get("secrets", []):
+        pipeline_update["secrets"] = [
             zen_store().get_secret_by_name_or_id(secret).id
             for secret in pipeline_secrets
         ]
-    pipeline_configuration = PipelineConfiguration(
-        **pipeline_update_dict,
-        name=deployment.pipeline_configuration.name,
-        parameters=deployment.pipeline_configuration.parameters,
+    pipeline_configuration = pydantic_utils.update_model(
+        deployment.pipeline_configuration, pipeline_update
     )
 
-    step_config_dict_base = pipeline_configuration.model_dump(
-        exclude={"name", "parameters", "tags", "enable_pipeline_logs"}
-    )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():
-        step_config_dict = {
-            **copy.deepcopy(step_config_dict_base),
-            **step.config.model_dump(
-                # TODO: Maybe we need to make some of these configurable via
-                # yaml as well, e.g. the lazy loaders?
-                include={
-                    "name",
-                    "caching_parameters",
-                    "external_input_artifacts",
-                    "model_artifacts_or_metadata",
-                    "client_lazy_loaders",
-                    "substitutions",
-                    "outputs",
-                }
-            ),
-        }
-
-        required_parameters = set(step.config.parameters)
-        configured_parameters = set()
-
-        if update := config.steps.get(invocation_id):
-            update_dict = update.model_dump()
+        step_update = config.steps.get(
+            invocation_id, StepConfigurationUpdate()
+        ).model_dump(
             # Get rid of deprecated name to prevent overriding the step name
             # with `None`.
-            update_dict.pop("name", None)
+            exclude={"name"},
+            exclude_unset=True,
+            exclude_none=True,
+        )
+        if step_secrets := step_update.get("secrets", []):
+            step_update["secrets"] = [
+                zen_store().get_secret_by_name_or_id(secret).id
+                for secret in step_secrets
+            ]
+        step_config = pydantic_utils.update_model(
+            step.step_config_overrides, step_update
+        )
+        merged_step_config = step_config.apply_pipeline_configuration(
+            pipeline_configuration
+        )
 
-            if step_secrets := update_dict.get("secrets", []):
-                update_dict["secrets"] = [
-                    zen_store().get_secret_by_name_or_id(secret).id
-                    for secret in step_secrets
-                ] + step_config_dict_base.get("secrets", [])
-
-            configured_parameters = set(update.parameters)
-            step_config_dict = dict_utils.recursive_update(
-                step_config_dict, update=update_dict
-            )
+        required_parameters = set(step.config.parameters)
+        configured_parameters = set(step_config.parameters)
 
         unknown_parameters = configured_parameters - required_parameters
         if unknown_parameters:
@@ -444,8 +503,11 @@ def deployment_request_from_template(
                 f"parameters for step {invocation_id}: {missing_parameters}."
             )
 
-        step_config = StepConfiguration.model_validate(step_config_dict)
-        steps[invocation_id] = Step(spec=step.spec, config=step_config)
+        steps[invocation_id] = Step(
+            spec=step.spec,
+            config=merged_step_config,
+            step_config_overrides=step_config,
+        )
 
     code_reference_request = None
     if deployment.code_reference:

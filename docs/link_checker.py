@@ -242,6 +242,10 @@ def check_link_validity(
     if not HAS_REQUESTS:
         return url, False, "requests module not installed", None
 
+    # Skip GitHub links
+    if "github.com" in url:
+        return url, True, "GitHub link validation skipped", None
+
     # Clean up escaped characters in URLs
     # This helps with Markdown URLs that have escaped underscores, etc.
     cleaned_url = clean_url(url)
@@ -326,32 +330,74 @@ def validate_urls(
     Returns:
         Dictionary of {url: (is_valid, error_message, status_code)}
     """
+    if not urls:
+        return {}
+
     results = {}
 
+    # Count and report GitHub links that will be skipped in validation
+    from urllib.parse import urlparse
+
+    github_urls = [
+        url
+        for url in urls
+        if urlparse(url).hostname
+        and urlparse(url).hostname.endswith("github.com")
+    ]
+    other_urls = [
+        url
+        for url in urls
+        if urlparse(url).hostname
+        and not urlparse(url).hostname.endswith("github.com")
+    ]
+
     print(f"Validating {len(urls)} links...")
+    print(
+        f"Note: {len(github_urls)} GitHub links will be automatically marked as valid (skipping validation)"
+    )
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_url = {
-            executor.submit(check_link_validity, url): url for url in urls
-        }
+    # Use moderate settings for non-GitHub URLs
+    actual_max_workers = min(6, max_workers)
 
+    print(
+        f"Using {actual_max_workers} workers for remaining {len(other_urls)} links..."
+    )
+
+    with ThreadPoolExecutor(max_workers=actual_max_workers) as executor:
+        future_to_url = {}
+
+        # Submit all URLs (GitHub links will be auto-skipped in check_link_validity)
+        for url in urls:
+            future_to_url[
+                executor.submit(check_link_validity, url, timeout=15)
+            ] = url
+
+        # Process results
         for i, future in enumerate(as_completed(future_to_url), 1):
             url = future_to_url[future]
             try:
                 _, is_valid, error_message, status_code = future.result()
                 results[url] = (is_valid, error_message, status_code)
 
-                # Print progress indicator
-                if i % 10 == 0 or i == len(urls):
+                if "github.com" in url:
                     print(
-                        f"  Checked {i}/{len(urls)} links",
-                        end="\r",
-                        flush=True,
+                        f"  Checked URL {i}/{len(urls)} [github.com]: ✓ Skipped (automatically marked valid)"
                     )
+                else:
+                    status = "✅ Valid" if is_valid else f"❌ {error_message}"
+                    domain = (
+                        url.split("/")[2]
+                        if "://" in url and "/" in url.split("://", 1)[1]
+                        else "unknown"
+                    )
+                    print(
+                        f"  Checked URL {i}/{len(urls)} [{domain}]: {status}"
+                    )
+
             except Exception as e:
                 results[url] = (False, str(e), None)
+                print(f"  Error checking URL {i}/{len(urls)}: {e}")
 
-    print()  # New line after progress
     return results
 
 

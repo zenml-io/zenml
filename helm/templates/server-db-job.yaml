@@ -5,6 +5,7 @@ metadata:
   name: {{ include "zenml.fullname" . }}-db-migration
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
+    app.kubernetes.io/component: db-migration
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-1"
@@ -20,6 +21,7 @@ spec:
       {{- end }}
       labels:
         {{- include "zenml.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: db-migration
     spec:
       {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
       initContainers:

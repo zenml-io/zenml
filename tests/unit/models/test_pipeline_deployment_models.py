@@ -30,6 +30,6 @@ def test_pipeline_deployment_base_model_fails_with_long_name():
             name="",
             run_name_template="",
             pipeline_configuration=PipelineConfiguration(name="aria_best_cat"),
-            step_configurations={"some_key": long_text},
+            step_configurations={"some_key": {"config": {"name": long_text}}},
             client_environment={},
         )

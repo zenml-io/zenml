@@ -16,7 +16,11 @@
 from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Security
+from fastapi import (
+    APIRouter,
+    Depends,
+    Security,
+)
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
@@ -223,12 +227,12 @@ if server_config().workload_manager_enabled:
             401: error_response,
             404: error_response,
             422: error_response,
+            429: error_response,
         },
     )
     @handle_exceptions
     def create_template_run(
         template_id: UUID,
-        background_tasks: BackgroundTasks,
         config: Optional[PipelineRunConfiguration] = None,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
@@ -236,14 +240,15 @@ if server_config().workload_manager_enabled:
 
         Args:
             template_id: The ID of the template.
-            background_tasks: Background tasks.
             config: Configuration for the pipeline run.
             auth_context: Authentication context.
 
         Returns:
             The created pipeline run.
         """
-        from zenml.zen_server.template_execution.utils import run_template
+        from zenml.zen_server.template_execution.utils import (
+            run_template,
+        )
 
         rbac_read_checks = []
 
@@ -295,6 +300,5 @@ if server_config().workload_manager_enabled:
             return run_template(
                 template=template,
                 auth_context=auth_context,
-                background_tasks=background_tasks,
                 run_config=config,
             )

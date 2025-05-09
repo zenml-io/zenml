@@ -989,6 +989,20 @@ zenml:
   # mounted as environment variables in the ZenML server container.
   secretEnvironment: {}
 
+  # Custom 'app.kubernetes.io/instance' label value to use. This is used to
+  # uniquely identify the ZenML deployment in the Kubernetes cluster. All
+  # resources in the deployment will be labeled with this value, if set. The
+  # label will also be used as a selector label for the ZenML server deployment
+  # and database migration job.
+  #
+  # If not set, the default value will be the release name.
+  #
+  # It is recommended to set this value to a unique identifier in your cluster
+  # to avoid conflicts with other ZenML deployments in the same cluster,
+  # especially when using the same Helm release name for multiple deployments.
+  # This can also be useful when used in conjunction with affinity rules.
+  instanceLabel:
+
   service:
     type: ClusterIP
     port: 80

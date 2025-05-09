@@ -216,3 +216,7 @@ class BackupSecretsStoreNotConfiguredError(NotImplementedError):
 
 class CustomFlavorImportError(ImportError):
     """Raised when failing to import a custom flavor."""
+
+
+class MaxConcurrentTasksError(ZenMLBaseException):
+    """Raised when the maximum number of concurrent tasks is reached."""

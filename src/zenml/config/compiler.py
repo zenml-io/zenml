@@ -23,14 +23,12 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Sequence,
     Tuple,
-    Union,
 )
-from uuid import UUID
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
@@ -47,7 +45,6 @@ from zenml.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
 if TYPE_CHECKING:
-    from zenml.config.source import Source
     from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps.step_invocation import StepInvocation
@@ -129,23 +126,12 @@ class Compiler:
                 merge=False,
             )
 
-        settings_to_passdown = {
-            key: settings
-            for key, settings in pipeline_settings.items()
-            if ConfigurationLevel.STEP in settings.LEVEL
-        }
-
         steps = {
             invocation_id: self._compile_step_invocation(
                 invocation=invocation,
-                pipeline_environment=pipeline_environment,
-                pipeline_secrets=pipeline_secrets,
-                pipeline_settings=settings_to_passdown,
-                pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
                 step_config=run_configuration.steps.get(invocation_id),
-                pipeline_failure_hook_source=pipeline.configuration.failure_hook_source,
-                pipeline_success_hook_source=pipeline.configuration.success_hook_source,
+                pipeline_configuration=pipeline.configuration,
             )
             for invocation_id, invocation in self._get_sorted_invocations(
                 pipeline=pipeline
@@ -468,29 +454,17 @@ class Compiler:
     def _compile_step_invocation(
         self,
         invocation: "StepInvocation",
-        pipeline_environment: Optional[Dict[str, Any]],
-        pipeline_secrets: Sequence[Union[UUID, str]],
-        pipeline_settings: Dict[str, "BaseSettings"],
-        pipeline_extra: Dict[str, Any],
         stack: "Stack",
         step_config: Optional["StepConfigurationUpdate"],
-        pipeline_failure_hook_source: Optional["Source"] = None,
-        pipeline_success_hook_source: Optional["Source"] = None,
+        pipeline_configuration: "PipelineConfiguration",
     ) -> Step:
         """Compiles a ZenML step.
 
         Args:
             invocation: The step invocation to compile.
-            pipeline_environment: Environment variables configured for the
-                pipeline.
-            pipeline_secrets: Secrets configured for the pipeline.
-            pipeline_settings: Settings configured on the
-                pipeline of the step.
-            pipeline_extra: Extra values configured on the pipeline of the step.
             stack: The stack on which the pipeline will be run.
             step_config: Run configuration for the step.
-            pipeline_failure_hook_source: Source for the failure hook.
-            pipeline_success_hook_source: Source for the success hook.
+            pipeline_configuration: Configuration for the pipeline.
 
         Returns:
             The compiled step.
@@ -509,7 +483,6 @@ class Compiler:
             step.configuration.settings, stack=stack
         )
         step_spec = self._get_step_spec(invocation=invocation)
-        step_environment = step.configuration.environment
         step_secrets = secret_utils.resolve_and_verify_secrets(
             step.configuration.secrets
         )
@@ -518,36 +491,28 @@ class Compiler:
             configuration_level=ConfigurationLevel.STEP,
             stack=stack,
         )
-        step_extra = step.configuration.extra
-        step_on_failure_hook_source = step.configuration.failure_hook_source
-        step_on_success_hook_source = step.configuration.success_hook_source
-
         step.configure(
-            environment=pipeline_environment,
-            settings=pipeline_settings,
-            secrets=pipeline_secrets,
-            extra=pipeline_extra,
-            on_failure=pipeline_failure_hook_source,
-            on_success=pipeline_success_hook_source,
-            merge=False,
-        )
-        step.configure(
-            environment=step_environment,
             secrets=step_secrets,
             settings=step_settings,
-            extra=step_extra,
-            on_failure=step_on_failure_hook_source,
-            on_success=step_on_success_hook_source,
-            merge=True,
+            merge=False,
         )
 
         parameters_to_ignore = (
             set(step_config.parameters) if step_config else set()
         )
-        complete_step_configuration = invocation.finalize(
+        step_configuration_overrides = invocation.finalize(
             parameters_to_ignore=parameters_to_ignore
         )
-        return Step(spec=step_spec, config=complete_step_configuration)
+        full_step_config = (
+            step_configuration_overrides.apply_pipeline_configuration(
+                pipeline_configuration=pipeline_configuration
+            )
+        )
+        return Step(
+            spec=step_spec,
+            config=full_step_config,
+            step_config_overrides=step_configuration_overrides,
+        )
 
     def _get_sorted_invocations(
         self,
