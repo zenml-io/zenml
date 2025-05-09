@@ -114,7 +114,7 @@ def create_deployment(
         project = zen_store().get_project(project_name_or_id)
         deployment.project = project.id
 
-    deployment = verify_permissions_and_create_entity(
+    deployment_response = verify_permissions_and_create_entity(
         request_model=deployment,
         create_method=zen_store().create_deployment,
     )
@@ -127,7 +127,7 @@ def create_deployment(
             }
         }
 
-    return deployment.model_dump(mode="json", exclude=exclude)
+    return deployment_response.model_dump(mode="json", exclude=exclude)
 
 
 @router.get(
