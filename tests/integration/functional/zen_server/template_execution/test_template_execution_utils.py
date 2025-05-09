@@ -44,6 +44,7 @@ def test_creating_deployment_request_from_template(
 
     build = PipelineBuildResponse(
         id=uuid4(),
+        project_id=deployment.project_id,
         body=PipelineBuildResponseBody(
             created=datetime.utcnow(), updated=datetime.utcnow()
         ),
@@ -52,6 +53,7 @@ def test_creating_deployment_request_from_template(
 
     template_response = RunTemplateResponse(
         id=uuid4(),
+        project_id=deployment.project_id,
         name="template",
         body=RunTemplateResponseBody(
             created=datetime.utcnow(),

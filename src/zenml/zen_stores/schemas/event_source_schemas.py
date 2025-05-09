@@ -165,6 +165,7 @@ class EventSourceSchema(NamedSchema, table=True):
             )
         return EventSourceResponse(
             id=self.id,
+            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

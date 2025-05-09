@@ -203,6 +203,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
         return ArtifactResponse(
             id=self.id,
+            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
@@ -437,6 +438,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
 
         return ArtifactVersionResponse(
             id=self.id,
+            project_id=self.project_id,
             body=body,
             metadata=metadata,
             resources=resources,
