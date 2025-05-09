@@ -72,8 +72,8 @@ def create_placeholder_run(
     run_request = PipelineRunRequest(
         name=string_utils.format_name_template(
             name_template=deployment.run_name_template,
-            substitutions=deployment.pipeline_configuration._get_full_substitutions(
-                start_time
+            substitutions=deployment.pipeline_configuration.finalize_substitutions(
+                start_time=start_time,
             ),
         ),
         # We set the start time on the placeholder run already to
@@ -113,6 +113,7 @@ def get_placeholder_run(
         size=1,
         deployment_id=deployment_id,
         status=ExecutionStatus.INITIALIZING,
+        hydrate=True,
     )
     if len(runs.items) == 0:
         return None

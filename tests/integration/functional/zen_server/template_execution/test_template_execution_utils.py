@@ -69,5 +69,4 @@ def test_creating_deployment_request_from_template(
         deployment_request_from_template(
             template=template_response,
             config=PipelineRunConfiguration(),
-            user_id=deployment.user.id,
         )
