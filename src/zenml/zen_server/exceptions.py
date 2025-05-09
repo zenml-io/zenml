@@ -25,6 +25,7 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
+    MaxConcurrentTasksError,
     MethodNotAllowedError,
     SubscriptionUpgradeRequiredError,
     ValidationError,
@@ -85,6 +86,8 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     (ValueError, 400),
     # 422 Unprocessable Entity
     (ValueError, 422),
+    # 429 Too Many Requests
+    (MaxConcurrentTasksError, 429),
     # 500 Internal Server Error
     (EntityCreationError, 500),
     (RuntimeError, 500),
