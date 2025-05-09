@@ -374,7 +374,14 @@ def get_resource_for_model(model: AnyModel) -> Optional[Resource]:
     project_id: Optional[UUID] = None
     if isinstance(model, ProjectScopedResponse):
         # A project scoped response is always scoped to a specific project
-        project_id = model.project.id
+        if model.metadata:
+            project_id = model.project.id
+        else:
+            # This is an unhydrated model. If we try to access the `project`
+            # property, it will hydrate the model which not only includes extra
+            # information in the response that the client did not request, but
+            # will also cause lots of unnecessary RBAC checks.
+            project_id = model.model_copy().project.id
     elif isinstance(model, ProjectScopedRequest):
         # A project scoped request is always scoped to a specific project
         project_id = model.project
