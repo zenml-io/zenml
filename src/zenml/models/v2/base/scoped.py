@@ -318,6 +318,8 @@ class ProjectScopedResponse(
     Used as a base class for all domain models that are project-scoped.
     """
 
+    project_id: UUID = Field(title="The project id.")
+
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for project scoped models.

@@ -96,22 +96,26 @@ def generate_config_template(
     deployment_model = deployment.to_model(include_metadata=True)
 
     steps_configs = {
-        name: step.config.model_dump(
+        name: step.step_config_overrides.model_dump(
             include=set(StepConfigurationUpdate.model_fields),
             exclude={"name", "outputs"},
+            exclude_none=True,
+            exclude_defaults=True,
         )
         for name, step in deployment_model.step_configurations.items()
     }
 
     for config in steps_configs.values():
-        config["settings"].pop("docker", None)
+        config.get("settings", {}).pop("docker", None)
 
     pipeline_config = deployment_model.pipeline_configuration.model_dump(
         include=set(PipelineRunConfiguration.model_fields),
         exclude={"schedule", "build", "parameters"},
+        exclude_none=True,
+        exclude_defaults=True,
     )
 
-    pipeline_config["settings"].pop("docker", None)
+    pipeline_config.get("settings", {}).pop("docker", None)
 
     config_template = {
         "run_name": deployment_model.run_name_template,

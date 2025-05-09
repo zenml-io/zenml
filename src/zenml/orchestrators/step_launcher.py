@@ -308,8 +308,8 @@ class StepLauncher:
         start_time = utc_now()
         run_name = string_utils.format_name_template(
             name_template=self._deployment.run_name_template,
-            substitutions=self._deployment.pipeline_configuration._get_full_substitutions(
-                start_time
+            substitutions=self._deployment.pipeline_configuration.finalize_substitutions(
+                start_time=start_time,
             ),
         )
 

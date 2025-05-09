@@ -59,7 +59,6 @@ import argparse
 import os
 import re
 import sys
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional, Tuple
 
@@ -333,43 +332,68 @@ def validate_urls(
     """
     if not urls:
         return {}
-        
+
     results = {}
 
     # Count and report GitHub links that will be skipped in validation
     from urllib.parse import urlparse
-    github_urls = [url for url in urls if urlparse(url).hostname and urlparse(url).hostname.endswith("github.com")]
-    other_urls = [url for url in urls if urlparse(url).hostname and not urlparse(url).hostname.endswith("github.com")]
-    
+
+    github_urls = [
+        url
+        for url in urls
+        if urlparse(url).hostname
+        and urlparse(url).hostname.endswith("github.com")
+    ]
+    other_urls = [
+        url
+        for url in urls
+        if urlparse(url).hostname
+        and not urlparse(url).hostname.endswith("github.com")
+    ]
+
     print(f"Validating {len(urls)} links...")
-    print(f"Note: {len(github_urls)} GitHub links will be automatically marked as valid (skipping validation)")
-    
+    print(
+        f"Note: {len(github_urls)} GitHub links will be automatically marked as valid (skipping validation)"
+    )
+
     # Use moderate settings for non-GitHub URLs
     actual_max_workers = min(6, max_workers)
-    
-    print(f"Using {actual_max_workers} workers for remaining {len(other_urls)} links...")
-    
+
+    print(
+        f"Using {actual_max_workers} workers for remaining {len(other_urls)} links..."
+    )
+
     with ThreadPoolExecutor(max_workers=actual_max_workers) as executor:
         future_to_url = {}
-        
+
         # Submit all URLs (GitHub links will be auto-skipped in check_link_validity)
         for url in urls:
-            future_to_url[executor.submit(check_link_validity, url, timeout=15)] = url
-        
+            future_to_url[
+                executor.submit(check_link_validity, url, timeout=15)
+            ] = url
+
         # Process results
         for i, future in enumerate(as_completed(future_to_url), 1):
             url = future_to_url[future]
             try:
                 _, is_valid, error_message, status_code = future.result()
                 results[url] = (is_valid, error_message, status_code)
-                
+
                 if "github.com" in url:
-                    print(f"  Checked URL {i}/{len(urls)} [github.com]: ✓ Skipped (automatically marked valid)")
+                    print(
+                        f"  Checked URL {i}/{len(urls)} [github.com]: ✓ Skipped (automatically marked valid)"
+                    )
                 else:
                     status = "✅ Valid" if is_valid else f"❌ {error_message}"
-                    domain = url.split('/')[2] if '://' in url and '/' in url.split('://', 1)[1] else 'unknown'
-                    print(f"  Checked URL {i}/{len(urls)} [{domain}]: {status}")
-                    
+                    domain = (
+                        url.split("/")[2]
+                        if "://" in url and "/" in url.split("://", 1)[1]
+                        else "unknown"
+                    )
+                    print(
+                        f"  Checked URL {i}/{len(urls)} [{domain}]: {status}"
+                    )
+
             except Exception as e:
                 results[url] = (False, str(e), None)
                 print(f"  Error checking URL {i}/{len(urls)}: {e}")

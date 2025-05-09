@@ -32,7 +32,6 @@ from zenml.models import (
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
 )
-from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -188,6 +187,14 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentSchema`.
         """
+        # Don't include the merged config in the step configurations, we
+        # reconstruct it in the `to_model` method using the pipeline
+        # configuration.
+        step_configurations = {
+            invocation_id: step.model_dump(mode="json", exclude={"config"})
+            for invocation_id, step in request.step_configurations.items()
+        }
+
         client_env = json.dumps(request.client_environment)
         if len(client_env) > TEXT_FIELD_MAX_LENGTH:
             logger.warning(
@@ -208,9 +215,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
             step_configurations=json.dumps(
-                request.step_configurations,
+                step_configurations,
                 sort_keys=False,
-                default=pydantic_encoder,
             ),
             client_environment=client_env,
             client_version=request.client_version,
@@ -254,8 +260,10 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 self.pipeline_configuration
             )
             step_configurations = json.loads(self.step_configurations)
-            for s, c in step_configurations.items():
-                step_configurations[s] = Step.model_validate(c)
+            for invocation_id, step in step_configurations.items():
+                step_configurations[invocation_id] = Step.from_dict(
+                    step, pipeline_configuration
+                )
 
             client_environment = json.loads(self.client_environment)
             if not include_python_packages:
@@ -287,6 +295,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             )
         return PipelineDeploymentResponse(
             id=self.id,
+            project_id=self.project_id,
             body=body,
             metadata=metadata,
         )
