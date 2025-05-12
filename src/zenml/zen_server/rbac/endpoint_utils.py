@@ -155,12 +155,15 @@ def verify_permissions_and_get_or_create_entity(
     get_or_create_method: Callable[
         [AnyRequest, Optional[Callable[[], None]]], Tuple[AnyResponse, bool]
     ],
+    custom_pre_creation_hook: Optional[Callable[[], None]] = None,
 ) -> Tuple[AnyResponse, bool]:
     """Verify permissions and create the entity if authorized.
 
     Args:
         request_model: The entity request model.
         get_or_create_method: The method to get or create the entity.
+        custom_pre_creation_hook: An optional hook to run before the entity is
+            created.
 
     Returns:
         The entity and a boolean indicating whether the entity was created.
@@ -183,6 +186,8 @@ def verify_permissions_and_get_or_create_entity(
         verify_permission_for_model(model=request_model, action=Action.CREATE)
         if resource_type and needs_usage_increment:
             check_entitlement(resource_type=resource_type)
+        if custom_pre_creation_hook:
+            custom_pre_creation_hook()
 
     model, created = get_or_create_method(request_model, _pre_creation_hook)
 

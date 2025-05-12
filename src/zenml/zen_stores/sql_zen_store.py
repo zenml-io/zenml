@@ -23,7 +23,7 @@ import re
 import sys
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -4977,6 +4977,31 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
+    def count_active_runs(self) -> int:
+        """Count the number of active runs.
+
+        Returns:
+            The number of active runs.
+        """
+        # Because we can not guarantee that we detect all failed runs, we only
+        # count runs that have been running for less than 5 minutes.
+        ten_minutes_ago = utc_now(tz_aware=False) - timedelta(minutes=5)
+        with Session(self.engine) as session:
+            query = (
+                select(func.count(col(PipelineRunSchema.id)))
+                .where(
+                    col(PipelineRunSchema.status).in_(
+                        [
+                            ExecutionStatus.INITIALIZING.value,
+                            ExecutionStatus.RUNNING.value,
+                        ]
+                    )
+                )
+                .where(PipelineRunSchema.start_time > ten_minutes_ago)  # type: ignore[operator]
+            )
+            count = session.scalar(query)
+            return int(count) if count else 0
+
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -5245,7 +5270,6 @@ class SqlZenStore(BaseZenStore):
                 return (
                     self._replace_placeholder_run(
                         pipeline_run=pipeline_run,
-                        pre_replacement_hook=pre_creation_hook,
                         session=session,
                     ),
                     True,

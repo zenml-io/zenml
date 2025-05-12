@@ -156,6 +156,8 @@ class ServerConfiguration(BaseModel):
             implementing the workload management interface.
         max_concurrent_template_runs: The maximum number of concurrent template
             runs that can be executed on the server.
+        max_concurrent_pipeline_runs: The maximum number of concurrent pipeline
+            runs that can be executed on the server.
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
             server.
@@ -297,6 +299,7 @@ class ServerConfiguration(BaseModel):
     max_concurrent_template_runs: int = (
         DEFAULT_ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS
     )
+    max_concurrent_pipeline_runs: Optional[int] = None
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
     )

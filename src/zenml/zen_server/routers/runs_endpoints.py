@@ -28,6 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import SubscriptionUpgradeRequiredError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
@@ -71,6 +72,28 @@ router = APIRouter(
 logger = get_logger(__name__)
 
 
+def check_concurrent_run_limit() -> None:
+    """Check if the concurrent run limit is exceeded.
+
+    Raises:
+        SubscriptionUpgradeRequiredError: If the limit of concurrent runs is
+            exceeded.
+    """
+    max_concurrent_runs = server_config().max_concurrent_pipeline_runs
+
+    if (
+        max_concurrent_runs
+        and zen_store().count_active_runs() >= max_concurrent_runs
+    ):
+        raise SubscriptionUpgradeRequiredError(
+            "You have reached the maximum number of concurrent runs. "
+            "Please upgrade your subscription to increase the limit. "
+            "If some of your runs are incorrectly still in running state even "
+            "though they've failed already, you can manually delete them by "
+            "running `zenml pipeline runs delete <ID>`."
+        )
+
+
 @router.post(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
@@ -106,6 +129,7 @@ def get_or_create_pipeline_run(
     return verify_permissions_and_get_or_create_entity(
         request_model=pipeline_run,
         get_or_create_method=zen_store().get_or_create_run,
+        custom_pre_creation_hook=check_concurrent_run_limit,
     )
 
 
