@@ -168,7 +168,7 @@ class StackComponentSchema(NamedSchema, table=True):
             The updated `StackComponentSchema`.
         """
         for field, value in component_update.model_dump(
-            exclude_unset=True, exclude={"user", "connector"}
+            exclude_unset=True, exclude={"user", "connector", "add_secrets", "remove_secrets"}
         ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
