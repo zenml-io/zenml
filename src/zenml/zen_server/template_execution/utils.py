@@ -24,6 +24,7 @@ from zenml.constants import (
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
     ENV_ZENML_RUNNER_PARENT_IMAGE,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
+    RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
     handle_bool_env_var,
     handle_int_env_var,
 )
@@ -50,6 +51,9 @@ from zenml.pipelines.run_utils import (
 from zenml.stack.flavor import Flavor
 from zenml.utils import pydantic_utils, requirements_utils, settings_utils
 from zenml.zen_server.auth import AuthContext, generate_access_token
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    report_usage,
+)
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
@@ -189,6 +193,11 @@ def run_template(
 
     placeholder_run = create_placeholder_run(deployment=new_deployment)
     assert placeholder_run
+
+    report_usage(
+        feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
+        resource_id=placeholder_run.id,
+    )
 
     # We create an API token scoped to the pipeline run that never expires
     api_token = generate_access_token(
