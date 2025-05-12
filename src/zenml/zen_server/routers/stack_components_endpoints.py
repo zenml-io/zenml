@@ -94,9 +94,12 @@ def create_stack_component(
         rbac_read_checks.append(service_connector)
 
     if component.secrets:
-        rbac_read_checks.extend(
-            [zen_store().get_secret(id) for id in component.secrets]
-        )
+        secrets = [
+            zen_store().get_secret_by_name_or_id(secret)
+            for secret in component.secrets
+        ]
+        rbac_read_checks.extend(secrets)
+        component.secrets = [secret.id for secret in secrets]
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
 
@@ -225,9 +228,12 @@ def update_stack_component(
         rbac_read_checks.append(service_connector)
 
     if component_update.add_secrets:
-        rbac_read_checks.extend(
-            [zen_store().get_secret(id) for id in component_update.add_secrets]
-        )
+        secrets = [
+            zen_store().get_secret_by_name_or_id(secret)
+            for secret in component_update.add_secrets
+        ]
+        rbac_read_checks.extend(secrets)
+        component_update.add_secrets = [secret.id for secret in secrets]
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
 

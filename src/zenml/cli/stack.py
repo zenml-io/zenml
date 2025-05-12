@@ -510,12 +510,6 @@ def register_stack(
                     ).id
                 ]
 
-        secret_ids = []
-        for secret in secrets:
-            if isinstance(secret, UUID):
-                secret_ids.append(secret)
-            else:
-                secret_ids.append(Client().get_secret(secret).id)
         try:
             created_stack = client.zen_store.create_stack(
                 stack=StackRequest(
@@ -525,7 +519,7 @@ def register_stack(
                     if service_connector
                     else [],
                     labels=labels,
-                    secrets=secret_ids,
+                    secrets=secrets,
                 )
             )
         except (KeyError, IllegalOperationError) as err:

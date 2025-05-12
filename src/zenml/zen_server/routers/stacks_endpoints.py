@@ -118,9 +118,12 @@ def create_stack(
         )
 
     if stack.secrets:
-        rbac_read_checks.extend(
-            [zen_store().get_secret(id) for id in stack.secrets]
-        )
+        secrets = [
+            zen_store().get_secret_by_name_or_id(secret)
+            for secret in stack.secrets
+        ]
+        rbac_read_checks.extend(secrets)
+        stack.secrets = [secret.id for secret in secrets]
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
 
@@ -224,9 +227,12 @@ def update_stack(
         )
 
     if stack_update.add_secrets:
-        rbac_read_checks.extend(
-            [zen_store().get_secret(id) for id in stack_update.add_secrets]
-        )
+        secrets = [
+            zen_store().get_secret_by_name_or_id(secret)
+            for secret in stack_update.add_secrets
+        ]
+        rbac_read_checks.extend(secrets)
+        stack_update.add_secrets = [secret.id for secret in secrets]
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
 

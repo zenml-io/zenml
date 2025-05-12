@@ -1212,14 +1212,12 @@ class Client(metaclass=ClientMetaClass):
             )
             stack_components[c_type] = [component.id]
 
-        secret_ids = [self.get_secret(secret).id for secret in secrets or []]
-
         stack = StackRequest(
             name=name,
             components=stack_components,
             stack_spec_path=stack_spec_file,
             labels=labels,
-            secrets=secret_ids,
+            secrets=secrets,
         )
 
         self._validate_stack_configuration(stack=stack)
@@ -1392,14 +1390,10 @@ class Client(metaclass=ClientMetaClass):
             update_model.labels = existing_labels
 
         if add_secrets:
-            update_model.add_secrets = [
-                self.get_secret(secret).id for secret in add_secrets
-            ]
+            update_model.add_secrets = list(add_secrets)
 
         if remove_secrets:
-            update_model.remove_secrets = [
-                self.get_secret(secret).id for secret in remove_secrets
-            ]
+            update_model.remove_secrets = list(remove_secrets)
 
         updated_stack = self.zen_store.update_stack(
             stack_id=stack.id,
@@ -2033,15 +2027,13 @@ class Client(metaclass=ClientMetaClass):
         assert validated_config is not None
         warn_if_config_server_mismatch(validated_config)
 
-        secret_ids = [self.get_secret(secret).id for secret in secrets or []]
-
         create_component_model = ComponentRequest(
             name=name,
             type=component_type,
             flavor=flavor,
             configuration=configuration,
             labels=labels,
-            secrets=secret_ids,
+            secrets=secrets,
         )
 
         # Register the new model
@@ -2161,14 +2153,10 @@ class Client(metaclass=ClientMetaClass):
                 )
 
         if add_secrets:
-            update_model.add_secrets = [
-                self.get_secret(secret).id for secret in add_secrets
-            ]
+            update_model.add_secrets = list(add_secrets)
 
         if remove_secrets:
-            update_model.remove_secrets = [
-                self.get_secret(secret).id for secret in remove_secrets
-            ]
+            update_model.remove_secrets = list(remove_secrets)
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(

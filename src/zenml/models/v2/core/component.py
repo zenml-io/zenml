@@ -72,9 +72,10 @@ class ComponentBase(BaseModel):
         default=None,
         title="Environment variables to set when running on this component.",
     )
-    secrets: Optional[List[UUID]] = Field(
+    secrets: Optional[List[Union[UUID, str]]] = Field(
         default=None,
         title="Secrets to set as environment variables when running on this component.",
+        union_mode="left_to_right",
     )
 
     configuration: Dict[str, Any] = Field(
@@ -164,11 +165,15 @@ class ComponentUpdate(BaseUpdate):
         title="The service connector linked to this stack component.",
         default=None,
     )
-    add_secrets: Optional[List[UUID]] = Field(
-        default=None, title="New secrets to add to the stack component."
+    add_secrets: Optional[List[Union[UUID, str]]] = Field(
+        default=None,
+        title="New secrets to add to the stack component.",
+        union_mode="left_to_right",
     )
-    remove_secrets: Optional[List[UUID]] = Field(
-        default=None, title="Secrets to remove from the stack component."
+    remove_secrets: Optional[List[Union[UUID, str]]] = Field(
+        default=None,
+        title="Secrets to remove from the stack component.",
+        union_mode="left_to_right",
     )
 
 
