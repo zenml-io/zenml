@@ -95,8 +95,8 @@ class Stack:
         id: UUID,
         name: str,
         *,
-        environment: Dict[str, str],
-        secrets: List[UUID],
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[List[UUID]] = None,
         orchestrator: "BaseOrchestrator",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
@@ -134,8 +134,8 @@ class Stack:
         """
         self._id = id
         self._name = name
-        self._environment = environment
-        self._secrets = secrets
+        self._environment = environment or {}
+        self._secrets = secrets or []
         self._orchestrator = orchestrator
         self._artifact_store = artifact_store
         self._container_registry = container_registry
@@ -201,9 +201,9 @@ class Stack:
         cls,
         id: UUID,
         name: str,
-        environment: Dict[str, str],
-        secrets: List[UUID],
         components: Dict[StackComponentType, "StackComponent"],
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[List[UUID]] = None,
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
@@ -212,11 +212,11 @@ class Stack:
         Args:
             id: Unique ID of the stack.
             name: The name of the stack.
+            components: The components of the stack.
             environment: Environment variables to set when running on this
                 stack.
             secrets: Secrets to set as environment variables when running on
                 this stack.
-            components: The components of the stack.
 
         Returns:
             A stack instance consisting of the given components.

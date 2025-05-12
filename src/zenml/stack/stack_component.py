@@ -335,8 +335,8 @@ class StackComponent:
         user: Optional[UUID],
         created: datetime,
         updated: datetime,
-        environment: Dict[str, str],
-        secrets: List[UUID],
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[List[UUID]] = None,
         labels: Optional[Dict[str, Any]] = None,
         connector_requirements: Optional[ServiceConnectorRequirements] = None,
         connector: Optional[UUID] = None,
@@ -385,8 +385,8 @@ class StackComponent:
         self.created = created
         self.updated = updated
         self.labels = labels
-        self.environment = environment
-        self.secrets = secrets
+        self.environment = environment or {}
+        self.secrets = secrets or []
         self.connector_requirements = connector_requirements
         self.connector = connector
         self.connector_resource_id = connector_resource_id
