@@ -38,7 +38,12 @@ kubernetes_settings = KubernetesOrchestratorSettings(
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
-            {"key": "pool", "operator": "Equal", "value": "workloads", "effect": "NoSchedule"}
+            {
+                "key": "pool",
+                "operator": "Equal",
+                "value": "workloads",
+                "effect": "NoSchedule",
+            }
         ],
         env=[{"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"}],
     ),
@@ -49,7 +54,12 @@ kubernetes_settings = KubernetesOrchestratorSettings(
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
-            {"key": "pool", "operator": "Equal", "value": "workloads", "effect": "NoSchedule"}
+            {
+                "key": "pool",
+                "operator": "Equal",
+                "value": "workloads",
+                "effect": "NoSchedule",
+            }
         ],
     ),
 )
@@ -65,6 +75,19 @@ def load_step(
     duration: int,
     sleep_interval: float,
 ) -> Dict[str, Any]:
+    """A step that performs API operations to stress test the ZenML server.
+
+    This step will perform a number of API operations to stress test the ZenML server.
+    It will list pipeline runs, stacks, stack components, and service connectors.
+
+    Args:
+        duration: The duration of the load test in seconds.
+        sleep_interval: The interval to sleep between API calls in seconds.
+
+    Returns:
+        A dictionary containing the number of operations performed and the
+        duration of the test.
+    """
     client = Client()
     start_time = time.time()
     operations = 0
@@ -94,7 +117,7 @@ def load_step(
 
 # The report results step is beefier than the load step because it has to fetch
 # all the artifacts from the run.
-kubernetes_settings = KubernetesOrchestratorSettings(
+report_kubernetes_settings = KubernetesOrchestratorSettings(
     pod_settings=KubernetesPodSettings(
         resources={
             "requests": {"cpu": "100m", "memory": "500Mi"},
@@ -102,16 +125,23 @@ kubernetes_settings = KubernetesOrchestratorSettings(
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
-            {"key": "pool", "operator": "Equal", "value": "workloads", "effect": "NoSchedule"}
+            {
+                "key": "pool",
+                "operator": "Equal",
+                "value": "workloads",
+                "effect": "NoSchedule",
+            }
         ],
         env=[{"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"}],
     ),
 )
 
-settings = {"docker": docker_settings, "orchestrator": kubernetes_settings}
+report_step_settings = {"orchestrator": report_kubernetes_settings}
 
-@step(settings=settings)
+
+@step(settings=report_step_settings)
 def report_results() -> None:
+    """A step that gathers and reports the results of the load test."""
     # Initialize the ZenML client to fetch artifacts
     context = get_step_context()
     current_run = context.pipeline_run
@@ -146,11 +176,19 @@ def report_results() -> None:
 def load_test_pipeline(
     num_parallel_steps: int, duration: int, sleep_interval: float
 ) -> None:
+    """A pipeline that performs a load test on the ZenML server.
+
+    This pipeline will spawn a number of parallel steps that will perform API
+    operations to stress test the ZenML server.
+
+    Args:
+        num_parallel_steps: The number of parallel steps to run.
+        duration: The duration of the load test in seconds.
+        sleep_interval: The interval to sleep between API calls in seconds.
+    """
     after = []
     for i in range(num_parallel_steps):
-        after.append(
-            load_step(duration, sleep_interval, id=f"load_step_{i}")
-        )
+        after.append(load_step(duration, sleep_interval, id=f"load_step_{i}"))
 
     report_results(after=after)
 
@@ -180,11 +218,16 @@ def load_test_pipeline(
     type=float,
     show_default=True,
 )
-def main(parallel_steps: int, duration: int, sleep_interval: float):
+def main(parallel_steps: int, duration: int, sleep_interval: float) -> None:
     """Execute a ZenML load test with configurable parallel steps.
 
     This will spawn multiple parallel steps that continuously make API calls
     to stress test the ZenML server.
+
+    Args:
+        parallel_steps: The number of parallel steps to run.
+        duration: The duration of the load test in seconds.
+        sleep_interval: The interval to sleep between API calls in seconds.
     """
     click.echo(f"Starting load test with {parallel_steps} parallel steps...")
     click.echo(f"Duration: {duration}s, Sleep Interval: {sleep_interval}s")
