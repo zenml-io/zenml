@@ -120,10 +120,10 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     memory: Union[None, int, float, str] = Field(
         default=None, union_mode="left_to_right"
     )
-    accelerators: Union[None, str, Dict[str, int], List[str]] = Field(
+    accelerators: Union[None, str, Dict[str, int]] = Field(
         default=None, union_mode="left_to_right"
     )
-    accelerator_args: Optional[Dict[str, Any]] = None
+    accelerator_args: Optional[Dict[str, str]] = None
     use_spot: Optional[bool] = None
     job_recovery: Union[None, str, Dict[str, Any]] = Field(
         default=None, union_mode="left_to_right"
