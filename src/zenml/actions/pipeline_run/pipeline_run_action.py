@@ -101,6 +101,7 @@ class PipelineRunActionHandler(BaseActionHandler):
             template=template,
             run_config=config.run_config,
             auth_context=auth_context,
+            sync=True,
         )
 
     def _validate_configuration(

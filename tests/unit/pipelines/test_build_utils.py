@@ -320,6 +320,7 @@ def test_custom_build_verification(
 
     missing_image_build = PipelineBuildResponse(
         id=uuid4(),
+        project_id=sample_deployment_response_model.project_id,
         body=PipelineBuildResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
@@ -491,6 +492,7 @@ def test_local_repo_verification(
 
     repo_response = CodeRepositoryResponse(
         id=uuid4(),
+        project_id=sample_deployment_response_model.project_id,
         name="name",
         body=CodeRepositoryResponseBody(
             created=datetime.now(),

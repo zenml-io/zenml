@@ -529,10 +529,13 @@ class StackComponent:
             else container.pipeline_configuration.settings
         )
 
+        # Use the current config as a base
+        settings_dict = self.config.model_dump()
+
         if key in all_settings:
-            return self.settings_class.model_validate(dict(all_settings[key]))
-        else:
-            return self.settings_class()
+            settings_dict.update(dict(all_settings[key]))
+
+        return self.settings_class.model_validate(settings_dict)
 
     def connector_has_expired(self) -> bool:
         """Checks whether the connector linked to this stack component has expired.

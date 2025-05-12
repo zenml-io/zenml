@@ -158,7 +158,7 @@ def profiling_pipeline():
 profiling_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration_code_docs/integrations-great_expectations/#zenml.integrations.great_expectations.steps.ge_profiler.great_expectations_profiler_step) , the step takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations `ExpectationSuite` object:
+As can be seen from the step definition, the step takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations `ExpectationSuite` object:
 
 ```python
 @step
@@ -171,8 +171,6 @@ def great_expectations_profiler_step(
 ) -> ExpectationSuite:
     ...
 ```
-
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration_code_docs/integrations-great_expectations/#zenml.integrations.great_expectations.steps.ge_profiler.great_expectations_profiler_step) in the SDK docs.
 
 #### The Great Expectations data validator step
 
@@ -219,7 +217,7 @@ def validation_pipeline():
 validation_pipeline()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration_code_docs/integrations-great_expectations/#zenml.integrations.great_expectations.steps.ge_validator.great_expectations_validator_step) , the step takes in a `pandas.DataFrame` dataset and a boolean `condition` and it returns a Great Expectations `CheckpointResult` object. The boolean `condition` is only used as a means of ordering steps in a pipeline (e.g. if you must force it to run only after the data profiling step generates an Expectation Suite):
+As can be seen from the step definition, the step takes in a `pandas.DataFrame` dataset and a boolean `condition` and it returns a Great Expectations `CheckpointResult` object. The boolean `condition` is only used as a means of ordering steps in a pipeline (e.g. if you must force it to run only after the data profiling step generates an Expectation Suite):
 
 ```python
 @step
@@ -231,8 +229,6 @@ def great_expectations_validator_step(
     exit_on_error: bool = False,
 ) -> CheckpointResult:
 ```
-
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration_code_docs/integrations-great_expectations/#zenml.integrations.great_expectations.steps.ge_validator.great_expectations_validator_step) in the SDK docs.
 
 #### Call Great Expectations directly
 

@@ -1,4 +1,8 @@
 ARG PYTHON_VERSION=3.11
+ARG VIRTUAL_ENV=/opt/venv
+ARG USERNAME=zenml
+ARG USER_UID=1000
+ARG USER_GID=1000
 ARG ZENML_VERSION=""
 ARG ZENML_NIGHTLY="false"
 
@@ -20,9 +24,11 @@ RUN set -ex \
 
 FROM base AS builder
 
-ARG VIRTUAL_ENV=/opt/venv
+# Redeclaring ARGs because Docker is not smart enough to inherit them from the
+# global scope
+ARG VIRTUAL_ENV
 ARG ZENML_VERSION
-ARG ZENML_NIGHTLY="false"
+ARG ZENML_NIGHTLY
 
 ENV \
   # Set up virtual environment
@@ -41,30 +47,13 @@ WORKDIR /zenml
 #
 # NOTE: System packages required for the build stages should be installed here
 
-FROM builder as client-builder
+FROM builder AS client-builder
 
-ARG VIRTUAL_ENV=/opt/venv
+# Redeclaring ARGs because Docker is not smart enough to inherit them from the
+# global scope
+ARG VIRTUAL_ENV
 ARG ZENML_VERSION
-ARG ZENML_NIGHTLY="false"
-
-RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-# Determine the package name based on ZENML_NIGHTLY
-RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
-      PACKAGE_NAME="zenml-nightly"; \
-    else \
-      PACKAGE_NAME="zenml"; \
-    fi \
-    && pip install --upgrade pip setuptools \
-    && pip install ${PACKAGE_NAME}${ZENML_VERSION:+==$ZENML_VERSION} \
-    && pip freeze > requirements.txt
-
-FROM builder as server-builder
-
-ARG VIRTUAL_ENV=/opt/venv
-ARG ZENML_VERSION
-ARG ZENML_NIGHTLY="false"
+ARG ZENML_NIGHTLY
 
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
@@ -76,12 +65,40 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
       PACKAGE_NAME="zenml"; \
     fi \
     && pip install --upgrade pip \
-    && pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" \
+    && pip install --upgrade uv \
+    && uv pip install ${PACKAGE_NAME}${ZENML_VERSION:+==$ZENML_VERSION} \
     && pip freeze > requirements.txt
 
-FROM base as client
+FROM builder AS server-builder
 
-ARG VIRTUAL_ENV=/opt/venv
+# Redeclaring ARGs because Docker is not smart enough to inherit them from the
+# global scope
+ARG VIRTUAL_ENV
+ARG ZENML_VERSION
+ARG ZENML_NIGHTLY
+
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Determine the package name based on ZENML_NIGHTLY
+# IMPORTANT: We want to keep the alembic version in the server image consistent.
+#   That's why, we to pin it to 1.15.2 here, as it is the highest version 
+#   that is compatible with the ZenML version we are using.
+RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
+      PACKAGE_NAME="zenml-nightly"; \
+    else \
+      PACKAGE_NAME="zenml"; \
+    fi \
+    && pip install --upgrade pip \
+    && pip install --upgrade uv \
+    && uv pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" "alembic==1.15.2" \
+    && pip freeze > requirements.txt
+
+FROM base AS client
+
+# Redeclaring ARGs because Docker is not smart enough to inherit them from the
+# global scope
+ARG VIRTUAL_ENV
 
 ENV \
   # Set the default timeout for pip to something more reasonable
@@ -123,10 +140,12 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 FROM base AS server
 
-ARG VIRTUAL_ENV=/opt/venv
-ARG USERNAME=zenml
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
+# Redeclaring ARGs because Docker is not smart enough to inherit them from the
+# global scope
+ARG VIRTUAL_ENV
+ARG USERNAME
+ARG USER_UID
+ARG USER_GID
 
 ENV \
   # Allow statements and log messages to immediately appear
@@ -153,11 +172,6 @@ WORKDIR /zenml
 # NOTE: System packages required by the server at runtime should be installed
 # here
 
-# Copy the virtual environment from the builder stage
-COPY --from=server-builder /opt/venv /opt/venv
-# Copy the requirements.txt file from the builder stage
-COPY --from=server-builder /zenml/requirements.txt /zenml/requirements.txt
-
 # Create the user and group which will be used to run the ZenML server
 # and set the ownership of the workdir directory to the user.
 # Create the local stores directory beforehand and ensure it is owned by the
@@ -166,6 +180,11 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && mkdir -p /zenml/.zenconfig/local_stores/default_zen_store \
     && chown -R $USER_UID:$USER_GID /zenml
+
+# Copy the virtual environment from the builder stage
+COPY --chown=$USERNAME:$USER_GID --from=server-builder /opt/venv /opt/venv
+# Copy the requirements.txt file from the builder stage
+COPY --chown=$USERNAME:$USER_GID --from=server-builder /zenml/requirements.txt /zenml/requirements.txt
 
 ENV PATH="$VIRTUAL_ENV/bin:/home/$USERNAME/.local/bin:$PATH"
 

@@ -85,9 +85,9 @@ COPY --chown=$USERNAME:$USER_GID src/zenml/__init__.py ./src/zenml/
 # dependencies for reproducibility and debugging.
 # NOTE: we uninstall zenml at the end because we install it separately in the
 # final stage
-RUN pip install --upgrade pip setuptools \
+RUN pip install --upgrade pip \
     && pip install uv \
-    && uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
+    && uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] "alembic==1.15.2" \
     && uv pip uninstall zenml \
     && uv pip freeze > requirements.txt
 

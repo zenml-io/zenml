@@ -5518,7 +5518,7 @@ zenml stack update new_default -c local2
 zenml stack describe new_default
 zenml stack remove-component -c
 ```
-More details are in the [CLI docs](https://apidocs.zenml.io/0.7.3/cli/). 
+More details are in the [CLI docs](https://sdkdocs.zenml.io/0.82.0/cli.html). 
 Users can add new stack components to a pre-existing stack, or they can modify 
 already-present stack components. They can also rename their stack and individual stack components.
 

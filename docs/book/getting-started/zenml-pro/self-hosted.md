@@ -1552,8 +1552,11 @@ The Run Templates feature comes with some optional sub-features that can be turn
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY` (optional): the container registry where the "runner" images will be pushed. Mandatory if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `true`, ignored otherwise.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` (optional): the "runner" container image to use. Only used if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `false`, ignored otherwise.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` (optional): whether to store the logs of the "runner" jobs in an external location. Defaults to `false`. Currently only supported with the AWS implementation and requires the `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` variable to be set as well.
-    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE_POD_RESOURCES` (optional): the Kubernetes pod resources specification to use for the "runner" jobs, in JSON format. Example: `{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}`.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES` (optional): the Kubernetes pod resources specification to use for the "runner" jobs, in JSON format. Example: `{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}`.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED` (optional): the time in seconds after which to cleanup finished jobs and their pods. Defaults to 2 days.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR` (optional): the Kubernetes node selector to use for the "runner" jobs, in JSON format. Example: `{"node-pool": "zenml-pool"}`.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS` (optional): the Kubernetes tolerations to use for the "runner" jobs, in JSON format. Example: `[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]`.
+    * `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` (optional): the maximum number of concurrent run templates that can be started at the same time by each server container or pod. Defaults to 2. If a client exceeds this number, the request will be rejected with a 429 Too Many Requests HTTP error. Note that this only limits the number of parallel run templates that can be *started* at the same time, not the number of parallel pipeline runs.
 
     For the AWS implementation, the following additional variables are supported:
 
@@ -1592,9 +1595,12 @@ The Run Templates feature comes with some optional sub-features that can be turn
             ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
             ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: 339712793861.dkr.ecr.eu-central-1.amazonaws.com
             ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS: "true"
-            ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
             ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET: s3://my-bucket/run-template-logs
             ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION: eu-central-1
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
+            ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
     ```
 
     Example updated Helm values file (full GCP configuration):
@@ -1607,7 +1613,10 @@ The Run Templates feature comes with some optional sub-features that can be turn
             ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
             ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
             ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-run-templates/zenml
-            ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
+            ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
     ```
 
 ## Day 2 Operations: Upgrades and Updates
