@@ -4985,7 +4985,7 @@ class SqlZenStore(BaseZenStore):
         """
         # Because we can not guarantee that we detect all failed runs, we only
         # count runs that have been running for less than 5 minutes.
-        ten_minutes_ago = utc_now(tz_aware=False) - timedelta(minutes=5)
+        start_time = utc_now(tz_aware=False) - timedelta(minutes=5)
         with Session(self.engine) as session:
             query = (
                 select(func.count(col(PipelineRunSchema.id)))
@@ -4997,7 +4997,7 @@ class SqlZenStore(BaseZenStore):
                         ]
                     )
                 )
-                .where(PipelineRunSchema.start_time > ten_minutes_ago)  # type: ignore[operator]
+                .where(PipelineRunSchema.created > ten_minutes_ago)  # type: ignore[operator]
             )
             count = session.scalar(query)
             return int(count) if count else 0
