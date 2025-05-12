@@ -89,8 +89,16 @@ def check_concurrent_run_limit() -> None:
             "You have reached the maximum number of concurrent runs. "
             "Please upgrade your subscription to increase the limit. "
             "If some of your runs are incorrectly still in running state even "
-            "though they've failed already, you can manually delete them by "
-            "running `zenml pipeline runs delete <ID>`."
+            "though they've failed already, you can free up resources by: "
+            "1. Running `zenml pipeline runs list --status=running` and/or "
+            "zenml pipeline runs list --status=initializing "
+            "to find stuck runs "
+            "2. Note the IDs of runs you want to remove from the list "
+            "3. Delete each run with `zenml pipeline runs delete <RUN_ID> -y` "
+            "4. To check if this resolved the issue, run your pipeline again "
+            
+            "For more details on pipeline management, see our documentation at "
+            "https://docs.zenml.io/user-guides/best-practices/keep-your-dashboard-server-clean#deleting-pipeline-runs"
         )
 
 
