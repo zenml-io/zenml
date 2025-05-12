@@ -289,5 +289,3 @@ Whether you're using the open-source version or ZenML Pro, the dashboard provide
 * **ZenML OSS:** Includes pipeline DAG visualization, artifact visualization, integration-specific visualizations, run history, and step execution details
 * **ZenML Pro:** Adds model control plane, experiment comparison tools, and comprehensive role-based access control (RBAC) with team management capabilities
 {% endhint %}
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
