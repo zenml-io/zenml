@@ -82,7 +82,7 @@ def _get_skypilot_orchestrator(
 
 
 @pytest.mark.skip(
-    reason="SkyPilot can not be installed in Python 3.9",
+    reason="Currently the ZenML AWS and Skypilot integration are pip-incompatible",
 )
 @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
 def test_skypilot_orchestrator_local_stack(
@@ -92,7 +92,6 @@ def test_skypilot_orchestrator_local_stack(
     remote_container_registry,
 ) -> None:
     """Test the SkyPilot VM orchestrator with remote stacks."""
-
     # Test missing container registry
     orchestrator = _get_skypilot_orchestrator(provider)
     with does_not_raise():
