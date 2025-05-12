@@ -6082,6 +6082,14 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(secret_resource)
 
+            try:
+                session.commit()
+            except IntegrityError:
+                # The secret resource already exists, so we rollback the session
+                # and do nothing.
+                session.rollback()
+                pass
+
     def _unlink_secrets_from_resource(
         self,
         secrets: Optional[Sequence[Union[str, UUID]]],

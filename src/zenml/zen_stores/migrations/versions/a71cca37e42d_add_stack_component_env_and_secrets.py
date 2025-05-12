@@ -40,7 +40,7 @@ def upgrade() -> None:
         batch_op.create_index(
             "ix_secret_resource_resource_id_resource_type_secret_id",
             ["resource_id", "resource_type", "secret_id"],
-            unique=False,
+            unique=True,
         )
 
     with op.batch_alter_table("stack", schema=None) as batch_op:

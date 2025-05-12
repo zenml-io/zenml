@@ -303,6 +303,7 @@ class SecretResourceSchema(BaseSchema, table=True):
                 "resource_type",
                 "secret_id",
             ],
+            unique=True,
         ),
     )
 

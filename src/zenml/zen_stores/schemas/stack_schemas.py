@@ -163,7 +163,8 @@ class StackSchema(NamedSchema, table=True):
             The updated StackSchema.
         """
         for field, value in stack_update.model_dump(
-            exclude_unset=True, exclude={"user", "add_secrets", "remove_secrets"}
+            exclude_unset=True,
+            exclude={"user", "add_secrets", "remove_secrets"},
         ).items():
             if field == "components":
                 self.components = components
