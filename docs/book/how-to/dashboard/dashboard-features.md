@@ -147,16 +147,6 @@ The following features are available in [ZenML Pro](https://zenml.io/pro). While
 
 ZenML Pro provides a sophisticated artifact control plane that enhances your ability to manage and understand data flowing through your pipelines.
 
-#### Enhanced Artifact Visualization
-
-Pro users gain access to richer visualization capabilities:
-- Interactive exploration of complex data structures
-- Drill-down capabilities for nested data
-- Enhanced filtering and sorting of tabular data
-- Comparative views across artifact versions
-
-![Pro artifact visualization](../../.gitbook/assets/dashboard-v2-pro-artifact-viz.png)
-
 #### Comprehensive Metadata Management
 
 The Pro dashboard transforms how you interact with pipeline and model metadata through its powerful exploration tools. When examining ML workflows, metadata provides crucial context about performance metrics, parameters, and execution details.
@@ -249,8 +239,6 @@ The dashboard makes it easy to:
 - Review and audit access rights
 - Visualize permission hierarchies
 
-![RBAC management](../../.gitbook/assets/dashboard-v2-rbac-management.png)
-
 ### Experiment Comparison Tools
 
 ZenML Pro offers powerful tools for comparing experiments and understanding the relationships between different runs.
@@ -299,7 +287,7 @@ Whether you're using the open-source version or ZenML Pro, the dashboard provide
 {% hint style="info" %}
 **OSS vs Pro Feature Summary:**
 * **ZenML OSS:** Includes pipeline DAG visualization, artifact visualization, integration-specific visualizations, run history, and step execution details
-* **ZenML Pro:** Adds advanced artifact visualization, model control plane, experiment comparison tools, and comprehensive role-based access control (RBAC) with team management capabilities
+* **ZenML Pro:** Adds model control plane, experiment comparison tools, and comprehensive role-based access control (RBAC) with team management capabilities
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
