@@ -353,7 +353,9 @@ class DockerSettings(BaseSettings):
         ):
             raise ValueError(
                 "Files must be included in the Docker image when trying to "
-                "install a local python package."
+                "install a local python package. You can do so by setting "
+                "the `allow_including_files_in_images` attribute of your "
+                "DockerSettings to `True`."
             )
 
         return self

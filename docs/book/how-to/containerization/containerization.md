@@ -257,7 +257,11 @@ By default, ZenML automatically installs all packages required by your active Ze
         ...
     ```
 
-    This will run `pip freeze` to get a list of your local packages, and allows you to easily replicate your local Python environment in the Docker container, ensuring that your pipeline runs with the same dependencies.
+    This will run `pip freeze` to get a list of the installed packages in your local Python environment and will install them in the Docker image. This ensures that the same
+    exact dependencies will be installed.
+    {% hint style="warning" %}
+    This does not work when you have a local project installed. To install local projects, check out the `Install Local Projects` section below.
+    {% endhint %}
 2.  **Specify a `pyproject.toml` file**:
 
     ```python
