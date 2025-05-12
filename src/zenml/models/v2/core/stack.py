@@ -89,7 +89,6 @@ class StackRequest(UserScopedRequest):
         default=None,
         title="Secrets to set as environment variables when running on this "
         "stack.",
-        union_mode="left_to_right",
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -179,12 +178,10 @@ class StackUpdate(BaseUpdate):
     add_secrets: Optional[List[Union[UUID, str]]] = Field(
         default=None,
         title="New secrets to add to the stack.",
-        union_mode="left_to_right",
     )
     remove_secrets: Optional[List[Union[UUID, str]]] = Field(
         default=None,
         title="Secrets to remove from the stack.",
-        union_mode="left_to_right",
     )
 
 
