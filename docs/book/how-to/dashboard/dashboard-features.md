@@ -19,7 +19,7 @@ The open-source version of ZenML includes a robust set of dashboard features tha
 
 The dashboard renders your pipeline as an interactive Directed Acyclic Graph (DAG), making it easy to understand the workflow structure and dependencies between steps.
 
-![Pipeline DAG visualization](../../.gitbook/assets/placeholder-pipeline-dag.png)
+![Pipeline DAG visualization](../../.gitbook/assets/dashboard-v2-pipeline-dag.png)
 
 This visualization enables you to:
 - See the execution flow between pipeline steps
@@ -56,7 +56,7 @@ In the dashboard interface, you can:
 - Track changes in pipeline structure over time
 - Filter runs by status, name, or other attributes
 
-![Pipeline run history](../../.gitbook/assets/placeholder-pipeline-history.png)
+![Pipeline run history](../../.gitbook/assets/dashboard-v2-pipeline-history.png)
 
 ### Artifact Visualization
 
@@ -71,7 +71,7 @@ Common data types receive automatic visualizations, including:
 - Images shown directly in the browser
 - Text data formatted for readability
 
-![Artifact visualization](../../.gitbook/assets/placeholder-artifact-viz.png)
+![Artifact visualization](../../.gitbook/assets/dashboard-v2-artifact-viz.png)
 
 #### Artifact Lineage Tracking
 
@@ -90,7 +90,7 @@ Access detailed logs for each step execution directly in the dashboard:
 - Troubleshoot errors with full context
 - Search through logs to identify specific events
 
-![Step logs](../../.gitbook/assets/placeholder-step-logs.png)
+![Step logs](../../.gitbook/assets/dashboard-v2-step-logs.png)
 
 #### Runtime Metrics
 
@@ -108,7 +108,7 @@ The dashboard provides a visual interface for managing your ZenML infrastructure
 
 Creating ML infrastructure stacks through the dashboard is intuitive and visual. The interface guides you through selecting compatible components and configuring their settings. You can see the entire stack architecture at a glance, making it easier to understand the relationships between different infrastructure pieces.
 
-![Stack management](../../.gitbook/assets/placeholder-stack-management.png)
+![Stack management](../../.gitbook/assets/dashboard-v2-stack-management.png)
 
 When building a stack, the dashboard helps you browse available components by category and suggests compatible options. Once created, stacks can be shared with team members, enabling consistent infrastructure across your organization.
 
@@ -116,7 +116,12 @@ When building a stack, the dashboard helps you browse available components by ca
 
 The dashboard streamlines the process of registering individual components like orchestrators, artifact stores, and container registries. Instead of writing configuration code, you can use form-based interfaces to set up each component.
 
-The UI helps connect components to appropriate service connectors and validates settings before saving. This visual approach to component management reduces configuration errors and simplifies the setup process, especially for team members who may not be familiar with the underlying infrastructure details.
+The UI helps connect components to appropriate service connectors and validates
+settings before saving. This visual approach to component management reduces
+configuration errors and simplifies the setup process, especially for team
+members who may not be familiar with the underlying infrastructure details.
+
+![Component registration](../../.gitbook/assets/dashboard-v2-component-registration.png)
 
 ### Integration-Specific Visualizations
 
@@ -130,7 +135,7 @@ The dashboard supports specialized visualizations for outputs from popular integ
 - Confusion matrices and classification reports
 - Custom visualization components for specialized data types
 
-![Integration visualizations](../../.gitbook/assets/placeholder-integration-viz.png)
+![Integration visualizations](../../.gitbook/assets/dashboard-v2-integration-viz.png)
 
 ## ZenML Pro Dashboard Features
 
@@ -150,7 +155,7 @@ Pro users gain access to richer visualization capabilities:
 - Enhanced filtering and sorting of tabular data
 - Comparative views across artifact versions
 
-![Pro artifact visualization](../../.gitbook/assets/placeholder-pro-artifact-viz.png)
+![Pro artifact visualization](../../.gitbook/assets/dashboard-v2-pro-artifact-viz.png)
 
 #### Comprehensive Metadata Management
 
@@ -188,7 +193,7 @@ Track and manage model versions with features like:
 - Performance metrics for each version
 - Linkage to generating pipelines and input artifacts
 
-![Model version management](../../.gitbook/assets/placeholder-model-versions.png)
+![Model version management](../../.gitbook/assets/dashboard-v2-model-versions.png)
 
 ```python
 from zenml import Model, pipeline
@@ -224,7 +229,7 @@ ZenML Pro provides comprehensive role-based access control (RBAC) features throu
 - **Workspaces**: Isolated ZenML deployments with separate resources
 - **Projects**: Logical subdivisions for organizing related ML assets
 
-![Organization structure](../../.gitbook/assets/placeholder-org-structure.png)
+![Organization structure](../../.gitbook/assets/dashboard-v2-org-structure.png)
 
 #### Role Management
 
@@ -244,7 +249,7 @@ The dashboard makes it easy to:
 - Review and audit access rights
 - Visualize permission hierarchies
 
-![RBAC management](../../.gitbook/assets/placeholder-rbac-management.png)
+![RBAC management](../../.gitbook/assets/dashboard-v2-rbac-management.png)
 
 ### Experiment Comparison Tools
 
@@ -258,7 +263,7 @@ Compare metadata, configurations, and outcomes across runs:
 - Sort and filter by any attribute
 - Export comparison data for further analysis
 
-![Experiment comparison table](../../.gitbook/assets/placeholder-experiment-table.png)
+![Experiment comparison table](../../.gitbook/assets/dashboard-v2-experiment-table.png)
 
 #### Parallel Coordinates Visualization
 
@@ -268,7 +273,7 @@ Understand complex relationships between parameters and outcomes:
 - Filter runs interactively
 - Focus on specific parameter ranges
 
-![Parallel coordinates visualization](../../.gitbook/assets/placeholder-parallel-coords.png)
+![Parallel coordinates visualization](../../.gitbook/assets/dashboard-v2-parallel-coords.png)
 
 
 ## Dashboard Best Practices
