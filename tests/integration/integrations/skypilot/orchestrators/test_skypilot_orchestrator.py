@@ -82,7 +82,7 @@ def _get_skypilot_orchestrator(
 
 
 @pytest.mark.skip(
-    reason="Currently the ZenML AWS and Skypilot integration are pip-incompatible",
+    reason="Currently the ZenML AWS and Skypilot integration are not pip-incompatible.",
 )
 @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
 def test_skypilot_orchestrator_local_stack(
