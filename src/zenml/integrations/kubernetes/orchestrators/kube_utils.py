@@ -574,4 +574,6 @@ def get_pod_owner_references(
     if not pod or not pod.metadata or not pod.metadata.owner_references:
         return []
 
-    return pod.metadata.owner_references
+    return cast(
+        List[k8s_client.V1OwnerReference], pod.metadata.owner_references
+    )
