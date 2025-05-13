@@ -134,6 +134,7 @@ The Kubernetes orchestrator will by default use a Kubernetes namespace called `z
 * `max_parallelism`: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For
 pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used
 to specify the maximum amount of steps pods that can be running at any time.
+* `successful_jobs_history_limit`, `failed_jobs_history_limit` and `ttl_seconds_after_finished`: Control the cleanup behaviour of jobs and pods created by the orchestrator.
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
