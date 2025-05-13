@@ -11354,13 +11354,10 @@ class SqlZenStore(BaseZenStore):
             except EntityExistsError:
                 if isinstance(tag, tag_utils.Tag):
                     tag_schema = self._get_tag_schema(tag.name, session)
-                    if (
-                        tag.exclusive is not None
-                        and tag.exclusive != tag_schema.exclusive
-                    ):
+                    if bool(tag.exclusive) != tag_schema.exclusive:
                         raise ValueError(
-                            f"Tag `{tag_schema.name}` has been defined as a "
-                            f"{'exclusive' if tag_schema.exclusive else 'non-exclusive'} "
+                            f"Tag `{tag_schema.name}` has been defined as "
+                            f"{'an exclusive' if tag_schema.exclusive else 'a non-exclusive'} "
                             "tag. Please update it before attaching it to resources."
                         )
                 else:
