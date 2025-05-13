@@ -15,47 +15,44 @@
 
 from uuid import UUID
 
-from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import feature_gate, server_config
 
 
-def check_entitlement(resource_type: ResourceType) -> None:
+def check_entitlement(feature: str) -> None:
     """Queries the feature gate to see if the operation falls within the Pro workspaces entitlements.
 
     Raises an exception if the user is not entitled to create an instance of the
     resource. Otherwise, simply returns.
 
     Args:
-        resource_type: The type of resource to check for.
+        feature: The feature to check for.
     """
     if not server_config().feature_gate_enabled:
         return
-    return feature_gate().check_entitlement(resource=resource_type)
+    return feature_gate().check_entitlement(feature=feature)
 
 
-def report_usage(resource_type: ResourceType, resource_id: UUID) -> None:
+def report_usage(feature: str, resource_id: UUID) -> None:
     """Reports the creation/usage of a feature/resource.
 
     Args:
-        resource_type: The type of resource to report a usage for
+        feature: The feature to report a usage for.
         resource_id: ID of the resource that was created.
     """
     if not server_config().feature_gate_enabled:
         return
-    feature_gate().report_event(
-        resource=resource_type, resource_id=resource_id
-    )
+    feature_gate().report_event(feature=feature, resource_id=resource_id)
 
 
-def report_decrement(resource_type: ResourceType, resource_id: UUID) -> None:
+def report_decrement(feature: str, resource_id: UUID) -> None:
     """Reports the deletion/deactivation of a feature/resource.
 
     Args:
-        resource_type: The type of resource to report a decrement in count for.
+        feature: The feature to report a decrement in count for.
         resource_id: ID of the resource that was deleted.
     """
     if not server_config().feature_gate_enabled:
         return
     feature_gate().report_event(
-        resource=resource_type, resource_id=resource_id, is_decrement=True
+        feature=feature, resource_id=resource_id, is_decrement=True
     )
