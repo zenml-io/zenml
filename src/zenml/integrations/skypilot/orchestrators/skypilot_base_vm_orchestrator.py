@@ -322,9 +322,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
             task = task.set_resources(sky.Resources(**resources_kwargs))
 
-            # Use num_nodes from settings or default to 1
-            num_nodes = settings.num_nodes or 1
-
             launch_new_cluster = True
             if settings.cluster_name:
                 cluster_info = sky.status(

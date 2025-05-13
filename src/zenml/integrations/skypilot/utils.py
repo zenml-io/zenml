@@ -221,7 +221,12 @@ def prepare_launch_kwargs(
     }
 
     # Remove keys that are no longer supported by sky.launch.
-    for _deprecated in ("stream_logs", "detach_setup", "detach_run", "num_nodes"):
+    for _deprecated in (
+        "stream_logs",
+        "detach_setup",
+        "detach_run",
+        "num_nodes",
+    ):
         launch_kwargs.pop(_deprecated, None)
 
     # Remove None values to avoid overriding SkyPilot defaults
