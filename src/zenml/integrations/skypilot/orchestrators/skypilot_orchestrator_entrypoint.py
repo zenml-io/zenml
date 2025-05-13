@@ -221,16 +221,18 @@ def main() -> None:
         # Prepare launch parameters
         launch_kwargs = prepare_launch_kwargs(
             settings=settings,
-            stream_logs=settings.stream_logs,
-            num_nodes=settings.num_nodes,
-            detach_run=True,  # Entrypoint always detaches
         )
 
-        sky.launch(
+        # sky.launch now returns a request ID (async). Capture it so we can
+        # optionally stream logs and block until completion when desired.
+        request_id = sky.launch(
             task,
             cluster_name,
             **launch_kwargs,
         )
+
+        if settings.stream_logs:
+            sky.stream_and_get(request_id)
 
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to start...")

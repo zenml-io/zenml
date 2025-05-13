@@ -131,6 +131,7 @@ def prepare_task_kwargs(
         "name": settings.task_name or task_name,
         "workdir": settings.workdir,
         "file_mounts": settings.file_mounts,
+        "num_nodes": settings.num_nodes,
         **settings.task_settings,  # Add any arbitrary task settings
     }
 
@@ -184,53 +185,44 @@ def prepare_resources_kwargs(
 
 def prepare_launch_kwargs(
     settings: SkypilotBaseOrchestratorSettings,
-    stream_logs: bool,
     down: Optional[bool] = None,
     idle_minutes_to_autostop: Optional[int] = None,
-    num_nodes: Optional[int] = None,
-    detach_run: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """Prepare launch keyword arguments for sky.launch.
 
     Args:
         settings: Skypilot orchestrator settings.
-        stream_logs: Whether to stream logs.
         down: Whether to tear down the cluster after job completion.
         idle_minutes_to_autostop: Minutes to autostop after idleness.
-        num_nodes: Number of nodes to launch.
-        detach_run: Whether to detach from the run. If None, will be
-            determined as the opposite of stream_logs.
 
     Returns:
         Launch keyword arguments dictionary.
     """
-    # Do not detach run if logs are being streamed
-    detach_run_value = (
-        detach_run if detach_run is not None else not stream_logs
-    )
-
-    # Use provided values or settings if not provided
+    # Determine values falling back to settings where applicable
     down_value = down if down is not None else settings.down
     idle_value = (
         idle_minutes_to_autostop
         if idle_minutes_to_autostop is not None
         else settings.idle_minutes_to_autostop
     )
-    nodes_value = (
-        num_nodes if num_nodes is not None else (settings.num_nodes or 1)
-    )
+
+    # The following parameters were removed from sky.launch in versions > 0.8.
+    # We therefore no longer include them in the kwargs passed to the call.
+    # • stream_logs – handled by explicitly calling sky.stream_and_get
+    # • detach_setup / detach_run – setup/run are now detached by default
+    # • num_nodes – passed directly to sky.Task (see prepare_task_kwargs)
 
     launch_kwargs = {
         "retry_until_up": settings.retry_until_up,
         "idle_minutes_to_autostop": idle_value,
         "down": down_value,
-        "stream_logs": stream_logs,
         "backend": None,
-        "detach_setup": True,
-        "detach_run": detach_run_value,
-        "num_nodes": nodes_value,
-        **settings.launch_settings,  # Add any arbitrary launch settings
+        **settings.launch_settings,  # Keep user-provided extras
     }
+
+    # Remove keys that are no longer supported by sky.launch.
+    for _deprecated in ("stream_logs", "detach_setup", "detach_run", "num_nodes"):
+        launch_kwargs.pop(_deprecated, None)
 
     # Remove None values to avoid overriding SkyPilot defaults
     return {k: v for k, v in launch_kwargs.items() if v is not None}

@@ -264,9 +264,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         # Set up credentials
         self.setup_credentials()
 
-        # Guaranteed by stack validation
-        assert stack is not None and stack.container_registry is not None
-
         # Prepare Docker setup
         setup, docker_creds_envs = prepare_docker_setup(
             container_registry_uri=stack.container_registry.config.uri,
@@ -356,17 +353,21 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 # Prepare launch parameters with additional launch settings
                 launch_kwargs = prepare_launch_kwargs(
                     settings=settings,
-                    stream_logs=settings.stream_logs,
                     down=down,
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
-                    num_nodes=num_nodes,
                 )
 
-                sky.launch(
+                request_id = sky.launch(
                     task,
                     cluster_name,
                     **launch_kwargs,
                 )
+
+                # New SkyPilot versions are asynchronous. Stream logs and wait
+                # for completion if the user requested it via `stream_logs`.
+                if settings.stream_logs:
+                    sky.stream_and_get(request_id)
+
             else:
                 # Prepare exec parameters with additional launch settings
                 exec_kwargs = {
@@ -390,11 +391,14 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                     retry_until_up=settings.retry_until_up,
                 )
-                sky.exec(
+                exec_request_id = sky.exec(
                     task,
                     settings.cluster_name,
                     **exec_kwargs,
                 )
+
+                if settings.stream_logs:
+                    sky.stream_and_get(exec_request_id)
 
         except Exception as e:
             logger.error(f"Pipeline run failed: {e}")
