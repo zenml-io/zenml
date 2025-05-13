@@ -403,11 +403,10 @@ def cascade_tags_for_output_artifacts(
     if tags is None:
         return
 
+    cascade_tags = [t for t in tags if isinstance(t, Tag) and t.cascade]
+
     for output_artifacts in artifacts.values():
         for output_artifact in output_artifacts:
-            cascade_tags = [
-                t for t in tags if isinstance(t, Tag) and t.cascade
-            ]
             add_tags(
                 tags=[t.name for t in cascade_tags],
                 artifact_version_id=output_artifact.id,
