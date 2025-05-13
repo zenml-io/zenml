@@ -194,7 +194,7 @@ def visualize_evaluation_results(
 
 For one of my runs of the evaluation pipeline, this looked like the following in the dashboard:
 
-![Evaluation metrics for our RAG pipeline](../../../.gitbook/assets/reranker\_evaluation\_metrics.png)
+![Evaluation metrics for our RAG pipeline](../../../.gitbook/assets/reranker_evaluation_metrics.png)
 
 You can see that for the full retrieval evaluation we do see an improvement. Our small retrieval test, which as of writing only included five questions, showed a considerable degradation in performance. Since these were specific examples where we knew the answers, this would be something we'd want to look into to see why the reranking model was not performing as expected.
 

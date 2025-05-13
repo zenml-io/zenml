@@ -29,15 +29,18 @@ from pydantic import (
 )
 
 from zenml.constants import (
+    DEFAULT_HTTP_TIMEOUT,
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
     DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
     DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE,
+    DEFAULT_ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
@@ -151,6 +154,8 @@ class ServerConfiguration(BaseModel):
             server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
+        max_concurrent_template_runs: The maximum number of concurrent template
+            runs that can be executed on the server.
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
             server.
@@ -245,6 +250,8 @@ class ServerConfiguration(BaseModel):
         memcache_default_expiry: The default expiry time in seconds for cache
             entries. If not specified, the default value of 30 seconds will be
             used.
+        file_download_size_limit: The maximum size of the file download in
+            bytes. If not specified, the default value of 2GB will be used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -287,6 +294,9 @@ class ServerConfiguration(BaseModel):
     feature_gate_implementation_source: Optional[str] = None
     reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
+    max_concurrent_template_runs: int = (
+        DEFAULT_ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS
+    )
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
     )
@@ -345,6 +355,10 @@ class ServerConfiguration(BaseModel):
 
     memcache_max_capacity: int = 1000
     memcache_default_expiry: int = 30
+
+    file_download_size_limit: int = (
+        DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT
+    )
 
     _deployment_id: Optional[UUID] = None
 
@@ -672,6 +686,7 @@ class ServerProConfiguration(BaseModel):
     organization_name: Optional[str] = None
     workspace_id: UUID
     workspace_name: Optional[str] = None
+    http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
     @field_validator("api_url", "dashboard_url")
     @classmethod

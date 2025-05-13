@@ -4074,15 +4074,6 @@ class RestZenStore(BaseZenStore):
             # Check if username and password are configured
             username, password = credentials_store.get_password(self.url)
 
-            api_key_hint = (
-                "\nHint: If you're getting this error in an automated, "
-                "non-interactive workload like a pipeline run or a CI/CD job, "
-                "you should use a service account API key to authenticate to "
-                "the server instead of temporary CLI login credentials. For "
-                "more information, see "
-                "https://docs.zenml.io/how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account"
-            )
-
             if api_key is not None:
                 # An API key is configured. Use it as a password to
                 # authenticate.
@@ -4119,14 +4110,12 @@ class RestZenStore(BaseZenStore):
                         "You need to be logged in to ZenML Pro in order to "
                         f"access the ZenML Pro server '{self.url}'. Please run "
                         "'zenml login' to log in or choose a different server."
-                        + api_key_hint
                     )
 
                 elif pro_token.expired:
                     raise CredentialsNotValid(
                         "Your ZenML Pro login session has expired. "
                         "Please log in again using 'zenml login'."
-                        + api_key_hint
                     )
 
                 data = {
@@ -4140,13 +4129,12 @@ class RestZenStore(BaseZenStore):
                     raise CredentialsNotValid(
                         "No valid credentials found. Please run 'zenml login "
                         f"--url {self.url}' to connect to the current server."
-                        + api_key_hint
                     )
                 elif token.expired:
                     raise CredentialsNotValid(
                         "Your authentication to the current server has expired. "
                         "Please log in again using 'zenml login --url "
-                        f"{self.url}'." + api_key_hint
+                        f"{self.url}'."
                     )
 
             response = self._handle_response(
@@ -4405,6 +4393,7 @@ class RestZenStore(BaseZenStore):
                 # explicitly indicates that the credentials are not valid and
                 # they can be thrown away or when the request is not
                 # authenticated at all.
+                credentials_store = get_credentials_store()
 
                 if self._api_token is None:
                     # The last request was not authenticated with an API
@@ -4416,6 +4405,24 @@ class RestZenStore(BaseZenStore):
                         "Re-authenticating and retrying..."
                     )
                     self.authenticate()
+                elif not credentials_store.can_login(self.url):
+                    # The request failed either because we're not
+                    # authenticated or our current credentials are not valid
+                    # anymore.
+                    logger.error(
+                        "The current token is no longer valid, and "
+                        "it is not possible to generate a new token using the "
+                        "configured credentials. Please run "
+                        f"`zenml login {self.url}` to "
+                        "re-authenticate to the server or authenticate using "
+                        "an API key. See "
+                        "https://docs.zenml.io/how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account "
+                        "for more information."
+                    )
+                    # Clear the current token from the credentials store to
+                    # force a new authentication flow next time.
+                    get_credentials_store().clear_token(self.url)
+                    raise e
                 elif not re_authenticated:
                     # The last request was authenticated with an API token
                     # that was rejected by the server. We attempt a

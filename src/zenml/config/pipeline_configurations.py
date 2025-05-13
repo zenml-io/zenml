@@ -41,6 +41,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
+    enable_pipeline_logs: Optional[bool] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
@@ -51,23 +52,30 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     retry: Optional[StepRetryConfig] = None
     substitutions: Dict[str, str] = {}
 
-    def _get_full_substitutions(
-        self, start_time: Optional[datetime]
+    def finalize_substitutions(
+        self, start_time: Optional[datetime] = None, inplace: bool = False
     ) -> Dict[str, str]:
         """Returns the full substitutions dict.
 
         Args:
             start_time: Start time of the pipeline run.
+            inplace: Whether to update the substitutions in place.
 
         Returns:
             The full substitutions dict including date and time.
         """
         if start_time is None:
             start_time = utc_now()
-        ret = self.substitutions.copy()
-        ret.setdefault("date", start_time.strftime("%Y_%m_%d"))
-        ret.setdefault("time", start_time.strftime("%H_%M_%S_%f"))
-        return ret
+
+        if inplace:
+            dict_ = self.substitutions
+        else:
+            dict_ = self.substitutions.copy()
+
+        dict_.setdefault("date", start_time.strftime("%Y_%m_%d"))
+        dict_.setdefault("time", start_time.strftime("%H_%M_%S_%f"))
+
+        return dict_
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):

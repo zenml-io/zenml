@@ -135,7 +135,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters) for more information on how to parameterize your steps.
+Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines#parameters-and-artifacts) for more information on how to parameterize your steps.
 
 ## Calling a step outside of a pipeline
 
@@ -316,7 +316,7 @@ my_pipeline()
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline) for more information on how to schedule your pipelines.
+Check out [this page](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) for more information on how to schedule your pipelines.
 
 ## Fetching pipelines after execution
 
@@ -385,7 +385,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/control-execution-order-of-steps) for more information on how to control the step execution order.
+Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines/advanced_features#step-execution-order) for more information on how to control the step execution order.
 
 ## Defining steps with multiple outputs
 
@@ -424,7 +424,7 @@ def my_step() -> Tuple[
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/step-output-typing-and-annotation) for more information on how to annotate your step outputs.
+Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines#type-annotations) for more information on how to annotate your step outputs.
 
 ## Accessing run information inside steps
 

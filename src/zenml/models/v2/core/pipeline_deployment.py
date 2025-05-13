@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import Dict, Optional, TypeVar, Union
+from typing import Any, Dict, Optional, TypeVar, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -60,7 +60,7 @@ class PipelineDeploymentBase(BaseZenModel):
     step_configurations: Dict[str, Step] = Field(
         default={}, title="The step configurations for this deployment."
     )
-    client_environment: Dict[str, str] = Field(
+    client_environment: Dict[str, Any] = Field(
         default={}, title="The client environment for this deployment."
     )
     client_version: Optional[str] = Field(
@@ -143,7 +143,7 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
     step_configurations: Dict[str, Step] = Field(
         default={}, title="The step configurations for this deployment."
     )
-    client_environment: Dict[str, str] = Field(
+    client_environment: Dict[str, Any] = Field(
         default={}, title="The client environment for this deployment."
     )
     client_version: Optional[str] = Field(
@@ -242,7 +242,7 @@ class PipelineDeploymentResponse(
         return self.get_metadata().step_configurations
 
     @property
-    def client_environment(self) -> Dict[str, str]:
+    def client_environment(self) -> Dict[str, Any]:
         """The `client_environment` property.
 
         Returns:

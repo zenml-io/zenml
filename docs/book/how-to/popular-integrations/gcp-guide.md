@@ -1,21 +1,17 @@
 ---
 description: A simple guide to quickly set up a minimal stack on GCP.
+icon: google
 ---
 
-# Set up a minimal GCP stack
+# GCP
 
 This page aims to quickly set up a minimal production stack on GCP. With just a few simple steps you will set up a service account with specifically-scoped permissions that ZenML can use to authenticate with the relevant GCP resources.
 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full GCP ZenML cloud stack already?
 
-Check out the
-[in-browser stack deployment wizard](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
-the [stack registration wizard](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),
-or [the ZenML GCP Terraform module](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
-for a shortcut on how to deploy & register this stack.
+Check out the [in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack.
 {% endhint %}
-
 
 {% hint style="warning" %}
 While this guide focuses on Google Cloud, we are seeking contributors to create a similar guide for other cloud providers. If you are interested, please create a [pull request over on GitHub](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md).
@@ -37,7 +33,7 @@ If you don't plan to keep the resources that you create in this procedure, creat
 
 ### 2) Enable GCloud APIs
 
-The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\\\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\\\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\\\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\\\_wcB) will need to be enabled within your chosen GCP project.
+The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&_ga=2.103703808.1862683951.1694002459-205697788.1651483076&_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw_wcB) will need to be enabled within your chosen GCP project.
 
 * Cloud Functions API # For the vertex orchestrator
 * Cloud Run Admin API # For the vertex orchestrator
@@ -114,8 +110,7 @@ This guide will use Vertex AI as the orchestrator to run the pipelines. As a ser
 export ORCHESTRATOR_NAME=gcp_vertex_orchestrator
 
 # Register the GCS artifact-store and reference the target GCS bucket
-zenml orchestrator register ${ORCHESTRATOR_NAME} --flavor=vertex 
-  --project=<PROJECT_NAME> --location=europe-west2
+zenml orchestrator register ${ORCHESTRATOR_NAME} --flavor=vertex --project=<PROJECT_NAME> --location=europe-west2
 
 # Connect the GCS orchestrator to the target gcp project via a GCP Service Connector
 zenml orchestrator connect ${ORCHESTRATOR_NAME} -i
@@ -192,8 +187,9 @@ gcloud storage buckets update gs://your-bucket-name --update-labels=project=zenm
 ```
 
 This command adds two labels to the bucket:
-- A label with key "project" and value "zenml"
-- A label with key "environment" and value "production"
+
+* A label with key "project" and value "zenml"
+* A label with key "environment" and value "production"
 
 You can add or update multiple labels in a single command by separating them with commas.
 
@@ -247,6 +243,5 @@ gsutil rewrite -r gs://source-bucket gs://destination-bucket
 ```
 
 By following these best practices and implementing the provided examples, you can create a more secure, efficient, and cost-effective GCP stack for your ZenML projects. Remember to regularly review and update your practices as your projects evolve and as GCP introduces new features and services.
-
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

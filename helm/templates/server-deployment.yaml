@@ -4,6 +4,7 @@ metadata:
   name: {{ include "zenml.fullname" . }}
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
 spec:
   {{- if .Values.zenml.database.url }}
   {{- if not .Values.autoscaling.enabled }}
@@ -24,6 +25,7 @@ spec:
       {{- end }}
       labels:
         {{- include "zenml.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: server
     spec:
       {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
       initContainers:

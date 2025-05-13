@@ -5,6 +5,7 @@ steps:
       - '-c'
       - |
         docker build \
+          --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.9 \
           --target client \
@@ -27,6 +28,7 @@ steps:
       - '-c'
       - |
         docker build \
+          --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.10 \
           --target client \
@@ -49,6 +51,7 @@ steps:
       - '-c'
       - |
         docker build \
+          --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
           --target client \
@@ -73,6 +76,7 @@ steps:
       - '-c'
       - |
         docker build \
+          --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.12 \
           --target client \
@@ -95,6 +99,7 @@ steps:
       - '-c'
       - |
         docker build \
+        --platform linux/amd64 \
         --build-arg ZENML_VERSION=$TAG_NAME \
         --build-arg PYTHON_VERSION=3.11 \
         --target server \
@@ -157,6 +162,7 @@ steps:
       - '-c'
       - |
         docker build \
+          --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
           --build-arg CLOUD_PROVIDER=gcp \
@@ -174,6 +180,7 @@ steps:
       - '-c'
       - |
         docker build \
+          --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
           --build-arg CLOUD_PROVIDER=aws \
@@ -191,6 +198,7 @@ steps:
       - '-c'
       - |
         docker build \
+          --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
           --build-arg CLOUD_PROVIDER=azure \

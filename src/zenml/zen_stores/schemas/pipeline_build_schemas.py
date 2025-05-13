@@ -169,6 +169,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             )
         return PipelineBuildResponse(
             id=self.id,
+            project_id=self.project_id,
             body=body,
             metadata=metadata,
         )

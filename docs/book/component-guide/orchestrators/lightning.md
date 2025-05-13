@@ -165,7 +165,7 @@ def my_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-lightning.html#zenml.integrations.lightning) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-lightning.html#zenml.integrations.lightning) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
 
 To use GPUs with the Lightning AI orchestrator, you need to specify a GPU-enabled machine type in your settings:
 

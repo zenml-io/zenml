@@ -1,21 +1,20 @@
 ---
 description: A simple guide to create an AWS stack to run your ZenML pipelines
+icon: aws
 ---
 
-# Run on AWS
+# AWS
 
 This page aims to quickly set up a minimal production stack on AWS. With just a few simple steps, you will set up an IAM role with specifically-scoped permissions that ZenML can use to authenticate with the relevant AWS resources.
 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full AWS ZenML cloud stack already?
 
-Check out the
-[in-browser stack deployment wizard](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
-the [stack registration wizard](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),
-or [the ZenML AWS Terraform module](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
+Check out the [in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
+the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),\
+or [the ZenML AWS Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
 for a shortcut on how to deploy & register this stack.
 {% endhint %}
-
 
 ## 1) Set up credentials and local environment
 
@@ -27,8 +26,8 @@ To follow this guide, you need:
 
 Once ready, navigate to the AWS console:
 
-1. Choose an AWS region In the AWS console, choose the region where you want to deploy your ZenML stack resources. Make note of the region name (e.g., `us-east-1`, `eu-west-2`, etc.) as you will need it in subsequent steps.
-2. Create an IAM role
+1. Choose an AWS region: In the AWS console, choose the region where you want to deploy your ZenML stack resources. Make note of the region name (e.g., `us-east-1`, `eu-west-2`, etc.) as you will need it in subsequent steps.
+2. Create an IAM role:
 
 For this, you'll need to find out your AWS account ID. You can find this by running:
 
@@ -66,7 +65,7 @@ aws iam create-role --role-name zenml-role --assume-role-policy-document file://
 
 Be sure to take note of the information that is output to the terminal, as you will need it in the next steps, especially the Role ARN.
 
-1. Attach policies to the role
+3. Attach policies to the role:
 
 Attach the following policies to the role to grant access to the necessary AWS services:
 
@@ -80,7 +79,7 @@ aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:
 aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
 ```
 
-1. If you have not already, install the AWS and S3 ZenML integrations:
+4. If you have not already, install the AWS and S3 ZenML integrations:
 
 ```shell
 zenml integration install aws s3 -y
@@ -120,7 +119,7 @@ aws s3api create-bucket --bucket your-bucket-name
 
 Once this is done, you can create the ZenML stack component as follows:
 
-1. Register an S3 Artifact Store with the connector
+2. Register an S3 Artifact Store with the connector:
 
 ```shell
 zenml artifact-store register cloud_artifact_store -f s3 --path=s3://bucket-name --connector aws_connector
@@ -144,7 +143,7 @@ By creating a SageMaker domain, you establish the necessary environment and perm
 
 Once this is done, you can create the ZenML stack component as follows:
 
-1. Register a SageMaker Pipelines orchestrator stack component:
+2. Register a SageMaker Pipelines orchestrator stack component:
 
 You'll need the IAM role ARN that we noted down earlier to register the orchestrator. This is the 'execution role' ARN you need to pass to the orchestrator.
 
@@ -168,7 +167,7 @@ aws ecr create-repository --repository-name zenml --region <YOUR_REGION>
 
 Once this is done, you can create the ZenML stack component as follows:
 
-1. Register an ECR container registry stack component:
+2. Register an ECR container registry stack component:
 
 ```shell
 zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com --connector aws-connector
@@ -286,16 +285,11 @@ Now that you have a functional AWS stack set up with ZenML, you can explore more
 * Explore ZenML's [integrations](https://docs.zenml.io/stacks) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
 
-By leveraging the power of AWS and ZenML, you can streamline your machine
-learning workflows, improve collaboration, and deploy production-ready pipelines
-with ease. What follows is a set of best practices for using your AWS stack with ZenML.
+By leveraging the power of AWS and ZenML, you can streamline your machine learning workflows, improve collaboration, and deploy production-ready pipelines with ease. What follows is a set of best practices for using your AWS stack with ZenML.
 
 ## Best Practices for Using an AWS Stack with ZenML
 
-When working with an AWS stack in ZenML, consider the following best practices
-to optimize your workflow, enhance security, and improve cost-efficiency. These
-are all things you might want to do or amend in your own setup once you have
-tried running some pipelines on your AWS stack.
+When working with an AWS stack in ZenML, consider the following best practices to optimize your workflow, enhance security, and improve cost-efficiency. These are all things you might want to do or amend in your own setup once you have tried running some pipelines on your AWS stack.
 
 ### Use IAM Roles and Least Privilege Principle
 
@@ -305,13 +299,11 @@ Always adhere to the principle of least privilege when setting up IAM roles. Onl
 
 Implement a [consistent tagging strategy](https://aws.amazon.com/solutions/guidance/tagging-on-aws/) for all of your AWS resources that you use for your pipelines. For example, if you have S3 as an artifact store in your stack, you should tag it like shown below:
 
-
 ```shell
 aws s3api put-bucket-tagging --bucket your-bucket-name --tagging 'TagSet=[{Key=Project,Value=ZenML},{Key=Environment,Value=Production}]'
 ```
 
-These tags will help you with billing and cost allocation tracking and also with
-any cleanup efforts.
+These tags will help you with billing and cost allocation tracking and also with any cleanup efforts.
 
 ### Implement Cost Management Strategies
 

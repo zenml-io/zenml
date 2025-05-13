@@ -211,6 +211,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return ScheduleResponse(
             id=self.id,
+            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

@@ -790,7 +790,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         # of the certificate files.
         validate_assignment=False,
         # Forbid extra attributes set in the class.
-        extra="forbid",
+        extra="ignore",
     )
 
 
@@ -1155,19 +1155,7 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize_database(self) -> None:
         """Initialize the database if not already initialized."""
-        # When running in a Pro ZenML server, the default project is not
-        # created on database initialization but on server onboarding.
-        create_default_project = True
-        if ENV_ZENML_SERVER in os.environ:
-            from zenml.config.server_config import ServerConfiguration
-
-            if (
-                ServerConfiguration.get_server_config().deployment_type
-                == ServerDeploymentType.CLOUD
-            ):
-                create_default_project = False
-
-        if create_default_project:
+        if self._default_project_enabled:
             # Make sure the default project exists
             self._get_or_create_default_project()
         # Make sure the default stack exists
@@ -5022,6 +5010,24 @@ class SqlZenStore(BaseZenStore):
         new_run = PipelineRunSchema.from_request(pipeline_run)
 
         session.add(new_run)
+
+        # Add logs entry for the run if exists
+        if pipeline_run.logs is not None:
+            self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=StackComponentSchema,
+                reference_id=pipeline_run.logs.artifact_store_id,
+                session=session,
+                reference_type="logs artifact store",
+            )
+
+            log_entry = LogsSchema(
+                uri=pipeline_run.logs.uri,
+                pipeline_run_id=new_run.id,
+                artifact_store_id=pipeline_run.logs.artifact_store_id,
+            )
+            session.add(log_entry)
+
         try:
             session.commit()
         except IntegrityError:
@@ -5068,7 +5074,10 @@ class SqlZenStore(BaseZenStore):
         return new_run.to_model(include_metadata=True, include_resources=True)
 
     def get_run(
-        self, run_id: UUID, hydrate: bool = True
+        self,
+        run_id: UUID,
+        hydrate: bool = True,
+        include_python_packages: bool = False,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -5076,6 +5085,8 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_python_packages: Flag deciding whether to include the
+                python packages in the response.
 
         Returns:
             The pipeline run.
@@ -5087,7 +5098,9 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             return run.to_model(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                include_python_packages=include_python_packages,
             )
 
     def _replace_placeholder_run(
@@ -7635,6 +7648,17 @@ class SqlZenStore(BaseZenStore):
                                 },
                                 session=session,
                             )
+                    if (
+                        defined_component.type
+                        == StackComponentType.ARTIFACT_STORE
+                    ):
+                        if defined_component.flavor != "local":
+                            self._update_onboarding_state(
+                                completed_steps={
+                                    OnboardingStep.STACK_WITH_REMOTE_ARTIFACT_STORE_CREATED
+                                },
+                                session=session,
+                            )
 
                 return new_stack_schema.to_model(
                     include_metadata=True, include_resources=True
@@ -8466,6 +8490,12 @@ class SqlZenStore(BaseZenStore):
                     completed_onboarding_steps.update(
                         {
                             OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
+                        }
+                    )
+                if stack_metadata["artifact_store"] != "local":
+                    completed_onboarding_steps.update(
+                        {
+                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
                             OnboardingStep.PRODUCTION_SETUP_COMPLETED,
                         }
                     )
@@ -9405,7 +9435,8 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             if (
-                existing_project.name == self._default_project_name
+                self._default_project_enabled
+                and existing_project.name == self._default_project_name
                 and "name" in project_update.model_fields_set
                 and project_update.name != existing_project.name
             ):
@@ -9446,7 +9477,10 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ProjectSchema,
                 session=session,
             )
-            if project.name == self._default_project_name:
+            if (
+                self._default_project_enabled
+                and project.name == self._default_project_name
+            ):
                 raise IllegalOperationError(
                     "The default project cannot be deleted."
                 )
@@ -9506,6 +9540,27 @@ class SqlZenStore(BaseZenStore):
             return self.create_project(
                 ProjectRequest(name=default_project_name)
             )
+
+    @property
+    def _default_project_enabled(self) -> bool:
+        """Check if the default project is enabled.
+
+        When running in a Pro ZenML server, the default project is not enabled.
+
+        Returns:
+            True if the default project is enabled, False otherwise.
+        """
+        default_project_enabled = True
+        if ENV_ZENML_SERVER in os.environ:
+            from zenml.config.server_config import ServerConfiguration
+
+            if (
+                ServerConfiguration.get_server_config().deployment_type
+                == ServerDeploymentType.CLOUD
+            ):
+                default_project_enabled = False
+
+        return default_project_enabled
 
     # =======================
     # Internal helper methods
@@ -9880,7 +9935,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             project_id = project.id
-        else:
+        elif self._default_project_enabled:
             # Use the default project as a last resort.
             try:
                 project = self._get_schema_by_name_or_id(
@@ -9891,6 +9946,8 @@ class SqlZenStore(BaseZenStore):
                 project_id = project.id
             except KeyError:
                 raise ValueError("Project scope missing from the filter")
+        else:
+            raise ValueError("Project scope missing from the filter")
 
         filter_model.project = project_id
 
@@ -10723,32 +10780,6 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate, include_resources=True
             )
 
-    def _set_filter_model_id(
-        self,
-        filter_model: ModelVersionFilter,
-        session: Session,
-    ) -> None:
-        """Set the model ID on a filter model.
-
-        Args:
-            filter_model: The filter model to set the model ID on.
-            session: The DB session to use to use for queries.
-
-        Raises:
-            ValueError: if the filter is not scoped to a model.
-        """
-        if filter_model.model:
-            model = self._get_schema_by_name_or_id(
-                object_name_or_id=filter_model.model,
-                schema_class=ModelSchema,
-                project_name_or_id=filter_model.project,
-                session=session,
-            )
-        else:
-            raise ValueError("Model ID missing from the filter")
-
-        filter_model.model = model.id
-
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilter,
@@ -10770,11 +10801,6 @@ class SqlZenStore(BaseZenStore):
                 filter_model=model_version_filter_model,
                 session=session,
             )
-            self._set_filter_model_id(
-                filter_model=model_version_filter_model,
-                session=session,
-            )
-
             query = select(ModelVersionSchema)
 
             return self.filter_and_paginate(

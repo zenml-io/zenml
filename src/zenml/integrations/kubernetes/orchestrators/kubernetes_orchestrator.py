@@ -417,6 +417,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 )
 
         pipeline_name = deployment.pipeline_configuration.name
+        settings = cast(
+            KubernetesOrchestratorSettings, self.get_settings(deployment)
+        )
 
         # We already make sure the orchestrator run name has the correct length
         # to make sure we don't cut off the randomized suffix later when
@@ -427,8 +430,16 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name, max_length=max_length
         )
+
+        if settings.pod_name_prefix:
+            pod_name = get_orchestrator_run_name(
+                settings.pod_name_prefix, max_length=max_length
+            )
+        else:
+            pod_name = orchestrator_run_name
+
         pod_name = kube_utils.sanitize_pod_name(
-            orchestrator_run_name, namespace=self.config.kubernetes_namespace
+            pod_name, namespace=self.config.kubernetes_namespace
         )
 
         assert stack.container_registry
@@ -453,10 +464,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
             run_id=placeholder_run.id if placeholder_run else None,
-        )
-
-        settings = cast(
-            KubernetesOrchestratorSettings, self.get_settings(deployment)
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
@@ -543,14 +550,23 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 mount_local_stores=self.config.is_local,
             )
 
-            self._k8s_core_api.create_namespaced_pod(
+            kube_utils.create_and_wait_for_pod_to_start(
+                core_api=self._k8s_core_api,
+                pod_display_name="Kubernetes orchestrator pod",
+                pod_name=pod_name,
+                pod_manifest=pod_manifest,
                 namespace=self.config.kubernetes_namespace,
-                body=pod_manifest,
+                startup_max_retries=settings.pod_failure_max_retries,
+                startup_failure_delay=settings.pod_failure_retry_delay,
+                startup_failure_backoff=settings.pod_failure_backoff,
+                startup_timeout=settings.pod_startup_timeout,
             )
 
             # Wait for the orchestrator pod to finish and stream logs.
             if settings.synchronous:
-                logger.info("Waiting for Kubernetes orchestrator pod...")
+                logger.info(
+                    "Waiting for Kubernetes orchestrator pod to finish..."
+                )
                 kube_utils.wait_pod(
                     kube_client_fn=self.get_kube_client,
                     pod_name=pod_name,

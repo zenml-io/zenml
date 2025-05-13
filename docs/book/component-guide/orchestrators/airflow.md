@@ -133,7 +133,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 
 #### Scheduling
 
-You can [schedule pipeline runs](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline) on Airflow similarly to other orchestrators. However, note that**Airflow schedules always need to be set in the past**, e.g.,:
+You can [schedule pipeline runs](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) on Airflow similarly to other orchestrators. However, note that**Airflow schedules always need to be set in the past**, e.g.,:
 
 ```python
 from datetime import datetime, timedelta
@@ -163,11 +163,11 @@ The username will always be `admin`.
 
 #### Additional configuration
 
-For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow.html#zenml.integrations.airflow) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/) for more information on how to specify settings.
+For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow.html#zenml.integrations.airflow) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration/) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/user-guides/tutorial/distributed-training/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 #### Using different Airflow operators
 
@@ -234,7 +234,7 @@ To run a pipeline in Airflow, ZenML creates a Zip archive that contains two file
 
 If you need more control over how the Airflow DAG is generated, you can provide a custom DAG generator file using the setting `custom_dag_generator`. This setting will need to reference a Python module that can be imported into your active Python environment. It will additionally need to contain the same classes (`DagConfiguration` and `TaskConfiguration`) and constants (`ENV_ZENML_AIRFLOW_RUN_ID`, `ENV_ZENML_LOCAL_STORES_PATH` and `CONFIG_FILENAME`) as the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag_generator.py) . For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
-Check out our docs on how to apply settings to your pipelines [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/).
+Check out our docs on how to apply settings to your pipelines [here](https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration/).
 
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow.html#zenml.integrations.airflow) .
 

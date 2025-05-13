@@ -115,7 +115,7 @@ One common approach is to separate your workspaces based on the development stag
 
 This separation allows for a clear distinction between experimental work and production-ready systems, reducing the risk of untested changes affecting live services.
 
-![Staging vs production workspaces](../../.gitbook/assets/staging-production-workspaces.png)
+![Staging vs production workspaces](../../.gitbook/assets/staging-production-tenants.png)
 
 ### Organizing workspaces by business logic
 
@@ -140,7 +140,7 @@ This organization method offers several benefits:
 * Better alignment with team structures and workflows
 * Enhanced data security and compliance management
 
-![Business logic-based workspace organization](../../.gitbook/assets/business-logic-workspaces.png)
+![Business logic-based workspace organization](../../.gitbook/assets/staging-production-tenants.png)
 
 Of course, both approaches of organizing your workspaces can be mixed and matched to create a structure that works best for you.
 

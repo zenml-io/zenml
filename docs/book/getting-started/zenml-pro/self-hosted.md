@@ -5,7 +5,11 @@ icon: box
 
 # Self-hosted deployment
 
-This page provides instructions for installing ZenML Pro - the ZenML Pro Control Plane and one or more ZenML Pro Workspace servers - on-premise in a Kubernetes cluster.
+This page provides instructions for installing ZenML Pro - the ZenML Pro Control
+Plane and one or more ZenML Pro Workspace servers - on-premise in a Kubernetes
+cluster. For more general information on deploying ZenML, visit [our
+documentation](https://docs.zenml.io/getting-started/deploying-zenml) where we
+explain the different options you have.
 
 ## Overview
 
@@ -14,7 +18,7 @@ ZenML Pro can be installed as a self-hosted deployment. You need to be granted a
 This document will guide you through the process.
 
 {% hint style="info" %}
-Please note that the SSO (Single Sign-On) and [Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) (i.e. running pipelines from the dashboard) features are currently not available in the on-prem version of ZenML Pro. These features are on our roadmap and will be added in future releases.
+Please note that the SSO (Single Sign-On) feature is currently not available in the on-prem version of ZenML Pro. This feature is on our roadmap and will be added in future releases.
 {% endhint %}
 
 ## Preparation and prerequisites
@@ -914,7 +918,7 @@ However, this feature is currently supported with helper Python scripts, as desc
 
 The script will prompt you for the URL of your deployment, the admin account email and admin account password and finally the location of your `users.yml` file.
 
-![](../../.gitbook/assets/on-prem-01.png)
+![](.gitbook/assets/on-prem-01.png)
 
 ### Create an Organization
 
@@ -924,29 +928,29 @@ The ZenML Pro admin user should only be used for administrative operations: crea
 
 Head on over to your deployment in the browser and use one of the users you just created to log in.
 
-![](../../.gitbook/assets/on-prem-02.png)
+![](.gitbook/assets/on-prem-02.png)
 
 After logging in for the first time, you will need to create a new password. (Be aware: For the time being only the admin account will be able to reset this password)
 
-![](../../.gitbook/assets/on-prem-03.png)
+![](.gitbook/assets/on-prem-03.png)
 
 Finally you can create an Organization. This Organization will host all the workspaces you enroll at the next stage.
 
-![](../../.gitbook/assets/on-prem-04.png)
+![](.gitbook/assets/on-prem-04.png)
 
 ### Invite Other Users to the Organization
 
 Now you can invite your whole team to the org. For this open the drop-down in the top right and head over to the settings.
 
-![](../../.gitbook/assets/on-prem-05.png)
+![](.gitbook/assets/on-prem-05.png)
 
 Here in the members tab, add all the users you created in the previous step.
 
-![](../../.gitbook/assets/on-prem-06.png)
+![](.gitbook/assets/on-prem-06.png)
 
 For each user, finally head over to the Pending invited screen and copy the invite link for each user.
 
-![](../../.gitbook/assets/on-prem-07.png)
+![](.gitbook/assets/on-prem-07.png)
 
 Finally, send the invitation link, along with the account's email and initial password over to your team members.
 
@@ -1467,17 +1471,17 @@ If you use TLS certificates for the ZenML Pro control plane or workspace server 
 
 The newly enrolled workspace should be accessible in the ZenML Pro workspace dashboard and the CLI now. You need to login as an organization member and add yourself as a workspace member first):
 
-![](../../.gitbook/assets/on-prem-08.png)
+![](.gitbook/assets/on-prem-08.png)
 
-![](../../.gitbook/assets/on-prem-09.png)
+![](.gitbook/assets/on-prem-09.png)
 
-![](../../.gitbook/assets/on-prem-10.png)
+![](.gitbook/assets/on-prem-10.png)
 
 Then follow the instructions in the checklist to unlock the full dashboard:
 
-![](../../.gitbook/assets/on-prem-11.png)
+![](.gitbook/assets/on-prem-11.png)
 
-![](../../.gitbook/assets/on-prem-12.png)
+![](.gitbook/assets/on-prem-12.png)
 
 #### Accessing the Workspace from the ZenML CLI
 
@@ -1493,6 +1497,127 @@ Alternatively, you can set the `ZENML_PRO_API_URL` environment variable:
 export ZENML_PRO_API_URL=https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
 zenml login
 ```
+
+## Enabling Run Templates Support
+
+The ZenML Pro workspace server can be configured to optionally support Run Templates - the ability to run pipelines straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
+
+{% hint style="warning" %}
+The Run Templates feature is only available from ZenML workspace server version 0.81.0 onwards.
+{% endhint %}
+
+The Run Templates feature comes with some optional sub-features that can be turned on or off to customize the behavior of the feature:
+
+* **Building runner container images**: Running pipelines from the dashboard relies on Kubernetes jobs (aka "runner" jobs) that are triggered by the ZenML workspace server. These jobs need to use container images that have the correct Python software packages installed on them to be able to launch the pipelines.
+
+    The good news is that run templates are based on pipeline runs that have already run in the past and already have container images built and associated with them. The same container images can be reused by the ZenML workspace server for the "runner jobs". However, for this to work, the Kubernetes cluster itself has to be able to access the container registries where these images are stored. This can be achieved in several ways:
+
+    * use implicit workload identity access to the container registry - available in most cloud providers by granting the Kubernetes service account access to the container registry
+    * configure a service account with implicit access to the container registry - associating some cloud service identity (e.g. a GCP service account, an AWS IAM role, etc.) with the Kubernetes service account used by the "runner" jobs
+    * configure an image pull secret for the service account - similar to the previous option, but using a Kubernetes secret instead of a cloud service identity
+
+    When none of the above are available or desirable, an alternative approach is to configure the ZenML workspace server itself to build these "runner" container images and push them to a different container registry. This can be achieved by setting the `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` environment variable to `true` and the `ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY` environment variable to the container registry where the "runner" images will be pushed.
+
+    Yet another alternative is to configure the ZenML workspace server to use a single pre-built "runner" image for all the pipeline runs. This can be achieved by keeping `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` environment variable set to `false` and the `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` environment variable set to the container image registry URI where the "runner" image is stored. Note that this image needs to have all requirements installed to instantiate the stack that will be used for the template run. 
+
+* **Store logs externally**: By default, the ZenML workspace server will use the logs extracted from the "runner" job pods to populate the run template logs shown in the ZenML dashboard. These pods may disappear after a while, so the logs may not be available anymore.
+
+    To avoid this, you can configure the ZenML workspace server to store the logs in an external location, like an S3 bucket. This can be achieved by setting the `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` environment variable to `true`.
+
+    This option is only currently available with the AWS implementation of the Run Templates feature and also requires the `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` environment variable to be set to point to the S3 bucket where the logs will be stored.
+
+1. Decide on an implementation.
+
+    There are currently three different implementations of the Run Templates feature:
+
+    * **Kubernetes**: runs pipelines in the same Kubernetes cluster as the ZenML Pro workspace server.
+    * **AWS**: extends the Kubernetes implementation to be able to build and push container images to AWS ECR and to store run the template logs in AWS S3.
+    * **GCP**: currently, this is the same as the Kubernetes implementation, but we plan to extend it to be able to push container images to GCP GCR and to store run template logs in GCP GCS.
+
+    If you're going for a fast, minimalistic setup, you should go for the Kubernetes implementation. If you want a complete cloud provider solution with all features enabled, you should go for the AWS implementation.
+
+2. Prepare Run Templates configuration.
+    
+    You'll need to prepare a list of environment variables that will be added to the Helm chart values used to deploy the ZenML workspace server.
+    
+    For all implementations, the following variables are supported:
+    
+    * `ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE` (mandatory): one of the values associated with the implementation you've chosen in step 1:
+        * `zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager`
+        * `zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager`
+        * `zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager`
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` (mandatory): the Kubernetes namespace where the "runner" jobs will be launched. It must exist before the run templates are enabled.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` (mandatory): the Kubernetes service account to use for the "runner" jobs. It must exist before the run templates are enabled.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` (optional): whether to build the "runner" container images or not. Defaults to `false`.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY` (optional): the container registry where the "runner" images will be pushed. Mandatory if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `true`, ignored otherwise.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` (optional): the "runner" container image to use. Only used if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `false`, ignored otherwise.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` (optional): whether to store the logs of the "runner" jobs in an external location. Defaults to `false`. Currently only supported with the AWS implementation and requires the `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` variable to be set as well.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES` (optional): the Kubernetes pod resources specification to use for the "runner" jobs, in JSON format. Example: `{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}`.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED` (optional): the time in seconds after which to cleanup finished jobs and their pods. Defaults to 2 days.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR` (optional): the Kubernetes node selector to use for the "runner" jobs, in JSON format. Example: `{"node-pool": "zenml-pool"}`.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS` (optional): the Kubernetes tolerations to use for the "runner" jobs, in JSON format. Example: `[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]`.
+    * `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` (optional): the maximum number of concurrent run templates that can be started at the same time by each server container or pod. Defaults to 2. If a client exceeds this number, the request will be rejected with a 429 Too Many Requests HTTP error. Note that this only limits the number of parallel run templates that can be *started* at the same time, not the number of parallel pipeline runs.
+
+    For the AWS implementation, the following additional variables are supported:
+
+    * `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` (optional): the S3 bucket where the logs will be stored (e.g. `s3://my-bucket/run-template-logs`). Mandatory if `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` is set to `true`.
+    * `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION` (optional): the AWS region where the container images will be pushed (e.g. `eu-central-1`). Mandatory if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `true`.
+
+3. Create the Kubernetes resources.
+
+    For the Kubernetes implementation, you'll need to create the following resources:
+
+    * the Kubernetes namespace passed in the `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` variable.
+    * the Kubernetes service account passed in the `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` variable. This service account will be used to build images and run the "runner" jobs, so it needs to have the necessary permissions to do so (e.g. access to the container images, permissions to push container images to the configured container registry, permissions to access the configured bucket, etc.).
+
+4. Finally, update the ZenML workspace server configuration to use the new implementation.
+
+    The environment variables you prepared in step 2 need to be added to the Helm chart values used to deploy the ZenML workspace server and the ZenML server has to be updated as covered in the [Day 2 Operations: Upgrades and Updates](self-hosted.md#day-2-operations-upgrades-and-updates) section.
+
+    Example updated Helm values file (minimal configuration):
+
+    ```yaml
+    zenml:
+        environment:
+            ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+    ```
+
+    Example updated Helm values file (full AWS configuration):
+
+    ```yaml
+    zenml:
+        environment:
+            ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: 339712793861.dkr.ecr.eu-central-1.amazonaws.com
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS: "true"
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+            ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET: s3://my-bucket/run-template-logs
+            ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION: eu-central-1
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
+            ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
+    ```
+
+    Example updated Helm values file (full GCP configuration):
+
+    ```yaml
+    zenml:
+        environment:
+            ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-run-templates/zenml
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
+            ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
+    ```
 
 ## Day 2 Operations: Upgrades and Updates
 

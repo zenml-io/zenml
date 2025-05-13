@@ -82,7 +82,7 @@ class DockerServerDeploymentConfig(LocalServerDeploymentConfig):
         """
         return f"http://{DEFAULT_LOCAL_SERVICE_IP_ADDRESS}:{self.port}"
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
 
 class DockerZenServerConfig(ContainerServiceConfig):

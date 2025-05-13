@@ -45,6 +45,7 @@ from zenml.models.v2.base.scoped import (
     RunMetadataFilterMixin,
     TaggableFilter,
 )
+from zenml.models.v2.core.logs import LogsRequest
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
 from zenml.utils.tag_utils import Tag
@@ -55,6 +56,7 @@ if TYPE_CHECKING:
     from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
+    from zenml.models.v2.core.logs import LogsResponse
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_build import (
         PipelineBuildResponse,
@@ -102,14 +104,7 @@ class PipelineRunRequest(ProjectScopedRequest):
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
     )
-    client_environment: Dict[str, str] = Field(
-        default={},
-        title=(
-            "Environment of the client that initiated this pipeline run "
-            "(OS, Python version, etc.)."
-        ),
-    )
-    orchestrator_environment: Dict[str, str] = Field(
+    orchestrator_environment: Dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the orchestrator that executed this pipeline run "
@@ -123,6 +118,10 @@ class PipelineRunRequest(ProjectScopedRequest):
     tags: Optional[List[Union[str, Tag]]] = Field(
         default=None,
         title="Tags of the pipeline run.",
+    )
+    logs: Optional[LogsRequest] = Field(
+        default=None,
+        title="Logs of the pipeline run.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -208,14 +207,14 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         title="The end time of the pipeline run.",
         default=None,
     )
-    client_environment: Dict[str, str] = Field(
+    client_environment: Dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the client that initiated this pipeline run "
             "(OS, Python version, etc.)."
         ),
     )
-    orchestrator_environment: Dict[str, str] = Field(
+    orchestrator_environment: Dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the orchestrator that executed this pipeline run "
@@ -251,6 +250,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
+    )
+    logs: Optional["LogsResponse"] = Field(
+        title="Logs associated with this pipeline run.",
+        default=None,
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -499,7 +502,7 @@ class PipelineRunResponse(
         return self.get_metadata().end_time
 
     @property
-    def client_environment(self) -> Dict[str, str]:
+    def client_environment(self) -> Dict[str, Any]:
         """The `client_environment` property.
 
         Returns:
@@ -508,7 +511,7 @@ class PipelineRunResponse(
         return self.get_metadata().client_environment
 
     @property
-    def orchestrator_environment(self) -> Dict[str, str]:
+    def orchestrator_environment(self) -> Dict[str, Any]:
         """The `orchestrator_environment` property.
 
         Returns:
@@ -578,6 +581,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().tags
+
+    @property
+    def logs(self) -> Optional["LogsResponse"]:
+        """The `logs` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().logs
 
 
 # ------------------ Filter Model ------------------

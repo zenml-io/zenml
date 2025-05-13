@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes pod settings."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import field_validator
 
@@ -33,10 +33,13 @@ class KubernetesPodSettings(BaseSettings):
         volumes: Volumes to mount in the pod.
         volume_mounts: Volume mounts to apply to the pod containers.
         host_ipc: Whether to enable host IPC for the pod.
+        scheduler_name: The name of the scheduler to use for the pod.
         image_pull_secrets: Image pull secrets to use for the pod.
         labels: Labels to apply to the pod.
         env: Environment variables to apply to the container.
         env_from: Environment variables to apply to the container.
+        additional_pod_spec_args: Additional arguments to pass to the pod. These
+            will be applied to the pod spec.
     """
 
     node_selectors: Dict[str, str] = {}
@@ -47,10 +50,12 @@ class KubernetesPodSettings(BaseSettings):
     volumes: List[Dict[str, Any]] = []
     volume_mounts: List[Dict[str, Any]] = []
     host_ipc: bool = False
+    scheduler_name: Optional[str] = None
     image_pull_secrets: List[str] = []
     labels: Dict[str, str] = {}
     env: List[Dict[str, Any]] = []
     env_from: List[Dict[str, Any]] = []
+    additional_pod_spec_args: Dict[str, Any] = {}
 
     @field_validator("volumes", mode="before")
     @classmethod
