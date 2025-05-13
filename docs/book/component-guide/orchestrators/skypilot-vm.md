@@ -79,7 +79,7 @@ We need first to install the SkyPilot integration for AWS and the AWS connectors
 ```
 
 {% hint style="warning" %}
-Please note that cuurently the ZenML Skypilot integration is **pip-incompatible** with the AWS and Azure integrations, therefore executing `zenml integration install X skypilot_X` will not work.
+Please note that currently the ZenML Skypilot integration is **pip-incompatible** with the AWS and Azure integrations, therefore executing `zenml integration install X skypilot_X` will not work.
 
 Since the working with a skypilot stack requires you to use a remote artifact store and container registry, please install the requirements of these components with pip to avoid any installation problems.
 {% endhint %}
