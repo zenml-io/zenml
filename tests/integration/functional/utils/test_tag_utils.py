@@ -230,3 +230,4 @@ def test_cascade_tags_for_output_artifacts_of_cached_pipeline_run(
         .outputs["single"][0]
         .tags
     ]
+    os.environ.pop(ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, None)
