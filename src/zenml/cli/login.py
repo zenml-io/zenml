@@ -1061,7 +1061,7 @@ def logout(
             if clear:
                 credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
-                f"Logged out from {server}."
+                f"Logged out from {server}.\n"
                 f"Hint: You can run `zenml login '{server}'` to log in again "
                 "to the same server or 'zenml server list' to view other available "
                 "servers that you can connect to with 'zenml login <server-url>'."

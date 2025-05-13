@@ -523,6 +523,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 pod_settings=orchestrator_pod_settings,
                 env=environment,
                 mount_local_stores=self.config.is_local,
+                successful_jobs_history_limit=settings.successful_jobs_history_limit,
+                failed_jobs_history_limit=settings.failed_jobs_history_limit,
+                ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
             )
 
             self._k8s_batch_api.create_namespaced_cron_job(
