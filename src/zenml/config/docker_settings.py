@@ -214,7 +214,7 @@ class DockerSettings(BaseSettings):
         PythonPackageInstaller.PIP
     )
     python_package_installer_args: Dict[str, Any] = {}
-    disable_automatic_requirements_detection: bool = False
+    disable_automatic_requirements_detection: bool = True
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod, bool]
     ] = Field(default=None, union_mode="left_to_right")

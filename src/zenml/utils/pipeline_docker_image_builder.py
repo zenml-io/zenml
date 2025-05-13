@@ -449,7 +449,6 @@ class PipelineDockerImageBuilder:
 
         if not any(
             [
-                docker_settings.disable_automatic_requirements_detection,
                 docker_settings.replicate_local_python_environment,
                 requirements,
                 pyproject_path,
@@ -465,6 +464,28 @@ class PipelineDockerImageBuilder:
             elif os.path.exists(pyproject_file_path):
                 implicit_requirements = True
                 pyproject_path = pyproject_file_path
+
+        if (
+            implicit_requirements
+            and docker_settings.disable_automatic_requirements_detection
+        ):
+            # TODO: This is only temporary to log a warning notifying users
+            # that we will soon switch the default behavior to
+            # `disable_automatic_requirements_detection=False`. Remove and
+            # adjust the logic once we've made this change.
+            if log:
+                logger.warning(
+                    "Detected `requirements.txt` or `pyproject.toml` files in "
+                    "the source root. In future versions of ZenML, these will "
+                    "be automatically picked up and installed in Docker images "
+                    "by default. To disable this behavior and keep the "
+                    "current behavior, set "
+                    "`DockerSettings.disable_automatic_requirements_detection` "
+                    "to `True`."
+                )
+            implicit_requirements = False
+            requirements = None
+            pyproject_path = None
 
         requirements_files: List[Tuple[str, str, List[str]]] = []
 
