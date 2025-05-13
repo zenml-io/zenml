@@ -144,12 +144,21 @@ def test_tag_utils(clean_client):
         )
 
 
+@pipeline(
+    tags=[Tag(name="cascade_tag", cascade=True)],
+    enable_cache=False,
+)
+def pipeline_with_cascade_tag():
+    """Pipeline definition to test the tag utils."""
+    _ = step_single_output()
+
+
 def test_cascade_tags_for_output_artifacts_of_cached_pipeline_run(
     clean_client,
 ):
     """Test that the cascade tags are added to the output artifacts of a cached step."""
     # Run the pipeline once without caching
-    pipeline_to_tag()
+    pipeline_with_cascade_tag()
 
     pipeline_runs = clean_client.list_pipeline_runs(sort_by="created")
     assert len(pipeline_runs.items) == 1
@@ -166,8 +175,8 @@ def test_cascade_tags_for_output_artifacts_of_cached_pipeline_run(
     ]
 
     # Run it once again with caching
-    pipeline_to_tag.configure(enable_cache=True)
-    pipeline_to_tag()
+    pipeline_with_cascade_tag.configure(enable_cache=True)
+    pipeline_with_cascade_tag()
     pipeline_runs = clean_client.list_pipeline_runs(sort_by="created")
     assert len(pipeline_runs.items) == 2
     assert (
@@ -176,10 +185,10 @@ def test_cascade_tags_for_output_artifacts_of_cached_pipeline_run(
     )
 
     # Run it once again with caching and a new cascade tag
-    pipeline_to_tag.configure(
+    pipeline_with_cascade_tag.configure(
         tags=[Tag(name="second_cascade_tag", cascade=True)]
     )
-    pipeline_to_tag()
+    pipeline_with_cascade_tag()
     pipeline_runs = clean_client.list_pipeline_runs(sort_by="created")
     assert len(pipeline_runs.items) == 3
     assert (
@@ -204,10 +213,10 @@ def test_cascade_tags_for_output_artifacts_of_cached_pipeline_run(
 
     # Run it once again with caching (preventing client side caching) and a new cascade tag
     os.environ[ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING] = "true"
-    pipeline_to_tag.configure(
+    pipeline_with_cascade_tag.configure(
         tags=[Tag(name="third_cascade_tag", cascade=True)]
     )
-    pipeline_to_tag()
+    pipeline_with_cascade_tag()
 
     pipeline_runs = clean_client.list_pipeline_runs(sort_by="created")
     assert len(pipeline_runs.items) == 4
