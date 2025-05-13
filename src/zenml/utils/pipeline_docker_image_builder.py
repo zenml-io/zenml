@@ -68,6 +68,11 @@ PIP_DEFAULT_ARGS = {
 }
 UV_DEFAULT_ARGS = {"no-cache-dir": None}
 
+DEFAULT_PYPROJECT_EXPORT_COMMANDS = [
+    "uv export --format=requirements-txt --directory={directory} --no-hashes --no-emit-project",
+    "poetry export --format=requirements.txt --directory={directory} --without-hashes",
+]
+
 
 class PipelineDockerImageBuilder:
     """Builds Docker images to run a ZenML pipeline."""
@@ -156,10 +161,11 @@ class PipelineDockerImageBuilder:
         requires_zenml_build = any(
             [
                 docker_settings.requirements,
+                docker_settings.pyproject_path,
                 docker_settings.required_integrations,
-                docker_settings.required_hub_plugins,
                 docker_settings.replicate_local_python_environment,
                 docker_settings.install_stack_requirements,
+                docker_settings.local_project_install_command,
                 docker_settings.apt_packages,
                 docker_settings.environment,
                 include_files,
@@ -434,8 +440,56 @@ class PipelineDockerImageBuilder:
             - Packages installed in the local Python environment
             - Requirements defined by stack integrations
             - Requirements defined by user integrations
+            - Requirements exported from a pyproject.toml
             - User-defined requirements
         """
+        implicit_requirements = False
+        pyproject_path = docker_settings.pyproject_path
+        requirements = docker_settings.requirements
+
+        if not any(
+            [
+                docker_settings.replicate_local_python_environment,
+                requirements,
+                pyproject_path,
+            ]
+        ):
+            root = source_utils.get_source_root()
+            requirements_path = os.path.join(root, "requirements.txt")
+            pyproject_file_path = os.path.join(root, "pyproject.toml")
+
+            if os.path.exists(requirements_path):
+                implicit_requirements = True
+                requirements = requirements_path
+            elif os.path.exists(pyproject_file_path):
+                implicit_requirements = True
+                pyproject_path = pyproject_file_path
+
+        if (
+            implicit_requirements
+            and docker_settings.disable_automatic_requirements_detection
+        ):
+            # TODO: This is only temporary to log a warning notifying users
+            # that we will soon switch the default behavior to
+            # `disable_automatic_requirements_detection=False`. Remove and
+            # adjust the logic once we've made this change.
+            if log:
+                logger.warning(
+                    "Detected `requirements.txt` or `pyproject.toml` files in "
+                    "the source root. In future versions of ZenML, these will "
+                    "be automatically picked up and installed in Docker images "
+                    "by default. To disable this behavior and keep the "
+                    "current behavior, set "
+                    "`DockerSettings.disable_automatic_requirements_detection` "
+                    "to `True`. If you want to enable this behavior right away, "
+                    "you can do so by setting "
+                    "`DockerSettings.disable_automatic_requirements_detection` "
+                    "to `False`."
+                )
+            implicit_requirements = False
+            requirements = None
+            pyproject_path = None
+
         requirements_files: List[Tuple[str, str, List[str]]] = []
 
         # Generate requirements file for the local environment if configured
@@ -447,6 +501,10 @@ class PipelineDockerImageBuilder:
                 command = (
                     docker_settings.replicate_local_python_environment.command
                 )
+            elif isinstance(
+                docker_settings.replicate_local_python_environment, bool
+            ):
+                command = PythonEnvironmentExportMethod.PIP_FREEZE.command
             else:
                 command = " ".join(
                     docker_settings.replicate_local_python_environment
@@ -520,9 +578,69 @@ class PipelineDockerImageBuilder:
                     ", ".join(f"`{r}`" for r in integration_requirements_list),
                 )
 
+        if pyproject_path:
+            path = os.path.abspath(pyproject_path)
+
+            if not os.path.exists(path):
+                raise FileNotFoundError(
+                    f"Pyproject file {path} does not exist."
+                )
+
+            def _run_command(command: str) -> str:
+                command = command.format(directory=os.path.dirname(path))
+
+                result = subprocess.run(
+                    command,
+                    capture_output=True,
+                    check=True,
+                    shell=True,  # nosec
+                )
+                return result.stdout.decode()
+
+            if docker_settings.pyproject_export_command:
+                command = " ".join(docker_settings.pyproject_export_command)
+
+                try:
+                    pyproject_requirements = _run_command(command)
+                except subprocess.CalledProcessError as e:
+                    raise RuntimeError(
+                        "Failed to export pyproject dependencies with "
+                        f"command `{command}`: {e.stderr.decode()}"
+                    )
+            else:
+                command_errors = {}
+
+                for command in DEFAULT_PYPROJECT_EXPORT_COMMANDS:
+                    try:
+                        pyproject_requirements = _run_command(command)
+                    except subprocess.CalledProcessError as e:
+                        command_errors[command] = e.stderr.decode()
+                    else:
+                        break
+                else:
+                    raise RuntimeError(
+                        "Failed to export pyproject dependencies with the "
+                        f"following commands: {command_errors}. Please specify "
+                        "a working command to export your pyproject.toml "
+                        "dependencies to a requirements.txt formatted file "
+                        "using `DockerSettings.pyproject_export_command`."
+                    )
+
+            requirements_files.append(
+                (".zenml_pyproject_requirements", pyproject_requirements, [])
+            )
+            if log:
+                logger.info(
+                    "- %s python packages from file `%s`",
+                    "Implicitly including"
+                    if implicit_requirements
+                    else "Including",
+                    path,
+                )
+
         # Generate/Read requirements file for user-defined requirements
-        if isinstance(docker_settings.requirements, str):
-            path = os.path.abspath(docker_settings.requirements)
+        if isinstance(requirements, str):
+            path = os.path.abspath(requirements)
             try:
                 user_requirements = io_utils.read_file_contents_as_string(path)
             except FileNotFoundError as e:
@@ -531,15 +649,18 @@ class PipelineDockerImageBuilder:
                 ) from e
             if log:
                 logger.info(
-                    "- Including user-defined requirements from file `%s`",
+                    "- %s user-defined requirements from file `%s`",
+                    "Implicitly including"
+                    if implicit_requirements
+                    else "Including",
                     path,
                 )
-        elif isinstance(docker_settings.requirements, List):
-            user_requirements = "\n".join(docker_settings.requirements)
+        elif isinstance(requirements, List):
+            user_requirements = "\n".join(requirements)
             if log:
                 logger.info(
                     "- Including user-defined requirements: %s",
-                    ", ".join(f"`{r}`" for r in docker_settings.requirements),
+                    ", ".join(f"`{r}`" for r in requirements),
                 )
         else:
             user_requirements = None
@@ -637,6 +758,11 @@ class PipelineDockerImageBuilder:
 
         lines.append("COPY . .")
         lines.append("RUN chmod -R a+rw .")
+
+        if docker_settings.local_project_install_command:
+            lines.append(
+                f"RUN {docker_settings.local_project_install_command}"
+            )
 
         if docker_settings.user:
             # Change file ownership to specified user

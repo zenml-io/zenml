@@ -245,65 +245,102 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 
 ### Python Dependencies
 
+By default, ZenML automatically installs all packages required by your active ZenML stack. 
+
+{% hint style="warning" %}
+In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current source root and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If
+you already want this automatic detection in current versions of ZenML, set `disable_automatic_requirements_detection=False`.
+{% endhint %}
+
 1.  **Replicate Local Environment**:
-
     ```python
-    # Use pip freeze (outputs a requirements file with exact package versions)
-    from zenml.config import DockerSettings, PythonEnvironmentExportMethod
-    docker_settings = DockerSettings(
-        replicate_local_python_environment=PythonEnvironmentExportMethod.PIP_FREEZE
-    )
-    # Or as a string
-    docker_settings = DockerSettings(replicate_local_python_environment="pip_freeze")
+    docker_settings = DockerSettings(replicate_local_python_environment=True)
 
-    # Or use poetry (requires Poetry to be installed)
-    docker_settings = DockerSettings(
-        replicate_local_python_environment=PythonEnvironmentExportMethod.POETRY_EXPORT
-    )
-    # Or as a string
-    docker_settings = DockerSettings(replicate_local_python_environment="poetry_export")
 
-    # Use custom command (provide a list of command arguments)
-    docker_settings = DockerSettings(replicate_local_python_environment=[
-        "poetry", "export", "--extras=train", "--format=requirements.txt"
-    ])
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline(...):
+        ...
     ```
 
-    This feature allows you to easily replicate your local Python environment in the Docker container, ensuring that your pipeline runs with the same dependencies.
-2.  **Specify Requirements Directly**:
+    This will run `pip freeze` to get a list of the installed packages in your local Python environment and will install them in the Docker image. This ensures that the same
+    exact dependencies will be installed.
+    {% hint style="warning" %}
+    This does not work when you have a local project installed. To install local projects, check out the `Install Local Projects` section below.
+    {% endhint %}
+2.  **Specify a `pyproject.toml` file**:
+
+    ```python
+    docker_settings = DockerSettings(pyproject_path="/path/to/pyproject.toml")
+
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline(...):
+        ...
+    ```
+
+    By default, ZenML will try to export the dependencies specified in the `pyproject.toml` by trying to run `uv export` and `poetry export`.
+    If both of these commands do not work for your `pyproject.toml` file or you want to customize the command (for example to install certain
+    extras), you can specify a custom command using the `pyproject_export_command` attribute. This command must output a list of requirements following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/). The command can contain a `{directory}` placeholder which will be replaced with the directory in which the `pyproject.toml` file is stored.
+
+    ```python
+    from zenml.config import DockerSettings
+
+    docker_settings = DockerSettings(pyproject_export_command=[
+        "uv",
+        "export",
+        "--extra=train",
+        "--format=requirements-txt"
+        "--directory={directory}
+    ])
+
+
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline(...):
+        ...
+    ```
+3.  **Specify Requirements Directly**:
 
     ```python
     docker_settings = DockerSettings(requirements=["torch==1.12.0", "torchvision"])
     ```
-3.  **Use Requirements File**:
+4.  **Use Requirements File**:
 
     ```python
     docker_settings = DockerSettings(requirements="/path/to/requirements.txt")
     ```
-4.  **Specify ZenML Integrations**:
+5.  **Specify ZenML Integrations**:
 
     ```python
     from zenml.integrations.constants import PYTORCH, EVIDENTLY
 
     docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
     ```
-5.  **Control Stack Requirements**:\
+6.  **Control Stack Requirements**:
     By default, ZenML installs the requirements needed by your active stack. You can disable this behavior if needed:
 
     ```python
     docker_settings = DockerSettings(install_stack_requirements=False)
     ```
 
-{% hint style="info" %}
-You can combine these methods but do make sure that your list of requirements does not overlap with ones specified explicitly in the Docker settings to avoid version conflicts.
-{% endhint %}
+7.  **Install Local Projects**:
+    If your code requires the installation of some local code files as a python package, you can specify a command
+    that installs it as follows:
+    ```python
+    docker_settings = DockerSettings(local_project_install_command="pip install . --no-deps")
+    ```
+
+    {% hint style="warning" %}
+    Installing a local python package only works if your code files are included in the Docker image, so make sure you have
+    `allow_including_files_in_images=True` in your Docker settings. If you want to instead use the [code download functionality](#source-code-management)
+    to avoid building new Docker images for each pipeline run, you can follow [this example](https://github.com/zenml-io/zenml-patterns/tree/main/docker-local-pkg). 
+    {% endhint %}
 
 Depending on the options specified in your Docker settings, ZenML installs the requirements in the following order (each step optional):
 
 1. The packages installed in your local Python environment
 2. The packages required by the stack (unless disabled by setting `install_stack_requirements=False`)
 3. The packages specified via the `required_integrations`
-4. The packages specified via the `requirements` attribute
+4. The packages defined in the pyproject.toml file specified by the `pyproject_path` attribute
+5. The packages specified via the `requirements` attribute
 
 ### System Packages
 
