@@ -51,6 +51,7 @@
 * [Metadata](how-to/metadata/metadata.md)
 * [Models](how-to/models/models.md)
 * [Templates](how-to/templates/templates.md)
+* [Dashboard](how-to/dashboard/dashboard-features.md)
 
 ## Reference
 
