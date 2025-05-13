@@ -373,8 +373,7 @@ def get_resource_for_model(model: AnyModel) -> Optional[Resource]:
 
     project_id: Optional[UUID] = None
     if isinstance(model, ProjectScopedResponse):
-        # A project scoped response is always scoped to a specific project
-        project_id = model.project.id
+        project_id = model.project_id
     elif isinstance(model, ProjectScopedRequest):
         # A project scoped request is always scoped to a specific project
         project_id = model.project

@@ -423,6 +423,7 @@ def sample_pipeline_run(
 
     return PipelineRunResponse(
         id=uuid4(),
+        project_id=sample_project_model.id,
         name="sample_run_name",
         body=PipelineRunResponseBody(
             created=datetime.now(),
@@ -475,6 +476,7 @@ def sample_artifact_model(sample_project_model) -> ArtifactResponse:
     """Return a sample artifact model for testing purposes."""
     return ArtifactResponse(
         id=uuid4(),
+        project_id=sample_project_model.id,
         name="sample_artifact",
         body=ArtifactResponseBody(
             created=datetime.now(),
@@ -495,6 +497,7 @@ def sample_artifact_version_model(
     """Return a sample artifact version model for testing purposes."""
     return ArtifactVersionResponse(
         id=uuid4(),
+        project_id=sample_project_model.id,
         body=ArtifactVersionResponseBody(
             artifact=sample_artifact_model,
             version="1",
@@ -563,6 +566,7 @@ def create_step_run(
         )
         return StepRunResponse(
             id=uuid4(),
+            project_id=sample_project_model.id,
             name=step_run_name,
             body=StepRunResponseBody(
                 status=ExecutionStatus.COMPLETED,
@@ -602,6 +606,7 @@ def create_pipeline_model(
         metadata_kwargs.update(kwargs)
         return PipelineResponse(
             id=uuid4(),
+            project_id=sample_project_model.id,
             name="sample_pipeline",
             body=PipelineResponseBody(
                 created=datetime.now(),
@@ -624,6 +629,7 @@ def sample_deployment_response_model(
 ) -> PipelineDeploymentResponse:
     return PipelineDeploymentResponse(
         id=uuid4(),
+        project_id=sample_project_model.id,
         body=PipelineDeploymentResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
@@ -646,6 +652,7 @@ def sample_build_response_model(
 ) -> PipelineBuildResponse:
     return PipelineBuildResponse(
         id=uuid4(),
+        project_id=sample_project_model.id,
         body=PipelineBuildResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
@@ -667,6 +674,7 @@ def sample_code_repo_response_model(
 ) -> CodeRepositoryResponse:
     return CodeRepositoryResponse(
         id=uuid4(),
+        project_id=sample_project_model.id,
         name="name",
         body=CodeRepositoryResponseBody(
             created=datetime.now(),
@@ -738,6 +746,7 @@ def service_response(
     )
     return ServiceResponse(
         id=service_id,
+        project_id=sample_project_model.id,
         name=service_name,
         body=body,
         metadata=metadata,

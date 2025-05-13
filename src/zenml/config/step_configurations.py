@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -46,7 +45,7 @@ from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
 from zenml.utils import deprecation_utils
-from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.pydantic_utils import before_validator_handler, update_model
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
@@ -241,23 +240,43 @@ class StepConfiguration(PartialStepConfiguration):
             model_or_dict = model_or_dict.model_dump()
         return DockerSettings.model_validate(model_or_dict)
 
-    def _get_full_substitutions(
-        self,
-        pipeline_config: "PipelineConfiguration",
-        start_time: Optional[datetime],
-    ) -> Dict[str, str]:
-        """Get the full set of substitutions for this step configuration.
+    def apply_pipeline_configuration(
+        self, pipeline_configuration: "PipelineConfiguration"
+    ) -> "StepConfiguration":
+        """Apply the pipeline configuration to this step configuration.
 
         Args:
-            pipeline_config: The pipeline configuration.
-            start_time: The start time of the pipeline run.
+            pipeline_configuration: The pipeline configuration to apply.
 
         Returns:
-            The full set of substitutions for this step configuration.
+            The updated step configuration.
         """
-        ret = pipeline_config._get_full_substitutions(start_time)
-        ret.update(self.substitutions)
-        return ret
+        pipeline_values = pipeline_configuration.model_dump(
+            include={
+                "settings",
+                "extra",
+                "failure_hook_source",
+                "success_hook_source",
+                "substitutions",
+            },
+            exclude_none=True,
+        )
+        if pipeline_values:
+            original_values = self.model_dump(
+                include={
+                    "settings",
+                    "extra",
+                    "failure_hook_source",
+                    "success_hook_source",
+                    "substitutions",
+                },
+                exclude_none=True,
+            )
+
+            updated_config = self.model_copy(update=pipeline_values, deep=True)
+            return update_model(updated_config, original_values)
+        else:
+            return self.model_copy(deep=True)
 
 
 class InputSpec(StrictBaseModel):
@@ -311,3 +330,59 @@ class Step(StrictBaseModel):
 
     spec: StepSpec
     config: StepConfiguration
+    step_config_overrides: StepConfiguration
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _add_step_config_overrides_if_missing(cls, data: Any) -> Any:
+        """Add step config overrides if missing.
+
+        This is to ensure backwards compatibility with data stored in the DB
+        before the `step_config_overrides` field was added. In that case, only
+        the `config` field, which contains the merged pipeline and step configs,
+        existed. We have no way to figure out which of those values were defined
+        on the step vs the pipeline level, so we just use the entire `config`
+        object as the `step_config_overrides`.
+
+        Args:
+            data: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict with the step config overrides added if missing.
+        """
+        if "step_config_overrides" not in data:
+            data["step_config_overrides"] = data["config"]
+
+        return data
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Dict[str, Any],
+        pipeline_configuration: "PipelineConfiguration",
+    ) -> "Step":
+        """Create a step from a dictionary.
+
+        This method can create a step from data stored without the merged
+        `config` attribute, by merging the `step_config_overrides` with the
+        pipeline configuration.
+
+        Args:
+            data: The dictionary to create the `Step` object from.
+            pipeline_configuration: The pipeline configuration to apply to the
+                step configuration.
+
+        Returns:
+            The instantiated object.
+        """
+        if "config" not in data:
+            config = StepConfiguration.model_validate(
+                data["step_config_overrides"]
+            )
+            config = config.apply_pipeline_configuration(
+                pipeline_configuration
+            )
+            data["config"] = config
+
+        return cls.model_validate(data)
