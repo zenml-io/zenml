@@ -369,7 +369,10 @@ class DockerSettings(BaseSettings):
         Returns:
             The validated settings values.
         """
-        if isinstance(self.replicate_local_python_environment, (str, list)):
+        if isinstance(
+            self.replicate_local_python_environment,
+            (str, list, PythonEnvironmentExportMethod),
+        ):
             logger.warning(
                 "Specifying a command (`%s`) for "
                 "`DockerSettings.replicate_local_python_environment` is "
