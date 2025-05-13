@@ -81,6 +81,9 @@ RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Determine the package name based on ZENML_NIGHTLY
+# IMPORTANT: We want to keep the alembic version in the server image consistent.
+#   That's why, we to pin it to 1.15.2 here, as it is the highest version 
+#   that is compatible with the ZenML version we are using.
 RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
       PACKAGE_NAME="zenml-nightly"; \
     else \
@@ -88,7 +91,7 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
     fi \
     && pip install --upgrade pip \
     && pip install --upgrade uv \
-    && uv pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" \
+    && uv pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" "alembic==1.15.2" \
     && pip freeze > requirements.txt
 
 FROM base AS client

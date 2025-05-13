@@ -80,6 +80,11 @@ def requires_included_code(
     for step in deployment.step_configurations.values():
         docker_settings = step.config.docker_settings
 
+        if docker_settings.local_project_install_command:
+            # When installing a local package, we need to include the code
+            # files in the container image.
+            return True
+
         if docker_settings.allow_download_from_artifact_store:
             return False
 
@@ -136,6 +141,9 @@ def code_download_possible(
         Whether code download is possible for the deployment.
     """
     for step in deployment.step_configurations.values():
+        if step.config.docker_settings.local_project_install_command:
+            return False
+
         if step.config.docker_settings.allow_download_from_artifact_store:
             continue
 

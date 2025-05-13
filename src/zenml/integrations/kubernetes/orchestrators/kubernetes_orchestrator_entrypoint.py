@@ -72,7 +72,7 @@ def main() -> None:
     # Parse / extract args.
     args = parse_args()
 
-    orchestrator_run_id = socket.gethostname()
+    orchestrator_pod_name = socket.gethostname()
 
     client = Client()
 
@@ -96,7 +96,22 @@ def main() -> None:
     core_api = k8s_client.CoreV1Api(kube_client)
 
     shared_env = get_config_environment_vars()
-    shared_env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
+    shared_env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_pod_name
+
+    try:
+        owner_references = kube_utils.get_pod_owner_references(
+            core_api=core_api,
+            pod_name=orchestrator_pod_name,
+            namespace=args.kubernetes_namespace,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to get pod owner references: {str(e)}")
+        owner_references = []
+    else:
+        # Make sure None of the owner references are marked as controllers of
+        # the created pod, which messes with the garbage collection logic.
+        for owner_reference in owner_references:
+            owner_reference.controller = False
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -120,7 +135,7 @@ def main() -> None:
             )
         )
 
-        if settings.pod_name_prefix and not orchestrator_run_id.startswith(
+        if settings.pod_name_prefix and not orchestrator_pod_name.startswith(
             settings.pod_name_prefix
         ):
             max_length = (
@@ -133,7 +148,7 @@ def main() -> None:
             )
             pod_name = f"{pod_name_prefix}-{step_name}"
         else:
-            pod_name = f"{orchestrator_run_id}-{step_name}"
+            pod_name = f"{orchestrator_pod_name}-{step_name}"
 
         pod_name = kube_utils.sanitize_pod_name(
             pod_name, namespace=args.kubernetes_namespace
@@ -187,6 +202,7 @@ def main() -> None:
             service_account_name=settings.step_pod_service_account_name
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
+            owner_references=owner_references,
         )
 
         kube_utils.create_and_wait_for_pod_to_start(
@@ -239,7 +255,7 @@ def main() -> None:
             else:
                 # For a run triggered by a schedule, we can only use the
                 # orchestrator run ID to find the pipeline run.
-                list_args = dict(orchestrator_run_id=orchestrator_run_id)
+                list_args = dict(orchestrator_run_id=orchestrator_pod_name)
 
             pipeline_runs = client.list_pipeline_runs(
                 hydrate=True,
