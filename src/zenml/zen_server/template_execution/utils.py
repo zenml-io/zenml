@@ -50,6 +50,7 @@ from zenml.pipelines.run_utils import (
 )
 from zenml.stack.flavor import Flavor
 from zenml.utils import pydantic_utils, requirements_utils, settings_utils
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.feature_gate.endpoint_utils import (
     report_usage,
@@ -309,7 +310,8 @@ def run_template(
                 zen_store().update_run(
                     run_id=placeholder_run.id,
                     run_update=PipelineRunUpdate(
-                        status=ExecutionStatus.FAILED
+                        status=ExecutionStatus.FAILED,
+                        end_time=utc_now(),
                     ),
                 )
                 raise
