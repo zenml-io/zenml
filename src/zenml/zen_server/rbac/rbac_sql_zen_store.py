@@ -67,7 +67,7 @@ class RBACSqlZenStore(SqlZenStore):
                 action=Action.CREATE,
                 project_id=model_request.project,
             )
-            check_entitlement(resource_type=ResourceType.MODEL)
+            check_entitlement(feature=ResourceType.MODEL)
         except Exception as e:
             allow_model_creation = False
             error = e
@@ -92,7 +92,7 @@ class RBACSqlZenStore(SqlZenStore):
 
         if created:
             report_usage(
-                resource_type=ResourceType.MODEL, resource_id=model_response.id
+                feature=ResourceType.MODEL, resource_id=model_response.id
             )
         else:
             verify_permission_for_model(model_response, action=Action.READ)

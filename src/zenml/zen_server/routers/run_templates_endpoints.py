@@ -25,7 +25,12 @@ from fastapi import (
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.constants import API, RUN_TEMPLATES, VERSION_1
+from zenml.constants import (
+    API,
+    RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
+    RUN_TEMPLATES,
+    VERSION_1,
+)
 from zenml.models import (
     Page,
     PipelineRunResponse,
@@ -36,6 +41,9 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -269,6 +277,7 @@ if server_config().workload_manager_enabled:
                 action=Action.CREATE,
                 project_id=template.project.id,
             )
+            check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
             return run_template(
                 template=template,
