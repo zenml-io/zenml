@@ -31,7 +31,15 @@ class SkypilotGCPIntegration(Integration):
     """Definition of Skypilot (GCP) Integration for ZenML."""
 
     NAME = SKYPILOT_GCP
-    REQUIREMENTS = ["skypilot[gcp]~=0.9.2"]
+    REQUIREMENTS = [
+        "skypilot[gcp]~=0.9.2",
+        # TODO: Remove this once the issue is fixed:
+        # Adding the dependencies of the GCP integration on top of the
+        # requirements of the skypilot integration results in a
+        # very long resolution time for pip. This is a workaround to
+        # speed up the resolution.
+        "protobuf>=4.25.0,<5.0.0",
+    ]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
