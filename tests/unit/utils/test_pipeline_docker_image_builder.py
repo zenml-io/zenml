@@ -67,12 +67,22 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         return_value=str(tmp_path),
     )
 
+    # Nothing specified -> No requirements
+    settings = DockerSettings(
+        install_stack_requirements=False,
+    )
+    files = PipelineDockerImageBuilder.gather_requirements_files(
+        settings, stack=local_stack
+    )
+    assert len(files) == 0
+
     # Nothing specified, no requirements.txt exists -> Use pyproject.toml
     pyproject_file = tmp_path / "pyproject.toml"
     pyproject_file.write_text("pyproject")
 
     settings = DockerSettings(
         install_stack_requirements=False,
+        disable_automatic_requirements_detection=False,
     )
     files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
@@ -140,6 +150,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
     pyproject_file.write_text("pyproject")
 
     settings = DockerSettings(
+        disable_automatic_requirements_detection=False,
         install_stack_requirements=True,
         requirements=str(requirements_file),
         required_integrations=[SKLEARN],
