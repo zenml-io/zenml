@@ -481,7 +481,10 @@ class PipelineDockerImageBuilder:
                     "by default. To disable this behavior and keep the "
                     "current behavior, set "
                     "`DockerSettings.disable_automatic_requirements_detection` "
-                    "to `True`."
+                    "to `True`. If you want to enable this behavior right away, "
+                    "you can do so by setting "
+                    "`DockerSettings.disable_automatic_requirements_detection` "
+                    "to `False`."
                 )
             implicit_requirements = False
             requirements = None
