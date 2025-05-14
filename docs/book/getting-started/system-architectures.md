@@ -93,7 +93,7 @@ We also offer a hybrid SaaS option where customer secrets are stored on the cust
 
 ![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_1_2.png)
 
-The partially self-hosted architecture offers a balanced approach that combines the benefits of cloud-hosted control with on-premises data sovereignty. In this configuration, while the ZenML Pro control plane remains hosted by ZenML (handling user management, authentication, and global workspace coordination), all other components - including services, data, and secrets - are deployed within your own cloud infrastructure.
+The partially self-hosted architecture offers a balanced approach that combines the benefits of cloud-hosted control with on-premises data sovereignty. In this configuration, while the ZenML Pro control plane remains hosted by ZenML (handling user management, authentication, RBAC and global workspace coordination), all other components - including services, data, and secrets - are deployed within your own cloud infrastructure.
 
 This hybrid model is particularly well-suited for organizations with:
 * A centralized MLOps or Platform team responsible for standardizing ML practices
