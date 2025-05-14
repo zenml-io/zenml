@@ -98,16 +98,17 @@ The partially self-hosted architecture offers a balanced approach that combines 
 This hybrid model is particularly well-suited for organizations with:
 * A centralized MLOps or Platform team responsible for standardizing ML practices
 * Multiple business units or teams that require autonomy over their data and infrastructure
+* Strict security requirements where workspaces must operate behind VPN/corporate firewalls
 * Compliance requirements that mandate keeping sensitive data and ML artifact metadata within company infrastructure
 * Need for customization of workspace configurations while maintaining centralized governance
 
 The key advantages of this setup include:
 * Simplified user management through the ZenML-hosted control plane
-* Complete control over sensitive data and ML artifacts
+* Complete data sovereignty - sensitive data and ML artifacts remain within your infrastructure
+* Secure networking - workspaces communicate through outbound-only connections via VPN/private networks
 * Ability to customize and configure workspaces according to specific team needs
 * Reduced operational overhead compared to fully self-hosted deployments
-* Easier updates and maintenance of the control plane components
-
+* Reduced maintenance burden - all control plane updates and maintenance are handled by ZenML
 This architecture strikes a balance between convenience and control, making it a popular choice for enterprises looking to standardize their MLOps practices while maintaining sovereignty.
 
 
