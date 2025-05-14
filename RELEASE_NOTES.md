@@ -2,6 +2,38 @@
 
 # 0.82.1
 
+The `0.82.1` release focuses on incremental improvements to [run template](https://docs.zenml.io/concepts/templates) management, [Kubernetes orchestration](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes), [Docker build performance](https://docs.zenml.io/concepts/containerization), and overall robustness, while shipping a wide range of documentation updates and quality-of-life enhancements. Key highlights include configurable Kubernetes job clean-up behavior, cascading tags for cached step runs, [`pyproject.toml` support for `DockerSettings`](https://docs.zenml.io/concepts/containerization#python-dependencies), improved login stability, and faster Docker build caching through parent image digests.
+
+## Features
+
+- Added [`pyproject.toml` support for configuring `DockerSettings`](https://docs.zenml.io/concepts/containerization#python-dependencies), making container builds easier to manage.
+- Added a unique instance label to the Helm chart to simplify the operation of multiple ZenML deployments in the same cluster.
+- Introduced a new stress-test example that showcases ZenML scalability and can be used to benchmark installations.
+
+## Improvements
+
+- Added cascading tags for cached step runs to improve cache reuse and pipeline run performance.
+- Added configurable Kubernetes job clean-up options for the Kubernetes orchestrator.
+- Added a limit to the maximum number of concurrent template runs and improved the overall run template UX.
+- Prevented unnecessary hydration in project-scoped API responses, reducing payload size and improving performance.
+- Optimized Docker build caching by using parent image digests and extending development Dockerfiles.
+- Pinned `setuptools` to a stable version and removed redundant script dependencies to avoid build failures.
+
+## Fixes
+
+- Fixed DockerHub repository digest detection when building images.
+- Fixed miscellaneous login issues and introduced an API login lock for added robustness.
+- Fixed dashboard bolt icon rendering.
+- Updated Alembic to address compatibility issues.
+
+## Documentation
+
+- Added a ["5-minute quick wins" guide](https://docs.zenml.io/user-guides/best-practices/quick-wins) and [a new dedicated docs section regarding orchestrator selection](https://docs.zenml.io/user-guides/best-practices/choose-orchestration-environment).
+- Added [documentation for dashboard features](https://docs.zenml.io/concepts/dashboard-features) and an accurate list of workload manager options.
+- Added `0.81.0` to legacy docs and fixed [artifact visualization guidance](https://zenml-io.gitbook.io/barisky/concepts/artifacts/visualizations).
+- Numerous minor documentation fixes and cleanup.
+
+
 ## What's Changed
 * Adding 0.81.0 to the legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3630
 * Extending the Dockerfiles  by @bcdurak in https://github.com/zenml-io/zenml/pull/3632
@@ -42,7 +74,7 @@
 
 The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes), enhanced documentation, and numerous fixes to improve overall stability and performance. Key highlights include configurable max parallelism for Kubernetes orchestrator, customizable pod name prefixes and scheduler options, improved runner timeouts, and support for private service connections in Vertex AI. This release also includes comprehensive documentation updates, and library compatibility improvements for NumPy and Pandas.
 
-# Features
+## Features
 
 - Added max parallelism option for [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)
 - Added support for pod name prefixes and scheduler configuration
@@ -51,7 +83,7 @@ The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator
 - Added storage for list of Python packages
 - Added an ability to deep refresh the status of your run from the dashboard
 
-# Improvements
+## Improvements
 
 - Adjusted GitHub code repo regex pattern for better compatibility
 - Improved build invalidation when parent Dockerfile changes
@@ -60,7 +92,7 @@ The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator
 - Added support for extra attributes in all ZenML models
 - Disabled default project behavior for pro workspaces
 
-# Fixes
+## Fixes
 
 - Fixed run templates listing
 - Eliminated premature active project warning logs
@@ -70,7 +102,7 @@ The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator
 - Removed unnecessary and invalid settings
 - Various frontend bug fixes
 
-# Documentation
+## Documentation
 
 - Completed comprehensive documentation revamp
 - Added documentation for [self-hosted run templates](https://docs.zenml.io/pro/deployments/self-hosted#enabling-run-templates-support)
@@ -80,7 +112,7 @@ The 0.82.0 release delivers significant improvements to [Kubernetes orchestrator
 - Updated image paths for ZenML pipeline screenshots
 - Migrated starter guide to unified log_metadata method
 
-# Breaking Changes
+## Breaking Changes
 
 - Removed `scikit-image` as a requirement of the sklearn integration
 
