@@ -24,5 +24,3 @@ RUN if [ "$CLOUD_PROVIDER" = "aws" ]; then \
     else \
         echo "No specific cloud integration installed"; \
     fi
-
-ENV ZENML_REQUIRES_CODE_DOWNLOAD=True
