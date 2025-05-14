@@ -7,7 +7,7 @@ description: Deploying your models locally with MLflow.
 The MLflow Model Deployer is one of the available flavors of the [Model Deployer](./) stack component. Provided with the MLflow integration it can be used to deploy and manage [MLflow models](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) on a local running MLflow server.
 
 {% hint style="warning" %}
-The MLflow Model Deployer is only meant for deplyoing models in development settings, for production model deployment we recommend tools like [BentoML](./bentoml.md) or [Seldon](./seldon.md).
+The MLflow Model Deployer is only meant for deploying models in development settings, for production model deployment we recommend tools like [BentoML](./bentoml.md) or [Seldon](./seldon.md).
 {% endhint %}
 
 ## When to use it?
