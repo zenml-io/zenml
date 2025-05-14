@@ -77,10 +77,6 @@ The advantage of this setup is that it is a fully-managed service, and is very e
 
 </details>
 
-We also offer a hybrid SaaS option where customer secrets are stored on the customer side. In this case, the customer connects their own secret store directly to the ZenML server that is managed by us. All ZenML secrets used by running pipelines to access infrastructure services and resources are stored in the customer secret store. This allows users to use [service connectors](https://docs.zenml.io/concepts/service_connectors) and the [secrets API](../how-to/secrets/secrets.md) to authenticate ZenML pipelines and the ZenML Pro to third-party services and infrastructure while ensuring that credentials are always stored on the customer side.
-
-![ZenML Pro SaaS deployment with Customer secret store](../.gitbook/assets/cloud_architecture_scenario_1_1.png)
-
 <details>
 
 <summary>Detailed Architecture Diagram for SaaS deployment with custom secret store configuration</summary>
@@ -89,7 +85,7 @@ We also offer a hybrid SaaS option where customer secrets are stored on the cust
 
 </details>
 
-### ZenML Pro partially Self-Hosted Architecture
+### ZenML Pro Hybrid Self-Hosted Architecture
 
 ![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_1_2.png)
 
@@ -111,7 +107,7 @@ The key advantages of this setup include:
 This architecture strikes a balance between convenience and control, making it a popular choice for enterprises looking to standardize their MLOps practices while maintaining sovereignty.
 
 
-### ZenML Pro fully Self-Hosted Architecture
+### ZenML Pro Self-Hosted Architecture
 
 ![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_2.png)
 
@@ -136,7 +132,6 @@ Are you interested in ZenML Pro? [Sign up](https://cloud.zenml.io/?utm_source=do
 | Deployment Scenario | Data Location | Data Movement | Data Access | Data Isolation |
 |---------------------|---------------|---------------|-------------|----------------|
 | **ZenML OSS (Self-hosted)** | All data remains on customer infrastructure: both ML metadata in OSS Metadata Store and actual ML data artifacts in customer Artifact Store | Data stays within customer boundary; moves between pipeline steps via the Orchestrator | Accessible only through customer infrastructure; no ZenML-managed components have access | Complete data isolation from ZenML-managed services |
-| **ZenML Pro SaaS (ZenML Secret Store)** | ML metadata in ZenML-hosted DB; Actual ML data artifacts in customer Artifact Store; Secrets in ZenML-managed Secret Store | Metadata flows to ZenML Pro Control Plane; ML data artifacts stay on customer infrastructure; ZenML services access customer infrastructure using stored credentials | ZenML Pro has access to the customer secrets that are explicitly stored; Workspace optionally needs read access to artifact store for dashboard display; No actual ML data moves to ZenML infrastructure unless explicitly shared | Only metadata and credentials are stored on ZenML infrastructure; actual ML data remains isolated on customer infrastructure |
-| **ZenML Pro SaaS (Customer Secret Store)** | ML metadata in ZenML-hosted DB; Actual ML data artifacts in customer Artifact Store; Secrets in customer-managed Secret Store | Metadata flows to ZenML Pro Control Plane; ML data artifacts stay on customer infrastructure; All credential access requires going through customer Secret Store | ZenML Pro must request credentials from customer Secret Store; Additional security layer for infrastructure access; No ML data stored on ZenML infrastructure | Improved security posture; customer maintains control of all credentials while benefiting from ZenML Pro features |
-| **ZenML Pro Partially Self-Hosted** | Control Plane on ZenML infrastructure; Workspace, DB, Secret Store, Orchestrator, and Artifact Store on customer infrastructure | Only authentication/authorization data flows to ZenML; All ML data and metadata stays on customer infrastructure | ZenML Control Plane has limited access to user management data; No access to actual ML data or metadata; Customer maintains all data access controls | Strong data isolation with only authentication events crossing boundary |
+| **ZenML Pro SaaS** | ML metadata in ZenML-hosted DB; Actual ML data artifacts in customer Artifact Store; Secrets in ZenML-managed Secret Store | Metadata flows to ZenML Pro Control Plane; ML data artifacts stay on customer infrastructure; ZenML services access customer infrastructure using stored credentials | ZenML Pro has access to the customer secrets that are explicitly stored; Workspace optionally needs read access to artifact store for dashboard display; No actual ML data moves to ZenML infrastructure unless explicitly shared | Only metadata and credentials are stored on ZenML infrastructure; actual ML data remains isolated on customer infrastructure |
+| **ZenML Pro Hybrid Self-Hosted** | Control Plane on ZenML infrastructure; Workspace, DB, Secret Store, Orchestrator, and Artifact Store on customer infrastructure | Only authentication/authorization data flows to ZenML; All ML data and metadata stays on customer infrastructure | ZenML Control Plane has limited access to user management data; No access to actual ML data or metadata; Customer maintains all data access controls | Strong data isolation with only authentication events crossing boundary |
 | **ZenML Pro Fully Self-Hosted** | All components run on customer infrastructure | All data movement contained within customer infrastructure boundary | No external access to any data; completely air-gapped operation possible | Complete data isolation; ZenML has no access to any customer data |\n\n## Key Data Security Insights\n\n1. **Artifact Storage:** In all scenarios, the actual ML data artifacts (datasets, models, etc.) remain on customer infrastructure in the customer-controlled Artifact Store.\n\n2. **Metadata Storage:** The metadata (pipeline configurations, run information, metrics) is either stored in ZenML-managed databases (SaaS options) or customer-managed databases (self-hosted options).\n\n3. **Secret Management:** Credentials can be managed by ZenML (standard SaaS) or by the customer (hybrid SaaS or self-hosted), providing flexibility based on security requirements.\n\n4. **Data Access Patterns:**\n   - The ZenML Workspace frontend requires read access to the Artifact Store to display artifacts in the dashboard\n   - The Orchestrator requires read/write access to the Artifact Store to execute pipelines\n   - Control Plane DB contains only users, roles, and workspace configuration information\n\n5. **Data Isolation:** Even in the fully-managed SaaS scenario, the actual ML data never leaves customer infrastructure unless explicitly configured to do so. Only metadata about runs, pipelines, etc. is stored in ZenML-managed systems.\n\nThis design ensures that even when using ZenML-managed services, customers maintain control over their sensitive ML data while benefiting from ZenML's orchestration and management capabilities.
