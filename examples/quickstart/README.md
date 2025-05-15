@@ -76,6 +76,9 @@ zenml login $ZENML_SERVER_URL
 
 # We'll start on the default stack
 zenml stack set default
+
+# In order to avoid the ModuleNotFoundError with `wandb`
+export WANDB_DISABLED="true"
 ```
 
 As described above we have done the first step already and created an experimental pipeline. Feel free to check out
