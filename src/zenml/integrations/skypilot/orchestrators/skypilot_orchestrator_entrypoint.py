@@ -35,6 +35,7 @@ from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator imp
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.orchestrators.utils import get_config_environment_vars
+from zenml.utils import env_utils
 
 logger = get_logger(__name__)
 
@@ -160,6 +161,8 @@ def main() -> None:
 
     logger.info("Fetching pipeline run: %s", run.id)
 
+    shared_env = get_config_environment_vars()
+
     def run_step_on_skypilot_vm(step_name: str) -> None:
         """Run a pipeline step in a separate Skypilot VM.
 
@@ -182,11 +185,17 @@ def main() -> None:
             SkypilotBaseOrchestratorSettings,
             orchestrator.get_settings(step),
         )
-        env = get_config_environment_vars()
-        env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
+
+        step_env = shared_env.copy()
+        step_env.update(
+            env_utils.get_step_environment(
+                step_config=step.config, stack=active_stack
+            )
+        )
+        step_env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
         docker_environment_str = " ".join(
-            f"-e {k}={v}" for k, v in env.items()
+            f"-e {k}={v}" for k, v in step_env.items()
         )
         custom_run_args = " ".join(settings.docker_run_args)
         if custom_run_args:

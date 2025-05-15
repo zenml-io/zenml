@@ -14,15 +14,20 @@
 """Utility functions for secrets and secret references."""
 
 import re
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, List, NamedTuple, Optional, Union
 
 from pydantic import Field, PlainSerializer, SecretStr
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
+from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from pydantic.fields import FieldInfo
+
+    from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 
 _secret_reference_expression = re.compile(r"\{\{\s*\S+?\.\S+\s*\}\}")
 
@@ -182,3 +187,54 @@ def is_clear_text_field(field: "FieldInfo") -> bool:
             )
 
     return False
+
+
+def resolve_and_verify_secrets(
+    secrets: List[Union[str, "UUID"]],
+    zen_store: Optional["ZenStoreInterface"] = None,
+) -> List["UUID"]:
+    """Convert a list of secret names or IDs to a list of secret IDs.
+
+    Args:
+        secrets: A list of secret names or IDs.
+        zen_store: The ZenML store to use to resolve the secrets.
+
+    Raises:
+        KeyError: If the secret is not found.
+
+    Returns:
+        A list of secret IDs.
+    """
+    if zen_store:
+        from zenml.models import SecretFilter
+
+        resolved_secrets = []
+
+        for secret_name_or_id in secrets:
+            if uuid_utils.is_valid_uuid(secret_name_or_id):
+                secret_id = (
+                    secret_name_or_id
+                    if isinstance(secret_name_or_id, UUID)
+                    else UUID(secret_name_or_id)
+                )
+                secret = zen_store.get_secret(secret_id, hydrate=False)
+                resolved_secrets.append(secret.id)
+            else:
+                filter_model = SecretFilter(name=secret_name_or_id)
+                secret_page = zen_store.list_secrets(
+                    secret_filter_model=filter_model
+                )
+                if not secret_page.items:
+                    raise KeyError(
+                        f"Secret with name {secret_name_or_id} not found."
+                    )
+
+                resolved_secrets.append(secret_page.items[0].id)
+
+        return resolved_secrets
+    else:
+        from zenml.client import Client
+
+        return [
+            Client().get_secret(secret, hydrate=False).id for secret in secrets
+        ]
