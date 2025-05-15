@@ -422,7 +422,8 @@ class Model(BaseModel):
 
         if not only_link and delete_from_artifact_store:
             artifact_versions = pagination_utils.depaginate(
-                client.list_artifact_versions(model_version_id=self.id)
+                client.list_artifact_versions,
+                model_version_id=self.id,
             )
             for artifact_version in artifact_versions:
                 client._delete_artifact_from_artifact_store(

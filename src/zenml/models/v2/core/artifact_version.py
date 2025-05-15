@@ -281,7 +281,7 @@ class ArtifactVersionResponse(
         return self.get_body().artifact
 
     @property
-    def version(self) -> Union[str, int]:
+    def version(self) -> str:
         """The `version` property.
 
         Returns:

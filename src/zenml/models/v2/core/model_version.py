@@ -371,18 +371,25 @@ class ModelVersionResponse(
             Dict[str, Dict[str, ArtifactResponse]]
         """
         logger.warning(
-            "ModelVersionResponse.model_artifacts is deprecated and will be removed in a future release."
+            "ModelVersionResponse.model_artifacts is deprecated and will be "
+            "removed in a future release."
         )
         from zenml.client import Client
 
-        return {
-            run.name: run
-            for run in pagination_utils.depaginate(
-                Client().list_artifact_versions(
-                    model_version_id=self.id, type=ArtifactType.MODEL
-                )
+        artifact_versions = pagination_utils.depaginate(
+            Client().list_artifact_versions,
+            model_version_id=self.id,
+            type=ArtifactType.MODEL,
+        )
+
+        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        for artifact_version in artifact_versions:
+            result.setdefault(artifact_version.name, {})
+            result[artifact_version.name][artifact_version.version] = (
+                artifact_version
             )
-        }
+
+        return result
 
     @property
     def data_artifacts(
@@ -395,19 +402,26 @@ class ModelVersionResponse(
             Dict[str, Dict[str, ArtifactResponse]]
         """
         logger.warning(
-            "ModelVersionResponse.data_artifacts is deprecated and will be removed in a future release."
+            "ModelVersionResponse.data_artifacts is deprecated and will be "
+            "removed in a future release."
         )
 
         from zenml.client import Client
 
-        return {
-            run.name: run
-            for run in pagination_utils.depaginate(
-                Client().list_artifact_versions(
-                    model_version_id=self.id, type=ArtifactType.DATA
-                )
+        artifact_versions = pagination_utils.depaginate(
+            Client().list_artifact_versions,
+            model_version_id=self.id,
+            type=ArtifactType.DATA,
+        )
+
+        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        for artifact_version in artifact_versions:
+            result.setdefault(artifact_version.name, {})
+            result[artifact_version.name][artifact_version.version] = (
+                artifact_version
             )
-        }
+
+        return result
 
     @property
     def deployment_artifacts(
@@ -420,19 +434,26 @@ class ModelVersionResponse(
             Dict[str, Dict[str, ArtifactResponse]]
         """
         logger.warning(
-            "ModelVersionResponse.deployment_artifacts is deprecated and will be removed in a future release."
+            "ModelVersionResponse.deployment_artifacts is deprecated and will "
+            "be removed in a future release."
         )
 
         from zenml.client import Client
 
-        return {
-            run.name: run
-            for run in pagination_utils.depaginate(
-                Client().list_artifact_versions(
-                    model_version_id=self.id, type=ArtifactType.SERVICE
-                )
+        artifact_versions = pagination_utils.depaginate(
+            Client().list_artifact_versions,
+            model_version_id=self.id,
+            type=ArtifactType.SERVICE,
+        )
+
+        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        for artifact_version in artifact_versions:
+            result.setdefault(artifact_version.name, {})
+            result[artifact_version.name][artifact_version.version] = (
+                artifact_version
             )
-        }
+
+        return result
 
     @property
     def pipeline_runs(self) -> Dict[str, "PipelineRunResponse"]:
@@ -442,7 +463,8 @@ class ModelVersionResponse(
             Dictionary of Pipeline Runs as PipelineRunResponseModel
         """
         logger.warning(
-            "ModelVersionResponse.pipeline_runs is deprecated and will be removed in a future release."
+            "ModelVersionResponse.pipeline_runs is deprecated and will be "
+            "removed in a future release."
         )
 
         from zenml.client import Client
@@ -450,7 +472,8 @@ class ModelVersionResponse(
         return {
             run.name: run
             for run in pagination_utils.depaginate(
-                Client().list_pipeline_runs(model_version_id=self.id)
+                Client().list_pipeline_runs,
+                model_version_id=self.id,
             )
         }
 
