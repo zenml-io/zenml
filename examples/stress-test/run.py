@@ -16,7 +16,7 @@
 #
 
 import time
-from typing import Any, Dict
+from typing import Annotated, Any, Dict, Tuple
 
 import click
 
@@ -33,8 +33,8 @@ kubernetes_settings = KubernetesOrchestratorSettings(
     pod_startup_timeout=600,
     pod_settings=KubernetesPodSettings(
         resources={
-            "requests": {"cpu": "100m", "memory": "300Mi"},
-            "limits": {"memory": "350Mi"},
+            "requests": {"cpu": "100m", "memory": "500Mi"},
+            # "limits": {"memory": "500Mi"},
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -49,7 +49,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
     ),
     orchestrator_pod_settings=KubernetesPodSettings(
         resources={
-            "requests": {"cpu": "100m", "memory": "300Mi"},
+            "requests": {"cpu": "100m", "memory": "350Mi"},
             "limits": {"memory": "350Mi"},
         },
         node_selectors={"pool": "workloads"},
@@ -71,9 +71,84 @@ settings = {"docker": docker_settings, "orchestrator": kubernetes_settings}
 
 
 @step
+def init_step() -> Tuple[
+    Annotated[int, "output1"],
+    Annotated[int, "output2"],
+    Annotated[int, "output3"],
+    Annotated[int, "output4"],
+    Annotated[int, "output5"],
+    Annotated[int, "output6"],
+    Annotated[int, "output7"],
+    Annotated[int, "output8"],
+    Annotated[int, "output9"],
+    Annotated[int, "output10"],
+    Annotated[int, "output11"],
+    Annotated[int, "output12"],
+    Annotated[int, "output13"],
+    Annotated[int, "output14"],
+    Annotated[int, "output15"],
+    Annotated[int, "output16"],
+    Annotated[int, "output17"],
+    Annotated[int, "output18"],
+    Annotated[int, "output19"],
+    Annotated[int, "output20"],
+]:
+    """A step that returns a bunch of outputs.
+
+    This is used to test the performance of the ZenML server when returning
+    a large number of outputs.
+
+    Returns:
+        A tuple of 20 integers.
+    """
+    return (
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+    )
+
+
+@step
 def load_step(
     duration: int,
     sleep_interval: float,
+    input1: int,
+    input2: int,
+    input3: int,
+    input4: int,
+    input5: int,
+    input6: int,
+    input7: int,
+    input8: int,
+    input9: int,
+    input10: int,
+    input11: int,
+    input12: int,
+    input13: int,
+    input14: int,
+    input15: int,
+    input16: int,
+    input17: int,
+    input18: int,
+    input19: int,
+    input20: int,
 ) -> Dict[str, Any]:
     """A step that performs API operations to stress test the ZenML server.
 
@@ -83,6 +158,26 @@ def load_step(
     Args:
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
+        input1: The first input.
+        input2: The second input.
+        input3: The third input.
+        input4: The fourth input.
+        input5: The fifth input.
+        input6: The sixth input.
+        input7: The seventh input.
+        input8: The eighth input.
+        input9: The ninth input.
+        input10: The tenth input.
+        input11: The eleventh input.
+        input12: The twelfth input.
+        input13: The thirteenth input.
+        input14: The fourteenth input.
+        input15: The fifteenth input.
+        input16: The sixteenth input.
+        input17: The seventeenth input.
+        input18: The eighteenth input.
+        input19: The nineteenth input.
+        input20: The twentieth input.
 
     Returns:
         A dictionary containing the number of operations performed and the
@@ -109,7 +204,7 @@ def load_step(
             "key9": 1.0,
         }
     )
-    
+
     print("Starting API calls...")
     while time.time() - start_time < duration:
         # Perform various API operations
@@ -138,8 +233,8 @@ def load_step(
 report_kubernetes_settings = KubernetesOrchestratorSettings(
     pod_settings=KubernetesPodSettings(
         resources={
-            "requests": {"cpu": "100m", "memory": "500Mi"},
-            "limits": {"memory": "600Mi"},
+            "requests": {"cpu": "100m", "memory": "800Mi"},
+            "limits": {"memory": "800Mi"},
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -204,9 +299,58 @@ def load_test_pipeline(
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
     """
+    (
+        int1,
+        int2,
+        int3,
+        int4,
+        int5,
+        int6,
+        int7,
+        int8,
+        int9,
+        int10,
+        int11,
+        int12,
+        int13,
+        int14,
+        int15,
+        int16,
+        int17,
+        int18,
+        int19,
+        int20,
+    ) = init_step()
+
     after = []
     for i in range(num_parallel_steps):
-        after.append(load_step(duration, sleep_interval, id=f"load_step_{i}"))
+        after.append(
+            load_step(
+                duration,
+                sleep_interval,
+                id=f"load_step_{i}",
+                input1=int1,
+                input2=int2,
+                input3=int3,
+                input4=int4,
+                input5=int5,
+                input6=int6,
+                input7=int7,
+                input8=int8,
+                input9=int9,
+                input10=int10,
+                input11=int11,
+                input12=int12,
+                input13=int13,
+                input14=int14,
+                input15=int15,
+                input16=int16,
+                input17=int17,
+                input18=int18,
+                input19=int19,
+                input20=int20,
+            )
+        )
 
     report_results(after=after)
 
