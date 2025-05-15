@@ -194,6 +194,7 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
+    # TODO: resources
     tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )

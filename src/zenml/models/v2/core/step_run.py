@@ -180,6 +180,7 @@ class StepRunResponseBody(ProjectScopedResponseBody):
         title="The end time of the step run.",
         default=None,
     )
+    # TODO: Move to resources
     inputs: Dict[str, StepRunInputResponse] = Field(
         title="The input artifact versions of the step run.",
         default_factory=dict,
