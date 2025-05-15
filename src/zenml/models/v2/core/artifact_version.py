@@ -194,10 +194,6 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
-    # TODO: resources
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the model",
-    )
     producer_pipeline_run_id: Optional[UUID] = Field(
         title="The ID of the pipeline run that generated this artifact version.",
         default=None,
@@ -249,6 +245,10 @@ class ArtifactVersionResponseMetadata(ProjectScopedResponseMetadata):
 
 class ArtifactVersionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the artifact version entity."""
+
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the artifact version.",
+    )
 
 
 class ArtifactVersionResponse(
@@ -314,7 +314,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
     @property
     def producer_pipeline_run_id(self) -> Optional[UUID]:

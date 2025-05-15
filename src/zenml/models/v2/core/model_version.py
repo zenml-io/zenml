@@ -155,9 +155,6 @@ class ModelVersionResponseBody(ProjectScopedResponseBody):
     model: "ModelResponse" = Field(
         description="The model containing version",
     )
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the model version", default=[]
-    )
 
     # TODO: Remove at some point
     model_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
@@ -209,6 +206,9 @@ class ModelVersionResponseResources(ProjectScopedResponseResources):
 
     services: Page[ServiceResponse] = Field(
         description="Services linked to the model version",
+    )
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the model version", default=[]
     )
 
 
@@ -297,7 +297,7 @@ class ModelVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
     @property
     def description(self) -> Optional[str]:

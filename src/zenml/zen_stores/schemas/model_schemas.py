@@ -37,6 +37,7 @@ from zenml.models import (
     ModelResponse,
     ModelResponseBody,
     ModelResponseMetadata,
+    ModelResponseResources,
     ModelUpdate,
     ModelVersionArtifactRequest,
     ModelVersionArtifactResponse,
@@ -193,8 +194,6 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponse`.
         """
-        tags = [tag.to_model() for tag in self.tags]
-
         if latest_version := self.latest_version:
             latest_version_name = latest_version.name
             latest_version_id = latest_version.id
@@ -216,11 +215,16 @@ class ModelSchema(NamedSchema, table=True):
                 save_models_to_registry=self.save_models_to_registry,
             )
 
+        resources = None
+        if include_resources:
+            resources = ModelResponseResources(
+                tags=[tag.to_model() for tag in self.tags],
+            )
+
         body = ModelResponseBody(
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
-            tags=tags,
             latest_version_name=latest_version_name,
             latest_version_id=latest_version_id,
         )
@@ -231,6 +235,7 @@ class ModelSchema(NamedSchema, table=True):
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(
@@ -442,6 +447,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             )
             resources = ModelVersionResponseResources(
                 services=services,
+                tags=[tag.to_model() for tag in self.tags],
             )
 
         body = ModelVersionResponseBody(
@@ -451,7 +457,6 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             stage=self.stage,
             number=self.number,
             model=self.model.to_model(),
-            tags=[tag.to_model() for tag in self.tags],
         )
 
         return ModelVersionResponse(

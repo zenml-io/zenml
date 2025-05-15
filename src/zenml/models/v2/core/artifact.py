@@ -87,9 +87,6 @@ class ArtifactUpdate(BaseUpdate):
 class ArtifactResponseBody(ProjectScopedResponseBody):
     """Response body for artifacts."""
 
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the model",
-    )
     latest_version_name: Optional[str] = None
     latest_version_id: Optional[UUID] = None
 
@@ -105,6 +102,10 @@ class ArtifactResponseMetadata(ProjectScopedResponseMetadata):
 
 class ArtifactResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the Artifact Entity."""
+
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the artifact.",
+    )
 
 
 class ArtifactResponse(
@@ -139,7 +140,7 @@ class ArtifactResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
     @property
     def latest_version_name(self) -> Optional[str]:

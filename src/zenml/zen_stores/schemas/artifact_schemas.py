@@ -33,11 +33,13 @@ from zenml.models import (
     ArtifactResponse,
     ArtifactResponseBody,
     ArtifactResponseMetadata,
+    ArtifactResponseResources,
     ArtifactUpdate,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionResponseBody,
     ArtifactVersionResponseMetadata,
+    ArtifactVersionResponseResources,
     ArtifactVersionUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
@@ -187,7 +189,6 @@ class ArtifactSchema(NamedSchema, table=True):
         body = ArtifactResponseBody(
             created=self.created,
             updated=self.updated,
-            tags=[tag.to_model() for tag in self.tags],
             latest_version_name=latest_name,
             latest_version_id=latest_id,
             user=self.user.to_model() if self.user else None,
@@ -201,12 +202,19 @@ class ArtifactSchema(NamedSchema, table=True):
                 project=self.project.to_model(),
             )
 
+        resources = None
+        if include_resources:
+            resources = ArtifactResponseResources(
+                tags=[tag.to_model() for tag in self.tags],
+            )
+
         return ArtifactResponse(
             id=self.id,
             project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, artifact_update: ArtifactUpdate) -> "ArtifactSchema":
@@ -418,7 +426,6 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             data_type=data_type,
             created=self.created,
             updated=self.updated,
-            tags=[tag.to_model() for tag in self.tags],
             producer_pipeline_run_id=producer_pipeline_run_id,
             save_type=ArtifactSaveType(self.save_type),
             artifact_store_id=self.artifact_store_id,
@@ -435,6 +442,10 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             )
 
         resources = None
+        if include_resources:
+            resources = ArtifactVersionResponseResources(
+                tags=[tag.to_model() for tag in self.tags],
+            )
 
         return ArtifactVersionResponse(
             id=self.id,

@@ -86,6 +86,7 @@ from zenml.models.v2.core.artifact import (
     ArtifactResponse,
     ArtifactResponseBody,
     ArtifactResponseMetadata,
+    ArtifactResponseResources,
     ArtifactUpdate,
 )
 from zenml.models.v2.core.artifact_version import (
@@ -94,6 +95,7 @@ from zenml.models.v2.core.artifact_version import (
     ArtifactVersionResponse,
     ArtifactVersionResponseBody,
     ArtifactVersionResponseMetadata,
+    ArtifactVersionResponseResources,
     ArtifactVersionUpdate,
     LazyArtifactVersionResponse
 )
@@ -172,6 +174,7 @@ from zenml.models.v2.core.model import (
     ModelResponse,
     ModelResponseBody,
     ModelResponseMetadata,
+    ModelResponseResources,
     ModelRequest,
     ModelUpdate,
 )
@@ -423,9 +426,11 @@ APIKeyResponseBody.model_rebuild()
 ArtifactResponse.model_rebuild()
 ArtifactResponseBody.model_rebuild()
 ArtifactResponseMetadata.model_rebuild()
+ArtifactResponseResources.model_rebuild()
 ArtifactVersionRequest.model_rebuild()
 ArtifactVersionResponseBody.model_rebuild()
 ArtifactVersionResponseMetadata.model_rebuild()
+ArtifactVersionResponseResources.model_rebuild()
 CodeReferenceResponseBody.model_rebuild()
 CodeRepositoryResponseBody.model_rebuild()
 CodeRepositoryResponseMetadata.model_rebuild()
@@ -440,6 +445,7 @@ FlavorResponseMetadata.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
 ModelResponseMetadata.model_rebuild()
+ModelResponseResources.model_rebuild()
 ModelVersionResponseBody.model_rebuild()
 ModelVersionResponseMetadata.model_rebuild()
 ModelVersionResponseResources.model_rebuild()
@@ -552,12 +558,14 @@ __all__ = [
     "ArtifactResponse",
     "ArtifactResponseBody",
     "ArtifactResponseMetadata",
+    "ArtifactResponseResources",
     "ArtifactUpdate",
     "ArtifactVersionRequest",
     "ArtifactVersionFilter",
     "ArtifactVersionResponse",
     "ArtifactVersionResponseBody",
     "ArtifactVersionResponseMetadata",
+    "ArtifactVersionResponseResources",
     "ArtifactVersionUpdate",
     "ArtifactVisualizationRequest",
     "ArtifactVisualizationResponse",
@@ -602,6 +610,7 @@ __all__ = [
     "ModelResponse",
     "ModelResponseBody",
     "ModelResponseMetadata",
+    "ModelResponseResources",
     "ModelUpdate",
     "ModelVersionFilter",
     "ModelVersionRequest",
