@@ -234,22 +234,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             ValueError: In case the step run configuration is missing.
         """
-        input_artifacts = {
-            artifact.name: StepRunInputResponse(
-                input_type=StepRunInputArtifactType(artifact.type),
-                **artifact.artifact_version.to_model().model_dump(),
-            )
-            for artifact in self.input_artifacts
-        }
-
-        output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
-        for artifact in self.output_artifacts:
-            if artifact.name not in output_artifacts:
-                output_artifacts[artifact.name] = []
-            output_artifacts[artifact.name].append(
-                artifact.artifact_version.to_model()
-            )
-
         step = None
         if self.deployment is not None:
             step_configurations = json.loads(
@@ -288,8 +272,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             status=ExecutionStatus(self.status),
             start_time=self.start_time,
             end_time=self.end_time,
-            inputs=input_artifacts,
-            outputs=output_artifacts,
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
@@ -318,7 +300,27 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if self.model_version:
                 model_version = self.model_version.to_model()
 
-            resources = StepRunResponseResources(model_version=model_version)
+            input_artifacts = {
+                artifact.name: StepRunInputResponse(
+                    input_type=StepRunInputArtifactType(artifact.type),
+                    **artifact.artifact_version.to_model().model_dump(),
+                )
+                for artifact in self.input_artifacts
+            }
+
+            output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
+            for artifact in self.output_artifacts:
+                if artifact.name not in output_artifacts:
+                    output_artifacts[artifact.name] = []
+                output_artifacts[artifact.name].append(
+                    artifact.artifact_version.to_model()
+                )
+
+            resources = StepRunResponseResources(
+                model_version=model_version,
+                inputs=input_artifacts,
+                outputs=output_artifacts,
+            )
 
         return StepRunResponse(
             id=self.id,
