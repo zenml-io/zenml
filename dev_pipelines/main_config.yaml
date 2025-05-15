@@ -1,0 +1,40 @@
+pipelines:
+  - name: pipeline_with_tags  # Must match the module name
+    command: "python run.py"
+    stacks:
+      - default
+      - aws
+    # env:
+    #   param1: "one"
+    #   param2: "two"
+    # params:
+    #   first: 
+    #     config: "some_config.yaml"  
+    #   second: 
+    #     config: "some_second_config.yaml" 
+    # triggers:
+    #   - on_sync   # Runs with each change to the PR
+    #   - on_change  # Runs if the pipeline has changed
+    #   - on_comment  # Runs if someone comments !run pipeline_with_tags
+    #   - on_file_change:  # Runs if there are any changes in the following modules
+    #     - "src/zenml/**"
+    #     - "src/zenml/integrations/aws/**"
+
+  - name: pipeline_with_metadata
+    command: "python run.py"
+    stacks:
+      - default
+    # env:
+    #   dataset_path: "s3://zenml-datasets/sample_data"
+    #   log_level: "INFO"
+    # params:
+    #   default:
+    #     batch_size: 32
+    #     epochs: 10
+    #   small:
+    #     batch_size: 16
+    #     epochs: 5
+    # triggers:
+    #   - on_comment
+    #   - on_file_change:
+    #     - "src/zenml/metadata/**" 
