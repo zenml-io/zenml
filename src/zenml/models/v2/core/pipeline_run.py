@@ -242,6 +242,7 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     step_substitutions: Dict[str, Dict[str, str]] = Field(
         title="Substitutions used in the step runs of this pipeline run.",
         default_factory=dict,
+        deprecated=True,
     )
 
 
@@ -562,15 +563,6 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_metadata().is_templatable
-
-    @property
-    def step_substitutions(self) -> Dict[str, Dict[str, str]]:
-        """The `step_substitutions` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().step_substitutions
 
     @property
     def model_version(self) -> Optional[ModelVersionResponse]:

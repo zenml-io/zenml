@@ -379,18 +379,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ):
                 is_templatable = True
 
-            steps = {
-                step.name: step.to_model(include_metadata=True)
-                for step in self.step_runs
-            }
-
-            step_substitutions = {}
-            for step_name, step in steps.items():
-                step_substitutions[step_name] = step.config.substitutions
-                # We fetch the steps hydrated before, but want them unhydrated
-                # in the response -> We need to reset the metadata here
-                step.metadata = None
-
             orchestrator_environment = (
                 json.loads(self.orchestrator_environment)
                 if self.orchestrator_environment
@@ -417,7 +405,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,
-                step_substitutions=step_substitutions,
             )
 
         resources = None
