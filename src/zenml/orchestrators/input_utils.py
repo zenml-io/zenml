@@ -65,15 +65,17 @@ def resolve_step_inputs(
     steps_to_fetch.difference_update(step_runs.keys())
 
     if steps_to_fetch:
-        step_runs = {
-            run_step.name: run_step
-            for run_step in pagination_utils.depaginate(
-                Client().list_run_steps,
-                pipeline_run_id=pipeline_run.id,
-                project=pipeline_run.project.id,
-                name="oneof:" + json.dumps(list(steps_to_fetch)),
-            )
-        }
+        step_runs.update(
+            {
+                run_step.name: run_step
+                for run_step in pagination_utils.depaginate(
+                    Client().list_run_steps,
+                    pipeline_run_id=pipeline_run.id,
+                    project=pipeline_run.project.id,
+                    name="oneof:" + json.dumps(list(steps_to_fetch)),
+                )
+            }
+        )
 
     input_artifacts: Dict[str, StepRunInputResponse] = {}
     for name, input_ in step.spec.inputs.items():
