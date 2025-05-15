@@ -409,12 +409,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         resources = None
         if include_resources:
-            model_version = None
-            if self.model_version:
-                model_version = self.model_version.to_model()
-
             resources = PipelineRunResponseResources(
-                model_version=model_version,
+                model_version=self.model_version.to_model()
+                if self.model_version
+                else None,
                 tags=[tag.to_model() for tag in self.tags],
                 logs=self.logs.to_model() if self.logs else None,
             )
