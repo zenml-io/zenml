@@ -20,7 +20,7 @@ from typing import Any, Dict
 
 import click
 
-from zenml import get_step_context, pipeline, step
+from zenml import Tag, get_step_context, log_metadata, pipeline, step
 from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.docker_settings import PythonPackageInstaller
@@ -92,6 +92,24 @@ def load_step(
     start_time = time.time()
     operations = 0
 
+    print("Adding metadata...")
+    log_metadata(
+        metadata={
+            "key": "value",
+            "key2": 2,
+            "key3": [1, 2, 3],
+            "key4": {
+                "subkey": "subvalue",
+                "some_list": [1, 2, 3],
+                "some_dict": {"subkey2": "subvalue2"},
+            },
+            "key5": True,
+            "key6": False,
+            "key8": 1.0,
+            "key9": 1.0,
+        }
+    )
+    
     print("Starting API calls...")
     while time.time() - start_time < duration:
         # Perform various API operations
@@ -218,7 +236,17 @@ def load_test_pipeline(
     type=float,
     show_default=True,
 )
-def main(parallel_steps: int, duration: int, sleep_interval: float) -> None:
+@click.option(
+    "--num-tags",
+    "-t",
+    default=10,
+    help="Number of tags to add to the pipeline",
+    type=int,
+    show_default=True,
+)
+def main(
+    parallel_steps: int, duration: int, sleep_interval: float, num_tags: int
+) -> None:
     """Execute a ZenML load test with configurable parallel steps.
 
     This will spawn multiple parallel steps that continuously make API calls
@@ -228,9 +256,14 @@ def main(parallel_steps: int, duration: int, sleep_interval: float) -> None:
         parallel_steps: The number of parallel steps to run.
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
+        num_tags: The number of tags to add to the pipeline.
     """
     click.echo(f"Starting load test with {parallel_steps} parallel steps...")
     click.echo(f"Duration: {duration}s, Sleep Interval: {sleep_interval}s")
+
+    load_test_pipeline.configure(
+        tags=[Tag(name=f"tag_{i}", cascade=True) for i in range(num_tags)],
+    )
 
     load_test_pipeline(
         num_parallel_steps=parallel_steps,
