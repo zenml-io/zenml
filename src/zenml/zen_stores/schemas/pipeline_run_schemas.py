@@ -405,7 +405,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 project=self.project.to_model(),
                 run_metadata=self.fetch_metadata(),
                 config=config,
-                steps=steps,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 client_environment=client_environment,
