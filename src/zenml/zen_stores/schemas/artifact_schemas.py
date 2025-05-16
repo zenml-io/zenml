@@ -176,19 +176,12 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactResponse`.
         """
-        latest_id, latest_name = None, None
-        if latest_version := self.latest_version:
-            latest_id = latest_version.id
-            latest_name = latest_version.version
-
         # Create the body of the model
         body = ArtifactResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            latest_version_name=latest_name,
-            latest_version_id=latest_id,
         )
 
         # Create the metadata of the model
@@ -200,9 +193,16 @@ class ArtifactSchema(NamedSchema, table=True):
 
         resources = None
         if include_resources:
+            latest_id, latest_name = None, None
+            if latest_version := self.latest_version:
+                latest_id = latest_version.id
+                latest_name = latest_version.version
+
             resources = ArtifactResponseResources(
                 user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
+                latest_version_id=latest_id,
+                latest_version_name=latest_name,
             )
 
         return ArtifactResponse(
@@ -427,12 +427,6 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             # This is an old source which was an importable source path
             data_type = Source.from_import_path(self.data_type)
 
-        producer_step_run_id, producer_pipeline_run_id = None, None
-        if producer_run_ids := self.producer_run_ids:
-            # TODO: Why was the producer_pipeline_run_id only set for one
-            # of the cases before?
-            producer_step_run_id, producer_pipeline_run_id = producer_run_ids
-
         # Create the body of the model
         artifact = self.artifact.to_model()
         body = ArtifactVersionResponseBody(
@@ -446,7 +440,6 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             data_type=data_type,
             created=self.created,
             updated=self.updated,
-            producer_pipeline_run_id=producer_pipeline_run_id,
             save_type=ArtifactSaveType(self.save_type),
             artifact_store_id=self.artifact_store_id,
         )
@@ -455,16 +448,25 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ArtifactVersionResponseMetadata(
-                producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata=self.fetch_metadata(),
             )
 
         resources = None
         if include_resources:
+            producer_step_run_id, producer_pipeline_run_id = None, None
+            if producer_run_ids := self.producer_run_ids:
+                # TODO: Why was the producer_pipeline_run_id only set for one
+                # of the cases before?
+                producer_step_run_id, producer_pipeline_run_id = (
+                    producer_run_ids
+                )
+
             resources = ArtifactVersionResponseResources(
                 user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
+                producer_step_run_id=producer_step_run_id,
+                producer_pipeline_run_id=producer_pipeline_run_id,
             )
 
         return ArtifactVersionResponse(

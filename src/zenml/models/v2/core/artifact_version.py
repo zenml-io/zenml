@@ -194,10 +194,6 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
-    producer_pipeline_run_id: Optional[UUID] = Field(
-        title="The ID of the pipeline run that generated this artifact version.",
-        default=None,
-    )
     save_type: ArtifactSaveType = Field(
         title="The save type of the artifact version.",
     )
@@ -231,10 +227,6 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
 class ArtifactVersionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for artifact versions."""
 
-    producer_step_run_id: Optional[UUID] = Field(
-        title="ID of the step run that produced this artifact.",
-        default=None,
-    )
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
@@ -248,6 +240,14 @@ class ArtifactVersionResponseResources(ProjectScopedResponseResources):
 
     tags: List[TagResponse] = Field(
         title="Tags associated with the artifact version.",
+    )
+    producer_step_run_id: Optional[UUID] = Field(
+        title="ID of the step run that produced this artifact.",
+        default=None,
+    )
+    producer_pipeline_run_id: Optional[UUID] = Field(
+        title="The ID of the pipeline run that generated this artifact version.",
+        default=None,
     )
 
 
@@ -323,7 +323,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().producer_pipeline_run_id
+        return self.get_resources().producer_pipeline_run_id
 
     @property
     def save_type(self) -> ArtifactSaveType:
@@ -350,7 +350,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().producer_step_run_id
+        return self.get_resources().producer_step_run_id
 
     @property
     def visualizations(
