@@ -33,25 +33,52 @@ RUN ARCH="$(dpkg --print-architecture)" \
     && chown root:root /usr/local/bin/fixuid \
     && chmod 4755 /usr/local/bin/fixuid \
     && mkdir -p /etc/fixuid \
-    && echo "user: root" >> /etc/fixuid/config.yml \
-    && echo "group: root" >> /etc/fixuid/config.yml
+    && echo "user: coder" >> /etc/fixuid/config.yml \
+    && echo "group: coder" >> /etc/fixuid/config.yml
 
 # Ensure /usr/local/bin (common install location) is in PATH
 ENV PATH="/usr/local/bin:${PATH}"
 
-# Create /home/coder directory (as in Modal example)
-RUN mkdir -p /home/coder
-# Optional: Set ownership if needed, depends on base image and desired execution user
-# RUN chown someuser:somegroup /home/coder
+# Create coder user and group if they don't exist
+RUN groupadd -g 1000 coder || true && \
+    useradd -u 1000 -g coder -m coder || true
 
-# Set environment variables (as in Modal example)
+# Create /home/coder directory and set ownership
+RUN mkdir -p /home/coder && chown -R coder:coder /home/coder
+
+# Install the Python requirements
+RUN pip install --upgrade pip
+
+# Install ZenML directly with regular pip (not uv) to ensure it shows up in pip list
+RUN if [ -z "$ZENML_VERSION" ] || [ "$ZENML_VERSION" = "latest" ]; then \
+      pip install zenml; \
+    else \
+      pip install zenml==$ZENML_VERSION; \
+    fi
+
+# Install cloud-specific ZenML integrations
+RUN if [ "$CLOUD_PROVIDER" = "aws" ]; then \
+        zenml integration install aws s3 -y; \
+    elif [ "$CLOUD_PROVIDER" = "azure" ]; then \
+        zenml integration install azure -y; \
+    elif [ "$CLOUD_PROVIDER" = "gcp" ]; then \
+        zenml integration install gcp -y; \
+    else \
+        echo "No specific cloud integration installed"; \
+    fi
+
+# Set environment variables
 ENV ENTRYPOINTD=""
+ENV ZENML_REQUIRES_CODE_DOWNLOAD=True
 
 # Default working directory from base image is likely /app
 WORKDIR /app
 
-# Expose the default code-server port (optional, for documentation)
+# Expose the default code-server port
 EXPOSE 8080
+
+# Switch to coder user for security
+USER coder
 
 # Default command - using dumb-init is often good practice with containers
 CMD ["dumb-init", "--", "/bin/bash"] 
