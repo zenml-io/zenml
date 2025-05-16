@@ -251,7 +251,7 @@ def main() -> None:
 
             pipeline_runs = client.list_pipeline_runs(
                 hydrate=True,
-                project=deployment_config.project.id,
+                project=deployment_config.project_id,
                 deployment_id=deployment_config.id,
                 **list_args,
             )

@@ -71,7 +71,7 @@ def resolve_step_inputs(
                 for run_step in pagination_utils.depaginate(
                     Client().list_run_steps,
                     pipeline_run_id=pipeline_run.id,
-                    project=pipeline_run.project.id,
+                    project=pipeline_run.project_id,
                     name="oneof:" + json.dumps(list(steps_to_fetch)),
                 )
             }

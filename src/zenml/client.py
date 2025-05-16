@@ -2569,7 +2569,7 @@ class Client(metaclass=ClientMetaClass):
                 self.list_run_templates,
                 pipeline_id=pipeline.id,
                 stack_id=stack.id if stack else None,
-                project=project or pipeline.project.id,
+                project=project or pipeline.project_id,
             )
 
             for template in templates:
@@ -6364,7 +6364,7 @@ class Client(metaclass=ClientMetaClass):
             model_version=ModelVersionRequest(
                 name=name,
                 description=description,
-                project=model.project.id,
+                project=model.project_id,
                 model=model.id,
                 tags=tags,
             )
@@ -6619,7 +6619,7 @@ class Client(metaclass=ClientMetaClass):
         if not is_valid_uuid(model_name_or_id):
             model = self.get_model(model_name_or_id, project=project)
             model_name_or_id = model.id
-            project = project or model.project.id
+            project = project or model.project_id
         if not is_valid_uuid(version_name_or_id):
             version_name_or_id = self.get_model_version(
                 model_name_or_id, version_name_or_id, project=project

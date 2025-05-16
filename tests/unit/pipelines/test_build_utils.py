@@ -505,7 +505,6 @@ def test_local_repo_verification(
             ),
         ),
         metadata=CodeRepositoryResponseMetadata(
-            project=sample_deployment_response_model.project,
             config={"key": "value"},
         ),
     )

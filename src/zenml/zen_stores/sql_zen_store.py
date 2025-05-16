@@ -10508,7 +10508,7 @@ class SqlZenStore(BaseZenStore):
             )
             track(
                 event=AnalyticsEvent.CREATED_MODEL_VERSION,
-                metadata={"project_id": model_version.project.id},
+                metadata={"project_id": model_version.project_id},
             )
             return True, model_version
         except EntityCreationError:
