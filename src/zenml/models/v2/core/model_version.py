@@ -156,28 +156,6 @@ class ModelVersionResponseBody(ProjectScopedResponseBody):
         description="The model containing version",
     )
 
-    # TODO: Remove at some point
-    model_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Model artifacts linked to the model version",
-        default={},
-        deprecated=True,
-    )
-    data_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Data artifacts linked to the model version",
-        default={},
-        deprecated=True,
-    )
-    deployment_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Deployment artifacts linked to the model version",
-        default={},
-        deprecated=True,
-    )
-    pipeline_run_ids: Dict[str, UUID] = Field(
-        description="Pipeline runs linked to the model version",
-        default={},
-        deprecated=True,
-    )
-
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
     #  It is possible to suppress this warning message with the following
@@ -253,42 +231,6 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_body().model
-
-    @property
-    def model_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
-        """The `model_artifact_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().model_artifact_ids
-
-    @property
-    def data_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
-        """The `data_artifact_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().data_artifact_ids
-
-    @property
-    def deployment_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
-        """The `deployment_artifact_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().deployment_artifact_ids
-
-    @property
-    def pipeline_run_ids(self) -> Dict[str, UUID]:
-        """The `pipeline_run_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().pipeline_run_ids
 
     @property
     def tags(self) -> List[TagResponse]:

@@ -595,21 +595,6 @@ def _print_artifacts_links_generic(
         else "model artifacts"
     )
 
-    if (
-        (only_data_artifacts and not model_version.data_artifact_ids)
-        or (
-            only_deployment_artifacts
-            and not model_version.deployment_artifact_ids
-        )
-        or (only_model_artifacts and not model_version.model_artifact_ids)
-    ):
-        cli_utils.declare(f"No {type_} linked to the model version found.")
-        return
-
-    cli_utils.title(
-        f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
-    )
-
     links = Client().list_model_version_artifact_links(
         model_version_id=model_version.id,
         only_data_artifacts=only_data_artifacts,
@@ -618,6 +603,13 @@ def _print_artifacts_links_generic(
         **kwargs,
     )
 
+    if not links:
+        cli_utils.declare(f"No {type_} linked to the model version found.")
+        return
+
+    cli_utils.title(
+        f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
+    )
     cli_utils.print_pydantic_models(
         links,
         columns=["artifact_version", "created"],
