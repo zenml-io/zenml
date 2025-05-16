@@ -162,6 +162,7 @@ def get_run(
     hydrate: bool = True,
     refresh_status: bool = False,
     include_python_packages: bool = False,
+    include_full_metadata: bool = False,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
@@ -174,6 +175,8 @@ def get_run(
             the status of the pipeline run using its orchestrator.
         include_python_packages: Flag deciding whether to include the
             Python packages in the response.
+        include_full_metadata: Flag deciding whether to include the
+            full metadata in the response.
 
     Returns:
         The pipeline run.
@@ -186,6 +189,7 @@ def get_run(
         get_method=zen_store().get_run,
         hydrate=hydrate,
         include_python_packages=include_python_packages,
+        include_full_metadata=include_full_metadata,
     )
     if refresh_status:
         try:

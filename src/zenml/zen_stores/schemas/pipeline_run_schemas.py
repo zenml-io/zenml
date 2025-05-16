@@ -263,8 +263,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             trigger_execution_id=request.trigger_execution_id,
         )
 
-    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+    def fetch_metadata_collection(
+        self, include_full_metadata: bool = False, **kwargs: Any
+    ) -> Dict[str, List[RunMetadataEntry]]:
         """Fetches all the metadata entries related to the pipeline run.
+
+        Args:
+            include_full_metadata: Whether the full metadata will be included.
+            **kwargs: Keyword arguments.
 
         Returns:
             a dictionary, where the key is the key of the metadata entry
@@ -273,18 +279,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         # Fetch the metadata related to this run
         metadata_collection = super().fetch_metadata_collection()
 
-        # Fetch the metadata related to the steps of this run
-        for s in self.step_runs:
-            step_metadata = s.fetch_metadata_collection()
+        if include_full_metadata:
+            # Fetch the metadata related to the steps of this run
+            for s in self.step_runs:
+                step_metadata = s.fetch_metadata_collection()
             for k, v in step_metadata.items():
                 metadata_collection[f"{s.name}::{k}"] = v
 
-        # Fetch the metadata related to the schedule of this run
-        if self.deployment is not None:
-            if schedule := self.deployment.schedule:
-                schedule_metadata = schedule.fetch_metadata_collection()
-                for k, v in schedule_metadata.items():
-                    metadata_collection[f"schedule:{k}"] = v
+            # Fetch the metadata related to the schedule of this run
+            if self.deployment is not None:
+                if schedule := self.deployment.schedule:
+                    schedule_metadata = schedule.fetch_metadata_collection()
+                    for k, v in schedule_metadata.items():
+                        metadata_collection[f"schedule:{k}"] = v
 
         return metadata_collection
 
@@ -293,6 +300,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         include_python_packages: bool = False,
+        include_full_metadata: bool = False,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -301,6 +309,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
+            include_full_metadata: Whether the full metadata will be included.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -351,7 +360,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         config.finalize_substitutions(start_time=self.start_time, inplace=True)
 
         body = PipelineRunResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             status=ExecutionStatus(self.status),
             stack=stack,
             pipeline=pipeline,
@@ -379,18 +389,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ):
                 is_templatable = True
 
-            steps = {
-                step.name: step.to_model(include_metadata=True)
-                for step in self.step_runs
-            }
-
-            step_substitutions = {}
-            for step_name, step in steps.items():
-                step_substitutions[step_name] = step.config.substitutions
-                # We fetch the steps hydrated before, but want them unhydrated
-                # in the response -> We need to reset the metadata here
-                step.metadata = None
-
             orchestrator_environment = (
                 json.loads(self.orchestrator_environment)
                 if self.orchestrator_environment
@@ -402,10 +400,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 orchestrator_environment.pop("python_packages", None)
 
             metadata = PipelineRunResponseMetadata(
-                project=self.project.to_model(),
                 run_metadata=self.fetch_metadata(),
                 config=config,
-                steps=steps,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 client_environment=client_environment,
@@ -418,24 +414,21 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,
-                step_substitutions=step_substitutions,
             )
 
         resources = None
         if include_resources:
-            model_version = None
-            if self.model_version:
-                model_version = self.model_version.to_model()
-
             resources = PipelineRunResponseResources(
-                model_version=model_version,
+                user=self.user.to_model() if self.user else None,
+                model_version=self.model_version.to_model()
+                if self.model_version
+                else None,
                 tags=[tag.to_model() for tag in self.tags],
                 logs=self.logs.to_model() if self.logs else None,
             )
 
         return PipelineRunResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

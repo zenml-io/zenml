@@ -133,9 +133,10 @@ class EventSourceSchema(NamedSchema, table=True):
         from zenml.models import TriggerResponse
 
         body = EventSourceResponseBody(
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            user=self.user.to_model() if self.user else None,
             flavor=self.flavor,
             plugin_subtype=self.plugin_subtype,
             is_active=self.is_active,
@@ -152,12 +153,12 @@ class EventSourceSchema(NamedSchema, table=True):
                 ),
             )
             resources = EventSourceResponseResources(
+                user=self.user.to_model() if self.user else None,
                 triggers=triggers,
             )
         metadata = None
         if include_metadata:
             metadata = EventSourceResponseMetadata(
-                project=self.project.to_model(),
                 description=self.description,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
@@ -165,7 +166,6 @@ class EventSourceSchema(NamedSchema, table=True):
             )
         return EventSourceResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

@@ -29,6 +29,7 @@ from zenml.models import (
     OAuthDeviceResponse,
     OAuthDeviceResponseBody,
     OAuthDeviceResponseMetadata,
+    OAuthDeviceResponseResources,
     OAuthDeviceUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -230,7 +231,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             )
 
         body = OAuthDeviceResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
             client_id=self.client_id,
@@ -241,10 +242,16 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             ip_address=self.ip_address,
             hostname=self.hostname,
         )
+        resources = None
+        if include_resources:
+            resources = OAuthDeviceResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
         return OAuthDeviceResponse(
             id=self.id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def to_internal_model(

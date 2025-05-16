@@ -180,18 +180,14 @@ class StepRunResponseBody(ProjectScopedResponseBody):
         title="The end time of the step run.",
         default=None,
     )
-    inputs: Dict[str, StepRunInputResponse] = Field(
-        title="The input artifact versions of the step run.",
-        default_factory=dict,
-    )
-    outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
-        title="The output artifact versions of the step run.",
-        default_factory=dict,
-    )
     model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
         "configured by this step run explicitly.",
         default=None,
+    )
+    substitutions: Dict[str, str] = Field(
+        title="The substitutions of the step run.",
+        default={},
     )
     model_config = ConfigDict(protected_namespaces=())
 
@@ -254,6 +250,14 @@ class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
+    inputs: Dict[str, StepRunInputResponse] = Field(
+        title="The input artifact versions of the step run.",
+        default_factory=dict,
+    )
+    outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
+        title="The output artifact versions of the step run.",
+        default_factory=dict,
+    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -345,7 +349,7 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().inputs
+        return self.get_resources().inputs
 
     @property
     def outputs(self) -> Dict[str, List[ArtifactVersionResponse]]:
@@ -354,7 +358,7 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().outputs
+        return self.get_resources().outputs
 
     @property
     def model_version_id(self) -> Optional[UUID]:
@@ -364,6 +368,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().model_version_id
+
+    @property
+    def substitutions(self) -> Dict[str, str]:
+        """The `substitutions` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().substitutions
 
     @property
     def config(self) -> "StepConfiguration":

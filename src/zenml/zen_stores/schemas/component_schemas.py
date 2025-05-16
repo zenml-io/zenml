@@ -190,9 +190,9 @@ class StackComponentSchema(NamedSchema, table=True):
             A `ComponentModel`
         """
         body = ComponentResponseBody(
+            user_id=self.user_id,
             type=StackComponentType(self.type),
             flavor_name=self.flavor,
-            user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
             logo_url=self.flavor_schema.logo_url
@@ -224,7 +224,8 @@ class StackComponentSchema(NamedSchema, table=True):
                 )
 
             resources = ComponentResponseResources(
-                flavor=self.flavor_schema.to_model()
+                user=self.user.to_model() if self.user else None,
+                flavor=self.flavor_schema.to_model(),
             )
         return ComponentResponse(
             id=self.id,

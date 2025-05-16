@@ -25,6 +25,7 @@ from zenml.models import (
     StackResponse,
     StackResponseBody,
     StackResponseMetadata,
+    StackResponseResources,
     StackUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -152,7 +153,7 @@ class StackSchema(NamedSchema, table=True):
             The converted model.
         """
         body = StackResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
         )
@@ -166,10 +167,16 @@ class StackSchema(NamedSchema, table=True):
                 else None,
                 description=self.description,
             )
+        resources = None
+        if include_resources:
+            resources = StackResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
 
         return StackResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

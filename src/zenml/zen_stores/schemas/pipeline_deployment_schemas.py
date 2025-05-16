@@ -31,6 +31,7 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
+    PipelineDeploymentResponseResources,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
@@ -250,7 +251,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             The created `PipelineDeploymentResponse`.
         """
         body = PipelineDeploymentResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
         )
@@ -270,7 +272,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 client_environment.pop("python_packages", None)
 
             metadata = PipelineDeploymentResponseMetadata(
-                project=self.project.to_model(),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
@@ -293,9 +294,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 code_path=self.code_path,
                 template_id=self.template_id,
             )
+
+        resources = None
+        if include_resources:
+            resources = PipelineDeploymentResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
         return PipelineDeploymentResponse(
             id=self.id,
-            project_id=self.project_id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

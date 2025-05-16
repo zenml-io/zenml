@@ -25,6 +25,7 @@ from zenml.models import (
     FlavorResponse,
     FlavorResponseBody,
     FlavorResponseMetadata,
+    FlavorResponseResources,
     FlavorUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -121,7 +122,7 @@ class FlavorSchema(NamedSchema, table=True):
             The flavor model.
         """
         body = FlavorResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
             type=StackComponentType(self.type),
             integration=self.integration,
             source=self.source,
@@ -140,9 +141,15 @@ class FlavorSchema(NamedSchema, table=True):
                 docs_url=self.docs_url,
                 sdk_docs_url=self.sdk_docs_url,
             )
+        resources = None
+        if include_resources:
+            resources = FlavorResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
         return FlavorResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

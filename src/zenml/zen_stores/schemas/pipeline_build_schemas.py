@@ -27,6 +27,7 @@ from zenml.models import (
     PipelineBuildResponse,
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
+    PipelineBuildResponseResources,
 )
 from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -148,14 +149,14 @@ class PipelineBuildSchema(BaseSchema, table=True):
             The created `PipelineBuildResponse`.
         """
         body = PipelineBuildResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
         )
         metadata = None
         if include_metadata:
             metadata = PipelineBuildResponseMetadata(
-                project=self.project.to_model(),
                 pipeline=self.pipeline.to_model() if self.pipeline else None,
                 stack=self.stack.to_model() if self.stack else None,
                 images=json.loads(self.images),
@@ -167,9 +168,16 @@ class PipelineBuildSchema(BaseSchema, table=True):
                 contains_code=self.contains_code,
                 duration=self.duration,
             )
+
+        resources = None
+        if include_resources:
+            resources = PipelineBuildResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return PipelineBuildResponse(
             id=self.id,
-            project_id=self.project_id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

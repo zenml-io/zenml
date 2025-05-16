@@ -234,22 +234,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             ValueError: In case the step run configuration is missing.
         """
-        input_artifacts = {
-            artifact.name: StepRunInputResponse(
-                input_type=StepRunInputArtifactType(artifact.type),
-                **artifact.artifact_version.to_model().model_dump(),
-            )
-            for artifact in self.input_artifacts
-        }
-
-        output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
-        for artifact in self.output_artifacts:
-            if artifact.name not in output_artifacts:
-                output_artifacts[artifact.name] = []
-            output_artifacts[artifact.name].append(
-                artifact.artifact_version.to_model()
-            )
-
         step = None
         if self.deployment is not None:
             step_configurations = json.loads(
@@ -284,20 +268,19 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         body = StepRunResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             status=ExecutionStatus(self.status),
             start_time=self.start_time,
             end_time=self.end_time,
-            inputs=input_artifacts,
-            outputs=output_artifacts,
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
+            substitutions=step.config.substitutions,
         )
         metadata = None
         if include_metadata:
             metadata = StepRunResponseMetadata(
-                project=self.project.to_model(),
                 config=step.config,
                 spec=step.spec,
                 cache_key=self.cache_key,
@@ -318,11 +301,31 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if self.model_version:
                 model_version = self.model_version.to_model()
 
-            resources = StepRunResponseResources(model_version=model_version)
+            input_artifacts = {
+                artifact.name: StepRunInputResponse(
+                    input_type=StepRunInputArtifactType(artifact.type),
+                    **artifact.artifact_version.to_model().model_dump(),
+                )
+                for artifact in self.input_artifacts
+            }
+
+            output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
+            for artifact in self.output_artifacts:
+                if artifact.name not in output_artifacts:
+                    output_artifacts[artifact.name] = []
+                output_artifacts[artifact.name].append(
+                    artifact.artifact_version.to_model()
+                )
+
+            resources = StepRunResponseResources(
+                user=self.user.to_model() if self.user else None,
+                model_version=model_version,
+                inputs=input_artifacts,
+                outputs=output_artifacts,
+            )
 
         return StepRunResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
@@ -410,7 +413,9 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Relationships
     step_run: "StepRunSchema" = Relationship(back_populates="input_artifacts")
-    artifact_version: "ArtifactVersionSchema" = Relationship()
+    artifact_version: "ArtifactVersionSchema" = Relationship(
+        sa_relationship_kwargs={"lazy": "joined"}
+    )
 
 
 class StepRunOutputArtifactSchema(SQLModel, table=True):
@@ -446,5 +451,5 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
     # Relationship
     step_run: "StepRunSchema" = Relationship(back_populates="output_artifacts")
     artifact_version: "ArtifactVersionSchema" = Relationship(
-        back_populates="output_of_step_runs"
+        sa_relationship_kwargs={"lazy": "joined"},
     )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID, uuid4
 
 from pydantic import ConfigDict
@@ -28,7 +28,6 @@ from sqlalchemy.orm import object_session
 from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import (
-    ArtifactType,
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
@@ -38,6 +37,7 @@ from zenml.models import (
     ModelResponse,
     ModelResponseBody,
     ModelResponseMetadata,
+    ModelResponseResources,
     ModelUpdate,
     ModelVersionArtifactRequest,
     ModelVersionArtifactResponse,
@@ -194,8 +194,6 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponse`.
         """
-        tags = [tag.to_model() for tag in self.tags]
-
         if latest_version := self.latest_version:
             latest_version_name = latest_version.name
             latest_version_id = latest_version.id
@@ -206,7 +204,6 @@ class ModelSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ModelResponseMetadata(
-                project=self.project.to_model(),
                 license=self.license,
                 description=self.description,
                 audience=self.audience,
@@ -217,21 +214,28 @@ class ModelSchema(NamedSchema, table=True):
                 save_models_to_registry=self.save_models_to_registry,
             )
 
+        resources = None
+        if include_resources:
+            resources = ModelResponseResources(
+                user=self.user.to_model() if self.user else None,
+                tags=[tag.to_model() for tag in self.tags],
+            )
+
         body = ModelResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            tags=tags,
             latest_version_name=latest_version_name,
             latest_version_id=latest_version_id,
         )
 
         return ModelResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(
@@ -317,14 +321,6 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         nullable=False,
     )
     model: "ModelSchema" = Relationship(back_populates="model_versions")
-    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
-        back_populates="model_version",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
-        back_populates="model_version",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.MODEL_VERSION.value}', foreign(TagResourceSchema.resource_id)==ModelVersionSchema.id)",
@@ -430,44 +426,9 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         from zenml.models import ServiceResponse
 
-        # Construct {name: {version: id}} dicts for all linked artifacts
-        model_artifact_ids: Dict[str, Dict[str, UUID]] = {}
-        deployment_artifact_ids: Dict[str, Dict[str, UUID]] = {}
-        data_artifact_ids: Dict[str, Dict[str, UUID]] = {}
-        for artifact_link in self.artifact_links:
-            if not artifact_link.artifact_version:
-                continue
-            artifact_name = artifact_link.artifact_version.artifact.name
-            artifact_version = str(artifact_link.artifact_version.version)
-            artifact_version_id = artifact_link.artifact_version.id
-            if artifact_link.artifact_version.type == ArtifactType.MODEL.value:
-                model_artifact_ids.setdefault(artifact_name, {}).update(
-                    {str(artifact_version): artifact_version_id}
-                )
-            elif (
-                artifact_link.artifact_version.type
-                == ArtifactType.SERVICE.value
-            ):
-                deployment_artifact_ids.setdefault(artifact_name, {}).update(
-                    {str(artifact_version): artifact_version_id}
-                )
-            else:
-                data_artifact_ids.setdefault(artifact_name, {}).update(
-                    {str(artifact_version): artifact_version_id}
-                )
-
-        # Construct {name: id} dict for all linked pipeline runs
-        pipeline_run_ids: Dict[str, UUID] = {}
-        for pipeline_run_link in self.pipeline_run_links:
-            if not pipeline_run_link.pipeline_run:
-                continue
-            pipeline_run = pipeline_run_link.pipeline_run
-            pipeline_run_ids[pipeline_run.name] = pipeline_run.id
-
         metadata = None
         if include_metadata:
             metadata = ModelVersionResponseMetadata(
-                project=self.project.to_model(),
                 description=self.description,
                 run_metadata=self.fetch_metadata(),
             )
@@ -484,26 +445,23 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
                 ),
             )
             resources = ModelVersionResponseResources(
+                user=self.user.to_model() if self.user else None,
                 services=services,
+                tags=[tag.to_model() for tag in self.tags],
             )
 
         body = ModelVersionResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             stage=self.stage,
             number=self.number,
             model=self.model.to_model(),
-            model_artifact_ids=model_artifact_ids,
-            data_artifact_ids=data_artifact_ids,
-            deployment_artifact_ids=deployment_artifact_ids,
-            pipeline_run_ids=pipeline_run_ids,
-            tags=[tag.to_model() for tag in self.tags],
         )
 
         return ModelVersionResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
@@ -549,9 +507,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model_version: "ModelVersionSchema" = Relationship(
-        back_populates="artifact_links"
-    )
+    model_version: "ModelVersionSchema" = Relationship()
     artifact_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ArtifactVersionSchema.__tablename__,
@@ -632,9 +588,7 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model_version: "ModelVersionSchema" = Relationship(
-        back_populates="pipeline_run_links"
-    )
+    model_version: "ModelVersionSchema" = Relationship()
     pipeline_run_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=PipelineRunSchema.__tablename__,
