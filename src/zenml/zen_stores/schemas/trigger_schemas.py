@@ -192,7 +192,8 @@ class TriggerSchema(NamedSchema, table=True):
         from zenml.models import TriggerExecutionResponse
 
         body = TriggerResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             action_flavor=self.action.flavor,
@@ -231,6 +232,7 @@ class TriggerSchema(NamedSchema, table=True):
                 ),
             )
             resources = TriggerResponseResources(
+                user=self.user.to_model() if self.user else None,
                 action=self.action.to_model(),
                 event_source=self.event_source.to_model()
                 if self.event_source
@@ -239,7 +241,6 @@ class TriggerSchema(NamedSchema, table=True):
             )
         return TriggerResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

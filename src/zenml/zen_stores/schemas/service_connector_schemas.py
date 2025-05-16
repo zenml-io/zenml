@@ -27,6 +27,7 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorResponseBody,
     ServiceConnectorResponseMetadata,
+    ServiceConnectorResponseResources,
     ServiceConnectorUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -241,7 +242,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             A `ServiceConnectorModel`
         """
         body = ServiceConnectorResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
             description=self.description,
@@ -265,9 +266,16 @@ class ServiceConnectorSchema(NamedSchema, table=True):
                 expiration_seconds=self.expiration_seconds,
                 labels=self.labels_dict,
             )
+        resources = None
+        if include_resources:
+            resources = ServiceConnectorResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return ServiceConnectorResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

@@ -218,11 +218,13 @@ class ModelSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = ModelResponseResources(
+                user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
             )
 
         body = ModelResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             latest_version_name=latest_version_name,
@@ -231,7 +233,6 @@ class ModelSchema(NamedSchema, table=True):
 
         return ModelResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
@@ -429,7 +430,6 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ModelVersionResponseMetadata(
-                project=self.project.to_model(),
                 description=self.description,
                 run_metadata=self.fetch_metadata(),
             )
@@ -446,12 +446,14 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
                 ),
             )
             resources = ModelVersionResponseResources(
+                user=self.user.to_model() if self.user else None,
                 services=services,
                 tags=[tag.to_model() for tag in self.tags],
             )
 
         body = ModelVersionResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             stage=self.stage,
@@ -461,7 +463,6 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return ModelVersionResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

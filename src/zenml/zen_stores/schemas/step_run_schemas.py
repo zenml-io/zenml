@@ -268,7 +268,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         body = StepRunResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             status=ExecutionStatus(self.status),
             start_time=self.start_time,
             end_time=self.end_time,
@@ -317,6 +318,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
 
             resources = StepRunResponseResources(
+                user=self.user.to_model() if self.user else None,
                 model_version=model_version,
                 inputs=input_artifacts,
                 outputs=output_artifacts,
@@ -324,7 +326,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return StepRunResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

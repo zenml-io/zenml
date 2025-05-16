@@ -223,7 +223,8 @@ class RunTemplateSchema(NamedSchema, table=True):
         latest_run = self.latest_run
 
         body = RunTemplateResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             runnable=runnable,
@@ -288,6 +289,7 @@ class RunTemplateSchema(NamedSchema, table=True):
                 code_reference = None
 
             resources = RunTemplateResponseResources(
+                user=self.user.to_model() if self.user else None,
                 source_deployment=self.source_deployment.to_model()
                 if self.source_deployment
                 else None,
@@ -299,7 +301,6 @@ class RunTemplateSchema(NamedSchema, table=True):
 
         return RunTemplateResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

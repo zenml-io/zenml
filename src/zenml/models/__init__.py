@@ -127,6 +127,7 @@ from zenml.models.v2.core.code_repository import (
     CodeRepositoryResponse,
     CodeRepositoryResponseBody,
     CodeRepositoryResponseMetadata,
+    CodeRepositoryResponseResources,
 )
 from zenml.models.v2.core.component import (
     ComponentBase,
@@ -151,6 +152,7 @@ from zenml.models.v2.core.device import (
     OAuthDeviceResponse,
     OAuthDeviceResponseBody,
     OAuthDeviceResponseMetadata,
+    OAuthDeviceResponseResources,
     OAuthDeviceInternalRequest,
     OAuthDeviceInternalUpdate,
     OAuthDeviceInternalResponse,
@@ -162,6 +164,7 @@ from zenml.models.v2.core.flavor import (
     FlavorResponse,
     FlavorResponseBody,
     FlavorResponseMetadata,
+    FlavorResponseResources,
 )
 from zenml.models.v2.core.logs import (
     LogsRequest,
@@ -215,6 +218,7 @@ from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
+    PipelineBuildResponseResources,
 )
 from zenml.models.v2.core.pipeline_deployment import (
     PipelineDeploymentBase,
@@ -254,6 +258,7 @@ from zenml.models.v2.core.schedule import (
     ScheduleResponse,
     ScheduleResponseBody,
     ScheduleResponseMetadata,
+    ScheduleResponseResources,
 )
 from zenml.models.v2.core.secret import (
     SecretFilter,
@@ -261,6 +266,7 @@ from zenml.models.v2.core.secret import (
     SecretResponse,
     SecretResponseBody,
     SecretResponseMetadata,
+    SecretResponseResources,
     SecretUpdate,
 )
 from zenml.models.v2.core.service_account import (
@@ -278,6 +284,7 @@ from zenml.models.v2.core.service_connector import (
     ServiceConnectorResponse,
     ServiceConnectorResponseBody,
     ServiceConnectorResponseMetadata,
+    ServiceConnectorResponseResources,
 )
 from zenml.models.v2.core.stack import (
     DefaultStackRequest,
@@ -287,6 +294,7 @@ from zenml.models.v2.core.stack import (
     StackResponse,
     StackResponseBody,
     StackResponseMetadata,
+    StackResponseResources
 )
 from zenml.models.v2.misc.statistics import (
     ProjectStatistics,
@@ -306,6 +314,7 @@ from zenml.models.v2.core.tag import (
     TagResponse,
     TagResponseBody,
     TagResponseMetadata,
+    TagResponseResources,
     TagRequest,
     TagUpdate,
 )
@@ -434,6 +443,7 @@ ArtifactVersionResponseResources.model_rebuild()
 CodeReferenceResponseBody.model_rebuild()
 CodeRepositoryResponseBody.model_rebuild()
 CodeRepositoryResponseMetadata.model_rebuild()
+CodeRepositoryResponseResources.model_rebuild()
 ComponentResponseBody.model_rebuild()
 ComponentResponseMetadata.model_rebuild()
 ComponentResponseResources.model_rebuild()
@@ -442,6 +452,7 @@ EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
+FlavorResponseResources.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
 ModelResponseMetadata.model_rebuild()
@@ -458,6 +469,7 @@ PipelineResponseResources.model_rebuild()
 PipelineBuildBase.model_rebuild()
 PipelineBuildResponseBody.model_rebuild()
 PipelineBuildResponseMetadata.model_rebuild()
+PipelineBuildResponseResources.model_rebuild()
 PipelineDeploymentRequest.model_rebuild()
 PipelineDeploymentResponseBody.model_rebuild()
 PipelineDeploymentResponseMetadata.model_rebuild()
@@ -472,22 +484,26 @@ RunTemplateResponseResources.model_rebuild()
 RunTemplateResponseBody.model_rebuild()
 ScheduleResponseBody.model_rebuild()
 ScheduleResponseMetadata.model_rebuild()
+ScheduleResponseResources.model_rebuild()
 SecretResponseBody.model_rebuild()
 SecretResponseMetadata.model_rebuild()
+SecretResponseResources.model_rebuild()
 ServiceResponseBody.model_rebuild()
 ServiceResponseMetadata.model_rebuild()
 ServiceResponseResources.model_rebuild()
 ServiceConnectorResponseBody.model_rebuild()
 ServiceConnectorResponseMetadata.model_rebuild()
+ServiceConnectorResponseResources.model_rebuild()
 StackRequest.model_rebuild()
 StackResponseBody.model_rebuild()
 StackResponseMetadata.model_rebuild()
-StackResponse.model_rebuild()
+StackResponseResources.model_rebuild()
 StepRunRequest.model_rebuild()
 StepRunResponseBody.model_rebuild()
 StepRunResponseMetadata.model_rebuild()
 StepRunResponseResources.model_rebuild()
 TagResponseBody.model_rebuild()
+TagResponseResources.model_rebuild()
 TriggerExecutionResponseResources.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -581,6 +597,7 @@ __all__ = [
     "CodeRepositoryResponse",
     "CodeRepositoryResponseBody",
     "CodeRepositoryResponseMetadata",
+    "CodeRepositoryResponseResources",
     "ComponentBase",
     "ComponentRequest",
     "ComponentUpdate",
@@ -601,6 +618,7 @@ __all__ = [
     "FlavorResponse",
     "FlavorResponseBody",
     "FlavorResponseMetadata",
+    "FlavorResponseResources",
     "LogsRequest",
     "LogsResponse",
     "LogsResponseBody",
@@ -632,6 +650,7 @@ __all__ = [
     "OAuthDeviceResponse",
     "OAuthDeviceResponseBody",
     "OAuthDeviceResponseMetadata",
+    "OAuthDeviceResponseResources",
     "OAuthDeviceInternalRequest",
     "OAuthDeviceInternalUpdate",
     "OAuthDeviceInternalResponse",
@@ -648,12 +667,14 @@ __all__ = [
     "PipelineBuildResponse",
     "PipelineBuildResponseBody",
     "PipelineBuildResponseMetadata",
+    "PipelineBuildResponseResources",
     "PipelineDeploymentBase",
     "PipelineDeploymentRequest",
     "PipelineDeploymentFilter",
     "PipelineDeploymentResponse",
     "PipelineDeploymentResponseBody",
     "PipelineDeploymentResponseMetadata",
+    "PipelineDeploymentResponseResources",
     "PipelineRunRequest",
     "PipelineRunUpdate",
     "PipelineRunFilter",
@@ -675,11 +696,13 @@ __all__ = [
     "ScheduleResponse",
     "ScheduleResponseBody",
     "ScheduleResponseMetadata",
+    "ScheduleResponseResources",
     "SecretFilter",
     "SecretRequest",
     "SecretResponse",
     "SecretResponseBody",
     "SecretResponseMetadata",
+    "SecretResponseResources",
     "SecretUpdate",
     "ServiceResponse",
     "ServiceResponseBody",
@@ -706,12 +729,14 @@ __all__ = [
     "ServiceConnectorResponse",
     "ServiceConnectorResponseBody",
     "ServiceConnectorResponseMetadata",
+    "ServiceConnectorResponseResources",
     "StackRequest",
     "StackUpdate",
     "StackFilter",
     "StackResponse",
     "StackResponseBody",
     "StackResponseMetadata",
+    "StackResponseResources",
     "StepRunRequest",
     "StepRunUpdate",
     "StepRunFilter",
@@ -726,6 +751,7 @@ __all__ = [
     "TagResponse",
     "TagResponseBody",
     "TagResponseMetadata",
+    "TagResponseResources",
     "TagRequest",
     "TagUpdate",
     "TriggerResponse",

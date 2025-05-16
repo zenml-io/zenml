@@ -26,6 +26,7 @@ from zenml.models import (
     ScheduleResponse,
     ScheduleResponseBody,
     ScheduleResponseMetadata,
+    ScheduleResponseResources,
     ScheduleUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -189,7 +190,8 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
             interval_second = None
 
         body = ScheduleResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             active=self.active,
             cron_expression=self.cron_expression,
             start_time=self.start_time,
@@ -209,10 +211,16 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
                 run_metadata=self.fetch_metadata(),
             )
 
+        resources = None
+        if include_resources:
+            resources = ScheduleResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return ScheduleResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

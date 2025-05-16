@@ -169,7 +169,8 @@ class PipelineSchema(NamedSchema, table=True):
         latest_run = self.latest_run
 
         body = PipelineResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             latest_run_id=latest_run.id if latest_run else None,
             latest_run_status=latest_run.status if latest_run else None,
             created=self.created,
@@ -188,6 +189,7 @@ class PipelineSchema(NamedSchema, table=True):
             latest_run_user = latest_run.user if latest_run else None
 
             resources = PipelineResponseResources(
+                user=self.user.to_model() if self.user else None,
                 latest_run_user=latest_run_user.to_model()
                 if latest_run_user
                 else None,
@@ -196,7 +198,6 @@ class PipelineSchema(NamedSchema, table=True):
 
         return PipelineResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

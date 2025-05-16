@@ -29,6 +29,7 @@ from zenml.models import (
     CodeRepositoryResponse,
     CodeRepositoryResponseBody,
     CodeRepositoryResponseMetadata,
+    CodeRepositoryResponseResources,
     CodeRepositoryUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -118,7 +119,8 @@ class CodeRepositorySchema(NamedSchema, table=True):
             The created CodeRepositoryResponse.
         """
         body = CodeRepositoryResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             source=json.loads(self.source),
             logo_url=self.logo_url,
             created=self.created,
@@ -131,12 +133,19 @@ class CodeRepositorySchema(NamedSchema, table=True):
                 config=json.loads(self.config),
                 description=self.description,
             )
+
+        resources = None
+        if include_resources:
+            resources = CodeRepositoryResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return CodeRepositoryResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
-            metadata=metadata,
             body=body,
+            metadata=metadata,
+            resources=resources,
         )
 
     def update(self, update: "CodeRepositoryUpdate") -> "CodeRepositorySchema":

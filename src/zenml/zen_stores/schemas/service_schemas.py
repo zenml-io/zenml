@@ -134,7 +134,8 @@ class ServiceSchema(NamedSchema, table=True):
             The created `ServiceResponse`.
         """
         body = ServiceResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             service_type=json.loads(self.service_type),
@@ -146,7 +147,6 @@ class ServiceSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ServiceResponseMetadata(
-                project=self.project.to_model(),
                 service_source=self.service_source,
                 config=json.loads(base64.b64decode(self.config).decode()),
                 status=json.loads(base64.b64decode(self.status).decode())
@@ -162,6 +162,7 @@ class ServiceSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = ServiceResponseResources(
+                user=self.user.to_model() if self.user else None,
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
@@ -171,7 +172,6 @@ class ServiceSchema(NamedSchema, table=True):
             )
         return ServiceResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

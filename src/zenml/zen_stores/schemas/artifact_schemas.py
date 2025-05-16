@@ -187,11 +187,12 @@ class ArtifactSchema(NamedSchema, table=True):
 
         # Create the body of the model
         body = ArtifactResponseBody(
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             latest_version_name=latest_name,
             latest_version_id=latest_id,
-            user=self.user.to_model() if self.user else None,
         )
 
         # Create the metadata of the model
@@ -205,12 +206,12 @@ class ArtifactSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = ArtifactResponseResources(
+                user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
             )
 
         return ArtifactResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
@@ -417,9 +418,10 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         # Create the body of the model
         artifact = self.artifact.to_model()
         body = ArtifactVersionResponseBody(
+            user_id=self.user_id,
+            project_id=self.project_id,
             artifact=artifact,
             version=self.version or str(self.version_number),
-            user=self.user.to_model() if self.user else None,
             uri=self.uri,
             type=ArtifactType(self.type),
             materializer=materializer,
@@ -444,12 +446,12 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         resources = None
         if include_resources:
             resources = ArtifactVersionResponseResources(
+                user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
             )
 
         return ArtifactVersionResponse(
             id=self.id,
-            project_id=self.project_id,
             body=body,
             metadata=metadata,
             resources=resources,

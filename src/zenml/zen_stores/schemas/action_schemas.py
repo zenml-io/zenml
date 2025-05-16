@@ -169,7 +169,8 @@ class ActionSchema(NamedSchema, table=True):
             The converted model.
         """
         body = ActionResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             flavor=self.flavor,
@@ -188,11 +189,11 @@ class ActionSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = ActionResponseResources(
+                user=self.user.to_model() if self.user else None,
                 service_account=self.service_account.to_model(),
             )
         return ActionResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

@@ -351,7 +351,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         config.finalize_substitutions(start_time=self.start_time, inplace=True)
 
         body = PipelineRunResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             status=ExecutionStatus(self.status),
             stack=stack,
             pipeline=pipeline,
@@ -410,6 +411,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         resources = None
         if include_resources:
             resources = PipelineRunResponseResources(
+                user=self.user.to_model() if self.user else None,
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
@@ -419,7 +421,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return PipelineRunResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

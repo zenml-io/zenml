@@ -31,6 +31,7 @@ from zenml.models import (
     SecretResponse,
     SecretResponseBody,
     SecretResponseMetadata,
+    SecretResponseResources,
     SecretUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -225,11 +226,17 @@ class SecretSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = SecretResponseMetadata()
 
+        resources = None
+        if include_resources:
+            resources = SecretResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         # Don't load the secret values implicitly in the secret. The
         # SQL secret store will call `get_secret_values` to load the
         # values separately if SQL is used as the secrets store.
         body = SecretResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
             private=self.private,
@@ -239,6 +246,7 @@ class SecretSchema(NamedSchema, table=True):
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def get_secret_values(

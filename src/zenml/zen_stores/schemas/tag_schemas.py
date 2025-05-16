@@ -28,6 +28,7 @@ from zenml.models import (
     TagResponse,
     TagResponseBody,
     TagResponseMetadata,
+    TagResponseResources,
     TagUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -105,11 +106,18 @@ class TagSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = TagResponseMetadata()
+
+        resources = None
+        if include_resources:
+            resources = TagResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return TagResponse(
             id=self.id,
             name=self.name,
             body=TagResponseBody(
-                user=self.user.to_model() if self.user else None,
+                user_id=self.user_id,
                 created=self.created,
                 updated=self.updated,
                 color=ColorVariants(self.color),
@@ -117,6 +125,7 @@ class TagSchema(NamedSchema, table=True):
                 tagged_count=len(self.links),
             ),
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, update: TagUpdate) -> "TagSchema":
