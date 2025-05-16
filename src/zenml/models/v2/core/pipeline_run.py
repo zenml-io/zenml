@@ -194,9 +194,6 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default={},
         title="Metadata associated with this pipeline run.",
     )
-    steps: Dict[str, "StepRunResponse"] = Field(
-        default={}, title="The steps of this run.", deprecated=True
-    )
     config: PipelineConfiguration = Field(
         title="The pipeline configuration used for this pipeline run.",
     )
