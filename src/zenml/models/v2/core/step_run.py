@@ -185,6 +185,10 @@ class StepRunResponseBody(ProjectScopedResponseBody):
         "configured by this step run explicitly.",
         default=None,
     )
+    substitutions: Dict[str, str] = Field(
+        title="The substitutions of the step run.",
+        default={},
+    )
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -364,6 +368,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().model_version_id
+
+    @property
+    def substitutions(self) -> Dict[str, str]:
+        """The `substitutions` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().substitutions
 
     @property
     def config(self) -> "StepConfiguration":

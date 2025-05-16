@@ -276,6 +276,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
+            substitutions=step.config.substitutions,
         )
         metadata = None
         if include_metadata:

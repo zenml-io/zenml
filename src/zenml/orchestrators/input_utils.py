@@ -86,14 +86,9 @@ def resolve_step_inputs(
                 f"No step `{input_.step_name}` found in current run."
             )
 
-        try:
-            output_name = string_utils.format_name_template(input_.output_name)
-        except KeyError:
-            # The output name contains a placeholder. We now fetch the step
-            # substitutions which will cost us an extra hydration call.
-            output_name = string_utils.format_name_template(
-                input_.output_name, substitutions=step_run.config.substitutions
-            )
+        output_name = string_utils.format_name_template(
+            input_.output_name, substitutions=step_run.substitutions
+        )
 
         try:
             outputs = step_run.outputs[output_name]
