@@ -200,7 +200,6 @@ class ArtifactSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ArtifactResponseMetadata(
                 has_custom_name=self.has_custom_name,
-                project=self.project.to_model(),
             )
 
         resources = None
@@ -437,7 +436,6 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ArtifactVersionResponseMetadata(
-                project=self.project.to_model(),
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata=self.fetch_metadata(),

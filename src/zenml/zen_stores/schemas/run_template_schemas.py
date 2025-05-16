@@ -258,7 +258,6 @@ class RunTemplateSchema(NamedSchema, table=True):
                     )
 
             metadata = RunTemplateResponseMetadata(
-                project=self.project.to_model(),
                 description=self.description,
                 pipeline_spec=pipeline_spec,
                 config_template=config_template,

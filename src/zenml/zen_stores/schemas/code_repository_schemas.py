@@ -129,7 +129,6 @@ class CodeRepositorySchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = CodeRepositoryResponseMetadata(
-                project=self.project.to_model(),
                 config=json.loads(self.config),
                 description=self.description,
             )

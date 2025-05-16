@@ -179,7 +179,6 @@ class ActionSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ActionResponseMetadata(
-                project=self.project.to_model(),
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 ),

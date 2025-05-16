@@ -209,7 +209,6 @@ class TriggerSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = TriggerResponseMetadata(
-                project=self.project.to_model(),
                 event_filter=json.loads(
                     base64.b64decode(self.event_filter).decode()
                 ),

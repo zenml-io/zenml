@@ -204,7 +204,6 @@ class ModelSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ModelResponseMetadata(
-                project=self.project.to_model(),
                 license=self.license,
                 description=self.description,
                 audience=self.audience,

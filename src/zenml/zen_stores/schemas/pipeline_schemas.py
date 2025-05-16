@@ -180,7 +180,6 @@ class PipelineSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = PipelineResponseMetadata(
-                project=self.project.to_model(),
                 description=self.description,
             )
 

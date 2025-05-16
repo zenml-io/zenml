@@ -157,7 +157,6 @@ class PipelineBuildSchema(BaseSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = PipelineBuildResponseMetadata(
-                project=self.project.to_model(),
                 pipeline=self.pipeline.to_model() if self.pipeline else None,
                 stack=self.stack.to_model() if self.stack else None,
                 images=json.loads(self.images),

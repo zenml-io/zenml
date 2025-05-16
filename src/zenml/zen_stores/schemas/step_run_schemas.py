@@ -281,7 +281,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = StepRunResponseMetadata(
-                project=self.project.to_model(),
                 config=step.config,
                 spec=step.spec,
                 cache_key=self.cache_key,

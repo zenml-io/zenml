@@ -205,7 +205,6 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ScheduleResponseMetadata(
-                project=self.project.to_model(),
                 pipeline_id=self.pipeline_id,
                 orchestrator_id=self.orchestrator_id,
                 run_metadata=self.fetch_metadata(),

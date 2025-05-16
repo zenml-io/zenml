@@ -272,7 +272,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 client_environment.pop("python_packages", None)
 
             metadata = PipelineDeploymentResponseMetadata(
-                project=self.project.to_model(),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,

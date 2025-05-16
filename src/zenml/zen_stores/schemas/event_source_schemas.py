@@ -159,7 +159,6 @@ class EventSourceSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = EventSourceResponseMetadata(
-                project=self.project.to_model(),
                 description=self.description,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
