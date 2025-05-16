@@ -413,7 +413,9 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Relationships
     step_run: "StepRunSchema" = Relationship(back_populates="input_artifacts")
-    artifact_version: "ArtifactVersionSchema" = Relationship()
+    artifact_version: "ArtifactVersionSchema" = Relationship(
+        sa_relationship_kwargs={"lazy": "joined"}
+    )
 
 
 class StepRunOutputArtifactSchema(SQLModel, table=True):
@@ -449,5 +451,5 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
     # Relationship
     step_run: "StepRunSchema" = Relationship(back_populates="output_artifacts")
     artifact_version: "ArtifactVersionSchema" = Relationship(
-        back_populates="output_of_step_runs"
+        sa_relationship_kwargs={"lazy": "joined"},
     )

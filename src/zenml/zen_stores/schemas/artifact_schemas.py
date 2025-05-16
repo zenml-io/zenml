@@ -48,10 +48,6 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.zen_stores.schemas.step_run_schemas import (
-    StepRunInputArtifactSchema,
-    StepRunOutputArtifactSchema,
-)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
 
@@ -312,14 +308,6 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
             overlaps="run_metadata",
         ),
-    )
-    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
-        back_populates="artifact_version",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    input_of_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
-        back_populates="artifact_version",
-        sa_relationship_kwargs={"cascade": "delete"},
     )
     visualizations: List["ArtifactVisualizationSchema"] = Relationship(
         back_populates="artifact_version",
