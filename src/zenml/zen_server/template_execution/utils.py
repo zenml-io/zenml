@@ -560,9 +560,9 @@ def get_pipeline_run_analytics_metadata(
                 if not source.is_internal:
                     custom_materializer = True
 
-    assert deployment.user
-    stack_creator = stack.user
-    own_stack = stack_creator and stack_creator.id == deployment.user.id
+    assert deployment.user_id
+    stack_creator = stack.user_id
+    own_stack = stack_creator and stack_creator == deployment.user_id
 
     stack_metadata = {
         component_type.value: component_list[0].flavor_name

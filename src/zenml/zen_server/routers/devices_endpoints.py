@@ -114,7 +114,7 @@ def get_authorization_device(
     device = zen_store().get_authorized_device(
         device_id=device_id, hydrate=hydrate
     )
-    if not device.user:
+    if not device.user_id:
         # A device that hasn't been verified and associated with a user yet
         # can only be retrieved if the user code is specified and valid.
         if user_code:
@@ -123,7 +123,7 @@ def get_authorization_device(
             )
             if internal_device.verify_user_code(user_code=user_code):
                 return device
-    elif device.user.id == auth_context.user.id:
+    elif device.user_id == auth_context.user.id:
         return device
 
     raise KeyError(
@@ -157,7 +157,7 @@ def update_authorized_device(
             belong to the current user.
     """
     device = zen_store().get_authorized_device(device_id=device_id)
-    if not device.user or device.user.id != auth_context.user.id:
+    if not device.user_id or device.user_id != auth_context.user.id:
         raise KeyError(
             f"Unable to get device with ID {device_id}: No device with "
             "this ID found."
@@ -222,7 +222,10 @@ def verify_authorized_device(
 
         # Check if the device already has a user associated with it. If so, the
         # current user and the user associated with the device must be the same.
-        if device_model.user and device_model.user.id != auth_context.user.id:
+        if (
+            device_model.user_id
+            and device_model.user_id != auth_context.user.id
+        ):
             raise ValueError(
                 "Invalid request: this device is associated with another user.",
             )
@@ -292,7 +295,7 @@ def delete_authorized_device(
             belong to the current user.
     """
     device = zen_store().get_authorized_device(device_id=device_id)
-    if not device.user or device.user.id != auth_context.user.id:
+    if not device.user_id or device.user_id != auth_context.user.id:
         raise KeyError(
             f"Unable to get device with ID {device_id}: No device with "
             "this ID found."
