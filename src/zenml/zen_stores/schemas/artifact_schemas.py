@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import TEXT, Column, UniqueConstraint, asc, desc
 from sqlalchemy.orm import object_session
-from sqlmodel import Field, Relationship, desc, select
+from sqlmodel import Field, Relationship, col, desc, select
 
 from zenml.config.source import Source
 from zenml.enums import (
@@ -332,6 +332,44 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         )
     )
 
+    @property
+    def producer_run_ids(self) -> Optional[Tuple[UUID, UUID]]:
+        """Fetch the producer run IDs for this artifact version.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The producer step run ID and pipeline run ID for this artifact
+            version.
+        """
+        from zenml.zen_stores.schemas import (
+            StepRunOutputArtifactSchema,
+            StepRunSchema,
+        )
+
+        if session := object_session(self):
+            return session.execute(
+                select(StepRunSchema.id, StepRunSchema.pipeline_run_id)
+                .join(
+                    StepRunOutputArtifactSchema,
+                    col(StepRunOutputArtifactSchema.step_id)
+                    == col(StepRunSchema.id),
+                )
+                .where(col(StepRunOutputArtifactSchema.artifact_id) == self.id)
+                .where(
+                    col(StepRunSchema.status)
+                    == ExecutionStatus.COMPLETED.value
+                )
+                # Fetch the oldest step run
+                .order_by(asc(StepRunSchema.created))
+                .limit(1)
+            ).one_or_none()
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch producer run for artifact version."
+            )
+
     @classmethod
     def from_request(
         cls,
@@ -400,19 +438,10 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             data_type = Source.from_import_path(self.data_type)
 
         producer_step_run_id, producer_pipeline_run_id = None, None
-        if self.output_of_step_runs:
-            original_step_runs = [
-                sr
-                for sr in self.output_of_step_runs
-                if sr.step_run.status == ExecutionStatus.COMPLETED
-            ]
-            if len(original_step_runs) == 1:
-                step_run = original_step_runs[0].step_run
-                producer_step_run_id = step_run.id
-                producer_pipeline_run_id = step_run.pipeline_run_id
-            else:
-                step_run = self.output_of_step_runs[0].step_run
-                producer_step_run_id = step_run.original_step_run_id
+        if producer_run_ids := self.producer_run_ids:
+            # TODO: Why was the producer_pipeline_run_id only set for one
+            # of the cases before?
+            producer_step_run_id, producer_pipeline_run_id = producer_run_ids
 
         # Create the body of the model
         artifact = self.artifact.to_model()
