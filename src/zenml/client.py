@@ -2024,7 +2024,9 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             type=component_type,
             flavor=flavor,
-            configuration=configuration,
+            configuration=validated_config.model_dump(
+                mode="json", exclude_unset=True
+            ),
             labels=labels,
         )
 
@@ -2112,7 +2114,9 @@ class Client(metaclass=ClientMetaClass):
             assert validated_config is not None
             warn_if_config_server_mismatch(validated_config)
 
-            update_model.configuration = existing_configuration
+            update_model.configuration = validated_config.model_dump(
+                mode="json", exclude_unset=True
+            )
 
         if labels is not None:
             existing_labels = component.labels or {}
