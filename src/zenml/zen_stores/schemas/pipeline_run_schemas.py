@@ -263,8 +263,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             trigger_execution_id=request.trigger_execution_id,
         )
 
-    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+    def fetch_metadata_collection(
+        self, include_full_metadata: bool = False, **kwargs: Any
+    ) -> Dict[str, List[RunMetadataEntry]]:
         """Fetches all the metadata entries related to the pipeline run.
+
+        Args:
+            include_full_metadata: Whether the full metadata will be included.
+            **kwargs: Keyword arguments.
 
         Returns:
             a dictionary, where the key is the key of the metadata entry
@@ -273,18 +279,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         # Fetch the metadata related to this run
         metadata_collection = super().fetch_metadata_collection()
 
-        # Fetch the metadata related to the steps of this run
-        for s in self.step_runs:
-            step_metadata = s.fetch_metadata_collection()
+        if include_full_metadata:
+            # Fetch the metadata related to the steps of this run
+            for s in self.step_runs:
+                step_metadata = s.fetch_metadata_collection()
             for k, v in step_metadata.items():
                 metadata_collection[f"{s.name}::{k}"] = v
 
-        # Fetch the metadata related to the schedule of this run
-        if self.deployment is not None:
-            if schedule := self.deployment.schedule:
-                schedule_metadata = schedule.fetch_metadata_collection()
-                for k, v in schedule_metadata.items():
-                    metadata_collection[f"schedule:{k}"] = v
+            # Fetch the metadata related to the schedule of this run
+            if self.deployment is not None:
+                if schedule := self.deployment.schedule:
+                    schedule_metadata = schedule.fetch_metadata_collection()
+                    for k, v in schedule_metadata.items():
+                        metadata_collection[f"schedule:{k}"] = v
 
         return metadata_collection
 
@@ -293,6 +300,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         include_python_packages: bool = False,
+        include_full_metadata: bool = False,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -301,6 +309,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
+            include_full_metadata: Whether the full metadata will be included.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
