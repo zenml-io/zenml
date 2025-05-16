@@ -711,7 +711,6 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
     """
 
     id: Optional[UUID] = None  # type: ignore[assignment]
-    project_id: Optional[UUID] = None  # type: ignore[assignment]
     lazy_load_name: Optional[str] = None
     lazy_load_version: Optional[str] = None
     lazy_load_model_name: str
