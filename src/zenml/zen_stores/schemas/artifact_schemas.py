@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import TEXT, Column, UniqueConstraint, asc, desc
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy.orm import object_session
-from sqlmodel import Field, Relationship, col, desc, select
+from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.source import Source
 from zenml.enums import (
@@ -337,7 +337,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         )
 
         if session := object_session(self):
-            return session.execute(
+            row = session.execute(
                 select(StepRunSchema.id, StepRunSchema.pipeline_run_id)
                 .join(
                     StepRunOutputArtifactSchema,
@@ -353,6 +353,8 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
                 .order_by(asc(StepRunSchema.created))
                 .limit(1)
             ).one_or_none()
+
+            return (row[0], row[1]) if row else None
         else:
             raise RuntimeError(
                 "Missing DB session to fetch producer run for artifact version."
