@@ -34,7 +34,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
     pod_settings=KubernetesPodSettings(
         resources={
             "requests": {"cpu": "100m", "memory": "500Mi"},
-            # "limits": {"memory": "500Mi"},
+            # "limits": {"memory": "500Mi"},    -> grows linearly with number of steps
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -49,8 +49,8 @@ kubernetes_settings = KubernetesOrchestratorSettings(
     ),
     orchestrator_pod_settings=KubernetesPodSettings(
         resources={
-            "requests": {"cpu": "100m", "memory": "350Mi"},
-            "limits": {"memory": "350Mi"},
+            "requests": {"cpu": "100m", "memory": "500Mi"},
+            # "limits": {"memory": "350Mi"}, # -> grows linearly with number of steps
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -209,13 +209,25 @@ def load_step(
     while time.time() - start_time < duration:
         # Perform various API operations
         print("Listing pipeline runs...")
-        client.list_pipeline_runs()
+        p = client.list_pipeline_runs()
+        if p.items:
+            print("Fetching pipeline run...")
+            client.get_pipeline_run(p.items[-1].id)
         print("Listing stacks...")
-        client.list_stacks()
+        s = client.list_stacks()
+        if s.items:
+            print("Fetching stack...")
+            client.get_stack(s.items[-1].id)
         print("Listing stack components...")
-        client.list_stack_components()
+        sc = client.list_stack_components()
+        if sc.items:
+            print("Fetching stack component...")
+            client.get_stack_component(sc.items[-1].type, sc.items[-1].id)
         print("Listing service connectors...")
-        client.list_service_connectors()
+        sc = client.list_service_connectors()
+        if sc.items:
+            print("Fetching service connector...")
+            client.get_service_connector(sc.items[-1].id)
 
         operations += 4
         if sleep_interval > 0:

@@ -14,6 +14,7 @@
 """SQL Zen Store implementation."""
 
 import base64
+import inspect
 import json
 import logging
 import math
@@ -74,7 +75,6 @@ from sqlalchemy.util import immutabledict
 # the tuple. While this is convenient in most cases, in unique cases like using
 # the "add_columns" functionality, one might encounter unexpected results.
 from sqlmodel import (
-    Session,
     SQLModel,
     and_,
     col,
@@ -84,6 +84,7 @@ from sqlmodel import (
     or_,
     select,
 )
+from sqlmodel import Session as SqlModelSession
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics import track
@@ -410,6 +411,40 @@ def exponential_backoff_with_jitter(
     """
     exponential_backoff = base_duration * 1.5**attempt
     return random.uniform(0, exponential_backoff)
+
+
+class Session(SqlModelSession):
+    """Session subclass that automatically tracks duration and calling context."""
+
+    def __enter__(self) -> "Session":
+        # Look up the stack to find the SQLZenStore method
+        # for frame in inspect.stack():
+        #     if "self" in frame.frame.f_locals:
+        #         instance = frame.frame.f_locals["self"]
+        #         if isinstance(instance, SqlZenStore):
+        #             self.caller_method = (
+        #                 f"{instance.__class__.__name__}.{frame.function}"
+        #             )
+        #             break
+        # else:
+        #     self.caller_method = "unknown"
+
+        # self.start_time = time.time()
+
+        return super().__enter__()
+
+    def __exit__(
+        self,
+        exc_type: Optional[Any],
+        exc_val: Optional[Any],
+        exc_tb: Optional[Any],
+    ) -> None:
+        # duration = time.time() - self.start_time
+        # logger.info(
+        #     f"SQL Session for method '{self.caller_method}' completed in "
+        #     f"{duration:.3f} seconds"
+        # )
+        return super().__exit__(exc_type, exc_val, exc_tb)
 
 
 class SQLDatabaseDriver(StrEnum):

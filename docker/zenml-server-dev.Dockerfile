@@ -147,7 +147,7 @@ RUN pip install --no-deps --no-cache -e .[server,secrets-aws,secrets-gcp,secrets
 
 EXPOSE 8080
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload", "--access-log"]
 CMD ["--port", "8080", "--host",  "0.0.0.0"]
 
 
@@ -160,5 +160,5 @@ RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-az
 
 EXPOSE 8080
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--access-log"]
 CMD ["--port", "8080", "--host",  "0.0.0.0"]

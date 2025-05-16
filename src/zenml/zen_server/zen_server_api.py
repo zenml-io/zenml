@@ -24,6 +24,8 @@ import os
 from asyncio.log import logger
 from datetime import datetime, timedelta
 from genericpath import isfile
+import threading
+import time
 from typing import Any, List, Set
 
 from anyio import to_thread
@@ -46,6 +48,7 @@ from starlette.responses import (
 from starlette.types import ASGIApp
 
 import zenml
+import logging
 from zenml.analytics import source_context
 from zenml.constants import (
     API,
@@ -316,17 +319,17 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
     try:
         if is_user_request(request):
             last_user_activity = now
+            if (
+                (now - last_user_activity_reported).total_seconds()
+                > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
+            ):
+                last_user_activity_reported = now
+                zen_store()._update_last_user_activity_timestamp(
+                    last_user_activity=last_user_activity
+                )
     except Exception as e:
         logger.debug(
             f"An unexpected error occurred while checking user activity: {e}"
-        )
-    if (
-        (now - last_user_activity_reported).total_seconds()
-        > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
-    ):
-        last_user_activity_reported = now
-        zen_store()._update_last_user_activity_timestamp(
-            last_user_activity=last_user_activity
         )
 
     try:
@@ -376,6 +379,46 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
             status_code=500,
             content={"detail": "An unexpected error occurred."},
         )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next: Any) -> Any:
+    """Log requests to the ZenML server.
+
+    Args:
+        request: The incoming request object.
+        call_next: A function that will receive the request as a parameter and
+            pass it to the corresponding path operation.
+
+    Returns:
+        The response to the request.
+    """
+    # Get active threads count
+    active_threads = threading.active_count()
+
+    # Get SQLAlchemy connection pool info
+    engine = zen_store().engine
+    pool_size = engine.pool.size()
+    checked_out_connections = engine.pool.checkedout()
+    available_connections = engine.pool.checkedin()
+
+    client_ip = request.client.host
+    method = request.method
+    url_path = request.url.path
+
+    logger.info(
+        f"{method} {url_path} from {client_ip} [ active_threads {active_threads} pool_size {pool_size} checked_out_connections {checked_out_connections} available_connections {available_connections} ]"
+    )
+
+    start_time = time.time()
+    response = await call_next(request)
+    duration = (time.time() - start_time) * 1000
+    status_code = response.status_code
+
+    logger.info(
+        f"{status_code} {method} {url_path} from {client_ip} took {duration:.2f}ms [ active_threads {active_threads} pool_size {pool_size} checked_out_connections {checked_out_connections} available_connections {available_connections} ]"
+    )
+    return response
 
 
 @app.on_event("startup")
