@@ -146,7 +146,7 @@ def upload_model(model):
     # No credential handling required
     from zenml.integrations.s3.artifact_stores import S3ArtifactStore
     store = S3ArtifactStore()
-    store.upload_file(model.path, 'models/model.pkl')
+    store.copyfile(model.path, 'models/model.pkl')
 ```
 
 ## Next Steps
