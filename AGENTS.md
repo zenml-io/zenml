@@ -72,6 +72,20 @@ This document provides guidance for Codex agents working with the ZenML codebase
 - Set up a Python environment with ZenML dev dependencies
 - Install ZenML in development mode: `pip install -e ".[dev]"`
 - Most scripts require these dependencies to be available
+- ZenML recommends using `uv` for Python package installation in local environments
+  - `uv` is also used in CI workflows
+  - It resolves dependencies more quickly and reliably than pip
+  - It can resolve dependency conflicts that pip sometimes struggles with or takes a long time to resolve
+
+### Environment Variables
+- Several environment variables are useful during ZenML development:
+  - `ZENML_DEBUG=true`: Enables verbose debug logging
+  - `ZENML_LOGGING_VERBOSITY=INFO`: Controls logging verbosity
+  - `ZENML_ANALYTICS_OPT_IN=false`: Disables analytics during development
+  - `MLSTACKS_ANALYTICS_OPT_OUT=true`: Disables MLStacks analytics
+  - `AUTO_OPEN_DASHBOARD=false`: Prevents automatic dashboard opening
+  - `ZENML_ENABLE_RICH_TRACEBACK=false`: Disables rich traceback formatting
+  - `TOKENIZERS_PARALLELISM=false`: Avoids tokenizers parallelism warnings
 
 ### Branch Management
 - **IMPORTANT**: `develop` is our primary working branch, NOT `main`

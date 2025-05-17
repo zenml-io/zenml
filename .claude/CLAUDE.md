@@ -76,6 +76,13 @@ This document provides guidance for Claude Code when working with the ZenML code
   - `uv` is also used in CI workflows
   - It resolves dependencies more quickly and reliably than pip
   - It can resolve dependency conflicts that pip sometimes struggles with or takes a long time to resolve
+- Install GitHub CLI (`gh`) for easier interaction with GitHub PRs and issues
+  - Use this to create and manage pull requests, view issues, and more
+  - Examples:
+    - `gh pr create --title "Title" --body "Description" --base develop --label bug`
+    - `gh pr view --web` (opens current PR in browser)
+    - `gh pr list` (shows open PRs)
+    - `gh pr status` (shows your PR status)
 
 ### Environment Variables
 - Several environment variables are useful during ZenML development:
@@ -126,12 +133,33 @@ This document provides guidance for Claude Code when working with the ZenML code
   - `bug`: For bug fixes
   - `dependencies`: For dependency updates
   - `enhancement`: For new features or improvements
-- Use appropriate PR tags where applicable:
-  - `internal`: For changes relevant only to ZenML team members
-  - `documentation`: For changes related to documentation
-  - `bug`: For bug fixes
-  - `dependencies`: For dependency updates
-  - `enhancement`: For new features or improvements
+
+### Using GitHub CLI for PRs
+- The GitHub CLI (gh) is highly recommended for managing PRs
+- Creating PRs:
+  ```
+  gh pr create --title "Your PR Title" --body "$(cat <<'EOF'
+  ## Summary
+  - Key point 1
+  - Key point 2
+
+  ## Details
+  More detailed explanation...
+
+  ## Test plan
+  How the changes were tested
+
+  🤖 Generated with [Claude Code](https://claude.ai/code)
+  EOF
+  )" --base develop --label bug
+  ```
+- Using heredocs (as shown above) helps format PR descriptions properly
+- Other useful commands:
+  - Update PR title: `gh pr edit --title "New title"`
+  - Update PR body: `gh pr edit --body "New description"`
+  - Add labels: `gh pr edit --add-label "bug,enhancement"`
+  - Check PR status: `gh pr status`
+  - View PR in browser: `gh pr view --web`
 
 ### Continuous Integration
 - ZenML uses a two-tier CI approach:
