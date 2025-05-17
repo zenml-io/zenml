@@ -35,9 +35,9 @@ This document provides guidance for Claude Code when working with the ZenML code
   - Automatically fixes and formats code using ruff and yamlfix
 - Check code quality with: `bash scripts/lint.sh`
   - Unlike format.sh, this doesn't auto-fix issues
-  - Runs MyPy type checking on the codebase
-  - Note: Full MyPy check is slow on the entire codebase
-  - For faster checks, run MyPy directly on specific files: `mypy src/zenml/path/to/file.py`
+  - Runs mypy type checking on the codebase
+  - Note: Full mypy check is slow on the entire codebase
+  - For faster checks, run mypy directly on specific files: `mypy src/zenml/path/to/file.py`
 - The primary code style is enforced by ruff, configured in `pyproject.toml`
 - YAML formatting uses yamlfix: `yamlfix .github -v`
 
