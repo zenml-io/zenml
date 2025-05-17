@@ -1,6 +1,6 @@
-# ZenML Codex Agent Guidelines
+# ZenML Claude Code Guidelines
 
-This document provides guidance for Codex agents working with the ZenML codebase. ZenML is an extensible, open-source MLOps framework for creating production-ready ML pipelines.
+This document provides guidance for Claude Code when working with the ZenML codebase. ZenML is an extensible, open-source MLOps framework for creating production-ready ML pipelines.
 
 ## Project Structure
 
@@ -201,4 +201,4 @@ When tackling complex tasks:
 
 ---
 
-*This document is maintained to help Codex agents work effectively with the ZenML codebase. For human contributors, see CONTRIBUTING.md.*
+*This document is maintained to help Claude Code work effectively with the ZenML codebase. For human contributors, see CONTRIBUTING.md.*
