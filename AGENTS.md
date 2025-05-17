@@ -72,6 +72,10 @@ This document provides guidance for Codex agents working with the ZenML codebase
 - Set up a Python environment with ZenML dev dependencies
 - Install ZenML in development mode: `pip install -e ".[dev]"`
 - Most scripts require these dependencies to be available
+- ZenML recommends using `uv` for Python package installation in local environments
+  - `uv` is also used in CI workflows
+  - It resolves dependencies more quickly and reliably than pip
+  - It can resolve dependency conflicts that pip sometimes struggles with or takes a long time to resolve
 
 ### Branch Management
 - **IMPORTANT**: `develop` is our primary working branch, NOT `main`
