@@ -33,7 +33,7 @@ This document provides guidance for Claude Code when working with the ZenML code
 - Format code with: `bash scripts/format.sh` (requires Python environment with dev dependencies)
   - Run this before every commit to ensure proper formatting
   - Automatically fixes and formats code using ruff and yamlfix
-- Check code quality with: `bash scripts/lint.sh` (or `scripts/linting.sh`)
+- Check code quality with: `bash scripts/lint.sh`
   - Unlike format.sh, this doesn't auto-fix issues
   - Runs MyPy type checking on the codebase
   - Note: Full MyPy check is slow on the entire codebase
@@ -46,10 +46,14 @@ This document provides guidance for Claude Code when working with the ZenML code
 - Follow Google Python style for docstrings
 - Type hint all function parameters and return values
 - Use descriptive variable names and documentation
-- Keep function size manageable (aim for < 50 lines)
+- Keep function size manageable (aim for < 50 lines) though there are exceptions
 
 ### Testing Requirements
-- All new code requires test coverage
+- Most new code requires test coverage
+  - key exceptions are when the code involves integrations with external
+    services. (in those cases we generally test things extensively locally and
+    in the CI. So the developer might have to run things or set things up
+    locally first.)
 - Tests live in the `/tests/` folder with structure loosely mirroring the main codebase
 - Unit tests go in `/tests/unit/`
 - Integration tests go in `/tests/integration/`
@@ -77,10 +81,9 @@ This document provides guidance for Claude Code when working with the ZenML code
 - If working on a feature branch that's already based on `develop`, you may need to branch off that feature branch for related changes
 
 ### Making Changes
-1. Run `scripts/format.sh` before every commit
-2. Run tests to verify changes
-3. Update documentation for user-facing changes
-4. Update `RELEASE_NOTES.md` for significant changes
+1. Run `bash scripts/format.sh` before every commit
+2. Run targeted tests to verify changes (see above)
+3. Update documentation for user-facing changes (or ensure that nothing was broken)
 
 ### When Implementing Features
 - Study existing similar implementations first
@@ -109,9 +112,9 @@ This document provides guidance for Claude Code when working with the ZenML code
   - **Fast CI**: Runs automatically on all PRs
   - **Full CI**: Includes more extensive tests but requires manual triggering
 - To run the full test suite:
-  1. Add the label `run-integration-tests` to your PR
-  2. Find and restart the "ZenML CI Integration Tests" job
-- If your changes touch integrations, you'll need to run the full CI
+  1. Add the label `run-slow-ci` to your PR
+  2. Find and restart the "ci-slow" job
+- If your changes touch integrations, you'll maybe want to run the full CI
 - CI environments have all dependencies installed that many tests require
 - Check the GitHub Actions logs to debug any CI failures
 
@@ -161,12 +164,6 @@ When tackling complex tasks:
 4. Test incrementally as you implement
 5. Document design decisions in code comments
 
-## Troubleshooting Guide
-
-- Debug issues with `zenml --debug [command]`
-- Check logs in `.zenml/` directory
-- Use ZenML server logs for server-related issues
-- Common errors and solutions are in our docs
 
 ## Expert Tips
 
@@ -201,4 +198,5 @@ When tackling complex tasks:
 
 ---
 
-*This document is maintained to help Claude Code work effectively with the ZenML codebase. For human contributors, see CONTRIBUTING.md.*
+*This document is maintained to help Claude Code work effectively with the
+ZenML codebase. For human contributors, see CONTRIBUTING.md.*
