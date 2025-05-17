@@ -107,7 +107,7 @@ class BaseArtifactStoreFlavor(Flavor):
     @property
     @abstractmethod
     def name(self) -> str:
-        """Returns the name of the flavor."""
+        """Returns the flavor's string identifier."""
 
     @property
     def type(self) -> StackComponentType:
