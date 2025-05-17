@@ -374,8 +374,9 @@ class DockerServiceConnector(ServiceConnector):
                 f"\nSkipping Docker connector verification."
             )
         else:
-            assert resource_id is not None
-            self._authorize_client(docker_client, resource_id)
-            docker_client.close()
+            # Only attempt to authorize the client if a resource ID is provided
+            if resource_id is not None:
+                self._authorize_client(docker_client, resource_id)
+                docker_client.close()
 
         return [resource_id] if resource_id else []
