@@ -106,6 +106,18 @@ This document provides guidance for Codex agents working with the ZenML codebase
   - Detail any important implementation decisions
   - Note any areas that need special reviewer attention
 - Detailed PR descriptions help both reviewers and release note creation
+- Use appropriate PR tags where applicable:
+  - `internal`: For changes relevant only to ZenML team members
+  - `documentation`: For changes related to documentation
+  - `bug`: For bug fixes
+  - `dependencies`: For dependency updates
+  - `enhancement`: For new features or improvements
+- Use appropriate PR tags where applicable:
+  - `internal`: For changes relevant only to ZenML team members
+  - `documentation`: For changes related to documentation
+  - `bug`: For bug fixes
+  - `dependencies`: For dependency updates
+  - `enhancement`: For new features or improvements
 
 ### Continuous Integration
 - ZenML uses a two-tier CI approach:
