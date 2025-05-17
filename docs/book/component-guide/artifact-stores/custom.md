@@ -40,7 +40,7 @@ class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores."""
 
     @abstractmethod
-    def open(self, name: PathType, mode: str = "r") -> Any:
+    def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path."""
 
     @abstractmethod
@@ -106,7 +106,7 @@ class BaseArtifactStoreFlavor(Flavor):
 
     @property
     @abstractmethod
-    def name(self) -> Type["BaseArtifactStore"]:
+    def name(self) -> str:
         """Returns the name of the flavor."""
 
     @property
