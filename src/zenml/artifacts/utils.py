@@ -16,6 +16,7 @@
 import base64
 import contextlib
 import os
+import re
 import tempfile
 import zipfile
 from pathlib import Path
@@ -889,6 +890,7 @@ def _load_file_from_artifact_store(
     mode: str = "rb",
     offset: int = 0,
     length: Optional[int] = None,
+    strip_timestamp: bool = False,
 ) -> Any:
     """Load the given uri from the given artifact store.
 
@@ -898,6 +900,7 @@ def _load_file_from_artifact_store(
         mode: The mode in which to open the file.
         offset: The offset from which to start reading.
         length: The amount of bytes that should be read.
+        strip_timestamp: Whether to strip the timestamp in logs or not.
 
     Returns:
         The loaded file.
@@ -921,7 +924,10 @@ def _load_file_from_artifact_store(
             elif offset > 0:
                 text_file.seek(offset, os.SEEK_SET)
 
-            return text_file.read(length)
+            logs = text_file.read(length)
+            if strip_timestamp:
+                logs = _strip_timestamp_from_multiline_string(logs)
+            return logs
     except FileNotFoundError:
         raise DoesNotExistException(
             f"File '{uri}' does not exist in artifact store "
@@ -938,6 +944,13 @@ def _load_file_from_artifact_store(
             f"likely because the authentication credentials are not configured "
             f"in the artifact store itself. For more information, see {link}."
         )
+
+
+def _strip_timestamp_from_multiline_string(
+    input: str,
+    pattern: str = r"^\[?\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC\]?\s*",
+) -> str:
+    return re.sub(pattern, "", input, flags=re.MULTILINE)
 
 
 # --------------------
