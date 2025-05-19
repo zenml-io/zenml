@@ -1,0 +1,100 @@
+---
+name: Run Dev Pipeline
+on:
+  workflow_call:
+    inputs:
+      zenml_store_url:
+        description: ZenML server URL
+        required: true
+        type: string
+      zenml_store_api_key:
+        description: ZenML server API key
+        required: true
+        type: string
+      dev_pipeline:
+        description: The name of the dev pipeline to run
+        required: true
+        type: string
+      branch:
+        description: (Optional) Git branch to checkout
+        required: false
+        type: string
+        default: main
+      stack:
+        description: (Optional) ZenML stack to use
+        required: false
+        type: string
+      requirements_file:
+        description: (Optional) requirements file to install
+        required: false
+        type: string
+      run_command:
+        description: (Optional) Command to run the pipeline (defaults to "python run.py")
+        required: false
+        type: string
+        default: python run.py
+      kwargs:
+        description: (Optional) arguments to pass to the run command
+        required: false
+        type: string
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    env:
+      ZENML_STORE_URL: ${{ inputs.zenml_store_url }}
+      ZENML_STORE_API_KEY: ${{ inputs.zenml_store_api_key }}
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.11'
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Setup target virtual environment
+        run: |
+          python -m venv ${{ inputs.dev_pipeline }}
+          source ${{ inputs.dev_pipeline }}/bin/activate
+          pip install --upgrade pip uv
+          echo "Target branch virtual environment created at ${{ inputs.dev_pipeline }}"
+      - name: Install ZenML 
+        run: |
+          source ${{ inputs.dev_pipeline }}/bin/activate
+          uv pip install -e .
+          zenml --version
+      - name: Set ZenML stack (if provided)
+        if: inputs.stack != ''
+        run: |
+          source venv/bin/activate
+          echo "Setting ZenML stack to: ${{ inputs.stack }}"
+          zenml stack set ${{ inputs.stack }}
+      - name: Install requirements (if provided)
+        if: inputs.requirements_file != ''
+        run: |
+          source ${{ inputs.dev_pipeline }}/bin/activate
+          echo "Installing requirements from: ${{ inputs.requirements_file }}"
+          
+          # Split multiple requirements files and install each one
+          IFS=',' read -ra REQ_FILES <<< "${{ inputs.requirements_file }}"
+          for req_file in "${REQ_FILES[@]}"; do
+            echo "Installing from: $req_file"
+            pip install -r "$req_file"
+          done
+      - name: Change to pipeline directory
+        run: |
+          cd "dev/pipelines/${{ inputs.dev_pipeline }}"
+      - name: Run pipeline
+        run: |-
+          # Prepare the run command
+          RUN_CMD="${{ inputs.run_command }}"
+
+          # Add kwargs if provided
+          if [[ -n "${{ inputs.kwargs }}" ]]; then
+            RUN_CMD="${RUN_CMD} ${{ inputs.kwargs }}"
+          fi
+          echo "Running command: ${RUN_CMD}"
+          eval ${RUN_CMD}

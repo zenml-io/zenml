@@ -1,0 +1,318 @@
+---
+name: PR Dev Assistant
+on:
+  issue_comment:
+    types: [created]
+env:
+  ZENML_ANALYTICS_OPT_IN: false
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  process-comment:
+    runs-on: ubuntu-latest
+    # Only run on PR comments, not issue comments
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '!') }}
+    outputs:
+      command: ${{ steps.extract-command.outputs.command }}
+      command_arg: ${{ steps.extract-command.outputs.command_arg }}
+      pr_number: ${{ github.event.issue.number }}
+      branch_name: ${{ steps.get-pr-branch.outputs.branch_slug }}
+      original_branch: ${{ steps.get-pr-branch.outputs.branch }}
+      zenml_version: ${{ steps.get-pr-branch.outputs.zenml_version }}
+      is_authorized: ${{ steps.check-permissions.outputs.is_authorized }}
+    steps:
+      - name: Check user permissions
+        id: check-permissions
+        run: |
+          # Check if user is a repository collaborator or organization member
+          USER="${{ github.event.comment.user.login }}"
+
+          # Check if the user is a repo collaborator (has write access)
+          IS_COLLABORATOR=$(gh api repos/${{ github.repository }}/collaborators/$USER --silent || echo "false")
+          if [[ "$IS_COLLABORATOR" != "false" ]]; then
+            echo "User $USER is a repository collaborator"
+            echo "is_authorized=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if user is org member
+          ORG="${{ github.repository_owner }}"
+          IS_ORG_MEMBER=$(gh api orgs/$ORG/members/$USER --silent || echo "false")
+          if [[ "$IS_ORG_MEMBER" != "false" ]]; then
+            echo "User $USER is an organization member"
+            echo "is_authorized=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # If we get here, user is not authorized
+          echo "User $USER is not authorized to trigger this workflow"
+          echo "is_authorized=false" >> $GITHUB_OUTPUT
+      - name: Check if comment contains command
+        id: extract-command
+        if: steps.check-permissions.outputs.is_authorized == 'true'
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+
+          # Extract command and argument
+          if [[ "$COMMENT" == "!deploy" ]]; then
+            echo "command=deploy" >> $GITHUB_OUTPUT
+            echo "command_arg=" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == "!update" ]]; then
+            echo "command=update" >> $GITHUB_OUTPUT
+            echo "command_arg=" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == "!destroy" ]]; then
+            echo "command=destroy" >> $GITHUB_OUTPUT
+            echo "command_arg=" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == "!status" ]]; then
+            echo "command=status" >> $GITHUB_OUTPUT
+            echo "command_arg=" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == "!run" ]]; then
+            echo "command=run" >> $GITHUB_OUTPUT
+            echo "command_arg=" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" =~ ^!run\ (.*)$ ]]; then
+            PIPELINE_NAME="${BASH_REMATCH[1]}"
+            echo "command=run" >> $GITHUB_OUTPUT
+            echo "command_arg=$PIPELINE_NAME" >> $GITHUB_OUTPUT
+          else
+            echo "command=none" >> $GITHUB_OUTPUT
+            echo "command_arg=" >> $GITHUB_OUTPUT
+          fi
+      - name: Check if user is unauthorized
+        if: steps.check-permissions.outputs.is_authorized == 'false'
+        run: |
+          echo "User ${{ github.event.comment.user.login }} is not authorized to run this workflow"
+          exit 1
+      - name: Exit if no valid command
+        if: steps.extract-command.outputs.command == 'none'
+        run: |
+          echo "No valid command found in comment"
+          exit 1
+      - name: Get PR branch and checkout
+        id: get-pr-branch
+        run: |
+          # Get the PR info to extract the head branch
+          PR_DATA=$(gh pr view ${{ github.event.issue.number }} --json headRefName --jq '.headRefName')
+          echo "branch=$PR_DATA" >> $GITHUB_OUTPUT
+          
+          # Checkout the branch
+          git checkout $PR_DATA || (echo "Failed to checkout branch $PR_DATA" && exit 1)
+          git fetch --prune --unshallow
+          
+          # Use the zen-dev info command to get the slugified branch name and ZenML version
+          echo "Getting branch info and ZenML version using zen-dev info"
+          INFO_OUTPUT=$(./zen-dev info)
+          
+          # Extract slugified name from output
+          BRANCH_SLUG=$(echo "$INFO_OUTPUT" | grep "Slugified name:" | cut -d ":" -f 2 | tr -d ' ')
+          echo "Created Docker-compatible tag: $BRANCH_SLUG"
+          echo "branch_slug=${BRANCH_SLUG}" >> $GITHUB_OUTPUT
+          
+          # Extract ZenML version from output
+          ZENML_VERSION=$(echo "$INFO_OUTPUT" | grep "ZenML version:" | cut -d ":" -f 2 | tr -d ' ')
+          echo "Version detected: ${ZENML_VERSION}"
+          echo "zenml_version=${ZENML_VERSION}" >> $GITHUB_OUTPUT
+          
+          # Check if version was found
+          if [[ -z "$ZENML_VERSION" || "$ZENML_VERSION" == *"Could not determine"* ]]; then
+            echo "ERROR: ZenML version could not be determined"
+            echo "This is required for deployment. Please ensure you're using a valid branch."
+            exit 1
+          fi
+
+  # Deploy workspace
+  deploy-workspace:
+    needs: process-comment
+    if: needs.process-comment.outputs.command == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ needs.process-comment.outputs.original_branch }}
+
+      - name: Build docker images
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
+
+      - name: Submit build job
+        run: |
+          gcloud builds submit \
+            --quiet \
+            --config=pull_request_cloudbuild.yaml \
+            --substitutions=_ZENML_BRANCH_NAME=${{ needs.process-comment.outputs.branch_name }}
+            
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.11'
+      - name: Run zen-dev deploy
+        env:
+          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+          ZENML_DEV_ORGANIZATION_ID: ${{ secrets.CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID }}
+        run: |
+          # Use zen-dev CLI directly without installation
+          ./zen-dev deploy --workspace ${{ needs.process-comment.outputs.branch_name }} \
+            --zenml-version ${{ needs.process-comment.outputs.zenml_version }} \
+            --docker-image zenmldocker/zenml-server-dev:${{ needs.process-comment.outputs.branch_name }}
+            
+      - name: Add result comment
+        run: |
+          TENANT_URL="https://staging.cloud.zenml.io/workspaces/${{ needs.process-comment.outputs.branch_name }}/projects"
+          gh pr comment ${{ needs.process-comment.outputs.pr_number }} --body "✅ Workspace deployed! Access it at: $TENANT_URL"
+
+  # Update workspace
+  update-workspace:
+    needs: process-comment
+    if: needs.process-comment.outputs.command == 'update'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ needs.process-comment.outputs.original_branch }}
+      - name: Build docker images
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
+      - name: Submit build job
+        run: |
+          gcloud builds submit \
+            --quiet \
+            --config=pull_request_cloudbuild.yaml \
+            --substitutions=_ZENML_BRANCH_NAME=${{ needs.process-comment.outputs.branch_name }}
+            
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.11'
+      - name: Run zen-dev update
+        env:
+          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+        run: |
+          # Use zen-dev CLI directly without installation
+          ./dev/zen-dev update --workspace ${{ needs.process-comment.outputs.branch_name }} \
+            --zenml-version ${{ needs.process-comment.outputs.zenml_version }} \
+            --docker-image zenmldocker/zenml-server-dev:${{ needs.process-comment.outputs.branch_name }}
+            
+      - name: Add result comment
+        run: |
+          TENANT_URL="https://staging.cloud.zenml.io/workspaces/${{ needs.process-comment.outputs.branch_name }}/projects"
+          gh pr comment ${{ needs.process-comment.outputs.pr_number }} --body "✅ Workspace updated! Access it at: $TENANT_URL"
+
+  # Destroy workspace
+  destroy-workspace:
+    needs: process-comment
+    if: needs.process-comment.outputs.command == 'destroy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ needs.process-comment.outputs.original_branch }}
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.11'
+      - name: Run zen-dev destroy
+        env:
+          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+        run: |
+          # Use zen-dev CLI directly without installation
+          # First get the workspace ID
+          WORKSPACE_ID=$(./dev/zen-dev status --workspace ${{ needs.process-comment.outputs.branch_name }} --format json | jq -r .id)
+          ./dev/zen-dev destroy --workspace $WORKSPACE_ID --force
+            
+      - name: Add result comment
+        run: |
+          gh pr comment ${{ needs.process-comment.outputs.pr_number }} --body "✅ Workspace destroyed."
+
+  # Generate matrix
+  prepare-pipelines:
+    needs: process-comment
+    if: needs.process-comment.outputs.command == 'run'
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      zenml_store_url: ${{ steps.auth.outputs.server_url }}
+      zenml_store_api_key: ${{ steps.auth.outputs.api_key }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ needs.process-comment.outputs.original_branch }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.11'
+      
+      - name: Connect to the ZenML Workspace
+        id: auth
+        env:
+          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+        run: |
+          echo "Setting up authentication to ZenML Workspace"
+          
+          # Install required packages
+          pip install requests
+          
+          # Use the dev CLI to authenticate and create a service account
+          WORKSPACE_NAME="${{ needs.process-comment.outputs.branch_name }}"
+          
+          # The CLI automatically masks secrets and sets outputs
+          ./dev/zen-dev auth --workspace "$WORKSPACE_NAME"
+          
+          echo "Successfully connected to ZenML workspace"
+        
+      - name: Generate matrix
+        id: matrix
+        run: |
+          # Run the config parser to generate the matrix
+          FILTER="${{ needs.process-comment.outputs.command_arg }}"
+          echo "Using filter: '$FILTER'"
+          
+          # Get JSON matrix directly from the script
+          MATRIX=$(python dev/dev_pipelines_config_parser.py --input "$FILTER")
+          
+          # Check if any configurations were found
+          if [[ $MATRIX == *"No matching configurations found"* ]]; then
+            echo "::error::No matching configurations found for filter: $FILTER"
+            exit 1
+          fi
+          
+          # Set the matrix output directly - script outputs JSON
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          
+          # Count configurations for reporting
+          CONFIG_COUNT=$(echo "$MATRIX" | python -c "import json, sys; print(len(json.loads(sys.stdin.read())['include']))")
+          echo "Found $CONFIG_COUNT configurations to run"
+
+  # Run pipelines using matrix strategy
+  run-pipelines:
+    needs: [process-comment, prepare-pipelines]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.prepare-pipelines.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - name: Run pipeline using reusable workflow
+        uses: ./.github/workflows/run-dev-pipeline
+        with:
+          zenml_store_url: ${{ needs.prepare-pipelines.outputs.zenml_store_url }}
+          zenml_store_api_key: ${{ needs.prepare-pipelines.outputs.zenml_store_api_key }}
+          dev_pipeline: ${{ matrix.pipeline_name }}
+          branch: ${{ needs.process-comment.outputs.original_branch }}
+          stack: ${{ matrix.stack }}
+          run_command: ${{ matrix.command || 'python run.py' }}
+          kwargs: ${{ matrix.params || '' }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+            
+          

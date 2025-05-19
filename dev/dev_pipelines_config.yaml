@@ -1,0 +1,24 @@
+pipeline_with_tags:
+  stacks:
+    default:
+    aws:
+  params:
+    first: 
+      config: "some_config.yaml"  
+    second: 
+      config: "some_second_config.yaml" 
+
+pipeline_with_metadata:
+  command: "python wow.py"
+
+  stacks:
+    default:
+    gcp: requirements.txt
+    aws: requirements_aws.txt
+  params:
+    default:
+      batch_size: 32
+      epochs: 10
+    small:
+      batch_size: 16
+      epochs: 5
