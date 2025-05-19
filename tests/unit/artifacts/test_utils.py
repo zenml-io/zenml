@@ -213,6 +213,13 @@ def test__load_artifact(builtin_type_file_uri):
             "[2025-05-16 16:20:59 UTC] Log 2.\n",
             "Using cached version of step XYZ.\nNo timestamp here\nLog 2.\n",
         ),
+        (
+            "[2025-05-16 16:20:23 UTC] Using cached version of step XYZ.\n"
+            "Timestamp is in the logs: [2025-05-16 16:20:59 UTC]\n"
+            "[2025-05-16 16:20:59 UTC] Log 2.\n",
+            "Using cached version of step XYZ.\n"
+            "Timestamp is in the logs: [2025-05-16 16:20:59 UTC]\nLog 2.\n",
+        ),
     ],
 )
 def test__strip_timestamp_from_multiline_string(raw: str, expected: str):
