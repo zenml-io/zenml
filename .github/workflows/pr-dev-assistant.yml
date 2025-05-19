@@ -268,7 +268,7 @@ jobs:
           WORKSPACE_NAME="${{ needs.process-comment.outputs.branch_name }}"
           
           # The CLI automatically masks secrets and sets outputs
-          ./dev/zen-dev auth --workspace "$WORKSPACE_NAME"
+          ./dev/zen-dev gh-action-login
           
           echo "Successfully connected to ZenML workspace"
         

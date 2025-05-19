@@ -4,28 +4,52 @@ A collection of developer tools for managing ZenML workspaces and running pipeli
 
 ## Authentication
 
-The CLI tool requires authentication to access the ZenML Cloud API. Set the following environment variables:
+The CLI tool requires authentication to access the ZenML Cloud API. You have two options:
 
 ```bash
-# Option 1: Using client credentials
+# Option 1: Using client credentials (for CI/CD)
 export CLOUD_STAGING_CLIENT_ID="your-client-id"
 export CLOUD_STAGING_CLIENT_SECRET="your-client-secret"
 
-# Option 2: Using a token directly
-export CLOUD_STAGING_CLIENT_TOKEN="your-token"
+# Option 2: Using ZenML's authentication (for local development)
+# First login with: zenml login --pro-api-url https://staging.cloudapi.zenml.io
+# Then use zen-dev commands which will use your existing ZenML auth
 ```
 
 ## Workspace Management Commands
+
+### Build Docker images
+
+```bash
+# Build a ZenML image
+./zen-dev build --repo zenmldocker
+
+# Build a ZenML server image
+./zen-dev build --server --repo zenmldocker
+
+# Build with a custom tag
+./zen-dev build --repo zenmldocker --tag v1.0
+
+# Build and push
+./zen-dev build --repo zenmldocker --push
+```
+
+`--repo` can also be set as an environment variable as `DEV_DOCKER_REPO`.
+`--tag` defaults to the sluggified branch name.
 
 ### Deploy a workspace
 
 ```bash
 # Create a new workspace with the latest ZenML version
-./zen-dev deploy --workspace my-workspace --zenml-version 0.81.0
+./zen-dev deploy --organization 0000000-0000-0000-000000
 
 # Specify custom Docker image and Helm chart version
 ./zen-dev deploy --workspace my-workspace --zenml-version 0.81.0 --docker-image zenmldocker/zenml-server:custom-tag --helm-version 0.36.0
 ```
+
+`--organization` can also be set as an environment variable as `DEV_ORGANIZATION_ID`.
+`--workspace` defaults to the sluggied branch name.
+`--zenml-version` defaults to the verions in the `VERSION` file.
 
 ### Update a workspace
 
@@ -37,14 +61,21 @@ export CLOUD_STAGING_CLIENT_TOKEN="your-token"
 ./zen-dev update --workspace my-workspace --zenml-version 0.82.0 --docker-image zenmldocker/zenml-server:custom-tag
 ```
 
-### Authenticate with a workspace
+`--workspace` defaults to the sluggied branch name.
+
+### Get environment information
 
 ```bash
-# Authenticate and create a service account for GitHub Actions
-./zen-dev auth --workspace my-workspace
+# Display current git branch, slugified name, and ZenML version
+./zen-dev info
+```
 
-# Specify a custom service account name
-./zen-dev auth --workspace my-workspace --sa-name my-custom-sa
+### GitHub Actions authentication
+
+```bash
+# For GitHub Actions workflows only
+# Outputs values in GitHub Actions output format
+./zen-dev gh-action-login
 ```
 
 ### Destroy a workspace
@@ -102,23 +133,6 @@ Each pipeline can have:
 
 For each pipeline, the system will generate all valid combinations of stack and parameter sets, which can be run individually or as a group.
 
-### Running Pipelines from CLI
-
-You can use the dev pipeline parser directly to test configurations:
-
-```bash
-# Generate all configurations for all pipelines
-python dev/dev_pipelines_config_parser.py
-
-# Filter for a specific pipeline
-python dev/dev_pipelines_config_parser.py --input "pipeline_name"
-
-# Filter for a specific pipeline and stack
-python dev/dev_pipelines_config_parser.py --input "pipeline_name:aws"
-
-# Filter for a specific pipeline, stack, and parameter set
-python dev/dev_pipelines_config_parser.py --input "pipeline_name:aws::small"
-```
 
 ### GitHub PR Comment Commands
 
@@ -174,7 +188,7 @@ The system uses several components:
 
 When a user comments on a PR with a command like `!run`, the system:
 1. Authenticates with the workspace
-2. Creates a service account for running pipelines
+2. Creates/Reuses a service account for running pipelines
 3. Parses the command to determine which pipelines to run
 4. Generates a matrix of configurations
 5. Runs each configuration as a separate job

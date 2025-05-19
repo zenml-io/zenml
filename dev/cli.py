@@ -13,17 +13,36 @@
 #  permissions and limitations under the License.
 """ZenML Dev CLI for managing workspaces and running dev pipelines."""
 
+import json
 import os
+import re
+import subprocess
 import sys
 import time
-import subprocess
-import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 from uuid import UUID
+
 import click
 import requests
-import json
 
+try:
+    import docker
+    from docker.errors import APIError, BuildError
+    DOCKER_AVAILABLE = True
+except ImportError:
+    DOCKER_AVAILABLE = False
+    BuildError = Exception
+    APIError = Exception
+
+from zenml.login.pro.client import AuthorizationException, ZenMLProClient
+
+# Constants for environment variables
+ZENML_API_URL_ENV = "ZENML_STORE_URL"
+ZENML_API_KEY_ENV = "ZENML_STORE_API_KEY"
+ZENML_CONFIG_FILE = os.path.expanduser("~/.zenml/dev_config.json")
+
+
+BASE_STAGING_URL = "https://staging.cloudapi.zenml.io"
 
 def _disect_docker_image_parts(docker_image: str) -> Tuple[str, str]:
     """Get the image repository and tag from a Docker image.
@@ -138,16 +157,16 @@ def slugify_branch_name(branch_name: str) -> str:
     slug = branch_name.lower()
     
     # Replace invalid chars with dashes (only allow a-z, 0-9, ., _, -)
-    slug = re.sub(r'[^a-z0-9_\.\-]', '-', slug)
+    slug = re.sub(r"[^a-z0-9_\.\-]", "-", slug)
     
     # Remove leading non-alphanumeric chars
-    slug = re.sub(r'^[^a-z0-9]*', '', slug)
+    slug = re.sub(r"^[^a-z0-9]*", "", slug)
     
     # Replace multiple consecutive dashes with a single dash
-    slug = re.sub(r'-+', '-', slug)
+    slug = re.sub(r"-+", "-", slug)
     
     # Remove trailing dashes
-    slug = re.sub(r'-$', '', slug)
+    slug = re.sub(r"-$", "", slug)
     
     # Limit to 128 chars max
     slug = slug[:128]
@@ -211,7 +230,7 @@ def get_token(client_id: str, client_secret: str) -> str:
     Raises:
         RuntimeError: If the API request fails for any reason.
     """
-    url = "https://staging.cloudapi.zenml.io/auth/login"
+    url = f"{BASE_STAGING_URL}/auth/login"
     data = {
         "grant_type": "",
         "client_id": client_id,
@@ -241,9 +260,7 @@ def get_workspace(token: str, workspace_name_or_id: str) -> Dict[str, Any]:
     Raises:
         RuntimeError: If the API request fails for any reason.
     """
-    url = (
-        f"https://staging.cloudapi.zenml.io/workspaces/{workspace_name_or_id}"
-    )
+    url = f"{BASE_STAGING_URL}/workspaces/{workspace_name_or_id}"
 
     response = requests.get(url, headers=_get_headers(token))
     try:
@@ -276,7 +293,7 @@ def create_workspace(
     Raises:
         RuntimeError: If the API request fails for any reason.
     """
-    url = "https://staging.cloudapi.zenml.io/workspaces"
+    url = f"{BASE_STAGING_URL}/workspaces"
 
     data = {
         "name": workspace_name,
@@ -312,9 +329,7 @@ def update_workspace(
     Raises:
         RuntimeError: If the API request fails for any reason.
     """
-    url = (
-        f"https://staging.cloudapi.zenml.io/workspaces/{workspace_name_or_id}"
-    )
+    url = f"{BASE_STAGING_URL}/workspaces/{workspace_name_or_id}"
 
     data = {
         "zenml_service": {"configuration": configuration},
@@ -342,9 +357,7 @@ def destroy_workspace(token: str, workspace_id: UUID) -> None:
     Raises:
         RuntimeError: If the API request fails for any reason.
     """
-    url = (
-        f"https://staging.cloudapi.zenml.io/workspaces/{workspace_id}"
-    )
+    url = f"{BASE_STAGING_URL}/workspaces/{workspace_id}"
 
     response = requests.delete(url, headers=_get_headers(token))
     try:
@@ -393,10 +406,10 @@ def wait_for_availability(token: str, workspace_name_or_id: str, timeout: int = 
 
 
 def get_auth_token() -> str:
-    """Get authentication token from environment variables.
+    """Get authentication token from environment variables or ZenML Pro Client.
     
     Checks for authentication credentials in environment variables and
-    returns a valid token for API access.
+    if not found, tries to use the ZenML Pro Client's existing authentication.
     
     Returns:
         A valid authentication token.
@@ -406,17 +419,32 @@ def get_auth_token() -> str:
     """
     client_id = os.environ.get("CLOUD_STAGING_CLIENT_ID")
     client_secret = os.environ.get("CLOUD_STAGING_CLIENT_SECRET")
-    client_token = os.environ.get("CLOUD_STAGING_CLIENT_TOKEN")
 
-    if client_token:
-        return client_token
-    elif client_id and client_secret:
+    if client_id and client_secret:
         return get_token(client_id, client_secret)
-    else:
+    
+    # Try to use ZenML Pro Client if credentials not in environment variables
+    try:
+        
+        click.echo("Credentials not found in environment variables. Trying to use existing ZenML authentication...")
+        client = ZenMLProClient(url=BASE_STAGING_URL)
+        api_token = client.api_token
+        
+        if api_token:
+            click.echo("Using existing ZenML authentication")
+            return api_token
+        else:
+            raise ValueError("Could not get authentication token from ZenML Pro Client")
+    
+    except AuthorizationException:
         raise ValueError(
-            "Authentication credentials not found. Please set either "
-            "CLOUD_STAGING_CLIENT_TOKEN or both CLOUD_STAGING_CLIENT_ID and "
-            "CLOUD_STAGING_CLIENT_SECRET environment variables."
+            "You are not logged in to ZenML. Please either login with 'zenml login' "
+            "or set CLOUD_STAGING_CLIENT_ID and CLOUD_STAGING_CLIENT_SECRET environment variables."
+        )
+    except Exception as e:
+        raise ValueError(
+            f"Failed to authenticate: {str(e)}. Please either login with 'zenml login' "
+            "or set CLOUD_STAGING_CLIENT_ID and CLOUD_STAGING_CLIENT_SECRET environment variables."
         )
 
 
@@ -435,7 +463,7 @@ def cli():
 @click.option(
     "--organization", 
     help="Organization ID",
-    envvar="ZENML_DEV_ORGANIZATION_ID"
+    envvar="DEV_ORGANIZATION_ID"
 )
 @click.option(
     "--zenml-version",
@@ -686,7 +714,7 @@ def get_workspace_auth_token(token: str, workspace_id: str) -> str:
     Raises:
         RuntimeError: If the API request fails for any reason.
     """
-    url = f"https://staging.cloudapi.zenml.io/auth/workspace_authorization/{workspace_id}"
+    url = f"{BASE_STAGING_URL}/auth/workspace_authorization/{workspace_id}"
     response = requests.get(url, headers=_get_headers(token))
     try:
         response.raise_for_status()
@@ -872,43 +900,23 @@ def create_api_key(
     return response.json()
 
 
-@cli.command("auth")
-@click.option(
-    "--workspace", 
-    required=False,
-    help="Name or ID of the workspace to authenticate with (defaults to slugified git branch name)"
-)
-@click.option(
-    "--sa-name",
-    default=None,
-    help="Name for the service account (default: github-actions-<workspace_name>)"
-)
-def auth(workspace: Optional[str], sa_name: Optional[str]):
-    """Authenticate with a workspace and create a service account with API key.
+@cli.command("gh-action-login")
+def gh_action_login():
+    """(FOR GH ACTIONS ONLY) Authenticate with a workspace with a service account.
     
-    This command authenticates with a ZenML workspace, creates or reuses a service
-    account, and generates an API key. It outputs GitHub Actions compatible commands
-    that mask secrets and set outputs for subsequent steps.
+    This command authenticates with the GH Runner with a ZenML workspace using
+    the current git branch name as the workspace name. It creates or reuses a
+    service account with a standardized name, and generates an API key. It
+    outputs GitHub Actions compatible commands that mask secrets and set outputs
+    for subsequent steps.
     
-    If no workspace is provided, uses the current git branch name (slugified).
-    
-    Args:
-        workspace: Name or ID of the workspace to authenticate with.
-        sa_name: Name for the service account (default: github-actions-<workspace_name>).
-        
-    Outputs:
-        Prints GitHub Actions compatible commands to set outputs and mask secrets.
-        
     Examples:
-        $ ./zen-dev auth
-        $ ./zen-dev auth --workspace my-workspace
-        $ ./zen-dev auth --workspace my-workspace --sa-name custom-service-account
+        $ ./zen-dev gh-action-login
     """
     try:
-        # Use default workspace name if not provided
-        if workspace is None:
-            workspace = get_default_workspace_name()
-            click.echo(f"Using git branch as workspace name: {workspace}")
+        # Use git branch name for workspace
+        workspace = get_default_workspace_name()
+        click.echo(f"Using git branch as workspace name: {workspace}")
             
         token = get_auth_token()
         
@@ -926,11 +934,8 @@ def auth(workspace: Optional[str], sa_name: Optional[str]):
         # Authenticate with the workspace
         auth_cookie, csrf_token = authenticate_with_workspace(server_url, workspace_auth_token)
         
-        # Create or get a service account
-        if not sa_name:
-            # Use deterministic name based on workspace name
-            sa_name = f"github-actions-{workspace_name}"
-        
+        # Create standard service account name based on workspace name
+        sa_name = f"github-actions-{workspace_name}"
         sa_description = "Service account for GitHub Actions"
         
         # Check if service account already exists using direct endpoint
@@ -960,7 +965,7 @@ def auth(workspace: Optional[str], sa_name: Optional[str]):
         api_key = api_key_info["body"]["key"]
         click.echo(f"API key created: {api_key_name}")
         
-        # Output GitHub Actions format for setting outputs and masking secrets
+        # Output GitHub Actions format
         print(f"::add-mask::{api_key}")
         print(f"::set-output name=server_url::{server_url}")
         print(f"::set-output name=api_key::{api_key}")
@@ -994,6 +999,124 @@ def info():
         click.echo(f"ZenML version: {version}")
     else:
         click.echo("ZenML version: Could not determine (VERSION file not found)")
+
+
+@cli.command("build")
+@click.option(
+    "--server", 
+    is_flag=True,
+    help="Build the zenml-server image instead of zenml"
+)
+@click.option(
+    "--repo",
+    required=True,
+    help="Docker repository name (required)",
+    envvar="DEV_DOCKER_REPO"
+)
+@click.option(
+    "--tag",
+    default=None,
+    help="Tag for the Docker image (defaults to slugified git branch name)"
+)
+@click.option(
+    "--push",
+    is_flag=True,
+    help="Push the image after building"
+)
+def build(server: bool, repo: str, tag: Optional[str], push: bool):
+    """Build a ZenML Docker image.
+    
+    This command builds a Docker image for ZenML or ZenML Server using
+    the appropriate dev Dockerfile. By default, it builds the zenml image, 
+    but you can use --server to build the zenml-server image instead.
+    
+    If no tag is provided, uses the current git branch name (slugified).
+    
+    Args:
+        server: If True, build the zenml-server image instead of zenml.
+        repo: Docker repository name (required, can be set with DEV_DOCKER_REPO env var).
+        tag: Tag for the Docker image (defaults to slugified git branch name).
+        push: If True, push the image after building.
+        
+    Examples:
+        $ ./zen-dev build --repo zenmldocker
+        $ ./zen-dev build --server --repo zenmldocker
+        $ ./zen-dev build --repo zenmldocker --tag v1.0
+        $ ./zen-dev build --repo myrepo --tag test
+        $ ./zen-dev build --repo zenmldocker --push
+    """
+    if not DOCKER_AVAILABLE:
+        click.echo("Docker Python client not found. Please install with 'pip install docker'", err=True)
+        sys.exit(1)
+    
+    # Use slugified git branch name as default tag if not provided
+    if tag is None:
+        tag = get_default_workspace_name()
+        click.echo(f"Using git branch as tag: {tag}")
+    
+    # Determine image type
+    image_type = "zenml-server" if server else "zenml"
+    image_name = f"{repo}/{image_type}:{tag}"
+    
+    # Build the Docker image
+    click.echo(f"Building Docker image: {image_name}...")
+    
+    try:
+        client = docker.from_env()
+        
+        # Find the Dockerfile path
+        dockerfile_path = f"docker/{image_type}-dev.Dockerfile"
+        if not os.path.exists(dockerfile_path):
+            click.echo(f"Error: Dockerfile not found at {dockerfile_path}", err=True)
+            sys.exit(1)
+        
+        # Build the image
+        click.echo("Building image... (this may take a while)")
+        image, logs = client.images.build(
+            path=".",
+            dockerfile=dockerfile_path,
+            tag=image_name,
+            buildargs={"PYTHON_VERSION": "3.11"},
+            platform="linux/amd64",
+            rm=True
+        )
+        
+        # Check for errors
+        for log in logs:
+            if isinstance(log, dict) and "error" in log:
+                error = log.get("error", "")
+                if isinstance(error, str):
+                    click.echo(f"Error building image: {error}", err=True)
+                    sys.exit(1)
+        
+        click.echo(f"✅ Successfully built: {image_name}")
+        
+        # Push the image if requested
+        if push:
+            click.echo(f"Pushing Docker image: {image_name}...")
+            click.echo("Pushing image... (this may take a while)")
+            
+            repository = f"{repo}/{image_type}"
+            
+            # Push the image and check for errors
+            for line in client.images.push(repository=repository, tag=tag, stream=True, decode=True):
+                if isinstance(line, dict) and "error" in line:
+                    error = line.get("error", "")
+                    if isinstance(error, str):
+                        click.echo(f"Error pushing image: {error}", err=True)
+                        sys.exit(1)
+            
+            click.echo(f"✅ Successfully pushed: {image_name}")
+    
+    except BuildError as e:
+        click.echo(f"❌ Error building image: {str(e)}", err=True)
+        sys.exit(1)
+    except APIError as e:
+        click.echo(f"❌ Docker API error: {str(e)}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"❌ Unexpected error: {str(e)}", err=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
