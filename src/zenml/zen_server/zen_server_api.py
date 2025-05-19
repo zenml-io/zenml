@@ -20,12 +20,13 @@ To run this file locally, execute:
     ```
 """
 
+import logging
 import os
+import threading
+import time
 from asyncio.log import logger
 from datetime import datetime, timedelta
 from genericpath import isfile
-import threading
-import time
 from typing import Any, List, Set
 
 from anyio import to_thread
@@ -48,7 +49,6 @@ from starlette.responses import (
 from starlette.types import ASGIApp
 
 import zenml
-import logging
 from zenml.analytics import source_context
 from zenml.constants import (
     API,
@@ -393,21 +393,19 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     Returns:
         The response to the request.
     """
+    if not logger.isEnabledFor(logging.DEBUG):
+        return await call_next(request)
+
     # Get active threads count
     active_threads = threading.active_count()
 
-    # Get SQLAlchemy connection pool info
-    engine = zen_store().engine
-    pool_size = engine.pool.size()
-    checked_out_connections = engine.pool.checkedout()
-    available_connections = engine.pool.checkedin()
-
-    client_ip = request.client.host
+    client_ip = request.client.host if request.client else "unknown"
     method = request.method
     url_path = request.url.path
 
-    logger.info(
-        f"{method} {url_path} from {client_ip} [ active_threads {active_threads} pool_size {pool_size} checked_out_connections {checked_out_connections} available_connections {available_connections} ]"
+    logger.debug(
+        f"API STATS - {method} {url_path} from {client_ip} "
+        f"started [ threads: {active_threads} ]"
     )
 
     start_time = time.time()
@@ -415,8 +413,9 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     duration = (time.time() - start_time) * 1000
     status_code = response.status_code
 
-    logger.info(
-        f"{status_code} {method} {url_path} from {client_ip} took {duration:.2f}ms [ active_threads {active_threads} pool_size {pool_size} checked_out_connections {checked_out_connections} available_connections {available_connections} ]"
+    logger.debug(
+        f"API STATS - {status_code} {method} {url_path} from "
+        f"{client_ip} took {duration:.2f}ms [ threads: {active_threads} ]"
     )
     return response
 

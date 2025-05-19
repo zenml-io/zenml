@@ -395,7 +395,7 @@ def load_test_pipeline(
 @click.option(
     "--num-tags",
     "-t",
-    default=100,
+    default=10,
     help="Number of tags to add to the pipeline",
     type=int,
     show_default=True,

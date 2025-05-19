@@ -22,6 +22,7 @@ import os
 import random
 import re
 import sys
+import threading
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -59,7 +60,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import func
+from sqlalchemy import QueuePool, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -67,6 +68,7 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import Mapped, noload
 from sqlalchemy.util import immutabledict
+from sqlmodel import Session as SqlModelSession
 
 # Important to note: The select function of SQLModel works slightly differently
 # from the select function of sqlalchemy. If you input only one entity on the
@@ -84,7 +86,6 @@ from sqlmodel import (
     or_,
     select,
 )
-from sqlmodel import Session as SqlModelSession
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics import track
@@ -417,19 +418,41 @@ class Session(SqlModelSession):
     """Session subclass that automatically tracks duration and calling context."""
 
     def __enter__(self) -> "Session":
-        # Look up the stack to find the SQLZenStore method
-        # for frame in inspect.stack():
-        #     if "self" in frame.frame.f_locals:
-        #         instance = frame.frame.f_locals["self"]
-        #         if isinstance(instance, SqlZenStore):
-        #             self.caller_method = (
-        #                 f"{instance.__class__.__name__}.{frame.function}"
-        #             )
-        #             break
-        # else:
-        #     self.caller_method = "unknown"
+        """Enter the context manager.
 
-        # self.start_time = time.time()
+        Returns:
+            The SqlModel session.
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            self.thread_id = threading.get_ident()
+
+            # Get SQLAlchemy connection pool info
+            assert isinstance(self.bind, Engine)
+            assert isinstance(self.bind.pool, QueuePool)
+            checked_out_connections = self.bind.pool.checkedout()
+            available_connections = self.bind.pool.checkedin()
+            overflow = self.bind.pool.overflow()
+
+            # Look up the stack to find the SQLZenStore method
+            for frame in inspect.stack():
+                if "self" in frame.frame.f_locals:
+                    instance = frame.frame.f_locals["self"]
+                    if isinstance(instance, SqlZenStore):
+                        self.caller_method = (
+                            f"{instance.__class__.__name__}.{frame.function}"
+                        )
+                        break
+            else:
+                self.caller_method = "unknown"
+
+            logger.debug(
+                f"[{self.thread_id}] SQL STATS - "
+                f"'{self.caller_method}' started [ conn(active): "
+                f"{checked_out_connections} conn(idle): "
+                f"{available_connections} conn(overflow): {overflow} ]"
+            )
+
+            self.start_time = time.time()
 
         return super().__enter__()
 
@@ -439,11 +462,29 @@ class Session(SqlModelSession):
         exc_val: Optional[Any],
         exc_tb: Optional[Any],
     ) -> None:
-        # duration = time.time() - self.start_time
-        # logger.info(
-        #     f"SQL Session for method '{self.caller_method}' completed in "
-        #     f"{duration:.3f} seconds"
-        # )
+        """Exit the context manager.
+
+        Args:
+            exc_type: The exception type.
+            exc_val: The exception value.
+            exc_tb: The exception traceback.
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            duration = time.time() - self.start_time
+
+            # Get SQLAlchemy connection pool info
+            assert isinstance(self.bind, Engine)
+            assert isinstance(self.bind.pool, QueuePool)
+            checked_out_connections = self.bind.pool.checkedout()
+            available_connections = self.bind.pool.checkedin()
+            overflow = self.bind.pool.overflow()
+            logger.debug(
+                f"[{self.thread_id}] SQL STATS - "
+                f"'{self.caller_method}' completed in "
+                f"{duration:.3f} seconds [ conn(active): "
+                f"{checked_out_connections} conn(idle): "
+                f"{available_connections} conn(overflow): {overflow} ]"
+            )
         return super().__exit__(exc_type, exc_val, exc_tb)
 
 
