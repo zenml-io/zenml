@@ -20,48 +20,49 @@ export CLOUD_STAGING_CLIENT_SECRET="your-client-secret"
 
 ### Build Docker images
 
+For all the commands below, you can set `--repo` through an environment variable called `DEV_DOCKER_REPO`.
+
 ```bash
 # Build a ZenML image
-./zen-dev build --repo zenmldocker
+./zen-dev build
 
 # Build a ZenML server image
-./zen-dev build --server --repo zenmldocker
+./zen-dev build --server
 
-# Build with a custom tag
+# Build and push the server image 
+./zen-dev build --server --push
+
+# Build with a custom tag (tag defaults to the sluggified branch name)
 ./zen-dev build --repo zenmldocker --tag v1.0
-
-# Build and push
-./zen-dev build --repo zenmldocker --push
 ```
 
-`--repo` can also be set as an environment variable as `DEV_DOCKER_REPO`.
-`--tag` defaults to the sluggified branch name.
-
 ### Deploy a workspace
+
+For all the commands below, you can set `--organization` through an environment variable called `DEV_ORGANIZATION_ID`.
 
 ```bash
 # Create a new workspace with the latest ZenML version
 ./zen-dev deploy --organization 0000000-0000-0000-000000
 
-# Specify custom Docker image and Helm chart version
-./zen-dev deploy --workspace my-workspace --zenml-version 0.81.0 --docker-image zenmldocker/zenml-server:custom-tag --helm-version 0.36.0
-```
+# Create a new workspace with a custom workspace name (workspace defaults to the sluggied branch name)
+./zen-dev deploy --workspace custom-name
 
-`--organization` can also be set as an environment variable as `DEV_ORGANIZATION_ID`.
-`--workspace` defaults to the sluggied branch name.
-`--zenml-version` defaults to the verions in the `VERSION` file.
+# Specify custom Docker image and Helm chart version
+./zen-dev deploy --zenml-version 0.81.0 --docker-image zenmldocker/zenml-server:custom-tag --helm-version 0.36.0
+```
 
 ### Update a workspace
 
 ```bash
+# Update the workspace with the default name (slugified branch name)
+./zen-dev update --docker-image some/new:image
+
 # Update an existing workspace with a new ZenML version
 ./zen-dev update --workspace my-workspace --zenml-version 0.82.0
 
 # Update with a custom Docker image
 ./zen-dev update --workspace my-workspace --zenml-version 0.82.0 --docker-image zenmldocker/zenml-server:custom-tag
 ```
-
-`--workspace` defaults to the sluggied branch name.
 
 ### Get environment information
 
@@ -172,7 +173,7 @@ Other available commands:
 To add a new dev pipeline:
 
 1. Create a directory in `dev/pipelines/your_pipeline_name/`
-2. Add your pipeline code and a `run.py` file as the entry point
+2. Add your pipeline code and a file as the entry point (defaults to run.py)
 3. Add the pipeline configuration to `dev/dev_pipelines_config.yaml`
 4. Commit and push your changes
 5. Trigger the pipeline with a PR comment: `!run your_pipeline_name`
