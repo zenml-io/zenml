@@ -393,6 +393,7 @@ from zenml.models.v2.misc.auth_models import (
     OAuthRedirectResponse,
     OAuthTokenResponse,
 )
+from zenml.models.v2.misc.pipeline_run_dag import PipelineRunDAG
 from zenml.models.v2.misc.run_metadata import (
     RunMetadataEntry,
     RunMetadataResource,
@@ -821,4 +822,5 @@ __all__ = [
     "RunMetadataEntry",
     "RunMetadataResource",
     "ProjectStatistics",
+    "PipelineRunDAG",
 ]

@@ -32,6 +32,7 @@ from zenml.logger import get_logger
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     Page,
+    PipelineRunDAG,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineRunResponse,
@@ -343,6 +344,32 @@ def get_run_status(
         id=run_id, get_method=zen_store().get_run, hydrate=False
     )
     return run.status
+
+
+@router.get(
+    "/{run_id}/dag",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_run_dag(
+    run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> PipelineRunDAG:
+    """Get the DAG of a specific pipeline run.
+
+    Args:
+        run_id: ID of the pipeline run for which to get the DAG.
+
+    Returns:
+        The DAG of the pipeline run.
+    """
+    # TODO: Maybe avoid calling get_run twice?
+    _ = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        hydrate=False,
+    )
+    return zen_store().get_dag(run_id)
 
 
 @router.get(

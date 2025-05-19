@@ -64,7 +64,8 @@ from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
 )
-from sqlalchemy.orm import Mapped, noload
+from sqlalchemy.orm import Mapped, joinedload, noload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
 
 # Important to note: The select function of SQLModel works slightly differently
@@ -95,10 +96,12 @@ from zenml.analytics.utils import (
     track_handler,
 )
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
-from zenml.config.step_configurations import StepConfiguration, StepSpec
+from zenml.config.source import Source
+from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_PASSWORD,
@@ -117,6 +120,7 @@ from zenml.constants import (
     is_true_string_value,
 )
 from zenml.enums import (
+    ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
     ExecutionStatus,
@@ -220,6 +224,7 @@ from zenml.models import (
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
+    PipelineRunDAG,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineRunResponse,
@@ -316,6 +321,7 @@ from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
+from zenml.zen_stores.dag_generator import DAGGeneratorHelper
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
@@ -4976,6 +4982,241 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     # ----------------------------- Pipeline runs -----------------------------
+
+    def get_pipeline_run_dag(self, pipeline_run_id: UUID) -> PipelineRunDAG:
+        helper = DAGGeneratorHelper()
+
+        with Session(self.engine) as session:
+            run = self._get_schema_by_id(
+                resource_id=pipeline_run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+                # TODO: Check whether this actually improves the performance
+                query_options=[
+                    joinedload(PipelineRunSchema.deployment),
+                    joinedload(PipelineRunSchema.step_runs).joinedload(
+                        StepRunSchema.input_artifacts
+                    ),
+                    joinedload(PipelineRunSchema.step_runs).joinedload(
+                        StepRunSchema.output_artifacts
+                    ),
+                ],
+            )
+            assert run.deployment is not None
+            deployment = run.deployment
+            step_runs = {step.name: step for step in run.step_runs}
+
+            pipeline_configuration = PipelineConfiguration.model_validate_json(
+                deployment.pipeline_configuration
+            )
+            pipeline_configuration.finalize_substitutions(
+                start_time=run.start_time, inplace=True
+            )
+
+            steps = {
+                step_name: Step.from_dict(
+                    config_dict, pipeline_configuration=pipeline_configuration
+                )
+                for step_name, config_dict in json.loads(
+                    deployment.step_configurations
+                ).items()
+            }
+            regular_output_artifact_nodes = defaultdict(dict)
+
+            def _get_regular_output_artifact_node(
+                step_name: str, output_name: str
+            ) -> Any:
+                substituted_output_name = format_name_template(
+                    output_name,
+                    substitutions=steps[step_name].config.substitutions,
+                )
+                return regular_output_artifact_nodes[step_name][
+                    substituted_output_name
+                ]
+
+            for step_name, step in steps.items():
+                upstream_steps = set(step.spec.upstream_steps)
+
+                step_id = None
+                metadata = {}
+
+                step_run = step_runs.get(step_name)
+                if step_run:
+                    step_id = step_run.id
+                    metadata["status"] = step_run.status
+
+                    if step_run.end_time and step_run.start_time:
+                        metadata["duration"] = (
+                            step_run.end_time - step_run.start_time
+                        )
+
+                step_node = helper.add_step_node(
+                    id=step_id,
+                    name=step_name,
+                    metadata=metadata,
+                )
+
+                if step_run:
+                    for input in step_run.input_artifacts:
+                        input_type = StepRunInputArtifactType(input.type)
+
+                        if input_type == StepRunInputArtifactType.STEP_OUTPUT:
+                            # This is a regular input artifact, so it is
+                            # guaranteed that an upstream step already ran and
+                            # produced the artifact.
+                            input_config = step.spec.inputs[input.name]
+                            artifact_node = _get_regular_output_artifact_node(
+                                input_config.step_name,
+                                input_config.output_name,
+                            )
+
+                            # If the upstream step and the current step are
+                            # already connected via a regular artifact, we
+                            # don't add a direct edge between the two.
+                            upstream_step_node = helper.get_step_node_by_id(
+                                input.step_id
+                            )
+                            try:
+                                upstream_steps.remove(upstream_step_node.name)
+                            except KeyError:
+                                pass
+                        else:
+                            # This is not a regular input artifact, but a
+                            # dynamic (loaded inside the step), external or
+                            # lazy-loaded artifact. It might be that this was
+                            # produced by another step in this pipeline, but
+                            # we want to display them as separate nodes in the
+                            # DAG. We can therefore always create a new node
+                            # here.
+                            artifact_node = helper.add_artifact_node(
+                                id=input.artifact_id,
+                                name=input.name,
+                                type=input.artifact_version.type,
+                                data_type=Source.model_validate_json(
+                                    input.artifact_version.data_type
+                                ).import_path,
+                                save_type=input.artifact_version.save_type,
+                            )
+
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            type=input_type.value,
+                        )
+                    for output in step_run.output_artifacts:
+                        # There is a very rare case where a node in the DAG
+                        # already exists for an output artifact. This can happen
+                        # when there are two steps that have no direct
+                        # dependency and can therefore run at the same time, and
+                        # one of them is producing an artifact that is then lazy
+                        # or dynamically loaded by the other step. We do not
+                        # want to merge these and instead display them
+                        # separately in the DAG, but if that should ever change
+                        # this would be the place to merge them.
+                        artifact_node = helper.add_artifact_node(
+                            id=output.artifact_id,
+                            name=output.name,
+                            type=output.artifact_version.type,
+                            data_type=Source.model_validate_json(
+                                output.artifact_version.data_type
+                            ).import_path,
+                            save_type=output.artifact_version.save_type,
+                        )
+
+                        helper.add_edge(
+                            source=step_node.node_id,
+                            target=artifact_node.node_id,
+                            type=output.artifact_version.save_type,
+                        )
+                        if (
+                            output.artifact_version.save_type
+                            == ArtifactSaveType.STEP_OUTPUT
+                        ):
+                            regular_output_artifact_nodes[step_name][
+                                output.name
+                            ] = artifact_node
+                else:
+                    for _, input_config in step.spec.inputs.items():
+                        # This node should always exist, as the step
+                        # configurations are sorted and therefore all
+                        # upstream steps should have been processed already.
+                        artifact_node = _get_regular_output_artifact_node(
+                            input_config.step_name,
+                            input_config.output_name,
+                        )
+
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            type=StepRunInputArtifactType.STEP_OUTPUT.value,
+                        )
+                        # If the upstream step and the current step are
+                        # already connected via a regular artifact, we
+                        # don't add a direct edge between the two.
+                        try:
+                            upstream_steps.remove(input_config.step_name)
+                        except KeyError:
+                            pass
+
+                    for input_name in step.config.client_lazy_loaders.keys():
+                        artifact_node = helper.add_artifact_node(
+                            name=input_name
+                        )
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            type=StepRunInputArtifactType.LAZY_LOADED.value,
+                        )
+
+                    for (
+                        input_name
+                    ) in step.config.model_artifacts_or_metadata.keys():
+                        artifact_node = helper.add_artifact_node(
+                            name=input_name
+                        )
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            type=StepRunInputArtifactType.LAZY_LOADED.value,
+                        )
+
+                    for (
+                        input_name
+                    ) in step.config.external_input_artifacts.keys():
+                        artifact_node = helper.add_artifact_node(
+                            name=input_name
+                        )
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            type=StepRunInputArtifactType.EXTERNAL.value,
+                        )
+
+                    for output_name, _ in step.config.outputs.items():
+                        artifact_node = helper.add_artifact_node(
+                            name=output_name,
+                        )
+                        helper.add_edge(
+                            source=step_node.node_id,
+                            target=artifact_node.node_id,
+                            type=ArtifactSaveType.STEP_OUTPUT.value,
+                        )
+                        regular_output_artifact_nodes[step_name][
+                            output_name
+                        ] = artifact_node
+
+                for upstream_step_name in upstream_steps:
+                    upstream_node = helper.get_step_node_by_name(
+                        upstream_step_name
+                    )
+                    helper.add_edge(
+                        source=upstream_node.node_id,
+                        target=step_node.node_id,
+                    )
+
+        return helper.finalize_dag(
+            pipeline_run_id=pipeline_run_id, status=run.status
+        )
 
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
@@ -9658,6 +9899,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         resource_type: Optional[str] = None,
         project_id: Optional[UUID] = None,
+        query_options: Optional[Sequence[ExecutableOption]] = None,
     ) -> AnySchema:
         """Query a schema by its 'id' field.
 
@@ -9669,6 +9911,7 @@ class SqlZenStore(BaseZenStore):
                 messages. If not provided, the type name will be inferred
                 from the schema class.
             project_id: Optional ID of a project to filter by.
+            query_options: Optional list of query options to apply to the query.
 
         Returns:
             The schema object.
@@ -9692,6 +9935,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
             query = query.where(schema_class.project_id == project_id)  # type: ignore[attr-defined]
+
+        if query_options:
+            query = query.options(*query_options)
 
         schema = session.exec(query).first()
 
