@@ -5082,11 +5082,8 @@ class SqlZenStore(BaseZenStore):
                             # If the upstream step and the current step are
                             # already connected via a regular artifact, we
                             # don't add a direct edge between the two.
-                            upstream_step_node = helper.get_step_node_by_id(
-                                input.step_id
-                            )
                             try:
-                                upstream_steps.remove(upstream_step_node.name)
+                                upstream_steps.remove(input_config.step_name)
                             except KeyError:
                                 pass
                         else:
