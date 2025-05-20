@@ -19,15 +19,16 @@ from functools import wraps
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     Dict,
     List,
     Optional,
+    ParamSpec,
     Tuple,
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -298,10 +299,11 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
-F = TypeVar("F", bound=Callable[..., Any])
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
-def handle_exceptions(func: F) -> F:
+def handle_exceptions(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
     """Decorator to handle exceptions in the API.
 
     Args:
@@ -312,7 +314,7 @@ def handle_exceptions(func: F) -> F:
     """
 
     @wraps(func)
-    def decorated(*args: Any, **kwargs: Any) -> Any:
+    def decorated(*args: P.args, **kwargs: P.kwargs) -> R:
         # These imports can't happen at module level as this module is also
         # used by the CLI when installed without the `server` extra
         from fastapi import HTTPException
@@ -345,7 +347,13 @@ def handle_exceptions(func: F) -> F:
             http_exception = http_exception_from_error(error)
             raise http_exception
 
-    return cast(F, decorated)
+    @wraps(decorated)
+    async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> R:
+        from starlette.concurrency import run_in_threadpool
+
+        return await run_in_threadpool(decorated, *args, **kwargs)
+
+    return async_decorated
 
 
 # Code from https://github.com/tiangolo/fastapi/issues/1474#issuecomment-1160633178
