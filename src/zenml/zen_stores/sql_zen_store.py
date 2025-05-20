@@ -64,7 +64,7 @@ from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
 )
-from sqlalchemy.orm import Mapped, joinedload, noload
+from sqlalchemy.orm import InstrumentedAttribute, Mapped, joinedload, noload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
 
@@ -416,6 +416,17 @@ def exponential_backoff_with_jitter(
     """
     exponential_backoff = base_duration * 1.5**attempt
     return random.uniform(0, exponential_backoff)
+
+
+def attr(column: Any) -> InstrumentedAttribute[Any]:
+    """Convert a column to an attribute.
+
+    This can be used in e.g. `joinedload` calls.
+
+    Args:
+        column: The column to make queryable.
+    """
+    return cast(InstrumentedAttribute[Any], column)
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -5000,12 +5011,12 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 # TODO: Check whether this actually improves the performance
                 query_options=[
-                    joinedload(PipelineRunSchema.deployment),
-                    joinedload(PipelineRunSchema.step_runs).joinedload(
-                        StepRunSchema.input_artifacts
+                    joinedload(attr(PipelineRunSchema.deployment)),
+                    joinedload(attr(PipelineRunSchema.step_runs)).joinedload(
+                        attr(StepRunSchema.input_artifacts)
                     ),
-                    joinedload(PipelineRunSchema.step_runs).joinedload(
-                        StepRunSchema.output_artifacts
+                    joinedload(attr(PipelineRunSchema.step_runs)).joinedload(
+                        attr(StepRunSchema.output_artifacts)
                     ),
                 ],
             )
