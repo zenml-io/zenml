@@ -79,6 +79,8 @@ def get_environment() -> str:
         return EnvironmentType.GENERIC_CI
     elif Environment.in_github_codespaces():
         return EnvironmentType.GITHUB_CODESPACES
+    elif Environment.in_zenml_codespace():
+        return EnvironmentType.ZENML_CODESPACE
     elif Environment.in_vscode_remote_container():
         return EnvironmentType.VSCODE_REMOTE_CONTAINER
     elif Environment.in_lightning_ai_studio():
@@ -254,6 +256,20 @@ class Environment(metaclass=SingletonMetaClass):
             or "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN" in os.environ
         )
 
+    @staticmethod
+    def in_zenml_codespace() -> bool:
+        """If the current Python process is running in ZenML Codespaces.
+
+        Returns:
+            `True` if the current Python process is running in ZenML Codespaces,
+            `False` otherwise.
+        """
+        return (
+            "ZENML_CODESPACE" in os.environ
+            or "ZENML_CODESPACE_ENABLED" in os.environ
+            or os.environ.get("ZENML_ENVIRONMENT") == "codespace"
+        )
+    
     @staticmethod
     def in_vscode_remote_container() -> bool:
         """If the current Python process is running in a VS Code Remote Container.
