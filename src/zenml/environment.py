@@ -264,12 +264,8 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current Python process is running in ZenML Codespaces,
             `False` otherwise.
         """
-        return (
-            "ZENML_CODESPACE" in os.environ
-            or "ZENML_CODESPACE_ENABLED" in os.environ
-            or os.environ.get("ZENML_ENVIRONMENT") == "codespace"
-        )
-    
+        return os.environ.get("ZENML_ENVIRONMENT") == "codespace"
+
     @staticmethod
     def in_vscode_remote_container() -> bool:
         """If the current Python process is running in a VS Code Remote Container.
