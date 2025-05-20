@@ -26,7 +26,7 @@ from zenml.event_sources.webhooks.base_webhook_event_source import (
 from zenml.exceptions import AuthorizationException, WebhookInactiveError
 from zenml.logger import get_logger
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     plugin_flavor_registry,
     zen_store,
 )
@@ -55,7 +55,7 @@ async def get_body(request: Request) -> bytes:
     "/{event_source_id}",
     response_model=Dict[str, str],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def webhook(
     event_source_id: UUID,
     request: Request,

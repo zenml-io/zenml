@@ -46,7 +46,11 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.rbac.utils import get_allowed_resource_ids
-from zenml.zen_server.utils import handle_exceptions, server_config, zen_store
+from zenml.zen_server.utils import (
+    async_fastapi_endpoint_wrapper,
+    server_config,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1,
@@ -69,7 +73,7 @@ async def version() -> str:
     INFO,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def server_info() -> ServerModel:
     """Get information about the server.
 
@@ -83,7 +87,7 @@ def server_info() -> ServerModel:
     LOAD_INFO,
     response_model=ServerLoadInfo,
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def server_load_info(_: AuthContext = Security(authorize)) -> ServerLoadInfo:
     """Get information about the server load.
 
@@ -132,7 +136,7 @@ def server_load_info(_: AuthContext = Security(authorize)) -> ServerLoadInfo:
         422: error_response,
     },
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_onboarding_state(
     _: AuthContext = Security(authorize),
 ) -> List[str]:
@@ -159,7 +163,7 @@ if server_config().external_server_id is None:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def get_settings(
         _: AuthContext = Security(authorize),
         hydrate: bool = True,
@@ -182,7 +186,7 @@ if server_config().external_server_id is None:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def update_server_settings(
         settings_update: ServerSettingsUpdate,
         auth_context: AuthContext = Security(authorize),
@@ -227,7 +231,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def activate_server(
         activate_request: ServerActivationRequest,
     ) -> Optional[UserResponse]:
@@ -246,7 +250,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     STATISTICS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_server_statistics(
     auth_context: AuthContext = Security(authorize),
 ) -> ServerStatistics:

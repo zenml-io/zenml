@@ -44,7 +44,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     plugin_flavor_registry,
     zen_store,
@@ -61,7 +61,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_actions(
     action_filter_model: ActionFilter = Depends(make_dependable(ActionFilter)),
     hydrate: bool = False,
@@ -132,7 +132,7 @@ def list_actions(
     "/{action_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_action(
     action_id: UUID,
     hydrate: bool = True,
@@ -179,7 +179,7 @@ def get_action(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_action(
     action: ActionRequest,
     _: AuthContext = Security(authorize),
@@ -225,7 +225,7 @@ def create_action(
     "/{action_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_action(
     action_id: UUID,
     action_update: ActionUpdate,
@@ -280,7 +280,7 @@ def update_action(
     "/{action_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_action(
     action_id: UUID,
     force: bool = False,

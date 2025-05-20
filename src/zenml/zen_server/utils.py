@@ -303,8 +303,16 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-def handle_exceptions(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
-    """Decorator to handle exceptions in the API.
+def async_fastapi_endpoint_wrapper(
+    func: Callable[P, R],
+) -> Callable[P, Awaitable[R]]:
+    """Decorator for FastAPI endpoints.
+
+    This decorator for FastAPI endpoints does the following:
+    - Sets the auth_context context variable if the endpoint is authenticated.
+    - Converts exceptions to HTTPExceptions with the correct status code.
+    - Converts the sync endpoint function to an coroutine and runs the original
+      function in a worker threadpool. See below for more details.
 
     Args:
         func: Function to decorate.
