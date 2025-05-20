@@ -17,7 +17,8 @@ from typing import Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column, UniqueConstraint
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import noload, object_session
+from sqlmodel import Field, Relationship, col, func, select
 
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models import (
@@ -69,6 +70,31 @@ class TagSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"overlaps": "tags", "cascade": "delete"},
     )
 
+    @property
+    def tagged_count(self) -> int:
+        """Fetch the number of resources tagged with this tag.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The number of resources tagged with this tag.
+        """
+        from zenml.zen_stores.schemas import TagResourceSchema
+
+        if session := object_session(self):
+            count = session.scalar(
+                select(func.count(col(TagResourceSchema.id)))
+                .where(TagResourceSchema.tag_id == self.id)
+                .options(noload("*"))
+            )
+
+            return int(count) if count else 0
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch tagged count for tag."
+            )
+
     @classmethod
     def from_request(cls, request: TagRequest) -> "TagSchema":
         """Convert an `TagRequest` to an `TagSchema`.
@@ -106,7 +132,7 @@ class TagSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = TagResponseMetadata(
-                tagged_count=len(self.links),
+                tagged_count=self.tagged_count,
             )
 
         resources = None
