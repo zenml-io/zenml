@@ -14,6 +14,7 @@
 """Utility functions to help with YAML files and data."""
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
@@ -99,9 +100,8 @@ def is_yaml(file_path: str) -> bool:
     Returns:
         True if is yaml, else False.
     """
-    if file_path.endswith("yaml") or file_path.endswith("yml"):
-        return True
-    return False
+    extension = os.path.splitext(file_path)[1].lower()
+    return extension in (".yaml", ".yml")
 
 
 def comment_out_yaml(yaml_string: str) -> str:
