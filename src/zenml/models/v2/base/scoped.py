@@ -160,6 +160,7 @@ class UserScopedResponse(
     @property
     def user(self) -> Optional["UserResponse"]:
         """The user property.
+
         Returns:
             the value of the property.
         """
