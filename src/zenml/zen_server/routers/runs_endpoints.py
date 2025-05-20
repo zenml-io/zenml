@@ -364,12 +364,12 @@ def get_run_dag(
         The DAG of the pipeline run.
     """
     # TODO: Maybe avoid calling get_run twice?
-    _ = verify_permissions_and_get_entity(
+    verify_permissions_and_get_entity(
         id=run_id,
         get_method=zen_store().get_run,
         hydrate=False,
     )
-    return zen_store().get_dag(run_id)
+    return zen_store().get_pipeline_run_dag(run_id)
 
 
 @router.get(

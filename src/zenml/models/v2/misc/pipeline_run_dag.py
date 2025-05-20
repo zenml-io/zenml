@@ -21,22 +21,26 @@ from pydantic import BaseModel, Field
 from zenml.enums import ExecutionStatus
 
 
-class Node(BaseModel):
-    node_id: UUID = Field(default_factory=uuid4)
-    type: str
-    id: Optional[UUID] = None
-    name: str
-    metadata: Dict[str, Any] = {}
-
-
-class Edge(BaseModel):
-    source: UUID
-    target: UUID
-    type: Optional[str] = None
-
-
 class PipelineRunDAG(BaseModel):
+    """Pipeline run DAG."""
+
     id: UUID
     status: ExecutionStatus
-    nodes: List[Node]
-    edges: List[Edge]
+    nodes: List["Node"]
+    edges: List["Edge"]
+
+    class Node(BaseModel):
+        """Node in the pipeline run DAG."""
+
+        node_id: UUID = Field(default_factory=uuid4)
+        type: str
+        id: Optional[UUID] = None
+        name: str
+        metadata: Dict[str, Any] = {}
+
+    class Edge(BaseModel):
+        """Edge in the pipeline run DAG."""
+
+        source: UUID
+        target: UUID
+        type: Optional[str] = None

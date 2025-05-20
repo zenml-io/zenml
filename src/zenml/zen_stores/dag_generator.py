@@ -17,14 +17,17 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from zenml.enums import ExecutionStatus
-from zenml.models.v2.misc.pipeline_run_dag import Edge, Node, PipelineRunDAG
+from zenml.models import PipelineRunDAG
 
 
 class DAGGeneratorHelper:
+    """Helper class for generating pipeline run DAGs."""
+
     def __init__(self) -> None:
-        self.step_nodes: Dict[UUID, Node] = {}
-        self.artifact_nodes: Dict[UUID, Node] = {}
-        self.edges: List[Edge] = []
+        """Initialize the DAG generator helper."""
+        self.step_nodes: Dict[UUID, PipelineRunDAG.Node] = {}
+        self.artifact_nodes: Dict[UUID, PipelineRunDAG.Node] = {}
+        self.edges: List[PipelineRunDAG.Edge] = []
 
     def add_step_node(
         self,
@@ -32,8 +35,19 @@ class DAGGeneratorHelper:
         id: Optional[UUID] = None,
         node_id: Optional[UUID] = None,
         **kwargs: Any,
-    ) -> Node:
-        step_node = Node(
+    ) -> PipelineRunDAG.Node:
+        """Add a step node to the DAG.
+
+        Args:
+            name: The name of the step.
+            id: The ID of the step.
+            node_id: The ID of the node.
+            **kwargs: Additional node metadata.
+
+        Returns:
+            The added step node.
+        """
+        step_node = PipelineRunDAG.Node(
             type="step",
             node_id=node_id or uuid4(),
             id=id,
@@ -49,8 +63,19 @@ class DAGGeneratorHelper:
         id: Optional[UUID] = None,
         node_id: Optional[UUID] = None,
         **kwargs: Any,
-    ) -> Node:
-        artifact_node = Node(
+    ) -> PipelineRunDAG.Node:
+        """Add an artifact node to the DAG.
+
+        Args:
+            name: The name of the artifact.
+            id: The ID of the artifact.
+            node_id: The ID of the node.
+            **kwargs: Additional node metadata.
+
+        Returns:
+            The added artifact node.
+        """
+        artifact_node = PipelineRunDAG.Node(
             type="artifact",
             node_id=node_id or uuid4(),
             id=id,
@@ -63,15 +88,46 @@ class DAGGeneratorHelper:
     def add_edge(
         self, source: UUID, target: UUID, type: Optional[str] = None
     ) -> None:
-        self.edges.append(Edge(source=source, target=target, type=type))
+        """Add an edge to the DAG.
 
-    def get_step_node_by_id(self, id: UUID) -> Node:
+        Args:
+            source: The source node ID.
+            target: The target node ID.
+            type: The type of the edge.
+        """
+        self.edges.append(
+            PipelineRunDAG.Edge(source=source, target=target, type=type)
+        )
+
+    def get_step_node_by_id(self, id: UUID) -> PipelineRunDAG.Node:
+        """Get a step node by ID.
+
+        Args:
+            id: The ID of the step node.
+
+        Raises:
+            KeyError: If the step node with the given ID is not found.
+
+        Returns:
+            The step node.
+        """
         for node in self.step_nodes.values():
             if node.id == id:
                 return node
         raise KeyError(f"Step node with id {id} not found")
 
-    def get_step_node_by_name(self, name: str) -> Node:
+    def get_step_node_by_name(self, name: str) -> PipelineRunDAG.Node:
+        """Get a step node by name.
+
+        Args:
+            name: The name of the step.
+
+        Raises:
+            KeyError: If the step node with the given name is not found.
+
+        Returns:
+            The step node.
+        """
         for node in self.step_nodes.values():
             if node.name == name:
                 return node
@@ -80,6 +136,15 @@ class DAGGeneratorHelper:
     def finalize_dag(
         self, pipeline_run_id: UUID, status: ExecutionStatus
     ) -> PipelineRunDAG:
+        """Finalize the DAG.
+
+        Args:
+            pipeline_run_id: The ID of the pipeline run.
+            status: The status of the pipeline run.
+
+        Returns:
+            The finalized DAG.
+        """
         return PipelineRunDAG(
             id=pipeline_run_id,
             status=status,

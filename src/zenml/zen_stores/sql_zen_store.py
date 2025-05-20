@@ -4984,8 +4984,15 @@ class SqlZenStore(BaseZenStore):
     # ----------------------------- Pipeline runs -----------------------------
 
     def get_pipeline_run_dag(self, pipeline_run_id: UUID) -> PipelineRunDAG:
-        helper = DAGGeneratorHelper()
+        """Get the DAG of a pipeline run.
 
+        Args:
+            pipeline_run_id: The ID of the pipeline run.
+
+        Returns:
+            The DAG of the pipeline run.
+        """
+        helper = DAGGeneratorHelper()
         with Session(self.engine) as session:
             run = self._get_schema_by_id(
                 resource_id=pipeline_run_id,
@@ -5021,11 +5028,13 @@ class SqlZenStore(BaseZenStore):
                     deployment.step_configurations
                 ).items()
             }
-            regular_output_artifact_nodes = defaultdict(dict)
+            regular_output_artifact_nodes: Dict[
+                str, Dict[str, PipelineRunDAG.Node]
+            ] = defaultdict(dict)
 
             def _get_regular_output_artifact_node(
                 step_name: str, output_name: str
-            ) -> Any:
+            ) -> PipelineRunDAG.Node:
                 substituted_output_name = format_name_template(
                     output_name,
                     substitutions=steps[step_name].config.substitutions,
@@ -5038,7 +5047,7 @@ class SqlZenStore(BaseZenStore):
                 upstream_steps = set(step.spec.upstream_steps)
 
                 step_id = None
-                metadata = {}
+                metadata: Dict[str, Any] = {}
 
                 step_run = step_runs.get(step_name)
                 if step_run:
@@ -5215,7 +5224,7 @@ class SqlZenStore(BaseZenStore):
                     )
 
         return helper.finalize_dag(
-            pipeline_run_id=pipeline_run_id, status=run.status
+            pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
         )
 
     def _create_run(
