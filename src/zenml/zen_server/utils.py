@@ -24,7 +24,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    ParamSpec,
     Tuple,
     Type,
     TypeVar,
@@ -33,6 +32,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
+from typing_extensions import ParamSpec
 
 from zenml import __version__ as zenml_version
 from zenml.config.global_config import GlobalConfiguration
