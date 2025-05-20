@@ -5112,6 +5112,7 @@ class SqlZenStore(BaseZenStore):
                             target=step_node.node_id,
                             type=input_type.value,
                         )
+
                     for output in step_run.output_artifacts:
                         # There is a very rare case where a node in the DAG
                         # already exists for an output artifact. This can happen
@@ -5144,6 +5145,34 @@ class SqlZenStore(BaseZenStore):
                             regular_output_artifact_nodes[step_name][
                                 output.name
                             ] = artifact_node
+
+                    for output_name in step.config.outputs.keys():
+                        # If the step failed or is still running, we do not have
+                        # its regular outputs. So we populate the DAG with the
+                        # outputs from the config instead.
+                        substituted_output_name = format_name_template(
+                            output_name,
+                            substitutions=step.config.substitutions,
+                        )
+                        if (
+                            substituted_output_name
+                            in regular_output_artifact_nodes[step_name]
+                        ):
+                            # If the real output already exists we can skip
+                            # adding a new node for it.
+                            continue
+
+                        artifact_node = helper.add_artifact_node(
+                            name=substituted_output_name,
+                        )
+                        helper.add_edge(
+                            source=step_node.node_id,
+                            target=artifact_node.node_id,
+                            type=ArtifactSaveType.STEP_OUTPUT.value,
+                        )
+                        regular_output_artifact_nodes[step_name][
+                            substituted_output_name
+                        ] = artifact_node
                 else:
                     for _, input_config in step.spec.inputs.items():
                         # This node should always exist, as the step
@@ -5201,9 +5230,13 @@ class SqlZenStore(BaseZenStore):
                             type=StepRunInputArtifactType.EXTERNAL.value,
                         )
 
-                    for output_name, _ in step.config.outputs.items():
+                    for output_name in step.config.outputs.keys():
+                        substituted_output_name = format_name_template(
+                            output_name,
+                            substitutions=step.config.substitutions,
+                        )
                         artifact_node = helper.add_artifact_node(
-                            name=output_name,
+                            name=substituted_output_name,
                         )
                         helper.add_edge(
                             source=step_node.node_id,
@@ -5211,7 +5244,7 @@ class SqlZenStore(BaseZenStore):
                             type=ArtifactSaveType.STEP_OUTPUT.value,
                         )
                         regular_output_artifact_nodes[step_name][
-                            output_name
+                            substituted_output_name
                         ] = artifact_node
 
                 for upstream_step_name in upstream_steps:
