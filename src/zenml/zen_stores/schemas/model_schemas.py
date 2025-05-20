@@ -194,13 +194,6 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponse`.
         """
-        if latest_version := self.latest_version:
-            latest_version_name = latest_version.name
-            latest_version_id = latest_version.id
-        else:
-            latest_version_name = None
-            latest_version_id = None
-
         metadata = None
         if include_metadata:
             metadata = ModelResponseMetadata(
@@ -216,9 +209,18 @@ class ModelSchema(NamedSchema, table=True):
 
         resources = None
         if include_resources:
+            if latest_version := self.latest_version:
+                latest_version_name = latest_version.name
+                latest_version_id = latest_version.id
+            else:
+                latest_version_name = None
+                latest_version_id = None
+
             resources = ModelResponseResources(
                 user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
+                latest_version_name=latest_version_name,
+                latest_version_id=latest_version_id,
             )
 
         body = ModelResponseBody(
@@ -226,8 +228,6 @@ class ModelSchema(NamedSchema, table=True):
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            latest_version_name=latest_version_name,
-            latest_version_id=latest_version_id,
         )
 
         return ModelResponse(
