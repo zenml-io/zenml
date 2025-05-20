@@ -425,7 +425,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
             # Define bash line and command line
             bash_line = "#!/bin/bash\n"
-            command_line = f'cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}="{deployment_id}_$(date +\%s)" > .env && docker compose up -d'
+            command_line = fr'cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}="{deployment_id}_$(date +\%s)" > .env && docker compose up -d'
 
             # Write script to temporary file
             with f.file as f_:
