@@ -73,6 +73,15 @@ def _create_local_orchestrator(
     client: Client,
     orchestrator_name: str = "OrchesTraitor",
 ) -> ComponentResponse:
+    """Creates a local orchestrator stack component.
+
+    Args:
+        client: The ZenML client instance.
+        orchestrator_name: The name for the orchestrator component.
+
+    Returns:
+        The created orchestrator component response.
+    """
     return client.create_stack_component(
         name=orchestrator_name,
         flavor="local",
@@ -85,6 +94,15 @@ def _create_local_artifact_store(
     client: Client,
     artifact_store_name: str = "Art-E-Fact",
 ) -> ComponentResponse:
+    """Creates a local artifact store stack component.
+
+    Args:
+        client: The ZenML client instance.
+        artifact_store_name: The name for the artifact store component.
+
+    Returns:
+        The created artifact store component response.
+    """
     return client.create_stack_component(
         name=artifact_store_name,
         flavor="local",
@@ -99,9 +117,22 @@ def _create_local_stack(
     orchestrator_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
 ) -> StackResponse:
-    """Creates a local stack with components with the given names. If the names are not given, a random string is used instead."""
+    """Creates a local stack with a local orchestrator and artifact store.
 
-    def _random_name():
+    If component names are not provided, random names will be generated.
+
+    Args:
+        client: The ZenML client instance.
+        stack_name: The name for the stack.
+        orchestrator_name: Optional name for the orchestrator.
+        artifact_store_name: Optional name for the artifact store.
+
+    Returns:
+        The created stack response.
+    """
+
+    def _random_name() -> str:
+        """Generates a random string for component names."""
         return "".join(random.choices(string.ascii_letters, k=10))
 
     orchestrator = _create_local_orchestrator(
@@ -122,7 +153,7 @@ def _create_local_stack(
     )
 
 
-def test_repository_detection(tmp_path):
+def test_repository_detection(tmp_path: "Path") -> None:
     """Tests detection of ZenML repositories in a directory."""
     assert Client.is_repository_directory(tmp_path) is False
     Client.initialize(tmp_path)
@@ -130,9 +161,9 @@ def test_repository_detection(tmp_path):
 
 
 def test_initializing_repo_creates_directory_and_uses_default_stack(
-    tmp_path, clean_client
-):
-    """Tests that repo initialization creates a .zen directory and uses the default local stack."""
+    tmp_path: "Path", clean_client: "Client"
+) -> None:
+    """Tests that `Client.initialize` creates the `.zen` directory and the new repo uses the default stack."""
     Client.initialize(tmp_path)
     assert fileio.exists(str(tmp_path / ".zen"))
 
@@ -153,15 +184,15 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
         assert stack.components[StackComponentType.CONTAINER_REGISTRY]
 
 
-def test_initializing_repo_twice_fails(tmp_path):
+def test_initializing_repo_twice_fails(tmp_path: "Path") -> None:
     """Tests that initializing a repo in a directory where another repo already exists fails."""
     Client.initialize(tmp_path)
     with pytest.raises(InitializationException):
         Client.initialize(tmp_path)
 
 
-def test_freshly_initialized_repo_attributes(tmp_path):
-    """Tests that the attributes of a new repository are set correctly."""
+def test_freshly_initialized_repo_attributes(tmp_path: "Path") -> None:
+    """Tests that the attributes of a new repository (e.g., `client.root`) are set correctly."""
     Client.initialize(tmp_path)
     client = Client(tmp_path)
 
@@ -169,9 +200,9 @@ def test_freshly_initialized_repo_attributes(tmp_path):
 
 
 def test_finding_repository_directory_with_explicit_path(
-    tmp_path, clean_client
-):
-    """Tests that a repository can be found using an explicit path, an environment variable and the current working directory."""
+    tmp_path: "Path", clean_client: "Client"
+) -> None:
+    """Tests that a ZenML repository can be correctly found (or not found) using an explicit path, an environment variable, or the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
     io_utils.create_dir_recursive_if_not_exists(str(subdirectory_path))
     os.chdir(str(subdirectory_path))
@@ -224,22 +255,22 @@ def test_finding_repository_directory_with_explicit_path(
     del os.environ["ZENML_REPOSITORY_PATH"]
 
 
-def test_activating_nonexisting_stack_fails(clean_client):
-    """Tests that activating a stack name that isn't registered fails."""
+def test_activating_nonexisting_stack_fails(clean_client: "Client") -> None:
+    """Tests that activating a stack by a non-existent ID or name fails with a KeyError."""
     with pytest.raises(KeyError):
         clean_client.activate_stack(str(uuid4()))
 
 
-def test_activating_a_stack_updates_the_config_file(clean_client):
-    """Tests that the newly active stack name gets persisted."""
+def test_activating_a_stack_updates_the_config_file(clean_client: "Client") -> None:
+    """Tests that activating a stack correctly persists the change by updating the active stack name in the configuration."""
     stack = _create_local_stack(client=clean_client, stack_name="new_stack")
     clean_client.activate_stack(stack.id)
 
     assert Client(clean_client.root).active_stack_model.name == stack.name
 
 
-def test_registering_a_stack(clean_client):
-    """Tests that registering a stack works and the stack gets persisted."""
+def test_registering_a_stack(clean_client: "Client") -> None:
+    """Tests that registering a new stack with valid components works and the stack is persisted."""
     orch = _create_local_orchestrator(
         client=clean_client,
     )
@@ -260,8 +291,8 @@ def test_registering_a_stack(clean_client):
         clean_client.zen_store.get_stack(new_stack.id)
 
 
-def test_registering_a_stack_with_existing_name(clean_client):
-    """Tests that registering a stack for an existing name fails."""
+def test_registering_a_stack_with_existing_name(clean_client: "Client") -> None:
+    """Tests that attempting to register a stack with a name that already exists fails with an EntityExistsError."""
     _create_local_stack(
         client=clean_client,
         stack_name="axels_super_awesome_stack_of_fluffyness",
@@ -279,8 +310,8 @@ def test_registering_a_stack_with_existing_name(clean_client):
         )
 
 
-def test_updating_a_stack_with_new_component_succeeds(clean_client):
-    """Tests that updating a new stack with already registered components updates the stack with the new or altered components passed in."""
+def test_updating_a_stack_with_new_component_succeeds(clean_client: "Client") -> None:
+    """Tests that updating an existing stack with a new, valid component for a component type succeeds."""
     stack = _create_local_stack(
         client=clean_client, stack_name="some_new_stack_name"
     )
@@ -311,8 +342,8 @@ def test_updating_a_stack_with_new_component_succeeds(clean_client):
     assert active_artifact_store == old_artifact_store
 
 
-def test_renaming_stack_with_update_method_succeeds(clean_client):
-    """Tests that renaming a stack with the update method succeeds."""
+def test_renaming_stack_with_update_method_succeeds(clean_client: "Client") -> None:
+    """Tests that renaming an existing stack using the update_stack method succeeds."""
     stack = _create_local_stack(
         client=clean_client, stack_name="some_new_stack_name"
     )
@@ -327,8 +358,8 @@ def test_renaming_stack_with_update_method_succeeds(clean_client):
     assert clean_client.get_stack(name_id_or_prefix=new_stack_name)
 
 
-def test_register_a_stack_with_unregistered_component_fails(clean_client):
-    """Tests that registering a stack with an unregistered component fails."""
+def test_register_a_stack_with_unregistered_component_fails(clean_client: "Client") -> None:
+    """Tests that attempting to register a stack with components that are not registered themselves fails with a KeyError."""
     with pytest.raises(KeyError):
         clean_client.create_stack(
             name="axels_empty_stack_of_disappoint",
@@ -339,14 +370,14 @@ def test_register_a_stack_with_unregistered_component_fails(clean_client):
         )
 
 
-def test_deregistering_the_active_stack(clean_client):
-    """Tests that deregistering the active stack fails."""
+def test_deregistering_the_active_stack(clean_client: "Client") -> None:
+    """Tests that attempting to deregister (delete) the currently active stack fails with a ValueError."""
     with pytest.raises(ValueError):
         clean_client.delete_stack(clean_client.active_stack_model.id)
 
 
-def test_deregistering_a_non_active_stack(clean_client):
-    """Tests that deregistering a non-active stack works."""
+def test_deregistering_a_non_active_stack(clean_client: "Client") -> None:
+    """Tests that deregistering a stack that is not currently active succeeds."""
     stack = _create_local_stack(
         client=clean_client, stack_name="some_new_stack_name"
     )
@@ -355,8 +386,8 @@ def test_deregistering_a_non_active_stack(clean_client):
         clean_client.delete_stack(name_id_or_prefix=stack.id)
 
 
-def test_getting_a_stack_component(clean_client):
-    """Tests that getting a stack component returns the correct component."""
+def test_getting_a_stack_component(clean_client: "Client") -> None:
+    """Tests that retrieving a registered stack component by its type and ID works correctly."""
     component = clean_client.active_stack_model.components[
         StackComponentType.ORCHESTRATOR
     ][0]
@@ -368,14 +399,14 @@ def test_getting_a_stack_component(clean_client):
     assert component == registered_component
 
 
-def test_getting_a_nonexisting_stack_component(clean_client):
-    """Tests that getting a stack component for a name that isn't registered fails."""
+def test_getting_a_nonexisting_stack_component(clean_client: "Client") -> None:
+    """Tests that attempting to retrieve a stack component using a non-existent ID fails with a KeyError."""
     with pytest.raises(KeyError):
         clean_client.get_stack(name_id_or_prefix=str(uuid4()))
 
 
-def test_registering_a_stack_component_with_existing_name(clean_client):
-    """Tests that registering a stack component for an existing name fails."""
+def test_registering_a_stack_component_with_existing_name(clean_client: "Client") -> None:
+    """Tests that attempting to register a stack component with a name that already exists for that component type fails with an EntityExistsError."""
     _create_local_orchestrator(
         client=clean_client, orchestrator_name="axels_orchestration_laboratory"
     )
@@ -388,8 +419,8 @@ def test_registering_a_stack_component_with_existing_name(clean_client):
         )
 
 
-def test_registering_a_new_stack_component_succeeds(clean_client):
-    """Tests that registering a stack component works and is persisted."""
+def test_registering_a_new_stack_component_succeeds(clean_client: "Client") -> None:
+    """Tests that registering a new stack component with valid parameters succeeds and the component is persisted."""
     new_artifact_store = _create_local_artifact_store(client=clean_client)
 
     new_client = Client(clean_client.root)
@@ -403,8 +434,8 @@ def test_registering_a_new_stack_component_succeeds(clean_client):
     assert registered_artifact_store == new_artifact_store
 
 
-def test_deregistering_a_stack_component_in_stack_fails(clean_client):
-    """Tests that deregistering a stack component works and is persisted."""
+def test_deregistering_a_stack_component_in_stack_fails(clean_client: "Client") -> None:
+    """Tests that attempting to deregister a stack component that is currently part of any registered stack fails with an IllegalOperationError."""
     component = _create_local_stack(
         clean_client,
         "local_stack",
@@ -419,9 +450,9 @@ def test_deregistering_a_stack_component_in_stack_fails(clean_client):
 
 
 def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
-    clean_client,
-):
-    """Tests that deregistering a stack component that is part of a registered stack fails."""
+    clean_client: "Client",
+) -> None:
+    """Tests that attempting to deregister a stack component that is part of the active stack (or any registered stack) fails with an IllegalOperationError."""
     component = clean_client.active_stack_model.components[
         StackComponentType.ORCHESTRATOR
     ][0]
@@ -433,8 +464,8 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
         )
 
 
-def test_getting_a_pipeline(clean_client: "Client"):
-    """Tests fetching of a pipeline."""
+def test_getting_a_pipeline(clean_client: "Client") -> None:
+    """Tests fetching of a pipeline by ID and name, and ensures KeyError for non-existent pipelines."""
     # Non-existent ID
     with pytest.raises(KeyError):
         clean_client.get_pipeline(name_id_or_prefix=uuid4())
@@ -456,8 +487,8 @@ def test_getting_a_pipeline(clean_client: "Client"):
     assert pipeline == response_1
 
 
-def test_listing_pipelines(clean_client):
-    """Tests listing of pipelines."""
+def test_listing_pipelines(clean_client: "Client") -> None:
+    """Tests listing of pipelines, including empty lists and filtering by name."""
     assert clean_client.list_pipelines().total == 0
 
     request = PipelineRequest(
@@ -476,8 +507,8 @@ def test_listing_pipelines(clean_client):
     assert clean_client.list_pipelines(name="yet_another_pipeline").total == 0
 
 
-def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
-    """Test creating run metadata linked only to a pipeline run."""
+def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client) -> None:
+    """Test creating run metadata linked only to a pipeline run and verifying its content."""
     pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
@@ -495,8 +526,8 @@ def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
     assert rm["axel"] == "is awesome"
 
 
-def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
-    """Test creating run metadata linked only to a step run."""
+def test_create_run_metadata_for_step_run(clean_client_with_run: Client) -> None:
+    """Test creating run metadata linked only to a step run and verifying its content."""
     step_run = clean_client_with_run.list_run_steps()[0]
 
     # Assert that the created metadata is correct
@@ -515,8 +546,8 @@ def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
     assert rm["axel"] == "is awesome"
 
 
-def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
-    """Test creating run metadata linked to an artifact."""
+def test_create_run_metadata_for_artifact(clean_client_with_run: Client) -> None:
+    """Test creating run metadata linked to an artifact version and verifying its content."""
     artifact_version = clean_client_with_run.list_artifact_versions()[0]
 
     # Assert that the created metadata is correct
@@ -544,16 +575,26 @@ def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
 
 
 def random_secret_name(prefix: str = "aria") -> str:
-    """Function to get a random secret name or prefix."""
+    """Generates a random secret name with a given prefix.
+
+    Args:
+        prefix: The prefix for the secret name.
+
+    Returns:
+        A randomly generated secret name.
+    """
     return f"pytest_{prefix}_{random_str(4)}"
 
 
 @contextmanager
 def random_secret_context() -> Generator[str, None, None]:
-    """Context for testing secrets.
+    """Context manager for creating and cleaning up secrets with a random prefix.
 
-    Generates a random secret prefix to avoid conflicts. Yields the prefix.
-    After the context is exited, all secrets with that prefix are deleted.
+    This ensures that secrets created during a test do not conflict with
+    existing secrets and are cleaned up after the test execution.
+
+    Yields:
+        A randomly generated prefix string that can be used for secret names.
     """
     prefix = random_secret_name()
     yield prefix
@@ -563,8 +604,8 @@ def random_secret_context() -> Generator[str, None, None]:
         client.delete_secret(secret.id)
 
 
-def test_create_secret_default_scope():
-    """Test that secrets are created as public by default."""
+def test_create_secret_default_scope() -> None:
+    """Test that secrets are created as public (not private) by default."""
     client = Client()
     with random_secret_context() as name:
         s = client.create_secret(
@@ -576,8 +617,8 @@ def test_create_secret_default_scope():
         assert s.secret_values == {"key": "value"}
 
 
-def test_create_private_secret():
-    """Test creating private secrets."""
+def test_create_private_secret() -> None:
+    """Test creating a secret explicitly marked as private."""
     client = Client()
     with random_secret_context() as name:
         s = client.create_secret(
@@ -590,8 +631,8 @@ def test_create_private_secret():
         assert s.secret_values == {"key": "value"}
 
 
-def test_create_secret_existing_name_scope():
-    """Test that creating a secret with an existing name fails."""
+def test_create_secret_existing_name_scope() -> None:
+    """Test that creating a secret with a name that already exists in the same scope (public) fails."""
     client = Client()
     with random_secret_context() as name:
         client.create_secret(
@@ -606,8 +647,8 @@ def test_create_secret_existing_name_scope():
             )
 
 
-def test_create_private_secret_existing_name():
-    """Test that creating a private secret with an existing name fails."""
+def test_create_private_secret_existing_name() -> None:
+    """Test that creating a private secret with a name that already exists for a private secret fails."""
     client = Client()
     with random_secret_context() as name:
         client.create_secret(
@@ -624,8 +665,8 @@ def test_create_private_secret_existing_name():
             )
 
 
-def test_create_secret_existing_name_different_scope():
-    """Test that creating a secret with the same name in different scopes succeeds."""
+def test_create_secret_existing_name_different_scope() -> None:
+    """Test that creating secrets with the same name but in different scopes (public vs. private) succeeds."""
     client = Client()
     with random_secret_context() as name:
         s1 = client.create_secret(
@@ -649,8 +690,8 @@ def test_create_secret_existing_name_different_scope():
 # ---------------
 
 
-def test_listing_builds(clean_client):
-    """Tests listing builds."""
+def test_listing_builds(clean_client: "Client") -> None:
+    """Tests listing pipeline builds, ensuring correct counts before and after creation, and filtering."""
     builds = clean_client.list_builds()
     assert len(builds) == 0
 
@@ -670,9 +711,8 @@ def test_listing_builds(clean_client):
     assert len(builds) == 0
 
 
-def test_getting_builds(clean_client):
-    """Tests getting builds."""
-
+def test_getting_builds(clean_client: "Client") -> None:
+    """Tests retrieving a specific pipeline build by its ID, and ensures KeyError for non-existent IDs."""
     with pytest.raises(KeyError):
         clean_client.get_build(str(uuid4()))
 
@@ -690,8 +730,8 @@ def test_getting_builds(clean_client):
     assert build == response
 
 
-def test_deleting_builds(clean_client):
-    """Tests deleting builds."""
+def test_deleting_builds(clean_client: "Client") -> None:
+    """Tests deleting a pipeline build by ID, and ensures KeyError when trying to get or delete it again."""
     with pytest.raises(KeyError):
         clean_client.delete_build(str(uuid4()))
 
@@ -715,8 +755,8 @@ def test_deleting_builds(clean_client):
 # --------------------
 
 
-def test_listing_deployments(clean_client):
-    """Tests listing deployments."""
+def test_listing_deployments(clean_client: "Client") -> None:
+    """Tests listing pipeline deployments, ensuring correct counts before and after creation, and filtering."""
     deployments = clean_client.list_deployments()
     assert len(deployments) == 0
 
@@ -738,8 +778,8 @@ def test_listing_deployments(clean_client):
     assert len(deployments) == 0
 
 
-def test_getting_deployments(clean_client):
-    """Tests getting deployments."""
+def test_getting_deployments(clean_client: "Client") -> None:
+    """Tests retrieving a specific pipeline deployment by its ID, and ensures KeyError for non-existent IDs."""
     with pytest.raises(KeyError):
         clean_client.get_deployment(str(uuid4()))
 
@@ -759,8 +799,8 @@ def test_getting_deployments(clean_client):
     assert deployment == response
 
 
-def test_deleting_deployments(clean_client):
-    """Tests deleting deployments."""
+def test_deleting_deployments(clean_client: "Client") -> None:
+    """Tests deleting a pipeline deployment by ID, and ensures KeyError when trying to get or delete it again."""
     with pytest.raises(KeyError):
         clean_client.delete_deployment(str(uuid4()))
 
@@ -781,8 +821,8 @@ def test_deleting_deployments(clean_client):
         clean_client.get_deployment(str(response.id))
 
 
-def test_get_run(clean_client: Client, connected_two_step_pipeline):
-    """Test that `get_run()` returns the correct run."""
+def test_get_run(clean_client: Client, connected_two_step_pipeline: "Callable") -> None:
+    """Test that `get_run()` returns the correct pipeline run when called with the run name."""
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step,
         step_2=int_plus_one_test_step,
@@ -792,14 +832,14 @@ def test_get_run(clean_client: Client, connected_two_step_pipeline):
     assert clean_client.get_pipeline_run(run_.name) == run_
 
 
-def test_get_run_fails_for_non_existent_run(clean_client: Client):
-    """Test that `get_run()` raises a `KeyError` for non-existent runs."""
+def test_get_run_fails_for_non_existent_run(clean_client: Client) -> None:
+    """Test that `get_run()` raises a `KeyError` when called with a non-existent run name."""
     with pytest.raises(KeyError):
         clean_client.get_pipeline_run("non_existent_run")
 
 
-def test_get_unlisted_runs(clean_client: Client, connected_two_step_pipeline):
-    """Test that listing unlisted runs works."""
+def test_get_unlisted_runs(clean_client: Client, connected_two_step_pipeline: "Callable") -> None:
+    """Test that listing unlisted runs works as expected, only showing runs marked as unlisted."""
     assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step,
@@ -812,6 +852,19 @@ def test_get_unlisted_runs(clean_client: Client, connected_two_step_pipeline):
 
 
 class ClientCrudTestConfig(BaseModel):
+    """Configuration model for defining parameters for generic CRUD tests.
+
+    This Pydantic model is used to parameterize tests that verify the basic
+    Create, Read, Update, and Delete (CRUD) operations for various ZenML
+    entities via the ZenML client.
+
+    Attributes:
+        entity_name: The singular name of the entity being tested (e.g., "user", "project").
+        create_args: A dictionary of arguments to pass to the client's `create_<entity_name>` method.
+        get_args: A dictionary of arguments to pass to the client's `get_<entity_name>` method.
+        update_args: A dictionary of arguments to pass to the client's `update_<entity_name>` method.
+        delete_args: A dictionary of arguments to pass to the client's `delete_<entity_name>` method.
+    """
     entity_name: str
     create_args: Dict[str, Any] = {}
     get_args: Dict[str, Any] = {}
@@ -887,9 +940,27 @@ crud_test_configs = [
     ids=[c.entity_name for c in crud_test_configs],
 )
 def test_basic_crud_for_entity(
-    crud_test_config: ClientCrudTestConfig, clean_client
-):
-    """Tests basic CRUD method on the client."""
+    crud_test_config: ClientCrudTestConfig, clean_client: "Client"
+) -> None:
+    """Tests basic CRUD (Create, Read, Update, Delete) methods on the ZenML client for various entities.
+
+    This test is parameterized using `ClientCrudTestConfig` to cover different
+    ZenML entities like users, projects, stacks, etc. It verifies:
+    - Successful creation of an entity.
+    - Retrieval of the created entity by its name and ID.
+    - Retrieval using a prefix of the name (if applicable).
+    - Correct failure when trying to retrieve with a non-matching name prefix.
+    - Successful update of the entity (if an update method exists).
+    - Correct failure when trying to update with a name prefix.
+    - Correct failure when trying to delete with a name prefix.
+    - Successful deletion of the entity using an ID prefix.
+    - Ensures the entity is cleaned up after the test.
+
+    Args:
+        crud_test_config: A `ClientCrudTestConfig` instance providing entity-specific
+            parameters for the CRUD operations.
+        clean_client: A pytest fixture providing a clean ZenML client instance.
+    """
     create_method = getattr(
         clean_client, f"create_{crud_test_config.entity_name}"
     )
@@ -1004,7 +1075,7 @@ def lazy_asserter_test_artifact(
     model_version_by_version: ModelVersionResponse,
     model_version_by_stage: ModelVersionResponse,
     model_version_run_metadata: str,
-):
+) -> None:
     """Assert that passed in values are loaded in lazy mode.
     They do not exists before actual run of the pipeline.
     """
@@ -1023,8 +1094,10 @@ def lazy_asserter_test_artifact(
 
 
 class TestArtifact:
-    def test_prune_full(self, clean_client: "Client"):
-        """Test that artifact pruning works."""
+    """Groups tests related to ZenML artifact management via the client."""
+
+    def test_prune_full(self, clean_client: "Client") -> None:
+        """Tests that artifact pruning with `delete_from_artifact_store=True` deletes the artifact version, artifact record, and data from the artifact store."""
         artifact_id = ExternalArtifact(value="foo").upload_by_value()
         artifact = clean_client.get_artifact_version(artifact_id)
         assert artifact is not None
@@ -1042,8 +1115,8 @@ class TestArtifact:
             )
         assert not os.path.exists(artifact.uri)
 
-    def test_prune_data_and_version(self, clean_client: "Client"):
-        """Test that artifact pruning works with delete_from_artifact_store flag."""
+    def test_prune_data_and_version(self, clean_client: "Client") -> None:
+        """Tests that artifact pruning with `delete_from_artifact_store=False` deletes the artifact version and artifact record, but keeps the data in the artifact store."""
         artifact_id = ExternalArtifact(value="foo").upload_by_value()
         artifact = clean_client.get_artifact_version(artifact_id)
         assert artifact is not None
@@ -1060,8 +1133,8 @@ class TestArtifact:
             )
         assert os.path.exists(artifact.uri)
 
-    def test_prune_only_artifact_version(self, clean_client: "Client"):
-        """Test that artifact pruning works with only versions flag."""
+    def test_prune_only_artifact_version(self, clean_client: "Client") -> None:
+        """Tests that artifact pruning with `only_versions=True` deletes only the artifact version, keeping the artifact record and data."""
         artifact_id = ExternalArtifact(value="foo").upload_by_value()
         artifact = clean_client.get_artifact_version(artifact_id)
         assert artifact is not None
@@ -1078,8 +1151,8 @@ class TestArtifact:
     def test_pipeline_can_load_in_lazy_mode(
         self,
         clean_client: "Client",
-    ):
-        """Tests that user can load model artifact versions, metadata and models (versions) in lazy mode in pipeline codes."""
+    ) -> None:
+        """Tests that artifacts, their metadata, models, and model versions can be loaded lazily within a pipeline step context."""
 
         @pipeline(
             enable_cache=False,
@@ -1087,7 +1160,8 @@ class TestArtifact:
                 name="aria", version="model_version", description="mv_desc_1"
             ),
         )
-        def dummy():
+        def dummy() -> None:
+            """Defines a pipeline to test lazy loading of artifacts and model versions."""
             artifact_existing = clean_client.get_artifact_version(
                 name_id_or_prefix="preexisting"
             )
@@ -1153,11 +1227,13 @@ class TestArtifact:
 
 
 class TestModel:
+    """Groups tests related to ZenML Model Control Plane management via the client."""
     MODEL_NAME = "foo"
 
     @staticmethod
     @pytest.fixture
     def client_with_model(clean_client: "Client") -> "Client":
+        """Pytest fixture that creates a sample model and returns the client."""
         clean_client.create_model(
             name=TestModel.MODEL_NAME,
             license="l",
@@ -1171,7 +1247,8 @@ class TestModel:
         )
         return clean_client
 
-    def test_get_model_found(self, client_with_model: "Client"):
+    def test_get_model_found(self, client_with_model: "Client") -> None:
+        """Tests retrieving an existing model by its name."""
         model = client_with_model.get_model(self.MODEL_NAME)
 
         assert model.name == self.MODEL_NAME
@@ -1184,11 +1261,13 @@ class TestModel:
         assert model.ethics == "e"
         assert {t.name for t in model.tags} == {"t", "t2"}
 
-    def test_get_model_not_found(self, clean_client: "Client"):
+    def test_get_model_not_found(self, clean_client: "Client") -> None:
+        """Tests that attempting to retrieve a non-existent model by name raises a KeyError."""
         with pytest.raises(KeyError):
             clean_client.get_model(self.MODEL_NAME)
 
-    def test_create_model_pass(self, clean_client: "Client"):
+    def test_create_model_pass(self, clean_client: "Client") -> None:
+        """Tests successful creation of a model with minimal and full parameters."""
         clean_client.create_model(name="some")
         model = clean_client.get_model("some")
 
@@ -1217,21 +1296,25 @@ class TestModel:
         assert model.ethics == "e"
         assert {t.name for t in model.tags} == {"t", "t2"}
 
-    def test_create_model_duplicate_fail(self, client_with_model: "Client"):
+    def test_create_model_duplicate_fail(self, client_with_model: "Client") -> None:
+        """Tests that attempting to create a model with a name that already exists fails with an EntityExistsError."""
         with pytest.raises(EntityExistsError):
             client_with_model.create_model(self.MODEL_NAME)
 
-    def test_delete_model_found(self, client_with_model: "Client"):
+    def test_delete_model_found(self, client_with_model: "Client") -> None:
+        """Tests successful deletion of an existing model by name."""
         client_with_model.delete_model(self.MODEL_NAME)
 
         with pytest.raises(KeyError):
             client_with_model.get_model(self.MODEL_NAME)
 
-    def test_delete_model_not_found(self, clean_client: "Client"):
+    def test_delete_model_not_found(self, clean_client: "Client") -> None:
+        """Tests that attempting to delete a non-existent model by name raises a KeyError."""
         with pytest.raises(KeyError):
             clean_client.delete_model(self.MODEL_NAME)
 
-    def test_update_model(self, client_with_model: "Client"):
+    def test_update_model(self, client_with_model: "Client") -> None:
+        """Tests updating various attributes of an existing model, including tags."""
         client_with_model.update_model(
             self.MODEL_NAME, add_tags=["t3"], remove_tags=["t2"]
         )
@@ -1269,8 +1352,8 @@ class TestModel:
         assert model.ethics == "E"
         assert {t.name for t in model.tags} == {"t", "t3"}
 
-    def test_name_is_mutable(self, clean_client: "Client"):
-        """Test that model version name is mutable."""
+    def test_name_is_mutable(self, clean_client: "Client") -> None:
+        """Test that a model's name can be successfully changed via the update method."""
         model = clean_client.create_model(name=self.MODEL_NAME)
 
         model = clean_client.get_model(model.id)
@@ -1280,8 +1363,8 @@ class TestModel:
         model = clean_client.get_model(model.id)
         assert model.name == "bar"
 
-    def test_latest_version_retrieval(self, clean_client: "Client"):
-        """Test that model response has proper latest version in it."""
+    def test_latest_version_retrieval(self, clean_client: "Client") -> None:
+        """Test that the model response correctly reflects the latest created model version."""
         model = clean_client.create_model(name=self.MODEL_NAME)
         mv1 = clean_client.create_model_version(model.id, name="foo")
         model_ = clean_client.get_model(model.id)
@@ -1293,8 +1376,8 @@ class TestModel:
         assert model_.latest_version_name == mv2.name
         assert model_.latest_version_id == mv2.id
 
-    def test_list_by_tags(self, clean_client: "Client"):
-        """Test that models can be listed using tag filters."""
+    def test_list_by_tags(self, clean_client: "Client") -> None:
+        """Test that models can be correctly listed and filtered using tags."""
         model1 = clean_client.create_model(
             name=self.MODEL_NAME, tags=["foo", "bar"]
         )
@@ -1323,13 +1406,15 @@ class TestModel:
 
 
 class TestModelVersion:
+    """Groups tests related to ZenML Model Version management via the client."""
     MODEL_NAME = "foo"
     VERSION_NAME = "bar"
     VERSION_DESC = "version desc"
 
     @staticmethod
     @pytest.fixture
-    def client_with_model(clean_client: "Client"):
+    def client_with_model(clean_client: "Client") -> "Client":
+        """Pytest fixture that creates a sample model and model version, then returns the client."""
         clean_client.create_model(name=TestModelVersion.MODEL_NAME)
         clean_client.create_model_version(
             model_name_or_id=TestModelVersion.MODEL_NAME,
@@ -1340,7 +1425,8 @@ class TestModelVersion:
 
     def test_get_model_version_by_name_found(
         self, client_with_model: "Client"
-    ):
+    ) -> None:
+        """Tests retrieving an existing model version by its name."""
         model_version = client_with_model.get_model_version(
             self.MODEL_NAME, self.VERSION_NAME
         )
@@ -1350,7 +1436,8 @@ class TestModelVersion:
         assert model_version.number == 1
         assert model_version.description == self.VERSION_DESC
 
-    def test_get_model_version_by_id_found(self, client_with_model: "Client"):
+    def test_get_model_version_by_id_found(self, client_with_model: "Client") -> None:
+        """Tests retrieving an existing model version by its ID."""
         mv = client_with_model.get_model_version(
             self.MODEL_NAME, self.VERSION_NAME
         )
@@ -1366,7 +1453,8 @@ class TestModelVersion:
 
     def test_get_model_version_by_index_found(
         self, client_with_model: "Client"
-    ):
+    ) -> None:
+        """Tests retrieving an existing model version by its numerical index (version number)."""
         model_version = client_with_model.get_model_version(self.MODEL_NAME, 1)
 
         assert model_version.model.name == self.MODEL_NAME
@@ -1376,7 +1464,8 @@ class TestModelVersion:
 
     def test_get_model_version_by_stage_found(
         self, client_with_model: "Client"
-    ):
+    ) -> None:
+        """Tests retrieving a model version by its stage (e.g., "staging") after setting it."""
         client_with_model.update_model_version(
             model_name_or_id=self.MODEL_NAME,
             version_name_or_id=self.VERSION_NAME,
@@ -1395,17 +1484,20 @@ class TestModelVersion:
 
     def test_get_model_version_by_stage_not_found(
         self, client_with_model: "Client"
-    ):
+    ) -> None:
+        """Tests that attempting to retrieve a model version by a stage that no version is set to raises a KeyError."""
         with pytest.raises(KeyError):
             client_with_model.get_model_version(
                 self.MODEL_NAME, ModelStages.STAGING
             )
 
-    def test_get_model_version_not_found(self, client_with_model: "Client"):
+    def test_get_model_version_not_found(self, client_with_model: "Client") -> None:
+        """Tests that attempting to retrieve a non-existent model version (e.g., by a high index) raises a KeyError."""
         with pytest.raises(KeyError):
             client_with_model.get_model_version(self.MODEL_NAME, 42)
 
-    def test_create_model_version_pass(self, client_with_model: "Client"):
+    def test_create_model_version_pass(self, client_with_model: "Client") -> None:
+        """Tests successful creation of model versions with default name, custom name, description, and tags."""
         model_version = client_with_model.create_model_version(self.MODEL_NAME)
 
         assert model_version.name == "2"
@@ -1438,13 +1530,15 @@ class TestModelVersion:
 
     def test_create_model_version_duplicate_fails(
         self, client_with_model: "Client"
-    ):
+    ) -> None:
+        """Tests that attempting to create a model version with a name that already exists for that model fails with an EntityExistsError."""
         with pytest.raises(EntityExistsError):
             client_with_model.create_model_version(
                 self.MODEL_NAME, self.VERSION_NAME
             )
 
-    def test_update_model_version(self, client_with_model: "Client"):
+    def test_update_model_version(self, client_with_model: "Client") -> None:
+        """Tests updating various attributes of an existing model version, including stage, name, and handling of stage conflicts."""
         model_version = client_with_model.get_model_version(
             self.MODEL_NAME, self.VERSION_NAME
         )
@@ -1513,7 +1607,8 @@ class TestModelVersion:
         assert model_version.description == self.VERSION_DESC
         assert model_version.stage == ModelStages.ARCHIVED
 
-    def test_list_model_version(self, client_with_model: "Client"):
+    def test_list_model_version(self, client_with_model: "Client") -> None:
+        """Tests listing model versions with pagination and filtering by name and tags."""
         for i in range(PAGE_SIZE_DEFAULT):
             client_with_model.create_model_version(
                 self.MODEL_NAME,
@@ -1555,7 +1650,8 @@ class TestModelVersion:
         )
         assert len(model_versions) == 0
 
-    def test_delete_model_version_found(self, client_with_model: "Client"):
+    def test_delete_model_version_found(self, client_with_model: "Client") -> None:
+        """Tests successful deletion of an existing model version by its ID."""
         client_with_model.delete_model_version(
             client_with_model.get_model_version(
                 self.MODEL_NAME, self.VERSION_NAME
@@ -1567,7 +1663,8 @@ class TestModelVersion:
                 self.MODEL_NAME, self.VERSION_NAME
             )
 
-    def test_delete_model_version_not_found(self, client_with_model: "Client"):
+    def test_delete_model_version_not_found(self, client_with_model: "Client") -> None:
+        """Tests that attempting to delete a non-existent model version by ID raises a KeyError."""
         with pytest.raises(KeyError):
             client_with_model.delete_model_version(uuid4())
 
@@ -1577,6 +1674,7 @@ class TestModelVersion:
         model_name: str = "aria_cat_supermodel",
         model_version_name: str = "1.0.0",
     ) -> Model:
+        """Helper function to create a model and a model version, returning the Model object."""
         model = client.create_model(
             name=model_name,
         )
@@ -1585,8 +1683,8 @@ class TestModelVersion:
             name=model_version_name,
         ).to_model_class(suppress_class_validation_warnings=True)
 
-    def test_get_by_latest(self, clean_client: "Client"):
-        """Test that model can be retrieved with latest."""
+    def test_get_by_latest(self, clean_client: "Client") -> None:
+        """Tests that retrieving a model version using the 'LATEST' stage alias correctly returns the most recently created version."""
         mv1 = self._create_some_model(client=clean_client)
 
         # latest returns the only model
@@ -1607,8 +1705,8 @@ class TestModelVersion:
         assert mv4 != mv1
         assert mv4 == mv3
 
-    def test_get_by_stage(self, clean_client: "Client"):
-        """Test that model can be retrieved by stage."""
+    def test_get_by_stage(self, clean_client: "Client") -> None:
+        """Tests that a model version can be correctly retrieved by its assigned stage (e.g., "staging")."""
         mv1 = self._create_some_model(client=clean_client)
 
         clean_client.update_model_version(
@@ -1625,8 +1723,8 @@ class TestModelVersion:
 
         assert mv1 == mv2
 
-    def test_stage_not_found(self, clean_client: "Client"):
-        """Test that attempting to get model fails if none at the given stage."""
+    def test_stage_not_found(self, clean_client: "Client") -> None:
+        """Tests that attempting to retrieve a model version by a stage that no version is assigned to raises a KeyError."""
         mv1 = self._create_some_model(client=clean_client)
 
         with pytest.raises(KeyError):
@@ -1635,8 +1733,8 @@ class TestModelVersion:
                 model_version_name_or_number_or_id=ModelStages.STAGING,
             )
 
-    def test_name_and_description_is_mutable(self, clean_client: "Client"):
-        """Test that model version name is mutable."""
+    def test_name_and_description_is_mutable(self, clean_client: "Client") -> None:
+        """Test that a model version's name and description can be successfully changed via the update method."""
         model = clean_client.create_model(name=self.MODEL_NAME)
         mv = clean_client.create_model_version(model.id, description="foo")
 
@@ -1656,7 +1754,8 @@ class TestModelVersion:
         assert mv.description == "bar"
 
 
-def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client):
+def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client) -> None:
+    """Tests attaching a tag to a pipeline run and then detaching it, verifying the tag's presence and absence respectively."""
     run = clean_client_with_run.get_pipeline_run("connected_two_step_pipeline")
     tag = clean_client_with_run.create_tag(name="foo")
     clean_client_with_run.attach_tag(
@@ -1673,3 +1772,5 @@ def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client):
     )
     run = clean_client_with_run.get_pipeline_run(run.id)
     assert "foo" not in [t.name for t in run.tags]
+
+[end of tests/integration/functional/test_client.py]

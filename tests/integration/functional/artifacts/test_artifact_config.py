@@ -26,7 +26,12 @@ MODEL_NAME = "foo"
 
 @step(model=Model(name=MODEL_NAME, version=ModelStages.LATEST))
 def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
-    """Untyped single output linked as Artifact from step context."""
+    """Step that returns a single integer output.
+
+    The output artifact is configured using `ArtifactConfig()` directly in the
+    type annotation, linking it to the model version specified in the step's
+    decorator.
+    """
     return 1
 
 
@@ -34,7 +39,11 @@ def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
 def single_output_step_from_context_model() -> Annotated[
     int, ArtifactConfig(artifact_type=ArtifactType.MODEL)
 ]:
-    """Untyped single output linked as a model artifact from step context."""
+    """Step that returns a single integer output, configured as a model artifact.
+
+    The output artifact is explicitly typed as `ArtifactType.MODEL` using
+    `ArtifactConfig` and linked to the model version from the step's context.
+    """
     return 1
 
 
@@ -42,13 +51,24 @@ def single_output_step_from_context_model() -> Annotated[
 def single_output_step_from_context_endpoint() -> Annotated[
     int, ArtifactConfig(artifact_type=ArtifactType.SERVICE)
 ]:
-    """Untyped single output linked as endpoint artifact from step context."""
+    """Step that returns a single integer output, configured as a service artifact.
+
+    The output artifact is explicitly typed as `ArtifactType.SERVICE` (representing
+    an endpoint/service) using `ArtifactConfig` and linked to the model version
+    from the step's context.
+    """
     return 1
 
 
 @pipeline(enable_cache=False)
-def simple_pipeline():
-    """Run 3 untyped single output linked from step context."""
+def simple_pipeline() -> None:
+    """Defines a simple pipeline with three steps.
+
+    The pipeline consists of three steps that each produce a single output.
+    These outputs are configured to be linked as different artifact types
+    (generic, model, and service) using `ArtifactConfig` within the step
+    context. The steps run sequentially.
+    """
     single_output_step_from_context()
     single_output_step_from_context_model(
         after=["single_output_step_from_context"]
@@ -58,8 +78,17 @@ def simple_pipeline():
     )
 
 
-def test_link_minimalistic(clean_client: "Client"):
-    """Test simple explicit linking from step context for 3 artifact types."""
+def test_link_minimalistic(clean_client: "Client") -> None:
+    """Tests explicit artifact linking from step context for different artifact types.
+
+    This test runs the `simple_pipeline`, which contains three steps each
+    outputting an artifact. It verifies that these artifacts are correctly
+    linked to the associated model version and that they have the specified
+    artifact types (DATA, MODEL, SERVICE).
+
+    Args:
+        clean_client: A ZenML client instance.
+    """
     # warm-up
     Model(name=MODEL_NAME)._get_or_create_model_version()
 
@@ -95,18 +124,36 @@ def multi_named_output_step_from_context() -> Tuple[
     Annotated[int, "2"],
     Annotated[int, "3"],
 ]:
-    """3 typed output step with explicit linking from step context."""
+    """Step that returns three named integer outputs.
+
+    Each output is annotated with a name ("1", "2", "3"). These artifacts
+    will be linked to the model version specified in the step's decorator.
+    """
     return 1, 2, 3
 
 
 @pipeline(enable_cache=False)
-def multi_named_pipeline():
-    """3 typed output step with explicit linking from step context."""
+def multi_named_pipeline() -> None:
+    """Defines a pipeline that runs a single step with multiple named outputs.
+
+    This pipeline utilizes the `multi_named_output_step_from_context` step,
+    which produces three distinct, named outputs. The artifacts generated
+    from these outputs are expected to be linked to the model version
+    specified in the step's configuration.
+    """
     multi_named_output_step_from_context()
 
 
-def test_link_multiple_named_outputs(clean_client: "Client"):
-    """Test multiple typed output step with explicit linking from step context."""
+def test_link_multiple_named_outputs(clean_client: "Client") -> None:
+    """Tests artifact linking for a step that produces multiple named outputs.
+
+    This test executes the `multi_named_pipeline`. It then verifies that all
+    three named outputs from the `multi_named_output_step_from_context` step
+    are correctly linked as artifacts to the corresponding model version.
+
+    Args:
+        clean_client: A ZenML client instance.
+    """
     multi_named_pipeline()
 
     mv = clean_client.get_model_version(MODEL_NAME, ModelStages.LATEST)
@@ -124,18 +171,39 @@ def multi_named_output_step_not_tracked() -> Tuple[
     Annotated[int, "2"],
     Annotated[int, "3"],
 ]:
-    """Here links would be implicitly created based on step Model."""
+    """Step with multiple named outputs where artifact linking is implicit.
+
+    The outputs "1", "2", and "3" are expected to be implicitly linked to the
+    model version defined in the step's decorator, as no explicit
+    `ArtifactConfig` is used.
+    """
     return 1, 2, 3
 
 
 @pipeline(enable_cache=False)
-def multi_named_pipeline_not_tracked():
-    """Here links would be implicitly created based on step Model."""
+def multi_named_pipeline_not_tracked() -> None:
+    """Defines a pipeline with a step that has multiple named outputs where artifact linking is implicit.
+
+    This pipeline runs the `multi_named_output_step_not_tracked` step.
+    The artifacts from this step are expected to be implicitly linked to the
+    model version defined in the step's context, as no explicit
+    `ArtifactConfig` is used for the outputs.
+    """
     multi_named_output_step_not_tracked()
 
 
-def test_link_multiple_named_outputs_without_links(clean_client: "Client"):
-    """Test multi output step implicit linking based on step context."""
+def test_link_multiple_named_outputs_without_links(clean_client: "Client") -> None:
+    """Tests implicit artifact linking for a step with multiple named outputs.
+
+    This test runs the `multi_named_pipeline_not_tracked`. It checks if the
+    artifacts produced by the `multi_named_output_step_not_tracked` step are
+    implicitly linked to the model version specified in the step's
+    configuration, even without explicit `ArtifactConfig` in the output
+    annotations.
+
+    Args:
+        clean_client: A ZenML client instance.
+    """
     multi_named_pipeline_not_tracked()
 
     mv = clean_client.get_model_version(MODEL_NAME, ModelStages.LATEST)
@@ -158,7 +226,7 @@ def multi_named_output_step_mixed_linkage() -> Tuple[
         "3",
     ],
 ]:
-    """Artifact 2 and 3 will get step context."""
+    """Step with multiple named outputs ("2", "3") linked via step-level model context."""
     return 2, 3
 
 
@@ -167,19 +235,33 @@ def pipeline_configuration_is_used_here() -> Tuple[
     Annotated[int, ArtifactConfig(name="custom_name")],
     Annotated[str, "4"],
 ]:
-    """Artifact "1" has own config and overrides name, but "4" will be implicitly tracked with pipeline config."""
+    """Step with two outputs demonstrating mixed artifact configuration.
+
+    - The first output (integer) uses an explicit `ArtifactConfig` to set a
+      custom artifact name "custom_name".
+    - The second output (string, named "4") will be implicitly linked using the
+      pipeline-level model context if available.
+    """
     return 1, "foo"
 
 
 @step
-def some_plain_outputs():
-    """This artifact will be implicitly tracked with pipeline config as a single tuple."""
+def some_plain_outputs() -> Tuple[str, float]:
+    """Step returning a tuple of a string and a float.
+
+    This output is expected to be treated as a single artifact (a tuple) and
+    implicitly linked to the model version defined at the pipeline level.
+    """
     return "bar", 42.0
 
 
 @step(model=Model(name="step", version="step"))
 def and_some_typed_outputs() -> int:
-    """This artifact can be implicitly tracked with step config."""
+    """Step returning a single integer output.
+
+    This artifact is expected to be implicitly linked to the model version
+    defined in this step's decorator ("step/step").
+    """
     return 1
 
 
@@ -187,8 +269,18 @@ def and_some_typed_outputs() -> int:
     enable_cache=False,
     model=Model(name="pipe", version="pipe"),
 )
-def multi_named_pipeline_mixed_linkage():
-    """Mixed linking cases, see steps description."""
+def multi_named_pipeline_mixed_linkage() -> None:
+    """Defines a pipeline demonstrating mixed artifact linkage scenarios.
+
+    This pipeline includes steps with various ways of defining artifact
+    configurations:
+    - `pipeline_configuration_is_used_here`: One output with custom ArtifactConfig,
+      another implicitly linked via pipeline-level model.
+    - `multi_named_output_step_mixed_linkage`: Outputs linked via step-level model.
+    - `some_plain_outputs`: Output implicitly linked as a single tuple artifact
+      via pipeline-level model.
+    - `and_some_typed_outputs`: Output implicitly linked via step-level model.
+    """
     pipeline_configuration_is_used_here()
     multi_named_output_step_mixed_linkage()
     some_plain_outputs()
@@ -197,8 +289,17 @@ def multi_named_pipeline_mixed_linkage():
 
 def test_link_multiple_named_outputs_with_mixed_linkage(
     clean_client: "Client",
-):
-    """In this test a mixed linkage of artifacts is verified. See steps description."""
+) -> None:
+    """Tests various scenarios of explicit and implicit artifact linking.
+
+    This test executes the `multi_named_pipeline_mixed_linkage`. It verifies
+    that artifacts from different steps, with mixed explicit `ArtifactConfig`
+    and implicit model context linking (both step-level and pipeline-level),
+    are correctly associated with their respective model versions.
+
+    Args:
+        clean_client: A ZenML client instance.
+    """
     # manual creation needed, as we work with specific versions
     models = []
     mvs = []
@@ -233,27 +334,49 @@ def test_link_multiple_named_outputs_with_mixed_linkage(
 def _cacheable_step_annotated() -> Annotated[
     str, ArtifactConfig(name="cacheable", artifact_type=ArtifactType.MODEL)
 ]:
+    """Cacheable step returning a string output explicitly configured as a model artifact named "cacheable"."""
     return "cacheable"
 
 
 @step(enable_cache=True)
-def _cacheable_step_not_annotated():
+def _cacheable_step_not_annotated() -> str:
+    """Cacheable step returning a string output with no explicit artifact configuration."""
     return "cacheable"
 
 
 @step(enable_cache=False)
-def _non_cacheable_step():
+def _non_cacheable_step() -> str:
+    """Non-cacheable step returning a string output."""
     return "not cacheable"
 
 
-def test_artifacts_linked_from_cache_steps(clean_client: "Client"):
-    """Test that artifacts are linked from cache steps."""
+def test_artifacts_linked_from_cache_steps(clean_client: "Client") -> None:
+    """Tests that artifacts are correctly linked to model versions even when steps are cached.
+
+    This test defines and runs an inner pipeline (`_caching_test_pipeline`)
+    multiple times. Some steps in this pipeline are cacheable. The test
+    verifies that artifacts produced by these steps (whether from a cached run
+    or a new execution) are correctly linked to the appropriate model version
+    associated with each pipeline run.
+
+    Args:
+        clean_client: A ZenML client instance.
+    """
 
     @pipeline(
         model=Model(name="foo"),
         enable_cache=False,
     )
-    def _inner_pipeline(force_disable_cache: bool = False):
+    def _caching_test_pipeline(force_disable_cache: bool = False) -> None:
+        """Pipeline to test artifact linking with cached steps.
+
+        Contains a mix of cacheable and non-cacheable steps. Some cacheable
+        steps have explicit ArtifactConfig, others don't.
+
+        Args:
+            force_disable_cache: If True, caching is disabled for normally
+                cacheable steps in this run.
+        """
         _cacheable_step_annotated.with_options(
             enable_cache=force_disable_cache
         )()
@@ -263,7 +386,7 @@ def test_artifacts_linked_from_cache_steps(clean_client: "Client"):
         _non_cacheable_step()
 
     for i in range(1, 3):
-        _inner_pipeline(i != 1)
+        _caching_test_pipeline(i != 1)
 
         mvrm = clean_client.get_model_version(
             model_name_or_id="foo", model_version_name_or_number_or_id=i
@@ -271,8 +394,8 @@ def test_artifacts_linked_from_cache_steps(clean_client: "Client"):
         assert len(mvrm.data_artifact_ids) == 2, f"Failed on {i} run"
         assert len(mvrm.model_artifact_ids) == 1, f"Failed on {i} run"
         assert set(mvrm.data_artifact_ids.keys()) == {
-            "_inner_pipeline::_non_cacheable_step::output",
-            "_inner_pipeline::_cacheable_step_not_annotated::output",
+            "_caching_test_pipeline::_non_cacheable_step::output",
+            "_caching_test_pipeline::_cacheable_step_not_annotated::output",
         }, f"Failed on {i} run"
         assert set(mvrm.model_artifact_ids.keys()) == {
             "cacheable",
@@ -281,6 +404,7 @@ def test_artifacts_linked_from_cache_steps(clean_client: "Client"):
 
 @step
 def standard_name_producer() -> str:
+    """Step that produces an artifact with a standard (default) name."""
     return "standard"
 
 
@@ -288,34 +412,55 @@ def standard_name_producer() -> str:
 def custom_name_producer() -> Annotated[
     str, "pipeline_::standard_name_producer::output"
 ]:
+    """Step that produces an artifact with a custom name.
+
+    The custom name is specified via `Annotated` and `ArtifactConfig` (implicitly,
+    as a string is a valid shorthand for `ArtifactConfig(name=...)`).
+    """
     return "custom"
 
 
-def test_update_of_has_custom_name(clean_client: "Client"):
-    """Test that update of has_custom_name works."""
+def test_update_of_has_custom_name(clean_client: "Client") -> None:
+    """Tests the behavior of the `has_custom_name` attribute of artifacts.
+
+    This test verifies that the `has_custom_name` flag on an artifact is
+    correctly set and persists:
+    1. Initially False when an artifact is created with a standard name.
+    2. True when an artifact (even if it's a new version of a previous one)
+       is logged with a custom name via `ArtifactConfig`.
+    3. Remains True even if a subsequent version of the same artifact is logged
+       again with a standard (non-custom) name.
+
+    Args:
+        clean_client: A ZenML client instance.
+    """
 
     @pipeline(enable_cache=False)
-    def pipeline_():
+    def _standard_name_pipeline() -> None:
+        """Pipeline that produces an artifact with a standard name."""
         standard_name_producer()
 
     @pipeline(enable_cache=False)
-    def pipeline_2():
+    def _custom_name_pipeline() -> None:
+        """Pipeline that produces an artifact with a custom name."""
         custom_name_producer()
 
     # Run once -> no custom name
-    pipeline_()
+    _standard_name_pipeline()
     assert not clean_client.get_artifact(
-        "pipeline_::standard_name_producer::output"
+        "_standard_name_pipeline::standard_name_producer::output"
     ).has_custom_name, "Standard name validation failed"
 
     # Run with custom name -> gets set to true
-    pipeline_2()
+    _custom_name_pipeline()
     assert clean_client.get_artifact(
-        "pipeline_::standard_name_producer::output"
+        "_standard_name_pipeline::standard_name_producer::output"
     ).has_custom_name, "Custom name validation failed"
 
     # Run again with standard name -> custom name stays true
-    pipeline_()
+    _standard_name_pipeline()
     assert clean_client.get_artifact(
-        "pipeline_::standard_name_producer::output"
+        "_standard_name_pipeline::standard_name_producer::output"
     ).has_custom_name, "Custom name validation failed"
+
+[end of tests/integration/functional/artifacts/test_artifact_config.py]

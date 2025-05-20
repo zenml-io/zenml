@@ -24,10 +24,15 @@ SERVER_START_STOP_TIMEOUT = 30
 
 @pytest.fixture
 def rest_api_auth_token() -> Tuple[str, str]:
-    """Get an authentication token from the server.
+    """Pytest fixture to get the ZenML server's REST API base URL and an authentication token.
 
-    Yield:
-        The server's REST API base URL and an authentication token.
+    This fixture assumes that the ZenML client is configured to use a
+    RESTZenStore, from which it retrieves the API URL and a valid
+    authentication token.
+
+    Yields:
+        Tuple[str, str]: A tuple containing the server's REST API base URL
+            (e.g., "http://localhost:8080") and an API authentication token.
     """
     from zenml.zen_stores.rest_zen_store import RestZenStore
 
@@ -37,8 +42,18 @@ def rest_api_auth_token() -> Tuple[str, str]:
     yield zen_store.url, zen_store.get_or_generate_api_token()
 
 
-def test_list_stacks_endpoint(rest_api_auth_token):
-    """Test that the list stack endpoint works."""
+def test_list_stacks_endpoint(rest_api_auth_token: Tuple[str, str]) -> None:
+    """Tests the functionality of the `/api/v1/stacks` endpoint.
+
+    This test verifies that the endpoint returns a successful (200) response,
+    that the response is a JSON dictionary, and that it contains at least one
+    stack item, indicating the endpoint is serving stack data correctly.
+
+    Args:
+        rest_api_auth_token: A tuple containing the server's REST API base URL
+            and an authentication token, provided by the `rest_api_auth_token`
+            fixture.
+    """
     endpoint, token = rest_api_auth_token
     api_endpoint = endpoint + API + VERSION_1
 
@@ -52,8 +67,18 @@ def test_list_stacks_endpoint(rest_api_auth_token):
     assert len(stacks_response.json()["items"]) >= 1
 
 
-def test_list_users_endpoint(rest_api_auth_token):
-    """Test that the list users endpoint works."""
+def test_list_users_endpoint(rest_api_auth_token: Tuple[str, str]) -> None:
+    """Tests the functionality of the `/api/v1/users` endpoint.
+
+    This test verifies that the endpoint returns a successful (200) response,
+    that the response is a JSON dictionary, and that it contains at least one
+    user item, indicating the endpoint is serving user data correctly.
+
+    Args:
+        rest_api_auth_token: A tuple containing the server's REST API base URL
+            and an authentication token, provided by the `rest_api_auth_token`
+            fixture.
+    """
     endpoint, token = rest_api_auth_token
     api_endpoint = endpoint + API + VERSION_1
 
@@ -67,8 +92,20 @@ def test_list_users_endpoint(rest_api_auth_token):
     assert len(users_response.json()["items"]) >= 1
 
 
-def test_server_requires_auth(rest_api_auth_token):
-    """Test that most service methods require authorization."""
+def test_server_requires_auth(rest_api_auth_token: Tuple[str, str]) -> None:
+    """Tests that server API endpoints require authentication.
+
+    This test verifies that requests to protected endpoints like `/api/v1/stacks`
+    and `/api/v1/users` return a 401 Unauthorized status code when no
+    authentication token is provided. It also checks that public endpoints
+    like `/health` can be accessed without authentication.
+
+    Args:
+        rest_api_auth_token: A tuple containing the server's REST API base URL
+            and an authentication token, provided by the `rest_api_auth_token`
+            fixture. The token is not used in this test to verify
+            unauthenticated access.
+    """
     endpoint, _ = rest_api_auth_token
     api_endpoint = endpoint + API + VERSION_1
 
@@ -81,3 +118,5 @@ def test_server_requires_auth(rest_api_auth_token):
     # health doesn't require auth
     health_response = requests.get(endpoint + "/health", timeout=31)
     assert health_response.status_code == 200
+
+[end of tests/integration/functional/test_zen_server_api.py]

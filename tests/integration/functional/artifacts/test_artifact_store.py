@@ -18,8 +18,19 @@ from zenml.client import Client
 from zenml.utils.string_utils import random_str
 
 
-def test_artifact_store_remove_on_folders(clean_client: Client):
-    """Tests that the artifact store removes artifacts on folders."""
+def test_artifact_store_remove_on_folders(clean_client: Client) -> None:
+    """Tests the artifact store's `rmtree` functionality for removing folders.
+
+    This test verifies that the `rmtree` method of an artifact store correctly
+    removes an entire folder, including its contents (e.g., a test file),
+    from the artifact store's storage. It checks both the artifact store's
+    perspective (`artifact_store.exists`) and the underlying file system's
+    perspective (`os.path.exists`).
+
+    Args:
+        clean_client: A ZenML client instance with a clean environment,
+            providing access to the active stack's artifact store.
+    """
     artifact_store = clean_client.active_stack.artifact_store
     folder = os.path.join(artifact_store.path, "test_folder_" + random_str(10))
     artifact_store.makedirs(folder)

@@ -40,14 +40,24 @@ DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT = 300
 
 
 class IntegrationTestExample:
-    """Class to encapsulate an integration test example."""
+    """Encapsulates an integration test example, providing methods to run it.
+
+    Attributes:
+        name: The name of the example.
+        path: The file system path to the example's directory.
+        run_dot_py_file: The full path to the `run.py` script of the example.
+    """
 
     def __init__(self, path: Path, name: str) -> None:
-        """Create a new example instance.
+        """Initializes an IntegrationTestExample instance.
 
         Args:
-            name: The name to the example
-            path: Path at which the example code lives.
+            path: The file system path to the example's directory.
+            name: The name of the example.
+
+        Raises:
+            RuntimeError: If a `run.py` file is not found in the example's
+                directory.
         """
         self.name = name
         self.path = path
@@ -61,13 +71,18 @@ class IntegrationTestExample:
             )
 
     def __call__(self, *args: str) -> None:
-        """Runs the example directly without going through setup/teardown.
+        """Runs the example's `run.py` script.
+
+        This method executes the `run.py` script associated with the example,
+        passing any provided arguments to it. The script is run in the
+        context of the example's directory.
 
         Args:
-            *args: Arguments to pass to the example.
+            *args: A variable number of string arguments to pass to the
+                `run.py` script.
 
         Raises:
-            RuntimeError: If running the example fails.
+            RuntimeError: If the execution of the `run.py` script fails.
         """
         subprocess.check_call(
             [sys.executable, self.run_dot_py_file, *args],
@@ -77,6 +92,17 @@ class IntegrationTestExample:
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
+    """Copies files from an example directory to a destination directory.
+
+    This function iterates over all items in the `example_dir`. If an item
+    is a directory, it's recursively copied. If it's a file, it's copied
+    directly. The '.zen' directory (ZenML repository) is explicitly skipped
+    to avoid conflicts or unintended behavior.
+
+    Args:
+        example_dir: The source directory from which to copy files.
+        dst_dir: The destination directory to which files will be copied.
+    """
     for item in os.listdir(example_dir):
         if item == ".zen":
             # don't copy any existing ZenML repository
@@ -99,22 +125,34 @@ def run_example(
     timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
     is_public_example: bool = False,
 ) -> Generator[Dict[str, List[PipelineRunResponse]], None, None]:
-    """Runs the given example and validates it ran correctly.
+    """Context manager to run a ZenML example and validate its execution.
+
+    This function prepares the environment for running an example by copying its
+    files to the current working directory. It then executes the example's
+    `run.py` script. After execution, it can validate pipeline runs and
+    perform cleanup operations like deleting created pipelines and Docker
+    resources.
 
     Args:
-        request: The pytest request object.
-        name: The name (=directory name) of the example.
-        example_args: Additional arguments to pass to the example
-        pipelines: Validate that the pipelines were executed during the example
-            run. Maps pipeline names to a Tuple (run_count, step_count) that
-            specifies the expected number of runs (and their steps) to validate.
-        timeout_limit: The maximum time to wait for the pipeline run to finish.
-        is_public_example: Whether the example is a public example that lives
-            in `examples/` (True) or a test-only example that lives in
-            `tests/integration/examples/` (False).
+        request: The pytest FixtureRequest object, used to access test
+            configuration and context.
+        name: The name of the example (corresponds to its directory name).
+        example_args: A list of additional string arguments to pass to the
+            example's `run.py` script.
+        pipelines: A dictionary mapping pipeline names to a tuple of
+            (expected_run_count, expected_step_count). This is used to
+            validate the number of runs and steps for specified pipelines
+            after the example has executed.
+        timeout_limit: The maximum time in seconds to wait for pipeline runs
+            to finish during validation.
+        is_public_example: A boolean indicating whether the example is a public
+            example (located in `examples/`) or an integration test-specific
+            example (located in `tests/integration/examples/`).
 
     Yields:
-        The example and the pipeline runs that were executed and validated.
+        Dict[str, List[PipelineRunResponse]]: A dictionary mapping pipeline
+            names to a list of their corresponding pipeline run responses that
+            were executed and validated.
     """
     # Copy all example files into the repository directory
     if is_public_example:  # examples/<name>
@@ -151,7 +189,11 @@ def run_example(
 
 
 def get_pipelines() -> List["PipelineResponse"]:
-    """Get the existing pipelines."""
+    """Fetches all pipelines from the ZenML server.
+
+    Returns:
+        A list of PipelineResponse objects representing the pipelines.
+    """
     from zenml.client import Client
 
     client = Client()
@@ -159,7 +201,11 @@ def get_pipelines() -> List["PipelineResponse"]:
 
 
 def get_builds() -> List["PipelineBuildResponse"]:
-    """Get the existing builds."""
+    """Fetches all pipeline builds from the ZenML server.
+
+    Returns:
+        A list of PipelineBuildResponse objects representing the builds.
+    """
     from zenml.client import Client
 
     client = Client()
@@ -171,7 +217,23 @@ def wait_and_validate_pipeline_runs(
     older_than: Optional[datetime] = None,
     timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
 ) -> Dict[str, List[PipelineRunResponse]]:
-    """Wait for and validate pipeline runs."""
+    """Waits for specified pipeline runs to complete and validates them.
+
+    This function iterates through a dictionary of pipelines, waiting for each
+    to meet its expected run and step counts within a given timeout.
+
+    Args:
+        pipelines: A dictionary where keys are pipeline names and values are
+            tuples of (expected_run_count, expected_step_count).
+        older_than: If provided, only pipeline runs created after this
+            datetime will be considered.
+        timeout_limit: The maximum time in seconds to wait for all specified
+            pipeline runs to finish.
+
+    Returns:
+        A dictionary mapping pipeline names to a list of their validated
+        PipelineRunResponse objects.
+    """
     pipelines = pipelines or {}
     runs: Dict[str, List[PipelineRunResponse]] = {}
     for pipeline_name, (run_count, step_count) in pipelines.items():
@@ -194,30 +256,39 @@ def wait_and_validate_pipeline_run(
     finish_timeout: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
     poll_period: int = 10,
 ) -> List[PipelineRunResponse]:
-    """A basic example validation function.
+    """Waits for and validates a specific pipeline's runs.
 
-    This function makes sure that a pipeline is registered and optionally waits
-    until a number of pipeline runs have executed by checking the run status as
-    well as making sure all steps were executed.
+    This function ensures that a named pipeline is registered in ZenML. It then
+    polls for a specified number of runs of this pipeline to be recorded and to
+    reach a finished status (e.g., COMPLETED). It also checks if the runs
+    have the expected number of steps.
 
     Args:
         pipeline_name: The name of the pipeline to verify.
-        run_count: The amount of pipeline runs to verify.
-        step_count: The amount of steps inside the pipeline.
-        older_than: Only look at runs older than this datetime. If not supplied
-            all runs will be checked.
-        start_timeout: The timeout in seconds to wait for a single pipeline run
-            to be recorded. Set to 0 or a negative number to disable.
-        finish_timeout: The timeout in seconds to wait for a single pipeline run
-            to finish.
-        poll_period: The period in seconds to wait between polling the pipeline
-            run status.
+        run_count: The expected number of pipeline runs to find and validate.
+            If None or 0, the function returns an empty list.
+        step_count: The expected number of steps in each validated pipeline run.
+            If None, this check is skipped.
+        older_than: If provided, only pipeline runs created at or after this
+            datetime will be considered. This helps filter out older,
+            irrelevant runs.
+        start_timeout: The maximum time in seconds to wait for the expected
+            number of pipeline runs to be recorded (i.e., appear in the system).
+            If 0 or negative, this check is skipped.
+        finish_timeout: The maximum time in seconds to wait for each recorded
+            pipeline run to reach a finished status.
+        poll_period: The interval in seconds at which to poll for pipeline run
+            status updates.
 
     Returns:
-        A list of pipeline runs that were validated.
+        A list of PipelineRunResponse objects for the validated pipeline runs.
+        The list will contain up to `run_count` runs.
 
     Raises:
-        AssertionError: If the validation failed.
+        AssertionError: If the pipeline is not found, if the expected number
+            of runs are not recorded within `start_timeout`, if runs do not
+            finish within `finish_timeout`, if a run's status is not
+            COMPLETED, or if a run does not have `step_count` steps (if provided).
     """
     # Not all orchestrators support synchronous execution, and some may not
     # even be configured to do that. In other cases, we may have to wait for
@@ -231,7 +302,7 @@ def wait_and_validate_pipeline_run(
     if not run_count:
         return []
 
-    runs: List[PipelineRunResponse] = []
+    runs: List[PipelineRunResponse]] = []
 
     # Wait for all pipeline runs to be recorded and complete. We assume the
     # runs will be executed in sequence, so we wait for an increasing number
@@ -301,7 +372,19 @@ def cleanup_pipelines(
     existing_pipeline_ids: Set["UUID"],
     pipeline_names: List[str],
 ) -> None:
-    """Cleanup pipelines, so they don't cause trouble in future example runs."""
+    """Removes pipelines created during a test run.
+
+    This function identifies pipelines that were created during the current
+    test session (i.e., their IDs are not in `existing_pipeline_ids`) and
+    whose names are in `pipeline_names`. These pipelines are then deleted
+    from the ZenML server to ensure a clean state for subsequent tests.
+
+    Args:
+        existing_pipeline_ids: A set of pipeline IDs that existed before the
+            current test session started.
+        pipeline_names: A list of names of pipelines that were potentially
+            created by the current test.
+    """
     client = Client()
     pipelines = get_pipelines()
     for pipeline in pipelines:
@@ -313,9 +396,17 @@ def cleanup_pipelines(
 
 
 def cleanup_docker_files(existing_build_ids: Set["UUID"]) -> None:
-    """Clean up more expensive Docker resources if any were created.
+    """Cleans up Docker resources created during a test run.
 
-    Cleans up containers, volumes and images.
+    This function identifies Docker images associated with pipeline builds
+    that were created during the current test session. It then attempts to
+    prune unused Docker containers and volumes, and remove the identified
+    Docker images to free up system resources.
+
+    Args:
+        existing_build_ids: A set of pipeline build IDs that existed before the
+            current test session started. This is used to identify builds
+            created by the current test.
     """
     builds = get_builds()
 

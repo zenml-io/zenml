@@ -52,15 +52,19 @@ from zenml.stack.stack_component import (
 DEFAULT_ENVIRONMENT_NAME = "default"
 
 
-def pytest_addoption(parser):
-    """Fixture that gets called by pytest ahead of tests. Adds CLI options that
-    can be used to configure the test deployment, environment, requirements and
+def pytest_addoption(parser: "pytest.Parser") -> None:
+    """Adds CLI options to pytest.
+
+    Can be used to configure the test deployment, environment, requirements and
     a few other options that can be used to control the teardown and cleanup
     process.
 
     Example of how to use these options:
 
         ```pytest tests/integration --environment <environment_name> --docker-cleanup```
+
+    Args:
+        parser: The pytest custom argparser.
     """
     parser.addoption(
         "--environment",
@@ -118,8 +122,13 @@ def auto_environment(
     """Fixture to automatically provision and use a test environment for all
     tests in a session.
 
+    Args:
+        session_mocker: Pytest mocker fixture.
+        request: Pytest FixtureRequest object.
+
     Yields:
-        The active environment and a client connected with it.
+        A tuple containing the active test environment and a ZenML client
+        connected to it.
     """
     session_mocker.patch("zenml.analytics.request.post")
 
@@ -156,8 +165,12 @@ def check_module_requirements(
 ) -> None:
     """Fixture to check test-level requirements for a test module.
 
-    Yields:
-        An active ZenML stack with the requirements of the test module.
+    If requirements are not met, the test module is skipped.
+
+    Args:
+        auto_environment: A tuple containing the active test environment and a
+            ZenML client connected to it.
+        request: Pytest FixtureRequest object.
     """
     env, client = auto_environment
     check_test_requirements(
@@ -174,8 +187,11 @@ def clean_project(
     """Fixture to create, activate and use a separate ZenML repository and
     project for an individual test.
 
+    Args:
+        tmp_path_factory: Pytest fixture to create temporary directories.
+
     Yields:
-        A ZenML client configured to use the project.
+        A ZenML client configured to use the temporary project.
     """
     with clean_project_session(
         tmp_path_factory=tmp_path_factory,
@@ -191,8 +207,11 @@ def module_clean_project(
     """Fixture to create, activate and use a separate ZenML repository and
     project for an entire test module.
 
+    Args:
+        tmp_path_factory: Pytest fixture to create temporary directories.
+
     Yields:
-        A ZenML client configured to use the project.
+        A ZenML client configured to use the temporary project for the module.
     """
     with clean_project_session(
         tmp_path_factory=tmp_path_factory,
@@ -209,9 +228,8 @@ def clean_client(
     configuration and isolated SQLite database for an individual test.
 
     Args:
-        request: Pytest FixtureRequest object
-        tmp_path_factory: Pytest TempPathFactory in order to create a new
-            temporary directory
+        tmp_path_factory: Pytest TempPathFactory to create a new
+            temporary directory.
 
     Yields:
         A clean ZenML client.
@@ -230,12 +248,11 @@ def module_clean_client(
     configuration and isolated SQLite database for a test module.
 
     Args:
-        request: Pytest FixtureRequest object
-        tmp_path_factory: Pytest TempPathFactory in order to create a new
-            temporary directory
+        tmp_path_factory: Pytest TempPathFactory to create a new
+            temporary directory.
 
     Yields:
-        A clean ZenML client.
+        A clean ZenML client for the module.
     """
     with clean_default_client_session(
         tmp_path_factory=tmp_path_factory,
@@ -245,25 +262,31 @@ def module_clean_client(
 
 @pytest.fixture
 def files_dir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
-    """Fixture that will search for a folder with the same name as the test
-    file and move it into the temp path of the test.
+    """Fixture that copies test-specific files to a temporary directory.
 
+    It searches for a folder with the same name as the test file (excluding
+    the .py extension) and copies its contents into the temporary path of the
+    test. This allows tests to access predefined file structures.
+
+    Example Structure:
     |dir
-    |--test_functionality
-    |--|--test_specific_method
-    |--test_functionality.py#test_specific_method
+    |--test_functionality/      # Directory named after the test file
+    |--|--test_specific_method/  # Directory named after the test function
+    |--|--|--some_file.txt
+    |--test_functionality.py    # Test file
 
-    In this case if the `test_specific_method()` function inside the
-    `test_functionality.py` has this fixture, the
-    `test_functionality/test_specific_method` file is copied into the tmp_path.
-    The path is passed into the test_specific_method(datadir: str) as string.
+    If `test_specific_method()` in `test_functionality.py` uses this fixture,
+    the content of `test_functionality/test_specific_method` will be copied
+    to a temporary directory specific to that test.
 
-    TO use this, ensure the filename (minus '.py') corresponds to the outer
-    directory name. And the inner directory corresponds to the test methods
-    name.
+    Args:
+        request: Pytest FixtureRequest object, used to determine test file and
+                 function names.
+        tmp_path: Pytest fixture providing a temporary directory path.
 
     Returns:
-        tmp_path at which to find the files.
+        The path to the temporary directory containing the copied files for the
+        current test.
     """
     filename = Path(request.module.__file__)
     test_dir = filename.with_suffix("")
@@ -284,17 +307,33 @@ def files_dir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
 def virtualenv(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
 ) -> str:
-    """Based on the underlying virtual environment a copy of the environment is
-    made and used for the test that uses this fixture.
+    """Fixture that creates a temporary virtual environment by cloning the current one.
+
+    This fixture is useful for tests that need to install packages or modify
+    the Python environment without affecting the global test environment. The
+    temporary virtual environment is activated for the duration of the test
+    and then deactivated.
+
+    Note:
+        This fixture relies on the `use_virtualenv` pytest option. If this
+        option is not set, the fixture will yield an empty string and no
+        virtual environment will be created or activated.
+        It also assumes that the current Python interpreter is running inside
+        a virtual environment created by `virtualenv`.
 
     Args:
-        request: Pytest FixtureRequest object used to create unique tmp dir
-                 based on the name of the test
-        tmp_path_factory: Pytest TempPathFactory in order to create a new
-                          temporary directory
+        request: Pytest FixtureRequest object, used for naming the temporary
+                 environment and accessing pytest options.
+        tmp_path_factory: Pytest fixture to create temporary directories.
 
     Yields:
-        Path to the virtual environment
+        The path to the created temporary virtual environment if
+        `use_virtualenv` is enabled, otherwise an empty string.
+
+    Raises:
+        FileNotFoundError: If the `activate_this.py` script is not found in
+                           the virtual environments, which can happen if the
+                           environment was not created by `virtualenv`.
     """
     if request.config.getoption("use_virtualenv"):
         # Remember the old executable
@@ -352,8 +391,12 @@ def virtualenv(
 
 
 @pytest.fixture
-def local_stack():
-    """Returns a local stack with local orchestrator and artifact store."""
+def local_stack() -> Stack:
+    """Returns a `Stack` object configured with a local orchestrator and local artifact store.
+
+    Returns:
+        A ZenML Stack object.
+    """
     orchestrator = LocalOrchestrator(
         name="",
         id=uuid4(),
@@ -383,8 +426,12 @@ def local_stack():
 
 
 @pytest.fixture
-def local_orchestrator():
-    """Returns a local orchestrator."""
+def local_orchestrator() -> LocalOrchestrator:
+    """Returns a `LocalOrchestrator` object.
+
+    Returns:
+        A ZenML LocalOrchestrator object.
+    """
     return LocalOrchestrator(
         name="",
         id=uuid4(),
@@ -398,8 +445,12 @@ def local_orchestrator():
 
 
 @pytest.fixture
-def local_artifact_store():
-    """Fixture that creates a local artifact store for testing."""
+def local_artifact_store() -> LocalArtifactStore:
+    """Returns a `LocalArtifactStore` object.
+
+    Returns:
+        A ZenML LocalArtifactStore object.
+    """
     return LocalArtifactStore(
         name="",
         id=uuid4(),
@@ -413,8 +464,12 @@ def local_artifact_store():
 
 
 @pytest.fixture
-def gcp_artifact_store():
-    """Fixture that creates a GCP artifact store for testing."""
+def gcp_artifact_store() -> "GCPArtifactStore":
+    """Returns a `GCPArtifactStore` object for testing purposes.
+
+    Returns:
+        A ZenML GCPArtifactStore object.
+    """
     from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
         GCPArtifactStore,
     )
@@ -435,8 +490,12 @@ def gcp_artifact_store():
 
 
 @pytest.fixture
-def s3_artifact_store():
-    """Fixture that creates an S3 artifact store for testing."""
+def s3_artifact_store() -> "S3ArtifactStore":
+    """Returns an `S3ArtifactStore` object for testing. `boto3` is mocked.
+
+    Returns:
+        A ZenML S3ArtifactStore object.
+    """
     from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
         S3ArtifactStore,
     )
@@ -458,8 +517,12 @@ def s3_artifact_store():
 
 
 @pytest.fixture
-def local_container_registry():
-    """Fixture that creates a local container registry for testing."""
+def local_container_registry() -> BaseContainerRegistry:
+    """Returns a `BaseContainerRegistry` object configured for local use.
+
+    Returns:
+        A ZenML BaseContainerRegistry object.
+    """
     return BaseContainerRegistry(
         name="",
         id=uuid4(),
@@ -473,8 +536,12 @@ def local_container_registry():
 
 
 @pytest.fixture
-def remote_container_registry():
-    """Fixture that creates a remote container registry for testing."""
+def remote_container_registry() -> BaseContainerRegistry:
+    """Returns a `BaseContainerRegistry` object configured for remote (GCP) use.
+
+    Returns:
+        A ZenML BaseContainerRegistry object.
+    """
     return BaseContainerRegistry(
         name="",
         id=uuid4(),

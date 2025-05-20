@@ -22,8 +22,25 @@ from zenml.client import Client
 
 def test_files_outside_of_artifact_store_are_not_reachable_by_it(
     clean_client: "Client",
-):
-    """Tests that no operations outside of bounds of artifact store could happen."""
+) -> None:
+    """Tests that artifact store operations are confined to its root path.
+
+    This test verifies that an artifact store cannot access or manipulate
+    files located outside of its designated root directory. It attempts to:
+    1. Create a file outside the artifact store's path.
+    2. Attempt to `open()` this external file via the artifact store interface
+       (expected to fail with FileNotFoundError).
+    3. Attempt to `copyfile()` this external file into the artifact store
+       (expected to fail with FileNotFoundError).
+    4. Create a file inside the artifact store's path.
+    5. Successfully `open()` and `copyfile()` this internal file.
+    6. Attempt to `copyfile()` an internal file to a destination outside the
+       artifact store's path (expected to fail with FileNotFoundError).
+
+    Args:
+        clean_client: A ZenML client instance with a clean environment,
+            providing access to the active stack's artifact store.
+    """
     a_s = clean_client.active_stack.artifact_store
 
     outside_dir = Path(a_s.path) / ".."
