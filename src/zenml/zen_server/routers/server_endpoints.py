@@ -56,7 +56,7 @@ router = APIRouter(
 
 
 @router.get("/version")
-def version() -> str:
+async def version() -> str:
     """Get version of the server.
 
     Returns:
