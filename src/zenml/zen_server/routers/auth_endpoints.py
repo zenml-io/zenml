@@ -222,11 +222,11 @@ class OAuthLoginRequestForm:
     LOGIN,
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
 )
+@handle_exceptions
 @rate_limit_requests(
     day_limit=server_config().login_rate_limit_day,
     minute_limit=server_config().login_rate_limit_minute,
 )
-@handle_exceptions
 def token(
     request: Request,
     response: Response,
