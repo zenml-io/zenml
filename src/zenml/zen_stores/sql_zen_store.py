@@ -5055,14 +5055,14 @@ class SqlZenStore(BaseZenStore):
                     metadata["status"] = step_run.status
 
                     if step_run.end_time and step_run.start_time:
-                        metadata["duration"] = (
+                        metadata["duration"] = float(
                             step_run.end_time - step_run.start_time
                         )
 
                 step_node = helper.add_step_node(
                     id=step_id,
                     name=step_name,
-                    metadata=metadata,
+                    **metadata,
                 )
 
                 if step_run:
