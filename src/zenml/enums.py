@@ -316,6 +316,7 @@ class EnvironmentType(StrEnum):
     VSCODE_REMOTE_CONTAINER = "vscode_remote_container"
     ZENML_CODESPACE = "zenml_codespace"
 
+
 class ModelStages(StrEnum):
     """All possible stages of a Model Version."""
 
