@@ -341,6 +341,7 @@ def logout(
     DEVICE_AUTHORIZATION,
     response_model=OAuthDeviceAuthorizationResponse,
 )
+@handle_exceptions
 def device_authorization(
     request: Request,
     client_id: UUID = Form(...),
