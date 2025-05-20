@@ -105,7 +105,9 @@ class TagSchema(NamedSchema, table=True):
         """
         metadata = None
         if include_metadata:
-            metadata = TagResponseMetadata()
+            metadata = TagResponseMetadata(
+                tagged_count=len(self.links),
+            )
 
         resources = None
         if include_resources:
@@ -122,7 +124,6 @@ class TagSchema(NamedSchema, table=True):
                 updated=self.updated,
                 color=ColorVariants(self.color),
                 exclusive=self.exclusive,
-                tagged_count=len(self.links),
             ),
             metadata=metadata,
             resources=resources,

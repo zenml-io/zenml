@@ -597,9 +597,7 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    pipeline_run: "PipelineRunSchema" = Relationship(
-        back_populates="model_versions_pipeline_runs_links"
-    )
+    pipeline_run: "PipelineRunSchema" = Relationship()
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.

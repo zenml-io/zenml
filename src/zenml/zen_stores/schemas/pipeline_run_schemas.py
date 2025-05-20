@@ -58,7 +58,6 @@ from zenml.zen_stores.schemas.utils import RunMetadataInterface
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import (
-        ModelVersionPipelineRunSchema,
         ModelVersionSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
@@ -154,12 +153,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     logs: Optional["LogsSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete", "uselist": False},
-    )
-    model_versions_pipeline_runs_links: List[
-        "ModelVersionPipelineRunSchema"
-    ] = Relationship(
-        back_populates="pipeline_run",
-        sa_relationship_kwargs={"cascade": "delete"},
     )
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
