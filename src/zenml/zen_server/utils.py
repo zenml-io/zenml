@@ -65,6 +65,11 @@ if TYPE_CHECKING:
         BoundedThreadPoolExecutor,
     )
 
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
 logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
@@ -299,13 +304,9 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
 def async_fastapi_endpoint_wrapper(
     func: Callable[P, R],
-) -> Callable[P, Awaitable[R]]:
+) -> Callable[P, Awaitable[Any]]:
     """Decorator for FastAPI endpoints.
 
     This decorator for FastAPI endpoints does the following:
@@ -322,7 +323,7 @@ def async_fastapi_endpoint_wrapper(
     """
 
     @wraps(func)
-    def decorated(*args: P.args, **kwargs: P.kwargs) -> R:
+    def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
         # These imports can't happen at module level as this module is also
         # used by the CLI when installed without the `server` extra
         from fastapi import HTTPException
@@ -369,7 +370,7 @@ def async_fastapi_endpoint_wrapper(
     # See: `fastapi.routing.serialize_response(...)` and
     # https://github.com/fastapi/fastapi/pull/888 for more information.
     @wraps(decorated)
-    async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> R:
+    async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
         from starlette.concurrency import run_in_threadpool
 
         return await run_in_threadpool(decorated, *args, **kwargs)
