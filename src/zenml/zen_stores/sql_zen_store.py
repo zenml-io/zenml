@@ -419,12 +419,15 @@ def exponential_backoff_with_jitter(
 
 
 def attr(column: Any) -> InstrumentedAttribute[Any]:
-    """Convert a column to an attribute.
+    """Cast a column to an attribute.
 
     This can be used in e.g. `joinedload` calls.
 
     Args:
-        column: The column to make queryable.
+        column: The column to cast.
+
+    Returns:
+        The column casted to an InstrumentedAttribute.
     """
     return cast(InstrumentedAttribute[Any], column)
 
