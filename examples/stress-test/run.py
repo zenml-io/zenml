@@ -66,8 +66,6 @@ kubernetes_settings = KubernetesOrchestratorSettings(
 
 docker_settings = DockerSettings(
     python_package_installer=PythonPackageInstaller.UV,
-    parent_image="public.ecr.aws/f7g3v0f1/zenml:stefan",
-    prevent_build_reuse=True,
 )
 settings = {"docker": docker_settings, "orchestrator": kubernetes_settings}
 
