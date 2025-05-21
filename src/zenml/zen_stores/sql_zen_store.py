@@ -5635,6 +5635,7 @@ class SqlZenStore(BaseZenStore):
         self,
         runs_filter_model: PipelineRunFilter,
         hydrate: bool = False,
+        include_full_metadata: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
@@ -5643,6 +5644,8 @@ class SqlZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
@@ -5659,6 +5662,11 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
                 hydrate=hydrate,
+                custom_schema_to_model_conversion=lambda schema: schema.to_model(
+                    include_metadata=hydrate,
+                    include_resources=True,
+                    include_full_metadata=include_full_metadata,
+                ),
             )
 
     def update_run(

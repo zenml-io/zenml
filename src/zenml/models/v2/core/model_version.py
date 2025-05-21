@@ -334,6 +334,66 @@ class ModelVersionResponse(
         return result
 
     @property
+    def data_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """Data artifacts linked to this model version.
+
+        Returns:
+            Data artifacts linked to this model version.
+        """
+        logger.warning(
+            "ModelVersionResponse.data_artifact_ids is deprecated and will "
+            "be removed in a future release."
+        )
+
+        return {
+            artifact_name: {
+                version_name: version_response.id
+                for version_name, version_response in artifact_versions.items()
+            }
+            for artifact_name, artifact_versions in self.data_artifacts.items()
+        }
+
+    @property
+    def model_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """Model artifacts linked to this model version.
+
+        Returns:
+            Model artifacts linked to this model version.
+        """
+        logger.warning(
+            "ModelVersionResponse.model_artifact_ids is deprecated and will "
+            "be removed in a future release."
+        )
+
+        return {
+            artifact_name: {
+                version_name: version_response.id
+                for version_name, version_response in artifact_versions.items()
+            }
+            for artifact_name, artifact_versions in self.model_artifacts.items()
+        }
+
+    @property
+    def deployment_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """Deployment artifacts linked to this model version.
+
+        Returns:
+            Deployment artifacts linked to this model version.
+        """
+        logger.warning(
+            "ModelVersionResponse.deployment_artifact_ids is deprecated and "
+            "will be removed in a future release."
+        )
+
+        return {
+            artifact_name: {
+                version_name: version_response.id
+                for version_name, version_response in artifact_versions.items()
+            }
+            for artifact_name, artifact_versions in self.deployment_artifacts.items()
+        }
+
+    @property
     def data_artifacts(
         self,
     ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
@@ -398,6 +458,28 @@ class ModelVersionResponse(
         return result
 
     @property
+    def pipeline_run_ids(self) -> Dict[str, UUID]:
+        """Pipeline runs linked to this model version.
+
+        Returns:
+            Pipeline runs linked to this model version.
+        """
+        logger.warning(
+            "ModelVersionResponse.pipeline_run_ids is deprecated and will be "
+            "removed in a future release."
+        )
+
+        from zenml.client import Client
+
+        return {
+            link.pipeline_run.name: link.pipeline_run.id
+            for link in pagination_utils.depaginate(
+                Client().list_model_version_pipeline_run_links,
+                model_version_id=self.id,
+            )
+        }
+
+    @property
     def pipeline_runs(self) -> Dict[str, "PipelineRunResponse"]:
         """Get all pipeline runs linked to this version.
 
@@ -412,9 +494,9 @@ class ModelVersionResponse(
         from zenml.client import Client
 
         return {
-            run.name: run
-            for run in pagination_utils.depaginate(
-                Client().list_pipeline_runs,
+            link.pipeline_run.name: link.pipeline_run
+            for link in pagination_utils.depaginate(
+                Client().list_model_version_pipeline_run_links,
                 model_version_id=self.id,
             )
         }

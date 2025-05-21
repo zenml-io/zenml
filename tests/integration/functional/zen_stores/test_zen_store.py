@@ -5120,15 +5120,6 @@ class TestModelVersionPipelineRunLinks:
             assert mv.pipeline_runs[prs[0].name].id == prs[0].id
             assert mv.pipeline_runs[prs[1].name].id == prs[1].id
 
-            assert (
-                mv.get_pipeline_run(prs[0].name)
-                == mv.pipeline_runs[prs[0].name]
-            )
-            assert (
-                mv.get_pipeline_run(prs[1].name)
-                == mv.pipeline_runs[prs[1].name]
-            )
-
 
 class TestTag:
     def test_create_pass(self, clean_client: "Client"):

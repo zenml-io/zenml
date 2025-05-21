@@ -129,6 +129,7 @@ def list_runs(
     ),
     project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
+    include_full_metadata: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
@@ -138,6 +139,8 @@ def list_runs(
         project_name_or_id: Optional name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        include_full_metadata: Flag deciding whether to include the
+            full metadata in the response.
 
     Returns:
         The pipeline runs according to query filters.
@@ -150,6 +153,7 @@ def list_runs(
         resource_type=ResourceType.PIPELINE_RUN,
         list_method=zen_store().list_runs,
         hydrate=hydrate,
+        include_full_metadata=include_full_metadata,
     )
 
 

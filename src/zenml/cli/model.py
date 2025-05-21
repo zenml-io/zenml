@@ -725,7 +725,7 @@ def list_model_version_pipeline_runs(
         model_version_name_or_number_or_id=model_version,
     )
 
-    runs = Client().list_pipeline_runs(
+    runs = Client().list_model_version_pipeline_run_links(
         model_version_id=model_version_response_model.id,
         **kwargs,
     )

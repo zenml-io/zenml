@@ -270,14 +270,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 and the values represent the list of entries with this key.
         """
         # Fetch the metadata related to this run
-        metadata_collection = super().fetch_metadata_collection()
+        metadata_collection = super().fetch_metadata_collection(**kwargs)
 
         if include_full_metadata:
             # Fetch the metadata related to the steps of this run
             for s in self.step_runs:
                 step_metadata = s.fetch_metadata_collection()
-            for k, v in step_metadata.items():
-                metadata_collection[f"{s.name}::{k}"] = v
+                for k, v in step_metadata.items():
+                    metadata_collection[f"{s.name}::{k}"] = v
 
             # Fetch the metadata related to the schedule of this run
             if self.deployment is not None:
