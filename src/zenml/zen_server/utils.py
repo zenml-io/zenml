@@ -13,19 +13,15 @@
 #  permissions and limitations under the License.
 """Util functions for the ZenML Server."""
 
-import hashlib
 import inspect
 import os
 import threading
-from asyncio import Lock
-from collections import defaultdict
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
-    DefaultDict,
     Dict,
     List,
     Optional,
@@ -648,142 +644,3 @@ def set_filter_project_scope(
         filter_model=filter_model,
         project_name_or_id=project_name_or_id,
     )
-
-
-class EndpointMetrics:
-    """Metrics for an endpoint."""
-
-    queued_avg: float = 0.0
-    queued_avg_count: int = 0
-    queued: int = 0
-    processed_avg: float = 0.0
-    processed_avg_count: int = 0
-    processing: int = 0
-
-
-class APIMetricsTracker:
-    """Tracks API metrics with thread-safe operations."""
-
-    def __init__(self, alpha: float = 0.1):
-        """Initialize the metrics tracker.
-
-        Args:
-            alpha: The smoothing factor for EMA (between 0 and 1).
-        """
-        self._metrics: DefaultDict[str, EndpointMetrics] = defaultdict(
-            EndpointMetrics
-        )
-        self._lock = Lock()
-        self.alpha = alpha
-
-    @staticmethod
-    def _get_key_hash(method: str, path: str) -> str:
-        """Generate a hash key for the method and path combination.
-
-        Args:
-            method: HTTP method
-            path: API path
-
-        Returns:
-            Hash string of the method:path combination
-        """
-        return hashlib.md5(f"{method}:{path}".encode()).hexdigest()
-
-    async def update_queued_avg(
-        self, method: str, path: str, duration: float
-    ) -> EndpointMetrics:
-        """Update the average time spent in the queue for an endpoint and decrement the number of requests currently in the queue.
-
-        Args:
-            method: HTTP method
-            path: API path
-            duration: Request duration in milliseconds
-
-        Returns:
-            The metrics for the endpoint.
-        """
-        key = self._get_key_hash(method, path)
-        async with self._lock:
-            metrics = self._metrics[key]
-            if metrics.queued_avg_count == 0:
-                metrics.queued_avg = duration
-            else:
-                metrics.queued_avg = (self.alpha * duration) + (
-                    (1 - self.alpha) * metrics.queued_avg
-                )
-            metrics.queued_avg_count += 1
-            metrics.queued -= 1
-            return metrics
-
-    async def update_processed_avg(
-        self, method: str, path: str, duration: float
-    ) -> EndpointMetrics:
-        """Update the average time spent processing a request for an endpoint and decrement the number of requests currently being processed.
-
-        Args:
-            method: HTTP method
-            path: API path
-            duration: Request duration in milliseconds
-
-        Returns:
-            The metrics for the endpoint.
-        """
-        key = self._get_key_hash(method, path)
-        async with self._lock:
-            metrics = self._metrics[key]
-            if metrics.processed_avg_count == 0:
-                metrics.processed_avg = duration
-            else:
-                metrics.processed_avg = (self.alpha * duration) + (
-                    (1 - self.alpha) * metrics.processed_avg
-                )
-            metrics.processed_avg_count += 1
-            metrics.processing -= 1
-            return metrics
-
-    async def increment_queued(
-        self, method: str, path: str
-    ) -> EndpointMetrics:
-        """Increment the number of requests currently in the queue for an endpoint.
-
-        Args:
-            method: HTTP method
-            path: API path
-
-        Returns:
-            The metrics for the endpoint.
-        """
-        key = self._get_key_hash(method, path)
-        async with self._lock:
-            metrics = self._metrics[key]
-            metrics.queued += 1
-            return metrics
-
-    async def increment_processing(
-        self, method: str, path: str
-    ) -> EndpointMetrics:
-        """Increment the number of requests currently being processed for an endpoint.
-
-        Args:
-            method: HTTP method
-            path: API path
-
-        Returns:
-            The metrics for the endpoint.
-        """
-        key = self._get_key_hash(method, path)
-        async with self._lock:
-            metrics = self._metrics[key]
-            metrics.processing += 1
-            return metrics
-
-    async def get_metrics(self, method: str, path: str) -> EndpointMetrics:
-        """Get the metrics for an endpoint.
-
-        Args:
-            method: HTTP method
-            path: API path
-        """
-        key = self._get_key_hash(method, path)
-        async with self._lock:
-            return self._metrics[key]

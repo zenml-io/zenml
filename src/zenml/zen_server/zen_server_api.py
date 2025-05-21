@@ -22,7 +22,6 @@ To run this file locally, execute:
 
 import logging
 import os
-import random
 import threading
 import time
 from asyncio import Lock, Semaphore, TimeoutError, wait_for
@@ -105,7 +104,6 @@ from zenml.zen_server.secure_headers import (
     secure_headers,
 )
 from zenml.zen_server.utils import (
-    APIMetricsTracker,
     initialize_feature_gate,
     initialize_memcache,
     initialize_plugins,
@@ -353,12 +351,11 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
 
 
 request_semaphore = Semaphore(server_config().thread_pool_size)
-api_metrics = APIMetricsTracker()
 
 
 @app.middleware("http")
-async def adaptive_throttling(request: Request, call_next: Any) -> Any:
-    """Adaptive throttling middleware.
+async def client_aware_throttling(request: Request, call_next: Any) -> Any:
+    """Client-aware throttling middleware.
 
     Args:
         request: The incoming request.
@@ -367,7 +364,8 @@ async def adaptive_throttling(request: Request, call_next: Any) -> Any:
     Returns:
         The response to the request.
     """
-    # Only rate limit the REST API endpoints
+    # Only process the REST API requests because these are the ones that
+    # take the most time to complete.
     if not request.url.path.startswith(API):
         return await call_next(request)
 
@@ -380,15 +378,9 @@ async def adaptive_throttling(request: Request, call_next: Any) -> Any:
     method = request.method
     url_path = request.url.path
 
-    ep_metrics = await api_metrics.increment_queued(method, url_path)
-
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
         f"QUEUED [ "
-        f"q: {ep_metrics.queued} "
-        f"p: {ep_metrics.processing} "
-        f"q_avg: {ep_metrics.queued_avg:.2f}ms "
-        f"p_avg: {ep_metrics.processed_avg:.2f}ms "
         f"threads: {active_threads} "
         f"]"
     )
@@ -396,52 +388,74 @@ async def adaptive_throttling(request: Request, call_next: Any) -> Any:
     start_time = time.time()
 
     try:
+        # Here we wait until a worker thread is available to process the
+        # request with a timeout value that is set to be lower than the
+        # what the client is willing to wait for (i.e. lower than the
+        # client's HTTP request timeout). The rationale is that we want to
+        # respond to the client before it times out and decides to retry the
+        # request (which would overwhelm the server).
         await wait_for(
             request_semaphore.acquire(),
-            timeout=server_config().server_request_timeout,
+            timeout=server_request_timeout,
         )
     except TimeoutError:
         end_time = time.time()
         duration = (end_time - start_time) * 1000
-        ep_metrics = await api_metrics.update_queued_avg(
-            method, url_path, duration
-        )
         active_threads = threading.active_count()
-        throttle_time = (ep_metrics.queued_avg + ep_metrics.processed_avg) // 2
-        # Randomize the throttle time to avoid simultaneous retries
-        throttle_time = int(throttle_time * random.uniform(0.8, 1.2))
+
+        # It can happen that the client disconnects before the request is
+        # processed. In this case, we return a 499 error.
+        if await request.is_disconnected():
+            logger.debug(
+                f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
+                f"DISCONNECTED after {duration:.2f}ms [ "
+                f"threads: {active_threads} "
+                f"]"
+            )
+            return JSONResponse(
+                {"error": "Client disconnected."},
+                status_code=499,
+            )
+
         logger.debug(
             f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-            f"THROTTLED for {throttle_time}ms after {duration:.2f}ms [ "
-            f"q: {ep_metrics.queued} "
-            f"p: {ep_metrics.processing} "
-            f"q_avg: {ep_metrics.queued_avg:.2f}ms "
-            f"p_avg: {ep_metrics.processed_avg:.2f}ms "
+            f"THROTTLED after {duration:.2f}ms [ "
             f"threads: {active_threads} "
             f"]"
         )
 
+        # We return a 429 error, basically telling the client to slow down.
+        # For the client, the 429 error is more meaningful than a ReadTimeout
+        # error, because it also tells the client two additional things:
+        #
+        # 1. The server is alive.
+        # 2. The server hasn't processed the request, so even if the request
+        #    is not idempotent, it's safe to retry it.
         return JSONResponse(
             {"error": "Server too busy. Please try again later."},
             status_code=429,
-            headers={"Retry-After": str(int(throttle_time * 1000 + 0.5))},
         )
 
     duration = (time.time() - start_time) * 1000
     active_threads = threading.active_count()
 
-    ep_metrics = await api_metrics.update_queued_avg(
-        method, url_path, duration
-    )
-    await api_metrics.increment_processing(method, url_path)
+    # It can happen that the client disconnects before the request is
+    # processed. In this case, we return a 499 error.
+    if await request.is_disconnected():
+        logger.debug(
+            f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
+            f"DISCONNECTED after {duration:.2f}ms [ "
+            f"threads: {active_threads} "
+            f"]"
+        )
+        return JSONResponse(
+            {"error": "Client disconnected."},
+            status_code=499,
+        )
 
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
         f"ACCEPTED after {duration:.2f}ms [ "
-        f"q: {ep_metrics.queued} "
-        f"p: {ep_metrics.processing} "
-        f"q_avg: {ep_metrics.queued_avg:.2f}ms "
-        f"p_avg: {ep_metrics.processed_avg:.2f}ms "
         f"threads: {active_threads} "
         f"]"
     )
@@ -449,8 +463,6 @@ async def adaptive_throttling(request: Request, call_next: Any) -> Any:
     try:
         return await call_next(request)
     finally:
-        duration = (time.time() - start_time) * 1000
-        await api_metrics.update_processed_avg(method, url_path, duration)
         request_semaphore.release()
 
 
@@ -483,15 +495,9 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     method = request.method
     url_path = request.url.path
 
-    ep_metrics = await api_metrics.get_metrics(method, url_path)
-
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
         f"RECEIVED [ "
-        f"q: {ep_metrics.queued} "
-        f"p: {ep_metrics.processing} "
-        f"q_avg: {ep_metrics.queued_avg:.2f}ms "
-        f"p_avg: {ep_metrics.processed_avg:.2f}ms "
         f"threads: {active_threads} "
         f"]"
     )
@@ -501,15 +507,9 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     duration = (time.time() - start_time) * 1000
     status_code = response.status_code
 
-    ep_metrics = await api_metrics.get_metrics(method, url_path)
-
     logger.debug(
         f"[{request_id}] API STATS - {status_code} {method} {url_path} from "
         f"{client_ip} took {duration:.2f}ms [ "
-        f"q: {ep_metrics.queued} "
-        f"p: {ep_metrics.processing} "
-        f"q_avg: {ep_metrics.queued_avg:.2f}ms "
-        f"p_avg: {ep_metrics.processed_avg:.2f}ms "
         f"threads: {active_threads} "
         f"]"
     )

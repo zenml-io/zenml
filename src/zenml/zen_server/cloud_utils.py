@@ -64,8 +64,7 @@ class ZenMLCloudConnection:
 
         if logger.isEnabledFor(logging.DEBUG):
             # Get the request ID from the current thread object
-            thread_local = threading.local()
-            request_id = getattr(thread_local, "request_id", None)
+            request_id = threading.current_thread().name
             logger.debug(
                 f"[{request_id}] RBAC STATS - {method} {endpoint} started"
             )

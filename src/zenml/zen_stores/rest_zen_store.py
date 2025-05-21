@@ -4180,6 +4180,20 @@ class RestZenStore(BaseZenStore):
         Returns:
             A requests session.
         """
+
+        class AugmentedRetry(Retry):
+            """Augmented retry class that also retries on 429 status codes for POST requests."""
+
+            def is_retry(
+                self,
+                method: str,
+                status_code: int,
+                has_retry_after: bool = False,
+            ) -> bool:
+                if status_code == 429:
+                    return True
+                return super().is_retry(method, status_code, has_retry_after)
+
         if self._session is None:
             # We only need to initialize the session once over the lifetime
             # of the client. We can swap the token out when it expires.
@@ -4209,7 +4223,7 @@ class RestZenStore(BaseZenStore):
             #     the timeout period.
             #     Connection Refused: If the server refuses the connection.
             #
-            retries = Retry(
+            retries = AugmentedRetry(
                 connect=5,
                 read=8,
                 redirect=3,
@@ -4223,7 +4237,7 @@ class RestZenStore(BaseZenStore):
                     504,  # Gateway Timeout
                 ],
                 other=3,
-                backoff_factor=0.5,
+                backoff_factor=1,
             )
             self._session.mount("https://", HTTPAdapter(max_retries=retries))
             self._session.mount("http://", HTTPAdapter(max_retries=retries))
