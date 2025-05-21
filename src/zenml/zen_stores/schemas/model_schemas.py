@@ -365,6 +365,16 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     # numeric.
     producer_run_id_if_numeric: UUID
 
+    # Needed for cascade deletion behavior
+    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
     #  It is possible to suppress this warning message with the following

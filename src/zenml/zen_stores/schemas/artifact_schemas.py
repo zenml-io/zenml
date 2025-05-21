@@ -59,6 +59,10 @@ if TYPE_CHECKING:
         ModelVersionArtifactSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.step_run_schemas import (
+        StepRunInputArtifactSchema,
+        StepRunOutputArtifactSchema,
+    )
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
@@ -313,11 +317,21 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+
+    # Needed for cascade deletion behavior
     model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
         Relationship(
             back_populates="artifact_version",
             sa_relationship_kwargs={"cascade": "delete"},
         )
+    )
+    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="artifact_version",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    input_of_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
+        back_populates="artifact_version",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     @property
