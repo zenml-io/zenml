@@ -301,13 +301,15 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if self.model_version:
                 model_version = self.model_version.to_model()
 
-            input_artifacts = {
-                artifact.name: StepRunInputResponse(
+            input_artifacts: Dict[str, List[StepRunInputResponse]] = {}
+            for artifact in self.input_artifacts:
+                if artifact.name not in input_artifacts:
+                    input_artifacts[artifact.name] = []
+                step_run_input = StepRunInputResponse(
                     input_type=StepRunInputArtifactType(artifact.type),
                     **artifact.artifact_version.to_model().model_dump(),
                 )
-                for artifact in self.input_artifacts
-            }
+                input_artifacts[artifact.name].append(step_run_input)
 
             output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
             for artifact in self.output_artifacts:

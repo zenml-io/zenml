@@ -137,8 +137,8 @@ class StepRunRequestFactory:
                 cache_key=cache_key
             ):
                 request.inputs = {
-                    input_name: artifact.id
-                    for input_name, artifact in cached_step_run.inputs.items()
+                    input_name: [artifact.id for artifact in artifacts]
+                    for input_name, artifacts in cached_step_run.inputs.items()
                 }
 
                 request.original_step_run_id = cached_step_run.id

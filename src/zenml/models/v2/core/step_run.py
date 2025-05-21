@@ -30,7 +30,11 @@ from pydantic import ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus, StepRunInputArtifactType
+from zenml.enums import (
+    ArtifactSaveType,
+    ExecutionStatus,
+    StepRunInputArtifactType,
+)
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
@@ -126,7 +130,7 @@ class StepRunRequest(ProjectScopedRequest):
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
     )
-    inputs: Dict[str, UUID] = Field(
+    inputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the input artifact versions of the step run.",
         default_factory=dict,
     )
@@ -250,7 +254,7 @@ class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
-    inputs: Dict[str, StepRunInputResponse] = Field(
+    inputs: Dict[str, List[StepRunInputResponse]] = Field(
         title="The input artifact versions of the step run.",
         default_factory=dict,
     )
@@ -292,7 +296,7 @@ class StepRunResponse(
 
     # Helper properties
     @property
-    def input(self) -> ArtifactVersionResponse:
+    def input(self) -> StepRunInputResponse:
         """Returns the input artifact that was used to run this step.
 
         Returns:
@@ -303,12 +307,14 @@ class StepRunResponse(
         """
         if not self.inputs:
             raise ValueError(f"Step {self.name} has no inputs.")
-        if len(self.inputs) > 1:
+        if len(self.inputs) > 1 or (
+            len(self.inputs) == 1 and len(next(iter(self.inputs.values()))) > 1
+        ):
             raise ValueError(
                 f"Step {self.name} has multiple inputs, so `Step.input` is "
                 "ambiguous. Please use `Step.inputs` instead."
             )
-        return next(iter(self.inputs.values()))
+        return next(iter(self.inputs.values()))[0]
 
     @property
     def output(self) -> ArtifactVersionResponse:
@@ -332,6 +338,61 @@ class StepRunResponse(
             )
         return next(iter(self.outputs.values()))[0]
 
+    @property
+    def regular_inputs(self) -> Dict[str, StepRunInputResponse]:
+        """Returns the regular step inputs of the step run.
+
+        Regular step inputs are the inputs that are defined in the step function
+        signature, and are not manually loaded during the step execution.
+
+        Returns:
+            The regular step inputs.
+        """
+        result = {}
+
+        for input_name, input_artifacts in self.inputs.items():
+            filtered = [
+                input_artifact
+                for input_artifact in input_artifacts
+                if input_artifact.input_type != StepRunInputArtifactType.MANUAL
+            ]
+            if len(filtered) != 1:
+                raise ValueError(
+                    f"Expected 1 regular input artifact for {input_name}, got "
+                    f"{len(filtered)}."
+                )
+            result[input_name] = filtered[0]
+
+        return result
+
+    @property
+    def regular_outputs(self) -> Dict[str, StepRunInputResponse]:
+        """Returns the regular step outputs of the step run.
+
+        Regular step outputs are the outputs that are defined in the step
+        function signature, and are not manually saved during the step
+        execution.
+
+        Returns:
+            The regular step outputs.
+        """
+        result = {}
+
+        for output_name, output_artifacts in self.outputs.items():
+            filtered = [
+                output_artifact
+                for output_artifact in output_artifacts
+                if output_artifact.save_type == ArtifactSaveType.STEP_OUTPUT
+            ]
+            if len(filtered) != 1:
+                raise ValueError(
+                    f"Expected 1 regular output artifact for {output_name}, "
+                    f"got {len(filtered)}."
+                )
+            result[output_name] = filtered[0]
+
+        return result
+
     # Body and metadata properties
     @property
     def status(self) -> ExecutionStatus:
@@ -343,7 +404,7 @@ class StepRunResponse(
         return self.get_body().status
 
     @property
-    def inputs(self) -> Dict[str, StepRunInputResponse]:
+    def inputs(self) -> Dict[str, List[StepRunInputResponse]]:
         """The `inputs` property.
 
         Returns:

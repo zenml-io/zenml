@@ -19,7 +19,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
-from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
+from zenml.enums import StepRunInputArtifactType
 from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils, string_utils
 
@@ -91,34 +91,20 @@ def resolve_step_inputs(
         )
 
         try:
-            outputs = step_run.outputs[output_name]
+            output = step_run.regular_outputs[output_name]
         except KeyError:
             raise InputResolutionError(
                 f"No step output `{output_name}` found for step "
                 f"`{input_.step_name}`."
             )
-
-        step_outputs = [
-            output
-            for output in outputs
-            if output.save_type == ArtifactSaveType.STEP_OUTPUT
-        ]
-        if len(step_outputs) > 2:
-            # This should never happen, there can only be a single regular step
-            # output for a name
+        except ValueError:
             raise InputResolutionError(
-                f"Too many step outputs for output `{output_name}` of "
-                f"step `{input_.step_name}`."
-            )
-        elif len(step_outputs) == 0:
-            raise InputResolutionError(
-                f"No step output `{output_name}` found for step "
-                f"`{input_.step_name}`."
+                f"Expected 1 regular output artifact for {output_name}."
             )
 
         input_artifacts[name] = StepRunInputResponse(
             input_type=StepRunInputArtifactType.STEP_OUTPUT,
-            **step_outputs[0].model_dump(),
+            **output.model_dump(),
         )
 
     for (
