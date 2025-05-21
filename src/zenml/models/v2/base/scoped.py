@@ -106,7 +106,7 @@ class ProjectScopedRequest(UserScopedRequest):
 class UserScopedResponseBody(BaseDatedResponseBody):
     """Base user-owned body."""
 
-    user_id: Optional[UUID] = Field(title="The user id.")
+    user_id: Optional[UUID] = Field(title="The user id.", default=None)
 
 
 class UserScopedResponseMetadata(BaseResponseMetadata):

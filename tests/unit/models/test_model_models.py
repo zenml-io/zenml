@@ -37,30 +37,26 @@ def test_model_version_response_artifact_fetching(
 
     model = ModelResponse(
         id=uuid4(),
-        project_id=sample_project_model.id,
         name="model",
         body=ModelResponseBody(
+            project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
             tags=[],
         ),
-        metadata=ModelResponseMetadata(
-            project=sample_project_model,
-        ),
+        metadata=ModelResponseMetadata(),
     )
     mv = ModelVersionResponse(
         id=uuid4(),
-        project_id=sample_project_model.id,
         name="foo",
         body=ModelVersionResponseBody(
+            project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
             model=model,
             number=-1,
         ),
-        metadata=ModelVersionResponseMetadata(
-            project=sample_project_model,
-        ),
+        metadata=ModelVersionResponseMetadata(),
     )
 
     artifact_name = "artifact_name"
