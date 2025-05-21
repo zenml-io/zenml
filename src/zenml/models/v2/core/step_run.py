@@ -345,6 +345,10 @@ class StepRunResponse(
         Regular step inputs are the inputs that are defined in the step function
         signature, and are not manually loaded during the step execution.
 
+        Raises:
+            ValueError: If there were multiple regular input artifacts for the
+                same input name.
+
         Returns:
             The regular step inputs.
         """
@@ -356,12 +360,13 @@ class StepRunResponse(
                 for input_artifact in input_artifacts
                 if input_artifact.input_type != StepRunInputArtifactType.MANUAL
             ]
-            if len(filtered) != 1:
+            if len(filtered) > 1:
                 raise ValueError(
                     f"Expected 1 regular input artifact for {input_name}, got "
                     f"{len(filtered)}."
                 )
-            result[input_name] = filtered[0]
+            if filtered:
+                result[input_name] = filtered[0]
 
         return result
 
@@ -372,6 +377,10 @@ class StepRunResponse(
         Regular step outputs are the outputs that are defined in the step
         function signature, and are not manually saved during the step
         execution.
+
+        Raises:
+            ValueError: If there were multiple regular output artifacts for the
+                same output name.
 
         Returns:
             The regular step outputs.
@@ -384,12 +393,13 @@ class StepRunResponse(
                 for output_artifact in output_artifacts
                 if output_artifact.save_type == ArtifactSaveType.STEP_OUTPUT
             ]
-            if len(filtered) != 1:
+            if len(filtered) > 1:
                 raise ValueError(
                     f"Expected 1 regular output artifact for {output_name}, "
                     f"got {len(filtered)}."
                 )
-            result[output_name] = filtered[0]
+            if filtered:
+                result[output_name] = filtered[0]
 
         return result
 
