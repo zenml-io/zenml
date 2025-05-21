@@ -24,7 +24,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    ParamSpec,
     Tuple,
     Type,
     TypeVar,

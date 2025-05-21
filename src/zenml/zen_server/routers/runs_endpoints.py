@@ -350,7 +350,7 @@ def get_run_status(
     "/{run_id}/dag",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_run_dag(
     run_id: UUID,
     _: AuthContext = Security(authorize),
