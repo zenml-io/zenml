@@ -34,7 +34,7 @@ class DAGGeneratorHelper:
         name: str,
         id: Optional[UUID] = None,
         node_id: Optional[UUID] = None,
-        **kwargs: Any,
+        **metadata: Any,
     ) -> PipelineRunDAG.Node:
         """Add a step node to the DAG.
 
@@ -42,7 +42,7 @@ class DAGGeneratorHelper:
             name: The name of the step.
             id: The ID of the step.
             node_id: The ID of the node.
-            **kwargs: Additional node metadata.
+            **metadata: Additional node metadata.
 
         Returns:
             The added step node.
@@ -52,7 +52,7 @@ class DAGGeneratorHelper:
             node_id=node_id or uuid4(),
             id=id,
             name=name,
-            metadata=kwargs,
+            metadata=metadata,
         )
         self.step_nodes[step_node.node_id] = step_node
         return step_node
@@ -62,7 +62,7 @@ class DAGGeneratorHelper:
         name: str,
         id: Optional[UUID] = None,
         node_id: Optional[UUID] = None,
-        **kwargs: Any,
+        **metadata: Any,
     ) -> PipelineRunDAG.Node:
         """Add an artifact node to the DAG.
 
@@ -70,7 +70,7 @@ class DAGGeneratorHelper:
             name: The name of the artifact.
             id: The ID of the artifact.
             node_id: The ID of the node.
-            **kwargs: Additional node metadata.
+            **metadata: Additional node metadata.
 
         Returns:
             The added artifact node.
@@ -80,41 +80,24 @@ class DAGGeneratorHelper:
             node_id=node_id or uuid4(),
             id=id,
             name=name,
-            metadata=kwargs,
+            metadata=metadata,
         )
         self.artifact_nodes[artifact_node.node_id] = artifact_node
         return artifact_node
 
-    def add_edge(
-        self, source: UUID, target: UUID, type: Optional[str] = None
-    ) -> None:
+    def add_edge(self, source: UUID, target: UUID, **metadata: Any) -> None:
         """Add an edge to the DAG.
 
         Args:
             source: The source node ID.
             target: The target node ID.
-            type: The type of the edge.
+            metadata: Additional edge metadata.
         """
         self.edges.append(
-            PipelineRunDAG.Edge(source=source, target=target, type=type)
+            PipelineRunDAG.Edge(
+                source=source, target=target, metadata=metadata
+            )
         )
-
-    def get_step_node_by_id(self, id: UUID) -> PipelineRunDAG.Node:
-        """Get a step node by ID.
-
-        Args:
-            id: The ID of the step node.
-
-        Raises:
-            KeyError: If the step node with the given ID is not found.
-
-        Returns:
-            The step node.
-        """
-        for node in self.step_nodes.values():
-            if node.id == id:
-                return node
-        raise KeyError(f"Step node with id {id} not found")
 
     def get_step_node_by_name(self, name: str) -> PipelineRunDAG.Node:
         """Get a step node by name.

@@ -43,4 +43,4 @@ class PipelineRunDAG(BaseModel):
 
         source: UUID
         target: UUID
-        type: Optional[str] = None
+        metadata: Dict[str, Any] = {}

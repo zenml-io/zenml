@@ -5118,6 +5118,7 @@ class SqlZenStore(BaseZenStore):
                         helper.add_edge(
                             source=artifact_node.node_id,
                             target=step_node.node_id,
+                            input_name=input.name,
                             type=input_type.value,
                         )
 
@@ -5144,6 +5145,7 @@ class SqlZenStore(BaseZenStore):
                         helper.add_edge(
                             source=step_node.node_id,
                             target=artifact_node.node_id,
+                            output_name=output.name,
                             type=output.artifact_version.save_type,
                         )
                         if (
@@ -5176,13 +5178,14 @@ class SqlZenStore(BaseZenStore):
                         helper.add_edge(
                             source=step_node.node_id,
                             target=artifact_node.node_id,
+                            output_name=output_name,
                             type=ArtifactSaveType.STEP_OUTPUT.value,
                         )
                         regular_output_artifact_nodes[step_name][
                             substituted_output_name
                         ] = artifact_node
                 else:
-                    for _, input_config in step.spec.inputs.items():
+                    for input_name, input_config in step.spec.inputs.items():
                         # This node should always exist, as the step
                         # configurations are sorted and therefore all
                         # upstream steps should have been processed already.
@@ -5194,6 +5197,7 @@ class SqlZenStore(BaseZenStore):
                         helper.add_edge(
                             source=artifact_node.node_id,
                             target=step_node.node_id,
+                            input_name=input_name,
                             type=StepRunInputArtifactType.STEP_OUTPUT.value,
                         )
                         # If the upstream step and the current step are
@@ -5211,6 +5215,7 @@ class SqlZenStore(BaseZenStore):
                         helper.add_edge(
                             source=artifact_node.node_id,
                             target=step_node.node_id,
+                            input_name=input_name,
                             type=StepRunInputArtifactType.LAZY_LOADED.value,
                         )
 
@@ -5223,6 +5228,7 @@ class SqlZenStore(BaseZenStore):
                         helper.add_edge(
                             source=artifact_node.node_id,
                             target=step_node.node_id,
+                            input_name=input_name,
                             type=StepRunInputArtifactType.LAZY_LOADED.value,
                         )
 
@@ -5235,6 +5241,7 @@ class SqlZenStore(BaseZenStore):
                         helper.add_edge(
                             source=artifact_node.node_id,
                             target=step_node.node_id,
+                            input_name=input_name,
                             type=StepRunInputArtifactType.EXTERNAL.value,
                         )
 
@@ -5249,6 +5256,7 @@ class SqlZenStore(BaseZenStore):
                         helper.add_edge(
                             source=step_node.node_id,
                             target=artifact_node.node_id,
+                            output_name=output_name,
                             type=ArtifactSaveType.STEP_OUTPUT.value,
                         )
                         regular_output_artifact_nodes[step_name][
