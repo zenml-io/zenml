@@ -5659,6 +5659,31 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             query = select(PipelineRunSchema)
+
+            query = query.options(
+                joinedload(PipelineRunSchema.deployment).joinedload(
+                    PipelineDeploymentSchema.pipeline
+                ),
+                joinedload(PipelineRunSchema.deployment).joinedload(
+                    PipelineDeploymentSchema.stack
+                ),
+                joinedload(PipelineRunSchema.deployment).joinedload(
+                    PipelineDeploymentSchema.build
+                ),
+                joinedload(PipelineRunSchema.deployment).joinedload(
+                    PipelineDeploymentSchema.schedule
+                ),
+                joinedload(PipelineRunSchema.deployment).joinedload(
+                    PipelineDeploymentSchema.code_reference
+                ),
+                joinedload(PipelineRunSchema.model_version).joinedload(
+                    ModelVersionSchema.model
+                ),
+                joinedload(PipelineRunSchema.logs),
+                joinedload(PipelineRunSchema.user),
+                # joinedload(PipelineRunSchema.tags),
+            )
+
             return self.filter_and_paginate(
                 session=session,
                 query=query,
