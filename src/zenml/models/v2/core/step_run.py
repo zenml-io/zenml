@@ -366,7 +366,7 @@ class StepRunResponse(
         return result
 
     @property
-    def regular_outputs(self) -> Dict[str, StepRunInputResponse]:
+    def regular_outputs(self) -> Dict[str, ArtifactVersionResponse]:
         """Returns the regular step outputs of the step run.
 
         Regular step outputs are the outputs that are defined in the step

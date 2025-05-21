@@ -105,7 +105,9 @@ class StepRunRequestFactory:
             for input_name, artifact in input_artifacts.items()
         }
 
-        request.inputs = input_artifact_ids
+        request.inputs = {
+            name: [artifact.id] for name, artifact in input_artifacts.items()
+        }
         request.parent_step_ids = parent_step_ids
 
         cache_key = cache_utils.generate_cache_key(

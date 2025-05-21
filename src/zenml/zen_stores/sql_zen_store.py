@@ -5376,8 +5376,8 @@ class SqlZenStore(BaseZenStore):
         self,
         run_id: UUID,
         hydrate: bool = True,
-        include_python_packages: bool = False,
         include_full_metadata: bool = False,
+        include_python_packages: bool = False,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -5385,10 +5385,10 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            include_python_packages: Flag deciding whether to include the
-                python packages in the response.
             include_full_metadata: Flag deciding whether to include the
                 full metadata in the response.
+            include_python_packages: Flag deciding whether to include the
+                python packages in the response.
 
         Returns:
             The pipeline run.
@@ -8404,19 +8404,22 @@ class SqlZenStore(BaseZenStore):
             step_model = step_schema.to_model(include_metadata=True)
 
             # Save input artifact IDs into the database.
-            for input_name, artifact_version_id in step_run.inputs.items():
-                input_type = self._get_step_run_input_type(
-                    input_name=input_name,
-                    step_config=step_model.config,
-                    step_spec=step_model.spec,
-                )
-                self._set_run_step_input_artifact(
-                    step_run=step_schema,
-                    artifact_version_id=artifact_version_id,
-                    name=input_name,
-                    input_type=input_type,
-                    session=session,
-                )
+            for input_name, artifact_version_ids in step_run.inputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    # TODO: This is not necessarily always correct for cached
+                    # step runs.
+                    input_type = self._get_step_run_input_type(
+                        input_name=input_name,
+                        step_config=step_model.config,
+                        step_spec=step_model.spec,
+                    )
+                    self._set_run_step_input_artifact(
+                        step_run=step_schema,
+                        artifact_version_id=artifact_version_id,
+                        name=input_name,
+                        input_type=input_type,
+                        session=session,
+                    )
 
             # Save output artifact IDs into the database.
             for name, artifact_version_ids in step_run.outputs.items():
