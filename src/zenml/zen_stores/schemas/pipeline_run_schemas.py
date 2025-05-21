@@ -378,7 +378,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.deployment
                 and self.deployment.build
                 and not self.deployment.build.is_local
-                and self.deployment.build.stack
+                and self.deployment.build.stack_id
             ):
                 is_templatable = True
 
