@@ -354,8 +354,8 @@ request_semaphore = Semaphore(server_config().thread_pool_size)
 
 
 @app.middleware("http")
-async def client_aware_throttling(request: Request, call_next: Any) -> Any:
-    """Client-aware throttling middleware.
+async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
+    """Prevent read timeout client errors.
 
     Args:
         request: The incoming request.
@@ -403,20 +403,6 @@ async def client_aware_throttling(request: Request, call_next: Any) -> Any:
         duration = (end_time - start_time) * 1000
         active_threads = threading.active_count()
 
-        # It can happen that the client disconnects before the request is
-        # processed. In this case, we return a 499 error.
-        if await request.is_disconnected():
-            logger.debug(
-                f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-                f"DISCONNECTED after {duration:.2f}ms [ "
-                f"threads: {active_threads} "
-                f"]"
-            )
-            return JSONResponse(
-                {"error": "Client disconnected."},
-                status_code=499,
-            )
-
         logger.debug(
             f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
             f"THROTTLED after {duration:.2f}ms [ "
@@ -438,20 +424,6 @@ async def client_aware_throttling(request: Request, call_next: Any) -> Any:
 
     duration = (time.time() - start_time) * 1000
     active_threads = threading.active_count()
-
-    # It can happen that the client disconnects before the request is
-    # processed. In this case, we return a 499 error.
-    if await request.is_disconnected():
-        logger.debug(
-            f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-            f"DISCONNECTED after {duration:.2f}ms [ "
-            f"threads: {active_threads} "
-            f"]"
-        )
-        return JSONResponse(
-            {"error": "Client disconnected."},
-            status_code=499,
-        )
 
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "

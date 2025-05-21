@@ -4476,10 +4476,10 @@ class RestZenStore(BaseZenStore):
                     ) from e
             finally:
                 end_time = time.time()
-                duration = end_time - start_time
+                duration = (end_time - start_time) * 1000
                 logger.debug(
                     f"Request to {path} with request ID {request_id} took "
-                    f"{duration} seconds."
+                    f"{duration:.2f}ms."
                 )
 
     def get(
