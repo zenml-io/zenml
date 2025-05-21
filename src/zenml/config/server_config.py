@@ -45,6 +45,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
+    DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP,
@@ -252,6 +253,11 @@ class ServerConfiguration(BaseModel):
             used.
         file_download_size_limit: The maximum size of the file download in
             bytes. If not specified, the default value of 2GB will be used.
+        thread_pool_size: The size of the thread pool for handling requests. If
+            not specified, the default value of 40 will be used.
+        server_request_timeout: The timeout for server requests in seconds. If
+            not specified, the default value of 15 seconds will be used. This
+            value should be lower than the client's request timeout.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -348,6 +354,7 @@ class ServerConfiguration(BaseModel):
     auto_activate: bool = False
 
     thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
+    server_request_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT
 
     max_request_body_size_in_bytes: int = (
         DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES

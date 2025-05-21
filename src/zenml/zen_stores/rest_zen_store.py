@@ -15,6 +15,7 @@
 
 import os
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import (
@@ -30,7 +31,7 @@ from typing import (
     Union,
 )
 from urllib.parse import urlparse
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import requests
 import urllib3
@@ -4360,6 +4361,14 @@ class RestZenStore(BaseZenStore):
         self.session.headers.update(
             {source_context.name: source_context.get().value}
         )
+        # Add a request ID to the request headers
+        request_id = str(uuid4())[:8]
+        self.session.headers.update({"X-Request-ID": request_id})
+        path = url.removeprefix(self.url)
+        start_time = time.time()
+        logger.debug(
+            f"Sending {method} request to {path} with request ID {request_id}..."
+        )
 
         # If the server replies with a credentials validation (401 Unauthorized)
         # error, we (re-)authenticate and retry the request here in the
@@ -4401,7 +4410,8 @@ class RestZenStore(BaseZenStore):
                     # request again, this time with a valid API token in the
                     # header.
                     logger.debug(
-                        f"The last request was not authenticated: {e}\n"
+                        f"The last request with ID {request_id} was not "
+                        f"authenticated: {e}\n"
                         "Re-authenticating and retrying..."
                     )
                     self.authenticate()
@@ -4428,8 +4438,9 @@ class RestZenStore(BaseZenStore):
                     # that was rejected by the server. We attempt a
                     # re-authentication here and then retry the request.
                     logger.debug(
-                        "The last request was authenticated with an API token "
-                        f"that was rejected by the server: {e}\n"
+                        f"The last request with ID {request_id} was authenticated "
+                        "with an API token that was rejected by the server: "
+                        f"{e}\n"
                         "Re-authenticating and retrying..."
                     )
                     re_authenticated = True
@@ -4441,13 +4452,21 @@ class RestZenStore(BaseZenStore):
                     # The last request was made after re-authenticating but
                     # still failed. Bailing out.
                     logger.debug(
-                        f"The last request failed after re-authenticating: {e}\n"
+                        f"The last request with ID {request_id} failed after "
+                        "re-authenticating: {e}\n"
                         "Bailing out..."
                     )
                     raise CredentialsNotValid(
                         "The current credentials are no longer valid. Please "
                         "log in again using 'zenml login'."
                     ) from e
+            finally:
+                end_time = time.time()
+                duration = end_time - start_time
+                logger.debug(
+                    f"Request to {path} with request ID {request_id} took "
+                    f"{duration} seconds."
+                )
 
     def get(
         self,
@@ -4467,7 +4486,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending GET request to {path}...")
         return self._request(
             "GET",
             self.url + API + VERSION_1 + path,
@@ -4496,7 +4514,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending DELETE request to {path}...")
         return self._request(
             "DELETE",
             self.url + API + VERSION_1 + path,
@@ -4526,7 +4543,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending POST request to {path}...")
         return self._request(
             "POST",
             self.url + API + VERSION_1 + path,
@@ -4556,7 +4572,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending PUT request to {path}...")
         json = (
             body.model_dump(mode="json", exclude_unset=True) if body else None
         )

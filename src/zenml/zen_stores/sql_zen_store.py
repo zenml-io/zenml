@@ -424,7 +424,8 @@ class Session(SqlModelSession):
             The SqlModel session.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            self.thread_id = threading.get_ident()
+            # Get the request ID from the current thread object
+            self.request_id = threading.current_thread().name
 
             # Get SQLAlchemy connection pool info
             assert isinstance(self.bind, Engine)
@@ -446,7 +447,7 @@ class Session(SqlModelSession):
                 self.caller_method = "unknown"
 
             logger.debug(
-                f"[{self.thread_id}] SQL STATS - "
+                f"[{self.request_id}] SQL STATS - "
                 f"'{self.caller_method}' started [ conn(active): "
                 f"{checked_out_connections} conn(idle): "
                 f"{available_connections} conn(overflow): {overflow} ]"
@@ -470,7 +471,7 @@ class Session(SqlModelSession):
             exc_tb: The exception traceback.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            duration = time.time() - self.start_time
+            duration = (time.time() - self.start_time) * 1000
 
             # Get SQLAlchemy connection pool info
             assert isinstance(self.bind, Engine)
@@ -479,9 +480,9 @@ class Session(SqlModelSession):
             available_connections = self.bind.pool.checkedin()
             overflow = self.bind.pool.overflow()
             logger.debug(
-                f"[{self.thread_id}] SQL STATS - "
+                f"[{self.request_id}] SQL STATS - "
                 f"'{self.caller_method}' completed in "
-                f"{duration:.3f} seconds [ conn(active): "
+                f"{duration:.2f}ms [ conn(active): "
                 f"{checked_out_connections} conn(idle): "
                 f"{available_connections} conn(overflow): {overflow} ]"
             )
