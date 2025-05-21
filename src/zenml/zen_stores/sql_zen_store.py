@@ -8406,13 +8406,27 @@ class SqlZenStore(BaseZenStore):
             # Save input artifact IDs into the database.
             for input_name, artifact_version_ids in step_run.inputs.items():
                 for artifact_version_id in artifact_version_ids:
-                    # TODO: This is not necessarily always correct for cached
-                    # step runs.
-                    input_type = self._get_step_run_input_type(
-                        input_name=input_name,
-                        step_config=step_model.config,
-                        step_spec=step_model.spec,
-                    )
+                    if step_run.original_step_run_id:
+                        # This is a cached step run, for which the input
+                        # artifacts might include manually loaded artifacts
+                        # which can not be inferred from the step config. In
+                        # this case, we check the input type of the artifact
+                        # for the original step run.
+                        input_type = self._get_step_run_input_type_from_cached_step_run(
+                            input_name=input_name,
+                            artifact_version_id=artifact_version_id,
+                            cached_step_run_id=step_run.original_step_run_id,
+                            session=session,
+                        )
+                    else:
+                        # This is a non-cached step run, which means all input
+                        # artifacts we receive at creation time are inputs that
+                        # are defined in the step config.
+                        input_type = self._get_step_run_input_type_from_config(
+                            input_name=input_name,
+                            step_config=step_model.config,
+                            step_spec=step_model.spec,
+                        )
                     self._set_run_step_input_artifact(
                         step_run=step_schema,
                         artifact_version_id=artifact_version_id,
@@ -8572,7 +8586,46 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
-    def _get_step_run_input_type(
+    def _get_step_run_input_type_from_cached_step_run(
+        self,
+        input_name: str,
+        artifact_version_id: UUID,
+        cached_step_run_id: UUID,
+        session: Session,
+    ) -> StepRunInputArtifactType:
+        """Get the input type of an artifact from a cached step run.
+
+        Args:
+            input_name: The name of the input artifact.
+            artifact_version_id: The ID of the artifact version.
+            cached_step_run_id: The ID of the cached step run.
+            session: The database session to use.
+
+        Raises:
+            RuntimeError: If no input artifact is found for the given input
+                name and artifact version ID.
+
+        Returns:
+            The input type of the artifact.
+        """
+        query = (
+            select(StepRunInputArtifactSchema.type)
+            .where(StepRunInputArtifactSchema.name == input_name)
+            .where(
+                StepRunInputArtifactSchema.artifact_id == artifact_version_id
+            )
+            .where(StepRunInputArtifactSchema.step_id == cached_step_run_id)
+        )
+        result = session.exec(query).first()
+        if result is None:
+            raise RuntimeError(
+                f"No input artifact found for input name `{input_name}`, "
+                f"artifact version `{artifact_version_id}` and step run "
+                f"`{cached_step_run_id}`."
+            )
+        return StepRunInputArtifactType(result)
+
+    def _get_step_run_input_type_from_config(
         self,
         input_name: str,
         step_config: StepConfiguration,
