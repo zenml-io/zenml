@@ -29,7 +29,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
-from zenml.zen_server.utils import handle_exceptions, zen_store
+from zenml.zen_server.utils import async_fastapi_endpoint_wrapper, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + RUN_METADATA,
@@ -50,7 +50,7 @@ router = APIRouter(
     deprecated=True,
     tags=["run_metadata"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_run_metadata(
     run_metadata: RunMetadataRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,

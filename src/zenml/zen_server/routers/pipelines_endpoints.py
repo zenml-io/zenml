@@ -48,7 +48,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     zen_store,
@@ -73,7 +73,7 @@ router = APIRouter(
     deprecated=True,
     tags=["pipelines"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_pipeline(
     pipeline: PipelineRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -119,7 +119,7 @@ def create_pipeline(
     deprecated=True,
     tags=["pipelines"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_pipelines(
     pipeline_filter_model: PipelineFilter = Depends(
         make_dependable(PipelineFilter)
@@ -155,7 +155,7 @@ def list_pipelines(
     "/{pipeline_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_pipeline(
     pipeline_id: UUID,
     hydrate: bool = True,
@@ -180,7 +180,7 @@ def get_pipeline(
     "/{pipeline_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: PipelineUpdate,
@@ -207,7 +207,7 @@ def update_pipeline(
     "/{pipeline_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_pipeline(
     pipeline_id: UUID,
     _: AuthContext = Security(authorize),
@@ -238,7 +238,7 @@ def delete_pipeline(
     "/{pipeline_id}" + RUNS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_pipeline_runs(
     pipeline_run_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)

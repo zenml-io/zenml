@@ -55,7 +55,7 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     workload_manager,
@@ -84,7 +84,7 @@ logger = get_logger(__name__)
     deprecated=True,
     tags=["runs"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_or_create_pipeline_run(
     pipeline_run: PipelineRunRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -122,7 +122,7 @@ def get_or_create_pipeline_run(
     deprecated=True,
     tags=["runs"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_runs(
     runs_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)
@@ -157,7 +157,7 @@ def list_runs(
     "/{run_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_run(
     run_id: UUID,
     hydrate: bool = True,
@@ -227,7 +227,7 @@ def get_run(
     "/{run_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_run(
     run_id: UUID,
     run_model: PipelineRunUpdate,
@@ -254,7 +254,7 @@ def update_run(
     "/{run_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_run(
     run_id: UUID,
     _: AuthContext = Security(authorize),
@@ -275,7 +275,7 @@ def delete_run(
     "/{run_id}" + STEPS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_run_steps(
     run_id: UUID,
     step_run_filter_model: StepRunFilter = Depends(
@@ -304,7 +304,7 @@ def get_run_steps(
     "/{run_id}" + PIPELINE_CONFIGURATION,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_pipeline_configuration(
     run_id: UUID,
     _: AuthContext = Security(authorize),
@@ -327,7 +327,7 @@ def get_pipeline_configuration(
     "/{run_id}" + STATUS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_run_status(
     run_id: UUID,
     _: AuthContext = Security(authorize),
@@ -376,7 +376,7 @@ def get_run_dag(
     "/{run_id}" + REFRESH,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def refresh_run_status(
     run_id: UUID,
     _: AuthContext = Security(authorize),
@@ -425,7 +425,7 @@ def refresh_run_status(
         422: error_response,
     },
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def run_logs(
     run_id: UUID,
     offset: int = 0,

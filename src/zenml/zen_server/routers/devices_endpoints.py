@@ -39,7 +39,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     zen_store,
@@ -56,7 +56,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_authorized_devices(
     filter_model: OAuthDeviceFilter = Depends(
         make_dependable(OAuthDeviceFilter)
@@ -86,7 +86,7 @@ def list_authorized_devices(
     "/{device_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_authorization_device(
     device_id: UUID,
     user_code: Optional[str] = None,
@@ -136,7 +136,7 @@ def get_authorization_device(
     "/{device_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_authorized_device(
     device_id: UUID,
     update: OAuthDeviceUpdate,
@@ -172,7 +172,7 @@ def update_authorized_device(
     "/{device_id}" + DEVICE_VERIFY,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def verify_authorized_device(
     device_id: UUID,
     request: OAuthDeviceVerificationRequest,
@@ -279,7 +279,7 @@ def verify_authorized_device(
     "/{device_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_authorized_device(
     device_id: UUID,
     auth_context: AuthContext = Security(authorize),

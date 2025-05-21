@@ -71,8 +71,8 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
+    async_fastapi_endpoint_wrapper,
     get_ip_location,
-    handle_exceptions,
     server_config,
     zen_store,
 )
@@ -222,7 +222,7 @@ class OAuthLoginRequestForm:
     LOGIN,
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 @rate_limit_requests(
     day_limit=server_config().login_rate_limit_day,
     minute_limit=server_config().login_rate_limit_minute,
@@ -341,6 +341,7 @@ def logout(
     DEVICE_AUTHORIZATION,
     response_model=OAuthDeviceAuthorizationResponse,
 )
+@async_fastapi_endpoint_wrapper
 def device_authorization(
     request: Request,
     client_id: UUID = Form(...),
@@ -471,7 +472,7 @@ def device_authorization(
     API_TOKEN,
     response_model=str,
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def api_token(
     token_type: APITokenType = APITokenType.GENERIC,
     expires_in: Optional[int] = None,

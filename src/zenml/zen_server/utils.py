@@ -33,6 +33,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
+from typing_extensions import ParamSpec
 
 from zenml import __version__ as zenml_version
 from zenml.config.global_config import GlobalConfiguration
@@ -64,6 +65,11 @@ if TYPE_CHECKING:
     from zenml.zen_server.template_execution.utils import (
         BoundedThreadPoolExecutor,
     )
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
 
 logger = get_logger(__name__)
 
@@ -299,12 +305,16 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
-P = ParamSpec("P")
-R = TypeVar("R")
+def async_fastapi_endpoint_wrapper(
+    func: Callable[P, R],
+) -> Callable[P, Awaitable[Any]]:
+    """Decorator for FastAPI endpoints.
 
-
-def handle_exceptions(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
-    """Decorator to handle exceptions in the API.
+    This decorator for FastAPI endpoints does the following:
+    - Sets the auth_context context variable if the endpoint is authenticated.
+    - Converts exceptions to HTTPExceptions with the correct status code.
+    - Converts the sync endpoint function to an coroutine and runs the original
+      function in a worker threadpool. See below for more details.
 
     Args:
         func: Function to decorate.
@@ -314,7 +324,7 @@ def handle_exceptions(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
     """
 
     @wraps(func)
-    def decorated(*args: P.args, **kwargs: P.kwargs) -> R:
+    def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
         # These imports can't happen at module level as this module is also
         # used by the CLI when installed without the `server` extra
         from fastapi import HTTPException
@@ -361,7 +371,7 @@ def handle_exceptions(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
     # See: `fastapi.routing.serialize_response(...)` and
     # https://github.com/fastapi/fastapi/pull/888 for more information.
     @wraps(decorated)
-    async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> R:
+    async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
         from starlette.concurrency import run_in_threadpool
 
         return await run_in_threadpool(decorated, *args, **kwargs)
