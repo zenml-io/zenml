@@ -216,11 +216,9 @@ class RunTemplateSchema(NamedSchema, table=True):
             self.source_deployment
             and self.source_deployment.build
             and not self.source_deployment.build.is_local
-            and self.source_deployment.build.stack
+            and self.source_deployment.build.stack_id
         ):
             runnable = True
-
-        latest_run = self.latest_run
 
         body = RunTemplateResponseBody(
             user_id=self.user_id,
@@ -229,8 +227,6 @@ class RunTemplateSchema(NamedSchema, table=True):
             updated=self.updated,
             runnable=runnable,
             hidden=self.hidden,
-            latest_run_id=latest_run.id if latest_run else None,
-            latest_run_status=latest_run.status if latest_run else None,
         )
 
         metadata = None
@@ -287,6 +283,8 @@ class RunTemplateSchema(NamedSchema, table=True):
                 build = None
                 code_reference = None
 
+            latest_run = self.latest_run
+
             resources = RunTemplateResponseResources(
                 user=self.user.to_model() if self.user else None,
                 source_deployment=self.source_deployment.to_model()
@@ -296,6 +294,8 @@ class RunTemplateSchema(NamedSchema, table=True):
                 build=build,
                 code_reference=code_reference,
                 tags=[tag.to_model() for tag in self.tags],
+                latest_run_id=latest_run.id if latest_run else None,
+                latest_run_status=latest_run.status if latest_run else None,
             )
 
         return RunTemplateResponse(

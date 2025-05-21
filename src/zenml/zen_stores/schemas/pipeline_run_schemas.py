@@ -393,7 +393,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 orchestrator_environment.pop("python_packages", None)
 
             metadata = PipelineRunResponseMetadata(
-                run_metadata=self.fetch_metadata(),
+                run_metadata=self.fetch_metadata(
+                    include_full_metadata=include_full_metadata
+                ),
                 config=config,
                 start_time=self.start_time,
                 end_time=self.end_time,
