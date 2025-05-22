@@ -148,8 +148,12 @@ By default, the Discord alerter recognizes these keywords:
 
 **Important Notes:**
 - The ask step returns a boolean (`True` for approval, `False` for disapproval/timeout)
-- Keywords are case-sensitive
+- **Keywords are case-sensitive** - you must respond with exact case (e.g., `LGTM` not `lgtm`)
 - If no valid response is received, the step returns `False`
+
+{% hint style="warning" %}
+**Discord Case Sensitivity**: The Discord alerter implementation requires exact case matching for approval keywords. Make sure to respond with the exact case specified (e.g., `LGTM`, not `lgtm`).
+{% endhint %}
 
 For more information and a full list of configurable attributes of the Discord alerter, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord) .
 

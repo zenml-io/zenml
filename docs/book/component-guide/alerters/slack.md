@@ -255,9 +255,13 @@ The `ask()` method and `slack_alerter_ask_step` recognize these keywords by defa
 
 **Important Notes:**
 - The ask step returns a boolean (`True` for approval, `False` for disapproval/timeout)
-- Response keywords are converted to lowercase before matching
+- **Response keywords are case-insensitive** - keywords are converted to lowercase before matching (e.g., both `LGTM` and `lgtm` work)
 - If no valid response is received within the timeout period, the step returns `False`
 - The default timeout is 300 seconds (5 minutes) but can be configured
+
+{% hint style="info" %}
+**Slack Case Handling**: The Slack alerter implementation automatically converts all response keywords to lowercase before matching, making responses case-insensitive. You can respond with `LGTM`, `lgtm`, or `Lgtm` - they'll all work.
+{% endhint %}
 
 For more information and a full list of configurable attributes of the Slack 
 alerter, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-slack.html#zenml.integrations.slack) .
