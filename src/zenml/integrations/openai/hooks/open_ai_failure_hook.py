@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Functionality for OpenAI standard hooks."""
 
+import html
+import re
 import traceback
 from typing import List, Match, Optional
 
@@ -35,8 +37,6 @@ def _format_markdown_for_html(markdown_text: str) -> str:
     Returns:
         HTML formatted string.
     """
-    import html
-    import re
 
     # First escape HTML characters to prevent injection
     # We'll unescape code blocks later
@@ -218,8 +218,11 @@ def openai_alerter_failure_hook_helper(
 
     alerter = client.active_stack.alerter
     if alerter and openai_api_key:
-        # Check if we're using SMTP Email alerter and import related classes if needed
+        # Check if we're using SMTP Email alerter and conditionally import if needed
         is_smtp_email_alerter = False
+        smtp_params = None
+        smtp_payload = None
+
         try:
             from zenml.integrations.smtp_email.alerters.smtp_email_alerter import (
                 SMTPEmailAlerter,
@@ -228,6 +231,10 @@ def openai_alerter_failure_hook_helper(
             )
 
             is_smtp_email_alerter = isinstance(alerter, SMTPEmailAlerter)
+            if is_smtp_email_alerter:
+                # Make these available for later use
+                smtp_params = SMTPEmailAlerterParameters
+                smtp_payload = SMTPEmailAlerterPayload
         except ImportError:
             pass
 
@@ -276,7 +283,7 @@ def openai_alerter_failure_hook_helper(
         )
 
         # If using SMTP Email alerter, use specialized formatting for better email display
-        if is_smtp_email_alerter:
+        if is_smtp_email_alerter and smtp_params and smtp_payload:
             # Create a plain text message for email body
             plain_message = f"""OpenAI Failure Hook Notification - Step failed!
 
@@ -317,7 +324,7 @@ OpenAI ChatGPT's suggestion (model = {model_name}) on how to fix it:
             )
 
             # Create a payload with relevant pipeline information
-            payload = SMTPEmailAlerterPayload(
+            payload = smtp_payload(
                 pipeline_name=context.pipeline.name,
                 step_name=context.step_run.name,
                 stack_name=client.active_stack.name,
@@ -332,7 +339,7 @@ OpenAI ChatGPT's suggestion (model = {model_name}) on how to fix it:
             )
 
             # Create parameters with HTML enabled and a clear subject
-            params = SMTPEmailAlerterParameters(
+            params = smtp_params(
                 subject=f"ZenML OpenAI Failure: {clean_pipeline_name} - {clean_step_name}",
                 include_html=True,
                 payload=payload,

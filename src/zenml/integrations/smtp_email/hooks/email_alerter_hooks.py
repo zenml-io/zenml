@@ -18,10 +18,12 @@ import traceback
 from zenml import get_step_context
 from zenml.client import Client
 from zenml.hooks import get_failure_template, get_success_template
+from zenml.integrations.smtp_email.alerters.smtp_email_alerter import (
+    SMTPEmailAlerter,
+    SMTPEmailAlerterParameters,
+    SMTPEmailAlerterPayload,
+)
 from zenml.logger import get_logger
-
-# Import these classes in the function body to avoid circular imports
-# SMTPEmailAlerter, SMTPEmailAlerterParameters, SMTPEmailAlerterPayload
 
 logger = get_logger(__name__)
 
@@ -36,13 +38,6 @@ def smtp_email_alerter_failure_hook(exception: BaseException) -> None:
     Args:
         exception: Original exception that lead to step failing.
     """
-    # Import here to avoid circular imports
-    from zenml.integrations.smtp_email.alerters.smtp_email_alerter import (
-        SMTPEmailAlerter,
-        SMTPEmailAlerterParameters,
-        SMTPEmailAlerterPayload,
-    )
-
     context = get_step_context()
     alerter = Client().active_stack.alerter
 
@@ -145,13 +140,6 @@ def smtp_email_alerter_success_hook() -> None:
     email formatting with HTML support. It organizes the success information
     in a structured way that displays well in email clients.
     """
-    # Import here to avoid circular imports
-    from zenml.integrations.smtp_email.alerters.smtp_email_alerter import (
-        SMTPEmailAlerter,
-        SMTPEmailAlerterParameters,
-        SMTPEmailAlerterPayload,
-    )
-
     context = get_step_context()
     alerter = Client().active_stack.alerter
 

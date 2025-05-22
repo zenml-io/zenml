@@ -14,6 +14,7 @@
 """Implementation for SMTP Email flavor of alerter component."""
 
 import html
+import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -70,9 +71,6 @@ class SMTPEmailAlerterParameters(BaseAlerterStepParameters):
 
         Returns:
             The validated email or None.
-
-        Raises:
-            ValueError: If email format is invalid.
         """
         if v is not None:
             return validate_email(v)
@@ -186,9 +184,10 @@ class SMTPEmailAlerter(BaseAlerter):
             Email address of the recipient.
 
         Raises:
-            RuntimeError: if config is not of type `BaseAlerterStepParameters`.
-            ValueError: if an email recipient was neither defined in the config
-                nor in the alerter component, or if the email format is invalid.
+            RuntimeError: if params is not of type `BaseAlerterStepParameters`.
+            ValueError: if an email recipient was neither defined in the params,
+                settings, nor in the alerter component configuration, or if the
+                email format is invalid.
         """
         email = cast(
             str,
@@ -262,8 +261,6 @@ class SMTPEmailAlerter(BaseAlerter):
             # Helper function to process markdown-style formatting
             def process_markdown_line(line: str) -> str:
                 # Handle backticks for code
-                import re
-
                 # Process inline code with backticks - replace `code` with <code>code</code>
                 # Note: We're working with already escaped HTML, so we need to be careful
                 line = re.sub(

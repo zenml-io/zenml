@@ -54,9 +54,6 @@ class SMTPEmailAlerterSettings(BaseSettings):
 
         Returns:
             The validated email or None.
-
-        Raises:
-            ValueError: If email format is invalid.
         """
         if v is not None:
             return validate_email(v)
@@ -90,9 +87,6 @@ class SMTPEmailAlerterConfig(BaseAlerterConfig, SMTPEmailAlerterSettings):
 
         Returns:
             The validated email.
-
-        Raises:
-            ValueError: If email format is invalid.
         """
         return validate_email(v)
 

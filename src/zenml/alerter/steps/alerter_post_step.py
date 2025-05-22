@@ -29,6 +29,9 @@ def alerter_post_step(msg: AlerterMessage) -> bool:
 
     Returns:
         True if the alerter successfully posted the message, else False.
+
+    Raises:
+        RuntimeError: If no alerter is configured in the active stack.
     """
     alerter = Client().active_stack.alerter
     if not alerter:
