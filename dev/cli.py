@@ -717,7 +717,7 @@ def get_workspace_auth_token(token: str, workspace_id: str) -> str:
         RuntimeError: If the API request fails for any reason.
     """
     url = f"{BASE_STAGING_URL}/auth/workspace_authorization/{workspace_id}"
-    response = requests.get(url, headers=_get_headers(token))
+    response = requests.post(url, headers=_get_headers(token))
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError:
