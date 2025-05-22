@@ -256,7 +256,7 @@ class ServerConfiguration(BaseModel):
         thread_pool_size: The size of the thread pool for handling requests. If
             not specified, the default value of 40 will be used.
         server_request_timeout: The timeout for server requests in seconds. If
-            not specified, the default value of 15 seconds will be used. This
+            not specified, the default value of 20 seconds will be used. This
             value should be lower than the client's request timeout.
     """
 
