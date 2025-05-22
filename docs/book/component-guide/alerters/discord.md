@@ -51,6 +51,23 @@ zenml alerter register discord_alerter \
     --default_discord_channel_id=<DISCORD_CHANNEL_ID>
 ```
 
+{% hint style="info" %}
+**Using Secrets for Token Management**: Instead of passing your Discord token directly, it's recommended to store it as a ZenML secret and reference it in your alerter configuration. This approach keeps sensitive information secure:
+
+```shell
+# Create a secret for your Discord token
+zenml secret create discord_secret --discord_token=<DISCORD_TOKEN>
+
+# Register the alerter referencing the secret
+zenml alerter register discord_alerter \
+    --flavor=discord \
+    --discord_token={{discord_secret.discord_token}} \
+    --default_discord_channel_id=<DISCORD_CHANNEL_ID>
+```
+
+Learn more about [referencing secrets in stack component attributes and settings](https://docs.zenml.io/concepts/secrets#reference-secrets-in-stack-component-attributes-and-settings).
+{% endhint %}
+
 After you have registered the `discord_alerter`, you can add it to your stack like this:
 
 ```shell

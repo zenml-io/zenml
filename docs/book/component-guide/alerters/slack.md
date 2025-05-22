@@ -55,6 +55,12 @@ zenml alerter register slack_alerter \
     --slack_channel_id=<SLACK_CHANNEL_ID>
 ```
 
+{% hint style="info" %}
+**Using Secrets for Token Management**: The example above demonstrates the recommended approach of storing your Slack token as a ZenML secret and referencing it using the `{{secret_name.key}}` syntax. This keeps sensitive information secure and follows security best practices.
+
+Learn more about [referencing secrets in stack component attributes and settings](https://docs.zenml.io/concepts/secrets#reference-secrets-in-stack-component-attributes-and-settings).
+{% endhint %}
+
 Here is where you can find the required parameters:
 
 * `<SLACK_CHANNEL_ID>`: The channel ID can be found in the channel details.
