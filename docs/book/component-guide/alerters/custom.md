@@ -9,7 +9,7 @@ Before diving into the specifics of this component type, it is beneficial to fam
 {% endhint %}
 
 > **Note**: Once you have implemented your custom alerter, you can post messages via the generic
-[`alerter_post_step`](./alerters.md#how-to-use-alerters-with-zenml) or [`alerter_ask_step`](./alerters.md#how-to-use-alerters-with-zenml)
+[`alerter_post_step`](./README.md#how-to-use-alerters-with-zenml) or [`alerter_ask_step`](./README.md#how-to-use-alerters-with-zenml)
 if your alerter supports interactive approvals.
 
 ### Base Abstraction
