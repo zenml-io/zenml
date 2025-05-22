@@ -50,7 +50,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
     orchestrator_pod_settings=KubernetesPodSettings(
         resources={
             "requests": {"cpu": "100m", "memory": "500Mi"},
-            # "limits": {"memory": "350Mi"}, # -> grows linearly with number of steps
+            # "limits": {"memory": "500Mi"}, # -> grows linearly with number of steps
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -246,7 +246,7 @@ report_kubernetes_settings = KubernetesOrchestratorSettings(
     pod_settings=KubernetesPodSettings(
         resources={
             "requests": {"cpu": "100m", "memory": "800Mi"},
-            "limits": {"memory": "800Mi"},
+            # "limits": {"memory": "800Mi"}, # -> grows linearly with number of steps
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -311,28 +311,7 @@ def load_test_pipeline(
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
     """
-    (
-        int1,
-        int2,
-        int3,
-        int4,
-        int5,
-        int6,
-        int7,
-        int8,
-        int9,
-        int10,
-        int11,
-        int12,
-        int13,
-        int14,
-        int15,
-        int16,
-        int17,
-        int18,
-        int19,
-        int20,
-    ) = init_step()
+    result = init_step()
 
     after = []
     for i in range(num_parallel_steps):
@@ -340,27 +319,8 @@ def load_test_pipeline(
             load_step(
                 duration,
                 sleep_interval,
+                *result,
                 id=f"load_step_{i}",
-                input1=int1,
-                input2=int2,
-                input3=int3,
-                input4=int4,
-                input5=int5,
-                input6=int6,
-                input7=int7,
-                input8=int8,
-                input9=int9,
-                input10=int10,
-                input11=int11,
-                input12=int12,
-                input13=int13,
-                input14=int14,
-                input15=int15,
-                input16=int16,
-                input17=int17,
-                input18=int18,
-                input19=int19,
-                input20=int20,
             )
         )
 
@@ -387,7 +347,7 @@ def load_test_pipeline(
 @click.option(
     "--sleep-interval",
     "-s",
-    default=0.1,
+    default=1,
     help="Sleep interval between API calls in seconds",
     type=float,
     show_default=True,

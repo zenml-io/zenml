@@ -486,7 +486,7 @@ class Session(SqlModelSession):
                 f"{checked_out_connections} conn(idle): "
                 f"{available_connections} conn(overflow): {overflow} ]"
             )
-        return super().__exit__(exc_type, exc_val, exc_tb)
+        super().__exit__(exc_type, exc_val, exc_tb)
 
 
 class SQLDatabaseDriver(StrEnum):
