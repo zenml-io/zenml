@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation for SMTP Email flavor of alerter component."""
 
+import html
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -249,17 +250,22 @@ class SMTPEmailAlerter(BaseAlerter):
             return params.html_body
 
         # Properly format the message for HTML
+        # - Escape HTML entities first for security
         # - Replace newlines with <br> tags
         # - Add <pre> tags for code blocks
         # - Convert Markdown-style formatting to HTML (backticks, asterisks)
         formatted_message = message
         if message:
+            # First, escape HTML entities to prevent XSS
+            safe_message = html.escape(message)
+            
             # Helper function to process markdown-style formatting
             def process_markdown_line(line: str) -> str:
                 # Handle backticks for code
                 import re
 
                 # Process inline code with backticks - replace `code` with <code>code</code>
+                # Note: We're working with already escaped HTML, so we need to be careful
                 line = re.sub(
                     r"`([^`]+)`",
                     r'<code style="background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: monospace;">\1</code>',
@@ -275,11 +281,11 @@ class SMTPEmailAlerter(BaseAlerter):
                 return line
 
             # Check if the message contains a traceback or code block
-            if "Traceback" in message or "File " in message:
+            if "Traceback" in safe_message or "File " in safe_message:
                 # For tracebacks, use <pre> to preserve formatting
                 formatted_parts: List[str] = []
                 in_traceback = False
-                for line in message.split("\n"):
+                for line in safe_message.split("\n"):
                     if "Traceback" in line or in_traceback or "File " in line:
                         in_traceback = True
                         if not formatted_parts or not formatted_parts[
@@ -306,7 +312,7 @@ class SMTPEmailAlerter(BaseAlerter):
             else:
                 # For regular messages, process each line for markdown and replace newlines with <br> tags
                 formatted_lines = []
-                for line in message.split("\n"):
+                for line in safe_message.split("\n"):
                     formatted_line = process_markdown_line(line)
                     formatted_lines.append(formatted_line)
                 formatted_message = "<br>".join(formatted_lines)
@@ -317,7 +323,12 @@ class SMTPEmailAlerter(BaseAlerter):
             and params.payload is not None
         ):
             payload = params.payload
-            html = f"""
+            # Escape all payload fields to prevent XSS
+            safe_pipeline_name = html.escape(payload.pipeline_name or "")
+            safe_step_name = html.escape(payload.step_name or "")
+            safe_stack_name = html.escape(payload.stack_name or "")
+            
+            html_content = f"""
             <html>
               <body style="font-family: Arial, sans-serif; padding: 20px;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
@@ -328,15 +339,15 @@ class SMTPEmailAlerter(BaseAlerter):
                   <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                     <tr>
                       <td style="padding: 10px; border-bottom: 1px solid #ddd; width: 30%;"><strong>Pipeline:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{payload.pipeline_name}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{safe_pipeline_name}</td>
                     </tr>
                     <tr>
                       <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Step:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{payload.step_name}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{safe_step_name}</td>
                     </tr>
                     <tr>
                       <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Stack:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{payload.stack_name}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{safe_stack_name}</td>
                     </tr>
                   </table>
                   <div style="background-color: #f3f3f3; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
@@ -350,7 +361,7 @@ class SMTPEmailAlerter(BaseAlerter):
               </body>
             </html>
             """
-            return html
+            return html_content
 
         # Simple HTML formatting if no payload
         return f"""
