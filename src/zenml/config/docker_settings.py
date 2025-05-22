@@ -211,7 +211,7 @@ class DockerSettings(BaseSettings):
     prevent_build_reuse: bool = False
     target_repository: Optional[str] = None
     python_package_installer: PythonPackageInstaller = (
-        PythonPackageInstaller.PIP
+        PythonPackageInstaller.UV
     )
     python_package_installer_args: Dict[str, Any] = {}
     disable_automatic_requirements_detection: bool = True

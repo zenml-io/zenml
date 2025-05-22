@@ -358,19 +358,19 @@ Control how packages are installed:
 # Use custom installer arguments
 docker_settings = DockerSettings(python_package_installer_args={"timeout": 1000})
 
-# Use uv instead of pip (experimental)
+# Use pip instead of uv
 from zenml.config import DockerSettings, PythonPackageInstaller
-docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.UV)
-# Or as a string
-docker_settings = DockerSettings(python_package_installer="uv")
-
-# Use pip (default)
 docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.PIP)
+# Or as a string
+docker_settings = DockerSettings(python_package_installer="pip")
+
+# Use uv (default)
+docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.UV)
 ```
 
 The available package installers are:
-- `pip`: The default Python package installer
-- `uv`: A faster alternative to pip (experimental)
+- `pip`: The standard Python package installer
+- `uv`: A faster alternative to pip (default)
 
 {% hint style="info" %}
 `uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation. If this happens, try switching the installer back to `pip` and see if that solves the issue.
