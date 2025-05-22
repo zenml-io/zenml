@@ -48,7 +48,10 @@ class DAGGeneratorHelper:
         """Get the ID of an artifact node.
 
         Args:
-            name: The name of the artifact.
+            name: The name of the input or output artifact.
+            step_name: The name of the step.
+            io_type: The type of the input or output artifact.
+            is_input: Whether the artifact is an input or output artifact.
 
         Returns:
             The ID of the artifact node.
