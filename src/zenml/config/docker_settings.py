@@ -402,9 +402,11 @@ class DockerSettings(BaseSettings):
         """
         if "python_package_installer" not in data:
             logger.warning(
-                "In a future release, the default Python package installer will "
-                "change from 'pip' to 'uv'. To maintain current behavior, you "
-                "can explicitly set `python_package_installer=PythonPackageInstaller.PIP` "
+                "In a future release, the default Python package installer "
+                "used by ZenML to build container images for your "
+                "containerized pipelines will change from 'pip' to 'uv'. "
+                "To maintain current behavior, you can explicitly set "
+                "`python_package_installer=PythonPackageInstaller.PIP` "
                 "in your DockerSettings."
             )
         return data
