@@ -503,8 +503,13 @@ class SMTPEmailAlerter(BaseAlerter):
                     )
                     return False
                 except smtplib.SMTPSenderRefused as e:
+                    error_msg = (
+                        e.smtp_error.decode("utf-8", errors="replace")
+                        if isinstance(e.smtp_error, bytes)
+                        else str(e.smtp_error)
+                    )
                     logger.error(
-                        f"Sender address {e.sender} refused by SMTP server: {e.smtp_error}. "
+                        f"Sender address {e.sender} refused by SMTP server: {error_msg}. "
                         "Please check your sender email configuration."
                     )
                     return False
