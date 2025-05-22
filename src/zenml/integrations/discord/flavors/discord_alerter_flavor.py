@@ -47,7 +47,7 @@ class DiscordAlerterConfig(BaseAlerterConfig):
             True if the stack component is valid, False otherwise.
         """
         try:
-            from discord import (  # type: ignore[import-not-found]
+            from discord import (
                 Client,
                 DiscordException,
                 Intents,
@@ -64,13 +64,7 @@ class DiscordAlerterConfig(BaseAlerterConfig):
         valid = False
         try:
             # Check discord token validity
-            # Cast the result of client.event to the proper type
-            def typed_event(
-                coro: Callable[[], Awaitable[None]],
-            ) -> Callable[[], Awaitable[None]]:
-                return cast(Callable[[], Awaitable[None]], client.event(coro))
-
-            @typed_event
+            @client.event
             async def on_ready() -> None:
                 nonlocal valid
                 try:

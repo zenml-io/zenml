@@ -24,6 +24,7 @@ try:
         Intents,
         Message,
     )
+    from discord.abc import Messageable
 except ImportError:
     # This should not happen as the integration requirements ensure discord.py is installed
     raise ImportError(
@@ -281,18 +282,12 @@ class DiscordAlerter(BaseAlerter):
 
         message_sent = False
 
-        # Cast the result of client.event to the proper type
-        def typed_event(
-            coro: Callable[[], Awaitable[None]],
-        ) -> Callable[[], Awaitable[None]]:
-            return cast(Callable[[], Awaitable[None]], client.event(coro))
-
-        @typed_event
+        @client.event
         async def on_ready() -> None:
             nonlocal message_sent
             try:
                 channel = client.get_channel(int(discord_channel_id))
-                if channel:
+                if channel and isinstance(channel, Messageable):
                     # Send the message
                     if embed_blocks:
                         await channel.send(embed=embed_blocks)
@@ -328,6 +323,12 @@ class DiscordAlerter(BaseAlerter):
         """
         # For consistency, treat 'question' as 'message' in the implementation
         message = question
+        # Convert AlerterMessage to string for Discord API
+        message_str = (
+            message.body
+            if isinstance(message, AlerterMessage)
+            else str(message)
+        )
         discord_channel_id = self._get_channel_id(params=params)
         intents = Intents.default()
         intents.message_content = True
@@ -336,22 +337,16 @@ class DiscordAlerter(BaseAlerter):
         embed_blocks = self._create_blocks(message, params)
         approved = False  # will be modified by check()
 
-        # Cast the result of client.event to the proper type
-        def typed_event(
-            coro: Callable[[], Awaitable[None]],
-        ) -> Callable[[], Awaitable[None]]:
-            return cast(Callable[[], Awaitable[None]], client.event(coro))
-
-        @typed_event
+        @client.event
         async def on_ready() -> None:
             try:
                 channel = client.get_channel(int(discord_channel_id))
-                if channel:
+                if channel and isinstance(channel, Messageable):
                     # Send the message
                     if embed_blocks:
                         await channel.send(embed=embed_blocks)
                     else:
-                        await channel.send(content=message)
+                        await channel.send(content=message_str)
 
                     def check(message: Message) -> bool:
                         if message.channel == channel:
