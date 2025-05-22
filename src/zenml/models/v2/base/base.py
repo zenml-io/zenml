@@ -212,17 +212,6 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
 
     def hydrate(self) -> None:
         """Hydrate the response."""
-        # TODO: Remove this debug log
-        import os
-
-        from zenml.constants import ENV_ZENML_SERVER
-
-        if ENV_ZENML_SERVER in os.environ:
-            logger.warning(
-                "Server-side hydration happening for model %s",
-                type(self).__name__,
-            )
-
         hydrated_version = self.get_hydrated_version()
         self._validate_hydrated_version(hydrated_version)
 

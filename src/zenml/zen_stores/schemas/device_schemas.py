@@ -309,6 +309,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             id=device_model.id,
             body=device_model.body,
             metadata=device_model.metadata,
+            resources=device_model.resources,
             user_code=self.user_code,
             device_code=self.device_code,
         )
