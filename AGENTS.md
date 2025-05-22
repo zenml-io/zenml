@@ -5,38 +5,12 @@ This document provides guidance for Codex agents working with the ZenML codebase
 ## Project Structure
 
 - `/src/zenml/` - Core source code
-  - `/alerters/` - Alerting system implementations
-  - `/annotators/` - Data annotation tool integrations
-  - `/artifact_stores/` - Artifact storage implementations
-  - `/cli/` - Command-line interface
-  - `/code_repositories/` - Code repository integrations
-  - `/config/` - Configuration system
-  - `/container_registries/` - Container registry implementations
-  - `/data_validators/` - Data validation implementations
-  - `/experiment_trackers/` - Experiment tracking integrations
-  - `/feature_stores/` - Feature store integrations
-  - `/image_builders/` - Image building functionality
-  - `/integrations/` - External tool integrations
-  - `/io/` - File I/O and filesystem utilities
-  - `/logging/` - Logging utilities
-  - `/materializers/` - Artifact serialization/deserialization
-  - `/metadata/` - Metadata management
-  - `/model/` - Model-related functionality
-  - `/model_deployers/` - Model deployment implementations
-  - `/model_registries/` - Model registry implementations
-  - `/orchestrators/` - Pipeline execution orchestrators
-  - `/pipelines/` - Core pipeline functionality
-  - `/services/` - Services implementation
-  - `/stack/` - Stack components management
-  - `/step_operators/` - Step operator implementations
-  - `/steps/` - Pipeline step definitions
-  - `/utils/` - Utility functions
-  - `/zen_server/` - ZenML server implementation
-  - `/zen_stores/` - Storage implementations
 - `/tests/` - Test suite (unit, integration)
 - `/docs/` - Documentation
 - `/examples/` - Example projects (IMPORTANT: Do not modify directly - this folder is updated by CI from other repositories)
 - `/scripts/` - Development utilities
+
+Use filesystem navigation tools to explore the codebase structure as needed.
 
 ## Code Style & Quality Standards
 
@@ -61,7 +35,7 @@ This document provides guidance for Codex agents working with the ZenML codebase
 
 ### Testing Requirements
 - Most new code requires test coverage
-  - key exceptions are when the code involves integrations with external
+  - Key exceptions are when the code involves integrations with external
     services. (in those cases we generally test things extensively locally and
     in the CI. So the developer might have to run things or set things up
     locally first.)
@@ -110,6 +84,39 @@ This document provides guidance for Codex agents working with the ZenML codebase
 2. Run targeted tests to verify changes (see above)
 3. Update documentation for user-facing changes (or ensure that nothing was broken)
 
+### Security Guidelines
+- **NEVER** commit secrets, API keys, tokens, or passwords
+- Use environment variables or ZenML's secret management for sensitive data
+- Review changes for accidental credential exposure before committing
+- If you accidentally commit secrets, notify the team immediately
+- Follow the principle of least privilege when implementing access controls
+- Validate and sanitize all user inputs
+
+### Database and Migration Guidelines
+- Database schema changes require Alembic migrations
+- Create migrations with descriptive names: `alembic revision -m "Add X to Y table"`
+- Test migrations both up and down: `alembic upgrade head` and `alembic downgrade -1`
+- Never modify existing migrations that are already on main/develop branches
+- Always consider backward compatibility for rolling deployments
+- Include both schema changes and data migrations when needed
+- Run `scripts/check-alembic-branches.sh` to verify migration consistency
+
+### Commit Message Guidelines
+- Write clear, descriptive commit messages explaining the "why" not just the "what"
+- First line should be a concise summary (50 chars or less)
+- Use imperative mood: "Add feature" not "Added feature"
+- Reference issue numbers when applicable: "Fix user auth bug (#1234)"
+- For multi-line messages, add a blank line after the summary
+- Example:
+  ```
+  Add retry logic to artifact upload
+  
+  Previously, artifact uploads would fail immediately on network errors.
+  This adds exponential backoff retry logic to handle transient failures.
+  
+  Fixes #1234
+  ```
+
 ### When Implementing Features
 - Study existing similar implementations first
 - Follow the established patterns in the codebase
@@ -140,14 +147,12 @@ This document provides guidance for Codex agents working with the ZenML codebase
 
 ### Continuous Integration
 - ZenML uses a two-tier CI approach:
-  - **Fast CI**: Runs automatically on all PRs
-  - **Full CI**: Includes more extensive tests but requires manual triggering
-- To run the full test suite:
-  1. Add the label `run-slow-ci` to your PR
-  2. Find and restart the "ci-slow" job
-- If your changes touch integrations, you'll maybe want to run the full CI
-- CI environments have all dependencies installed that many tests require
-- Check the GitHub Actions logs to debug any CI failures
+  - **Fast CI**: Runs automatically on all PRs (basic tests, linting, type checking)
+  - **Full CI**: Includes integration tests and more extensive test coverage
+- The `run-slow-ci` label triggers full CI testing
+- Full CI is required before merging - maintainers will add the label if needed
+- If your changes touch integrations or core functionality, mention in the PR that full CI should be run
+- CI failures will show in the PR checks - review logs to understand any issues
 
 ## Core Concepts
 
