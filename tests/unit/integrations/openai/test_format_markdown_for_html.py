@@ -168,7 +168,7 @@ def test_empty_and_whitespace():
     """Test empty strings and whitespace."""
     assert _format_markdown_for_html("") == ""
     # Whitespace gets wrapped in paragraph tags
-    result = _format_markdown_for_html("   ")
+    _format_markdown_for_html("   ")
     # Just check that the function doesn't crash on whitespace
 
 
