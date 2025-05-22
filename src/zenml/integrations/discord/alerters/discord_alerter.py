@@ -240,7 +240,26 @@ class DiscordAlerter(BaseAlerter):
             logger.error(
                 "Client connection timed out. please verify the credentials."
             )
+        except asyncio.CancelledError:
+            # Handle cancellation gracefully
+            pass
         finally:
+            # Ensure client is closed properly
+            if not client.is_closed():
+                loop.run_until_complete(client.close())
+            
+            # Give a small delay for cleanup
+            loop.run_until_complete(asyncio.sleep(0.25))
+            
+            # Cancel all remaining tasks
+            pending = asyncio.all_tasks(loop) if hasattr(asyncio, 'all_tasks') else asyncio.Task.all_tasks(loop)
+            for task in pending:
+                task.cancel()
+            
+            # Wait for task cancellation
+            if pending:
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            
             # Close the event loop
             loop.close()
 
