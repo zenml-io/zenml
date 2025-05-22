@@ -200,7 +200,7 @@ def ask_question() -> bool:
     return Client().active_stack.alerter.ask(question=message, params=params)
 
 @step  
-def conditional_step(approved: bool) -> None:
+def process_approval_response(approved: bool) -> None:
     if approved:
         print("User approved! Continuing with operation...")
         # Your logic here
@@ -212,7 +212,7 @@ def conditional_step(approved: bool) -> None:
 def my_pipeline():
     post_statement()
     approved = ask_question()
-    conditional_step(approved)
+    process_approval_response(approved)
 
 
 if __name__ == "__main__":
@@ -235,7 +235,7 @@ from zenml.integrations.slack.steps.slack_alerter_ask_step import (
 )
 
 @step
-def handle_response(approved: bool) -> None:
+def process_approval_response(approved: bool) -> None:
     if approved:
         print("Operation approved!")
     else:
@@ -245,7 +245,7 @@ def handle_response(approved: bool) -> None:
 def my_pipeline():
     slack_alerter_post_step("Posting a statement.")
     approved = slack_alerter_ask_step("Asking a question. Should I continue?")
-    handle_response(approved)
+    process_approval_response(approved)
 
 
 if __name__ == "__main__":

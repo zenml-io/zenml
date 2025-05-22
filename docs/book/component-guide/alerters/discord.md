@@ -115,7 +115,7 @@ def my_formatter_step(artifact_to_be_communicated) -> str:
 
 
 @step
-def conditional_step(artifact, approved: bool) -> None:
+def process_approval_response(artifact, approved: bool) -> None:
     if approved:
         # Proceed with the operation
         print(f"User approved! Processing {artifact}")
@@ -130,7 +130,7 @@ def my_pipeline(...):
     artifact_to_be_communicated = ...
     message = my_formatter_step(artifact_to_be_communicated)
     approved = discord_alerter_ask_step(message)
-    conditional_step(artifact_to_be_communicated, approved)
+    process_approval_response(artifact_to_be_communicated, approved)
 
 if __name__ == "__main__":
     my_pipeline()
