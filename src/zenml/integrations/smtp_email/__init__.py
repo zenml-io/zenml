@@ -22,6 +22,8 @@ from zenml.stack import Flavor
 
 SMTP_EMAIL_ALERTER_FLAVOR = "smtp_email"
 
+__all__ = ["SMTPEmailIntegration", "SMTP_EMAIL_ALERTER_FLAVOR"]
+
 
 class SMTPEmailIntegration(Integration):
     """Definition of SMTP Email integration for ZenML.

@@ -317,18 +317,32 @@ class SlackAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, question: str, params: Optional[BaseAlerterStepParameters] = None
+        self,
+        question: Union[str, AlerterMessage],
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 
         Args:
-            question: Initial message to be posted.
+            question: Initial message to be posted (string or AlerterMessage).
             params: Optional parameters.
 
         Returns:
             True if a user approved the operation, else False
         """
         slack_channel_id = self._get_channel_id(params=params)
+        
+        # Convert AlerterMessage to string if needed
+        if isinstance(question, AlerterMessage):
+            # Build a simple combined text from title + body
+            question_text = ""
+            if question.title:
+                question_text += f"*{question.title}*\n"
+            if question.body:
+                question_text += question.body
+            question_text = question_text.strip() or "Approval required"
+        else:
+            question_text = question or "Approval required"
 
         client = WebClient(token=self.config.slack_token)
         approve_options = self._get_approve_msg_options(params)
@@ -338,8 +352,8 @@ class SlackAlerter(BaseAlerter):
             # Send message to the Slack channel
             response = client.chat_postMessage(
                 channel=slack_channel_id,
-                text=question,
-                blocks=self._create_blocks(question, params),
+                text=question_text,
+                blocks=self._create_blocks(question_text, params),
             )
 
             if not response.get("ok", False):

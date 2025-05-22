@@ -248,17 +248,10 @@ class DiscordAlerter(BaseAlerter):
 
         Args:
             message: A string or AlerterMessage to post.
-            params: Additional step parameters.
-
-        Returns:
-            True if message was successfully sent, else False.
-
-        Args:
-            message: Message to be posted.
             params: Optional parameters.
 
         Returns:
-            True if operation succeeded, else False
+            True if message was successfully sent, else False.
         """
         discord_channel_id = self._get_channel_id(params=params)
         intents = Intents.default()
