@@ -16,13 +16,20 @@
 import asyncio
 from typing import Awaitable, Callable, List, Optional, Union, cast
 
-from discord import (  # type: ignore[import-not-found]
-    Client,
-    DiscordException,
-    Embed,
-    Intents,
-    Message,
-)
+try:
+    from discord import (
+        Client,
+        DiscordException,
+        Embed,
+        Intents,
+        Message,
+    )
+except ImportError:
+    # This should not happen as the integration requirements ensure discord.py is installed
+    raise ImportError(
+        "discord.py is required for the Discord alerter. "
+        "Please install it with: pip install discord.py"
+    )
 from pydantic import BaseModel
 
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
