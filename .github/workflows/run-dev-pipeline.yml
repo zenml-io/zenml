@@ -37,9 +37,6 @@ on:
         description: (Optional) arguments to pass to the run command
         required: false
         type: string
-    secrets:
-      GITHUB_TOKEN:
-        required: true
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest

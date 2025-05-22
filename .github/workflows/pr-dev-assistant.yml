@@ -9,7 +9,6 @@ env:
 jobs:
   process-comment:
     runs-on: ubuntu-latest
-    # Only run on PR comments, not issue comments
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '!') }}
     outputs:
       command: ${{ steps.extract-command.outputs.command }}
@@ -86,16 +85,21 @@ jobs:
         run: |
           echo "No valid command found in comment"
           exit 1
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
       - name: Get PR branch and checkout
         id: get-pr-branch
         run: |
           # Get the PR info to extract the head branch
-          PR_DATA=$(gh pr view ${{ github.event.issue.number }} --json headRefName --jq '.headRefName')
+          PR_DATA=$(gh pr view ${{ github.event.issue.number }} --json headRefName --jq .headRefName)
           echo "branch=$PR_DATA" >> $GITHUB_OUTPUT
           
           # Checkout the branch
           git checkout $PR_DATA || (echo "Failed to checkout branch $PR_DATA" && exit 1)
-          git fetch --prune --unshallow
           
           # Use the zen-dev info command to get the slugified branch name and ZenML version
           echo "Getting branch info and ZenML version using zen-dev info"
@@ -128,36 +132,36 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           ref: ${{ needs.process-comment.outputs.original_branch }}
-
       - name: Build docker images
         uses: google-github-actions/setup-gcloud@v0
         with:
           service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
           service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
           project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
-
       - name: Submit build job
         run: |
           gcloud builds submit \
             --quiet \
             --config=pull_request_cloudbuild.yaml \
             --substitutions=_ZENML_BRANCH_NAME=${{ needs.process-comment.outputs.branch_name }}
-            
       - name: Set up Python
         uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
       - name: Run zen-dev deploy
         env:
           CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
           CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
-          ZENML_DEV_ORGANIZATION_ID: ${{ secrets.CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID }}
+          DEV_ORGANIZATION_ID: ${{ secrets.CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID }}
         run: |
           # Use zen-dev CLI directly without installation
           ./zen-dev deploy --workspace ${{ needs.process-comment.outputs.branch_name }} \
             --zenml-version ${{ needs.process-comment.outputs.zenml_version }} \
             --docker-image zenmldocker/zenml-server-dev:${{ needs.process-comment.outputs.branch_name }}
-            
       - name: Add result comment
         run: |
           TENANT_URL="https://staging.cloud.zenml.io/workspaces/${{ needs.process-comment.outputs.branch_name }}/projects"
@@ -185,7 +189,6 @@ jobs:
             --quiet \
             --config=pull_request_cloudbuild.yaml \
             --substitutions=_ZENML_BRANCH_NAME=${{ needs.process-comment.outputs.branch_name }}
-            
       - name: Set up Python
         uses: actions/setup-python@v5.3.0
         with:
@@ -196,7 +199,7 @@ jobs:
           CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
         run: |
           # Use zen-dev CLI directly without installation
-          ./dev/zen-dev update --workspace ${{ needs.process-comment.outputs.branch_name }} \
+          ./zen-dev update --workspace ${{ needs.process-comment.outputs.branch_name }} \
             --zenml-version ${{ needs.process-comment.outputs.zenml_version }} \
             --docker-image zenmldocker/zenml-server-dev:${{ needs.process-comment.outputs.branch_name }}
             
@@ -268,7 +271,7 @@ jobs:
           WORKSPACE_NAME="${{ needs.process-comment.outputs.branch_name }}"
           
           # The CLI automatically masks secrets and sets outputs
-          ./dev/zen-dev gh-action-login
+          ./zen-dev gh-action-login
           
           echo "Successfully connected to ZenML workspace"
         
@@ -313,6 +316,5 @@ jobs:
           stack: ${{ matrix.stack }}
           run_command: ${{ matrix.command || 'python run.py' }}
           kwargs: ${{ matrix.params || '' }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
             
           

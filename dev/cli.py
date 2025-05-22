@@ -617,11 +617,13 @@ def update(
         docker_image=docker_image,
         helm_chart_version=helm_version,
     )
-    
+
+    workspace_response = get_workspace(token, workspace)
+
     try:
         update_workspace(
             token=token,
-            workspace_name_or_id=workspace,
+            workspace_name_or_id=workspace_response["id"],
             configuration=configuration,
         )
         click.echo("Workspace update initiated")
