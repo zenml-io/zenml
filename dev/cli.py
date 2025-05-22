@@ -21,7 +21,7 @@ import sys
 import time
 from typing import Any, Dict, Optional, Tuple
 from uuid import UUID
-
+import logging
 import click
 import requests
 
@@ -746,6 +746,7 @@ def authenticate_with_workspace(server_url: str, workspace_auth_token: str) -> T
         "Authorization": f"Bearer {workspace_auth_token}",
         "accept": "application/json"
     }
+    logging.warning(f"URL: {url}")
 
     response = requests.post(url, headers=headers)
     try:
