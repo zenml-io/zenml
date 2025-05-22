@@ -67,10 +67,10 @@ Creating your own custom alerter can be done in four steps:
             try:
                 # Implement your chat service posting logic here
                 # e.g., send HTTP request to chat API
-                print(f"Posting message: {message}")
+                logging.info(f"Posting message: {message}")
                 return True
             except Exception as e:
-                print(f"Failed to post message: {e}")
+                logging.error(f"Failed to post message: {e}")
                 return False
 
         def ask(
