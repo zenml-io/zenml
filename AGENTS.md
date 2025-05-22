@@ -5,13 +5,22 @@ This document provides guidance for Codex agents working with the ZenML codebase
 ## Project Structure
 
 - `/src/zenml/` - Core source code
+  - `/alerters/` - Alerting system implementations
+  - `/annotators/` - Data annotation tool integrations
   - `/artifact_stores/` - Artifact storage implementations
   - `/cli/` - Command-line interface
+  - `/code_repositories/` - Code repository integrations
   - `/config/` - Configuration system
   - `/container_registries/` - Container registry implementations
+  - `/data_validators/` - Data validation implementations
+  - `/experiment_trackers/` - Experiment tracking integrations
+  - `/feature_stores/` - Feature store integrations
   - `/image_builders/` - Image building functionality
   - `/integrations/` - External tool integrations
+  - `/io/` - File I/O and filesystem utilities
+  - `/logging/` - Logging utilities
   - `/materializers/` - Artifact serialization/deserialization
+  - `/metadata/` - Metadata management
   - `/model/` - Model-related functionality
   - `/model_deployers/` - Model deployment implementations
   - `/model_registries/` - Model registry implementations
@@ -19,8 +28,10 @@ This document provides guidance for Codex agents working with the ZenML codebase
   - `/pipelines/` - Core pipeline functionality
   - `/services/` - Services implementation
   - `/stack/` - Stack components management
+  - `/step_operators/` - Step operator implementations
   - `/steps/` - Pipeline step definitions
   - `/utils/` - Utility functions
+  - `/zen_server/` - ZenML server implementation
   - `/zen_stores/` - Storage implementations
 - `/tests/` - Test suite (unit, integration)
 - `/docs/` - Documentation
@@ -35,9 +46,9 @@ This document provides guidance for Codex agents working with the ZenML codebase
   - Automatically fixes and formats code using ruff and yamlfix
 - Check code quality with: `bash scripts/lint.sh`
   - Unlike format.sh, this doesn't auto-fix issues
-  - Runs MyPy type checking on the codebase
-  - Note: Full MyPy check is slow on the entire codebase
-  - For faster checks, run MyPy directly on specific files: `mypy src/zenml/path/to/file.py`
+  - Runs mypy type checking on the codebase
+  - Note: Full mypy check is slow on the entire codebase
+  - For faster checks, run mypy directly on specific files: `mypy src/zenml/path/to/file.py`
 - The primary code style is enforced by ruff, configured in `pyproject.toml`
 - YAML formatting uses yamlfix: `yamlfix .github -v`
 
@@ -120,12 +131,6 @@ This document provides guidance for Codex agents working with the ZenML codebase
   - Detail any important implementation decisions
   - Note any areas that need special reviewer attention
 - Detailed PR descriptions help both reviewers and release note creation
-- Use appropriate PR tags where applicable:
-  - `internal`: For changes relevant only to ZenML team members
-  - `documentation`: For changes related to documentation
-  - `bug`: For bug fixes
-  - `dependencies`: For dependency updates
-  - `enhancement`: For new features or improvements
 - Use appropriate PR tags where applicable:
   - `internal`: For changes relevant only to ZenML team members
   - `documentation`: For changes related to documentation
