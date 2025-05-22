@@ -19,6 +19,13 @@ The base abstraction for alerters defines two main methods that subclasses shoul
 * `post()` takes either a string or an `AlerterMessage` object, posts it to the desired service, and returns `True` if the operation succeeded, else `False`.
 * `ask()` does the same as `post()`, but after sending the message, it waits until someone approves or rejects the operation from within the service (e.g., by sending "approve" / "reject" as a response). `ask()` then only returns `True` if the operation succeeded and was approved, else `False`.
 
+The `ask()` method is particularly useful for implementing human-in-the-loop workflows. When implementing this method, you should:
+- Wait for user responses containing approval keywords (like `"approve"`, `"yes"`, `"ok"`, `"LGTM"`)
+- Wait for user responses containing disapproval keywords (like `"reject"`, `"no"`, `"cancel"`, `"stop"`)
+- Return `True` only when explicit approval is received
+- Return `False` for disapproval, timeout, or any errors
+- Consider implementing configurable approval/disapproval keywords via parameters
+
 The base abstraction looks something like this:
 
 ```python
@@ -65,7 +72,7 @@ This is a slimmed-down version of the base implementation. To see the full docst
 
 ### Building your own custom alerter
 
-Creating your own custom alerter can be done in three steps:
+Creating your own custom alerter can be done in four steps:
 
 1.  Create a class that inherits from the `BaseAlerter` and implement the `post()` and `ask()` methods.
 
@@ -81,7 +88,7 @@ Creating your own custom alerter can be done in three steps:
 
         def post(
             self, message: Union[str, AlerterMessage], 
-            config: Optional[BaseAlerterStepParameters] = None
+            params: Optional[BaseAlerterStepParameters] = None
         ) -> bool:
             """Post a message to a service.
             
@@ -89,43 +96,80 @@ Creating your own custom alerter can be done in three steps:
             
             Args:
                 message: Either a string or AlerterMessage object
-                config: Optional parameters for the alert
+                params: Optional parameters for the alert
                 
             Returns:
                 True if successful, False otherwise
             """
-            # Handle AlerterMessage objects
-            if isinstance(message, AlerterMessage):
-                # Extract structured data from the AlerterMessage
-                title = message.title
-                body = message.body
-                metadata = message.metadata
-                
-                # Format the message appropriately for your service
-                formatted_message = f"{title}\n\n{body}"
-                
-                # Use metadata as needed
-                if metadata:
-                    # Process any custom metadata as needed
-                    pass
+            try:
+                # Handle AlerterMessage objects
+                if isinstance(message, AlerterMessage):
+                    # Extract structured data from the AlerterMessage
+                    title = message.title
+                    body = message.body
+                    metadata = message.metadata
                     
-                # Send the formatted message to your service
-                # ...
-                print(f"Sending AlerterMessage: {formatted_message}")
-            else:
-                # Handle simple string messages for backward compatibility
-                print(f"Sending string message: {message}")
-            
-            return True
+                    # Format the message appropriately for your service
+                    formatted_message = f"{title}\n\n{body}"
+                    
+                    # Use metadata as needed
+                    if metadata:
+                        # Process any custom metadata as needed
+                        pass
+                        
+                    # Send the formatted message to your service
+                    # ...
+                    print(f"Sending AlerterMessage: {formatted_message}")
+                else:
+                    # Handle simple string messages for backward compatibility
+                    print(f"Sending string message: {message}")
+                
+                return True
+            except Exception as e:
+                logging.error(f"Failed to post message: {e}")
+                return False
 
         def ask(
             self, question: Union[str, AlerterMessage],
-            config: Optional[BaseAlerterStepParameters] = None
+            params: Optional[BaseAlerterStepParameters] = None
         ) -> bool:
-            """Post a message to a service and wait for approval."""
-            # Similar handling as post() but implementing approval logic
-            # ...
-            return True
+            """Post a message to a chat service and wait for approval."""
+            try:
+                # First, post the question
+                if not self.post(question, params):
+                    return False
+                    
+                # Define default approval/disapproval options
+                approve_options = ["approve", "yes", "ok", "LGTM"]
+                disapprove_options = ["reject", "no", "cancel", "stop"]
+                
+                # Check if custom options are provided in params
+                if params and hasattr(params, 'approve_msg_options'):
+                    approve_options = params.approve_msg_options
+                if params and hasattr(params, 'disapprove_msg_options'):
+                    disapprove_options = params.disapprove_msg_options
+                
+                # Wait for response (implement your chat service polling logic)
+                # This is a simplified example - you'd implement actual polling
+                response = self._wait_for_user_response()
+                
+                if response.lower() in [opt.lower() for opt in approve_options]:
+                    return True
+                elif response.lower() in [opt.lower() for opt in disapprove_options]:
+                    return False
+                else:
+                    # Invalid response or timeout
+                    return False
+                    
+            except Exception as e:
+                print(f"Failed to get approval: {e}")
+                return False
+                
+        def _wait_for_user_response(self) -> str:
+            """Wait for user response - implement based on your chat service."""
+            # This is where you'd implement the actual waiting logic
+            # e.g., polling your chat service API for new messages
+            return "approve"  # Placeholder
     ```
 2.  If you need to configure your custom alerter, you can also implement a config object.
 
@@ -136,7 +180,25 @@ Creating your own custom alerter can be done in three steps:
     class MyAlerterConfig(BaseAlerterConfig):
         my_param: str 
     ```
-3.  Finally, you can bring the implementation and the configuration together in a new flavor object.
+
+3.  Optionally, you can create custom parameter classes to support configurable approval/disapproval keywords:
+
+    ```python
+    from typing import List, Optional
+    from zenml.alerter.base_alerter import BaseAlerterStepParameters
+
+
+    class MyAlerterParameters(BaseAlerterStepParameters):
+        """Custom parameters for MyAlerter."""
+        
+        # Custom approval/disapproval message options
+        approve_msg_options: Optional[List[str]] = None
+        disapprove_msg_options: Optional[List[str]] = None
+        
+        # Any other custom parameters for your alerter
+        custom_channel: Optional[str] = None
+    ```
+4.  Finally, you can bring the implementation and the configuration together in a new flavor object.
 
     ```python
     from typing import Type, TYPE_CHECKING
