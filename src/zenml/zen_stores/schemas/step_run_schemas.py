@@ -221,6 +221,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 [
                     joinedload(jl_arg(StepRunSchema.logs)),
                     joinedload(jl_arg(StepRunSchema.parents)),
+                    joinedload(jl_arg(StepRunSchema.run_metadata)),
                 ]
             )
 

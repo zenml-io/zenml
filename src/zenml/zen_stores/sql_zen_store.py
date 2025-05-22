@@ -1050,7 +1050,7 @@ class SqlZenStore(BaseZenStore):
         else:
             item_schemas = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
-            ).all()
+            ).unique().all()
 
         # Convert this page of items from schemas to models.
         items: List[AnyResponse] = []

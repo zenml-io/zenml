@@ -145,6 +145,7 @@ class ArtifactSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(ArtifactSchema.user)),
+                    joinedload(jl_arg(ArtifactSchema.tags)),
                 ]
             )
 
@@ -391,13 +392,17 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
 
         if include_metadata:
             options.extend(
-                [joinedload(jl_arg(ArtifactVersionSchema.visualizations))]
+                [
+                    joinedload(jl_arg(ArtifactVersionSchema.visualizations)),
+                    joinedload(jl_arg(ArtifactVersionSchema.run_metadata)),
+                ]
             )
 
         if include_resources:
             options.extend(
                 [
                     joinedload(jl_arg(ArtifactVersionSchema.user)),
+                    joinedload(jl_arg(ArtifactVersionSchema.tags)),
                 ]
             )
 

@@ -276,6 +276,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ),
         ]
 
+        if include_metadata:
+            options.extend(
+                [
+                    joinedload(jl_arg(PipelineRunSchema.run_metadata)),
+                ]
+            )
+
         if include_resources:
             options.extend(
                 [
@@ -284,6 +291,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     ).joinedload(jl_arg(ModelVersionSchema.model)),
                     joinedload(jl_arg(PipelineRunSchema.logs)),
                     joinedload(jl_arg(PipelineRunSchema.user)),
+                    joinedload(jl_arg(PipelineRunSchema.tags)),
                 ]
             )
 

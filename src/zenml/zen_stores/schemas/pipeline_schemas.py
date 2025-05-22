@@ -154,7 +154,12 @@ class PipelineSchema(NamedSchema, table=True):
         options = []
 
         if include_resources:
-            options.extend([joinedload(jl_arg(PipelineSchema.user))])
+            options.extend(
+                [
+                    joinedload(jl_arg(PipelineSchema.user)),
+                    joinedload(jl_arg(PipelineSchema.tags)),
+                ]
+            )
 
         return options
 

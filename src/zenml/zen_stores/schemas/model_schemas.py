@@ -154,6 +154,7 @@ class ModelSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(ModelSchema.user)),
+                    joinedload(jl_arg(ModelSchema.tags)),
                 ]
             )
 
@@ -438,11 +439,19 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             joinedload(jl_arg(ModelVersionSchema.model)),
         ]
 
+        if include_metadata:
+            options.extend(
+                [
+                    joinedload(jl_arg(ModelVersionSchema.run_metadata)),
+                ]
+            )
+
         if include_resources:
             options.extend(
                 [
                     joinedload(jl_arg(ModelVersionSchema.user)),
                     joinedload(jl_arg(ModelVersionSchema.services)),
+                    joinedload(jl_arg(ModelVersionSchema.tags)),
                 ]
             )
 
