@@ -59,18 +59,18 @@ class SMTPEmailAlerterParameters(BaseAlerterStepParameters):
 
     # Payload for email template
     payload: Optional[SMTPEmailAlerterPayload] = None
-    
+
     @field_validator("recipient_email")
     @classmethod
     def validate_recipient_email(cls, v: Optional[str]) -> Optional[str]:
         """Validate recipient email format.
-        
+
         Args:
             v: The recipient email to validate.
-            
+
         Returns:
             The validated email or None.
-            
+
         Raises:
             ValueError: If email format is invalid.
         """
@@ -258,7 +258,7 @@ class SMTPEmailAlerter(BaseAlerter):
         if message:
             # First, escape HTML entities to prevent XSS
             safe_message = html.escape(message)
-            
+
             # Helper function to process markdown-style formatting
             def process_markdown_line(line: str) -> str:
                 # Handle backticks for code
@@ -327,7 +327,7 @@ class SMTPEmailAlerter(BaseAlerter):
             safe_pipeline_name = html.escape(payload.pipeline_name or "")
             safe_step_name = html.escape(payload.step_name or "")
             safe_stack_name = html.escape(payload.stack_name or "")
-            
+
             html_content = f"""
             <html>
               <body style="font-family: Arial, sans-serif; padding: 20px;">
@@ -458,7 +458,7 @@ class SMTPEmailAlerter(BaseAlerter):
                     self.config.smtp_server, self.config.smtp_port
                 )
                 server.set_debuglevel(0)  # Set to 1 for SMTP debug output
-                
+
                 # Start TLS if configured
                 if self.config.use_tls:
                     try:
@@ -469,10 +469,12 @@ class SMTPEmailAlerter(BaseAlerter):
                             "Please check your server configuration or disable TLS."
                         )
                         return False
-                
+
                 # Authenticate
                 try:
-                    server.login(self.config.sender_email, self.config.password)
+                    server.login(
+                        self.config.sender_email, self.config.password
+                    )
                 except smtplib.SMTPAuthenticationError as e:
                     logger.error(
                         f"SMTP authentication failed for {self.config.sender_email}. "
@@ -485,7 +487,7 @@ class SMTPEmailAlerter(BaseAlerter):
                         "This might be due to incorrect server settings or network issues."
                     )
                     return False
-                
+
                 # Send the message
                 try:
                     server.send_message(email_message)
@@ -506,7 +508,7 @@ class SMTPEmailAlerter(BaseAlerter):
                         "Please check your sender email configuration."
                     )
                     return False
-                    
+
             except smtplib.SMTPConnectError as e:
                 logger.error(
                     f"Failed to connect to SMTP server {self.config.smtp_server}:{self.config.smtp_port}. "
@@ -550,7 +552,7 @@ class SMTPEmailAlerter(BaseAlerter):
                     except Exception:
                         # Ignore errors when closing
                         pass
-                        
+
         except Exception as e:
             logger.error(f"Error preparing email message: {str(e)}")
             return False

@@ -43,18 +43,18 @@ class SMTPEmailAlerterSettings(BaseSettings):
     recipient_email: Optional[str] = None
     subject_prefix: str = "[ZenML]"
     include_html: bool = True
-    
+
     @field_validator("recipient_email")
     @classmethod
     def validate_recipient_email(cls, v: Optional[str]) -> Optional[str]:
         """Validate recipient email format.
-        
+
         Args:
             v: The recipient email to validate.
-            
+
         Returns:
             The validated email or None.
-            
+
         Raises:
             ValueError: If email format is invalid.
         """
@@ -79,18 +79,18 @@ class SMTPEmailAlerterConfig(BaseAlerterConfig, SMTPEmailAlerterSettings):
     sender_email: str
     password: str = SecretField()
     use_tls: bool = True
-    
+
     @field_validator("sender_email")
     @classmethod
     def validate_sender_email(cls, v: str) -> str:
         """Validate sender email format.
-        
+
         Args:
             v: The sender email to validate.
-            
+
         Returns:
             The validated email.
-            
+
         Raises:
             ValueError: If email format is invalid.
         """
@@ -108,7 +108,7 @@ class SMTPEmailAlerterConfig(BaseAlerterConfig, SMTPEmailAlerterSettings):
             # Test the SMTP connection
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
             server.set_debuglevel(0)
-            
+
             if self.use_tls:
                 try:
                     server.starttls()
@@ -118,7 +118,7 @@ class SMTPEmailAlerterConfig(BaseAlerterConfig, SMTPEmailAlerterSettings):
                         "Please check your server configuration or disable TLS."
                     )
                     return False
-            
+
             try:
                 server.login(self.sender_email, self.password)
             except smtplib.SMTPAuthenticationError as e:
@@ -127,10 +127,12 @@ class SMTPEmailAlerterConfig(BaseAlerterConfig, SMTPEmailAlerterSettings):
                     f"Please check your email credentials. Error: {str(e)}"
                 )
                 return False
-            
-            logger.debug(f"SMTP configuration validated successfully for {self.smtp_server}")
+
+            logger.debug(
+                f"SMTP configuration validated successfully for {self.smtp_server}"
+            )
             return True
-            
+
         except smtplib.SMTPConnectError as e:
             logger.error(
                 f"Failed to connect to SMTP server {self.smtp_server}:{self.smtp_port}. "

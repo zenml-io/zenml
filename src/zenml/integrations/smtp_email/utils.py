@@ -16,59 +16,61 @@
 import re
 
 # Email validation regex pattern
-EMAIL_REGEX = re.compile(
-    r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-)
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 
 def validate_email(email: str) -> str:
     """Validate email address format.
-    
+
     Args:
         email: Email address to validate.
-        
+
     Returns:
         The validated email address.
-        
+
     Raises:
         ValueError: If email format is invalid.
     """
     # Basic checks
     if not email or not isinstance(email, str):
         raise ValueError(
-            f"Invalid email address format: {email}. "
-            "Email cannot be empty."
+            f"Invalid email address format: {email}. Email cannot be empty."
         )
-    
+
     # Check basic format with regex
     if not EMAIL_REGEX.match(email):
         raise ValueError(
             f"Invalid email address format: {email}. "
             "Please provide a valid email address."
         )
-    
+
     # Additional validation
-    local, domain = email.rsplit('@', 1)
-    
+    local, domain = email.rsplit("@", 1)
+
     # Check for consecutive dots
-    if '..' in email:
+    if ".." in email:
         raise ValueError(
             f"Invalid email address format: {email}. "
             "Email cannot contain consecutive dots."
         )
-    
+
     # Check local part doesn't start/end with dot
-    if local.startswith('.') or local.endswith('.'):
+    if local.startswith(".") or local.endswith("."):
         raise ValueError(
             f"Invalid email address format: {email}. "
             "Local part cannot start or end with a dot."
         )
-    
+
     # Check domain doesn't start/end with dot or hyphen
-    if domain.startswith('.') or domain.endswith('.') or domain.startswith('-') or domain.endswith('-'):
+    if (
+        domain.startswith(".")
+        or domain.endswith(".")
+        or domain.startswith("-")
+        or domain.endswith("-")
+    ):
         raise ValueError(
             f"Invalid email address format: {email}. "
             "Domain cannot start or end with a dot or hyphen."
         )
-    
+
     return email

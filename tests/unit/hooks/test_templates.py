@@ -35,7 +35,7 @@ def test_get_html_email_template_basic():
             }
         ],
     )
-    
+
     # Check that essential elements are present
     assert "<html>" in html
     assert "</html>" in html
@@ -47,7 +47,7 @@ def test_get_html_email_template_basic():
     assert "Section 1" in html
     assert "This is content" in html
     assert "ZenML Logo" in html
-    
+
 
 def test_get_html_email_template_with_pre_section():
     """Test HTML email template with preformatted content."""
@@ -61,7 +61,7 @@ def test_get_html_email_template_with_pre_section():
             }
         ],
     )
-    
+
     # Check for pre tag
     assert "<pre" in html
     assert "</pre>" in html
@@ -82,7 +82,7 @@ def test_get_html_email_template_with_custom_colors():
             }
         ],
     )
-    
+
     # Check for custom colors
     assert "background-color: #ff0000" in html
     assert "color: #0000ff" in html
@@ -97,7 +97,7 @@ def test_get_html_email_template_custom_footer():
         content_sections=[],
         footer_text=custom_footer,
     )
-    
+
     assert custom_footer in html
 
 
@@ -109,7 +109,7 @@ def test_get_success_template():
         run_name="test_run",
         stack_name="test_stack",
     )
-    
+
     # Check for success-specific elements
     assert "ZenML Pipeline Success" in html
     assert "test_pipeline" in html
@@ -124,13 +124,13 @@ def test_get_success_template_custom_title_and_message():
     """Test success template with custom title and message."""
     html = get_success_template(
         pipeline_name="test_pipeline",
-        step_name="test_step", 
+        step_name="test_step",
         run_name="test_run",
         stack_name="test_stack",
         title="Custom Success Title",
         status_message="Custom success message!",
     )
-    
+
     assert "Custom Success Title" in html
     assert "Custom success message!" in html
 
@@ -149,7 +149,7 @@ def test_get_success_template_with_additional_content():
             }
         ],
     )
-    
+
     assert "Extra Info" in html
     assert "Some additional information" in html
 
@@ -165,7 +165,7 @@ def test_get_failure_template():
         exception_str="Something went wrong",
         traceback="Traceback (most recent call last):\n  File 'test.py', line 1\n    raise ValueError('oops')",
     )
-    
+
     # Check for failure-specific elements
     assert "ZenML Pipeline Failure Alert" in html
     assert "test_pipeline" in html
@@ -190,7 +190,7 @@ def test_get_failure_template_custom_title():
         traceback="trace",
         title="Critical Failure!",
     )
-    
+
     assert "Critical Failure!" in html
 
 
@@ -202,7 +202,7 @@ def test_get_failure_template_with_additional_content():
         run_name="test_run",
         stack_name="test_stack",
         exception_type="Exception",
-        exception_str="Error", 
+        exception_str="Error",
         traceback="trace",
         additional_content=[
             {
@@ -212,7 +212,7 @@ def test_get_failure_template_with_additional_content():
             }
         ],
     )
-    
+
     assert "Debug Info" in html
     assert "Additional debugging information" in html
     assert "#ffcccc" in html
@@ -225,7 +225,7 @@ def test_empty_table_rows():
         table_rows=[],
         content_sections=[{"content": "Just content"}],
     )
-    
+
     # Should not have table tags if no rows
     assert "<table" not in html
 
@@ -237,7 +237,7 @@ def test_empty_content_sections():
         table_rows=[{"label": "Test", "value": "Value"}],
         content_sections=[],
     )
-    
+
     # Should still have the table
     assert "<table" in html
     assert "Test" in html

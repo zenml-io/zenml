@@ -19,11 +19,11 @@ from pydantic import ValidationError
 from zenml.integrations.smtp_email.alerters.smtp_email_alerter import (
     SMTPEmailAlerterParameters,
 )
-from zenml.integrations.smtp_email.utils import validate_email
 from zenml.integrations.smtp_email.flavors.smtp_email_alerter_flavor import (
     SMTPEmailAlerterConfig,
     SMTPEmailAlerterSettings,
 )
+from zenml.integrations.smtp_email.utils import validate_email
 
 
 def test_validate_email_valid():
@@ -36,7 +36,7 @@ def test_validate_email_valid():
         "123@example.com",
         "a@b.co",
     ]
-    
+
     for email in valid_emails:
         assert validate_email(email) == email
 
@@ -55,14 +55,16 @@ def test_validate_email_invalid():
         "user@example.",
         "user..name@example.com",
     ]
-    
+
     for email in invalid_emails:
         try:
             with pytest.raises(ValueError) as exc_info:
                 validate_email(email)
             assert "Invalid email address format" in str(exc_info.value)
         except AssertionError:
-            pytest.fail(f"Email '{email}' did not raise ValueError as expected")
+            pytest.fail(
+                f"Email '{email}' did not raise ValueError as expected"
+            )
 
 
 def test_smtp_email_alerter_parameters_validation():
@@ -70,15 +72,15 @@ def test_smtp_email_alerter_parameters_validation():
     # Valid email should work
     params = SMTPEmailAlerterParameters(recipient_email="test@example.com")
     assert params.recipient_email == "test@example.com"
-    
+
     # None should be allowed
     params = SMTPEmailAlerterParameters(recipient_email=None)
     assert params.recipient_email is None
-    
+
     # Invalid email should raise ValidationError
     with pytest.raises(ValidationError) as exc_info:
         SMTPEmailAlerterParameters(recipient_email="invalid-email")
-    
+
     errors = exc_info.value.errors()
     assert len(errors) == 1
     assert "Invalid email address format" in str(errors[0]["ctx"]["error"])
@@ -89,15 +91,15 @@ def test_smtp_email_alerter_settings_validation():
     # Valid email should work
     settings = SMTPEmailAlerterSettings(recipient_email="test@example.com")
     assert settings.recipient_email == "test@example.com"
-    
+
     # None should be allowed (optional field)
     settings = SMTPEmailAlerterSettings(recipient_email=None)
     assert settings.recipient_email is None
-    
+
     # Invalid email should raise ValidationError
     with pytest.raises(ValidationError) as exc_info:
         SMTPEmailAlerterSettings(recipient_email="not-an-email")
-    
+
     errors = exc_info.value.errors()
     assert len(errors) == 1
     assert "Invalid email address format" in str(errors[0]["ctx"]["error"])
@@ -112,7 +114,7 @@ def test_smtp_email_alerter_config_validation():
         password="secret",
     )
     assert config.sender_email == "sender@example.com"
-    
+
     # Invalid sender email should raise ValidationError
     with pytest.raises(ValidationError) as exc_info:
         SMTPEmailAlerterConfig(
@@ -120,11 +122,11 @@ def test_smtp_email_alerter_config_validation():
             sender_email="invalid@",
             password="secret",
         )
-    
+
     errors = exc_info.value.errors()
     assert len(errors) == 1
     assert "Invalid email address format" in str(errors[0]["ctx"]["error"])
-    
+
     # Test recipient email validation through inheritance
     with pytest.raises(ValidationError) as exc_info:
         SMTPEmailAlerterConfig(
@@ -133,7 +135,7 @@ def test_smtp_email_alerter_config_validation():
             password="secret",
             recipient_email="@invalid.com",
         )
-    
+
     errors = exc_info.value.errors()
     assert len(errors) == 1
     assert "Invalid email address format" in str(errors[0]["ctx"]["error"])
@@ -145,13 +147,16 @@ def test_email_validation_edge_cases():
     assert validate_email("user+tag@example.com") == "user+tag@example.com"
     assert validate_email("user.name@example.com") == "user.name@example.com"
     assert validate_email("user_name@example.com") == "user_name@example.com"
-    
+
     # Test with numbers
     assert validate_email("user123@example.com") == "user123@example.com"
     assert validate_email("123user@example.com") == "123user@example.com"
-    
+
     # Test with hyphens in domain
-    assert validate_email("user@sub-domain.example.com") == "user@sub-domain.example.com"
-    
+    assert (
+        validate_email("user@sub-domain.example.com")
+        == "user@sub-domain.example.com"
+    )
+
     # Test minimum valid email
     assert validate_email("a@b.co") == "a@b.co"

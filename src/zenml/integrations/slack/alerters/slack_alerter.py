@@ -331,7 +331,7 @@ class SlackAlerter(BaseAlerter):
             True if a user approved the operation, else False
         """
         slack_channel_id = self._get_channel_id(params=params)
-        
+
         # Convert AlerterMessage to string if needed
         if isinstance(question, AlerterMessage):
             # Build a simple combined text from title + body

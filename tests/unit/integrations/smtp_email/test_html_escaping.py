@@ -23,15 +23,15 @@ from zenml.integrations.smtp_email.alerters.smtp_email_alerter import (
 
 def process_message_for_html(message: str) -> str:
     """Simplified version of the HTML processing logic for testing.
-    
+
     This mimics the logic in SMTPEmailAlerter._create_html_body.
     """
     if not message:
         return ""
-    
+
     # First, escape HTML entities to prevent XSS
     safe_message = html.escape(message)
-    
+
     # Helper function to process markdown-style formatting
     def process_markdown_line(line: str) -> str:
         # Process inline code with backticks
@@ -45,7 +45,7 @@ def process_message_for_html(message: str) -> str:
         # Process italic with underscores
         line = re.sub(r"_([^_\n]+)_", r"<em>\1</em>", line)
         return line
-    
+
     # Check if the message contains a traceback or code block
     if "Traceback" in safe_message or "File " in safe_message:
         # For tracebacks, use <pre> to preserve formatting
@@ -54,7 +54,9 @@ def process_message_for_html(message: str) -> str:
         for line in safe_message.split("\n"):
             if "Traceback" in line or in_traceback or "File " in line:
                 in_traceback = True
-                if not formatted_parts or not formatted_parts[-1].startswith("<pre"):
+                if not formatted_parts or not formatted_parts[-1].startswith(
+                    "<pre"
+                ):
                     formatted_parts.append(
                         "<pre style='font-family: monospace; white-space: pre-wrap; font-size: 12px; background-color: #f8f8f8; padding: 10px; border-radius: 3px;'>"
                     )
@@ -66,11 +68,11 @@ def process_message_for_html(message: str) -> str:
                 # Process markdown formatting on non-traceback lines
                 formatted_line = process_markdown_line(line)
                 formatted_parts.append(formatted_line + "<br>")
-        
+
         # Close the last pre tag if needed
         if formatted_parts and formatted_parts[-1].startswith("<pre"):
             formatted_parts[-1] += "</pre>"
-        
+
         return "".join(formatted_parts)
     else:
         # For regular messages, process each line for markdown
@@ -85,43 +87,43 @@ def test_html_escaping_in_message():
     """Test that HTML entities in messages are properly escaped."""
     # Test message with potential XSS attack
     malicious_message = '<script>alert("XSS")</script>Hello <b>world</b>'
-    
+
     # Process the message
     result = process_message_for_html(malicious_message)
-    
+
     # Check that script tags are escaped
-    assert '<script>' not in result
-    assert '&lt;script&gt;' in result
-    assert '&lt;/script&gt;' in result
-    assert '<b>' not in result
-    assert '&lt;b&gt;' in result
+    assert "<script>" not in result
+    assert "&lt;script&gt;" in result
+    assert "&lt;/script&gt;" in result
+    assert "<b>" not in result
+    assert "&lt;b&gt;" in result
 
 
 def test_markdown_formatting_preserved():
     """Test that markdown formatting still works after HTML escaping."""
     # Message with markdown formatting
     message = "This is *bold* and this is `code` and _italic_"
-    
+
     # Process the message
     result = process_message_for_html(message)
-    
+
     # Check that markdown is converted to HTML
-    assert '<strong>bold</strong>' in result
-    assert '<code style=' in result
-    assert '<em>italic</em>' in result
+    assert "<strong>bold</strong>" in result
+    assert "<code style=" in result
+    assert "<em>italic</em>" in result
 
 
 def test_combined_xss_and_markdown():
     """Test that XSS is prevented even within markdown formatting."""
     # Message with XSS attempt inside markdown
     message = 'This is *<script>alert("xss")</script>* code'
-    
+
     # Process the message
     result = process_message_for_html(message)
-    
+
     # Check that script is escaped even inside markdown
-    assert '<script>' not in result
-    assert '<strong>&lt;script&gt;' in result
+    assert "<script>" not in result
+    assert "<strong>&lt;script&gt;" in result
 
 
 def test_traceback_html_escaping():
@@ -131,16 +133,16 @@ def test_traceback_html_escaping():
   File "<script>evil.py</script>", line 1, in <module>
     raise ValueError("<img src=x onerror=alert()>")
 ValueError: <img src=x onerror=alert()>"""
-    
+
     # Process the message
     result = process_message_for_html(traceback_message)
-    
+
     # Check that HTML in traceback is escaped
-    assert '<script>' not in result
-    assert '&lt;script&gt;' in result
-    assert '<img src=x' not in result
-    assert '&lt;img src=x' in result
-    assert '<pre' in result  # Should still be in a pre block
+    assert "<script>" not in result
+    assert "&lt;script&gt;" in result
+    assert "<img src=x" not in result
+    assert "&lt;img src=x" in result
+    assert "<pre" in result  # Should still be in a pre block
 
 
 def test_empty_message_handling():
@@ -148,7 +150,7 @@ def test_empty_message_handling():
     # Test with empty string
     result = process_message_for_html("")
     assert result == ""
-    
+
     # Test with None-like handling (empty string)
     result = process_message_for_html("")
     assert result == ""
@@ -157,9 +159,9 @@ def test_empty_message_handling():
 def test_multiline_message_with_breaks():
     """Test that newlines are converted to <br> tags."""
     message = "Line 1\nLine 2\nLine 3"
-    
+
     result = process_message_for_html(message)
-    
+
     # Check that lines are separated by <br>
     assert "Line 1<br>Line 2<br>Line 3" in result
 
@@ -167,13 +169,13 @@ def test_multiline_message_with_breaks():
 def test_html_in_code_blocks():
     """Test that HTML inside code blocks is escaped."""
     message = "Here is some code: `<script>alert('test')</script>`"
-    
+
     result = process_message_for_html(message)
-    
+
     # Check that HTML inside code blocks is escaped
-    assert '<code style=' in result
-    assert '&lt;script&gt;' in result
-    assert '<script>' not in result
+    assert "<code style=" in result
+    assert "&lt;script&gt;" in result
+    assert "<script>" not in result
 
 
 def test_payload_escaping():
@@ -184,16 +186,16 @@ def test_payload_escaping():
         step_name='<img src=x onerror=alert("step")>',
         stack_name='<iframe src="evil.com"></iframe>',
     )
-    
+
     # Manually escape as the method does
     safe_pipeline = html.escape(payload.pipeline_name or "")
     safe_step = html.escape(payload.step_name or "")
     safe_stack = html.escape(payload.stack_name or "")
-    
+
     # Check escaping
-    assert '&lt;script&gt;' in safe_pipeline
-    assert '&lt;img src=x' in safe_step
-    assert '&lt;iframe' in safe_stack
-    assert '<script>' not in safe_pipeline
-    assert '<img' not in safe_step
-    assert '<iframe' not in safe_stack
+    assert "&lt;script&gt;" in safe_pipeline
+    assert "&lt;img src=x" in safe_step
+    assert "&lt;iframe" in safe_stack
+    assert "<script>" not in safe_pipeline
+    assert "<img" not in safe_step
+    assert "<iframe" not in safe_stack
