@@ -14,7 +14,7 @@
 """DAG generator helper."""
 
 from typing import Any, Dict, List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from zenml.enums import ExecutionStatus
 from zenml.models import PipelineRunDAG
@@ -29,19 +29,50 @@ class DAGGeneratorHelper:
         self.artifact_nodes: Dict[UUID, PipelineRunDAG.Node] = {}
         self.edges: List[PipelineRunDAG.Edge] = []
 
+    def get_step_node_id(self, name: str) -> str:
+        """Get the ID of a step node.
+
+        Args:
+            name: The name of the step.
+
+        Returns:
+            The ID of the step node.
+        """
+        # Make sure there is no slashes as we use them as delimiters
+        name = name.replace("/", "-")
+        return f"step/{name}"
+
+    def get_artifact_node_id(
+        self, name: str, step_name: str, io_type: str, is_input: bool
+    ) -> str:
+        """Get the ID of an artifact node.
+
+        Args:
+            name: The name of the artifact.
+
+        Returns:
+            The ID of the artifact node.
+        """
+        # Make sure there is no slashes as we use them as delimiters
+        name = name.replace("/", "-")
+        step_name = step_name.replace("/", "-")
+        io_str = "inputs" if is_input else "outputs"
+
+        return f"{step_name}/{io_str}/{io_type}/{name}"
+
     def add_step_node(
         self,
+        node_id: str,
         name: str,
         id: Optional[UUID] = None,
-        node_id: Optional[UUID] = None,
         **metadata: Any,
     ) -> PipelineRunDAG.Node:
         """Add a step node to the DAG.
 
         Args:
+            node_id: The ID of the node.
             name: The name of the step.
             id: The ID of the step.
-            node_id: The ID of the node.
             **metadata: Additional node metadata.
 
         Returns:
@@ -49,8 +80,8 @@ class DAGGeneratorHelper:
         """
         step_node = PipelineRunDAG.Node(
             type="step",
-            node_id=node_id or uuid4(),
             id=id,
+            node_id=node_id,
             name=name,
             metadata=metadata,
         )
@@ -59,17 +90,17 @@ class DAGGeneratorHelper:
 
     def add_artifact_node(
         self,
+        node_id: str,
         name: str,
         id: Optional[UUID] = None,
-        node_id: Optional[UUID] = None,
         **metadata: Any,
     ) -> PipelineRunDAG.Node:
         """Add an artifact node to the DAG.
 
         Args:
+            node_id: The ID of the node.
             name: The name of the artifact.
             id: The ID of the artifact.
-            node_id: The ID of the node.
             **metadata: Additional node metadata.
 
         Returns:
@@ -77,7 +108,7 @@ class DAGGeneratorHelper:
         """
         artifact_node = PipelineRunDAG.Node(
             type="artifact",
-            node_id=node_id or uuid4(),
+            node_id=node_id,
             id=id,
             name=name,
             metadata=metadata,
@@ -85,7 +116,7 @@ class DAGGeneratorHelper:
         self.artifact_nodes[artifact_node.node_id] = artifact_node
         return artifact_node
 
-    def add_edge(self, source: UUID, target: UUID, **metadata: Any) -> None:
+    def add_edge(self, source: str, target: str, **metadata: Any) -> None:
         """Add an edge to the DAG.
 
         Args:

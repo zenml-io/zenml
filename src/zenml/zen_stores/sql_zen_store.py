@@ -5120,6 +5120,7 @@ class SqlZenStore(BaseZenStore):
                         ).total_seconds()
 
                 step_node = helper.add_step_node(
+                    node_id=helper.get_step_node_id(name=step_name),
                     id=step_id,
                     name=step_name,
                     **metadata,
@@ -5155,6 +5156,12 @@ class SqlZenStore(BaseZenStore):
                             # DAG. We can therefore always create a new node
                             # here.
                             artifact_node = helper.add_artifact_node(
+                                node_id=helper.get_artifact_node_id(
+                                    name=input.name,
+                                    step_name=step_name,
+                                    io_type=input.type,
+                                    is_input=True,
+                                ),
                                 id=input.artifact_id,
                                 name=input.name,
                                 type=input.artifact_version.type,
@@ -5182,6 +5189,12 @@ class SqlZenStore(BaseZenStore):
                         # separately in the DAG, but if that should ever change
                         # this would be the place to merge them.
                         artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=output.name,
+                                step_name=step_name,
+                                io_type=output.artifact_version.save_type,
+                                is_input=False,
+                            ),
                             id=output.artifact_id,
                             name=output.name,
                             type=output.artifact_version.type,
@@ -5222,6 +5235,12 @@ class SqlZenStore(BaseZenStore):
                             continue
 
                         artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=substituted_output_name,
+                                step_name=step_name,
+                                io_type=ArtifactSaveType.STEP_OUTPUT.value,
+                                is_input=False,
+                            ),
                             name=substituted_output_name,
                         )
                         helper.add_edge(
@@ -5259,7 +5278,13 @@ class SqlZenStore(BaseZenStore):
 
                     for input_name in step.config.client_lazy_loaders.keys():
                         artifact_node = helper.add_artifact_node(
-                            name=input_name
+                            node_id=helper.get_artifact_node_id(
+                                name=input_name,
+                                step_name=step_name,
+                                io_type=StepRunInputArtifactType.LAZY_LOADED.value,
+                                is_input=True,
+                            ),
+                            name=input_name,
                         )
                         helper.add_edge(
                             source=artifact_node.node_id,
@@ -5272,7 +5297,13 @@ class SqlZenStore(BaseZenStore):
                         input_name
                     ) in step.config.model_artifacts_or_metadata.keys():
                         artifact_node = helper.add_artifact_node(
-                            name=input_name
+                            node_id=helper.get_artifact_node_id(
+                                name=input_name,
+                                step_name=step_name,
+                                io_type=StepRunInputArtifactType.LAZY_LOADED.value,
+                                is_input=True,
+                            ),
+                            name=input_name,
                         )
                         helper.add_edge(
                             source=artifact_node.node_id,
@@ -5285,7 +5316,13 @@ class SqlZenStore(BaseZenStore):
                         input_name
                     ) in step.config.external_input_artifacts.keys():
                         artifact_node = helper.add_artifact_node(
-                            name=input_name
+                            node_id=helper.get_artifact_node_id(
+                                name=input_name,
+                                step_name=step_name,
+                                io_type=StepRunInputArtifactType.EXTERNAL.value,
+                                is_input=True,
+                            ),
+                            name=input_name,
                         )
                         helper.add_edge(
                             source=artifact_node.node_id,
@@ -5300,6 +5337,12 @@ class SqlZenStore(BaseZenStore):
                             substitutions=step.config.substitutions,
                         )
                         artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=substituted_output_name,
+                                step_name=step_name,
+                                io_type=ArtifactSaveType.STEP_OUTPUT.value,
+                                is_input=False,
+                            ),
                             name=substituted_output_name,
                         )
                         helper.add_edge(

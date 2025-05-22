@@ -14,9 +14,9 @@
 """Pipeline run DAG models."""
 
 from typing import Any, Dict, List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from zenml.enums import ExecutionStatus
 
@@ -32,7 +32,7 @@ class PipelineRunDAG(BaseModel):
     class Node(BaseModel):
         """Node in the pipeline run DAG."""
 
-        node_id: UUID = Field(default_factory=uuid4)
+        node_id: str
         type: str
         id: Optional[UUID] = None
         name: str
@@ -41,6 +41,6 @@ class PipelineRunDAG(BaseModel):
     class Edge(BaseModel):
         """Edge in the pipeline run DAG."""
 
-        source: UUID
-        target: UUID
+        source: str
+        target: str
         metadata: Dict[str, Any] = {}
