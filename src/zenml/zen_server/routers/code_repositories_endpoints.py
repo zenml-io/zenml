@@ -38,7 +38,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     zen_store,
 )
@@ -62,7 +62,7 @@ router = APIRouter(
     deprecated=True,
     tags=["code_repositories"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_code_repository(
     code_repository: CodeRepositoryRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -99,7 +99,7 @@ def create_code_repository(
     deprecated=True,
     tags=["code_repositories"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_code_repositories(
     filter_model: CodeRepositoryFilter = Depends(
         make_dependable(CodeRepositoryFilter)
@@ -135,7 +135,7 @@ def list_code_repositories(
     "/{code_repository_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_code_repository(
     code_repository_id: UUID,
     hydrate: bool = True,
@@ -162,7 +162,7 @@ def get_code_repository(
     "/{code_repository_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_code_repository(
     code_repository_id: UUID,
     update: CodeRepositoryUpdate,
@@ -189,7 +189,7 @@ def update_code_repository(
     "/{code_repository_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_code_repository(
     code_repository_id: UUID,
     _: AuthContext = Security(authorize),
