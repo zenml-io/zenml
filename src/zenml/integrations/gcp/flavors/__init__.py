@@ -11,38 +11,32 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""GCP integration flavors."""
+"""GCP stack component flavors."""
 
 from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-    GCPArtifactStoreConfig,
     GCPArtifactStoreFlavor,
 )
 from zenml.integrations.gcp.flavors.gcp_image_builder_flavor import (
-    GCPImageBuilderConfig,
     GCPImageBuilderFlavor,
 )
 from zenml.integrations.gcp.flavors.vertex_experiment_tracker_flavor import (
-    VertexExperimentTrackerConfig,
     VertexExperimentTrackerFlavor,
 )
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
-    VertexOrchestratorConfig,
     VertexOrchestratorFlavor,
 )
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
-    VertexStepOperatorConfig,
     VertexStepOperatorFlavor,
+)
+from zenml.integrations.gcp.flavors.zenml_artifact_store_flavor import (
+    ZenMLArtifactStoreFlavor,
 )
 
 __all__ = [
     "GCPArtifactStoreFlavor",
-    "GCPArtifactStoreConfig",
+    "ZenMLArtifactStoreFlavor",
     "GCPImageBuilderFlavor",
-    "GCPImageBuilderConfig",
     "VertexExperimentTrackerFlavor",
-    "VertexExperimentTrackerConfig",
     "VertexOrchestratorFlavor",
-    "VertexOrchestratorConfig",
     "VertexStepOperatorFlavor",
-    "VertexStepOperatorConfig",
 ]

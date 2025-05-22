@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 
 GCP_PATH_PREFIX = "gs://"
+ZENML_ARTIFACT_STORE_FLAVOR = "zenml"
 
 
 class GCPArtifactStoreConfig(
