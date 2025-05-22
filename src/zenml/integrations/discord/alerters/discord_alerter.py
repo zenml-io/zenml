@@ -14,7 +14,7 @@
 """Implementation for discord flavor of alerter component."""
 
 import asyncio
-from typing import Awaitable, Callable, List, Optional, Union, cast
+from typing import List, Optional, Union, cast
 
 try:
     from discord import (
