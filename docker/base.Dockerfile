@@ -20,7 +20,8 @@ RUN set -ex \
   && apt-get upgrade -y \
   && apt-get autoremove -y \
   && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && pip install --upgrade pip setuptools
 
 FROM base AS builder
 
@@ -64,8 +65,7 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
     else \
       PACKAGE_NAME="zenml"; \
     fi \
-    && pip install --upgrade pip \
-    && pip install --upgrade uv \
+    && pip install --upgrade pip uv setuptools \
     && uv pip install ${PACKAGE_NAME}${ZENML_VERSION:+==$ZENML_VERSION} \
     && pip freeze > requirements.txt
 
@@ -89,8 +89,7 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
     else \
       PACKAGE_NAME="zenml"; \
     fi \
-    && pip install --upgrade pip \
-    && pip install --upgrade uv \
+    && pip install --upgrade pip uv setuptools \
     && uv pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" "alembic==1.15.2" \
     && pip freeze > requirements.txt
 

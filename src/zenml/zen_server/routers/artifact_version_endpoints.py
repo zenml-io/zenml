@@ -66,7 +66,7 @@ from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
 )
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     set_filter_project_scope,
     zen_store,
@@ -83,7 +83,7 @@ artifact_version_router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_artifact_versions(
     artifact_version_filter_model: ArtifactVersionFilter = Depends(
         make_dependable(ArtifactVersionFilter)
@@ -127,7 +127,7 @@ def list_artifact_versions(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_artifact_version(
     artifact_version: ArtifactVersionRequest,
     _: AuthContext = Security(authorize),
@@ -150,7 +150,7 @@ def create_artifact_version(
     BATCH,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def batch_create_artifact_version(
     artifact_versions: List[ArtifactVersionRequest],
     _: AuthContext = Security(authorize),
@@ -173,7 +173,7 @@ def batch_create_artifact_version(
     "/{artifact_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_artifact_version(
     artifact_version_id: UUID,
     hydrate: bool = True,
@@ -200,7 +200,7 @@ def get_artifact_version(
     "/{artifact_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_artifact_version(
     artifact_version_id: UUID,
     artifact_version_update: ArtifactVersionUpdate,
@@ -227,7 +227,7 @@ def update_artifact_version(
     "/{artifact_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_artifact_version(
     artifact_version_id: UUID,
     _: AuthContext = Security(authorize),
@@ -248,7 +248,7 @@ def delete_artifact_version(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def prune_artifact_versions(
     project_name_or_id: Union[str, UUID],
     only_versions: bool = True,
@@ -275,7 +275,7 @@ def prune_artifact_versions(
     "/{artifact_version_id}" + VISUALIZE,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_artifact_visualization(
     artifact_version_id: UUID,
     index: int = 0,
@@ -303,7 +303,7 @@ def get_artifact_visualization(
     "/{artifact_version_id}" + DOWNLOAD_TOKEN,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_artifact_download_token(
     artifact_version_id: UUID,
     _: AuthContext = Security(authorize),
@@ -334,7 +334,7 @@ def get_artifact_download_token(
     "/{artifact_version_id}" + DATA,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def download_artifact_data(
     artifact_version_id: UUID, token: str
 ) -> FileResponse:
