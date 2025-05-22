@@ -37,6 +37,7 @@ def test_model_version_response_artifact_fetching(
 
     model = ModelResponse(
         id=uuid4(),
+        project_id=sample_project_model.id,
         name="model",
         body=ModelResponseBody(
             created=datetime.now(),
@@ -49,6 +50,7 @@ def test_model_version_response_artifact_fetching(
     )
     mv = ModelVersionResponse(
         id=uuid4(),
+        project_id=sample_project_model.id,
         name="foo",
         body=ModelVersionResponseBody(
             created=datetime.now(),

@@ -5,7 +5,7 @@ icon: cubes
 
 # Stack & Components
 
-A ZenML stack is a collection of components that together form an MLOps infrastructure to run your ML pipelines. While your pipeline code defines what happens in your ML workflow, the stack determines where and how that code runs.
+A [ZenML stack](https://docs.zenml.io/stacks) is a collection of components that together form an MLOps infrastructure to run your ML pipelines. While your pipeline code defines what happens in your ML workflow, the stack determines where and how that code runs.
 
 Stacks provide several key benefits:
 

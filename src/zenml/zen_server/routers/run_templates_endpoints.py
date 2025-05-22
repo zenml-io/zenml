@@ -16,12 +16,21 @@
 from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Security
+from fastapi import (
+    APIRouter,
+    Depends,
+    Security,
+)
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.constants import API, RUN_TEMPLATES, VERSION_1
+from zenml.constants import (
+    API,
+    RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
+    RUN_TEMPLATES,
+    VERSION_1,
+)
 from zenml.models import (
     Page,
     PipelineRunResponse,
@@ -32,6 +41,9 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -43,7 +55,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     zen_store,
@@ -68,7 +80,7 @@ router = APIRouter(
     deprecated=True,
     tags=["run_templates"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_run_template(
     run_template: RunTemplateRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -105,7 +117,7 @@ def create_run_template(
     deprecated=True,
     tags=["run_templates"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_run_templates(
     filter_model: RunTemplateFilter = Depends(
         make_dependable(RunTemplateFilter)
@@ -141,7 +153,7 @@ def list_run_templates(
     "/{template_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_run_template(
     template_id: UUID,
     hydrate: bool = True,
@@ -168,7 +180,7 @@ def get_run_template(
     "/{template_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_run_template(
     template_id: UUID,
     update: RunTemplateUpdate,
@@ -195,7 +207,7 @@ def update_run_template(
     "/{template_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_run_template(
     template_id: UUID,
     _: AuthContext = Security(authorize),
@@ -220,12 +232,12 @@ if server_config().workload_manager_enabled:
             401: error_response,
             404: error_response,
             422: error_response,
+            429: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def create_template_run(
         template_id: UUID,
-        background_tasks: BackgroundTasks,
         config: Optional[PipelineRunConfiguration] = None,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
@@ -233,14 +245,15 @@ if server_config().workload_manager_enabled:
 
         Args:
             template_id: The ID of the template.
-            background_tasks: Background tasks.
             config: Configuration for the pipeline run.
             auth_context: Authentication context.
 
         Returns:
             The created pipeline run.
         """
-        from zenml.zen_server.template_execution.utils import run_template
+        from zenml.zen_server.template_execution.utils import (
+            run_template,
+        )
 
         with track_handler(
             event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
@@ -264,10 +277,10 @@ if server_config().workload_manager_enabled:
                 action=Action.CREATE,
                 project_id=template.project.id,
             )
+            check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
             return run_template(
                 template=template,
                 auth_context=auth_context,
-                background_tasks=background_tasks,
                 run_config=config,
             )

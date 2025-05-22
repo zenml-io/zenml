@@ -73,7 +73,7 @@ If you don't see any 'Copy Channel ID' option for your channel, go to "User Sett
 
 #### DISCORD\_TOKEN
 
-This is the Discord token of your bot. You can find the instructions on how to set up a bot, invite it to your channel, and find its token[here](https://discordpy.readthedocs.io/en/latest/discord.html).
+This is the Discord token of your bot. You can find the instructions on how to set up a bot, invite it to your channel, and find its token [here](https://discordpy.readthedocs.io/en/latest/discord.html).
 
 {% hint style="warning" %}
 When inviting the bot to your channel, make sure it has at least the following permissions:

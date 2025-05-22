@@ -266,12 +266,21 @@ def push_image(
     logger.info("Finished pushing Docker image.")
 
     image_name_without_tag, _ = image_name.rsplit(":", maxsplit=1)
+    prefix_candidates = [f"{image_name_without_tag}@"]
+
+    if image_name_without_tag.startswith(("index.docker.io/", "docker.io/")):
+        # When looking for the repo digest later, Docker sometimes removes the
+        # index prefix, so we make sure to check for a digest with and without.
+        image_name_without_index = image_name_without_tag.split(
+            "/", maxsplit=1
+        )[1]
+        prefix_candidates.append(f"{image_name_without_index}@")
 
     image = docker_client.images.get(image_name)
     repo_digests: List[str] = image.attrs["RepoDigests"]
 
     for digest in repo_digests:
-        if digest.startswith(f"{image_name_without_tag}@"):
+        if digest.startswith(tuple(prefix_candidates)):
             return digest
 
     for info in reversed(aux_info):

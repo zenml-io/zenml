@@ -85,7 +85,7 @@ def validate_stack_component_config(
     validation_config_class: Type[StackComponentConfig] = type(
         config_class.__name__,
         (config_class,),
-        {"model_config": {"extra": "forbid"}},
+        {"model_config": {"extra": "ignore"}},
     )
     configuration = validation_config_class(**configuration_dict)
 

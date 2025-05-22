@@ -13,18 +13,16 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for deployments."""
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Request, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
-    Page,
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
     PipelineRunFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -38,12 +36,43 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     workload_manager,
     zen_store,
 )
+
+
+# TODO: Remove this as soon as there is only a low number of users running
+# versions < 0.82.0. Also change back the return type to
+# `PipelineDeploymentResponse` once we have removed the `exclude` logic.
+def _should_remove_step_config_overrides(
+    request: Request,
+) -> bool:
+    """Check if the step config overrides should be removed from the response.
+
+    Args:
+        request: The request object.
+
+    Returns:
+        If the step config overrides should be removed from the response.
+    """
+    from packaging import version
+
+    user_agent = request.headers.get("User-Agent", "")
+
+    if not user_agent.startswith("zenml/"):
+        # This request is not coming from a ZenML client
+        return False
+
+    client_version = version.parse(user_agent.removeprefix("zenml/"))
+
+    # Versions before 0.82.0 did have `extra="forbid"` in the pydantic model
+    # that stores the step configurations. This means it would crash if we
+    # included the `step_config_overrides` in the response.
+    return client_version < version.parse("0.82.0")
+
 
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINE_DEPLOYMENTS,
@@ -64,15 +93,17 @@ router = APIRouter(
     deprecated=True,
     tags=["deployments"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_deployment(
+    request: Request,
     deployment: PipelineDeploymentRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
-) -> PipelineDeploymentResponse:
+) -> Any:
     """Creates a deployment.
 
     Args:
+        request: The request object.
         deployment: Deployment to create.
         project_name_or_id: Optional name or ID of the project.
 
@@ -83,10 +114,20 @@ def create_deployment(
         project = zen_store().get_project(project_name_or_id)
         deployment.project = project.id
 
-    return verify_permissions_and_create_entity(
+    deployment_response = verify_permissions_and_create_entity(
         request_model=deployment,
         create_method=zen_store().create_deployment,
     )
+
+    exclude = None
+    if _should_remove_step_config_overrides(request):
+        exclude = {
+            "metadata": {
+                "step_configurations": {"__all__": {"step_config_overrides"}}
+            }
+        }
+
+    return deployment_response.model_dump(mode="json", exclude=exclude)
 
 
 @router.get(
@@ -101,18 +142,20 @@ def create_deployment(
     deprecated=True,
     tags=["deployments"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_deployments(
+    request: Request,
     deployment_filter_model: PipelineDeploymentFilter = Depends(
         make_dependable(PipelineDeploymentFilter)
     ),
     project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[PipelineDeploymentResponse]:
+) -> Any:
     """Gets a list of deployments.
 
     Args:
+        request: The request object.
         deployment_filter_model: Filter model used for pagination, sorting,
             filtering.
         project_name_or_id: Optional name or ID of the project to filter by.
@@ -125,27 +168,45 @@ def list_deployments(
     if project_name_or_id:
         deployment_filter_model.project = project_name_or_id
 
-    return verify_permissions_and_list_entities(
+    page = verify_permissions_and_list_entities(
         filter_model=deployment_filter_model,
         resource_type=ResourceType.PIPELINE_DEPLOYMENT,
         list_method=zen_store().list_deployments,
         hydrate=hydrate,
     )
 
+    exclude = None
+    if _should_remove_step_config_overrides(request):
+        exclude = {
+            "items": {
+                "__all__": {
+                    "metadata": {
+                        "step_configurations": {
+                            "__all__": {"step_config_overrides"}
+                        }
+                    }
+                }
+            }
+        }
+
+    return page.model_dump(mode="json", exclude=exclude)
+
 
 @router.get(
     "/{deployment_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_deployment(
+    request: Request,
     deployment_id: UUID,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> PipelineDeploymentResponse:
+) -> Any:
     """Gets a specific deployment using its unique id.
 
     Args:
+        request: The request object.
         deployment_id: ID of the deployment to get.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
@@ -153,18 +214,28 @@ def get_deployment(
     Returns:
         A specific deployment object.
     """
-    return verify_permissions_and_get_entity(
+    deployment = verify_permissions_and_get_entity(
         id=deployment_id,
         get_method=zen_store().get_deployment,
         hydrate=hydrate,
     )
+
+    exclude = None
+    if _should_remove_step_config_overrides(request):
+        exclude = {
+            "metadata": {
+                "step_configurations": {"__all__": {"step_config_overrides"}}
+            }
+        }
+
+    return deployment.model_dump(mode="json", exclude=exclude)
 
 
 @router.delete(
     "/{deployment_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_deployment(
     deployment_id: UUID,
     _: AuthContext = Security(authorize),
@@ -189,7 +260,7 @@ def delete_deployment(
         422: error_response,
     },
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def deployment_logs(
     deployment_id: UUID,
     offset: int = 0,

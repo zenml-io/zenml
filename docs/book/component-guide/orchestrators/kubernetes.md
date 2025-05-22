@@ -126,14 +126,19 @@ The Kubernetes orchestrator will by default use a Kubernetes namespace called `z
 * `kubernetes_namespace`: The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster.
 * `service_account_name`: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
 * `pass_zenml_token_as_secret`: By default, the Kubernetes orchestrator will pass a short-lived API token to authenticate to the ZenML server as an environment variable as part of the Pod manifest. If you want this token to be stored in a Kubernetes secret instead, set `pass_zenml_token_as_secret=True` when registering your orchestrator. If you do so, make sure the service connector that you configure for your has permissions to create Kubernetes secrets. Additionally, the service account used for the Pods running your pipeline must have permissions to delete secrets, otherwise the cleanup will fail and you'll be left with orphaned secrets.
+* `pod_name_prefix`: Prefix for the pod names. A random suffix and the step name will be appended to create unique pod names.
 * `pod_startup_timeout`: The maximum time to wait for a pending step pod to start (in seconds). The orchestrator will delete the pending pod after this time has elapsed and raise an error. If configured, the `pod_failure_retry_delay` and `pod_failure_backoff` settings will also be used to calculate the delay between retries.
 * `pod_failure_retry_delay`: The delay (in seconds) between retries to create a step pod that fails to start.
 * `pod_failure_max_retries`: The maximum number of retries to create a step pod that fails to start.
 * `pod_failure_backoff`: The backoff factor to use for retrying to create a step pod that fails to start.
+* `max_parallelism`: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For
+pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used
+to specify the maximum amount of steps pods that can be running at any time.
+* `successful_jobs_history_limit`, `failed_jobs_history_limit` and `ttl_seconds_after_finished`: Control the cleanup behavior of jobs and pods created by the orchestrator.
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
-* `pod_settings`: Node selectors, labels, affinity, and tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `pod_settings`: Node selectors, labels, affinity, and tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 * `orchestrator_pod_settings`: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
@@ -236,6 +241,11 @@ kubernetes_settings = KubernetesOrchestratorSettings(
             "app": "ml-pipeline",
             "environment": "production",
             "team": "data-science"
+        },
+        # Pass values for any additional PodSpec attribute here, e.g.
+        # a deadline after which the pod should be killed
+        "additional_pod_spec_args": {
+            "active_deadline_seconds": 30
         }
     },
     orchestrator_pod_settings={
@@ -273,7 +283,7 @@ def my_kubernetes_pipeline():
 
 ### Define settings on the step level
 
-You can also define settings on the step level, which will override the settings defined at the pipeline level. This is helpful when you want to run a specific step with a different configuration like affinity for more powerful hardware or a different Kubernetes service account. Learn more about the hierarchy of settings [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/configuration-hierarchy).
+You can also define settings on the step level, which will override the settings defined at the pipeline level. This is helpful when you want to run a specific step with a different configuration like affinity for more powerful hardware or a different Kubernetes service account. Learn more about the hierarchy of settings [here](https://docs.zenml.io/concepts/steps_and_pipelines/configuration).
 
 ```python
 k8s_settings = KubernetesOrchestratorSettings(
@@ -304,13 +314,13 @@ def simple_ml_pipeline(parameter: int):
 
 This code will now run the `train_model` step on a GPU-enabled node in the `gpu-pool` node pool while the rest of the pipeline can run on ordinary nodes.
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
 
 ### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/user-guides/tutorial/distributed-training/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 ### Running scheduled pipelines with Kubernetes
 

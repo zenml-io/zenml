@@ -22,10 +22,10 @@ from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
     DoesNotExistException,
-    DuplicateRunNameError,
     EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
+    MaxConcurrentTasksError,
     MethodNotAllowedError,
     SubscriptionUpgradeRequiredError,
     ValidationError,
@@ -69,7 +69,6 @@ error_response = dict(model=ErrorModel)
 # different status codes (e.g. `ValueError` and the 400 and 422 status codes).
 REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 409 Conflict
-    (DuplicateRunNameError, 409),
     (EntityExistsError, 409),
     # 403 Forbidden
     (IllegalOperationError, 403),
@@ -87,6 +86,8 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     (ValueError, 400),
     # 422 Unprocessable Entity
     (ValueError, 422),
+    # 429 Too Many Requests
+    (MaxConcurrentTasksError, 429),
     # 500 Internal Server Error
     (EntityCreationError, 500),
     (RuntimeError, 500),

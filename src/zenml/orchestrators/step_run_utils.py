@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Utilities for creating step runs."""
 
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
+from zenml import Tag, add_tags
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
@@ -333,6 +334,11 @@ def create_cached_step_runs(
                     model_version=model_version,
                 )
 
+            cascade_tags_for_output_artifacts(
+                artifacts=step_run.outputs,
+                tags=pipeline_run.config.tags,
+            )
+
             logger.info("Using cached version of step `%s`.", invocation_id)
             cached_invocations.add(invocation_id)
 
@@ -381,4 +387,27 @@ def link_output_artifacts_to_model_version(
             link_artifact_version_to_model_version(
                 artifact_version=output_artifact,
                 model_version=model_version,
+            )
+
+
+def cascade_tags_for_output_artifacts(
+    artifacts: Dict[str, List[ArtifactVersionResponse]],
+    tags: Optional[List[Union[str, Tag]]] = None,
+) -> None:
+    """Tag the outputs of a step run.
+
+    Args:
+        artifacts: The step output artifacts.
+        tags: The tags to add to the artifacts.
+    """
+    if tags is None:
+        return
+
+    cascade_tags = [t for t in tags if isinstance(t, Tag) and t.cascade]
+
+    for output_artifacts in artifacts.values():
+        for output_artifact in output_artifacts:
+            add_tags(
+                tags=[t.name for t in cascade_tags],
+                artifact_version_id=output_artifact.id,
             )

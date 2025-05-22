@@ -434,16 +434,9 @@ def authenticate_credentials(
                     run does not exist.
                 """
                 try:
-                    pipeline_run = zen_store().get_run(
-                        pipeline_run_id, hydrate=True
-                    )
+                    return zen_store().get_run_status(pipeline_run_id)
                 except KeyError:
                     return None, None
-
-                return (
-                    pipeline_run.status,
-                    pipeline_run.end_time,
-                )
 
             (
                 pipeline_run_status,

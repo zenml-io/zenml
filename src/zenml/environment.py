@@ -15,12 +15,11 @@
 
 import os
 import platform
-from pathlib import Path
-from typing import Dict
+import subprocess
+from typing import Any, Dict, List
 
 import distro
 
-from zenml import __version__
 from zenml.constants import INSIDE_ZENML_CONTAINER
 from zenml.enums import EnvironmentType
 from zenml.logger import get_logger
@@ -29,7 +28,7 @@ from zenml.utils.singleton import SingletonMetaClass
 logger = get_logger(__name__)
 
 
-def get_run_environment_dict() -> Dict[str, str]:
+def get_run_environment_dict() -> Dict[str, Any]:
     """Returns a dictionary of the current run environment.
 
     Everything that is returned here will be saved in the DB as
@@ -40,11 +39,23 @@ def get_run_environment_dict() -> Dict[str, str]:
     Returns:
         A dictionary of the current run environment.
     """
-    return {
-        "environment": get_environment(),
+    env_dict: Dict[str, Any] = {
+        "environment": str(get_environment()),
         **Environment.get_system_info(),
         "python_version": Environment.python_version(),
     }
+
+    try:
+        python_packages = Environment.get_python_packages()
+    except RuntimeError:
+        logger.warning("Failed to get list of installed Python packages")
+    else:
+        # TODO: We send the python packages as a string right now to keep
+        # backwards compatibility with old versions. We should update this to
+        # be a list of strings eventually.
+        env_dict["python_packages"] = "\n".join(python_packages)
+
+    return env_dict
 
 
 def get_environment() -> str:
@@ -68,6 +79,8 @@ def get_environment() -> str:
         return EnvironmentType.GENERIC_CI
     elif Environment.in_github_codespaces():
         return EnvironmentType.GITHUB_CODESPACES
+    elif Environment.in_zenml_codespace():
+        return EnvironmentType.ZENML_CODESPACE
     elif Environment.in_vscode_remote_container():
         return EnvironmentType.VSCODE_REMOTE_CONTAINER
     elif Environment.in_lightning_ai_studio():
@@ -88,35 +101,8 @@ def get_environment() -> str:
         return EnvironmentType.NATIVE
 
 
-def get_system_details() -> str:
-    """Returns OS, python and ZenML information.
-
-    Returns:
-        str: OS, python and ZenML information
-    """
-    from zenml.integrations.registry import integration_registry
-
-    info = {
-        "ZenML version": __version__,
-        "Install path": Path(__file__).resolve().parent,
-        "Python version": Environment.python_version(),
-        "Platform information": Environment.get_system_info(),
-        "Environment": get_environment(),
-        "Integrations": integration_registry.get_installed_integrations(),
-    }
-    return "\n".join(
-        "{:>10} {}".format(k + ":", str(v).replace("\n", " "))
-        for k, v in info.items()
-    )
-
-
 class Environment(metaclass=SingletonMetaClass):
-    """Provides environment information.
-
-    Individual environment components can be registered separately to extend
-    the global Environment object with additional information (see
-    `BaseEnvironmentComponent`).
-    """
+    """Provides environment information."""
 
     def __init__(self) -> None:
         """Initializes an Environment instance.
@@ -271,6 +257,16 @@ class Environment(metaclass=SingletonMetaClass):
         )
 
     @staticmethod
+    def in_zenml_codespace() -> bool:
+        """If the current Python process is running in ZenML Codespaces.
+
+        Returns:
+            `True` if the current Python process is running in ZenML Codespaces,
+            `False` otherwise.
+        """
+        return os.environ.get("ZENML_ENVIRONMENT") == "codespace"
+
+    @staticmethod
     def in_vscode_remote_container() -> bool:
         """If the current Python process is running in a VS Code Remote Container.
 
@@ -366,3 +362,22 @@ class Environment(metaclass=SingletonMetaClass):
             "LIGHTNING_CLOUD_URL" in os.environ
             and "LIGHTNING_CLOUDSPACE_HOST" in os.environ
         )
+
+    @staticmethod
+    def get_python_packages() -> List[str]:
+        """Returns a list of installed Python packages.
+
+        Raises:
+            RuntimeError: If the process to get the list of installed packages
+                fails.
+
+        Returns:
+            List of installed packages in pip freeze format.
+        """
+        try:
+            output = subprocess.check_output(["pip", "freeze"]).decode()
+            return output.strip().split("\n")
+        except subprocess.CalledProcessError:
+            raise RuntimeError(
+                "Failed to get list of installed Python packages"
+            )

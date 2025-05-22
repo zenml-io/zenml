@@ -34,7 +34,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 import enum
 import re
 import time
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -554,3 +554,26 @@ def create_and_wait_for_pod_to_start(
         total_wait += delay
         time.sleep(delay)
         delay *= startup_failure_backoff
+
+
+def get_pod_owner_references(
+    core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
+) -> List[k8s_client.V1OwnerReference]:
+    """Get owner references for a pod.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        pod_name: Name of the pod.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        List of owner references.
+    """
+    pod = get_pod(core_api=core_api, pod_name=pod_name, namespace=namespace)
+
+    if not pod or not pod.metadata or not pod.metadata.owner_references:
+        return []
+
+    return cast(
+        List[k8s_client.V1OwnerReference], pod.metadata.owner_references
+    )

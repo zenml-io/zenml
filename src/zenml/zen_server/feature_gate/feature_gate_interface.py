@@ -16,18 +16,16 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from zenml.zen_server.rbac.models import ResourceType
-
 
 class FeatureGateInterface(ABC):
     """Feature gate interface definition."""
 
     @abstractmethod
-    def check_entitlement(self, resource: ResourceType) -> None:
+    def check_entitlement(self, feature: str) -> None:
         """Checks if a user is entitled to create a resource.
 
         Args:
-            resource: The resource the user wants to create
+            feature: The feature the user wants to use.
 
         Raises:
             UpgradeRequiredError in case a subscription limit is reached
@@ -36,14 +34,14 @@ class FeatureGateInterface(ABC):
     @abstractmethod
     def report_event(
         self,
-        resource: ResourceType,
+        feature: str,
         resource_id: UUID,
         is_decrement: bool = False,
     ) -> None:
         """Reports the usage of a feature to the aggregator backend.
 
         Args:
-            resource: The resource the user created
+            feature: The feature the user used.
             resource_id: ID of the resource that was created/deleted.
             is_decrement: In case this event reports an actual decrement of usage
         """

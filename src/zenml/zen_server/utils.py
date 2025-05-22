@@ -19,6 +19,7 @@ from functools import wraps
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     Dict,
     List,
@@ -27,11 +28,11 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
+from typing_extensions import ParamSpec
 
 from zenml import __version__ as zenml_version
 from zenml.config.global_config import GlobalConfiguration
@@ -60,6 +61,14 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.zen_server.template_execution.utils import (
+        BoundedThreadPoolExecutor,
+    )
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
 
 logger = get_logger(__name__)
 
@@ -67,6 +76,7 @@ _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
+_run_template_executor: Optional["BoundedThreadPoolExecutor"] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
 
@@ -196,6 +206,35 @@ def initialize_workload_manager() -> None:
             _workload_manager = workload_manager_class()
 
 
+def run_template_executor() -> "BoundedThreadPoolExecutor":
+    """Return the initialized run template executor.
+
+    Raises:
+        RuntimeError: If the run template executor is not initialized.
+
+    Returns:
+        The run template executor.
+    """
+    global _run_template_executor
+    if _run_template_executor is None:
+        raise RuntimeError("Run template executor not initialized")
+
+    return _run_template_executor
+
+
+def initialize_run_template_executor() -> None:
+    """Initialize the run template executor."""
+    global _run_template_executor
+    from zenml.zen_server.template_execution.utils import (
+        BoundedThreadPoolExecutor,
+    )
+
+    _run_template_executor = BoundedThreadPoolExecutor(
+        max_workers=server_config().max_concurrent_template_runs,
+        thread_name_prefix="zenml-run-template-executor",
+    )
+
+
 def initialize_plugins() -> None:
     """Initialize the event plugins registry."""
     plugin_flavor_registry().initialize_plugins()
@@ -265,11 +304,16 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
-F = TypeVar("F", bound=Callable[..., Any])
+def async_fastapi_endpoint_wrapper(
+    func: Callable[P, R],
+) -> Callable[P, Awaitable[Any]]:
+    """Decorator for FastAPI endpoints.
 
-
-def handle_exceptions(func: F) -> F:
-    """Decorator to handle exceptions in the API.
+    This decorator for FastAPI endpoints does the following:
+    - Sets the auth_context context variable if the endpoint is authenticated.
+    - Converts exceptions to HTTPExceptions with the correct status code.
+    - Converts the sync endpoint function to an coroutine and runs the original
+      function in a worker threadpool. See below for more details.
 
     Args:
         func: Function to decorate.
@@ -279,7 +323,7 @@ def handle_exceptions(func: F) -> F:
     """
 
     @wraps(func)
-    def decorated(*args: Any, **kwargs: Any) -> Any:
+    def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
         # These imports can't happen at module level as this module is also
         # used by the CLI when installed without the `server` extra
         from fastapi import HTTPException
@@ -312,7 +356,26 @@ def handle_exceptions(func: F) -> F:
             http_exception = http_exception_from_error(error)
             raise http_exception
 
-    return cast(F, decorated)
+    # When having a sync FastAPI endpoint, it runs the endpoint function in
+    # a worker threadpool. If all threads are busy, it will queue the task.
+    # The problem is that after the endpoint code returns, FastAPI will queue
+    # another task in the same threadpool to serialize the response. If there
+    # are many tasks already in the queue, this means that the response
+    # serialization will wait for a long time instead of returning the response
+    # immediately. By making our endpoints async and then immediately
+    # dispatching them to the threadpool ourselves (which is essentially what
+    # FastAPI does when having a sync endpoint), we can avoid this problem.
+    # The serialization logic will now run on the event loop and not wait for
+    # a worker thread to become available.
+    # See: `fastapi.routing.serialize_response(...)` and
+    # https://github.com/fastapi/fastapi/pull/888 for more information.
+    @wraps(decorated)
+    async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
+        from starlette.concurrency import run_in_threadpool
+
+        return await run_in_threadpool(decorated, *args, **kwargs)
+
+    return async_decorated
 
 
 # Code from https://github.com/tiangolo/fastapi/issues/1474#issuecomment-1160633178

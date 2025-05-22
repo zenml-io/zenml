@@ -25,7 +25,6 @@ from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
-from zenml.zen_server.rbac.models import ResourceType
 
 logger = get_logger(__name__)
 
@@ -47,7 +46,7 @@ class RawUsageEvent(BaseModel):
     organization_id: str = Field(
         description="The organization that this usage can be attributed to.",
     )
-    feature: ResourceType = Field(
+    feature: str = Field(
         description="The feature whose usage is being reported.",
     )
     total: int = Field(
@@ -66,22 +65,22 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface):
         """Initialize the object."""
         self._connection = cloud_connection()
 
-    def check_entitlement(self, resource: ResourceType) -> None:
+    def check_entitlement(self, feature: str) -> None:
         """Checks if a user is entitled to create a resource.
 
         Args:
-            resource: The resource the user wants to create
+            feature: The feature the user wants to use.
 
         Raises:
             SubscriptionUpgradeRequiredError: in case a subscription limit is reached
         """
         try:
             response = self._connection.get(
-                endpoint=ENTITLEMENT_ENDPOINT + "/" + resource, params=None
+                endpoint=ENTITLEMENT_ENDPOINT + "/" + feature, params=None
             )
         except SubscriptionUpgradeRequiredError:
             raise SubscriptionUpgradeRequiredError(
-                f"Your subscription reached its `{resource}` limit. Please "
+                f"Your subscription reached its `{feature}` limit. Please "
                 f"upgrade your subscription or reach out to us."
             )
 
@@ -94,20 +93,20 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface):
 
     def report_event(
         self,
-        resource: ResourceType,
+        feature: str,
         resource_id: UUID,
         is_decrement: bool = False,
     ) -> None:
         """Reports the usage of a feature to the aggregator backend.
 
         Args:
-            resource: The resource the user created
+            feature: The feature the user used.
             resource_id: ID of the resource that was created/deleted.
             is_decrement: In case this event reports an actual decrement of usage
         """
         data = RawUsageEvent(
             organization_id=ORGANIZATION_ID,
-            feature=resource,
+            feature=feature,
             total=1 if not is_decrement else -1,
             metadata={
                 "workspace_id": str(server_config.get_external_server_id()),

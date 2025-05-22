@@ -417,6 +417,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 )
 
         pipeline_name = deployment.pipeline_configuration.name
+        settings = cast(
+            KubernetesOrchestratorSettings, self.get_settings(deployment)
+        )
 
         # We already make sure the orchestrator run name has the correct length
         # to make sure we don't cut off the randomized suffix later when
@@ -427,8 +430,16 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name, max_length=max_length
         )
+
+        if settings.pod_name_prefix:
+            pod_name = get_orchestrator_run_name(
+                settings.pod_name_prefix, max_length=max_length
+            )
+        else:
+            pod_name = orchestrator_run_name
+
         pod_name = kube_utils.sanitize_pod_name(
-            orchestrator_run_name, namespace=self.config.kubernetes_namespace
+            pod_name, namespace=self.config.kubernetes_namespace
         )
 
         assert stack.container_registry
@@ -453,10 +464,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
             run_id=placeholder_run.id if placeholder_run else None,
-        )
-
-        settings = cast(
-            KubernetesOrchestratorSettings, self.get_settings(deployment)
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
@@ -516,6 +523,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 pod_settings=orchestrator_pod_settings,
                 env=environment,
                 mount_local_stores=self.config.is_local,
+                successful_jobs_history_limit=settings.successful_jobs_history_limit,
+                failed_jobs_history_limit=settings.failed_jobs_history_limit,
+                ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
             )
 
             self._k8s_batch_api.create_namespaced_cron_job(

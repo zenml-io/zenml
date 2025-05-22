@@ -169,7 +169,7 @@ class UserRequest(UserBase, BaseRequest):
         # Validate attributes when assigning them
         validate_assignment=True,
         # Forbid extra attributes to prevent unexpected behavior
-        extra="forbid",
+        extra="ignore",
     )
 
 

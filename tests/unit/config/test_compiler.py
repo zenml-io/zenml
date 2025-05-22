@@ -473,6 +473,104 @@ def test_stack_component_settings_for_missing_component_are_ignored(
     )
 
 
+def test_invalid_settings_keys_are_ignored(
+    mocker, one_step_pipeline, empty_step, local_stack
+):
+    """Tests that invalid settings keys that are not part of the settings class
+    are ignored."""
+
+    class StubSettings(BaseSettings):
+        valid_key: str = ""
+
+    orchestrator_class = type(local_stack.orchestrator)
+    mocker.patch.object(
+        orchestrator_class,
+        "settings_class",
+        new_callable=mocker.PropertyMock,
+        return_value=StubSettings,
+    )
+
+    settings = {"orchestrator": {"valid_key": "value", "invalid_key": "value"}}
+
+    step_instance = empty_step
+    pipeline_instance = one_step_pipeline(step_instance)
+
+    pipeline_instance.configure(settings=settings)
+    step_instance.configure(settings=settings)
+    run_config = PipelineRunConfiguration(
+        settings=settings,
+        steps={"_empty_step": StepConfigurationUpdate(settings=settings)},
+    )
+
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
+    deployment = Compiler().compile(
+        pipeline=pipeline_instance,
+        stack=local_stack,
+        run_configuration=run_config,
+    )
+
+    compiled_pipeline_settings = deployment.pipeline_configuration.settings[
+        "orchestrator.default"
+    ].model_dump()
+    assert "invalid_key" not in compiled_pipeline_settings
+    assert compiled_pipeline_settings["valid_key"] == "value"
+
+    compiled_step_settings = (
+        deployment.step_configurations["_empty_step"]
+        .config.settings["orchestrator.default"]
+        .model_dump()
+    )
+    assert "invalid_key" not in compiled_step_settings
+    assert compiled_step_settings["valid_key"] == "value"
+
+
+def test_empty_settings_classes_are_ignored(
+    mocker, one_step_pipeline, empty_step, local_stack
+):
+    """Tests that empty settings classes are ignored."""
+
+    class StubSettings(BaseSettings):
+        valid_key: str = ""
+
+    orchestrator_class = type(local_stack.orchestrator)
+    mocker.patch.object(
+        orchestrator_class,
+        "settings_class",
+        new_callable=mocker.PropertyMock,
+        return_value=StubSettings,
+    )
+
+    step_instance = empty_step
+    pipeline_instance = one_step_pipeline(step_instance)
+
+    settings = {"orchestrator": {"invalid_key": "value"}}
+
+    pipeline_instance.configure(settings=settings)
+    step_instance.configure(settings=settings)
+    run_config = PipelineRunConfiguration(
+        settings=settings,
+        steps={"_empty_step": StepConfigurationUpdate(settings=settings)},
+    )
+
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
+    deployment = Compiler().compile(
+        pipeline=pipeline_instance,
+        stack=local_stack,
+        run_configuration=run_config,
+    )
+
+    assert (
+        "orchestrator.default"
+        not in deployment.pipeline_configuration.settings
+    )
+    assert (
+        "orchestrator.default"
+        not in deployment.step_configurations["_empty_step"].config.settings
+    )
+
+
 @step
 def s1() -> int:
     return 1

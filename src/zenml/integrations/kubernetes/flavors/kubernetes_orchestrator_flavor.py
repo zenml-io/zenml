@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import NonNegativeInt, PositiveInt
+
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
@@ -47,6 +49,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply to pods executing the steps.
         orchestrator_pod_settings: Pod settings to apply to the pod which is
             launching the actual steps.
+        pod_name_prefix: Prefix to use for the pod name.
         pod_startup_timeout: The maximum time to wait for a pending step pod to
             start (in seconds).
         pod_failure_max_retries: The maximum number of times to retry a step
@@ -55,6 +58,15 @@ class KubernetesOrchestratorSettings(BaseSettings):
             failure retries and pod startup retries (in seconds)
         pod_failure_backoff: The backoff factor for pod failure retries and
             pod startup retries.
+        max_parallelism: Maximum number of steps to run in parallel.
+        successful_jobs_history_limit: The number of successful jobs
+            to retain. This only applies to jobs created when scheduling a
+            pipeline.
+        failed_jobs_history_limit: The number of failed jobs to retain.
+            This only applies to jobs created when scheduling a pipeline.
+        ttl_seconds_after_finished: The amount of seconds to keep finished jobs
+            before deleting them. This only applies to jobs created when
+            scheduling a pipeline.
     """
 
     synchronous: bool = True
@@ -64,10 +76,15 @@ class KubernetesOrchestratorSettings(BaseSettings):
     privileged: bool = False
     pod_settings: Optional[KubernetesPodSettings] = None
     orchestrator_pod_settings: Optional[KubernetesPodSettings] = None
+    pod_name_prefix: Optional[str] = None
     pod_startup_timeout: int = 60 * 10  # Default 10 minutes
     pod_failure_max_retries: int = 3
     pod_failure_retry_delay: int = 10
     pod_failure_backoff: float = 1.0
+    max_parallelism: Optional[PositiveInt] = None
+    successful_jobs_history_limit: Optional[NonNegativeInt] = None
+    failed_jobs_history_limit: Optional[NonNegativeInt] = None
+    ttl_seconds_after_finished: Optional[NonNegativeInt] = None
 
 
 class KubernetesOrchestratorConfig(

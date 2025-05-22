@@ -2024,7 +2024,9 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             type=component_type,
             flavor=flavor,
-            configuration=configuration,
+            configuration=validated_config.model_dump(
+                mode="json", exclude_unset=True
+            ),
             labels=labels,
         )
 
@@ -2112,7 +2114,9 @@ class Client(metaclass=ClientMetaClass):
             assert validated_config is not None
             warn_if_config_server_mismatch(validated_config)
 
-            update_model.configuration = existing_configuration
+            update_model.configuration = validated_config.model_dump(
+                mode="json", exclude_unset=True
+            )
 
         if labels is not None:
             existing_labels = component.labels or {}
@@ -3624,7 +3628,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             hidden=hidden,
             tag=tag,
-            project=project,
+            project=project or self.active_project.id,
             pipeline_id=pipeline_id,
             build_id=build_id,
             stack_id=stack_id,
@@ -6504,7 +6508,8 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
-        model_name_or_id: Union[str, UUID],
+        model: Optional[Union[str, UUID]] = None,
+        model_name_or_id: Optional[Union[str, UUID]] = None,
         sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
@@ -6525,6 +6530,7 @@ class Client(metaclass=ClientMetaClass):
         """Get model versions by filter from Model Control Plane.
 
         Args:
+            model: The model to filter by.
             model_name_or_id: name or id of the model containing the model
                 version.
             sort_by: The column to sort by
@@ -6548,6 +6554,19 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page object with all model versions.
         """
+        if model_name_or_id:
+            logger.warning(
+                "The `model_name_or_id` argument is deprecated. "
+                "Please use the `model` argument instead."
+            )
+            if model is None:
+                model = model_name_or_id
+            else:
+                logger.warning(
+                    "Ignoring `model_name_or_id` argument as `model` argument "
+                    "was also provided."
+                )
+
         model_version_filter_model = ModelVersionFilter(
             page=page,
             size=size,
@@ -6563,7 +6582,7 @@ class Client(metaclass=ClientMetaClass):
             tag=tag,
             tags=tags,
             user=user,
-            model=model_name_or_id,
+            model=model,
             project=project or self.active_project.id,
         )
 

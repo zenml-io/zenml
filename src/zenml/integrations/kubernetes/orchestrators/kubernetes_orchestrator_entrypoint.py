@@ -15,7 +15,7 @@
 
 import argparse
 import socket
-from typing import Any, Dict
+from typing import Any, Dict, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -41,7 +41,10 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
-from zenml.orchestrators.utils import get_config_environment_vars
+from zenml.orchestrators.utils import (
+    get_config_environment_vars,
+    get_orchestrator_run_name,
+)
 
 logger = get_logger(__name__)
 
@@ -68,7 +71,7 @@ def main() -> None:
     # Parse / extract args.
     args = parse_args()
 
-    orchestrator_run_id = socket.gethostname()
+    orchestrator_pod_name = socket.gethostname()
 
     client = Client()
 
@@ -92,7 +95,22 @@ def main() -> None:
     core_api = k8s_client.CoreV1Api(kube_client)
 
     env = get_config_environment_vars()
-    env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
+    env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_pod_name
+
+    try:
+        owner_references = kube_utils.get_pod_owner_references(
+            core_api=core_api,
+            pod_name=orchestrator_pod_name,
+            namespace=args.kubernetes_namespace,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to get pod owner references: {str(e)}")
+        owner_references = []
+    else:
+        # Make sure None of the owner references are marked as controllers of
+        # the created pod, which messes with the garbage collection logic.
+        for owner_reference in owner_references:
+            owner_reference.controller = False
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -103,8 +121,27 @@ def main() -> None:
         Raises:
             Exception: If the pod fails to start.
         """
-        # Define Kubernetes pod name.
-        pod_name = f"{orchestrator_run_id}-{step_name}"
+        step_config = deployment_config.step_configurations[step_name].config
+        settings = step_config.settings.get("orchestrator.kubernetes", None)
+        settings = KubernetesOrchestratorSettings.model_validate(
+            settings.model_dump() if settings else {}
+        )
+
+        if settings.pod_name_prefix and not orchestrator_pod_name.startswith(
+            settings.pod_name_prefix
+        ):
+            max_length = (
+                kube_utils.calculate_max_pod_name_length_for_namespace(
+                    namespace=args.kubernetes_namespace
+                )
+            )
+            pod_name_prefix = get_orchestrator_run_name(
+                settings.pod_name_prefix, max_length=max_length
+            )
+            pod_name = f"{pod_name_prefix}-{step_name}"
+        else:
+            pod_name = f"{orchestrator_pod_name}-{step_name}"
+
         pod_name = kube_utils.sanitize_pod_name(
             pod_name, namespace=args.kubernetes_namespace
         )
@@ -114,20 +151,6 @@ def main() -> None:
         )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name, deployment_id=deployment_config.id
-        )
-
-        step_config = deployment_config.step_configurations[step_name].config
-
-        kubernetes_settings = step_config.settings.get(
-            "orchestrator.kubernetes", None
-        )
-
-        orchestrator_settings = {}
-        if kubernetes_settings is not None:
-            orchestrator_settings = kubernetes_settings.model_dump()
-
-        settings = KubernetesOrchestratorSettings.model_validate(
-            orchestrator_settings
         )
 
         # We set some default minimum memory resource requests for the step pod
@@ -171,6 +194,7 @@ def main() -> None:
             service_account_name=settings.step_pod_service_account_name
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
+            owner_references=owner_references,
         )
 
         kube_utils.create_and_wait_for_pod_to_start(
@@ -223,7 +247,7 @@ def main() -> None:
             else:
                 # For a run triggered by a schedule, we can only use the
                 # orchestrator run ID to find the pipeline run.
-                list_args = dict(orchestrator_run_id=orchestrator_run_id)
+                list_args = dict(orchestrator_run_id=orchestrator_pod_name)
 
             pipeline_runs = client.list_pipeline_runs(
                 hydrate=True,
@@ -274,12 +298,17 @@ def main() -> None:
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
     )
+    settings = cast(
+        KubernetesOrchestratorSettings,
+        orchestrator.get_settings(deployment_config),
+    )
     try:
         ThreadedDagRunner(
             dag=pipeline_dag,
             run_fn=run_step_on_kubernetes,
             finalize_fn=finalize_run,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
+            max_parallelism=settings.max_parallelism,
         ).run()
         logger.info("Orchestration pod completed.")
     finally:

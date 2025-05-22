@@ -104,14 +104,7 @@ class PipelineRunRequest(ProjectScopedRequest):
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
     )
-    client_environment: Dict[str, str] = Field(
-        default={},
-        title=(
-            "Environment of the client that initiated this pipeline run "
-            "(OS, Python version, etc.)."
-        ),
-    )
-    orchestrator_environment: Dict[str, str] = Field(
+    orchestrator_environment: Dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the orchestrator that executed this pipeline run "
@@ -214,14 +207,14 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         title="The end time of the pipeline run.",
         default=None,
     )
-    client_environment: Dict[str, str] = Field(
+    client_environment: Dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the client that initiated this pipeline run "
             "(OS, Python version, etc.)."
         ),
     )
-    orchestrator_environment: Dict[str, str] = Field(
+    orchestrator_environment: Dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the orchestrator that executed this pipeline run "
@@ -509,7 +502,7 @@ class PipelineRunResponse(
         return self.get_metadata().end_time
 
     @property
-    def client_environment(self) -> Dict[str, str]:
+    def client_environment(self) -> Dict[str, Any]:
         """The `client_environment` property.
 
         Returns:
@@ -518,7 +511,7 @@ class PipelineRunResponse(
         return self.get_metadata().client_environment
 
     @property
-    def orchestrator_environment(self) -> Dict[str, str]:
+    def orchestrator_environment(self) -> Dict[str, Any]:
         """The `orchestrator_environment` property.
 
         Returns:

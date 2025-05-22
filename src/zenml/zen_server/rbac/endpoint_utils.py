@@ -182,7 +182,7 @@ def verify_permissions_and_get_or_create_entity(
     def _pre_creation_hook() -> None:
         verify_permission_for_model(model=request_model, action=Action.CREATE)
         if resource_type and needs_usage_increment:
-            check_entitlement(resource_type=resource_type)
+            check_entitlement(feature=resource_type)
 
     model, created = get_or_create_method(request_model, _pre_creation_hook)
 
