@@ -20,6 +20,8 @@ from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -53,7 +55,10 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import RunMetadataInterface
+from zenml.zen_stores.schemas.utils import (
+    RunMetadataInterface,
+    jl_arg,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
@@ -231,6 +236,56 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = [
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.pipeline)
+            ),
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.stack)
+            ),
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.build)
+            ),
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.schedule)
+            ),
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.code_reference)
+            ),
+        ]
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(
+                        jl_arg(PipelineRunSchema.model_version)
+                    ).joinedload(jl_arg(ModelVersionSchema.model)),
+                    joinedload(jl_arg(PipelineRunSchema.logs)),
+                    joinedload(jl_arg(PipelineRunSchema.user)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(

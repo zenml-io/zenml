@@ -18,6 +18,8 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.enums import MetadataResourceTypes
@@ -36,7 +38,10 @@ from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import RunMetadataInterface
+from zenml.zen_stores.schemas.utils import (
+    RunMetadataInterface,
+    jl_arg,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -120,6 +125,32 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     interval_second: Optional[float] = Field(nullable=True)
     catchup: bool
     run_once_start_time: Optional[datetime] = Field(nullable=True)
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(ScheduleSchema.user))])
+
+        return options
 
     @classmethod
     def from_request(

@@ -21,6 +21,8 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -53,7 +55,10 @@ from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import RunMetadataInterface
+from zenml.zen_stores.schemas.utils import (
+    RunMetadataInterface,
+    jl_arg,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
@@ -184,6 +189,52 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = [
+            joinedload(jl_arg(StepRunSchema.deployment)),
+            joinedload(jl_arg(StepRunSchema.pipeline_run)),
+        ]
+
+        if include_metadata:
+            options.extend(
+                [
+                    joinedload(jl_arg(StepRunSchema.logs)),
+                    joinedload(jl_arg(StepRunSchema.parents)),
+                ]
+            )
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(StepRunSchema.model_version)).joinedload(
+                        jl_arg(ModelVersionSchema.model)
+                    ),
+                    joinedload(jl_arg(StepRunSchema.user)),
+                    joinedload(jl_arg(StepRunSchema.input_artifacts)),
+                    joinedload(jl_arg(StepRunSchema.output_artifacts)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(

@@ -15,11 +15,13 @@
 
 from datetime import datetime
 from secrets import token_hex
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 from uuid import UUID
 
 from passlib.context import CryptContext
 from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -36,6 +38,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 
 class APIKeySchema(NamedSchema, table=True):
@@ -89,6 +92,31 @@ class APIKeySchema(NamedSchema, table=True):
         """
         context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         return context.hash(key)
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = [
+            joinedload(jl_arg(APIKeySchema.service_account)),
+        ]
+
+        return options
 
     @classmethod
     def from_request(

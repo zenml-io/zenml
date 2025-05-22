@@ -19,6 +19,8 @@ from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -44,6 +46,7 @@ from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -171,6 +174,45 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_metadata:
+            options.extend(
+                [
+                    joinedload(jl_arg(PipelineDeploymentSchema.stack)),
+                    joinedload(jl_arg(PipelineDeploymentSchema.build)),
+                    joinedload(jl_arg(PipelineDeploymentSchema.pipeline)),
+                    joinedload(jl_arg(PipelineDeploymentSchema.schedule)),
+                    joinedload(
+                        jl_arg(PipelineDeploymentSchema.code_reference)
+                    ),
+                ]
+            )
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(PipelineDeploymentSchema.user))])
+
+        return options
 
     @classmethod
     def from_request(

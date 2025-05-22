@@ -15,8 +15,9 @@
 
 import json
 import math
-from typing import Any, Dict, List, Type, TypeVar
+from typing import Any, Dict, List, Type, TypeVar, cast
 
+from sqlalchemy.orm import InstrumentedAttribute
 from sqlmodel import Relationship
 
 from zenml.metadata.metadata_types import MetadataType
@@ -24,6 +25,18 @@ from zenml.models import BaseResponse, Page, RunMetadataEntry
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 S = TypeVar("S", bound=BaseSchema)
+
+
+def jl_arg(column: Any) -> InstrumentedAttribute[Any]:
+    """Cast a SQLModel column to a joinedload argument.
+
+    Args:
+        column: The column.
+
+    Returns:
+        The column cast to a joinedload argument.
+    """
+    return cast(InstrumentedAttribute[Any], column)
 
 
 def get_page_from_list(

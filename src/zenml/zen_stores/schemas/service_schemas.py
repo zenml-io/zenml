@@ -15,11 +15,13 @@
 
 import base64
 import json
-from typing import Any, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.models.v2.core.service import (
@@ -38,6 +40,7 @@ from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 
 class ServiceSchema(NamedSchema, table=True):
@@ -116,6 +119,38 @@ class ServiceSchema(NamedSchema, table=True):
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(ServiceSchema.user)),
+                    joinedload(jl_arg(ServiceSchema.model_version)),
+                    joinedload(jl_arg(ServiceSchema.pipeline_run)),
+                ]
+            )
+
+        return options
 
     def to_model(
         self,

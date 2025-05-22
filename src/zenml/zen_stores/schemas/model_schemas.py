@@ -24,7 +24,8 @@ from sqlalchemy import (
     Column,
     UniqueConstraint,
 )
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import (
@@ -65,6 +66,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
     get_page_from_list,
+    jl_arg,
 )
 
 if TYPE_CHECKING:
@@ -126,6 +128,36 @@ class ModelSchema(NamedSchema, table=True):
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(ModelSchema.user)),
+                ]
+            )
+
+        return options
 
     @property
     def latest_version(self) -> Optional["ModelVersionSchema"]:
@@ -382,6 +414,39 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = [
+            joinedload(jl_arg(ModelVersionSchema.model)),
+        ]
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(ModelVersionSchema.user)),
+                    joinedload(jl_arg(ModelVersionSchema.services)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(

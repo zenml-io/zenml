@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml import EventSourceResponseMetadata
@@ -36,7 +38,10 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import get_page_from_list
+from zenml.zen_stores.schemas.utils import (
+    get_page_from_list,
+    jl_arg,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import TriggerSchema
@@ -84,6 +89,37 @@ class EventSourceSchema(NamedSchema, table=True):
 
     configuration: bytes
     is_active: bool = Field(nullable=False)
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(EventSourceSchema.user)),
+                    joinedload(jl_arg(EventSourceSchema.triggers)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(cls, request: EventSourceRequest) -> "EventSourceSchema":

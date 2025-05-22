@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import (
@@ -32,6 +34,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import (
@@ -106,6 +109,43 @@ class StackSchema(NamedSchema, table=True):
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="stack",
     )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        from zenml.zen_stores.schemas import StackComponentSchema
+
+        options = []
+
+        if include_metadata:
+            options.extend(
+                [
+                    joinedload(jl_arg(StackSchema.components)).joinedload(
+                        jl_arg(StackComponentSchema.flavor_schema)
+                    ),
+                ]
+            )
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(StackSchema.user))])
+
+        return options
 
     def update(
         self,

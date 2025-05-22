@@ -18,7 +18,8 @@ from uuid import UUID
 
 from pydantic import ValidationError
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.source import Source
@@ -49,7 +50,10 @@ from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import RunMetadataInterface
+from zenml.zen_stores.schemas.utils import (
+    RunMetadataInterface,
+    jl_arg,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_visualization_schemas import (
@@ -115,6 +119,36 @@ class ArtifactSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(
         back_populates="artifacts",
     )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(ArtifactSchema.user)),
+                ]
+            )
+
+        return options
 
     @property
     def latest_version(self) -> Optional["ArtifactVersionSchema"]:
@@ -333,6 +367,41 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_metadata:
+            options.extend(
+                [joinedload(jl_arg(ArtifactVersionSchema.visualizations))]
+            )
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(ArtifactVersionSchema.user)),
+                ]
+            )
+
+        return options
 
     @property
     def producer_run_ids(self) -> Optional[Tuple[UUID, UUID]]:

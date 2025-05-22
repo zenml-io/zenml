@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import TaggableResourceTypes
@@ -34,6 +35,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_build_schemas import (
@@ -129,6 +131,32 @@ class PipelineSchema(NamedSchema, table=True):
             raise RuntimeError(
                 "Missing DB session to fetch latest run for pipeline."
             )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(PipelineSchema.user))])
+
+        return options
 
     @classmethod
     def from_request(

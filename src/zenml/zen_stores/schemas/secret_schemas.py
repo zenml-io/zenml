@@ -15,10 +15,12 @@
 
 import base64
 import json
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy_utils.types.encrypted.encrypted_type import (
     AesGcmEngine,
     InvalidCiphertextError,
@@ -38,6 +40,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 
 class SecretDecodeError(Exception):
@@ -75,6 +78,32 @@ class SecretSchema(NamedSchema, table=True):
         nullable=False,
     )
     user: "UserSchema" = Relationship(back_populates="secrets")
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> List[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(SecretSchema.user))])
+
+        return options
 
     @classmethod
     def _dump_secret_values(
