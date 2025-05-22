@@ -932,9 +932,11 @@ def gh_action_login():
         click.echo(f"Workspace found: {workspace_name} (ID: {workspace_id})")
         
         # Get workspace authorization token
+        click.echo("Getting workspace auth token")
         workspace_auth_token = get_workspace_auth_token(token, workspace_id)
         
         # Authenticate with the workspace
+        click.echo("Authenticating with the workspace")
         auth_cookie, csrf_token = authenticate_with_workspace(server_url, workspace_auth_token)
         
         # Create standard service account name based on workspace name
