@@ -58,7 +58,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import func
+from sqlalchemy import ScalarResult, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -1048,13 +1048,13 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            item_schemas = (
-                session.exec(
-                    query.limit(filter_model.size).offset(filter_model.offset)
-                )
-                .unique()
-                .all()
+            query_result = session.exec(
+                query.limit(filter_model.size).offset(filter_model.offset)
             )
+            if isinstance(query_result, ScalarResult):
+                item_schemas = query_result.unique().all()
+            else:
+                item_schemas = query_result.all()
 
         # Convert this page of items from schemas to models.
         items: List[AnyResponse] = []
