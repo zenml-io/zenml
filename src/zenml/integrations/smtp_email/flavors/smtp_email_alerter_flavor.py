@@ -16,9 +16,12 @@
 import smtplib
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import field_validator
+
 from zenml.alerter.base_alerter import BaseAlerterConfig, BaseAlerterFlavor
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.smtp_email import SMTP_EMAIL_ALERTER_FLAVOR
+from zenml.integrations.smtp_email.utils import validate_email
 from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
 
@@ -40,6 +43,24 @@ class SMTPEmailAlerterSettings(BaseSettings):
     recipient_email: Optional[str] = None
     subject_prefix: str = "[ZenML]"
     include_html: bool = True
+    
+    @field_validator("recipient_email")
+    @classmethod
+    def validate_recipient_email(cls, v: Optional[str]) -> Optional[str]:
+        """Validate recipient email format.
+        
+        Args:
+            v: The recipient email to validate.
+            
+        Returns:
+            The validated email or None.
+            
+        Raises:
+            ValueError: If email format is invalid.
+        """
+        if v is not None:
+            return validate_email(v)
+        return v
 
 
 class SMTPEmailAlerterConfig(BaseAlerterConfig, SMTPEmailAlerterSettings):
@@ -58,6 +79,22 @@ class SMTPEmailAlerterConfig(BaseAlerterConfig, SMTPEmailAlerterSettings):
     sender_email: str
     password: str = SecretField()
     use_tls: bool = True
+    
+    @field_validator("sender_email")
+    @classmethod
+    def validate_sender_email(cls, v: str) -> str:
+        """Validate sender email format.
+        
+        Args:
+            v: The sender email to validate.
+            
+        Returns:
+            The validated email.
+            
+        Raises:
+            ValueError: If email format is invalid.
+        """
+        return validate_email(v)
 
     @property
     def is_valid(self) -> bool:

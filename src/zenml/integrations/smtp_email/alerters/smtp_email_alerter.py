@@ -18,7 +18,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any, List, Never, Optional, Type, Union, cast
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
@@ -26,6 +26,7 @@ from zenml.integrations.smtp_email.flavors.smtp_email_alerter_flavor import (
     SMTPEmailAlerterConfig,
     SMTPEmailAlerterSettings,
 )
+from zenml.integrations.smtp_email.utils import validate_email
 from zenml.logger import get_logger
 from zenml.models.v2.misc.alerter_models import AlerterMessage
 
@@ -57,6 +58,24 @@ class SMTPEmailAlerterParameters(BaseAlerterStepParameters):
 
     # Payload for email template
     payload: Optional[SMTPEmailAlerterPayload] = None
+    
+    @field_validator("recipient_email")
+    @classmethod
+    def validate_recipient_email(cls, v: Optional[str]) -> Optional[str]:
+        """Validate recipient email format.
+        
+        Args:
+            v: The recipient email to validate.
+            
+        Returns:
+            The validated email or None.
+            
+        Raises:
+            ValueError: If email format is invalid.
+        """
+        if v is not None:
+            return validate_email(v)
+        return v
 
 
 class SMTPEmailAlerter(BaseAlerter):
@@ -168,9 +187,9 @@ class SMTPEmailAlerter(BaseAlerter):
         Raises:
             RuntimeError: if config is not of type `BaseAlerterStepParameters`.
             ValueError: if an email recipient was neither defined in the config
-                nor in the alerter component.
+                nor in the alerter component, or if the email format is invalid.
         """
-        return cast(
+        email = cast(
             str,
             self._get_attribute_value(
                 attribute_name="recipient_email",
@@ -179,6 +198,8 @@ class SMTPEmailAlerter(BaseAlerter):
                 param_class=BaseAlerterStepParameters,
             ),
         )
+        # Validate the email format before returning
+        return validate_email(email)
 
     def _should_include_html(
         self, params: Optional[BaseAlerterStepParameters] = None
