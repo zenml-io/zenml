@@ -25,8 +25,8 @@ class DAGGeneratorHelper:
 
     def __init__(self) -> None:
         """Initialize the DAG generator helper."""
-        self.step_nodes: Dict[UUID, PipelineRunDAG.Node] = {}
-        self.artifact_nodes: Dict[UUID, PipelineRunDAG.Node] = {}
+        self.step_nodes: Dict[str, PipelineRunDAG.Node] = {}
+        self.artifact_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.edges: List[PipelineRunDAG.Edge] = []
 
     def get_step_node_id(self, name: str) -> str:
