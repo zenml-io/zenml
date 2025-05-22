@@ -14,7 +14,8 @@ RUN set -ex \
   && apt-get upgrade -y \
   && apt-get autoremove -y \
   && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && pip install --upgrade pip setuptools
 
 FROM base AS builder
 
@@ -52,8 +53,7 @@ COPY src/zenml/__init__.py ./src/zenml/
 # dependencies for reproducibility and debugging.
 # NOTE: we uninstall zenml at the end because we install it separately in the
 # final stage
-RUN pip install --upgrade pip \
-  && pip install uv \
+RUN pip install --upgrade pip uv setuptools \
   && uv pip install . \
   && uv pip uninstall zenml \
   && uv pip freeze > requirements.txt
