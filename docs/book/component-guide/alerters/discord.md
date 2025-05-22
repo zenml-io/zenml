@@ -8,8 +8,8 @@ The `DiscordAlerter` enables you to send messages to a dedicated Discord channel
 
 ZenML provides generic alerter steps that work with any alerter flavor, including Discord:
 
-* [alerter\_post\_step](https://sdkdocs.zenml.io/latest/api\_docs/alerter/#zenml.alerter.steps.alerter_post_step.alerter_post_step) takes an `AlerterMessage` object, posts it to a Discord channel using the active alerter, and returns whether the operation was successful.
-* [alerter\_ask\_step](https://sdkdocs.zenml.io/latest/api\_docs/alerter/#zenml.alerter.steps.alerter_ask_step.alerter_ask_step) also posts a message to a Discord channel, but waits for user feedback, and only returns `True` if a user explicitly approved the operation.
+* `alerter_post_step` takes an `AlerterMessage` object, posts it to a Discord channel using the active alerter, and returns whether the operation was successful.
+* `alerter_ask_step` also posts a message to a Discord channel, but waits for user feedback, and only returns `True` if a user explicitly approved the operation.
 
 {% hint style="warning" %}
 The specialized Discord steps (`discord_alerter_post_step` and `discord_alerter_ask_step`) are deprecated and will be removed in a future release. Please migrate to the generic `alerter_post_step` and `alerter_ask_step` steps which work with any alerter flavor.

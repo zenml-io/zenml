@@ -160,7 +160,7 @@ def send_custom_html_email() -> None:
             <li><strong>Precision:</strong> 90.2%</li>
             <li><strong>Recall:</strong> 88.7%</li>
           </ul>
-          <p>View the <a href="https://dashboard.zenml.io" style="color: #4A6CFA;">complete results in the dashboard</a>.</p>
+          <p>View the <a href="https://cloud.zenml.io" style="color: #4A6CFA;">complete results in the dashboard</a>.</p>
         </div>
       </body>
     </html>
