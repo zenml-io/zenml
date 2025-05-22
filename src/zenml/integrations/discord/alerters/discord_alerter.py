@@ -252,11 +252,7 @@ class DiscordAlerter(BaseAlerter):
             loop.run_until_complete(asyncio.sleep(0.25))
 
             # Cancel all remaining tasks
-            pending = (
-                asyncio.all_tasks(loop)
-                if hasattr(asyncio, "all_tasks")
-                else asyncio.Task.all_tasks(loop)
-            )
+            pending = asyncio.all_tasks(loop)
             for task in pending:
                 task.cancel()
 
