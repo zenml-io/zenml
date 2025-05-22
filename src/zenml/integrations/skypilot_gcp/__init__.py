@@ -32,7 +32,7 @@ class SkypilotGCPIntegration(Integration):
 
     NAME = SKYPILOT_GCP
     REQUIREMENTS = [
-        "skypilot[gcp]~=0.9.3",
+        "skypilot[gcp]==0.9.3",
         # TODO: Remove this once the issue is fixed:
         # Adding the dependencies of the GCP integration on top of the
         # requirements of the skypilot integration results in a

@@ -75,27 +75,8 @@ We need first to install the SkyPilot integration for AWS and the AWS connectors
 
 ```shell
   # Installs dependencies for Skypilot AWS, AWS Container Registry, and S3 Artifact Store
-  pip install "zenml[connectors-aws]" "skypilot[lambda]~=0.9.2" "aws-profile-manager" boto3 argparse fsspec
+  pip install "zenml[connectors-aws]" "skypilot[lambda]==0.9.3" "aws-profile-manager" boto3 argparse fsspec
 ```
-
-{% hint style="warning" %}
-Please note that currently the ZenML Skypilot integration is **pip-incompatible** with the AWS and Azure integrations, therefore executing `zenml integration install X skypilot_X` will not work.
-
-Since the working with a skypilot stack requires you to use a remote artifact store and container registry, please install the requirements of these components with pip to avoid any installation problems.
-{% endhint %}
-
-{% hint style="warning" %}
-If you would like to use `uv` to install the stack requirements, you need to use `python_package_installer_args={"prerelease": "allow"}`:
-
-docker_settings = DockerSettings(
-    python_package_installer=PythonPackageInstaller.UV,
-    python_package_installer_args={"prerelease": "allow"},
-)
-
-@pipeline(settings={"docker": docker_settings})
-def basic_pipeline():
-    ...
-{% endhint %}
 
 To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector). To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
 
@@ -194,12 +175,30 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% endtab %}
 
 {% tab title="Azure" %}
-We need first to install the SkyPilot integration for Azure and the Azure extra for ZenML, using the following two commands
+We need first to install the SkyPilot integration for Azure and the extra requirements that are needed from additional Azure components, using the following two commands
+
+{% hint style="warning" %}
+Currently, the ZenML Skypilot integration is **pip-incompatible** with the Azure integrations, therefore executing `zenml integration install azure skypilot_azure` will not work.
+
+Since the working with a skypilot stack requires you to use a remote artifact store and container registry, please install the requirements of these components with pip to avoid any installation problems.
+{% endhint %}
 
 ```shell
-  pip install "zenml[connectors-azure]"
-  zenml integration install azure skypilot_azure 
+  pip install "zenml[connectors-azure]" adlfs azure-mgmt-containerservice azure-storage-blob
 ```
+
+{% hint style="warning" %}
+If you would like to use `uv` to install the stack requirements for an Azure Skypilot Stack, you need to use `python_package_installer_args={"prerelease": "allow"}`:
+
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    python_package_installer_args={"prerelease": "allow"},
+)
+
+@pipeline(settings={"docker": docker_settings})
+def basic_pipeline():
+    ...
+{% endhint %}
 
 To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector)
 
