@@ -137,6 +137,8 @@ class RunTemplateSchema(NamedSchema, table=True):
         Returns:
             A list of query options.
         """
+        from zenml.zen_stores.schemas import PipelineDeploymentSchema
+
         options = [
             joinedload(jl_arg(RunTemplateSchema.source_deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.build)

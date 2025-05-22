@@ -209,6 +209,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             A list of query options.
         """
+        from zenml.zen_stores.schemas import ModelVersionSchema
+
         options = [
             joinedload(jl_arg(StepRunSchema.deployment)),
             joinedload(jl_arg(StepRunSchema.pipeline_run)),
