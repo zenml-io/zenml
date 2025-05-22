@@ -358,22 +358,28 @@ Control how packages are installed:
 # Use custom installer arguments
 docker_settings = DockerSettings(python_package_installer_args={"timeout": 1000})
 
-# Use pip instead of uv
+# Use uv instead of pip
 from zenml.config import DockerSettings, PythonPackageInstaller
-docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.PIP)
-# Or as a string
-docker_settings = DockerSettings(python_package_installer="pip")
-
-# Use uv (default)
 docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.UV)
+# Or as a string
+docker_settings = DockerSettings(python_package_installer="uv")
+
+# Use pip (default)
+docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.PIP)
 ```
 
 The available package installers are:
-- `pip`: The standard Python package installer
-- `uv`: A faster alternative to pip (default)
+- `pip`: The default Python package installer
+- `uv`: A faster alternative to pip
 
-{% hint style="info" %}
-`uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation. If this happens, try switching the installer back to `pip` and see if that solves the issue.
+{% hint style="warning" %}
+In an upcoming release, ZenML will switch from `pip` to `uv` as the default package installer due to its significantly better performance. We encourage you to try it out in advance to prepare for this change:
+
+```python
+docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.UV)
+```
+
+This will help ensure a smooth transition for the entire community. If you encounter any issues, please report them on our [GitHub repository](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
 Full documentation for how `uv` works with PyTorch can be found on the Astral Docs website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers some of the particular gotchas and details you might need to know.
