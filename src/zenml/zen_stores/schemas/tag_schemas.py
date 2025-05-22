@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column, UniqueConstraint
@@ -78,7 +78,7 @@ class TagSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

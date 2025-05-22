@@ -15,7 +15,7 @@
 
 from datetime import datetime
 from secrets import token_hex
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional, Sequence, Tuple
 from uuid import UUID
 
 from passlib.context import CryptContext
@@ -99,7 +99,7 @@ class APIKeySchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

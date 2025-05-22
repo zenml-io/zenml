@@ -14,7 +14,7 @@
 """Base classes for SQLModel schemas."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, TypeVar
+from typing import TYPE_CHECKING, Any, Sequence, TypeVar
 from uuid import UUID, uuid4
 
 from sqlalchemy.sql.base import ExecutableOption
@@ -41,7 +41,7 @@ class BaseSchema(SQLModel):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         This method should return query options that improve the performance

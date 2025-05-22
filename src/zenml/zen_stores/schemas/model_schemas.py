@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, cast
 from uuid import UUID, uuid4
 
 from pydantic import ConfigDict
@@ -135,7 +135,7 @@ class ModelSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:
@@ -421,7 +421,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

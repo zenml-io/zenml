@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import Any, List, Optional
+from typing import Any, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -126,7 +126,7 @@ class ServiceSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

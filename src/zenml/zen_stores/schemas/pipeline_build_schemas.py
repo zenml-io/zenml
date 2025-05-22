@@ -14,7 +14,7 @@
 """SQLModel implementation of pipeline build tables."""
 
 import json
-from typing import Any, List, Optional
+from typing import Any, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import Column, String
@@ -113,7 +113,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

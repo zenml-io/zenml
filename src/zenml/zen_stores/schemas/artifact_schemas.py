@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 from pydantic import ValidationError
@@ -126,7 +126,7 @@ class ArtifactSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:
@@ -374,7 +374,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

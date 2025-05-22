@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -108,7 +108,7 @@ class ActionSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

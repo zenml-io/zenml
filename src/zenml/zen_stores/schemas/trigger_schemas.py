@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional, Sequence, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -129,7 +129,7 @@ class TriggerSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

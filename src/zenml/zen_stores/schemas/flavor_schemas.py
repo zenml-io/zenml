@@ -14,7 +14,7 @@
 """SQL Model Implementations for Flavors."""
 
 import json
-from typing import Any, List, Optional
+from typing import Any, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -88,7 +88,7 @@ class FlavorSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:

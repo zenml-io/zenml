@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of run template tables."""
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import Column, String, UniqueConstraint
@@ -124,7 +124,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> List[ExecutableOption]:
+    ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
 
         Args:
