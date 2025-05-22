@@ -15,28 +15,40 @@
 
 from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCPArtifactStoreFlavor,
+    GCPArtifactStoreConfig,
 )
 from zenml.integrations.gcp.flavors.gcp_image_builder_flavor import (
     GCPImageBuilderFlavor,
+    GCPImageBuilderConfig,
 )
 from zenml.integrations.gcp.flavors.vertex_experiment_tracker_flavor import (
     VertexExperimentTrackerFlavor,
+    VertexExperimentTrackerConfig,
 )
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorFlavor,
+    VertexOrchestratorConfig,
 )
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
     VertexStepOperatorFlavor,
+    VertexStepOperatorConfig,
 )
 from zenml.integrations.gcp.flavors.zenml_artifact_store_flavor import (
     ZenMLArtifactStoreFlavor,
+    ZenMLArtifactStoreConfig,
 )
 
 __all__ = [
     "GCPArtifactStoreFlavor",
+    "GCPArtifactStoreConfig",
     "ZenMLArtifactStoreFlavor",
+    "ZenMLArtifactStoreConfig",
     "GCPImageBuilderFlavor",
+    "GCPImageBuilderConfig",
     "VertexExperimentTrackerFlavor",
+    "VertexExperimentTrackerConfig",
     "VertexOrchestratorFlavor",
+    "VertexOrchestratorConfig",
     "VertexStepOperatorFlavor",
+    "VertexStepOperatorConfig",
 ]
