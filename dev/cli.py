@@ -610,7 +610,7 @@ def update(
             return
     
     click.echo(f"Updating workspace: {workspace}")
-    
+
     token = get_auth_token()
     configuration = _build_configuration(
         zenml_version=zenml_version,
@@ -741,12 +741,12 @@ def authenticate_with_workspace(server_url: str, workspace_auth_token: str) -> T
     Raises:
         RuntimeError: If authentication fails or if the required tokens are not found.
     """
-    url = f"{server_url}/auth/login"
+    url = f"{server_url}/api/v1/login"
     headers = {
         "Authorization": f"Bearer {workspace_auth_token}",
         "accept": "application/json"
     }
-    
+
     response = requests.post(url, headers=headers)
     try:
         response.raise_for_status()
