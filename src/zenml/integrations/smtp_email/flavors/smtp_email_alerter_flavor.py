@@ -103,17 +103,65 @@ class SMTPEmailAlerterConfig(BaseAlerterConfig, SMTPEmailAlerterSettings):
         Returns:
             True if the stack component is valid, False otherwise.
         """
+        server = None
         try:
             # Test the SMTP connection
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            server.set_debuglevel(0)
+            
             if self.use_tls:
-                server.starttls()
-            server.login(self.sender_email, self.password)
-            server.quit()
+                try:
+                    server.starttls()
+                except smtplib.SMTPNotSupportedError:
+                    logger.error(
+                        f"TLS is not supported by the SMTP server {self.smtp_server}. "
+                        "Please check your server configuration or disable TLS."
+                    )
+                    return False
+            
+            try:
+                server.login(self.sender_email, self.password)
+            except smtplib.SMTPAuthenticationError as e:
+                logger.error(
+                    f"SMTP authentication failed for {self.sender_email}. "
+                    f"Please check your email credentials. Error: {str(e)}"
+                )
+                return False
+            
+            logger.debug(f"SMTP configuration validated successfully for {self.smtp_server}")
             return True
-        except Exception as e:
-            logger.error(f"SMTP Email Alerter configuration error: {str(e)}")
+            
+        except smtplib.SMTPConnectError as e:
+            logger.error(
+                f"Failed to connect to SMTP server {self.smtp_server}:{self.smtp_port}. "
+                f"Error: {str(e)}. Please check your server address and port."
+            )
             return False
+        except ConnectionRefusedError:
+            logger.error(
+                f"Connection refused by {self.smtp_server}:{self.smtp_port}. "
+                "Please ensure the SMTP server is running and accessible."
+            )
+            return False
+        except TimeoutError:
+            logger.error(
+                f"Connection to {self.smtp_server}:{self.smtp_port} timed out. "
+                "Please check your network connection and server availability."
+            )
+            return False
+        except Exception as e:
+            logger.error(
+                f"SMTP Email Alerter configuration error: {type(e).__name__}: {str(e)}"
+            )
+            return False
+        finally:
+            # Always close the connection if it was established
+            if server:
+                try:
+                    server.quit()
+                except Exception:
+                    # Ignore errors when closing
+                    pass
 
 
 class SMTPEmailAlerterFlavor(BaseAlerterFlavor):

@@ -450,21 +450,109 @@ class SMTPEmailAlerter(BaseAlerter):
                     html_body = self._create_html_body(fallback_plain, params)
                 email_message.attach(MIMEText(html_body, "html"))
 
-            # Send email
-            server = smtplib.SMTP(
-                self.config.smtp_server, self.config.smtp_port
-            )
-            if self.config.use_tls:
-                server.starttls()
-            server.login(self.config.sender_email, self.config.password)
-            server.send_message(email_message)
-            server.quit()
-
-            logger.info("Email alert sent successfully")
-            return True
-
+            # Send email with better error handling
+            server = None
+            try:
+                # Connect to SMTP server
+                server = smtplib.SMTP(
+                    self.config.smtp_server, self.config.smtp_port
+                )
+                server.set_debuglevel(0)  # Set to 1 for SMTP debug output
+                
+                # Start TLS if configured
+                if self.config.use_tls:
+                    try:
+                        server.starttls()
+                    except smtplib.SMTPNotSupportedError:
+                        logger.error(
+                            f"TLS is not supported by the SMTP server {self.config.smtp_server}. "
+                            "Please check your server configuration or disable TLS."
+                        )
+                        return False
+                
+                # Authenticate
+                try:
+                    server.login(self.config.sender_email, self.config.password)
+                except smtplib.SMTPAuthenticationError as e:
+                    logger.error(
+                        f"SMTP authentication failed for {self.config.sender_email}. "
+                        f"Please check your email credentials. Error: {str(e)}"
+                    )
+                    return False
+                except smtplib.SMTPServerDisconnected:
+                    logger.error(
+                        "Server unexpectedly disconnected during authentication. "
+                        "This might be due to incorrect server settings or network issues."
+                    )
+                    return False
+                
+                # Send the message
+                try:
+                    server.send_message(email_message)
+                    logger.info(
+                        f"Email alert sent successfully from {self.config.sender_email} "
+                        f"to {recipient_email}"
+                    )
+                    return True
+                except smtplib.SMTPRecipientsRefused as e:
+                    logger.error(
+                        f"Recipients refused by SMTP server: {e.recipients}. "
+                        "Please check the recipient email addresses."
+                    )
+                    return False
+                except smtplib.SMTPSenderRefused as e:
+                    logger.error(
+                        f"Sender address {e.sender} refused by SMTP server: {e.smtp_error}. "
+                        "Please check your sender email configuration."
+                    )
+                    return False
+                    
+            except smtplib.SMTPConnectError as e:
+                logger.error(
+                    f"Failed to connect to SMTP server {self.config.smtp_server}:{self.config.smtp_port}. "
+                    f"Error: {str(e)}. Please check your server address and port."
+                )
+                return False
+            except smtplib.SMTPServerDisconnected as e:
+                logger.error(
+                    f"Lost connection to SMTP server: {str(e)}. "
+                    "This might be due to network issues or server timeout."
+                )
+                return False
+            except smtplib.SMTPException as e:
+                logger.error(
+                    f"SMTP error occurred: {str(e)}. "
+                    "Please check your SMTP configuration."
+                )
+                return False
+            except ConnectionRefusedError:
+                logger.error(
+                    f"Connection refused by {self.config.smtp_server}:{self.config.smtp_port}. "
+                    "Please ensure the SMTP server is running and accessible."
+                )
+                return False
+            except TimeoutError:
+                logger.error(
+                    f"Connection to {self.config.smtp_server}:{self.config.smtp_port} timed out. "
+                    "Please check your network connection and server availability."
+                )
+                return False
+            except Exception as e:
+                logger.error(
+                    f"Unexpected error sending email alert: {type(e).__name__}: {str(e)}"
+                )
+                return False
+            finally:
+                # Always close the connection if it was established
+                if server:
+                    try:
+                        server.quit()
+                    except Exception:
+                        # Ignore errors when closing
+                        pass
+                        
         except Exception as e:
-            logger.error(f"Error sending email alert: {str(e)}")
+            logger.error(f"Error preparing email message: {str(e)}")
             return False
 
     def ask(
