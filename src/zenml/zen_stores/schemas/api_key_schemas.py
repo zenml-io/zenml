@@ -113,7 +113,7 @@ class APIKeySchema(NamedSchema, table=True):
             A list of query options.
         """
         options = [
-            joinedload(jl_arg(APIKeySchema.service_account)),
+            joinedload(jl_arg(APIKeySchema.service_account), innerjoin=True),
         ]
 
         return options

@@ -436,7 +436,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             A list of query options.
         """
         options = [
-            joinedload(jl_arg(ModelVersionSchema.model)),
+            joinedload(jl_arg(ModelVersionSchema.model), innerjoin=True),
         ]
 
         if include_metadata:

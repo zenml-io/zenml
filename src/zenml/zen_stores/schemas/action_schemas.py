@@ -127,7 +127,9 @@ class ActionSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(ActionSchema.user)),
-                    joinedload(jl_arg(ActionSchema.service_account)),
+                    joinedload(
+                        jl_arg(ActionSchema.service_account), innerjoin=True
+                    ),
                 ]
             )
 

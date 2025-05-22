@@ -288,7 +288,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 [
                     joinedload(
                         jl_arg(PipelineRunSchema.model_version)
-                    ).joinedload(jl_arg(ModelVersionSchema.model)),
+                    ).joinedload(
+                        jl_arg(ModelVersionSchema.model), innerjoin=True
+                    ),
                     joinedload(jl_arg(PipelineRunSchema.logs)),
                     joinedload(jl_arg(PipelineRunSchema.user)),
                     joinedload(jl_arg(PipelineRunSchema.tags)),

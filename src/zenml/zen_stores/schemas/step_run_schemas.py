@@ -229,7 +229,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(StepRunSchema.model_version)).joinedload(
-                        jl_arg(ModelVersionSchema.model)
+                        jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
                     joinedload(jl_arg(StepRunSchema.user)),
                     joinedload(jl_arg(StepRunSchema.input_artifacts)),

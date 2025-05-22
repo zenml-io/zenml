@@ -143,8 +143,8 @@ class TriggerSchema(NamedSchema, table=True):
             A list of query options.
         """
         options = [
-            joinedload(jl_arg(TriggerSchema.action)),
-            joinedload(jl_arg(TriggerSchema.event_source)),
+            joinedload(jl_arg(TriggerSchema.action), innerjoin=True),
+            joinedload(jl_arg(TriggerSchema.event_source), innerjoin=True),
         ]
 
         if include_resources:
