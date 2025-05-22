@@ -35,9 +35,19 @@ def alerter_ask_step(msg: AlerterMessage) -> bool:
 
     Raises:
         RuntimeError: If no alerter is configured in the active stack.
+        NotImplementedError: If the alerter doesn't support interactive approvals.
     """
     alerter = Client().active_stack.alerter
     if not alerter:
         raise RuntimeError("No alerter is configured in the active stack.")
 
-    return alerter.ask(question=msg)
+    try:
+        return alerter.ask(question=msg)
+    except NotImplementedError:
+        # Re-raise with more context about which alerter type doesn't support ask()
+        alerter_type = type(alerter).__name__
+        raise NotImplementedError(
+            f"The {alerter_type} does not support interactive approvals. "
+            f"The ask() method is only available for chat-based alerters like Slack or Discord. "
+            f"Email alerters cannot wait for user responses."
+        )
