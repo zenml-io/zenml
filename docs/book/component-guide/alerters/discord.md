@@ -97,17 +97,59 @@ def my_formatter_step(artifact_to_be_communicated) -> str:
     return f"Here is my artifact {artifact_to_be_communicated}!"
 
 
+@step
+def conditional_step(artifact, approved: bool) -> None:
+    if approved:
+        # Proceed with the operation
+        print(f"User approved! Processing {artifact}")
+        # Your logic here
+    else:
+        print("User disapproved. Skipping operation.")
+
+
 @pipeline
 def my_pipeline(...):
     ...
     artifact_to_be_communicated = ...
     message = my_formatter_step(artifact_to_be_communicated)
     approved = discord_alerter_ask_step(message)
-    ... # Potentially have different behavior in subsequent steps if `approved`
+    conditional_step(artifact_to_be_communicated, approved)
 
 if __name__ == "__main__":
     my_pipeline()
 ```
+
+## Using Custom Approval Keywords
+
+You can customize which words trigger approval or disapproval by using `DiscordAlerterParameters`:
+
+```python
+from zenml.integrations.discord.steps.discord_alerter_ask_step import discord_alerter_ask_step
+from zenml.integrations.discord.alerters.discord_alerter import DiscordAlerterParameters
+
+# Custom approval/disapproval keywords
+params = DiscordAlerterParameters(
+    approve_msg_options=["deploy", "ship it", "✅"],
+    disapprove_msg_options=["stop", "cancel", "❌"]
+)
+
+approved = discord_alerter_ask_step(
+    "Deploy model to production?", 
+    params=params
+)
+```
+
+### Default Response Keywords
+
+By default, the Discord alerter recognizes these keywords:
+
+**Approval:** `approve`, `LGTM`, `ok`, `yes`  
+**Disapproval:** `decline`, `disapprove`, `no`, `reject`
+
+**Important Notes:**
+- The ask step returns a boolean (`True` for approval, `False` for disapproval/timeout)
+- Keywords are case-sensitive
+- If no valid response is received, the step returns `False`
 
 For more information and a full list of configurable attributes of the Discord alerter, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord) .
 

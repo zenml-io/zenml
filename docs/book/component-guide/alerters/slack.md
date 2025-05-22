@@ -171,7 +171,7 @@ def post_statement() -> None:
     )
 
 
-# Formatting with blocks
+# Formatting with blocks and custom approval options
 @step
 def ask_question() -> bool:
     message = ":tada: Should I continue? (Y/N)"
@@ -193,11 +193,20 @@ def ask_question() -> bool:
     )
     return Client().active_stack.alerter.ask(question=message, params=params)
 
+@step  
+def conditional_step(approved: bool) -> None:
+    if approved:
+        print("User approved! Continuing with operation...")
+        # Your logic here
+    else:
+        print("User declined. Stopping operation.")
+
 
 @pipeline(enable_cache=False)
 def my_pipeline():
     post_statement()
-    ask_question()
+    approved = ask_question()
+    conditional_step(approved)
 
 
 if __name__ == "__main__":
@@ -211,7 +220,7 @@ If you want to only use it in a simple manner, you can also use the steps
 the Slack integration of ZenML:
 
 ```python
-from zenml import pipeline
+from zenml import pipeline, step
 from zenml.integrations.slack.steps.slack_alerter_post_step import (
     slack_alerter_post_step
 )
@@ -219,16 +228,36 @@ from zenml.integrations.slack.steps.slack_alerter_ask_step import (
     slack_alerter_ask_step,
 )
 
+@step
+def handle_response(approved: bool) -> None:
+    if approved:
+        print("Operation approved!")
+    else:
+        print("Operation declined.")
 
 @pipeline(enable_cache=False)
 def my_pipeline():
     slack_alerter_post_step("Posting a statement.")
-    slack_alerter_ask_step("Asking a question. Should I continue?")
+    approved = slack_alerter_ask_step("Asking a question. Should I continue?")
+    handle_response(approved)
 
 
 if __name__ == "__main__":
     my_pipeline()
 ```
+
+## Default Response Keywords and Ask Step Behavior
+
+The `ask()` method and `slack_alerter_ask_step` recognize these keywords by default:
+
+**Approval:** `approve`, `LGTM`, `ok`, `yes`  
+**Disapproval:** `decline`, `disapprove`, `no`, `reject`
+
+**Important Notes:**
+- The ask step returns a boolean (`True` for approval, `False` for disapproval/timeout)
+- Response keywords are converted to lowercase before matching
+- If no valid response is received within the timeout period, the step returns `False`
+- The default timeout is 300 seconds (5 minutes) but can be configured
 
 For more information and a full list of configurable attributes of the Slack 
 alerter, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-slack.html#zenml.integrations.slack) .
