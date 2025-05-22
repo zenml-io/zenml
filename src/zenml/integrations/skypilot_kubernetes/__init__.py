@@ -31,8 +31,8 @@ class SkypilotKubernetesIntegration(Integration):
     """Definition of Skypilot Kubernetes Integration for ZenML."""
 
     NAME = SKYPILOT_KUBERNETES
-    # all 0.6.x versions of skypilot[kubernetes] are compatible
-    REQUIREMENTS = ["skypilot[kubernetes]~=0.9.2"]
+
+    REQUIREMENTS = ["skypilot[kubernetes]~=0.9.3"]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
