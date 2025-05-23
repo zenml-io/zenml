@@ -8898,12 +8898,12 @@ class SqlZenStore(BaseZenStore):
         from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
         pipeline_run = session.exec(
-            select(PipelineRunSchema).where(
-                PipelineRunSchema.id == pipeline_run_id
-            )
+            select(PipelineRunSchema)
+            .options(joinedload(PipelineRunSchema.deployment, innerjoin=True))
+            .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
-        step_runs = session.exec(
-            select(StepRunSchema).where(
+        step_run_statuses = session.exec(
+            select(StepRunSchema.status).where(
                 StepRunSchema.pipeline_run_id == pipeline_run_id
             )
         ).all()
@@ -8911,13 +8911,11 @@ class SqlZenStore(BaseZenStore):
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
         num_steps = len(
-            pipeline_run.deployment.to_model(
-                include_metadata=True
-            ).step_configurations
+            json.loads(pipeline_run.deployment.step_configurations)
         )
         new_status = get_pipeline_run_status(
             step_statuses=[
-                ExecutionStatus(step_run.status) for step_run in step_runs
+                ExecutionStatus(status) for status in step_run_statuses
             ],
             num_steps=num_steps,
         )
