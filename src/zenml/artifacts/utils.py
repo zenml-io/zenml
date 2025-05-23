@@ -909,6 +909,8 @@ def _load_file_from_artifact_store(
         DoesNotExistException: If the file does not exist in the artifact store.
         NotImplementedError: If the artifact store cannot open the file.
         IOError: If the artifact store rejects the request.
+        TypeError: If trying to strip timestamp from a file that is read as
+            bytes.
     """
     try:
         with artifact_store.open(uri, mode) as text_file:
@@ -926,6 +928,8 @@ def _load_file_from_artifact_store(
 
             logs = text_file.read(length)
             if strip_timestamp:
+                if not isinstance(logs, str):
+                    raise TypeError("Cannot strip timestamp from bytes.")
                 logs = _strip_timestamp_from_multiline_string(logs)
             return logs
     except FileNotFoundError:

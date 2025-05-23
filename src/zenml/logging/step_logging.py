@@ -147,11 +147,11 @@ def fetch_logs(
             _load_file_from_artifact_store(
                 uri,
                 artifact_store=artifact_store,
-                mode="rb",
+                mode="r",
                 offset=offset,
                 length=length,
                 strip_timestamp=strip_timestamp,
-            ).decode()
+            )
         )
 
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
