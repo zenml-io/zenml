@@ -14,9 +14,23 @@
 """Implementation for discord flavor of alerter component."""
 
 import asyncio
-from typing import List, Optional, cast
+from typing import List, Optional, Union, cast
 
-from discord import Client, DiscordException, Embed, Intents, Message
+try:
+    from discord import (
+        Client,
+        DiscordException,
+        Embed,
+        Intents,
+        Message,
+    )
+    from discord.abc import Messageable
+except ImportError:
+    # This should not happen as the integration requirements ensure discord.py is installed
+    raise ImportError(
+        "discord.py is required for the Discord alerter. "
+        "Please install it with: pip install discord.py"
+    )
 from pydantic import BaseModel
 
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
@@ -24,6 +38,7 @@ from zenml.integrations.discord.flavors.discord_alerter_flavor import (
     DiscordAlerterConfig,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 logger = get_logger(__name__)
 
@@ -141,17 +156,25 @@ class DiscordAlerter(BaseAlerter):
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
     def _create_blocks(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self,
+        message: Union[str, AlerterMessage],
+        params: Optional[BaseAlerterStepParameters],
     ) -> Optional[Embed]:
         """Helper function to create discord blocks.
 
         Args:
-            message: message
+            message: message (string or AlerterMessage)
             params: Optional parameters.
 
         Returns:
             Discord embed object.
         """
+        # Convert AlerterMessage to string if needed
+        message_str = (
+            message.body
+            if isinstance(message, AlerterMessage)
+            else str(message)
+        )
         blocks_response = None
         if (
             isinstance(params, DiscordAlerterParameters)
@@ -183,7 +206,9 @@ class DiscordAlerter(BaseAlerter):
 
             # Add a message field
             embed.add_field(
-                name=":email: *Message:*", value=f"\n{message}", inline=False
+                name=":email: *Message:*",
+                value=f"\n{message_str}",
+                inline=False,
             )
             blocks_response = embed
         return blocks_response
@@ -215,28 +240,67 @@ class DiscordAlerter(BaseAlerter):
             logger.error(
                 "Client connection timed out. please verify the credentials."
             )
+        except asyncio.CancelledError:
+            # Handle cancellation gracefully
+            pass
         finally:
+            # Ensure client is closed properly
+            if not client.is_closed():
+                loop.run_until_complete(client.close())
+
+            # Give a small delay for cleanup
+            loop.run_until_complete(asyncio.sleep(0.25))
+
+            # Cancel all remaining tasks
+            pending = asyncio.all_tasks(loop)
+            for task in pending:
+                task.cancel()
+
+            # Wait for task cancellation
+            if pending:
+                loop.run_until_complete(
+                    asyncio.gather(*pending, return_exceptions=True)
+                )
+
             # Close the event loop
             loop.close()
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self,
+        message: Union[str, AlerterMessage],
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a Discord channel.
 
+        Now supports either a plain string or an AlerterMessage. If
+        it's an AlerterMessage, we parse title/body for final content.
+
         Args:
-            message: Message to be posted.
+            message: A string or AlerterMessage to post.
             params: Optional parameters.
 
         Returns:
-            True if operation succeeded, else False
+            True if message was successfully sent, else False.
         """
         discord_channel_id = self._get_channel_id(params=params)
         intents = Intents.default()
         intents.message_content = True
 
         client = Client(intents=intents)
-        embed_blocks = self._create_blocks(message, params)
+
+        if isinstance(message, AlerterMessage):
+            final_text = ""
+            if message.title:
+                final_text += f"**{message.title}**\n"
+            if message.body:
+                final_text += message.body
+            if not final_text:
+                final_text = "(no content)"
+            embed_blocks = self._create_blocks(final_text, params)
+        else:
+            final_text = message
+            embed_blocks = self._create_blocks(final_text, params)
+
         message_sent = False
 
         @client.event
@@ -244,12 +308,12 @@ class DiscordAlerter(BaseAlerter):
             nonlocal message_sent
             try:
                 channel = client.get_channel(int(discord_channel_id))
-                if channel:
+                if channel and isinstance(channel, Messageable):
                     # Send the message
                     if embed_blocks:
-                        await channel.send(embed=embed_blocks)  # type: ignore
+                        await channel.send(embed=embed_blocks)
                     else:
-                        await channel.send(content=message)  # type: ignore
+                        await channel.send(content=final_text)
                     message_sent = True
                 else:
                     logger.error(
@@ -265,17 +329,27 @@ class DiscordAlerter(BaseAlerter):
         return message_sent
 
     def ask(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self,
+        question: Union[str, AlerterMessage],
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a Discord channel and wait for approval.
 
         Args:
-            message: Initial message to be posted.
+            question: Initial message to be posted (either string or AlerterMessage).
             params: Optional parameters.
 
         Returns:
             True if a user approved the operation, else False
         """
+        # For consistency, treat 'question' as 'message' in the implementation
+        message = question
+        # Convert AlerterMessage to string for Discord API
+        message_str = (
+            message.body
+            if isinstance(message, AlerterMessage)
+            else str(message)
+        )
         discord_channel_id = self._get_channel_id(params=params)
         intents = Intents.default()
         intents.message_content = True
@@ -288,12 +362,12 @@ class DiscordAlerter(BaseAlerter):
         async def on_ready() -> None:
             try:
                 channel = client.get_channel(int(discord_channel_id))
-                if channel:
+                if channel and isinstance(channel, Messageable):
                     # Send the message
                     if embed_blocks:
-                        await channel.send(embed=embed_blocks)  # type: ignore
+                        await channel.send(embed=embed_blocks)
                     else:
-                        await channel.send(content=message)  # type: ignore
+                        await channel.send(content=message_str)
 
                     def check(message: Message) -> bool:
                         if message.channel == channel:

@@ -8,12 +8,16 @@ description: Learning how to develop a custom alerter.
 Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
+> **Note**: Once you have implemented your custom alerter, you can post messages via the generic
+[`alerter_post_step`](./README.md#how-to-use-alerters-with-zenml) or [`alerter_ask_step`](./README.md#how-to-use-alerters-with-zenml)
+if your alerter supports interactive approvals.
+
 ### Base Abstraction
 
-The base abstraction for alerters is very basic, as it only defines two abstract methods that subclasses should implement:
+The base abstraction for alerters defines two main methods that subclasses should implement:
 
-* `post()` takes a string, posts it to the desired chat service, and returns `True` if the operation succeeded, else `False`.
-* `ask()` does the same as `post()`, but after sending the message, it waits until someone approves or rejects the operation from within the chat service (e.g., by sending "approve" / "reject" to the bot as a response). `ask()` then only returns `True` if the operation succeeded and was approved, else `False`.
+* `post()` takes either a string or an `AlerterMessage` object, posts it to the desired service, and returns `True` if the operation succeeded, else `False`.
+* `ask()` does the same as `post()`, but after sending the message, it waits until someone approves or rejects the operation from within the service (e.g., by sending "approve" / "reject" as a response). `ask()` then only returns `True` if the operation succeeded and was approved, else `False`.
 
 The `ask()` method is particularly useful for implementing human-in-the-loop workflows. When implementing this method, you should:
 - Wait for user responses containing approval keywords (like `"approve"`, `"yes"`, `"ok"`, `"LGTM"`)
@@ -22,22 +26,43 @@ The `ask()` method is particularly useful for implementing human-in-the-loop wor
 - Return `False` for disapproval, timeout, or any errors
 - Consider implementing configurable approval/disapproval keywords via parameters
 
-Then base abstraction looks something like this:
+The base abstraction looks something like this:
 
 ```python
+from typing import Optional, Union
+from zenml.models.v2.misc.alerter_models import AlerterMessage
+
 class BaseAlerter(StackComponent, ABC):
     """Base class for all ZenML alerters."""
 
     def post(
-            self, message: str, params: Optional[BaseAlerterStepParameters]
+            self, message: Union[str, AlerterMessage], 
+            params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
-        """Post a message to a chat service."""
+        """Post a message to a service.
+        
+        Args:
+            message: Either a simple string message or a structured AlerterMessage
+            params: Optional parameters to configure the alert behavior
+            
+        Returns:
+            True if the message was successfully delivered, False otherwise
+        """
         return True
 
     def ask(
-            self, question: str, params: Optional[BaseAlerterStepParameters]
+            self, question: Union[str, AlerterMessage],
+            params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
-        """Post a message to a chat service and wait for approval."""
+        """Post a message to a service and wait for approval.
+        
+        Args:
+            question: Either a simple string question or a structured AlerterMessage
+            params: Optional parameters to configure the alert behavior
+            
+        Returns:
+            True if the question was approved by a user, False otherwise
+        """
         return True
 ```
 
@@ -52,29 +77,61 @@ Creating your own custom alerter can be done in four steps:
 1.  Create a class that inherits from the `BaseAlerter` and implement the `post()` and `ask()` methods.
 
     ```python
-    from typing import Optional
+    from typing import Optional, Union
 
     from zenml.alerter import BaseAlerter, BaseAlerterStepParameters
+    from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 
     class MyAlerter(BaseAlerter):
         """My alerter class."""
 
         def post(
-            self, message: str, params: Optional[BaseAlerterStepParameters]
+            self, message: Union[str, AlerterMessage], 
+            params: Optional[BaseAlerterStepParameters] = None
         ) -> bool:
-            """Post a message to a chat service."""
+            """Post a message to a service.
+            
+            This method handles both string messages and AlerterMessage objects.
+            
+            Args:
+                message: Either a string or AlerterMessage object
+                params: Optional parameters for the alert
+                
+            Returns:
+                True if successful, False otherwise
+            """
             try:
-                # Implement your chat service posting logic here
-                # e.g., send HTTP request to chat API
-                logging.info(f"Posting message: {message}")
+                # Handle AlerterMessage objects
+                if isinstance(message, AlerterMessage):
+                    # Extract structured data from the AlerterMessage
+                    title = message.title
+                    body = message.body
+                    metadata = message.metadata
+                    
+                    # Format the message appropriately for your service
+                    formatted_message = f"{title}\n\n{body}"
+                    
+                    # Use metadata as needed
+                    if metadata:
+                        # Process any custom metadata as needed
+                        pass
+                        
+                    # Send the formatted message to your service
+                    # ...
+                    print(f"Sending AlerterMessage: {formatted_message}")
+                else:
+                    # Handle simple string messages for backward compatibility
+                    print(f"Sending string message: {message}")
+                
                 return True
             except Exception as e:
                 logging.error(f"Failed to post message: {e}")
                 return False
 
         def ask(
-            self, question: str, params: Optional[BaseAlerterStepParameters]
+            self, question: Union[str, AlerterMessage],
+            params: Optional[BaseAlerterStepParameters] = None
         ) -> bool:
             """Post a message to a chat service and wait for approval."""
             try:
