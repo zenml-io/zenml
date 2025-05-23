@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from zenml.artifacts.utils import (
     _load_artifact_from_uri,
+    _strip_timestamp_from_multiline_string,
     load_artifact_from_response,
     load_model_from_metadata,
     save_model_metadata,
@@ -189,3 +190,38 @@ def test__load_artifact(builtin_type_file_uri):
     )
     assert artifact is not None
     assert isinstance(artifact, TempClass)
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        (
+            "[2025-05-16 16:20:23 UTC] Using cached version of step XYZ.\n",
+            "Using cached version of step XYZ.\n",
+        ),
+        (
+            "[2025-05-16 16:20:23 UTC] Using cached version of step XYZ.\n[2025-05-16 16:20:59 UTC] Log 2.\n",
+            "Using cached version of step XYZ.\nLog 2.\n",
+        ),
+        (
+            "Using cached version of step XYZ.\nLog 2.\n",
+            "Using cached version of step XYZ.\nLog 2.\n",
+        ),
+        ("", ""),
+        (
+            "[2025-05-16 16:20:23 UTC] Using cached version of step XYZ.\nNo timestamp here\n"
+            "[2025-05-16 16:20:59 UTC] Log 2.\n",
+            "Using cached version of step XYZ.\nNo timestamp here\nLog 2.\n",
+        ),
+        (
+            "[2025-05-16 16:20:23 UTC] Using cached version of step XYZ.\n"
+            "Timestamp is in the logs: [2025-05-16 16:20:59 UTC]\n"
+            "[2025-05-16 16:20:59 UTC] Log 2.\n",
+            "Using cached version of step XYZ.\n"
+            "Timestamp is in the logs: [2025-05-16 16:20:59 UTC]\nLog 2.\n",
+        ),
+    ],
+)
+def test__strip_timestamp_from_multiline_string(raw: str, expected: str):
+    """Test the _strip_timestamp_from_multiline_string function to properly strip the logs."""
+    assert _strip_timestamp_from_multiline_string(raw) == expected
