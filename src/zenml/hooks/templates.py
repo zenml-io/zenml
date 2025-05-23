@@ -195,7 +195,7 @@ def get_failure_template(
         {"label": "Exception Type", "value": exception_type},
     ]
 
-    content_sections = [
+    content_sections: List[Dict[str, Any]] = [
         {
             "title": "Error Message",
             "content": exception_str,
