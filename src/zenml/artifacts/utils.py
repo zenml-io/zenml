@@ -890,7 +890,6 @@ def _load_file_from_artifact_store(
     mode: str = "rb",
     offset: int = 0,
     length: Optional[int] = None,
-    strip_timestamp: bool = False,
 ) -> Any:
     """Load the given uri from the given artifact store.
 
@@ -900,7 +899,6 @@ def _load_file_from_artifact_store(
         mode: The mode in which to open the file.
         offset: The offset from which to start reading.
         length: The amount of bytes that should be read.
-        strip_timestamp: Whether to strip the timestamp in logs or not.
 
     Returns:
         The loaded file.
@@ -909,8 +907,6 @@ def _load_file_from_artifact_store(
         DoesNotExistException: If the file does not exist in the artifact store.
         NotImplementedError: If the artifact store cannot open the file.
         IOError: If the artifact store rejects the request.
-        TypeError: If trying to strip timestamp from a file that is read as
-            bytes.
     """
     try:
         with artifact_store.open(uri, mode) as text_file:
@@ -926,12 +922,7 @@ def _load_file_from_artifact_store(
             elif offset > 0:
                 text_file.seek(offset, os.SEEK_SET)
 
-            logs = text_file.read(length)
-            if strip_timestamp:
-                if not isinstance(logs, str):
-                    raise TypeError("Cannot strip timestamp from bytes.")
-                logs = _strip_timestamp_from_multiline_string(logs)
-            return logs
+            return text_file.read(length)
     except FileNotFoundError:
         raise DoesNotExistException(
             f"File '{uri}' does not exist in artifact store "

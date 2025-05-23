@@ -28,6 +28,7 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifacts.utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,
+    _strip_timestamp_from_multiline_string,
 )
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
@@ -143,16 +144,18 @@ def fetch_logs(
         length: Optional[int] = None,
         strip_timestamp: bool = False,
     ) -> str:
-        return str(
+        file_content = str(
             _load_file_from_artifact_store(
                 uri,
                 artifact_store=artifact_store,
-                mode="r",
+                mode="rb",
                 offset=offset,
                 length=length,
-                strip_timestamp=strip_timestamp,
-            )
+            ).decode()
         )
+        if strip_timestamp:
+            file_content = _strip_timestamp_from_multiline_string(file_content)
+        return file_content
 
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
     try:
