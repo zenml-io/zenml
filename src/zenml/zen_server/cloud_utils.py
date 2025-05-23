@@ -1,5 +1,8 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
+import logging
+import threading
+import time
 from datetime import datetime, timedelta
 from threading import RLock
 from typing import Any, Dict, Optional
@@ -12,8 +15,11 @@ from zenml.exceptions import (
     IllegalOperationError,
     SubscriptionUpgradeRequiredError,
 )
+from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.utils import get_zenml_headers, server_config
+
+logger = get_logger(__name__)
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
 
@@ -56,16 +62,16 @@ class ZenMLCloudConnection:
         """
         url = self._config.api_url + endpoint
 
-        response = self.session.request(
-            method=method,
-            url=url,
-            params=params,
-            json=data,
-            timeout=self._config.http_timeout,
-        )
-        if response.status_code == 401:
-            # Refresh the auth token and try again
-            self._reset_login()
+        if logger.isEnabledFor(logging.DEBUG):
+            # Get the request ID from the current thread object
+            request_id = threading.current_thread().name
+            logger.debug(
+                f"[{request_id}] RBAC STATS - {method} {endpoint} started"
+            )
+            start_time = time.time()
+
+        status_code: Optional[int] = None
+        try:
             response = self.session.request(
                 method=method,
                 url=url,
@@ -73,18 +79,36 @@ class ZenMLCloudConnection:
                 json=data,
                 timeout=self._config.http_timeout,
             )
+            if response.status_code == 401:
+                # Refresh the auth token and try again
+                self._reset_login()
+                response = self.session.request(
+                    method=method,
+                    url=url,
+                    params=params,
+                    json=data,
+                    timeout=self._config.http_timeout,
+                )
 
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            if response.status_code == 402:
-                raise SubscriptionUpgradeRequiredError(response.json())
-            elif response.status_code == 403:
-                raise IllegalOperationError(response.json())
-            else:
-                raise RuntimeError(
-                    f"Failed while trying to contact the central zenml pro "
-                    f"service: {e}"
+            status_code = response.status_code
+            try:
+                response.raise_for_status()
+            except requests.HTTPError as e:
+                if response.status_code == 402:
+                    raise SubscriptionUpgradeRequiredError(response.json())
+                elif response.status_code == 403:
+                    raise IllegalOperationError(response.json())
+                else:
+                    raise RuntimeError(
+                        f"Failed while trying to contact the central zenml pro "
+                        f"service: {e}"
+                    )
+        finally:
+            if logger.isEnabledFor(logging.DEBUG):
+                duration = (time.time() - start_time) * 1000
+                logger.debug(
+                    f"[{request_id}] RBAC STATS - {status_code} {method} "
+                    f"{endpoint} completed in {duration:.2f}ms"
                 )
 
         return response

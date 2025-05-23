@@ -14,6 +14,7 @@
 """SQL Zen Store implementation."""
 
 import base64
+import inspect
 import json
 import logging
 import math
@@ -21,6 +22,7 @@ import os
 import random
 import re
 import sys
+import threading
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -58,7 +60,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import ScalarResult, func
+from sqlalchemy import QueuePool, ScalarResult, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -67,6 +69,7 @@ from sqlalchemy.exc import (
 from sqlalchemy.orm import Mapped, joinedload, noload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
+from sqlmodel import Session as SqlModelSession
 
 # Important to note: The select function of SQLModel works slightly differently
 # from the select function of sqlalchemy. If you input only one entity on the
@@ -75,7 +78,6 @@ from sqlalchemy.util import immutabledict
 # the tuple. While this is convenient in most cases, in unique cases like using
 # the "add_columns" functionality, one might encounter unexpected results.
 from sqlmodel import (
-    Session,
     SQLModel,
     and_,
     col,
@@ -419,6 +421,81 @@ def exponential_backoff_with_jitter(
     """
     exponential_backoff = base_duration * 1.5**attempt
     return random.uniform(0, exponential_backoff)
+
+
+class Session(SqlModelSession):
+    """Session subclass that automatically tracks duration and calling context."""
+
+    def __enter__(self) -> "Session":
+        """Enter the context manager.
+
+        Returns:
+            The SqlModel session.
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            # Get the request ID from the current thread object
+            self.request_id = threading.current_thread().name
+
+            # Get SQLAlchemy connection pool info
+            assert isinstance(self.bind, Engine)
+            assert isinstance(self.bind.pool, QueuePool)
+            checked_out_connections = self.bind.pool.checkedout()
+            available_connections = self.bind.pool.checkedin()
+            overflow = self.bind.pool.overflow()
+
+            # Look up the stack to find the SQLZenStore method
+            for frame in inspect.stack():
+                if "self" in frame.frame.f_locals:
+                    instance = frame.frame.f_locals["self"]
+                    if isinstance(instance, SqlZenStore):
+                        self.caller_method = (
+                            f"{instance.__class__.__name__}.{frame.function}"
+                        )
+                        break
+            else:
+                self.caller_method = "unknown"
+
+            logger.debug(
+                f"[{self.request_id}] SQL STATS - "
+                f"'{self.caller_method}' started [ conn(active): "
+                f"{checked_out_connections} conn(idle): "
+                f"{available_connections} conn(overflow): {overflow} ]"
+            )
+
+            self.start_time = time.time()
+
+        return super().__enter__()
+
+    def __exit__(
+        self,
+        exc_type: Optional[Any],
+        exc_val: Optional[Any],
+        exc_tb: Optional[Any],
+    ) -> None:
+        """Exit the context manager.
+
+        Args:
+            exc_type: The exception type.
+            exc_val: The exception value.
+            exc_tb: The exception traceback.
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            duration = (time.time() - self.start_time) * 1000
+
+            # Get SQLAlchemy connection pool info
+            assert isinstance(self.bind, Engine)
+            assert isinstance(self.bind.pool, QueuePool)
+            checked_out_connections = self.bind.pool.checkedout()
+            available_connections = self.bind.pool.checkedin()
+            overflow = self.bind.pool.overflow()
+            logger.debug(
+                f"[{self.request_id}] SQL STATS - "
+                f"'{self.caller_method}' completed in "
+                f"{duration:.2f}ms [ conn(active): "
+                f"{checked_out_connections} conn(idle): "
+                f"{available_connections} conn(overflow): {overflow} ]"
+            )
+        super().__exit__(exc_type, exc_val, exc_tb)
 
 
 class SQLDatabaseDriver(StrEnum):

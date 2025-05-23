@@ -270,18 +270,22 @@ def wait_pod(
         # Stream logs to `zenml.logger.info()`.
         # TODO: can we do this without parsing all logs every time?
         if stream_logs and pod_is_not_pending(resp):
-            response = core_api.read_namespaced_pod_log(
-                name=pod_name,
-                namespace=namespace,
-                _preload_content=False,
-            )
-            raw_data = response.data
-            decoded_log = raw_data.decode("utf-8", errors="replace")
-            logs = decoded_log.splitlines()
-            if len(logs) > logged_lines:
-                for line in logs[logged_lines:]:
-                    logger.info(line)
-                logged_lines = len(logs)
+            try:
+                response = core_api.read_namespaced_pod_log(
+                    name=pod_name,
+                    namespace=namespace,
+                    _preload_content=False,
+                )
+            except ApiException as e:
+                logger.error(f"Error reading pod logs: {e}. Retrying...")
+            else:
+                raw_data = response.data
+                decoded_log = raw_data.decode("utf-8", errors="replace")
+                logs = decoded_log.splitlines()
+                if len(logs) > logged_lines:
+                    for line in logs[logged_lines:]:
+                        logger.info(line)
+                    logged_lines = len(logs)
 
         # Raise an error if the pod failed.
         if pod_failed(resp):
