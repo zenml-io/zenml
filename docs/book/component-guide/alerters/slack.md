@@ -311,6 +311,45 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
+## Using Slack Alerter with Hooks
+
+You can use the Slack alerter with pipeline hooks to automatically send notifications when your pipeline succeeds or fails:
+
+```python
+from zenml import pipeline, step
+from zenml.hooks import alerter_success_hook, alerter_failure_hook
+
+@step
+def my_training_step() -> float:
+    # Your training logic here
+    accuracy = 0.95
+    return accuracy
+
+# Apply hooks at the pipeline level
+@pipeline(
+    on_success=alerter_success_hook,
+    on_failure=alerter_failure_hook
+)
+def training_pipeline():
+    my_training_step()
+
+# Or apply hooks at the step level  
+@step(
+    on_success=alerter_success_hook,
+    on_failure=alerter_failure_hook
+)
+def critical_step():
+    # Step logic here
+    pass
+```
+
+The alerter hooks use the new `AlerterMessage` format internally, which provides structured alerts with:
+- **Title**: "Pipeline Success Notification" or "Pipeline Failure Alert"
+- **Body**: Detailed information about the pipeline, step, and context
+- **Metadata**: Additional context like pipeline name, run ID, and stack name
+
+For failure hooks, the full exception traceback is included in the alert, making debugging easier.
+
 ## Default Response Keywords and Ask Step Behavior
 
 The `ask()` method and `slack_alerter_ask_step` recognize these keywords by default:

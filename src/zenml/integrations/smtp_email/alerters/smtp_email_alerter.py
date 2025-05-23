@@ -182,12 +182,6 @@ class SMTPEmailAlerter(BaseAlerter):
 
         Returns:
             Email address of the recipient.
-
-        Raises:
-            RuntimeError: if params is not of type `BaseAlerterStepParameters`.
-            ValueError: if an email recipient was neither defined in the params,
-                settings, nor in the alerter component configuration, or if the
-                email format is invalid.
         """
         email = cast(
             str,

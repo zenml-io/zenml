@@ -19,9 +19,12 @@ from typing import Optional, Type, Union, cast
 from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
+
+logger = get_logger(__name__)
 
 
 class BaseAlerterStepParameters(BaseModel):
@@ -62,6 +65,12 @@ class BaseAlerter(StackComponent, ABC):
         Returns:
             bool: True if operation succeeded, else False.
         """
+        if isinstance(message, str):
+            logger.warning(
+                "Passing string messages to alerter.post() is deprecated. "
+                "Please use AlerterMessage objects instead for better structured alerts. "
+                "Example: AlerterMessage(title='Alert Title', body='Alert body', metadata={...})"
+            )
         return True
 
     def ask(
@@ -81,6 +90,12 @@ class BaseAlerter(StackComponent, ABC):
         Returns:
             bool: True if operation succeeded and was approved, else False.
         """
+        if isinstance(question, str):
+            logger.warning(
+                "Passing string messages to alerter.ask() is deprecated. "
+                "Please use AlerterMessage objects instead for better structured alerts. "
+                "Example: AlerterMessage(title='Question Title', body='Question body', metadata={...})"
+            )
         return True
 
 

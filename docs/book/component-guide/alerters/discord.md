@@ -247,6 +247,45 @@ approved = discord_alerter_ask_step(
 )
 ```
 
+## Using Discord Alerter with Hooks
+
+You can use the Discord alerter with pipeline hooks to automatically send notifications when your pipeline succeeds or fails:
+
+```python
+from zenml import pipeline, step
+from zenml.hooks import alerter_success_hook, alerter_failure_hook
+
+@step
+def model_training_step() -> float:
+    # Your model training logic here
+    accuracy = 0.92
+    return accuracy
+
+# Apply hooks at the pipeline level
+@pipeline(
+    on_success=alerter_success_hook,
+    on_failure=alerter_failure_hook
+)
+def ml_pipeline():
+    model_training_step()
+
+# Or apply hooks at the step level  
+@step(
+    on_success=alerter_success_hook,
+    on_failure=alerter_failure_hook
+)
+def critical_deployment_step():
+    # Deployment logic here
+    pass
+```
+
+The alerter hooks use the new `AlerterMessage` format internally, which provides structured alerts with:
+- **Title**: "Pipeline Success Notification" or "Pipeline Failure Alert"
+- **Body**: Detailed information about the pipeline, step, and context
+- **Metadata**: Additional context like pipeline name, run ID, and stack name
+
+For failure hooks, the full exception traceback is included in the alert, formatted appropriately for Discord.
+
 ### Default Response Keywords
 
 By default, the Discord alerter recognizes these keywords:

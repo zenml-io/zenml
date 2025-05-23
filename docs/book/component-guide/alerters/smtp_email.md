@@ -179,11 +179,11 @@ def send_custom_html_email() -> None:
 
 ### Using with Failure and Success Hooks
 
-Email alerts are particularly useful when combined with step hooks for success and failure notifications. There are two types of hooks you can use:
+Email alerts are particularly useful when combined with step hooks for success and failure notifications.
 
-#### Standard Alerter Hooks
+#### Standard Alerter Hooks (Recommended)
 
-These work with any alerter but may not provide optimal formatting for emails:
+The standard alerter hooks now use the new `AlerterMessage` format internally, which provides excellent email formatting:
 
 ```python
 from zenml import pipeline, step
@@ -205,9 +205,16 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
-#### Email-Specific Hooks (Recommended)
+The alerter hooks use `AlerterMessage` format which provides:
+- **Title**: "Pipeline Success Notification" or "Pipeline Failure Alert"
+- **Body**: Detailed information about the pipeline, step, and context
+- **Metadata**: Additional context like pipeline name, run ID, and stack name
 
-The SMTP Email integration provides specialized hooks that format messages specifically for email, with proper HTML formatting and structure:
+The SMTP Email alerter automatically formats these messages into well-structured HTML emails.
+
+#### Email-Specific Hooks (Enhanced Formatting)
+
+The SMTP Email integration also provides specialized hooks that offer enhanced email-specific formatting:
 
 ```python
 from zenml import pipeline, step
@@ -232,18 +239,13 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
-These specialized hooks automatically:
-- Format messages with proper HTML for email clients
-- Include relevant pipeline and step information
-- Set descriptive email subjects
-- Use structured layout for better readability
-- Format error tracebacks for better legibility in email clients
-- Support Markdown-style formatting (backticks, asterisks)
-- Display traceback code in monospaced font with proper formatting
+These specialized hooks provide additional email-specific features:
+- Custom HTML templates with professional styling
+- Email-optimized error formatting
+- Structured payloads for better email organization
+- Automatic subject line generation
 
-ZenML uses a standardized email template system across all email-based alerts (including OpenAI integration) to ensure consistent styling and formatting. The template system handles the HTML structure, styling, and layout, while allowing each integration to customize the content as needed.
-
-These hooks are strongly recommended when using SMTP email alerters, as they provide a significantly better user experience compared to the standard hooks which were primarily designed for chat services.
+Both approaches work well - use the standard hooks for consistency across alerter types, or use the email-specific hooks if you need the enhanced email formatting features.
 
 ### Using the Generic Alerter Step
 
