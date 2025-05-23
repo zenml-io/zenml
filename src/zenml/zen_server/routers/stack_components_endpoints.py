@@ -93,7 +93,7 @@ def create_stack_component(
 
     from zenml.stack.utils import validate_stack_component_config
 
-    validate_stack_component_config(
+    validated_config = validate_stack_component_config(
         configuration_dict=component.configuration,
         flavor=component.flavor,
         component_type=component.type,
@@ -101,6 +101,11 @@ def create_stack_component(
         # We allow custom flavors to fail import on the server side.
         validate_custom_flavors=False,
     )
+
+    if validated_config:
+        component.configuration = validated_config.model_dump(
+            mode="json", exclude_unset=True
+        )
 
     return verify_permissions_and_create_entity(
         request_model=component,
@@ -199,7 +204,7 @@ def update_stack_component(
         from zenml.stack.utils import validate_stack_component_config
 
         existing_component = zen_store().get_stack_component(component_id)
-        validate_stack_component_config(
+        validated_config = validate_stack_component_config(
             configuration_dict=component_update.configuration,
             flavor=existing_component.flavor_name,
             component_type=existing_component.type,
@@ -207,6 +212,10 @@ def update_stack_component(
             # We allow custom flavors to fail import on the server side.
             validate_custom_flavors=False,
         )
+        if validated_config:
+            component_update.configuration = validated_config.model_dump(
+                mode="json", exclude_unset=True
+            )
 
     if component_update.connector:
         service_connector = zen_store().get_service_connector(
