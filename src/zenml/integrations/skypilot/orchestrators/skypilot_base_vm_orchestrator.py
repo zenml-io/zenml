@@ -346,9 +346,12 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             launch_new_cluster = True
             if settings.cluster_name:
                 status_request_id = sky.status(
-                    refresh=StatusRefreshMode.AUTO, cluster_names=[settings.cluster_name]
+                    refresh=StatusRefreshMode.AUTO,
+                    cluster_names=[settings.cluster_name],
                 )
-                cluster_info = self._sky_get(status_request_id, settings.stream_logs)
+                cluster_info = self._sky_get(
+                    status_request_id, settings.stream_logs
+                )
                 if cluster_info:
                     logger.info(
                         f"Found existing cluster {settings.cluster_name}. Reusing..."
@@ -381,7 +384,14 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     cluster_name,
                     **launch_kwargs,
                 )
-                self._sky_get(launch_request_id, settings.stream_logs)
+                job_id, _ = self._sky_get(
+                    launch_request_id, settings.stream_logs
+                )
+
+                if settings.stream_logs:
+                    sky.tail_logs(
+                        cluster_name=cluster_name, job_id=job_id, follow=True
+                    )
 
             else:
                 # Prepare exec parameters with additional launch settings
@@ -404,13 +414,20 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     retry_until_up=settings.retry_until_up,
                 )
                 self._sky_get(start_request_id, settings.stream_logs)
-                
+
                 exec_request_id = sky.exec(
                     task,
                     cluster_name=settings.cluster_name,
                     **exec_kwargs,
                 )
-                self._sky_get(exec_request_id, settings.stream_logs)
+                job_id, _ = self._sky_get(
+                    exec_request_id, settings.stream_logs
+                )
+
+                if settings.stream_logs:
+                    sky.tail_logs(
+                        cluster_name=cluster_name, job_id=job_id, follow=True
+                    )
 
         except Exception as e:
             logger.error(f"Pipeline run failed: {e}")
