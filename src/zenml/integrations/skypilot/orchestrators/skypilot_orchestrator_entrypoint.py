@@ -32,6 +32,14 @@ from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator imp
     ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID,
     SkypilotBaseOrchestrator,
 )
+from zenml.integrations.skypilot.utils import (
+    create_docker_run_command,
+    prepare_docker_setup,
+    prepare_launch_kwargs,
+    prepare_resources_kwargs,
+    prepare_task_kwargs,
+    sanitize_cluster_name,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.orchestrators.utils import get_config_environment_vars
@@ -102,19 +110,12 @@ def main() -> None:
     if container_registry is None:
         raise ValueError("Container registry cannot be None.")
 
-    if docker_creds := container_registry.credentials:
-        docker_username, docker_password = docker_creds
-        setup = (
-            f"docker login --username $DOCKER_USERNAME --password "
-            f"$DOCKER_PASSWORD {container_registry.config.uri}"
-        )
-        task_envs = {
-            "DOCKER_USERNAME": docker_username,
-            "DOCKER_PASSWORD": docker_password,
-        }
-    else:
-        setup = None
-        task_envs = None
+    # Prepare Docker setup
+    setup, task_envs = prepare_docker_setup(
+        container_registry_uri=container_registry.config.uri,
+        credentials=container_registry.credentials,
+        use_sudo=False,  # Entrypoint doesn't use sudo
+    )
 
     unique_resource_configs: Dict[str, str] = {}
     for step_name, step in deployment.step_configurations.items():
@@ -142,7 +143,7 @@ def main() -> None:
             accelerators_hashable,
         )
         cluster_name_parts = [
-            orchestrator.sanitize_cluster_name(str(part))
+            sanitize_cluster_name(str(part))
             for part in resource_config
             if part is not None
         ]
@@ -185,51 +186,55 @@ def main() -> None:
         env = get_config_environment_vars()
         env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
-        docker_environment_str = " ".join(
-            f"-e {k}={v}" for k, v in env.items()
+        # Create the Docker run command
+        run_command = create_docker_run_command(
+            image=image,
+            entrypoint_str=entrypoint_str,
+            arguments_str=arguments_str,
+            environment=env,
+            docker_run_args=settings.docker_run_args,
+            use_sudo=False,  # Entrypoint doesn't use sudo
         )
-        custom_run_args = " ".join(settings.docker_run_args)
-        if custom_run_args:
-            custom_run_args += " "
 
-        # Set up the task
-        run_command = f"docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
         task_name = f"{deployment.id}-{step_name}-{time.time()}"
-        task = sky.Task(
-            run=run_command,
+
+        # Create task kwargs
+        task_kwargs = prepare_task_kwargs(
+            settings=settings,
+            run_command=run_command,
             setup=setup,
-            envs=task_envs,
-            name=task_name,
-        )
-        task = task.set_resources(
-            sky.Resources(
-                cloud=orchestrator.cloud,
-                instance_type=settings.instance_type
-                or orchestrator.DEFAULT_INSTANCE_TYPE,
-                cpus=settings.cpus,
-                memory=settings.memory,
-                disk_size=settings.disk_size,
-                disk_tier=settings.disk_tier,
-                accelerators=settings.accelerators,
-                accelerator_args=settings.accelerator_args,
-                use_spot=settings.use_spot,
-                job_recovery=settings.job_recovery,
-                region=settings.region,
-                zone=settings.zone,
-                image_id=settings.image_id,
-            )
+            task_envs=task_envs,
+            task_name=task_name,
         )
 
-        sky.launch(
+        task = sky.Task(**task_kwargs)
+
+        # Set resources
+        resources_kwargs = prepare_resources_kwargs(
+            cloud=orchestrator.cloud,
+            settings=settings,
+            default_instance_type=orchestrator.DEFAULT_INSTANCE_TYPE,
+        )
+
+        task = task.set_resources(sky.Resources(**resources_kwargs))
+
+        # Prepare launch parameters
+        launch_kwargs = prepare_launch_kwargs(
+            settings=settings,
+        )
+
+        # sky.launch now returns a request ID (async). Capture it so we can
+        # optionally stream logs and block until completion when desired.
+        launch_request_id = sky.launch(
             task,
             cluster_name,
-            retry_until_up=settings.retry_until_up,
-            idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
-            down=settings.down,
-            stream_logs=settings.stream_logs,
-            detach_setup=True,
-            detach_run=True,
+            **launch_kwargs,
         )
+
+        if settings.stream_logs:
+            sky.stream_and_get(launch_request_id)
+        else:
+            sky.get(launch_request_id)
 
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to start...")
@@ -264,7 +269,12 @@ def main() -> None:
                 f"Resource configuration for cluster '{cluster_name}' "
                 "is not used by subsequent steps. deprovisioning the cluster."
             )
-            sky.down(cluster_name)
+            down_request_id = sky.down(cluster_name)
+            # Wait for the cluster to be terminated
+            if settings.stream_logs:
+                sky.stream_and_get(down_request_id)
+            else:
+                sky.get(down_request_id)
 
         logger.info(f"Running step `{step_name}` on a VM is completed.")
 

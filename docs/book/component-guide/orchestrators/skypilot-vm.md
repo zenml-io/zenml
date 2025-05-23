@@ -40,28 +40,13 @@ All ZenML pipeline runs are executed using Docker containers within the VMs prov
 You don't need to do anything special to deploy the SkyPilot VM Orchestrator. As the SkyPilot integration itself takes care of provisioning VMs, you can simply use the orchestrator as you would any other ZenML orchestrator. However, you will need to ensure that you have the appropriate permissions to provision VMs on your cloud provider of choice and to configure your SkyPilot orchestrator accordingly using the [service connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) feature.
 
 {% hint style="info" %}
-The SkyPilot VM Orchestrator currently only supports the AWS, GCP, and Azure cloud platforms.
+The SkyPilot VM Orchestrator currently only supports the AWS, GCP, Azure, Lambda Labs and Kubernetes platforms.
 {% endhint %}
 
 ## How to use it
 
 To use the SkyPilot VM Orchestrator, you need:
 
-*   One of the SkyPilot integrations installed. You can install the SkyPilot integration for your cloud provider of choice using the following command:
-
-    ```shell
-      # For AWS
-      pip install "zenml[connectors-aws]"
-      zenml integration install aws skypilot_aws 
-
-      # for GCP
-      pip install "zenml[connectors-gcp]"
-      zenml integration install gcp skypilot_gcp # for GCP
-
-      # for Azure
-      pip install "zenml[connectors-azure]"
-      zenml integration install azure skypilot_azure # for Azure
-    ```
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
 * A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
@@ -71,11 +56,12 @@ To use the SkyPilot VM Orchestrator, you need:
 
 {% tabs %}
 {% tab title="AWS" %}
-We need first to install the SkyPilot integration for AWS and the AWS connectors extra, using the following two commands:
+We need first to install the SkyPilot integration for AWS and the AWS connectors extra, using the following commands:
 
 ```shell
+  # Installs dependencies for Skypilot AWS, AWS Container Registry, and S3 Artifact Store
   pip install "zenml[connectors-aws]"
-  zenml integration install aws skypilot_aws 
+  zenml integration install aws skypilot_aws  # We recommend using the --uv option here
 ```
 
 To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector). To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
@@ -175,12 +161,32 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% endtab %}
 
 {% tab title="Azure" %}
-We need first to install the SkyPilot integration for Azure and the Azure extra for ZenML, using the following two commands
+We need first to install the SkyPilot integration for Azure and the extra requirements that are needed from additional Azure components, using the following two commands
+
+{% hint style="warning" %}
+Currently, the ZenML Skypilot integration is **pip-incompatible** with the ZenML Azure integration, therefore executing `zenml integration install azure skypilot_azure` will not work.
+
+Since working with a skypilot stack requires you to use a remote artifact store and container registry, please install the requirements of these components with pip to avoid any installation problems.
+{% endhint %}
 
 ```shell
-  pip install "zenml[connectors-azure]"
-  zenml integration install azure skypilot_azure 
+  pip install "zenml[connectors-azure]" adlfs azure-mgmt-containerservice azure-storage-blob
 ```
+
+{% hint style="warning" %}
+If you would like to use `uv` to install the stack requirements for an Azure Skypilot Stack, you need to use `python_package_installer_args={"prerelease": "allow"}`:
+
+```python
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    python_package_installer_args={"prerelease": "allow"},
+)
+
+@pipeline(settings={"docker": docker_settings})
+def basic_pipeline():
+    ...
+```
+{% endhint %}
 
 To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector)
 
@@ -314,6 +320,18 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
 * `stream_logs`: If True, show the logs in the terminal as they are generated while the cluster is running.
 * `docker_run_args`: Additional arguments to pass to the `docker run` command. For example, `['--gpus=all']` to use all GPUs available on the VM.
+* `ports`: Ports to expose. Could be an integer, a range, or a list of integers and ranges. All ports will be exposed to the public internet.
+* `labels`: Labels to apply to instances as key-value pairs. These are mapped to cloud-specific implementations (instance tags in AWS, instance labels in GCP, etc.).
+* `any_of`: List of candidate resources to try in order of preference based on cost (determined by the SkyPilot optimizer).
+* `ordered`: List of candidate resources to try in the specified order.
+* `workdir`: Working directory on the local machine to sync to the VM. This is synced to `~/sky_workdir` inside the VM.
+* `task_name`: Human-readable task name shown in SkyPilot for display purposes.
+* `num_nodes`: Number of nodes to launch (including the head node).
+* `file_mounts`: File and storage mounts configuration to make local or cloud storage paths available inside the remote cluster.
+* `envs`: Environment variables for the task. Accessible in the SkyPilot setup/run phases and inside your pipeline steps.
+* `task_settings`: Dictionary of arbitrary settings forwarded to `sky.Task()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
+* `resources_settings`: Dictionary of arbitrary settings forwarded to `sky.Resources()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
+* `launch_settings`: Dictionary of arbitrary settings forwarded to `sky.launch()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
 
 The following code snippets show how to configure the orchestrator settings for each cloud provider:
 
@@ -340,7 +358,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     retry_until_up=True,
     idle_minutes_to_autostop=60,
     down=True,
-    stream_logs=True
+    stream_logs=True,
     docker_run_args=["--gpus=all"]
 )
 
@@ -376,7 +394,8 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
     retry_until_up=True,
     idle_minutes_to_autostop=60,
     down=True,
-    stream_logs=True
+    stream_logs=True,
+    docker_run_args=["--gpus=all"]
 )
 
 
@@ -410,7 +429,8 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
     retry_until_up=True,
     idle_minutes_to_autostop=60,
     down=True,
-    stream_logs=True
+    stream_logs=True,
+    docker_run_args=["--gpus=all"]
 )
 
 
@@ -462,7 +482,7 @@ skypilot_settings = SkypilotKubernetesOrchestratorSettings(
     disk_size=100,
     cluster_name="my_cluster",
     retry_until_up=True,
-    stream_logs=True
+    stream_logs=True,
     docker_run_args=["--gpus=all"]
 )
 

@@ -14,12 +14,12 @@
 """Implementation of the Skypilot base VM orchestrator."""
 
 import os
-import re
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from uuid import uuid4
 
 import sky
+from sky import StatusRefreshMode
 
 from zenml.entrypoints import PipelineEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -30,6 +30,14 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
 )
 from zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint_configuration import (
     SkypilotOrchestratorEntrypointConfiguration,
+)
+from zenml.integrations.skypilot.utils import (
+    create_docker_run_command,
+    prepare_docker_setup,
+    prepare_launch_kwargs,
+    prepare_resources_kwargs,
+    prepare_task_kwargs,
+    sanitize_cluster_name,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import (
@@ -144,6 +152,26 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             set: Whether to set the environment variables or not.
         """
 
+    def _sky_get(self, request_id: str, stream_logs: bool) -> Any:
+        """Handle SkyPilot request results based on stream_logs setting.
+
+        SkyPilot API methods are asynchronous and return a request ID.
+        This method waits for the operation to complete and returns the result.
+
+        Args:
+            request_id: The request ID returned from a SkyPilot operation.
+            stream_logs: Whether to stream logs while waiting for completion.
+
+        Returns:
+            The result of the SkyPilot operation.
+        """
+        if stream_logs:
+            # Stream logs and wait for completion
+            return sky.stream_and_get(request_id)
+        else:
+            # Just wait for completion without streaming logs
+            return sky.get(request_id)
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -252,32 +280,21 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         entrypoint_str = " ".join(command)
         arguments_str = " ".join(args)
 
-        task_envs = environment
-        docker_environment_str = " ".join(
-            f"-e {k}={v}" for k, v in environment.items()
-        )
-        custom_run_args = " ".join(settings.docker_run_args)
-        if custom_run_args:
-            custom_run_args += " "
-
-        instance_type = settings.instance_type or self.DEFAULT_INSTANCE_TYPE
+        task_envs = environment.copy()
 
         # Set up credentials
         self.setup_credentials()
 
-        # Guaranteed by stack validation
-        assert stack is not None and stack.container_registry is not None
+        # Prepare Docker setup
+        setup, docker_creds_envs = prepare_docker_setup(
+            container_registry_uri=stack.container_registry.config.uri,
+            credentials=stack.container_registry.credentials,
+            use_sudo=True,  # Base orchestrator uses sudo
+        )
 
-        if docker_creds := stack.container_registry.credentials:
-            docker_username, docker_password = docker_creds
-            setup = (
-                f"sudo docker login --username $DOCKER_USERNAME --password "
-                f"$DOCKER_PASSWORD {stack.container_registry.config.uri}"
-            )
-            task_envs["DOCKER_USERNAME"] = docker_username
-            task_envs["DOCKER_PASSWORD"] = docker_password
-        else:
-            setup = None
+        # Update task_envs with Docker credentials
+        if docker_creds_envs:
+            task_envs.update(docker_creds_envs)
 
         # Run the entire pipeline
 
@@ -291,44 +308,49 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 down = False
                 idle_minutes_to_autostop = None
             else:
-                run_command = f"sudo docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+                run_command = create_docker_run_command(
+                    image=image,
+                    entrypoint_str=entrypoint_str,
+                    arguments_str=arguments_str,
+                    environment=task_envs,
+                    docker_run_args=settings.docker_run_args,
+                    use_sudo=True,  # Base orchestrator uses sudo
+                )
                 down = settings.down
                 idle_minutes_to_autostop = settings.idle_minutes_to_autostop
-            task = sky.Task(
-                run=run_command,
+
+            # Create the Task with all parameters and task settings
+            task_kwargs = prepare_task_kwargs(
+                settings=settings,
+                run_command=run_command,
                 setup=setup,
-                envs=task_envs,
+                task_envs=task_envs,
+                task_name=f"{orchestrator_run_name}",
             )
+
+            task = sky.Task(**task_kwargs)
             logger.debug(f"Running run: {run_command}")
 
-            task = task.set_resources(
-                sky.Resources(
-                    cloud=self.cloud,
-                    instance_type=instance_type,
-                    cpus=settings.cpus,
-                    memory=settings.memory,
-                    accelerators=settings.accelerators,
-                    accelerator_args=settings.accelerator_args,
-                    use_spot=settings.use_spot,
-                    job_recovery=settings.job_recovery,
-                    region=settings.region,
-                    zone=settings.zone,
-                    image_id=image
-                    if isinstance(self.cloud, sky.clouds.Kubernetes)
-                    else settings.image_id,
-                    disk_size=settings.disk_size,
-                    disk_tier=settings.disk_tier,
-                )
+            # Set resources with all parameters and resource settings
+            resources_kwargs = prepare_resources_kwargs(
+                cloud=self.cloud,
+                settings=settings,
+                default_instance_type=self.DEFAULT_INSTANCE_TYPE,
+                kubernetes_image=image
+                if isinstance(self.cloud, sky.clouds.Kubernetes)
+                else None,
             )
-            # Do not detach run if logs are being streamed
-            # Otherwise, the logs will not be streamed after the task is submitted
-            # Could also be a parameter in the settings to control this behavior
-            detach_run = not settings.stream_logs
+
+            task = task.set_resources(sky.Resources(**resources_kwargs))
 
             launch_new_cluster = True
             if settings.cluster_name:
-                cluster_info = sky.status(
-                    refresh=True, cluster_names=settings.cluster_name
+                status_request_id = sky.status(
+                    refresh=StatusRefreshMode.AUTO,
+                    cluster_names=[settings.cluster_name],
+                )
+                cluster_info = self._sky_get(
+                    status_request_id, settings.stream_logs
                 )
                 if cluster_info:
                     logger.info(
@@ -342,7 +364,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     )
                     cluster_name = settings.cluster_name
             else:
-                cluster_name = self.sanitize_cluster_name(
+                cluster_name = sanitize_cluster_name(
                     f"{orchestrator_run_name}"
                 )
                 logger.info(
@@ -350,34 +372,62 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 )
 
             if launch_new_cluster:
-                sky.launch(
+                # Prepare launch parameters with additional launch settings
+                launch_kwargs = prepare_launch_kwargs(
+                    settings=settings,
+                    down=down,
+                    idle_minutes_to_autostop=idle_minutes_to_autostop,
+                )
+
+                launch_request_id = sky.launch(
                     task,
                     cluster_name,
-                    retry_until_up=settings.retry_until_up,
-                    idle_minutes_to_autostop=idle_minutes_to_autostop,
-                    down=down,
-                    stream_logs=settings.stream_logs,
-                    backend=None,
-                    detach_setup=True,
-                    detach_run=detach_run,
+                    **launch_kwargs,
                 )
+                job_id, _ = self._sky_get(
+                    launch_request_id, settings.stream_logs
+                )
+
+                if settings.stream_logs:
+                    sky.tail_logs(
+                        cluster_name=cluster_name, job_id=job_id, follow=True
+                    )
+
             else:
-                # Make sure the cluster is up -
-                # If the cluster is already up, this will not do anything
-                sky.start(
+                # Prepare exec parameters with additional launch settings
+                exec_kwargs = {
+                    "down": down,
+                    "backend": None,
+                    **settings.launch_settings,  # Can reuse same settings for exec
+                }
+
+                # Remove None values to avoid overriding SkyPilot defaults
+                exec_kwargs = {
+                    k: v for k, v in exec_kwargs.items() if v is not None
+                }
+
+                # Make sure the cluster is up
+                start_request_id = sky.start(
                     settings.cluster_name,
                     down=down,
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                     retry_until_up=settings.retry_until_up,
                 )
-                sky.exec(
+                self._sky_get(start_request_id, settings.stream_logs)
+
+                exec_request_id = sky.exec(
                     task,
-                    settings.cluster_name,
-                    down=down,
-                    stream_logs=settings.stream_logs,
-                    backend=None,
-                    detach_run=detach_run,
+                    cluster_name=settings.cluster_name,
+                    **exec_kwargs,
                 )
+                job_id, _ = self._sky_get(
+                    exec_request_id, settings.stream_logs
+                )
+
+                if settings.stream_logs:
+                    sky.tail_logs(
+                        cluster_name=cluster_name, job_id=job_id, follow=True
+                    )
 
         except Exception as e:
             logger.error(f"Pipeline run failed: {e}")
@@ -386,19 +436,3 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         finally:
             # Unset the service connector AWS profile ENV variable
             self.prepare_environment_variable(set=False)
-
-    def sanitize_cluster_name(self, name: str) -> str:
-        """Sanitize the value to be used in a cluster name.
-
-        Args:
-            name: Arbitrary input cluster name.
-
-        Returns:
-            Sanitized cluster name.
-        """
-        name = re.sub(
-            r"[^a-z0-9-]", "-", name.lower()
-        )  # replaces any character that is not a lowercase letter, digit, or hyphen with a hyphen
-        name = re.sub(r"^[-]+", "", name)  # trim leading hyphens
-        name = re.sub(r"[-]+$", "", name)  # trim trailing hyphens
-        return name
