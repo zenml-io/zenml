@@ -29,6 +29,7 @@ from pydantic import ConfigDict, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, ModelStages
+from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.page import Page
@@ -44,6 +45,7 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -58,6 +60,8 @@ if TYPE_CHECKING:
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
+
+logger = get_logger(__name__)
 
 # ------------------ Request Model ------------------
 
@@ -151,25 +155,6 @@ class ModelVersionResponseBody(ProjectScopedResponseBody):
     model: "ModelResponse" = Field(
         description="The model containing version",
     )
-    model_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Model artifacts linked to the model version",
-        default={},
-    )
-    data_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Data artifacts linked to the model version",
-        default={},
-    )
-    deployment_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Deployment artifacts linked to the model version",
-        default={},
-    )
-    pipeline_run_ids: Dict[str, UUID] = Field(
-        description="Pipeline runs linked to the model version",
-        default={},
-    )
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the model version", default=[]
-    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -199,6 +184,9 @@ class ModelVersionResponseResources(ProjectScopedResponseResources):
 
     services: Page[ServiceResponse] = Field(
         description="Services linked to the model version",
+    )
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the model version", default=[]
     )
 
 
@@ -245,49 +233,13 @@ class ModelVersionResponse(
         return self.get_body().model
 
     @property
-    def model_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
-        """The `model_artifact_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().model_artifact_ids
-
-    @property
-    def data_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
-        """The `data_artifact_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().data_artifact_ids
-
-    @property
-    def deployment_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
-        """The `deployment_artifact_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().deployment_artifact_ids
-
-    @property
-    def pipeline_run_ids(self) -> Dict[str, UUID]:
-        """The `pipeline_run_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().pipeline_run_ids
-
-    @property
     def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
     @property
     def description(self) -> Optional[str]:
@@ -360,14 +312,85 @@ class ModelVersionResponse(
             Dictionary of model artifacts with versions as
             Dict[str, Dict[str, ArtifactResponse]]
         """
+        logger.warning(
+            "ModelVersionResponse.model_artifacts is deprecated and will be "
+            "removed in a future release."
+        )
         from zenml.client import Client
 
+        artifact_versions = pagination_utils.depaginate(
+            Client().list_artifact_versions,
+            model_version_id=self.id,
+            type=ArtifactType.MODEL,
+        )
+
+        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        for artifact_version in artifact_versions:
+            result.setdefault(artifact_version.name, {})
+            result[artifact_version.name][artifact_version.version] = (
+                artifact_version
+            )
+
+        return result
+
+    @property
+    def data_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """Data artifacts linked to this model version.
+
+        Returns:
+            Data artifacts linked to this model version.
+        """
+        logger.warning(
+            "ModelVersionResponse.data_artifact_ids is deprecated and will "
+            "be removed in a future release."
+        )
+
         return {
-            name: {
-                version: Client().get_artifact_version(a)
-                for version, a in self.model_artifact_ids[name].items()
+            artifact_name: {
+                version_name: version_response.id
+                for version_name, version_response in artifact_versions.items()
             }
-            for name in self.model_artifact_ids
+            for artifact_name, artifact_versions in self.data_artifacts.items()
+        }
+
+    @property
+    def model_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """Model artifacts linked to this model version.
+
+        Returns:
+            Model artifacts linked to this model version.
+        """
+        logger.warning(
+            "ModelVersionResponse.model_artifact_ids is deprecated and will "
+            "be removed in a future release."
+        )
+
+        return {
+            artifact_name: {
+                version_name: version_response.id
+                for version_name, version_response in artifact_versions.items()
+            }
+            for artifact_name, artifact_versions in self.model_artifacts.items()
+        }
+
+    @property
+    def deployment_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """Deployment artifacts linked to this model version.
+
+        Returns:
+            Deployment artifacts linked to this model version.
+        """
+        logger.warning(
+            "ModelVersionResponse.deployment_artifact_ids is deprecated and "
+            "will be removed in a future release."
+        )
+
+        return {
+            artifact_name: {
+                version_name: version_response.id
+                for version_name, version_response in artifact_versions.items()
+            }
+            for artifact_name, artifact_versions in self.deployment_artifacts.items()
         }
 
     @property
@@ -380,15 +403,27 @@ class ModelVersionResponse(
             Dictionary of data artifacts with versions as
             Dict[str, Dict[str, ArtifactResponse]]
         """
+        logger.warning(
+            "ModelVersionResponse.data_artifacts is deprecated and will be "
+            "removed in a future release."
+        )
+
         from zenml.client import Client
 
-        return {
-            name: {
-                version: Client().get_artifact_version(a)
-                for version, a in self.data_artifact_ids[name].items()
-            }
-            for name in self.data_artifact_ids
-        }
+        artifact_versions = pagination_utils.depaginate(
+            Client().list_artifact_versions,
+            model_version_id=self.id,
+            type=ArtifactType.DATA,
+        )
+
+        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        for artifact_version in artifact_versions:
+            result.setdefault(artifact_version.name, {})
+            result[artifact_version.name][artifact_version.version] = (
+                artifact_version
+            )
+
+        return result
 
     @property
     def deployment_artifacts(
@@ -400,14 +435,48 @@ class ModelVersionResponse(
             Dictionary of deployment artifacts with versions as
             Dict[str, Dict[str, ArtifactResponse]]
         """
+        logger.warning(
+            "ModelVersionResponse.deployment_artifacts is deprecated and will "
+            "be removed in a future release."
+        )
+
+        from zenml.client import Client
+
+        artifact_versions = pagination_utils.depaginate(
+            Client().list_artifact_versions,
+            model_version_id=self.id,
+            type=ArtifactType.SERVICE,
+        )
+
+        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        for artifact_version in artifact_versions:
+            result.setdefault(artifact_version.name, {})
+            result[artifact_version.name][artifact_version.version] = (
+                artifact_version
+            )
+
+        return result
+
+    @property
+    def pipeline_run_ids(self) -> Dict[str, UUID]:
+        """Pipeline runs linked to this model version.
+
+        Returns:
+            Pipeline runs linked to this model version.
+        """
+        logger.warning(
+            "ModelVersionResponse.pipeline_run_ids is deprecated and will be "
+            "removed in a future release."
+        )
+
         from zenml.client import Client
 
         return {
-            name: {
-                version: Client().get_artifact_version(a)
-                for version, a in self.deployment_artifact_ids[name].items()
-            }
-            for name in self.deployment_artifact_ids
+            link.pipeline_run.name: link.pipeline_run.id
+            for link in pagination_utils.depaginate(
+                Client().list_model_version_pipeline_run_links,
+                model_version_id=self.id,
+            )
         }
 
     @property
@@ -417,11 +486,19 @@ class ModelVersionResponse(
         Returns:
             Dictionary of Pipeline Runs as PipelineRunResponseModel
         """
+        logger.warning(
+            "ModelVersionResponse.pipeline_runs is deprecated and will be "
+            "removed in a future release."
+        )
+
         from zenml.client import Client
 
         return {
-            name: Client().get_pipeline_run(pr)
-            for name, pr in self.pipeline_run_ids.items()
+            link.pipeline_run.name: link.pipeline_run
+            for link in pagination_utils.depaginate(
+                Client().list_model_version_pipeline_run_links,
+                model_version_id=self.id,
+            )
         }
 
     def _get_linked_object(
@@ -524,19 +601,6 @@ class ModelVersionResponse(
             Specific version of the deployment artifact or None
         """
         return self._get_linked_object(name, version, ArtifactType.SERVICE)
-
-    def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
-        """Get pipeline run linked to this version.
-
-        Args:
-            name: The name of the pipeline run to retrieve.
-
-        Returns:
-            PipelineRun as PipelineRunResponseModel
-        """
-        from zenml.client import Client
-
-        return Client().get_pipeline_run(self.pipeline_run_ids[name])
 
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False

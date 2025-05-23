@@ -226,7 +226,7 @@ def delete_pipeline(
     should_decrement = (
         ResourceType.PIPELINE in server_config().reportable_resources
         and zen_store().count_pipelines(
-            PipelineFilter(name=pipeline.name, project=pipeline.project.id)
+            PipelineFilter(name=pipeline.name, project=pipeline.project_id)
         )
         == 0
     )

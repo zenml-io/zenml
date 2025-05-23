@@ -15,11 +15,13 @@
 
 import base64
 import json
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.models.v2.core.service import (
@@ -38,6 +40,7 @@ from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 
 class ServiceSchema(NamedSchema, table=True):
@@ -117,6 +120,38 @@ class ServiceSchema(NamedSchema, table=True):
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(ServiceSchema.user)),
+                    joinedload(jl_arg(ServiceSchema.model_version)),
+                    joinedload(jl_arg(ServiceSchema.pipeline_run)),
+                ]
+            )
+
+        return options
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -134,7 +169,8 @@ class ServiceSchema(NamedSchema, table=True):
             The created `ServiceResponse`.
         """
         body = ServiceResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             service_type=json.loads(self.service_type),
@@ -146,7 +182,6 @@ class ServiceSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ServiceResponseMetadata(
-                project=self.project.to_model(),
                 service_source=self.service_source,
                 config=json.loads(base64.b64decode(self.config).decode()),
                 status=json.loads(base64.b64decode(self.status).decode())
@@ -162,6 +197,7 @@ class ServiceSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = ServiceResponseResources(
+                user=self.user.to_model() if self.user else None,
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
@@ -171,7 +207,6 @@ class ServiceSchema(NamedSchema, table=True):
             )
         return ServiceResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

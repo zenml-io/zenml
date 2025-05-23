@@ -106,9 +106,7 @@ class ProjectScopedRequest(UserScopedRequest):
 class UserScopedResponseBody(BaseDatedResponseBody):
     """Base user-owned body."""
 
-    user: Optional["UserResponse"] = Field(
-        title="The user who created this resource.", default=None
-    )
+    user_id: Optional[UUID] = Field(title="The user id.", default=None)
 
 
 class UserScopedResponseMetadata(BaseResponseMetadata):
@@ -117,6 +115,10 @@ class UserScopedResponseMetadata(BaseResponseMetadata):
 
 class UserScopedResponseResources(BaseResponseResources):
     """Base class for all resource models associated with the user."""
+
+    user: Optional["UserResponse"] = Field(
+        title="The user who created this resource.", default=None
+    )
 
 
 UserBody = TypeVar("UserBody", bound=UserScopedResponseBody)
@@ -141,19 +143,28 @@ class UserScopedResponse(
             The analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        if self.user is not None:
-            metadata["user_id"] = self.user.id
+        if user_id := self.user_id:
+            metadata["user_id"] = user_id
         return metadata
 
     # Body and metadata properties
     @property
-    def user(self) -> Optional["UserResponse"]:
-        """The `user` property.
+    def user_id(self) -> Optional[UUID]:
+        """The user ID property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().user
+        return self.get_body().user_id
+
+    @property
+    def user(self) -> Optional["UserResponse"]:
+        """The user property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().user
 
 
 class UserScopedFilter(BaseFilter):
@@ -289,11 +300,11 @@ class UserScopedFilter(BaseFilter):
 class ProjectScopedResponseBody(UserScopedResponseBody):
     """Base project-scoped body."""
 
+    project_id: UUID = Field(title="The project id.")
+
 
 class ProjectScopedResponseMetadata(UserScopedResponseMetadata):
     """Base project-scoped metadata."""
-
-    project: "ProjectResponse" = Field(title="The project of this resource.")
 
 
 class ProjectScopedResponseResources(UserScopedResponseResources):
@@ -318,8 +329,6 @@ class ProjectScopedResponse(
     Used as a base class for all domain models that are project-scoped.
     """
 
-    project_id: UUID = Field(title="The project id.")
-
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for project scoped models.
@@ -328,11 +337,19 @@ class ProjectScopedResponse(
             The analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        if self.project is not None:
-            metadata["project_id"] = self.project.id
+        metadata["project_id"] = self.project_id
         return metadata
 
-    # Body and metadata properties
+    @property
+    def project_id(self) -> UUID:
+        """The project ID property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().project_id
+
+    # Helper
     @property
     def project(self) -> "ProjectResponse":
         """The project property.
@@ -340,7 +357,9 @@ class ProjectScopedResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().project
+        from zenml.client import Client
+
+        return Client().get_project(self.project_id)
 
 
 # ---------------------- Filter Models ----------------------

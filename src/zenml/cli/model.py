@@ -68,12 +68,6 @@ def _model_version_to_print(
         "stage": model_version.stage,
         "run_metadata": model_version.run_metadata,
         "tags": [t.name for t in model_version.tags],
-        "data_artifacts_count": len(model_version.data_artifact_ids),
-        "model_artifacts_count": len(model_version.model_artifact_ids),
-        "deployment_artifacts_count": len(
-            model_version.deployment_artifact_ids
-        ),
-        "pipeline_runs_count": len(model_version.pipeline_run_ids),
         "updated": model_version.updated.date(),
     }
 
@@ -601,21 +595,6 @@ def _print_artifacts_links_generic(
         else "model artifacts"
     )
 
-    if (
-        (only_data_artifacts and not model_version.data_artifact_ids)
-        or (
-            only_deployment_artifacts
-            and not model_version.deployment_artifact_ids
-        )
-        or (only_model_artifacts and not model_version.model_artifact_ids)
-    ):
-        cli_utils.declare(f"No {type_} linked to the model version found.")
-        return
-
-    cli_utils.title(
-        f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
-    )
-
     links = Client().list_model_version_artifact_links(
         model_version_id=model_version.id,
         only_data_artifacts=only_data_artifacts,
@@ -624,6 +603,13 @@ def _print_artifacts_links_generic(
         **kwargs,
     )
 
+    if not links:
+        cli_utils.declare(f"No {type_} linked to the model version found.")
+        return
+
+    cli_utils.title(
+        f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
+    )
     cli_utils.print_pydantic_models(
         links,
         columns=["artifact_version", "created"],
@@ -732,29 +718,23 @@ def list_model_version_pipeline_runs(
         model_name: The ID or name of the model containing version.
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
-        **kwargs: Keyword arguments to filter models.
+        **kwargs: Keyword arguments to filter runs.
     """
     model_version_response_model = Client().get_model_version(
         model_name_or_id=model_name,
         model_version_name_or_number_or_id=model_version,
     )
 
-    if not model_version_response_model.pipeline_run_ids:
-        cli_utils.declare("No pipeline runs attached to model version found.")
-        return
-    cli_utils.title(
-        f"Pipeline runs linked to the model version `{model_version_response_model.name}[{model_version_response_model.number}]`:"
-    )
-
-    links = Client().list_model_version_pipeline_run_links(
+    runs = Client().list_model_version_pipeline_run_links(
         model_version_id=model_version_response_model.id,
         **kwargs,
     )
 
-    cli_utils.print_pydantic_models(
-        links,
-        columns=[
-            "pipeline_run",
-            "created",
-        ],
+    if not runs:
+        cli_utils.declare("No pipeline runs attached to model version found.")
+        return
+
+    cli_utils.title(
+        f"Pipeline runs linked to the model version `{model_version_response_model.name}[{model_version_response_model.number}]`:"
     )
+    cli_utils.print_pydantic_models(runs)

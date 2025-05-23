@@ -132,12 +132,6 @@ class ModelUpdate(BaseUpdate):
 class ModelResponseBody(ProjectScopedResponseBody):
     """Response body for models."""
 
-    tags: List["TagResponse"] = Field(
-        title="Tags associated with the model",
-    )
-    latest_version_name: Optional[str] = None
-    latest_version_id: Optional[UUID] = None
-
 
 class ModelResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for models."""
@@ -186,6 +180,12 @@ class ModelResponseMetadata(ProjectScopedResponseMetadata):
 class ModelResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the model entity."""
 
+    tags: List["TagResponse"] = Field(
+        title="Tags associated with the model",
+    )
+    latest_version_name: Optional[str] = None
+    latest_version_id: Optional[UUID] = None
+
 
 class ModelResponse(
     ProjectScopedResponse[
@@ -217,7 +217,7 @@ class ModelResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
     @property
     def latest_version_name(self) -> Optional[str]:
@@ -226,7 +226,7 @@ class ModelResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().latest_version_name
+        return self.get_resources().latest_version_name
 
     @property
     def latest_version_id(self) -> Optional[UUID]:
@@ -235,7 +235,7 @@ class ModelResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().latest_version_id
+        return self.get_resources().latest_version_id
 
     @property
     def license(self) -> Optional[str]:
@@ -323,7 +323,7 @@ class ModelResponse(
         model_versions = depaginate(
             client.list_model_versions,
             model_name_or_id=self.id,
-            project=self.project.id,
+            project=self.project_id,
         )
         return [
             mv.to_model_class(suppress_class_validation_warnings=True)
