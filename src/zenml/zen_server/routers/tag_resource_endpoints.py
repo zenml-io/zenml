@@ -27,7 +27,7 @@ from zenml.models import TagResourceRequest, TagResourceResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     zen_store,
 )
 
@@ -42,7 +42,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_tag_resource(
     tag_resource: TagResourceRequest,
     _: AuthContext = Security(authorize),
@@ -62,7 +62,7 @@ def create_tag_resource(
     BATCH,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def batch_create_tag_resource(
     tag_resources: List[TagResourceRequest],
     _: AuthContext = Security(authorize),
@@ -85,7 +85,7 @@ def batch_create_tag_resource(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_tag_resource(
     tag_resource: TagResourceRequest,
     _: AuthContext = Security(authorize),
@@ -102,7 +102,7 @@ def delete_tag_resource(
     BATCH,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def batch_delete_tag_resource(
     tag_resources: List[TagResourceRequest],
     _: AuthContext = Security(authorize),

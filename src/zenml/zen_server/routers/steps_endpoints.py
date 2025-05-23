@@ -48,7 +48,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     set_filter_project_scope,
     zen_store,
@@ -65,7 +65,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_run_steps(
     step_run_filter_model: StepRunFilter = Depends(
         make_dependable(StepRunFilter)
@@ -109,7 +109,7 @@ def list_run_steps(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_run_step(
     step: StepRunRequest,
     _: AuthContext = Security(authorize),
@@ -136,7 +136,7 @@ def create_run_step(
     "/{step_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_step(
     step_id: UUID,
     hydrate: bool = True,
@@ -169,7 +169,7 @@ def get_step(
     "/{step_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_step(
     step_id: UUID,
     step_model: StepRunUpdate,
@@ -198,7 +198,7 @@ def update_step(
     "/{step_id}" + STEP_CONFIGURATION,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_step_configuration(
     step_id: UUID,
     _: AuthContext = Security(authorize),
@@ -222,7 +222,7 @@ def get_step_configuration(
     "/{step_id}" + STATUS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_step_status(
     step_id: UUID,
     _: AuthContext = Security(authorize),
@@ -246,7 +246,7 @@ def get_step_status(
     "/{step_id}" + LOGS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_step_logs(
     step_id: UUID,
     offset: int = 0,

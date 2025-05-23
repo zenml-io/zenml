@@ -30,7 +30,7 @@ from zenml.models.v2.base.page import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     plugin_flavor_registry,
 )
 
@@ -49,7 +49,7 @@ plugin_router = APIRouter(
     response_model=Page[BasePluginFlavorResponse],  # type: ignore[type-arg]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_flavors(
     type: PluginType,
     subtype: PluginSubType,
@@ -83,7 +83,7 @@ def list_flavors(
     "/{name}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_flavor(
     name: str,
     type: PluginType = Query(..., alias="type"),

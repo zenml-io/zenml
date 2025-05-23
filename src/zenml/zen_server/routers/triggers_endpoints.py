@@ -43,7 +43,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     plugin_flavor_registry,
     zen_store,
@@ -60,7 +60,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_triggers(
     trigger_filter_model: TriggerFilter = Depends(
         make_dependable(TriggerFilter)
@@ -91,7 +91,7 @@ def list_triggers(
     "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_trigger(
     trigger_id: UUID,
     hydrate: bool = True,
@@ -116,7 +116,7 @@ def get_trigger(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_trigger(
     trigger: TriggerRequest,
     _: AuthContext = Security(authorize),
@@ -167,7 +167,7 @@ def create_trigger(
     "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_trigger(
     trigger_id: UUID,
     trigger_update: TriggerUpdate,
@@ -230,7 +230,7 @@ def update_trigger(
     "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_trigger(
     trigger_id: UUID,
     _: AuthContext = Security(authorize),
@@ -258,7 +258,7 @@ executions_router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_trigger_executions(
     trigger_execution_filter_model: TriggerExecutionFilter = Depends(
         make_dependable(TriggerExecutionFilter)
@@ -289,7 +289,7 @@ def list_trigger_executions(
     "/{trigger_execution_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_trigger_execution(
     trigger_execution_id: UUID,
     hydrate: bool = True,
@@ -316,7 +316,7 @@ def get_trigger_execution(
     "/{trigger_execution_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_trigger_execution(
     trigger_execution_id: UUID,
     _: AuthContext = Security(authorize),

@@ -74,7 +74,7 @@ def test_write_file_contents_as_string_works(tmp_path):
 def test_write_file_contents_as_string_fails_with_non_string_types(tmp_path):
     """Tests writing to file."""
     file_path = os.path.join(tmp_path, "test.txt")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Content must be of type str"):
         io_utils.write_file_contents_as_string(file_path, 1)
 
 
