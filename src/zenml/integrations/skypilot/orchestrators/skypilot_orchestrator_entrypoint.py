@@ -225,14 +225,16 @@ def main() -> None:
 
         # sky.launch now returns a request ID (async). Capture it so we can
         # optionally stream logs and block until completion when desired.
-        request_id = sky.launch(
+        launch_request_id = sky.launch(
             task,
             cluster_name,
             **launch_kwargs,
         )
 
         if settings.stream_logs:
-            sky.stream_and_get(request_id)
+            sky.stream_and_get(launch_request_id)
+        else:
+            sky.get(launch_request_id)
 
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to start...")
@@ -267,7 +269,12 @@ def main() -> None:
                 f"Resource configuration for cluster '{cluster_name}' "
                 "is not used by subsequent steps. deprovisioning the cluster."
             )
-            sky.down(cluster_name)
+            down_request_id = sky.down(cluster_name)
+            # Wait for the cluster to be terminated
+            if settings.stream_logs:
+                sky.stream_and_get(down_request_id)
+            else:
+                sky.get(down_request_id)
 
         logger.info(f"Running step `{step_name}` on a VM is completed.")
 
