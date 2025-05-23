@@ -8976,7 +8976,11 @@ class SqlZenStore(BaseZenStore):
 
         pipeline_run = session.exec(
             select(PipelineRunSchema)
-            .options(joinedload(PipelineRunSchema.deployment, innerjoin=True))
+            .options(
+                joinedload(
+                    jl_arg(PipelineRunSchema.deployment), innerjoin=True
+                )
+            )
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
         step_run_statuses = session.exec(
