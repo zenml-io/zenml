@@ -147,12 +147,12 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         options = []
 
-        if include_metadata:
-            options.extend(
-                [
-                    joinedload(jl_arg(ScheduleSchema.run_metadata)),
-                ]
-            )
+        # if include_metadata:
+        #     options.extend(
+        #         [
+        #             joinedload(jl_arg(ScheduleSchema.run_metadata)),
+        #         ]
+        #     )
 
         if include_resources:
             options.extend([joinedload(jl_arg(ScheduleSchema.user))])

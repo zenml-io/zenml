@@ -60,7 +60,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, ScalarResult, func
+from sqlalchemy import QueuePool, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -1128,10 +1128,7 @@ class SqlZenStore(BaseZenStore):
             query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
             )
-            if isinstance(query_result, ScalarResult):
-                item_schemas = query_result.unique().all()
-            else:
-                item_schemas = query_result.all()
+            item_schemas = query_result.all()
 
         # Convert this page of items from schemas to models.
         items: List[AnyResponse] = []
@@ -5138,12 +5135,12 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 query_options=[
                     joinedload(jl_arg(PipelineRunSchema.deployment)),
-                    joinedload(jl_arg(PipelineRunSchema.step_runs)).joinedload(
-                        jl_arg(StepRunSchema.input_artifacts)
-                    ),
-                    joinedload(jl_arg(PipelineRunSchema.step_runs)).joinedload(
-                        jl_arg(StepRunSchema.output_artifacts)
-                    ),
+                    # joinedload(jl_arg(PipelineRunSchema.step_runs)).sele(
+                    #     jl_arg(StepRunSchema.input_artifacts)
+                    # ),
+                    # joinedload(jl_arg(PipelineRunSchema.step_runs)).joinedload(
+                    #     jl_arg(StepRunSchema.output_artifacts)
+                    # ),
                 ],
             )
             assert run.deployment is not None

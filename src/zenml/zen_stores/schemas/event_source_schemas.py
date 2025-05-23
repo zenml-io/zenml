@@ -115,7 +115,7 @@ class EventSourceSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(EventSourceSchema.user)),
-                    joinedload(jl_arg(EventSourceSchema.triggers)),
+                    # joinedload(jl_arg(EventSourceSchema.triggers)),
                 ]
             )
 

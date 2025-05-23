@@ -220,8 +220,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(StepRunSchema.logs)),
-                    joinedload(jl_arg(StepRunSchema.parents)),
-                    joinedload(jl_arg(StepRunSchema.run_metadata)),
+                    # joinedload(jl_arg(StepRunSchema.parents)),
+                    # joinedload(jl_arg(StepRunSchema.run_metadata)),
                 ]
             )
 
@@ -232,8 +232,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
                     joinedload(jl_arg(StepRunSchema.user)),
-                    joinedload(jl_arg(StepRunSchema.input_artifacts)),
-                    joinedload(jl_arg(StepRunSchema.output_artifacts)),
+                    # joinedload(jl_arg(StepRunSchema.input_artifacts)),
+                    # joinedload(jl_arg(StepRunSchema.output_artifacts)),
                 ]
             )
 

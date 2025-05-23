@@ -174,7 +174,7 @@ class RunTemplateSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(RunTemplateSchema.user)),
-                    joinedload(jl_arg(RunTemplateSchema.tags)),
+                    # joinedload(jl_arg(RunTemplateSchema.tags)),
                 ]
             )
 

@@ -157,7 +157,7 @@ class PipelineSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(PipelineSchema.user)),
-                    joinedload(jl_arg(PipelineSchema.tags)),
+                    # joinedload(jl_arg(PipelineSchema.tags)),
                 ]
             )
 

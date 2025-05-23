@@ -151,7 +151,7 @@ class TriggerSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(TriggerSchema.user)),
-                    joinedload(jl_arg(TriggerSchema.executions)),
+                    # joinedload(jl_arg(TriggerSchema.executions)),
                 ]
             )
 
