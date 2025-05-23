@@ -18,9 +18,10 @@ import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any, List, Never, Optional, Type, Union, cast
+from typing import Any, List, Optional, Type, Union, cast
 
 from pydantic import BaseModel, field_validator
+from typing_extensions import Never
 
 from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
