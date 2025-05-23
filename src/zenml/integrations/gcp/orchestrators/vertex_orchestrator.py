@@ -406,7 +406,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Creates a KFP JSON pipeline.
@@ -439,8 +440,11 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -527,10 +531,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
                 step_name_to_dynamic_component[step_name] = component
 
-            environment[ENV_ZENML_VERTEX_RUN_ID] = (
-                dsl.PIPELINE_JOB_NAME_PLACEHOLDER
-            )
-
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
             )
@@ -558,6 +558,11 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         step_settings.custom_job_parameters is not None
                     )
 
+                    step_environment = step_environments[component_name]
+                    step_environment[ENV_ZENML_VERTEX_RUN_ID] = (
+                        dsl.PIPELINE_JOB_NAME_PLACEHOLDER
+                    )
+
                     if use_custom_training_job:
                         if not step.config.resource_settings.empty:
                             logger.warning(
@@ -576,7 +581,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         component = self._convert_to_custom_training_job(
                             component,
                             settings=step_settings,
-                            environment=environment,
+                            environment=step_environment,
                         )
                         task = (
                             component()
@@ -593,7 +598,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                             .set_caching_options(enable_caching=False)
                             .after(*upstream_step_components)
                         )
-                        for key, value in environment.items():
+                        for key, value in step_environment.items():
                             task = task.set_env_variable(name=key, value=value)
 
                         pod_settings = step_settings.pod_settings
