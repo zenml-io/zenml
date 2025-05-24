@@ -29,10 +29,13 @@ from zenml.utils import code_utils, notebook_utils, source_utils, string_utils
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
-try:
-    from sqlalchemy.exc import IntegrityError
-except ImportError:
-    IntegrityError = None
+if TYPE_CHECKING:
+    from sqlalchemy.exc import IntegrityError as SQLIntegrityError
+else:
+    try:
+        from sqlalchemy.exc import IntegrityError as SQLIntegrityError
+    except ImportError:
+        SQLIntegrityError = None
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
@@ -122,8 +125,8 @@ def create_placeholder_run(
 
         # Check for raw SQL IntegrityError
         elif (
-            IntegrityError is not None
-            and isinstance(e.__cause__ or e, IntegrityError)
+            SQLIntegrityError is not None
+            and isinstance(e.__cause__ or e, SQLIntegrityError)
             or "unique_run_name_in_project" in original_message
             or (
                 "duplicate entry" in original_message.lower()
