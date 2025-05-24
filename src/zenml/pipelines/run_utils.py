@@ -12,6 +12,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
@@ -63,6 +64,10 @@ def create_placeholder_run(
 
     Returns:
         The placeholder run or `None` if no run was created.
+
+    Raises:
+        EntityExistsError: If a pipeline run with the same name already exists,
+            with an improved error message suggesting solutions.
     """
     assert deployment.user
 
@@ -91,8 +96,30 @@ def create_placeholder_run(
         tags=deployment.pipeline_configuration.tags,
         logs=logs,
     )
-    run, _ = Client().zen_store.get_or_create_run(run_request)
-    return run
+
+    try:
+        run, _ = Client().zen_store.get_or_create_run(run_request)
+        return run
+    except EntityExistsError as e:
+        # Check if this is a duplicate run name error and provide better guidance
+        original_message = str(e)
+        if (
+            "pipeline run" in original_message.lower()
+            and "name" in original_message.lower()
+        ):
+            run_name = run_request.name
+            improved_message = (
+                f"Pipeline run name '{run_name}' already exists in this project. "
+                f"Each pipeline run must have a unique name.\n\n"
+                f"To fix this, you can:\n"
+                f"1. Change the 'run_name' in your config to a unique value\n"
+                f'2. Use a dynamic run name with placeholders like: run_name: "{run_name}_{{date}}_{{time}}"\n'
+                f"3. Remove the 'run_name' from your config to auto-generate unique names\n\n"
+                f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
+            )
+            raise EntityExistsError(improved_message) from e
+        # Re-raise the original error if it's not about duplicate run names
+        raise
 
 
 def get_placeholder_run(
