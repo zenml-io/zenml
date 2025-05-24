@@ -12,6 +12,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
@@ -27,6 +28,11 @@ from zenml.stack import Flavor, Stack
 from zenml.utils import code_utils, notebook_utils, source_utils, string_utils
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
+
+try:
+    from sqlalchemy.exc import IntegrityError
+except ImportError:
+    IntegrityError = None
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
@@ -63,6 +69,10 @@ def create_placeholder_run(
 
     Returns:
         The placeholder run or `None` if no run was created.
+
+    Raises:
+        EntityExistsError: If a pipeline run with the same name already exists,
+            with an improved error message suggesting solutions.
     """
     assert deployment.user
 
@@ -91,8 +101,51 @@ def create_placeholder_run(
         tags=deployment.pipeline_configuration.tags,
         logs=logs,
     )
-    run, _ = Client().zen_store.get_or_create_run(run_request)
-    return run
+
+    try:
+        run, _ = Client().zen_store.get_or_create_run(run_request)
+        return run
+    except (EntityExistsError, Exception) as e:
+        # Handle both EntityExistsError and raw database IntegrityError
+        original_message = str(e)
+
+        # Check for duplicate run name patterns in the error message
+        is_duplicate_run_name = False
+        run_name = run_request.name
+
+        # Check for ZenML's EntityExistsError
+        if isinstance(e, EntityExistsError) and (
+            "pipeline run" in original_message.lower()
+            and "name" in original_message.lower()
+        ):
+            is_duplicate_run_name = True
+
+        # Check for raw SQL IntegrityError
+        elif (
+            IntegrityError is not None
+            and isinstance(e.__cause__ or e, IntegrityError)
+            or "unique_run_name_in_project" in original_message
+            or (
+                "duplicate entry" in original_message.lower()
+                and run_name in original_message
+            )
+        ):
+            is_duplicate_run_name = True
+
+        if is_duplicate_run_name:
+            improved_message = (
+                f"Pipeline run name '{run_name}' already exists in this project. "
+                f"Each pipeline run must have a unique name.\n\n"
+                f"To fix this, you can:\n"
+                f"1. Change the 'run_name' in your config file to a unique value\n"
+                f'2. Use a dynamic run name with placeholders like: run_name: "{run_name}_{{date}}_{{time}}"\n'
+                f"3. Remove the 'run_name' from your config to auto-generate unique names\n\n"
+                f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
+            )
+            raise EntityExistsError(improved_message) from e
+
+        # Re-raise the original error if it's not about duplicate run names
+        raise
 
 
 def get_placeholder_run(
