@@ -121,7 +121,10 @@ run_name: "training_run_cifar10_resnet50_lr0.001"
 
 1. **Use dynamic placeholders** to ensure uniqueness:
    ```yaml
+   # Example 1: Use placeholders for date and time to ensure uniqueness
    run_name: "training_run_{date}_{time}"
+   
+   # Example 2: Combine placeholders with specific details for better context
    run_name: "training_run_cifar10_resnet50_lr0.001_{date}_{time}"
    ```
 
