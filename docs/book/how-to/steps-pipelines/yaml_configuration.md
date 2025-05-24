@@ -128,7 +128,7 @@ run_name: "training_run_cifar10_resnet50_lr0.001"
    run_name: "training_run_cifar10_resnet50_lr0.001_{date}_{time}"
    ```
 
-2. **Don't specify a run_name** to let ZenML auto-generate unique names
+2. **Remove the 'run_name' from your config** to let ZenML auto-generate unique names
 
 3. **Change the run_name** before rerunning the pipeline
 

@@ -108,7 +108,7 @@ def create_placeholder_run(
     try:
         run, _ = Client().zen_store.get_or_create_run(run_request)
         return run
-    except (EntityExistsError, Exception) as e:
+    except (EntityExistsError, RuntimeError) as e:
         # Handle both EntityExistsError and raw database IntegrityError
         original_message = str(e)
 
@@ -126,7 +126,7 @@ def create_placeholder_run(
         # Check for raw SQL IntegrityError
         elif (
             SQLIntegrityError is not None
-            and isinstance(e.__cause__ or e, SQLIntegrityError)
+            and (isinstance(e.__cause__ or e, SQLIntegrityError))
             or "unique_run_name_in_project" in original_message
             or (
                 "duplicate entry" in original_message.lower()
