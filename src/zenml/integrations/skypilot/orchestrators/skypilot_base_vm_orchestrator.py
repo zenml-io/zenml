@@ -426,7 +426,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
                 if settings.stream_logs:
                     sky.tail_logs(
-                        cluster_name=cluster_name, job_id=job_id, follow=True
+                        cluster_name=settings.cluster_name, job_id=job_id, follow=True
                     )
 
         except Exception as e:

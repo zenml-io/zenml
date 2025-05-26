@@ -158,6 +158,13 @@ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector gcp-skypilot-vm
 # Register and activate a stack with the new orchestrator
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
+
+{% hint style="warning" %}
+If you are running a pipeline, where at least one step has different Skypilot settings than the pipeline, the orchestrator will try to run this step in a separate VM. In order to do this properly, you will need to provide it with a parent image through your DockerSettings where both `ZenML` and `gcloud` CLI is installed (currently not available in the default ZenML parent image).
+
+docker_settings = DockerSettings(parent_image="your/custom-image:with-zenml-and-gcloud")
+{% endhint %}
+
 {% endtab %}
 
 {% tab title="Azure" %}
