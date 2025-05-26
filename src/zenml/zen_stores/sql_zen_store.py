@@ -5107,10 +5107,29 @@ class SqlZenStore(BaseZenStore):
 
         try:
             session.commit()
-        except IntegrityError:
+        except IntegrityError as e:
             # We have to rollback the failed session first in order to
             # continue using it
             session.rollback()
+
+            # Check if this is a duplicate run name error
+            error_message = str(e).lower()
+            if "unique_run_name_in_project" in error_message or (
+                "duplicate entry" in error_message
+                and pipeline_run.name in str(e)
+            ):
+                # Provide a user-friendly error message for duplicate run names
+                improved_message = (
+                    f"Pipeline run name '{pipeline_run.name}' already exists in this project. "
+                    f"Each pipeline run must have a unique name.\n\n"
+                    f"To fix this, you can:\n"
+                    f"1. Use a different run name\n"
+                    f'2. Use a dynamic run name with placeholders like: "{pipeline_run.name}_{{date}}_{{time}}"\n'
+                    f"3. Remove the run name from your configuration to auto-generate unique names\n\n"
+                    f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
+                )
+                raise EntityExistsError(improved_message) from e
+
             # This can fail if the name is taken by a different run
             self._verify_name_uniqueness(
                 resource=pipeline_run,
