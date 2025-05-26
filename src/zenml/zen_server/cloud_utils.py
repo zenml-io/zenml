@@ -40,7 +40,7 @@ class ZenMLCloudConnection:
         method: str,
         endpoint: str,
         params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
+        data: Any = None,
     ) -> requests.Response:
         """Send a request using the active session.
 
@@ -132,7 +132,7 @@ class ZenMLCloudConnection:
         self,
         endpoint: str,
         params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
+        data: Any = None,
     ) -> requests.Response:
         """Send a POST request using the active session.
 
