@@ -129,7 +129,6 @@ class StackSchema(NamedSchema, table=True):
         Returns:
             A list of query options.
         """
-
         options = []
 
         # if include_metadata:
