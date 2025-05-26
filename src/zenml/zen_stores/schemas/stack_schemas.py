@@ -129,18 +129,17 @@ class StackSchema(NamedSchema, table=True):
         Returns:
             A list of query options.
         """
-        from zenml.zen_stores.schemas import StackComponentSchema
 
         options = []
 
-        if include_metadata:
-            options.extend(
-                [
-                    joinedload(jl_arg(StackSchema.components)).joinedload(
-                        jl_arg(StackComponentSchema.flavor_schema)
-                    ),
-                ]
-            )
+        # if include_metadata:
+        #     options.extend(
+        #         [
+        #             joinedload(jl_arg(StackSchema.components)).joinedload(
+        #                 jl_arg(StackComponentSchema.flavor_schema)
+        #             ),
+        #         ]
+        #     )
 
         if include_resources:
             options.extend([joinedload(jl_arg(StackSchema.user))])
