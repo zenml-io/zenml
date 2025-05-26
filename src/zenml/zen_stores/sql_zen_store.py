@@ -1046,6 +1046,7 @@ class SqlZenStore(BaseZenStore):
             ]
         ] = None,
         hydrate: bool = False,
+        apply_query_options_from_schema: bool = False,
     ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -1066,6 +1067,8 @@ class SqlZenStore(BaseZenStore):
                 arguments and return a `List` of items.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            apply_query_options_from_schema: Flag deciding whether to apply
+                query options defined on the schema.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -1112,7 +1115,7 @@ class SqlZenStore(BaseZenStore):
         query_options = table.get_query_options(
             include_metadata=hydrate, include_resources=True
         )
-        if query_options:
+        if apply_query_options_from_schema and query_options:
             query = query.options(*query_options)
 
         # Get a page of the actual data
@@ -2002,9 +2005,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=action_id,
                 schema_class=ActionSchema,
                 session=session,
-                query_options=ActionSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
 
             return action.to_model(
@@ -2551,9 +2551,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=service_id,
                 schema_class=ServiceSchema,
                 session=session,
-                query_options=ServiceSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return service.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -2698,9 +2695,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=artifact_id,
                 schema_class=ArtifactSchema,
                 session=session,
-                query_options=ArtifactSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return artifact.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -3092,9 +3086,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=artifact_version_id,
                 schema_class=ArtifactVersionSchema,
                 session=session,
-                query_options=ArtifactVersionSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return artifact_version.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -3274,9 +3265,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=artifact_visualization_id,
                 schema_class=ArtifactVisualizationSchema,
                 session=session,
-                query_options=ArtifactVisualizationSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return artifact_visualization.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -3302,9 +3290,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=code_reference_id,
                 schema_class=CodeReferenceSchema,
                 session=session,
-                query_options=CodeReferenceSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return code_reference.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -3362,9 +3347,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=code_repository_id,
                 schema_class=CodeRepositorySchema,
                 session=session,
-                query_options=CodeRepositorySchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
 
             return repo.to_model(
@@ -3568,9 +3550,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=component_id,
                 schema_class=StackComponentSchema,
                 session=session,
-                query_options=StackComponentSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
 
             return stack_component.to_model(
@@ -3849,9 +3828,6 @@ class SqlZenStore(BaseZenStore):
                 schema_class=OAuthDeviceSchema,
                 session=session,
                 resource_type="authorized device",
-                query_options=OAuthDeviceSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
 
             return device.to_model(
@@ -4125,9 +4101,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=flavor_id,
                 schema_class=FlavorSchema,
                 session=session,
-                query_options=FlavorSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return flavor_in_db.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -4271,9 +4244,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=logs_id,
                 schema_class=LogsSchema,
                 session=session,
-                query_options=LogsSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return logs.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -4347,9 +4317,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=pipeline_id,
                 schema_class=PipelineSchema,
                 session=session,
-                query_options=PipelineSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return pipeline.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -4516,9 +4483,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=build_id,
                 schema_class=PipelineBuildSchema,
                 session=session,
-                query_options=PipelineBuildSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return build.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -4710,9 +4674,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=deployment_id,
                 schema_class=PipelineDeploymentSchema,
                 session=session,
-                query_options=PipelineDeploymentSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
 
             return deployment.to_model(
@@ -4835,9 +4796,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=template_id,
                 schema_class=RunTemplateSchema,
                 session=session,
-                query_options=RunTemplateSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return template.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -5014,9 +4972,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=event_source_id,
                 schema_class=EventSourceSchema,
                 session=session,
-                query_options=EventSourceSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return event_source.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -5837,6 +5792,7 @@ class SqlZenStore(BaseZenStore):
                     include_resources=True,
                     include_full_metadata=include_full_metadata,
                 ),
+                apply_query_options_from_schema=True,
             )
 
     def update_run(
@@ -6048,9 +6004,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=schedule_id,
                 schema_class=ScheduleSchema,
                 session=session,
-                query_options=ScheduleSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return schedule.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -7231,9 +7184,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=service_connector_id,
                 schema_class=ServiceConnectorSchema,
                 session=session,
-                query_options=ServiceConnectorSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
 
             connector = service_connector.to_model(
@@ -8200,9 +8150,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=stack_id,
                 schema_class=StackSchema,
                 session=session,
-                query_options=StackSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return stack.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -8705,6 +8652,7 @@ class SqlZenStore(BaseZenStore):
                 table=StepRunSchema,
                 filter_model=step_run_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_run_step(
@@ -9141,9 +9089,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=trigger_id,
                 schema_class=TriggerSchema,
                 session=session,
-                query_options=TriggerSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return trigger.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -9301,9 +9246,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=trigger_execution_id,
                 schema_class=TriggerExecutionSchema,
                 session=session,
-                query_options=TriggerExecutionSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return execution.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -10771,9 +10713,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=model_id,
                 schema_class=ModelSchema,
                 session=session,
-                query_options=ModelSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
             )
             return model.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -11397,6 +11336,7 @@ class SqlZenStore(BaseZenStore):
                 table=ModelVersionSchema,
                 filter_model=model_version_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def delete_model_version(
