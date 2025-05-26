@@ -352,7 +352,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                 ):
                     type_ = find_type_by_str(type_str)
                     materializer_class = materializer_registry[type_]
-                    materializer = materializer_class(uri=path_)
+                    materializer = materializer_class(
+                        uri=path_, artifact_store=self.artifact_store
+                    )
                     element = materializer.load(type_)
                     outputs.append(element)
 
@@ -364,7 +366,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     materializer_class = source_utils.load(
                         entry["materializer"]
                     )
-                    materializer = materializer_class(uri=path_)
+                    materializer = materializer_class(
+                        uri=path_, artifact_store=self.artifact_store
+                    )
                     element = materializer.load(type_)
                     outputs.append(element)
 
@@ -427,7 +431,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                 self.artifact_store.mkdir(element_path)
                 type_ = type(element)
                 materializer_class = materializer_registry[type_]
-                materializer = materializer_class(uri=element_path)
+                materializer = materializer_class(
+                    uri=element_path, artifact_store=self.artifact_store
+                )
                 materializers.append(materializer)
                 metadata.append(
                     {
