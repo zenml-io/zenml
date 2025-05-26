@@ -63,10 +63,6 @@ def create_placeholder_run(
 
     Returns:
         The placeholder run or `None` if no run was created.
-
-    Raises:
-        EntityExistsError: If a pipeline run with the same name already exists,
-            with an improved error message suggesting solutions.
     """
     assert deployment.user
 
