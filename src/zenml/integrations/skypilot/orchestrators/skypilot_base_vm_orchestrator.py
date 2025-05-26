@@ -38,6 +38,7 @@ from zenml.integrations.skypilot.utils import (
     prepare_resources_kwargs,
     prepare_task_kwargs,
     sanitize_cluster_name,
+    sky_job_get,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import (
@@ -151,26 +152,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         Args:
             set: Whether to set the environment variables or not.
         """
-
-    def _sky_get(self, request_id: str, stream_logs: bool) -> Any:
-        """Handle SkyPilot request results based on stream_logs setting.
-
-        SkyPilot API methods are asynchronous and return a request ID.
-        This method waits for the operation to complete and returns the result.
-
-        Args:
-            request_id: The request ID returned from a SkyPilot operation.
-            stream_logs: Whether to stream logs while waiting for completion.
-
-        Returns:
-            The result of the SkyPilot operation.
-        """
-        if stream_logs:
-            # Stream logs and wait for completion
-            return sky.stream_and_get(request_id)
-        else:
-            # Just wait for completion without streaming logs
-            return sky.get(request_id)
 
     def prepare_or_run_pipeline(
         self,
@@ -349,9 +330,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     refresh=StatusRefreshMode.AUTO,
                     cluster_names=[settings.cluster_name],
                 )
-                cluster_info = self._sky_get(
-                    status_request_id, settings.stream_logs
-                )
+                cluster_info = sky.stream_and_get(status_request_id)
+
                 if cluster_info:
                     logger.info(
                         f"Found existing cluster {settings.cluster_name}. Reusing..."
@@ -379,19 +359,12 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                 )
 
-                launch_request_id = sky.launch(
+                launch_job_id = sky.launch(
                     task,
                     cluster_name,
                     **launch_kwargs,
                 )
-                job_id, _ = self._sky_get(
-                    launch_request_id, settings.stream_logs
-                )
-
-                if settings.stream_logs:
-                    sky.tail_logs(
-                        cluster_name=cluster_name, job_id=job_id, follow=True
-                    )
+                sky_job_get(launch_job_id, settings.stream_logs)
 
             else:
                 # Prepare exec parameters with additional launch settings
@@ -413,21 +386,14 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                     retry_until_up=settings.retry_until_up,
                 )
-                self._sky_get(start_request_id, settings.stream_logs)
+                sky.stream_and_get(start_request_id)
 
-                exec_request_id = sky.exec(
+                exec_job_id = sky.exec(
                     task,
                     cluster_name=settings.cluster_name,
                     **exec_kwargs,
                 )
-                job_id, _ = self._sky_get(
-                    exec_request_id, settings.stream_logs
-                )
-
-                if settings.stream_logs:
-                    sky.tail_logs(
-                        cluster_name=settings.cluster_name, job_id=job_id, follow=True
-                    )
+                sky_job_get(exec_job_id, settings.stream_logs)
 
         except Exception as e:
             logger.error(f"Pipeline run failed: {e}")

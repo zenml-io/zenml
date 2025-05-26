@@ -3,6 +3,8 @@
 import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+import sky
+
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorSettings,
 )
@@ -117,9 +119,11 @@ def prepare_task_kwargs(
     """
     # Merge envs from settings with existing task_envs
     merged_envs = {}
+
     # First add user-provided envs
     if settings.envs:
         merged_envs.update(settings.envs)
+
     # Then add task_envs which take precedence
     if task_envs:
         merged_envs.update(task_envs)
@@ -130,7 +134,7 @@ def prepare_task_kwargs(
         "envs": merged_envs,
         "name": settings.task_name or task_name,
         "workdir": settings.workdir,
-        "file_mounts": settings.file_mounts,
+        "file_mounts_mapping": settings.file_mounts,
         "num_nodes": settings.num_nodes,
         **settings.task_settings,  # Add any arbitrary task settings
     }
@@ -231,3 +235,35 @@ def prepare_launch_kwargs(
 
     # Remove None values to avoid overriding SkyPilot defaults
     return {k: v for k, v in launch_kwargs.items() if v is not None}
+
+
+def sky_job_get(request_id: str, stream_logs: bool) -> Any:
+    """Handle SkyPilot request results based on stream_logs setting.
+
+    SkyPilot API exec and launch methods are asynchronous and return a request ID.
+    This method waits for the operation to complete and returns the result.
+    If stream_logs is True, it will also stream the logs and wait for the
+    job to complete.
+
+    Args:
+        request_id: The request ID returned from a SkyPilot operation.
+        stream_logs: Whether to stream logs while waiting for completion.
+        cluster_name: The name of the cluster to tail logs for.
+
+    Returns:
+        The result of the SkyPilot operation.
+    """
+    if stream_logs:
+        # Stream logs and wait for completion
+        job_id, _ = sky.stream_and_get(request_id)
+    else:
+        # Just wait for completion without streaming logs
+        job_id, _ = sky.get(request_id)
+
+    if stream_logs:
+        status = sky.jobs.tail_logs(job_id=job_id, follow=True)
+
+    if status != 0:
+        raise Exception(f"SkyPilot job {job_id} failed with status {status}")
+
+    return job_id

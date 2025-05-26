@@ -39,12 +39,12 @@ from zenml.integrations.skypilot.utils import (
     prepare_resources_kwargs,
     prepare_task_kwargs,
     sanitize_cluster_name,
+    sky_job_get,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
-    publish_failed_step_run,
 )
 from zenml.orchestrators.utils import get_config_environment_vars
 
@@ -84,9 +84,9 @@ def main() -> None:
     # Parse / extract args.
     args = parse_args()
     orchestrator_run_id = socket.gethostname()
-    
+
     run = None
-    
+
     try:
         deployment = Client().get_deployment(args.deployment_id)
 
@@ -131,7 +131,9 @@ def main() -> None:
             )
             # Handle both str and Dict[str, int] types for accelerators
             if isinstance(settings.accelerators, dict):
-                accelerators_hashable = frozenset(settings.accelerators.items())
+                accelerators_hashable = frozenset(
+                    settings.accelerators.items()
+                )
             elif isinstance(settings.accelerators, str):
                 accelerators_hashable = frozenset({(settings.accelerators, 1)})
             else:
@@ -173,6 +175,7 @@ def main() -> None:
             Args:
                 step_name: Name of the step.
             """
+            logger.info(f"Running step `{step_name}` on a VM...")
             try:
                 cluster_name = unique_resource_configs[step_name]
 
@@ -180,8 +183,10 @@ def main() -> None:
                     deployment=deployment, step_name=step_name
                 )
 
-                step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, deployment_id=deployment.id
+                step_args = (
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name, deployment_id=deployment.id
+                    )
                 )
                 arguments_str = " ".join(step_args)
 
@@ -191,7 +196,9 @@ def main() -> None:
                     orchestrator.get_settings(step),
                 )
                 env = get_config_environment_vars()
-                env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
+                env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
+                    orchestrator_run_id
+                )
 
                 # Create the Docker run command
                 run_command = create_docker_run_command(
@@ -213,6 +220,8 @@ def main() -> None:
                     task_envs=task_envs,
                     task_name=task_name,
                 )
+                
+                logger.info(f"Using settings: {settings}")
 
                 task = sky.Task(**task_kwargs)
 
@@ -237,26 +246,7 @@ def main() -> None:
                     cluster_name,
                     **launch_kwargs,
                 )
-
-                if settings.stream_logs:
-                    sky.stream_and_get(launch_request_id)
-                else:
-                    sky.get(launch_request_id)
-
-                # Wait for pod to finish.
-                logger.info(f"Waiting for pod of step `{step_name}` to start...")
-
-                current_run = Client().get_pipeline_run(run.id)
-
-                step_is_finished = False
-                while not step_is_finished:
-                    time.sleep(10)
-                    current_run = Client().get_pipeline_run(run.id)
-                    try:
-                        step_is_finished = current_run.steps[step_name].status.is_finished
-                    except KeyError:
-                        # Step is not yet in the run, so we wait for it to appear
-                        continue
+                sky_job_get(launch_request_id, True)
 
                 # Pop the resource configuration for this step
                 unique_resource_configs.pop(step_name)
@@ -276,18 +266,19 @@ def main() -> None:
                     )
                     down_request_id = sky.down(cluster_name)
                     # Wait for the cluster to be terminated
-                    if settings.stream_logs:
-                        sky.stream_and_get(down_request_id)
-                    else:
-                        sky.get(down_request_id)
+                    sky.stream_and_get(down_request_id)
 
-                logger.info(f"Running step `{step_name}` on a VM is completed.")
+                logger.info(
+                    f"Running step `{step_name}` on a VM is completed."
+                )
 
             except Exception as e:
                 logger.error(f"Failed while launching step `{step_name}`: {e}")
                 raise
 
-        dag_runner = ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_skypilot_vm)
+        dag_runner = ThreadedDagRunner(
+            dag=pipeline_dag, run_fn=run_step_on_skypilot_vm
+        )
         dag_runner.run()
 
         failed_nodes = []
@@ -300,7 +291,7 @@ def main() -> None:
 
     except Exception as e:
         logger.error(f"Orchestrator failed: {e}")
-        
+
         # Try to mark the pipeline run as failed
         if run:
             publish_failed_pipeline_run(run.id)
