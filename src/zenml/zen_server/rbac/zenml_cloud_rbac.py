@@ -64,11 +64,12 @@ class ZenMLCloudRBAC(RBACInterface):
 
         params = {
             "user_id": str(user.external_user_id),
-            "resources": resources,
             "action": str(action),
         }
-        response = self._connection.get(
-            endpoint=PERMISSIONS_ENDPOINT, params=params
+        response = self._connection.post(
+            endpoint=PERMISSIONS_ENDPOINT, params=params, data={
+                "resources": resources,
+            }
         )
         value = response.json()
 
