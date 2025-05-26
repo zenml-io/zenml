@@ -87,7 +87,7 @@ def main() -> None:
         run_required = (
             cache_utils.create_cached_step_runs_and_prune_deployment(
                 deployment=deployment,
-                placeholder_run=client.get_pipeline_run(args.run_id),
+                pipeline_run=client.get_pipeline_run(args.run_id),
                 stack=active_stack,
             )
         )

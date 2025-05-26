@@ -138,14 +138,14 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
 
 def create_cached_step_runs_and_prune_deployment(
     deployment: "PipelineDeploymentResponse",
-    placeholder_run: "PipelineRunResponse",
+    pipeline_run: "PipelineRunResponse",
     stack: "Stack",
 ) -> bool:
     """Create cached step runs and prune the cached steps from the deployment.
 
     Args:
         deployment: The deployment of the pipeline run.
-        placeholder_run: The pipeline run for which to create the step runs.
+        pipeline_run: The pipeline run for which to create the step runs.
         stack: The stack on which the pipeline run is happening.
 
     Returns:
@@ -153,7 +153,7 @@ def create_cached_step_runs_and_prune_deployment(
     """
     cached_invocations = step_run_utils.create_cached_step_runs(
         deployment=deployment,
-        pipeline_run=placeholder_run,
+        pipeline_run=pipeline_run,
         stack=stack,
     )
 
