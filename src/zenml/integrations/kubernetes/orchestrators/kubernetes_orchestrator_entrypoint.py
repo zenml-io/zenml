@@ -81,32 +81,18 @@ def main() -> None:
 
     active_stack = client.active_stack
 
-
     if args.run_id:
-        from zenml.orchestrators import step_run_utils
+        from zenml.orchestrators import cache_utils
 
-        placeholder_run = client.get_pipeline_run(args.run_id)
-
-        cached_invocations = step_run_utils.create_cached_step_runs(
-            deployment=deployment,
-            pipeline_run=placeholder_run,
-            stack=active_stack,
+        run_required = (
+            cache_utils.create_cached_step_runs_and_prune_deployment(
+                deployment=deployment,
+                placeholder_run=client.get_pipeline_run(args.run_id),
+                stack=active_stack,
+            )
         )
 
-        for invocation_id in cached_invocations:
-            # Remove the cached step invocations from the deployment so
-            # the orchestrator does not try to run them
-            deployment.step_configurations.pop(invocation_id)
-
-        for step in deployment.step_configurations.values():
-            for invocation_id in cached_invocations:
-                if invocation_id in step.spec.upstream_steps:
-                    step.spec.upstream_steps.remove(invocation_id)
-
-        if len(deployment.step_configurations) == 0:
-            # All steps were cached, we update the pipeline run status and
-            # don't actually use the orchestrator to run the pipeline
-            logger.info("All steps of the pipeline run were cached.")
+        if not run_required:
             return
 
     mount_local_stores = active_stack.orchestrator.config.is_local
@@ -190,9 +176,7 @@ def main() -> None:
 
         if orchestrator.config.pass_zenml_token_as_secret:
             env.pop("ZENML_STORE_API_TOKEN", None)
-            secret_name = orchestrator.get_token_secret_name(
-                deployment.id
-            )
+            secret_name = orchestrator.get_token_secret_name(deployment.id)
             pod_settings.env.append(
                 {
                     "name": "ZENML_STORE_API_TOKEN",
@@ -346,9 +330,7 @@ def main() -> None:
             orchestrator.config.pass_zenml_token_as_secret
             and deployment.schedule is None
         ):
-            secret_name = orchestrator.get_token_secret_name(
-                deployment.id
-            )
+            secret_name = orchestrator.get_token_secret_name(deployment.id)
             try:
                 kube_utils.delete_secret(
                     core_api=core_api,
