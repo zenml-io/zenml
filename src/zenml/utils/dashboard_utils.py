@@ -133,7 +133,7 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
 
     dashboard_url = get_server_dashboard_url()
     if dashboard_url:
-        return f"{dashboard_url}{constants.RUNS}/{run.id}"
+        return f"{dashboard_url}{constants.PROJECTS}/{run.project.name}{constants.RUNS}/{run.id}"
 
     return None
 
