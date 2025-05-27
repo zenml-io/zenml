@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, cast
 from uuid import UUID, uuid4
 
 from pydantic import ConfigDict
@@ -24,11 +24,11 @@ from sqlalchemy import (
     Column,
     UniqueConstraint,
 )
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import (
-    ArtifactType,
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
@@ -38,6 +38,7 @@ from zenml.models import (
     ModelResponse,
     ModelResponseBody,
     ModelResponseMetadata,
+    ModelResponseResources,
     ModelUpdate,
     ModelVersionArtifactRequest,
     ModelVersionArtifactResponse,
@@ -65,6 +66,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
     get_page_from_list,
+    jl_arg,
 )
 
 if TYPE_CHECKING:
@@ -126,6 +128,37 @@ class ModelSchema(NamedSchema, table=True):
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(ModelSchema.user)),
+                    # joinedload(jl_arg(ModelSchema.tags)),
+                ]
+            )
+
+        return options
 
     @property
     def latest_version(self) -> Optional["ModelVersionSchema"]:
@@ -194,19 +227,9 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponse`.
         """
-        tags = [tag.to_model() for tag in self.tags]
-
-        if latest_version := self.latest_version:
-            latest_version_name = latest_version.name
-            latest_version_id = latest_version.id
-        else:
-            latest_version_name = None
-            latest_version_id = None
-
         metadata = None
         if include_metadata:
             metadata = ModelResponseMetadata(
-                project=self.project.to_model(),
                 license=self.license,
                 description=self.description,
                 audience=self.audience,
@@ -217,21 +240,35 @@ class ModelSchema(NamedSchema, table=True):
                 save_models_to_registry=self.save_models_to_registry,
             )
 
+        resources = None
+        if include_resources:
+            if latest_version := self.latest_version:
+                latest_version_name = latest_version.name
+                latest_version_id = latest_version.id
+            else:
+                latest_version_name = None
+                latest_version_id = None
+
+            resources = ModelResponseResources(
+                user=self.user.to_model() if self.user else None,
+                tags=[tag.to_model() for tag in self.tags],
+                latest_version_name=latest_version_name,
+                latest_version_id=latest_version_id,
+            )
+
         body = ModelResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            tags=tags,
-            latest_version_name=latest_version_name,
-            latest_version_id=latest_version_id,
         )
 
         return ModelResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(
@@ -317,14 +354,6 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         nullable=False,
     )
     model: "ModelSchema" = Relationship(back_populates="model_versions")
-    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
-        back_populates="model_version",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
-        back_populates="model_version",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.MODEL_VERSION.value}', foreign(TagResourceSchema.resource_id)==ModelVersionSchema.id)",
@@ -369,6 +398,16 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     # numeric.
     producer_run_id_if_numeric: UUID
 
+    # Needed for cascade deletion behavior
+    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
     #  It is possible to suppress this warning message with the following
@@ -376,6 +415,47 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     #  Even though they do not cause any problems right now, if we are not
     #  careful we might overwrite some fields protected by pydantic.
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = [
+            joinedload(jl_arg(ModelVersionSchema.model), innerjoin=True),
+        ]
+
+        # if include_metadata:
+        #     options.extend(
+        #         [
+        #             joinedload(jl_arg(ModelVersionSchema.run_metadata)),
+        #         ]
+        #     )
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(ModelVersionSchema.user)),
+                    # joinedload(jl_arg(ModelVersionSchema.services)),
+                    # joinedload(jl_arg(ModelVersionSchema.tags)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(
@@ -430,44 +510,9 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         from zenml.models import ServiceResponse
 
-        # Construct {name: {version: id}} dicts for all linked artifacts
-        model_artifact_ids: Dict[str, Dict[str, UUID]] = {}
-        deployment_artifact_ids: Dict[str, Dict[str, UUID]] = {}
-        data_artifact_ids: Dict[str, Dict[str, UUID]] = {}
-        for artifact_link in self.artifact_links:
-            if not artifact_link.artifact_version:
-                continue
-            artifact_name = artifact_link.artifact_version.artifact.name
-            artifact_version = str(artifact_link.artifact_version.version)
-            artifact_version_id = artifact_link.artifact_version.id
-            if artifact_link.artifact_version.type == ArtifactType.MODEL.value:
-                model_artifact_ids.setdefault(artifact_name, {}).update(
-                    {str(artifact_version): artifact_version_id}
-                )
-            elif (
-                artifact_link.artifact_version.type
-                == ArtifactType.SERVICE.value
-            ):
-                deployment_artifact_ids.setdefault(artifact_name, {}).update(
-                    {str(artifact_version): artifact_version_id}
-                )
-            else:
-                data_artifact_ids.setdefault(artifact_name, {}).update(
-                    {str(artifact_version): artifact_version_id}
-                )
-
-        # Construct {name: id} dict for all linked pipeline runs
-        pipeline_run_ids: Dict[str, UUID] = {}
-        for pipeline_run_link in self.pipeline_run_links:
-            if not pipeline_run_link.pipeline_run:
-                continue
-            pipeline_run = pipeline_run_link.pipeline_run
-            pipeline_run_ids[pipeline_run.name] = pipeline_run.id
-
         metadata = None
         if include_metadata:
             metadata = ModelVersionResponseMetadata(
-                project=self.project.to_model(),
                 description=self.description,
                 run_metadata=self.fetch_metadata(),
             )
@@ -484,26 +529,23 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
                 ),
             )
             resources = ModelVersionResponseResources(
+                user=self.user.to_model() if self.user else None,
                 services=services,
+                tags=[tag.to_model() for tag in self.tags],
             )
 
         body = ModelVersionResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             stage=self.stage,
             number=self.number,
             model=self.model.to_model(),
-            model_artifact_ids=model_artifact_ids,
-            data_artifact_ids=data_artifact_ids,
-            deployment_artifact_ids=deployment_artifact_ids,
-            pipeline_run_ids=pipeline_run_ids,
-            tags=[tag.to_model() for tag in self.tags],
         )
 
         return ModelVersionResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
@@ -549,9 +591,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model_version: "ModelVersionSchema" = Relationship(
-        back_populates="artifact_links"
-    )
+    model_version: "ModelVersionSchema" = Relationship()
     artifact_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ArtifactVersionSchema.__tablename__,
@@ -632,9 +672,7 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model_version: "ModelVersionSchema" = Relationship(
-        back_populates="pipeline_run_links"
-    )
+    model_version: "ModelVersionSchema" = Relationship()
     pipeline_run_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=PipelineRunSchema.__tablename__,
@@ -643,9 +681,7 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    pipeline_run: "PipelineRunSchema" = Relationship(
-        back_populates="model_versions_pipeline_runs_links"
-    )
+    pipeline_run: "PipelineRunSchema" = Relationship()
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.

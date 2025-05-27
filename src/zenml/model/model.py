@@ -29,6 +29,7 @@ from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.pipelines.pipeline_context import get_pipeline_context
+from zenml.utils import pagination_utils
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.string_utils import format_name_template
 
@@ -38,7 +39,6 @@ if TYPE_CHECKING:
         ArtifactVersionResponse,
         ModelResponse,
         ModelVersionResponse,
-        PipelineRunResponse,
     )
 
 logger = get_logger(__name__)
@@ -303,17 +303,6 @@ class Model(BaseModel):
             version=version,
         )
 
-    def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
-        """Get pipeline run linked to this version.
-
-        Args:
-            name: The name of the pipeline run to retrieve.
-
-        Returns:
-            PipelineRun as PipelineRunResponse
-        """
-        return self._get_or_create_model_version().get_pipeline_run(name=name)
-
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
     ) -> None:
@@ -432,16 +421,14 @@ class Model(BaseModel):
         client = Client()
 
         if not only_link and delete_from_artifact_store:
-            mv = self._get_model_version()
-            artifact_responses = mv.data_artifacts
-            artifact_responses.update(mv.model_artifacts)
-            artifact_responses.update(mv.deployment_artifacts)
-
-            for artifact_ in artifact_responses.values():
-                for artifact_response_ in artifact_.values():
-                    client._delete_artifact_from_artifact_store(
-                        artifact_version=artifact_response_
-                    )
+            artifact_versions = pagination_utils.depaginate(
+                client.list_artifact_versions,
+                model_version_id=self.id,
+            )
+            for artifact_version in artifact_versions:
+                client._delete_artifact_from_artifact_store(
+                    artifact_version=artifact_version
+                )
 
         client.delete_all_model_version_artifact_links(self.id, only_link)
 

@@ -546,8 +546,8 @@ def is_owned_by_authenticated_user(model: AnyModel) -> bool:
     assert auth_context
 
     if isinstance(model, UserScopedResponse):
-        if model.user:
-            return model.user.id == auth_context.user.id
+        if model.user_id:
+            return model.user_id == auth_context.user.id
         else:
             # The model is server-owned and for RBAC purposes we consider
             # every user to be the owner of it

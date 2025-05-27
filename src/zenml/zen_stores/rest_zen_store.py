@@ -1930,7 +1930,10 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_run(
-        self, run_id: UUID, hydrate: bool = True
+        self,
+        run_id: UUID,
+        hydrate: bool = True,
+        include_full_metadata: bool = False,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -1938,6 +1941,8 @@ class RestZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             The pipeline run.
@@ -1946,13 +1951,17 @@ class RestZenStore(BaseZenStore):
             resource_id=run_id,
             route=RUNS,
             response_model=PipelineRunResponse,
-            params={"hydrate": hydrate},
+            params={
+                "hydrate": hydrate,
+                "include_full_metadata": include_full_metadata,
+            },
         )
 
     def list_runs(
         self,
         runs_filter_model: PipelineRunFilter,
         hydrate: bool = False,
+        include_full_metadata: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
@@ -1961,6 +1970,8 @@ class RestZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
@@ -1969,7 +1980,10 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
             response_model=PipelineRunResponse,
             filter_model=runs_filter_model,
-            params={"hydrate": hydrate},
+            params={
+                "hydrate": hydrate,
+                "include_full_metadata": include_full_metadata,
+            },
         )
 
     def update_run(
