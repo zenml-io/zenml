@@ -69,6 +69,7 @@ def test_model_version_response_artifact_fetching(
         artifact=artifact_name,
         version=version_name,
         model_version_id=mv.id,
+        project=mv.project_id,
         type=None,
         hydrate=True,
     )
@@ -81,6 +82,7 @@ def test_model_version_response_artifact_fetching(
         artifact=artifact_name,
         version=version_name,
         model_version_id=mv.id,
+        project=mv.project_id,
         type=ArtifactType.DATA,
         hydrate=True,
     )
@@ -93,6 +95,7 @@ def test_model_version_response_artifact_fetching(
         artifact=artifact_name,
         version=version_name,
         model_version_id=mv.id,
+        project=mv.project_id,
         type=ArtifactType.MODEL,
         hydrate=True,
     )
@@ -105,6 +108,7 @@ def test_model_version_response_artifact_fetching(
         artifact=artifact_name,
         version=version_name,
         model_version_id=mv.id,
+        project=mv.project_id,
         type=ArtifactType.SERVICE,
         hydrate=True,
     )
