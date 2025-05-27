@@ -78,7 +78,7 @@ from zenml.service_connectors.service_connector import (
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.secret_utils import PlainSerializedSecretStr
-from zenml.utils.time_utils import utc_now
+from zenml.utils.time_utils import to_utc_timezone, utc_now
 
 logger = get_logger(__name__)
 
@@ -1200,14 +1200,13 @@ class GCPServiceConnector(ServiceConnector):
         elif auth_method == GCPAuthenticationMethods.OAUTH2_TOKEN:
             assert isinstance(cfg, GCPOAuth2TokenConfig)
 
-            expires_at = self.expires_at
-            if expires_at:
-                # Remove the UTC timezone
-                expires_at = expires_at.replace(tzinfo=None)
-
             credentials = gcp_credentials.Credentials(
                 token=cfg.token.get_secret_value(),
-                expiry=expires_at,
+                # Currently GCP expects the expiry to be a timezone-naive
+                # UTC datetime.
+                expiry=to_utc_timezone(self.expires_at).replace(tzinfo=None)
+                if self.expires_at
+                else None,
                 scopes=scopes,
             )
 
@@ -1303,10 +1302,12 @@ class GCPServiceConnector(ServiceConnector):
                 )
 
         if credentials.expiry:
-            # Add the UTC timezone to the expiration time
-            expires_at = credentials.expiry.replace(
-                tzinfo=datetime.timezone.utc
-            )
+            expires_at = credentials.expiry
+
+        if expires_at:
+            # Add the UTC timezone to the expiration time, if it's not already
+            # set
+            expires_at = to_utc_timezone(expires_at)
 
         return credentials, expires_at
 

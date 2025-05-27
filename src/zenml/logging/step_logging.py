@@ -28,6 +28,7 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifacts.utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,
+    _strip_timestamp_from_multiline_string,
 )
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
@@ -117,6 +118,7 @@ def fetch_logs(
     logs_uri: str,
     offset: int = 0,
     length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
+    strip_timestamp: bool = False,
 ) -> str:
     """Fetches the logs from the artifact store.
 
@@ -126,6 +128,7 @@ def fetch_logs(
         logs_uri: The URI of the artifact.
         offset: The offset from which to start reading.
         length: The amount of bytes that should be read.
+        strip_timestamp: Whether to strip timestamps in logs or not
 
     Returns:
         The logs as a string.
@@ -136,9 +139,12 @@ def fetch_logs(
     """
 
     def _read_file(
-        uri: str, offset: int = 0, length: Optional[int] = None
+        uri: str,
+        offset: int = 0,
+        length: Optional[int] = None,
+        strip_timestamp: bool = False,
     ) -> str:
-        return str(
+        file_content = str(
             _load_file_from_artifact_store(
                 uri,
                 artifact_store=artifact_store,
@@ -147,16 +153,22 @@ def fetch_logs(
                 length=length,
             ).decode()
         )
+        if strip_timestamp:
+            file_content = _strip_timestamp_from_multiline_string(file_content)
+        return file_content
 
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
     try:
         if not artifact_store.isdir(logs_uri):
-            return _read_file(logs_uri, offset, length)
+            return _read_file(logs_uri, offset, length, strip_timestamp)
         else:
             files = artifact_store.listdir(logs_uri)
             if len(files) == 1:
                 return _read_file(
-                    os.path.join(logs_uri, str(files[0])), offset, length
+                    os.path.join(logs_uri, str(files[0])),
+                    offset,
+                    length,
+                    strip_timestamp,
                 )
             else:
                 is_negative_offset = offset < 0
@@ -191,6 +203,7 @@ def fetch_logs(
                             os.path.join(logs_uri, str(file)),
                             offset,
                             length,
+                            strip_timestamp,
                         )
                     )
                     offset = 0
