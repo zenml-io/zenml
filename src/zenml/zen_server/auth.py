@@ -788,7 +788,10 @@ def authenticate_external_user(
     user_agent = request.headers.get("User-Agent", "").lower()
     if "zenml/" in user_agent:
         store.update_onboarding_state(
-            completed_steps={OnboardingStep.DEVICE_VERIFIED}
+            completed_steps={
+                OnboardingStep.DEVICE_VERIFIED,
+                OnboardingStep.PRO_ONBOARDING_COMPLETED,
+            }
         )
 
     return AuthContext(user=user)
