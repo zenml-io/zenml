@@ -420,17 +420,20 @@ class Model(BaseModel):
 
         client = Client()
 
+        mv = self._get_or_create_model_version()
+
         if not only_link and delete_from_artifact_store:
             artifact_versions = pagination_utils.depaginate(
                 client.list_artifact_versions,
-                model_version_id=self.id,
+                model_version_id=mv.id,
+                project=mv.project_id,
             )
             for artifact_version in artifact_versions:
                 client._delete_artifact_from_artifact_store(
                     artifact_version=artifact_version
                 )
 
-        client.delete_all_model_version_artifact_links(self.id, only_link)
+        client.delete_all_model_version_artifact_links(mv.id, only_link)
 
     def _lazy_artifact_get(
         self,
