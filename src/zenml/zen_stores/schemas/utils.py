@@ -15,8 +15,9 @@
 
 import json
 import math
-from typing import Dict, List, Type, TypeVar
+from typing import Any, Dict, List, Type, TypeVar, cast
 
+from sqlalchemy.orm import InstrumentedAttribute
 from sqlmodel import Relationship
 
 from zenml.metadata.metadata_types import MetadataType
@@ -24,6 +25,18 @@ from zenml.models import BaseResponse, Page, RunMetadataEntry
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 S = TypeVar("S", bound=BaseSchema)
+
+
+def jl_arg(column: Any) -> InstrumentedAttribute[Any]:
+    """Cast a SQLModel column to a joinedload argument.
+
+    Args:
+        column: The column.
+
+    Returns:
+        The column cast to a joinedload argument.
+    """
+    return cast(InstrumentedAttribute[Any], column)
 
 
 def get_page_from_list(
@@ -77,8 +90,13 @@ class RunMetadataInterface:
 
     run_metadata = Relationship()
 
-    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+    def fetch_metadata_collection(
+        self, **kwargs: Any
+    ) -> Dict[str, List[RunMetadataEntry]]:
         """Fetches all the metadata entries related to the entity.
+
+        Args:
+            **kwargs: Keyword arguments.
 
         Returns:
             A dictionary, where the key is the key of the metadata entry
@@ -98,14 +116,17 @@ class RunMetadataInterface:
 
         return metadata_collection
 
-    def fetch_metadata(self) -> Dict[str, MetadataType]:
+    def fetch_metadata(self, **kwargs: Any) -> Dict[str, MetadataType]:
         """Fetches the latest metadata entry related to the entity.
+
+        Args:
+            **kwargs: Keyword arguments to pass to the metadata collection.
 
         Returns:
             A dictionary, where the key is the key of the metadata entry
                 and the values represent the latest entry with this key.
         """
-        metadata_collection = self.fetch_metadata_collection()
+        metadata_collection = self.fetch_metadata_collection(**kwargs)
         return {
             k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
             for k, v in metadata_collection.items()

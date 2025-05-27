@@ -294,7 +294,7 @@ def deployment_logs(
     # Get the last pipeline run for this deployment
     pipeline_runs = store.list_runs(
         runs_filter_model=PipelineRunFilter(
-            project=deployment.project.id,
+            project=deployment.project_id,
             sort_by="asc:created",
             size=1,
             deployment_id=deployment.id,

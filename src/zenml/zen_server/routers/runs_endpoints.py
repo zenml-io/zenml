@@ -32,6 +32,7 @@ from zenml.logger import get_logger
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     Page,
+    PipelineRunDAG,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineRunResponse,
@@ -128,6 +129,7 @@ def list_runs(
     ),
     project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
+    include_full_metadata: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
@@ -137,6 +139,8 @@ def list_runs(
         project_name_or_id: Optional name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        include_full_metadata: Flag deciding whether to include the
+            full metadata in the response.
 
     Returns:
         The pipeline runs according to query filters.
@@ -149,6 +153,7 @@ def list_runs(
         resource_type=ResourceType.PIPELINE_RUN,
         list_method=zen_store().list_runs,
         hydrate=hydrate,
+        include_full_metadata=include_full_metadata,
     )
 
 
@@ -162,6 +167,7 @@ def get_run(
     hydrate: bool = True,
     refresh_status: bool = False,
     include_python_packages: bool = False,
+    include_full_metadata: bool = False,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
@@ -174,6 +180,8 @@ def get_run(
             the status of the pipeline run using its orchestrator.
         include_python_packages: Flag deciding whether to include the
             Python packages in the response.
+        include_full_metadata: Flag deciding whether to include the
+            full metadata in the response.
 
     Returns:
         The pipeline run.
@@ -186,6 +194,7 @@ def get_run(
         get_method=zen_store().get_run,
         hydrate=hydrate,
         include_python_packages=include_python_packages,
+        include_full_metadata=include_full_metadata,
     )
     if refresh_status:
         try:
@@ -339,6 +348,32 @@ def get_run_status(
         id=run_id, get_method=zen_store().get_run, hydrate=False
     )
     return run.status
+
+
+@router.get(
+    "/{run_id}/dag",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def get_run_dag(
+    run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> PipelineRunDAG:
+    """Get the DAG of a specific pipeline run.
+
+    Args:
+        run_id: ID of the pipeline run for which to get the DAG.
+
+    Returns:
+        The DAG of the pipeline run.
+    """
+    # TODO: Maybe avoid calling get_run twice?
+    verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        hydrate=False,
+    )
+    return zen_store().get_pipeline_run_dag(run_id)
 
 
 @router.get(

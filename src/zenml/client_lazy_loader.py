@@ -14,6 +14,7 @@
 """Lazy loading functionality for Client methods."""
 
 import contextlib
+import functools
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
 from pydantic import BaseModel, Field
@@ -188,6 +189,7 @@ def evaluate_all_lazy_load_args_in_client_methods(
     def _evaluate_args(
         func: Callable[..., Any], is_instance_method: bool
     ) -> Any:
+        @functools.wraps(func)
         def _inner(*args: Any, **kwargs: Any) -> Any:
             args_ = list(args)
             if not is_instance_method:

@@ -129,7 +129,7 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     """
     cloud_url = get_cloud_dashboard_url()
     if cloud_url:
-        return f"{cloud_url}{constants.PROJECTS}/{run.project.id}{constants.RUNS}/{run.id}"
+        return f"{cloud_url}{constants.PROJECTS}/{run.project_id}{constants.RUNS}/{run.id}"
 
     dashboard_url = get_server_dashboard_url()
     if dashboard_url:
@@ -151,7 +151,7 @@ def get_model_version_url(
     """
     cloud_url = get_cloud_dashboard_url()
     if cloud_url:
-        return f"{cloud_url}{constants.PROJECTS}/{model_version.project.id}/model-versions/{str(model_version.id)}"
+        return f"{cloud_url}{constants.PROJECTS}/{model_version.project_id}/model-versions/{str(model_version.id)}"
 
     return None
 
