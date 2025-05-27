@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from sqlmodel import and_
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -94,18 +94,31 @@ class StackRequest(UserScopedRequest):
         "scratch.",
     )
 
-    @property
-    def is_valid(self) -> bool:
-        """Check if the stack is valid.
+    @field_validator("components")
+    def _validate_components(
+        cls, value: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]]
+    ) -> Dict[StackComponentType, List[Union[UUID, ComponentInfo]]]:
+        """Validate the components of the stack.
+
+        Args:
+            value: The components of the stack.
+
+        Raises:
+            ValueError: If the stack does not contain an orchestrator and
+                artifact store.
 
         Returns:
-            True if the stack is valid, False otherwise.
+            The components of the stack.
         """
-        if not self.components:
-            return False
-        return (
-            StackComponentType.ARTIFACT_STORE in self.components
-            and StackComponentType.ORCHESTRATOR in self.components
+        if value:
+            artifact_stores = value.get(StackComponentType.ARTIFACT_STORE, [])
+            orchestrators = value.get(StackComponentType.ORCHESTRATOR, [])
+
+            if orchestrators and artifact_stores:
+                return value
+
+        raise ValueError(
+            "Stack must contain at least an orchestrator and artifact store."
         )
 
     @model_validator(mode="after")

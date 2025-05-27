@@ -1541,9 +1541,6 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             stack: The stack to validate.
-
-        Raises:
-            ValidationError: If the stack configuration is invalid.
         """
         local_components: List[str] = []
         remote_components: List[str] = []
@@ -1606,13 +1603,6 @@ class Client(metaclass=ClientMetaClass):
                 f"sure that your stack is configured correctly, or try to use "
                 f"component flavors or configurations that do not require "
                 f"local resources."
-            )
-
-        if not stack.is_valid:
-            raise ValidationError(
-                "Stack configuration is invalid. A valid"
-                "stack must contain an Artifact Store and "
-                "an Orchestrator."
             )
 
     # ----------------------------- Services -----------------------------------
