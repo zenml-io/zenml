@@ -250,6 +250,9 @@ def sky_job_get(request_id: str, stream_logs: bool, cluster_name: str) -> Any:
 
     Returns:
         The result of the SkyPilot operation.
+
+    Raises:
+        Exception: If the SkyPilot job fails.
     """
     if stream_logs:
         # Stream logs and wait for completion

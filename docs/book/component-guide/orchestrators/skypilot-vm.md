@@ -334,7 +334,7 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `workdir`: Working directory on the local machine to sync to the VM. This is synced to `~/sky_workdir` inside the VM.
 * `task_name`: Human-readable task name shown in SkyPilot for display purposes.
 * `file_mounts`: File and storage mounts configuration to make local or cloud storage paths available inside the remote cluster.
-* `envs`: Environment variables for the task. Accessible in the VMs that Skypilot lauches, not in Docker continaers that the steps and pipeline is running on.
+* `envs`: Environment variables for the task. Accessible in the VMs that Skypilot launches, not in Docker continaers that the steps and pipeline is running on.
 * `task_settings`: Dictionary of arbitrary settings forwarded to `sky.Task()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
 * `resources_settings`: Dictionary of arbitrary settings forwarded to `sky.Resources()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
 * `launch_settings`: Dictionary of arbitrary settings forwarded to `sky.launch()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.

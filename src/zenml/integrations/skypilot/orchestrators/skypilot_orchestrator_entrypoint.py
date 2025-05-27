@@ -77,6 +77,7 @@ def main() -> None:
         TypeError: If the active stack's orchestrator is not an instance of
             SkypilotBaseOrchestrator.
         ValueError: If the active stack's container registry is None.
+        Exception: If the orchestration or one of the steps fails.
     """
     # Log to the container's stdout so it can be streamed by the client.
     logger.info("Skypilot orchestrator VM started.")
@@ -174,6 +175,9 @@ def main() -> None:
 
             Args:
                 step_name: Name of the step.
+
+            Raises:
+                Exception: If the step execution fails.
             """
             logger.info(f"Running step `{step_name}` on a VM...")
             try:
