@@ -33,16 +33,10 @@ from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
     VertexStepOperatorFlavor,
     VertexStepOperatorConfig,
 )
-from zenml.integrations.gcp.flavors.zenml_artifact_store_flavor import (
-    ZenMLArtifactStoreFlavor,
-    ZenMLArtifactStoreConfig,
-)
 
 __all__ = [
     "GCPArtifactStoreFlavor",
     "GCPArtifactStoreConfig",
-    "ZenMLArtifactStoreFlavor",
-    "ZenMLArtifactStoreConfig",
     "GCPImageBuilderFlavor",
     "GCPImageBuilderConfig",
     "VertexExperimentTrackerFlavor",

@@ -29,7 +29,6 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
-ZENML_ARTIFACT_STORE_FLAVOR = "zenml"
 GCP_IMAGE_BUILDER_FLAVOR = "gcp"
 GCP_VERTEX_EXPERIMENT_TRACKER_FLAVOR = "vertex"
 GCP_VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
@@ -76,7 +75,6 @@ class GcpIntegration(Integration):
             VertexExperimentTrackerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
-            ZenMLArtifactStoreFlavor,
         )
 
         return [
@@ -85,5 +83,4 @@ class GcpIntegration(Integration):
             VertexExperimentTrackerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
-            ZenMLArtifactStoreFlavor,
         ]

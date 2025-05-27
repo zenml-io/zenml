@@ -11,14 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Amazon S3 integration flavors."""
+"""S3 integration flavors."""
 
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
     S3ArtifactStoreConfig,
     S3ArtifactStoreFlavor,
 )
+from zenml.integrations.s3.flavors.zenml_artifact_store_flavor import (
+    ZenMLArtifactStoreConfig,
+    ZenMLArtifactStoreFlavor,
+)
 
 __all__ = [
     "S3ArtifactStoreFlavor",
     "S3ArtifactStoreConfig",
+    "ZenMLArtifactStoreFlavor",
+    "ZenMLArtifactStoreConfig",
 ]

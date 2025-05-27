@@ -11,27 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""GCP artifact store flavor."""
+"""ZenML artifact store flavor."""
 
 from typing import Type
 
-from zenml.integrations.gcp import ZENML_ARTIFACT_STORE_FLAVOR
-from zenml.integrations.gcp.artifact_stores.zenml_artifact_store import (
+from zenml.integrations.s3 import ZENML_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.s3.artifact_stores.zenml_artifact_store import (
     ZenMLArtifactStore,
 )
-from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-    GCPArtifactStoreConfig,
-    GCPArtifactStoreFlavor,
+from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
+    S3ArtifactStoreConfig,
+    S3ArtifactStoreFlavor,
 )
 
 
-class ZenMLArtifactStoreConfig(GCPArtifactStoreConfig):
+class ZenMLArtifactStoreConfig(S3ArtifactStoreConfig):
     """Configuration for ZenML specialized Artifact Store."""
 
     pass
 
 
-class ZenMLArtifactStoreFlavor(GCPArtifactStoreFlavor):
+class ZenMLArtifactStoreFlavor(S3ArtifactStoreFlavor):
     """Flavor of the ZenML specialized artifact store."""
 
     @property
@@ -68,8 +68,8 @@ class ZenMLArtifactStoreFlavor(GCPArtifactStoreFlavor):
         Returns:
             The implementation class.
         """
-        from zenml.integrations.gcp.artifact_stores.zenml_artifact_store import (
+        from zenml.integrations.s3.artifact_stores.zenml_artifact_store import (
             ZenMLArtifactStore,
         )
 
-        return ZenMLArtifactStore
+        return ZenMLArtifactStore 
