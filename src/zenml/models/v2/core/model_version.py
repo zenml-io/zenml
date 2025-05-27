@@ -706,7 +706,6 @@ class ModelVersionFilter(
         custom_filters = super().get_custom_filters(table)
 
         if self.model:
-            value, operator = self._resolve_operator(self.model)
             model_filter = and_(
                 ModelVersionSchema.model_id == ModelSchema.id,  # type: ignore[arg-type]
                 self.generate_name_or_id_query_conditions(
