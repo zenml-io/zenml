@@ -264,18 +264,18 @@ if server_config().workload_manager_enabled:
                 hydrate=True,
             )
             analytics_handler.metadata = {
-                "project_id": template.project.id,
+                "project_id": template.project_id,
             }
 
             verify_permission(
                 resource_type=ResourceType.PIPELINE_DEPLOYMENT,
                 action=Action.CREATE,
-                project_id=template.project.id,
+                project_id=template.project_id,
             )
             verify_permission(
                 resource_type=ResourceType.PIPELINE_RUN,
                 action=Action.CREATE,
-                project_id=template.project.id,
+                project_id=template.project_id,
             )
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
