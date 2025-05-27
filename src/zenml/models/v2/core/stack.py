@@ -176,6 +176,39 @@ class StackUpdate(BaseUpdate):
         title="The stack labels.",
     )
 
+    @field_validator("components")
+    def _validate_components(
+        cls,
+        value: Optional[
+            Dict[StackComponentType, List[Union[UUID, ComponentInfo]]]
+        ],
+    ) -> Optional[Dict[StackComponentType, List[Union[UUID, ComponentInfo]]]]:
+        """Validate the components of the stack.
+
+        Args:
+            value: The components of the stack.
+
+        Raises:
+            ValueError: If the stack does not contain an orchestrator and
+                artifact store.
+
+        Returns:
+            The components of the stack.
+        """
+        if value is None:
+            return
+
+        if value:
+            artifact_stores = value.get(StackComponentType.ARTIFACT_STORE, [])
+            orchestrators = value.get(StackComponentType.ORCHESTRATOR, [])
+
+            if orchestrators and artifact_stores:
+                return value
+
+        raise ValueError(
+            "Stack must contain at least an orchestrator and artifact store."
+        )
+
 
 # ------------------ Response Model ------------------
 
