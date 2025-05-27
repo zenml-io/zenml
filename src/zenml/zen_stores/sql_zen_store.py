@@ -9018,9 +9018,8 @@ class SqlZenStore(BaseZenStore):
                             OnboardingStep.PRODUCTION_SETUP_COMPLETED,
                         }
                     )
-                if (
-                    OnboardingStep.THIRD_PIPELINE_RUN
-                    not in self._cached_onboarding_state
+                if OnboardingStep.THIRD_PIPELINE_RUN not in (
+                    self._cached_onboarding_state or {}
                 ):
                     onboarding_state = self.get_onboarding_state()
                     if OnboardingStep.PIPELINE_RUN in onboarding_state:
