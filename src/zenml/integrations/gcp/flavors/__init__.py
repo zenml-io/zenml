@@ -14,24 +14,24 @@
 """GCP integration flavors."""
 
 from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-    GCPArtifactStoreFlavor,
     GCPArtifactStoreConfig,
+    GCPArtifactStoreFlavor,
 )
 from zenml.integrations.gcp.flavors.gcp_image_builder_flavor import (
-    GCPImageBuilderFlavor,
     GCPImageBuilderConfig,
+    GCPImageBuilderFlavor,
 )
 from zenml.integrations.gcp.flavors.vertex_experiment_tracker_flavor import (
-    VertexExperimentTrackerFlavor,
     VertexExperimentTrackerConfig,
+    VertexExperimentTrackerFlavor,
 )
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
-    VertexOrchestratorFlavor,
     VertexOrchestratorConfig,
+    VertexOrchestratorFlavor,
 )
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
-    VertexStepOperatorFlavor,
     VertexStepOperatorConfig,
+    VertexStepOperatorFlavor,
 )
 
 __all__ = [
