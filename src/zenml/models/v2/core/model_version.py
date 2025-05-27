@@ -322,6 +322,7 @@ class ModelVersionResponse(
             Client().list_artifact_versions,
             model_version_id=self.id,
             type=ArtifactType.MODEL,
+            project=self.project_id,
         )
 
         result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
@@ -414,6 +415,7 @@ class ModelVersionResponse(
             Client().list_artifact_versions,
             model_version_id=self.id,
             type=ArtifactType.DATA,
+            project=self.project_id,
         )
 
         result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
@@ -446,6 +448,7 @@ class ModelVersionResponse(
             Client().list_artifact_versions,
             model_version_id=self.id,
             type=ArtifactType.SERVICE,
+            project=self.project_id,
         )
 
         result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
@@ -527,6 +530,7 @@ class ModelVersionResponse(
             version=version,
             model_version_id=self.id,
             type=type,
+            project=self.project_id,
             hydrate=True,
         )
 
