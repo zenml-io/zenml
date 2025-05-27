@@ -74,14 +74,19 @@ def main() -> None:
     orchestrator_pod_name = socket.gethostname()
 
     client = Client()
+    active_stack = client.active_stack
+    orchestrator = active_stack.orchestrator
+    assert isinstance(orchestrator, KubernetesOrchestrator)
 
     deployment = client.get_deployment(args.deployment_id)
+    pipeline_settings = cast(
+        KubernetesOrchestratorSettings,
+        orchestrator.get_settings(deployment),
+    )
 
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
 
-    active_stack = client.active_stack
-
-    if args.run_id:
+    if args.run_id and not pipeline_settings.prevent_orchestrator_pod_caching:
         from zenml.orchestrators import cache_utils
 
         run_required = (
@@ -100,8 +105,6 @@ def main() -> None:
     # Get a Kubernetes client from the active Kubernetes orchestrator, but
     # override the `incluster` setting to `True` since we are running inside
     # the Kubernetes cluster.
-    orchestrator = active_stack.orchestrator
-    assert isinstance(orchestrator, KubernetesOrchestrator)
     kube_client = orchestrator.get_kube_client(incluster=True)
     core_api = k8s_client.CoreV1Api(kube_client)
 
@@ -307,10 +310,6 @@ def main() -> None:
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
     )
-    settings = cast(
-        KubernetesOrchestratorSettings,
-        orchestrator.get_settings(deployment),
-    )
 
     pipeline_dag = {
         step_name: step.spec.upstream_steps
@@ -322,7 +321,7 @@ def main() -> None:
             run_fn=run_step_on_kubernetes,
             finalize_fn=finalize_run,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
-            max_parallelism=settings.max_parallelism,
+            max_parallelism=pipeline_settings.max_parallelism,
         ).run()
         logger.info("Orchestration pod completed.")
     finally:
