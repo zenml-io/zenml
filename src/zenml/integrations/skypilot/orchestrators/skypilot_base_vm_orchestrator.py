@@ -358,13 +358,15 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     down=down,
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                 )
-
+                logger.info(
+                    f"Launching the task on a new cluster: {cluster_name}"
+                )
                 launch_job_id = sky.launch(
                     task,
                     cluster_name,
                     **launch_kwargs,
                 )
-                sky_job_get(launch_job_id, settings.stream_logs)
+                sky_job_get(launch_job_id, settings.stream_logs, cluster_name)
 
             else:
                 # Prepare exec parameters with additional launch settings
@@ -388,12 +390,18 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 )
                 sky.stream_and_get(start_request_id)
 
+                logger.info(
+                    f"Executing the task on the cluster: {settings.cluster_name}"
+                )
                 exec_job_id = sky.exec(
                     task,
                     cluster_name=settings.cluster_name,
                     **exec_kwargs,
                 )
-                sky_job_get(exec_job_id, settings.stream_logs)
+                assert settings.cluster_name is not None
+                sky_job_get(
+                    exec_job_id, settings.stream_logs, settings.cluster_name
+                )
 
         except Exception as e:
             logger.error(f"Pipeline run failed: {e}")

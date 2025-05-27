@@ -333,9 +333,8 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `ordered`: List of candidate resources to try in the specified order.
 * `workdir`: Working directory on the local machine to sync to the VM. This is synced to `~/sky_workdir` inside the VM.
 * `task_name`: Human-readable task name shown in SkyPilot for display purposes.
-* `num_nodes`: Number of nodes to launch (including the head node).
 * `file_mounts`: File and storage mounts configuration to make local or cloud storage paths available inside the remote cluster.
-* `envs`: Environment variables for the task. Accessible in the SkyPilot setup/run phases and inside your pipeline steps.
+* `envs`: Environment variables for the task. Accessible in the VMs that Skypilot lauches, not in Docker continaers that the steps and pipeline is running on.
 * `task_settings`: Dictionary of arbitrary settings forwarded to `sky.Task()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
 * `resources_settings`: Dictionary of arbitrary settings forwarded to `sky.Resources()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
 * `launch_settings`: Dictionary of arbitrary settings forwarded to `sky.launch()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
@@ -355,7 +354,10 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     accelerators="V100:2",
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
-    job_recovery="recovery_strategy",
+    job_recovery={
+        "strategy": "failover",
+        "max_restarts_on_errors": 3,
+    },
     region="us-west-1",
     zone="us-west1-a",
     image_id="ami-1234567890abcdef0",
@@ -391,7 +393,10 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
     accelerators="V100:2",
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
-    job_recovery="recovery_strategy",
+    job_recovery={
+        "strategy": "failover",
+        "max_restarts_on_errors": 3,
+    },
     region="us-west1",
     zone="us-west1-a",
     image_id="ubuntu-pro-2004-focal-v20231101",
@@ -427,7 +432,10 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
     accelerators="V100:2",
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
-    job_recovery="recovery_strategy",
+    job_recovery={
+        "strategy": "failover",
+        "max_restarts_on_errors": 3,
+    },
     region="West Europe",
     image_id="Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest",
     disk_size=100,

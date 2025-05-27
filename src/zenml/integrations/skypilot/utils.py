@@ -135,7 +135,6 @@ def prepare_task_kwargs(
         "name": settings.task_name or task_name,
         "workdir": settings.workdir,
         "file_mounts_mapping": settings.file_mounts,
-        "num_nodes": settings.num_nodes,
         **settings.task_settings,  # Add any arbitrary task settings
     }
 
@@ -214,7 +213,6 @@ def prepare_launch_kwargs(
     # We therefore no longer include them in the kwargs passed to the call.
     # • stream_logs – handled by explicitly calling sky.stream_and_get
     # • detach_setup / detach_run – setup/run are now detached by default
-    # • num_nodes – passed directly to sky.Task (see prepare_task_kwargs)
 
     launch_kwargs = {
         "retry_until_up": settings.retry_until_up,
@@ -237,7 +235,7 @@ def prepare_launch_kwargs(
     return {k: v for k, v in launch_kwargs.items() if v is not None}
 
 
-def sky_job_get(request_id: str, stream_logs: bool) -> Any:
+def sky_job_get(request_id: str, stream_logs: bool, cluster_name: str) -> Any:
     """Handle SkyPilot request results based on stream_logs setting.
 
     SkyPilot API exec and launch methods are asynchronous and return a request ID.
@@ -260,8 +258,11 @@ def sky_job_get(request_id: str, stream_logs: bool) -> Any:
         # Just wait for completion without streaming logs
         job_id, _ = sky.get(request_id)
 
+    status = 0  # 0=Successful, 100=Failed
     if stream_logs:
-        status = sky.jobs.tail_logs(job_id=job_id, follow=True)
+        status = sky.tail_logs(
+            cluster_name=cluster_name, job_id=job_id, follow=True
+        )
 
     if status != 0:
         raise Exception(f"SkyPilot job {job_id} failed with status {status}")

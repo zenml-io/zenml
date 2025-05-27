@@ -98,9 +98,8 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
             running inside the VM.
         workdir: Working directory to sync to the VM. Synced to ~/sky_workdir.
         task_name: Task name used for display purposes.
-        num_nodes: Number of nodes to launch (including the head node).
         file_mounts: File and storage mounts configuration for remote cluster.
-        envs: Environment variables for the task. Accessible in setup/run.
+        envs: Environment variables for the task.
         task_settings: Dictionary of arbitrary settings to pass to sky.Task().
             This allows passing future parameters added by SkyPilot without
             requiring updates to ZenML.
@@ -155,7 +154,6 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     ordered: Optional[List[Dict[str, Any]]] = None
     workdir: Optional[str] = None
     task_name: Optional[str] = None
-    num_nodes: Optional[int] = None
     file_mounts: Optional[Dict[str, Any]] = None
     envs: Optional[Dict[str, str]] = None
 

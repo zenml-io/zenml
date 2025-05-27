@@ -220,7 +220,7 @@ def main() -> None:
                     task_envs=task_envs,
                     task_name=task_name,
                 )
-                
+
                 logger.info(f"Using settings: {settings}")
 
                 task = sky.Task(**task_kwargs)
@@ -246,7 +246,7 @@ def main() -> None:
                     cluster_name,
                     **launch_kwargs,
                 )
-                sky_job_get(launch_request_id, True)
+                sky_job_get(launch_request_id, True, cluster_name)
 
                 # Pop the resource configuration for this step
                 unique_resource_configs.pop(step_name)
