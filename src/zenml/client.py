@@ -1480,9 +1480,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model of the active stack for this client.
-
-        Raises:
-            RuntimeError: If the active stack is not set.
         """
         if env_stack_id := os.environ.get(ENV_ZENML_ACTIVE_STACK_ID):
             if not self._active_stack or self._active_stack.id != UUID(
@@ -1508,12 +1505,6 @@ class Client(metaclass=ClientMetaClass):
                 return active_stack
 
             stack_id = GlobalConfiguration().get_active_stack_id()
-
-        if not stack_id:
-            raise RuntimeError(
-                "No active stack is configured. Run "
-                "`zenml stack set STACK_NAME` to set the active stack."
-            )
 
         return self.get_stack(stack_id)
 
