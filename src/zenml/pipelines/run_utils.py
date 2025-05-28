@@ -90,6 +90,7 @@ def create_placeholder_run(
         tags=deployment.pipeline_configuration.tags,
         logs=logs,
     )
+
     run, _ = Client().zen_store.get_or_create_run(run_request)
     return run
 
