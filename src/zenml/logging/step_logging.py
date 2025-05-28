@@ -549,8 +549,14 @@ class PipelineLogsStorageContext:
                 except Exception:
                     pass
 
-                if step_context and args[0] != "\n":
-                    message = f"[{step_context.step_name}] " + message
+                if step_context and args[0] not in ["\n", ""]:
+                    # For progress bar updates (with \r), inject the step name after the \r
+                    if "\r" in message:
+                        message = message.replace(
+                            "\r", f"\r[{step_context.step_name}] "
+                        )
+                    else:
+                        message = f"[{step_context.step_name}] {message}"
 
                 output = method(message, *args[1:], **kwargs)
 
