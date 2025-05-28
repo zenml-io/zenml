@@ -1,6 +1,38 @@
 <!-- markdown-link-check-disable -->
-
 # 0.83.0
+
+🚀 **Major Performance Release** - ZenML 0.83.0 introduces significant performance improvements and response optimizations that dramatically reduce API response times and database query overhead. This release includes breaking changes and is **not compatible with earlier client/server versions**.
+
+## ⚡ Performance Improvements
+
+This release delivers substantial performance enhancements across the ZenML server:
+
+- **Optimized API Responses**: Pipeline run responses no longer include unpaginated step lists, dramatically reducing response sizes for large pipelines
+- **Database Query Optimization**: Improved query patterns with strategic joined loads to minimize database roundtrips
+- **Reduced Response Payloads**: Many attributes moved from `body` to `resources` to avoid unnecessary data transfer when objects are embedded in other responses
+
+## 🔄 Breaking Changes
+
+⚠️ **Client/Server Compatibility**: This version is **not compatible** with earlier ZenML client/server versions. Please ensure both client and server are upgraded to 0.83.0.
+
+### API Response Changes
+- Pipeline run responses no longer include `metadata.steps` or `metadata.step_substitutions`
+- Many model attributes moved from `body` to `resources` for performance
+- Project metadata structure simplified across all responses
+- Model version responses no longer include comprehensive artifact and run ID lists
+
+### Method Deprecations
+- `Model.get_pipeline_run(...)` and `ModelVersionResponse.get_pipeline_run(...)` have been removed
+
+For a comprehensive list of all response changes and migration details, see [PR #3675](https://github.com/zenml-io/zenml/pull/3675).
+
+## 🚀 Orchestrator Enhancements
+
+### Kubernetes Orchestrator
+- **Enhanced Caching**: Added caching capabilities in Kubernetes orchestrator entrypoint to improve performance and reduce unnecessary pod creations
+
+### Skypilot Orchestrator  
+- **Updated Version and Settings**: Updated to new Skypilot version and added new setting options
 
 ## What's Changed
 * Adding 0.82.0 to the legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3671
@@ -36,7 +68,6 @@
 
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.82.1...0.83.0
-
 
 # 0.82.1
 
