@@ -815,15 +815,65 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )["PipelineExecutionStatus"]
 
         # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-        # https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/PipelineState
+        # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
         if status in ["Executing", "Stopping"]:
             return ExecutionStatus.RUNNING
-        elif status in ["Stopped", "Failed"]:
+        elif status in ["Stopped"]:
+            return ExecutionStatus.CANCELED
+        elif status in ["Failed"]:
             return ExecutionStatus.FAILED
         elif status in ["Succeeded"]:
             return ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline execution.")
+
+    def stop_run(self, run: "PipelineRunResponse") -> None:
+        """Stops a specific pipeline run.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+
+        Raises:
+            AssertionError: If the run was not executed by this orchestrator.
+            ValueError: If the orchestrator run ID cannot be found.
+        """
+        # Make sure that the stack exists and is accessible
+        if run.stack is None:
+            raise ValueError(
+                "The stack that the run was executed on is not available "
+                "anymore."
+            )
+
+        # Make sure that the run belongs to this orchestrator
+        assert (
+            self.id
+            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
+        )
+
+        # Initialize the Sagemaker client
+        session = self._get_sagemaker_session()
+        sagemaker_client = session.sagemaker_client
+
+        # Get the pipeline execution ARN
+        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
+        elif run.orchestrator_run_id is not None:
+            run_id = run.orchestrator_run_id
+        else:
+            raise ValueError(
+                "Can not find the orchestrator run ID, thus can not stop "
+                "the pipeline execution."
+            )
+
+        try:
+            # Stop the pipeline execution
+            sagemaker_client.stop_pipeline_execution(
+                PipelineExecutionArn=run_id
+            )
+            logger.info(f"Successfully stopped SageMaker pipeline execution: {run_id}")
+        except Exception as e:
+            logger.error(f"Failed to stop SageMaker pipeline execution: {e}")
+            raise
 
     def compute_metadata(
         self,

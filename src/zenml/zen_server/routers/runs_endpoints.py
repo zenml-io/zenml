@@ -26,6 +26,7 @@ from zenml.constants import (
     STATUS,
     STEPS,
     VERSION_1,
+    STOP,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
@@ -419,6 +420,55 @@ def refresh_run_status(
             f"The stack, the run '{run.id}' was executed on, is deleted."
         )
     run.refresh_run_status()
+
+
+@router.post(
+    "/{run_id}" + STOP,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def stop_run(
+    run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> PipelineRunResponse:
+    """Stops a specific pipeline run.
+
+    Args:
+        run_id: ID of the pipeline run to stop.
+
+    Returns:
+        The updated pipeline run.
+
+    Raises:
+        RuntimeError: If the stack or the orchestrator of the run is deleted.
+    """
+    # Verify access to the run
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        hydrate=True,
+    )
+
+    # Check the stack and its orchestrator
+    if run.stack is not None:
+        orchestrators = run.stack.components.get(
+            StackComponentType.ORCHESTRATOR, []
+        )
+        if orchestrators:
+            verify_permission_for_model(
+                model=orchestrators[0], action=Action.READ
+            )
+        else:
+            raise RuntimeError(
+                f"The orchestrator, the run '{run.id}' was executed with, is "
+                "deleted."
+            )
+    else:
+        raise RuntimeError(
+            f"The stack, the run '{run.id}' was executed on, is deleted."
+        )
+    
+    return run.stop_run()
 
 
 @router.get(
