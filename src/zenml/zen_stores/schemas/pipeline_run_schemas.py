@@ -15,11 +15,13 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -53,7 +55,10 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import RunMetadataInterface
+from zenml.zen_stores.schemas.utils import (
+    RunMetadataInterface,
+    jl_arg,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
@@ -155,12 +160,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete", "uselist": False},
     )
-    model_versions_pipeline_runs_links: List[
-        "ModelVersionPipelineRunSchema"
-    ] = Relationship(
-        back_populates="pipeline_run",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -228,7 +227,77 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
     )
 
+    # Needed for cascade deletion
+    model_versions_pipeline_runs_links: List[
+        "ModelVersionPipelineRunSchema"
+    ] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        from zenml.zen_stores.schemas import ModelVersionSchema
+
+        options = [
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.pipeline)
+            ),
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.stack)
+            ),
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.build)
+            ),
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.schedule)
+            ),
+            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+                jl_arg(PipelineDeploymentSchema.code_reference)
+            ),
+        ]
+
+        # if include_metadata:
+        #     options.extend(
+        #         [
+        #             joinedload(jl_arg(PipelineRunSchema.run_metadata)),
+        #         ]
+        #     )
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(
+                        jl_arg(PipelineRunSchema.model_version)
+                    ).joinedload(
+                        jl_arg(ModelVersionSchema.model), innerjoin=True
+                    ),
+                    joinedload(jl_arg(PipelineRunSchema.logs)),
+                    joinedload(jl_arg(PipelineRunSchema.user)),
+                    # joinedload(jl_arg(PipelineRunSchema.tags)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(
@@ -263,28 +332,35 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             trigger_execution_id=request.trigger_execution_id,
         )
 
-    def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
+    def fetch_metadata_collection(
+        self, include_full_metadata: bool = False, **kwargs: Any
+    ) -> Dict[str, List[RunMetadataEntry]]:
         """Fetches all the metadata entries related to the pipeline run.
+
+        Args:
+            include_full_metadata: Whether the full metadata will be included.
+            **kwargs: Keyword arguments.
 
         Returns:
             a dictionary, where the key is the key of the metadata entry
                 and the values represent the list of entries with this key.
         """
         # Fetch the metadata related to this run
-        metadata_collection = super().fetch_metadata_collection()
+        metadata_collection = super().fetch_metadata_collection(**kwargs)
 
-        # Fetch the metadata related to the steps of this run
-        for s in self.step_runs:
-            step_metadata = s.fetch_metadata_collection()
-            for k, v in step_metadata.items():
-                metadata_collection[f"{s.name}::{k}"] = v
+        if include_full_metadata:
+            # Fetch the metadata related to the steps of this run
+            for s in self.step_runs:
+                step_metadata = s.fetch_metadata_collection()
+                for k, v in step_metadata.items():
+                    metadata_collection[f"{s.name}::{k}"] = v
 
-        # Fetch the metadata related to the schedule of this run
-        if self.deployment is not None:
-            if schedule := self.deployment.schedule:
-                schedule_metadata = schedule.fetch_metadata_collection()
-                for k, v in schedule_metadata.items():
-                    metadata_collection[f"schedule:{k}"] = v
+            # Fetch the metadata related to the schedule of this run
+            if self.deployment is not None:
+                if schedule := self.deployment.schedule:
+                    schedule_metadata = schedule.fetch_metadata_collection()
+                    for k, v in schedule_metadata.items():
+                        metadata_collection[f"schedule:{k}"] = v
 
         return metadata_collection
 
@@ -293,6 +369,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         include_python_packages: bool = False,
+        include_full_metadata: bool = False,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -301,6 +378,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
+            include_full_metadata: Whether the full metadata will be included.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -351,7 +429,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         config.finalize_substitutions(start_time=self.start_time, inplace=True)
 
         body = PipelineRunResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             status=ExecutionStatus(self.status),
             stack=stack,
             pipeline=pipeline,
@@ -375,21 +454,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.deployment
                 and self.deployment.build
                 and not self.deployment.build.is_local
-                and self.deployment.build.stack
+                and self.deployment.build.stack_id
             ):
                 is_templatable = True
-
-            steps = {
-                step.name: step.to_model(include_metadata=True)
-                for step in self.step_runs
-            }
-
-            step_substitutions = {}
-            for step_name, step in steps.items():
-                step_substitutions[step_name] = step.config.substitutions
-                # We fetch the steps hydrated before, but want them unhydrated
-                # in the response -> We need to reset the metadata here
-                step.metadata = None
 
             orchestrator_environment = (
                 json.loads(self.orchestrator_environment)
@@ -402,10 +469,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 orchestrator_environment.pop("python_packages", None)
 
             metadata = PipelineRunResponseMetadata(
-                project=self.project.to_model(),
-                run_metadata=self.fetch_metadata(),
+                run_metadata=self.fetch_metadata(
+                    include_full_metadata=include_full_metadata
+                ),
                 config=config,
-                steps=steps,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 client_environment=client_environment,
@@ -418,24 +485,21 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,
-                step_substitutions=step_substitutions,
             )
 
         resources = None
         if include_resources:
-            model_version = None
-            if self.model_version:
-                model_version = self.model_version.to_model()
-
             resources = PipelineRunResponseResources(
-                model_version=model_version,
+                user=self.user.to_model() if self.user else None,
+                model_version=self.model_version.to_model()
+                if self.model_version
+                else None,
                 tags=[tag.to_model() for tag in self.tags],
                 logs=self.logs.to_model() if self.logs else None,
             )
 
         return PipelineRunResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

@@ -61,7 +61,7 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     zen_store,
 )
@@ -91,7 +91,7 @@ types_router = APIRouter(
     deprecated=True,
     tags=["service_connectors"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_service_connector(
     connector: ServiceConnectorRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -124,7 +124,7 @@ def create_service_connector(
     deprecated=True,
     tags=["service_connectors"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_service_connectors(
     connector_filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
@@ -198,7 +198,7 @@ def list_service_connectors(
     deprecated=True,
     tags=["service_connectors"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_service_connector_resources(
     filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
@@ -234,7 +234,7 @@ def list_service_connector_resources(
     "/{connector_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_service_connector(
     connector_id: UUID,
     expand_secrets: bool = True,
@@ -276,7 +276,7 @@ def get_service_connector(
     "/{connector_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_service_connector(
     connector_id: UUID,
     connector_update: ServiceConnectorUpdate,
@@ -303,7 +303,7 @@ def update_service_connector(
     "/{connector_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_service_connector(
     connector_id: UUID,
     _: AuthContext = Security(authorize),
@@ -324,7 +324,7 @@ def delete_service_connector(
     SERVICE_CONNECTOR_VERIFY,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def validate_and_verify_service_connector_config(
     connector: ServiceConnectorRequest,
     list_resources: bool = True,
@@ -357,7 +357,7 @@ def validate_and_verify_service_connector_config(
     "/{connector_id}" + SERVICE_CONNECTOR_VERIFY,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def validate_and_verify_service_connector(
     connector_id: UUID,
     resource_type: Optional[str] = None,
@@ -398,7 +398,7 @@ def validate_and_verify_service_connector(
     "/{connector_id}" + SERVICE_CONNECTOR_CLIENT,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_service_connector_client(
     connector_id: UUID,
     resource_type: Optional[str] = None,
@@ -435,7 +435,7 @@ def get_service_connector_client(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_service_connector_types(
     connector_type: Optional[str] = None,
     resource_type: Optional[str] = None,
@@ -465,7 +465,7 @@ def list_service_connector_types(
     "/{connector_type}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_service_connector_type(
     connector_type: str,
     _: AuthContext = Security(authorize),
@@ -485,7 +485,7 @@ def get_service_connector_type(
     SERVICE_CONNECTOR_FULL_STACK,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_resources_based_on_service_connector_info(
     connector_info: Optional[ServiceConnectorInfo] = None,
     connector_uuid: Optional[UUID] = None,

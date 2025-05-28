@@ -15,12 +15,14 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -53,7 +55,10 @@ from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import RunMetadataInterface
+from zenml.zen_stores.schemas.utils import (
+    RunMetadataInterface,
+    jl_arg,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
@@ -186,6 +191,55 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        from zenml.zen_stores.schemas import ModelVersionSchema
+
+        options = [
+            joinedload(jl_arg(StepRunSchema.deployment)),
+            joinedload(jl_arg(StepRunSchema.pipeline_run)),
+        ]
+
+        if include_metadata:
+            options.extend(
+                [
+                    joinedload(jl_arg(StepRunSchema.logs)),
+                    # joinedload(jl_arg(StepRunSchema.parents)),
+                    # joinedload(jl_arg(StepRunSchema.run_metadata)),
+                ]
+            )
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(StepRunSchema.model_version)).joinedload(
+                        jl_arg(ModelVersionSchema.model), innerjoin=True
+                    ),
+                    joinedload(jl_arg(StepRunSchema.user)),
+                    # joinedload(jl_arg(StepRunSchema.input_artifacts)),
+                    # joinedload(jl_arg(StepRunSchema.output_artifacts)),
+                ]
+            )
+
+        return options
+
+    @classmethod
     def from_request(
         cls, request: StepRunRequest, deployment_id: Optional[UUID]
     ) -> "StepRunSchema":
@@ -234,22 +288,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             ValueError: In case the step run configuration is missing.
         """
-        input_artifacts = {
-            artifact.name: StepRunInputResponse(
-                input_type=StepRunInputArtifactType(artifact.type),
-                **artifact.artifact_version.to_model().model_dump(),
-            )
-            for artifact in self.input_artifacts
-        }
-
-        output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
-        for artifact in self.output_artifacts:
-            if artifact.name not in output_artifacts:
-                output_artifacts[artifact.name] = []
-            output_artifacts[artifact.name].append(
-                artifact.artifact_version.to_model()
-            )
-
         step = None
         if self.deployment is not None:
             step_configurations = json.loads(
@@ -284,20 +322,19 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         body = StepRunResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             status=ExecutionStatus(self.status),
             start_time=self.start_time,
             end_time=self.end_time,
-            inputs=input_artifacts,
-            outputs=output_artifacts,
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
+            substitutions=step.config.substitutions,
         )
         metadata = None
         if include_metadata:
             metadata = StepRunResponseMetadata(
-                project=self.project.to_model(),
                 config=step.config,
                 spec=step.spec,
                 cache_key=self.cache_key,
@@ -318,11 +355,33 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if self.model_version:
                 model_version = self.model_version.to_model()
 
-            resources = StepRunResponseResources(model_version=model_version)
+            input_artifacts: Dict[str, List[StepRunInputResponse]] = {}
+            for input_artifact in self.input_artifacts:
+                if input_artifact.name not in input_artifacts:
+                    input_artifacts[input_artifact.name] = []
+                step_run_input = StepRunInputResponse(
+                    input_type=StepRunInputArtifactType(input_artifact.type),
+                    **input_artifact.artifact_version.to_model().model_dump(),
+                )
+                input_artifacts[input_artifact.name].append(step_run_input)
+
+            output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
+            for output_artifact in self.output_artifacts:
+                if output_artifact.name not in output_artifacts:
+                    output_artifacts[output_artifact.name] = []
+                output_artifacts[output_artifact.name].append(
+                    output_artifact.artifact_version.to_model()
+                )
+
+            resources = StepRunResponseResources(
+                user=self.user.to_model() if self.user else None,
+                model_version=model_version,
+                inputs=input_artifacts,
+                outputs=output_artifacts,
+            )
 
         return StepRunResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
@@ -410,7 +469,10 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Relationships
     step_run: "StepRunSchema" = Relationship(back_populates="input_artifacts")
-    artifact_version: "ArtifactVersionSchema" = Relationship()
+    artifact_version: "ArtifactVersionSchema" = Relationship(
+        back_populates="input_of_step_runs",
+        sa_relationship_kwargs={"lazy": "joined"},
+    )
 
 
 class StepRunOutputArtifactSchema(SQLModel, table=True):
@@ -446,5 +508,6 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
     # Relationship
     step_run: "StepRunSchema" = Relationship(back_populates="output_artifacts")
     artifact_version: "ArtifactVersionSchema" = Relationship(
-        back_populates="output_of_step_runs"
+        back_populates="output_of_step_runs",
+        sa_relationship_kwargs={"lazy": "joined"},
     )

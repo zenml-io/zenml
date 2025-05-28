@@ -13,29 +13,34 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
-from typing import TYPE_CHECKING, Dict, List, Tuple
+import json
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
-from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
+from zenml.enums import StepRunInputArtifactType
 from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils, string_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunResponse
+    from zenml.models import PipelineRunResponse, StepRunResponse
     from zenml.models.v2.core.step_run import StepRunInputResponse
 
 
 def resolve_step_inputs(
     step: "Step",
     pipeline_run: "PipelineRunResponse",
+    step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
 ) -> Tuple[Dict[str, "StepRunInputResponse"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
         step: The step for which to resolve the inputs.
         pipeline_run: The current pipeline run.
+        step_runs: A dictionary of already fetched step runs to use for input
+            resolution. This will be updated in-place with newly fetched step
+            runs.
 
     Raises:
         InputResolutionError: If input resolving failed due to a missing
@@ -50,65 +55,56 @@ def resolve_step_inputs(
     from zenml.models import ArtifactVersionResponse
     from zenml.models.v2.core.step_run import StepRunInputResponse
 
-    current_run_steps = {
-        run_step.name: run_step
-        for run_step in pagination_utils.depaginate(
-            Client().list_run_steps,
-            pipeline_run_id=pipeline_run.id,
-            project=pipeline_run.project.id,
+    step_runs = step_runs or {}
+
+    steps_to_fetch = set(step.spec.upstream_steps)
+    steps_to_fetch.update(
+        input_.step_name for input_ in step.spec.inputs.values()
+    )
+    # Remove all the step runs that we've already fetched.
+    steps_to_fetch.difference_update(step_runs.keys())
+
+    if steps_to_fetch:
+        step_runs.update(
+            {
+                run_step.name: run_step
+                for run_step in pagination_utils.depaginate(
+                    Client().list_run_steps,
+                    pipeline_run_id=pipeline_run.id,
+                    project=pipeline_run.project_id,
+                    name="oneof:" + json.dumps(list(steps_to_fetch)),
+                )
+            }
         )
-    }
 
     input_artifacts: Dict[str, StepRunInputResponse] = {}
     for name, input_ in step.spec.inputs.items():
         try:
-            step_run = current_run_steps[input_.step_name]
+            step_run = step_runs[input_.step_name]
         except KeyError:
             raise InputResolutionError(
                 f"No step `{input_.step_name}` found in current run."
             )
 
-        # Try to get the substitutions from the pipeline run first, as we
-        # already have a hydrated version of that. In the unlikely case
-        # that the pipeline run is outdated, we fetch it from the step
-        # run instead which will costs us one hydration call.
-        substitutions = (
-            pipeline_run.step_substitutions.get(step_run.name)
-            or step_run.config.substitutions
-        )
         output_name = string_utils.format_name_template(
-            input_.output_name, substitutions=substitutions
+            input_.output_name, substitutions=step_run.substitutions
         )
 
         try:
-            outputs = step_run.outputs[output_name]
+            output = step_run.regular_outputs[output_name]
         except KeyError:
             raise InputResolutionError(
                 f"No step output `{output_name}` found for step "
                 f"`{input_.step_name}`."
             )
-
-        step_outputs = [
-            output
-            for output in outputs
-            if output.save_type == ArtifactSaveType.STEP_OUTPUT
-        ]
-        if len(step_outputs) > 2:
-            # This should never happen, there can only be a single regular step
-            # output for a name
+        except ValueError:
             raise InputResolutionError(
-                f"Too many step outputs for output `{output_name}` of "
-                f"step `{input_.step_name}`."
-            )
-        elif len(step_outputs) == 0:
-            raise InputResolutionError(
-                f"No step output `{output_name}` found for step "
-                f"`{input_.step_name}`."
+                f"Expected 1 regular output artifact for {output_name}."
             )
 
         input_artifacts[name] = StepRunInputResponse(
             input_type=StepRunInputArtifactType.STEP_OUTPUT,
-            **step_outputs[0].model_dump(),
+            **output.model_dump(),
         )
 
     for (
@@ -187,7 +183,7 @@ def resolve_step_inputs(
             step.config.parameters[name] = value_
 
     parent_step_ids = [
-        current_run_steps[upstream_step].id
+        step_runs[upstream_step].id
         for upstream_step in step.spec.upstream_steps
     ]
 

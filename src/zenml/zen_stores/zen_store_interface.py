@@ -1546,7 +1546,10 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_run(
-        self, run_id: UUID, hydrate: bool = True
+        self,
+        run_id: UUID,
+        hydrate: bool = True,
+        include_full_metadata: bool = False,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -1554,6 +1557,8 @@ class ZenStoreInterface(ABC):
             run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             The pipeline run.
@@ -1567,6 +1572,7 @@ class ZenStoreInterface(ABC):
         self,
         runs_filter_model: PipelineRunFilter,
         hydrate: bool = False,
+        include_full_metadata: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
@@ -1575,6 +1581,8 @@ class ZenStoreInterface(ABC):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             A list of all pipeline runs matching the filter criteria.

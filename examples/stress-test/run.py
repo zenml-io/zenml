@@ -16,11 +16,11 @@
 #
 
 import time
-from typing import Any, Dict
+from typing import Annotated, Any, Dict, Tuple
 
 import click
 
-from zenml import get_step_context, pipeline, step
+from zenml import Tag, get_step_context, log_metadata, pipeline, step
 from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.docker_settings import PythonPackageInstaller
@@ -33,8 +33,8 @@ kubernetes_settings = KubernetesOrchestratorSettings(
     pod_startup_timeout=600,
     pod_settings=KubernetesPodSettings(
         resources={
-            "requests": {"cpu": "100m", "memory": "300Mi"},
-            "limits": {"memory": "350Mi"},
+            "requests": {"cpu": "100m", "memory": "500Mi"},
+            # "limits": {"memory": "500Mi"},    -> grows linearly with number of steps
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -49,8 +49,8 @@ kubernetes_settings = KubernetesOrchestratorSettings(
     ),
     orchestrator_pod_settings=KubernetesPodSettings(
         resources={
-            "requests": {"cpu": "100m", "memory": "300Mi"},
-            "limits": {"memory": "350Mi"},
+            "requests": {"cpu": "100m", "memory": "500Mi"},
+            # "limits": {"memory": "500Mi"}, # -> grows linearly with number of steps
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -71,9 +71,84 @@ settings = {"docker": docker_settings, "orchestrator": kubernetes_settings}
 
 
 @step
+def init_step() -> Tuple[
+    Annotated[int, "output1"],
+    Annotated[int, "output2"],
+    Annotated[int, "output3"],
+    Annotated[int, "output4"],
+    Annotated[int, "output5"],
+    Annotated[int, "output6"],
+    Annotated[int, "output7"],
+    Annotated[int, "output8"],
+    Annotated[int, "output9"],
+    Annotated[int, "output10"],
+    Annotated[int, "output11"],
+    Annotated[int, "output12"],
+    Annotated[int, "output13"],
+    Annotated[int, "output14"],
+    Annotated[int, "output15"],
+    Annotated[int, "output16"],
+    Annotated[int, "output17"],
+    Annotated[int, "output18"],
+    Annotated[int, "output19"],
+    Annotated[int, "output20"],
+]:
+    """A step that returns a bunch of outputs.
+
+    This is used to test the performance of the ZenML server when returning
+    a large number of outputs.
+
+    Returns:
+        A tuple of 20 integers.
+    """
+    return (
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+    )
+
+
+@step
 def load_step(
     duration: int,
     sleep_interval: float,
+    input1: int,
+    input2: int,
+    input3: int,
+    input4: int,
+    input5: int,
+    input6: int,
+    input7: int,
+    input8: int,
+    input9: int,
+    input10: int,
+    input11: int,
+    input12: int,
+    input13: int,
+    input14: int,
+    input15: int,
+    input16: int,
+    input17: int,
+    input18: int,
+    input19: int,
+    input20: int,
 ) -> Dict[str, Any]:
     """A step that performs API operations to stress test the ZenML server.
 
@@ -83,6 +158,26 @@ def load_step(
     Args:
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
+        input1: The first input.
+        input2: The second input.
+        input3: The third input.
+        input4: The fourth input.
+        input5: The fifth input.
+        input6: The sixth input.
+        input7: The seventh input.
+        input8: The eighth input.
+        input9: The ninth input.
+        input10: The tenth input.
+        input11: The eleventh input.
+        input12: The twelfth input.
+        input13: The thirteenth input.
+        input14: The fourteenth input.
+        input15: The fifteenth input.
+        input16: The sixteenth input.
+        input17: The seventeenth input.
+        input18: The eighteenth input.
+        input19: The nineteenth input.
+        input20: The twentieth input.
 
     Returns:
         A dictionary containing the number of operations performed and the
@@ -92,17 +187,47 @@ def load_step(
     start_time = time.time()
     operations = 0
 
+    print("Adding metadata...")
+    log_metadata(
+        metadata={
+            "key": "value",
+            "key2": 2,
+            "key3": [1, 2, 3],
+            "key4": {
+                "subkey": "subvalue",
+                "some_list": [1, 2, 3],
+                "some_dict": {"subkey2": "subvalue2"},
+            },
+            "key5": True,
+            "key6": False,
+            "key8": 1.0,
+            "key9": 1.0,
+        }
+    )
+
     print("Starting API calls...")
     while time.time() - start_time < duration:
         # Perform various API operations
         print("Listing pipeline runs...")
-        client.list_pipeline_runs()
+        p = client.list_pipeline_runs()
+        if p.items:
+            print("Fetching pipeline run...")
+            client.get_pipeline_run(p.items[-1].id)
         print("Listing stacks...")
-        client.list_stacks()
+        s = client.list_stacks()
+        if s.items:
+            print("Fetching stack...")
+            client.get_stack(s.items[-1].id)
         print("Listing stack components...")
-        client.list_stack_components()
+        sc = client.list_stack_components()
+        if sc.items:
+            print("Fetching stack component...")
+            client.get_stack_component(sc.items[-1].type, sc.items[-1].id)
         print("Listing service connectors...")
-        client.list_service_connectors()
+        sc = client.list_service_connectors()
+        if sc.items:
+            print("Fetching service connector...")
+            client.get_service_connector(sc.items[-1].id)
 
         operations += 4
         if sleep_interval > 0:
@@ -120,8 +245,8 @@ def load_step(
 report_kubernetes_settings = KubernetesOrchestratorSettings(
     pod_settings=KubernetesPodSettings(
         resources={
-            "requests": {"cpu": "100m", "memory": "500Mi"},
-            "limits": {"memory": "600Mi"},
+            "requests": {"cpu": "100m", "memory": "800Mi"},
+            # "limits": {"memory": "800Mi"}, # -> grows linearly with number of steps
         },
         node_selectors={"pool": "workloads"},
         tolerations=[
@@ -186,9 +311,18 @@ def load_test_pipeline(
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
     """
+    result = init_step()
+
     after = []
     for i in range(num_parallel_steps):
-        after.append(load_step(duration, sleep_interval, id=f"load_step_{i}"))
+        after.append(
+            load_step(
+                duration,
+                sleep_interval,
+                *result,
+                id=f"load_step_{i}",
+            )
+        )
 
     report_results(after=after)
 
@@ -213,12 +347,22 @@ def load_test_pipeline(
 @click.option(
     "--sleep-interval",
     "-s",
-    default=0.1,
+    default=1,
     help="Sleep interval between API calls in seconds",
     type=float,
     show_default=True,
 )
-def main(parallel_steps: int, duration: int, sleep_interval: float) -> None:
+@click.option(
+    "--num-tags",
+    "-t",
+    default=10,
+    help="Number of tags to add to the pipeline",
+    type=int,
+    show_default=True,
+)
+def main(
+    parallel_steps: int, duration: int, sleep_interval: float, num_tags: int
+) -> None:
     """Execute a ZenML load test with configurable parallel steps.
 
     This will spawn multiple parallel steps that continuously make API calls
@@ -228,9 +372,14 @@ def main(parallel_steps: int, duration: int, sleep_interval: float) -> None:
         parallel_steps: The number of parallel steps to run.
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
+        num_tags: The number of tags to add to the pipeline.
     """
     click.echo(f"Starting load test with {parallel_steps} parallel steps...")
     click.echo(f"Duration: {duration}s, Sleep Interval: {sleep_interval}s")
+
+    load_test_pipeline.configure(
+        tags=[Tag(name=f"tag_{i}", cascade=True) for i in range(num_tags)],
+    )
 
     load_test_pipeline(
         num_parallel_steps=parallel_steps,

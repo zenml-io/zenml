@@ -108,6 +108,13 @@ class BuildConfiguration(BaseModel):
             )
             if digest:
                 hash_.update(digest.encode())
+            elif self.settings.skip_build:
+                # If the user has specified to skip the build, the image being
+                # used for the run is whatever they set for `parent_image`.
+                # In this case, the bevavior depends on the orchestrators image
+                # pull policy, and whether there is any caching involved. This
+                # is out of our control here, so we don't log any warning.
+                pass
             else:
                 logger.warning(
                     "Unable to fetch parent image digest for image `%s`. "

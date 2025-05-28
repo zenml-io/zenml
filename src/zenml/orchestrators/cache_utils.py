@@ -19,13 +19,20 @@ from typing import TYPE_CHECKING, Dict, Optional
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
+from zenml.orchestrators import step_run_utils
 
 if TYPE_CHECKING:
     from uuid import UUID
 
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
-    from zenml.models import StepRunResponse
+    from zenml.models import (
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
+    from zenml.stack import Stack
+
 
 logger = get_logger(__name__)
 
@@ -127,3 +134,43 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     if cache_candidates:
         return cache_candidates[0]
     return None
+
+
+def create_cached_step_runs_and_prune_deployment(
+    deployment: "PipelineDeploymentResponse",
+    pipeline_run: "PipelineRunResponse",
+    stack: "Stack",
+) -> bool:
+    """Create cached step runs and prune the cached steps from the deployment.
+
+    Args:
+        deployment: The deployment of the pipeline run.
+        pipeline_run: The pipeline run for which to create the step runs.
+        stack: The stack on which the pipeline run is happening.
+
+    Returns:
+        Whether an actual pipeline run is still required.
+    """
+    cached_invocations = step_run_utils.create_cached_step_runs(
+        deployment=deployment,
+        pipeline_run=pipeline_run,
+        stack=stack,
+    )
+
+    for invocation_id in cached_invocations:
+        # Remove the cached step invocations from the deployment so
+        # the orchestrator does not try to run them
+        deployment.step_configurations.pop(invocation_id)
+
+    for step in deployment.step_configurations.values():
+        for invocation_id in cached_invocations:
+            if invocation_id in step.spec.upstream_steps:
+                step.spec.upstream_steps.remove(invocation_id)
+
+    if len(deployment.step_configurations) == 0:
+        # All steps were cached, we update the pipeline run status and
+        # don't actually use the orchestrator to run the pipeline
+        logger.info("All steps of the pipeline run were cached.")
+        return False
+
+    return True

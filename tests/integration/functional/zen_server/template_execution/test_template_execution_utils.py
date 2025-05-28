@@ -44,24 +44,26 @@ def test_creating_deployment_request_from_template(
 
     build = PipelineBuildResponse(
         id=uuid4(),
-        project_id=deployment.project_id,
         body=PipelineBuildResponseBody(
-            created=datetime.utcnow(), updated=datetime.utcnow()
+            user_id=deployment.user_id,
+            project_id=deployment.project_id,
+            created=datetime.utcnow(),
+            updated=datetime.utcnow(),
         ),
     )
     deployment.metadata.build = build
 
     template_response = RunTemplateResponse(
         id=uuid4(),
-        project_id=deployment.project_id,
         name="template",
         body=RunTemplateResponseBody(
+            user_id=deployment.user_id,
+            project_id=deployment.project_id,
             created=datetime.utcnow(),
             updated=datetime.utcnow(),
-            user=deployment.user,
             runnable=True,
         ),
-        metadata=RunTemplateResponseMetadata(project=deployment.project),
+        metadata=RunTemplateResponseMetadata(),
         resources=RunTemplateResponseResources(
             source_deployment=deployment, tags=[]
         ),

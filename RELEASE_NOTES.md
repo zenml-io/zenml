@@ -1,4 +1,73 @@
 <!-- markdown-link-check-disable -->
+# 0.83.0
+
+🚀 **Major Performance Release** - ZenML 0.83.0 introduces significant performance improvements and response optimizations that dramatically reduce API response times and database query overhead. This release includes breaking changes and is **not compatible with earlier client/server versions**.
+
+## ⚡ Performance Improvements
+
+This release delivers substantial performance enhancements across the ZenML server:
+
+- **Optimized API Responses**: Pipeline run responses no longer include unpaginated step lists, dramatically reducing response sizes for large pipelines
+- **Database Query Optimization**: Improved query patterns with strategic joined loads to minimize database roundtrips
+- **Reduced Response Payloads**: Many attributes moved from `body` to `resources` to avoid unnecessary data transfer when objects are embedded in other responses
+
+## 🔄 Breaking Changes
+
+⚠️ **Client/Server Compatibility**: This version is **not compatible** with earlier ZenML client/server versions. Please ensure both client and server are upgraded to 0.83.0.
+
+### API Response Changes
+- Pipeline run responses no longer include `metadata.steps` or `metadata.step_substitutions`
+- Many model attributes moved from `body` to `resources` for performance
+- Project metadata structure simplified across all responses
+- Model version responses no longer include comprehensive artifact and run ID lists
+
+### Method Deprecations
+- `Model.get_pipeline_run(...)` and `ModelVersionResponse.get_pipeline_run(...)` have been removed
+
+For a comprehensive list of all response changes and migration details, see [PR #3675](https://github.com/zenml-io/zenml/pull/3675).
+
+## 🚀 Orchestrator Enhancements
+
+### Kubernetes Orchestrator
+- **Enhanced Caching**: Added caching capabilities in Kubernetes orchestrator entrypoint to improve performance and reduce unnecessary pod creations
+
+### Skypilot Orchestrator  
+- **Updated Version and Settings**: Updated to new Skypilot version and added new setting options
+
+## What's Changed
+* Adding 0.82.0 to the legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3671
+* New deployment scenarios by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3666
+* Add instruction to `WANDB_DISABLED` to `True` for the quickstart by @bcdurak in https://github.com/zenml-io/zenml/pull/3673
+* Fix service connector docs example by @strickvl in https://github.com/zenml-io/zenml/pull/3679
+* Fix YAML extension check by @strickvl in https://github.com/zenml-io/zenml/pull/3677
+* Fix typos, bugs, and improve test precision by @strickvl in https://github.com/zenml-io/zenml/pull/3678
+* Performance boost fix: don't fetch entire pipeline run to verify pipeline API token validity by @stefannica in https://github.com/zenml-io/zenml/pull/3684
+* Async wrapper for FastAPI endpoints to run serialization in event loop by @schustmi in https://github.com/zenml-io/zenml/pull/3685
+* Don't log parent image digest warning if build is skipped by @schustmi in https://github.com/zenml-io/zenml/pull/3676
+* Convert string to raw to avoid warnings in python 3.12+ by @jlopezpena in https://github.com/zenml-io/zenml/pull/3687
+* Use correct artifact store for nested materializers by @schustmi in https://github.com/zenml-io/zenml/pull/3670
+* Tiny Discord docs fix by @strickvl in https://github.com/zenml-io/zenml/pull/3691
+* Store validated config with converted types in DB by @schustmi in https://github.com/zenml-io/zenml/pull/3668
+* Added zenml codespace env detection by @htahir1 in https://github.com/zenml-io/zenml/pull/3686
+* Fix setuptools vulnerabilities and deprecate pip as DockerSettings default by @stefannica in https://github.com/zenml-io/zenml/pull/3694
+* Improve alerter documentation with comprehensive ask step coverage by @strickvl in https://github.com/zenml-io/zenml/pull/3693
+* Add comprehensive agent guidelines with `AGENTS.md` and `CLAUDE.md` by @strickvl in https://github.com/zenml-io/zenml/pull/3680
+* Performance test utilities, stats and stress test pipeline updates by @stefannica in https://github.com/zenml-io/zenml/pull/3690
+* Fix GCP service connector expiry by @stefannica in https://github.com/zenml-io/zenml/pull/3697
+* Fix trivy image scanning GitHub actions by @stefannica in https://github.com/zenml-io/zenml/pull/3699
+* Add ability to strip the timestamps from the logs, on request by @avishniakov in https://github.com/zenml-io/zenml/pull/3683
+* Send POST request for RBAC permission checks to avoid URL length limits by @schustmi in https://github.com/zenml-io/zenml/pull/3702
+* Response and database improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3675
+* Add Caching in Kubernetes orchestrator entrypoint by @schustmi in https://github.com/zenml-io/zenml/pull/3703
+* New Pro onboarding by @schustmi in https://github.com/zenml-io/zenml/pull/3704
+* Suppress repeated DockerSettings warnings by @stefannica in https://github.com/zenml-io/zenml/pull/3705
+* New OSS dashboard fixes by @schustmi in https://github.com/zenml-io/zenml/pull/3706
+* Remove unused import from metadata docs by @strickvl in https://github.com/zenml-io/zenml/pull/3707
+* Project consistency fixes for `Model` and `ModelVersionResponse` by @schustmi in https://github.com/zenml-io/zenml/pull/3708
+* Update Skypilot orchestrator settings and features by @htahir1 in https://github.com/zenml-io/zenml/pull/3612
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.82.1...0.83.0
 
 # 0.82.1
 

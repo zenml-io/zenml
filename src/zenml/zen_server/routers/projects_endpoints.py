@@ -52,7 +52,7 @@ from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
 )
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     zen_store,
@@ -81,7 +81,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_projects(
     project_filter_model: ProjectFilter = Depends(
         make_dependable(ProjectFilter)
@@ -118,7 +118,7 @@ def list_projects(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_project(
     project_request: ProjectRequest,
     _: AuthContext = Security(authorize),
@@ -149,7 +149,7 @@ def create_project(
     "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_project(
     project_name_or_id: Union[str, UUID],
     hydrate: bool = True,
@@ -184,7 +184,7 @@ def get_project(
     "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_project(
     project_name_or_id: UUID,
     project_update: ProjectUpdate,
@@ -219,7 +219,7 @@ def update_project(
     "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_project(
     project_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),
@@ -249,7 +249,7 @@ def delete_project(
     "/{project_name_or_id}" + STATISTICS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_project_statistics(
     project_name_or_id: Union[str, UUID],
     auth_context: AuthContext = Security(authorize),

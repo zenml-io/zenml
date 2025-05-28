@@ -310,23 +310,23 @@ def test_input_artifacts_typing(clean_client: Client):
         )()
         assert len(prr.steps["producer_step"].inputs) == 0
         assert (
-            prr.steps["cs1"].inputs["shared_name"].input_type
+            prr.steps["cs1"].inputs["shared_name"][0].input_type
             == StepRunInputArtifactType.STEP_OUTPUT
         )
         assert (
-            prr.steps["cs2"].inputs["shared_name"].input_type
+            prr.steps["cs2"].inputs["shared_name"][0].input_type
             == StepRunInputArtifactType.EXTERNAL
         )
         assert (
-            prr.steps["cs3"].inputs["shared_name"].input_type
+            prr.steps["cs3"].inputs["shared_name"][0].input_type
             == StepRunInputArtifactType.LAZY_LOADED
         )
         assert (
-            prr.steps["mcsl"].inputs["shared_name"].input_type
+            prr.steps["mcsl"].inputs["shared_name"][0].input_type
             == StepRunInputArtifactType.MANUAL
         )
         assert (
-            prr.steps["mcsc"].inputs["shared_name"].input_type
+            prr.steps["mcsc"].inputs["shared_name"][0].input_type
             == StepRunInputArtifactType.MANUAL
         )
 

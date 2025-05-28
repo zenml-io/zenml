@@ -67,6 +67,8 @@ class KubernetesOrchestratorSettings(BaseSettings):
         ttl_seconds_after_finished: The amount of seconds to keep finished jobs
             before deleting them. This only applies to jobs created when
             scheduling a pipeline.
+        prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
+            not try to compute cached steps before starting the step pods.
     """
 
     synchronous: bool = True
@@ -85,6 +87,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     successful_jobs_history_limit: Optional[NonNegativeInt] = None
     failed_jobs_history_limit: Optional[NonNegativeInt] = None
     ttl_seconds_after_finished: Optional[NonNegativeInt] = None
+    prevent_orchestrator_pod_caching: bool = False
 
 
 class KubernetesOrchestratorConfig(

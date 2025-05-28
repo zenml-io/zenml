@@ -49,7 +49,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission_for_model
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     zen_store,
 )
@@ -73,7 +73,7 @@ router = APIRouter(
         422: error_response,
     },
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_service_account(
     service_account: ServiceAccountRequest,
     _: AuthContext = Security(authorize),
@@ -96,7 +96,7 @@ def create_service_account(
     "/{service_account_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_service_account(
     service_account_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),
@@ -123,7 +123,7 @@ def get_service_account(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_service_accounts(
     filter_model: ServiceAccountFilter = Depends(
         make_dependable(ServiceAccountFilter)
@@ -158,7 +158,7 @@ def list_service_accounts(
         422: error_response,
     },
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_service_account(
     service_account_name_or_id: Union[str, UUID],
     service_account_update: ServiceAccountUpdate,
@@ -185,7 +185,7 @@ def update_service_account(
     "/{service_account_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_service_account(
     service_account_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),
@@ -211,7 +211,7 @@ def delete_service_account(
     "/{service_account_id}" + API_KEYS,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_api_key(
     service_account_id: UUID,
     api_key: APIKeyRequest,
@@ -249,7 +249,7 @@ def create_api_key(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
@@ -282,7 +282,7 @@ def get_api_key(
     "/{service_account_id}" + API_KEYS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_api_keys(
     service_account_id: UUID,
     filter_model: APIKeyFilter = Depends(make_dependable(APIKeyFilter)),
@@ -316,7 +316,7 @@ def list_api_keys(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
@@ -350,7 +350,7 @@ def update_api_key(
     + API_KEY_ROTATE,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def rotate_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
@@ -381,7 +381,7 @@ def rotate_api_key(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],

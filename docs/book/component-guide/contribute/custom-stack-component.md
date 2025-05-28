@@ -178,7 +178,7 @@ class MyS3ArtifactStore(BaseArtifactStore):
         )
         return self._filesystem
 
-    def open(self, path, mode: = "r"):
+    def open(self, path, mode="r"):
         """Custom logic goes here."""
         return self.filesystem.open(path=path, mode=mode)
 

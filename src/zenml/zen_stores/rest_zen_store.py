@@ -15,6 +15,7 @@
 
 import os
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import (
@@ -30,7 +31,7 @@ from typing import (
     Union,
 )
 from urllib.parse import urlparse
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import requests
 import urllib3
@@ -1929,7 +1930,10 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_run(
-        self, run_id: UUID, hydrate: bool = True
+        self,
+        run_id: UUID,
+        hydrate: bool = True,
+        include_full_metadata: bool = False,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -1937,6 +1941,8 @@ class RestZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             The pipeline run.
@@ -1945,13 +1951,17 @@ class RestZenStore(BaseZenStore):
             resource_id=run_id,
             route=RUNS,
             response_model=PipelineRunResponse,
-            params={"hydrate": hydrate},
+            params={
+                "hydrate": hydrate,
+                "include_full_metadata": include_full_metadata,
+            },
         )
 
     def list_runs(
         self,
         runs_filter_model: PipelineRunFilter,
         hydrate: bool = False,
+        include_full_metadata: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
@@ -1960,6 +1970,8 @@ class RestZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
@@ -1968,7 +1980,10 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
             response_model=PipelineRunResponse,
             filter_model=runs_filter_model,
-            params={"hydrate": hydrate},
+            params={
+                "hydrate": hydrate,
+                "include_full_metadata": include_full_metadata,
+            },
         )
 
     def update_run(
@@ -4179,6 +4194,20 @@ class RestZenStore(BaseZenStore):
         Returns:
             A requests session.
         """
+
+        class AugmentedRetry(Retry):
+            """Augmented retry class that also retries on 429 status codes for POST requests."""
+
+            def is_retry(
+                self,
+                method: str,
+                status_code: int,
+                has_retry_after: bool = False,
+            ) -> bool:
+                if status_code == 429:
+                    return True
+                return super().is_retry(method, status_code, has_retry_after)
+
         if self._session is None:
             # We only need to initialize the session once over the lifetime
             # of the client. We can swap the token out when it expires.
@@ -4208,7 +4237,7 @@ class RestZenStore(BaseZenStore):
             #     the timeout period.
             #     Connection Refused: If the server refuses the connection.
             #
-            retries = Retry(
+            retries = AugmentedRetry(
                 connect=5,
                 read=8,
                 redirect=3,
@@ -4222,7 +4251,7 @@ class RestZenStore(BaseZenStore):
                     504,  # Gateway Timeout
                 ],
                 other=3,
-                backoff_factor=0.5,
+                backoff_factor=1,
             )
             self._session.mount("https://", HTTPAdapter(max_retries=retries))
             self._session.mount("http://", HTTPAdapter(max_retries=retries))
@@ -4360,6 +4389,14 @@ class RestZenStore(BaseZenStore):
         self.session.headers.update(
             {source_context.name: source_context.get().value}
         )
+        # Add a request ID to the request headers
+        request_id = str(uuid4())[:8]
+        self.session.headers.update({"X-Request-ID": request_id})
+        path = url.removeprefix(self.url)
+        start_time = time.time()
+        logger.debug(
+            f"Sending {method} request to {path} with request ID {request_id}..."
+        )
 
         # If the server replies with a credentials validation (401 Unauthorized)
         # error, we (re-)authenticate and retry the request here in the
@@ -4401,7 +4438,8 @@ class RestZenStore(BaseZenStore):
                     # request again, this time with a valid API token in the
                     # header.
                     logger.debug(
-                        f"The last request was not authenticated: {e}\n"
+                        f"The last request with ID {request_id} was not "
+                        f"authenticated: {e}\n"
                         "Re-authenticating and retrying..."
                     )
                     self.authenticate()
@@ -4428,8 +4466,9 @@ class RestZenStore(BaseZenStore):
                     # that was rejected by the server. We attempt a
                     # re-authentication here and then retry the request.
                     logger.debug(
-                        "The last request was authenticated with an API token "
-                        f"that was rejected by the server: {e}\n"
+                        f"The last request with ID {request_id} was authenticated "
+                        "with an API token that was rejected by the server: "
+                        f"{e}\n"
                         "Re-authenticating and retrying..."
                     )
                     re_authenticated = True
@@ -4441,13 +4480,21 @@ class RestZenStore(BaseZenStore):
                     # The last request was made after re-authenticating but
                     # still failed. Bailing out.
                     logger.debug(
-                        f"The last request failed after re-authenticating: {e}\n"
+                        f"The last request with ID {request_id} failed after "
+                        "re-authenticating: {e}\n"
                         "Bailing out..."
                     )
                     raise CredentialsNotValid(
                         "The current credentials are no longer valid. Please "
                         "log in again using 'zenml login'."
                     ) from e
+            finally:
+                end_time = time.time()
+                duration = (end_time - start_time) * 1000
+                logger.debug(
+                    f"Request to {path} with request ID {request_id} took "
+                    f"{duration:.2f}ms."
+                )
 
     def get(
         self,
@@ -4467,7 +4514,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending GET request to {path}...")
         return self._request(
             "GET",
             self.url + API + VERSION_1 + path,
@@ -4496,7 +4542,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending DELETE request to {path}...")
         return self._request(
             "DELETE",
             self.url + API + VERSION_1 + path,
@@ -4526,7 +4571,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending POST request to {path}...")
         return self._request(
             "POST",
             self.url + API + VERSION_1 + path,
@@ -4556,7 +4600,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        logger.debug(f"Sending PUT request to {path}...")
         json = (
             body.model_dump(mode="json", exclude_unset=True) if body else None
         )

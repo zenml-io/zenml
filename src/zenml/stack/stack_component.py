@@ -406,10 +406,7 @@ class StackComponent:
 
         configuration = flavor.config_class(**component_model.configuration)
 
-        if component_model.user is not None:
-            user_id = component_model.user.id
-        else:
-            user_id = None
+        user_id = component_model.user_id
 
         try:
             return flavor.implementation_class(

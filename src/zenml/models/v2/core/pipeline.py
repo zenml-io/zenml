@@ -98,15 +98,6 @@ class PipelineUpdate(BaseUpdate):
 class PipelineResponseBody(ProjectScopedResponseBody):
     """Response body for pipelines."""
 
-    latest_run_id: Optional[UUID] = Field(
-        default=None,
-        title="The ID of the latest run of the pipeline.",
-    )
-    latest_run_status: Optional[ExecutionStatus] = Field(
-        default=None,
-        title="The status of the latest run of the pipeline.",
-    )
-
 
 class PipelineResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipelines."""
@@ -123,6 +114,14 @@ class PipelineResponseResources(ProjectScopedResponseResources):
     latest_run_user: Optional["UserResponse"] = Field(
         default=None,
         title="The user that created the latest run of this pipeline.",
+    )
+    latest_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the latest run of the pipeline.",
+    )
+    latest_run_status: Optional[ExecutionStatus] = Field(
+        default=None,
+        title="The status of the latest run of the pipeline.",
     )
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline.",
@@ -233,7 +232,7 @@ class PipelineResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().latest_run_id
+        return self.get_resources().latest_run_id
 
     @property
     def latest_run_status(self) -> Optional[ExecutionStatus]:
@@ -242,7 +241,7 @@ class PipelineResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().latest_run_status
+        return self.get_resources().latest_run_status
 
     @property
     def tags(self) -> List[TagResponse]:

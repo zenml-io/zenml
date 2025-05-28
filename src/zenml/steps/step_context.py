@@ -198,7 +198,7 @@ class StepContext(metaclass=SingletonMetaClass):
         Returns:
             The input artifacts of the current step.
         """
-        return self.step_run.inputs
+        return self.step_run.regular_inputs
 
     def _get_output(
         self, output_name: Optional[str] = None
