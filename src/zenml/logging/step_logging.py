@@ -552,8 +552,7 @@ class PipelineLogsStorageContext:
                 if step_context and args[0] not in ['\n', '']:
                     # For progress bar updates (with \r), inject the step name after the \r
                     if isinstance(message, str) and "\r" in message:
-                        message = message.replace("\r", "")
-                        message = f"\r[{step_context.step_name}] {message.rstrip()}"
+                        message = message.replace("\r", f"\r[{step_context.step_name}] ")
                     else:
                         # For regular lines, only prepend the step name if it's not already there
                         message = f"[{step_context.step_name}] {message}"
