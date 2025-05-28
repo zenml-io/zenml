@@ -15,6 +15,7 @@
 
 AIRFLOW = "airflow"
 ARGILLA = "argilla"
+ARRAY = "array"
 AWS = "aws"
 AZURE = "azure"
 AZUREML = "azureml"
