@@ -1,5 +1,43 @@
 <!-- markdown-link-check-disable -->
 
+# 0.83.0
+
+## What's Changed
+* Adding 0.82.0 to the legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3671
+* New deployment scenarios by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3666
+* Add instruction to `WANDB_DISABLED` to `True` for the quickstart by @bcdurak in https://github.com/zenml-io/zenml/pull/3673
+* Fix service connector docs example by @strickvl in https://github.com/zenml-io/zenml/pull/3679
+* Fix YAML extension check by @strickvl in https://github.com/zenml-io/zenml/pull/3677
+* Fix typos, bugs, and improve test precision by @strickvl in https://github.com/zenml-io/zenml/pull/3678
+* Performance boost fix: don't fetch entire pipeline run to verify pipeline API token validity by @stefannica in https://github.com/zenml-io/zenml/pull/3684
+* Async wrapper for FastAPI endpoints to run serialization in event loop by @schustmi in https://github.com/zenml-io/zenml/pull/3685
+* Don't log parent image digest warning if build is skipped by @schustmi in https://github.com/zenml-io/zenml/pull/3676
+* Convert string to raw to avoid warnings in python 3.12+ by @jlopezpena in https://github.com/zenml-io/zenml/pull/3687
+* Use correct artifact store for nested materializers by @schustmi in https://github.com/zenml-io/zenml/pull/3670
+* Tiny Discord docs fix by @strickvl in https://github.com/zenml-io/zenml/pull/3691
+* Store validated config with converted types in DB by @schustmi in https://github.com/zenml-io/zenml/pull/3668
+* Added zenml codespace env detection by @htahir1 in https://github.com/zenml-io/zenml/pull/3686
+* Fix setuptools vulnerabilities and deprecate pip as DockerSettings default by @stefannica in https://github.com/zenml-io/zenml/pull/3694
+* Improve alerter documentation with comprehensive ask step coverage by @strickvl in https://github.com/zenml-io/zenml/pull/3693
+* Add comprehensive agent guidelines with `AGENTS.md` and `CLAUDE.md` by @strickvl in https://github.com/zenml-io/zenml/pull/3680
+* Performance test utilities, stats and stress test pipeline updates by @stefannica in https://github.com/zenml-io/zenml/pull/3690
+* Fix GCP service connector expiry by @stefannica in https://github.com/zenml-io/zenml/pull/3697
+* Fix trivy image scanning GitHub actions by @stefannica in https://github.com/zenml-io/zenml/pull/3699
+* Add ability to strip the timestamps from the logs, on request by @avishniakov in https://github.com/zenml-io/zenml/pull/3683
+* Send POST request for RBAC permission checks to avoid URL length limits by @schustmi in https://github.com/zenml-io/zenml/pull/3702
+* Response and database improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3675
+* Add Caching in Kubernetes orchestrator entrypoint by @schustmi in https://github.com/zenml-io/zenml/pull/3703
+* New Pro onboarding by @schustmi in https://github.com/zenml-io/zenml/pull/3704
+* Suppress repeated DockerSettings warnings by @stefannica in https://github.com/zenml-io/zenml/pull/3705
+* New OSS dashboard fixes by @schustmi in https://github.com/zenml-io/zenml/pull/3706
+* Remove unused import from metadata docs by @strickvl in https://github.com/zenml-io/zenml/pull/3707
+* Project consistency fixes for `Model` and `ModelVersionResponse` by @schustmi in https://github.com/zenml-io/zenml/pull/3708
+* Update Skypilot orchestrator settings and features by @htahir1 in https://github.com/zenml-io/zenml/pull/3612
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.82.1...0.83.0
+
+
 # 0.82.1
 
 The `0.82.1` release focuses on incremental improvements to [run template](https://docs.zenml.io/concepts/templates) management, [Kubernetes orchestration](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes), [Docker build performance](https://docs.zenml.io/concepts/containerization), and overall robustness, while shipping a wide range of documentation updates and quality-of-life enhancements. Key highlights include configurable Kubernetes job clean-up behavior, cascading tags for cached step runs, [`pyproject.toml` support for `DockerSettings`](https://docs.zenml.io/concepts/containerization#python-dependencies), improved login stability, and faster Docker build caching through parent image digests.
