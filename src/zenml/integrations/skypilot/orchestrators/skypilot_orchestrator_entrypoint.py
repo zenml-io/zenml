@@ -225,8 +225,6 @@ def main() -> None:
                     task_name=task_name,
                 )
 
-                logger.info(f"Using settings: {settings}")
-
                 task = sky.Task(**task_kwargs)
 
                 # Set resources
