@@ -247,21 +247,6 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
-When you are running a pipeline with the Skypilot orchestrator (especially on AWS), we recommend you to use `uv` as the python package installer:
-
-```python
-from zenml import pipeline
-from zenml.config.docker_settings import DockerSettings
-
-docker_settings = DockerSettings(python_package_installer="uv")
-
-@pipeline(settings={"docker": docker_settings})
-def your_pipeline():
-    ...
-```
-{% endhint %}
-
-{% hint style="info" %}
 The Lambda Labs orchestrator does not support some of the features like `job_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot`. It is recommended not to use these features with the Lambda Labs orchestrator and not to use [step-specific settings](skypilot-vm.md#configuring-step-specific-resources).
 {% endhint %}
 
@@ -319,6 +304,21 @@ Some of the features like `job_recovery`, `disk_tier`, `image_id`, `zone`, `idle
 {% endhint %}
 {% endtab %}
 {% endtabs %}
+
+{% hint style="info" %}
+When you are running a pipeline with the Skypilot orchestrator (especially on AWS), we recommend you to use `uv` as the python package installer:
+
+```python
+from zenml import pipeline
+from zenml.config.docker_settings import DockerSettings
+
+docker_settings = DockerSettings(python_package_installer="uv")
+
+@pipeline(settings={"docker": docker_settings})
+def your_pipeline():
+    ...
+```
+{% endhint %}
 
 #### Additional Configuration
 
