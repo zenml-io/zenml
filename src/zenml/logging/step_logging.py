@@ -550,7 +550,12 @@ class PipelineLogsStorageContext:
                     pass
 
                 if step_context and args[0] != "\n":
-                    message = f"[{step_context.step_name}] " + message
+                    # For line updates (with \r), append the step name after
+                    if isinstance(message, str) and "\r" in message:
+                        message = f"{message.rstrip()} [{step_context.step_name}]\r"
+                    else:
+                        # For regular lines, prepend the step name
+                        message = f"[{step_context.step_name}] {message}"
 
                 output = method(message, *args[1:], **kwargs)
 
