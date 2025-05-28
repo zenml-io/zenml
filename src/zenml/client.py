@@ -1480,9 +1480,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model of the active stack for this client.
-
-        Raises:
-            RuntimeError: If the active stack is not set.
         """
         if env_stack_id := os.environ.get(ENV_ZENML_ACTIVE_STACK_ID):
             if not self._active_stack or self._active_stack.id != UUID(
@@ -1508,12 +1505,6 @@ class Client(metaclass=ClientMetaClass):
                 return active_stack
 
             stack_id = GlobalConfiguration().get_active_stack_id()
-
-        if not stack_id:
-            raise RuntimeError(
-                "No active stack is configured. Run "
-                "`zenml stack set STACK_NAME` to set the active stack."
-            )
 
         return self.get_stack(stack_id)
 
@@ -1550,9 +1541,6 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             stack: The stack to validate.
-
-        Raises:
-            ValidationError: If the stack configuration is invalid.
         """
         local_components: List[str] = []
         remote_components: List[str] = []
@@ -1615,13 +1603,6 @@ class Client(metaclass=ClientMetaClass):
                 f"sure that your stack is configured correctly, or try to use "
                 f"component flavors or configurations that do not require "
                 f"local resources."
-            )
-
-        if not stack.is_valid:
-            raise ValidationError(
-                "Stack configuration is invalid. A valid"
-                "stack must contain an Artifact Store and "
-                "an Orchestrator."
             )
 
     # ----------------------------- Services -----------------------------------
