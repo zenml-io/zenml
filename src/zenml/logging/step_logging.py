@@ -554,7 +554,6 @@ class PipelineLogsStorageContext:
                     if isinstance(message, str) and "\r" in message:
                         message = message.replace("\r", f"\r[{step_context.step_name}] ")
                     else:
-                        # For regular lines, only prepend the step name if it's not already there
                         message = f"[{step_context.step_name}] {message}"
 
                 output = method(message, *args[1:], **kwargs)
