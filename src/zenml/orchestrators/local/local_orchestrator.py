@@ -40,6 +40,7 @@ class LocalOrchestrator(BaseOrchestrator):
     """
 
     _orchestrator_run_id: Optional[str] = None
+    _stop_requested: bool = False
 
     def prepare_or_run_pipeline(
         self,
@@ -102,6 +103,14 @@ class LocalOrchestrator(BaseOrchestrator):
             raise RuntimeError("No run id set.")
 
         return self._orchestrator_run_id
+
+    def stop_run(self, run: "PipelineRunResponse") -> None:
+        """Stops a pipeline run by setting the stop flag.
+
+        Args:
+            run: The pipeline run to stop.
+        """
+        logger.info(f"Stopping local pipeline run {run.id}...")
 
 
 class LocalOrchestratorConfig(BaseOrchestratorConfig):

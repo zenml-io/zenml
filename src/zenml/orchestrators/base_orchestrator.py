@@ -255,6 +255,28 @@ class BaseOrchestrator(StackComponent, ABC):
                             "Something went went wrong trying to publish the"
                             f"run metadata: {e}"
                         )
+        except KeyboardInterrupt:
+            # Handle Ctrl+C for synchronous orchestrators
+            if self.config.is_synchronous and placeholder_run:
+                logger.info("Received keyboard interrupt. Attempting to stop the pipeline run...")
+                try:
+                    self.stop_run(placeholder_run)
+                    logger.info("Pipeline run stopped successfully.")
+                    # Update the run status to CANCELED
+                    from zenml.client import Client
+                    from zenml.models import PipelineRunUpdate
+                    Client().zen_store.update_run(
+                        run_id=placeholder_run.id,
+                        run_update=PipelineRunUpdate(status=ExecutionStatus.CANCELED)
+                    )
+                except NotImplementedError:
+                    logger.warning(
+                        "Stop functionality not implemented for this orchestrator. "
+                        "The pipeline may continue running in the background."
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to stop pipeline run: {e}")
+            raise
         finally:
             self._cleanup_run()
 
@@ -317,6 +339,21 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         raise NotImplementedError(
             "The fetch status functionality is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
+
+    def stop_run(self, run: "PipelineRunResponse") -> None:
+        """Stops a specific pipeline run.
+
+        Args:
+            run: A pipeline run response to stop.
+
+        Raises:
+            NotImplementedError: If any orchestrator inheriting from the base
+                class does not implement this logic.
+        """
+        raise NotImplementedError(
+            "The stop run functionality is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."
         )
 

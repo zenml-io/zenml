@@ -368,6 +368,57 @@ class PipelineRunResponse(
 
         return self
 
+    def stop_run(self) -> "PipelineRunResponse":
+        """Method to stop a pipeline run.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            ValueError: If the stack of the run response is None.
+        """
+        # Check if the stack is still accessible
+        if self.stack is None:
+            raise ValueError(
+                "The stack that this pipeline run response was executed on "
+                "has been deleted."
+            )
+
+        # Create the orchestrator instance
+        from zenml.enums import StackComponentType
+        from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+        from zenml.stack.stack_component import StackComponent
+
+        # Check if the stack is still accessible
+        orchestrator_list = self.stack.components.get(
+            StackComponentType.ORCHESTRATOR, []
+        )
+        if len(orchestrator_list) == 0:
+            raise ValueError(
+                "The orchestrator that this pipeline run response was "
+                "executed with has been deleted."
+            )
+
+        orchestrator = cast(
+            BaseOrchestrator,
+            StackComponent.from_model(
+                component_model=orchestrator_list[0]
+            ),
+        )
+
+        # Stop the run
+        orchestrator.stop_run(run=self)
+
+        # Update the status to CANCELED
+        from zenml.client import Client
+        from zenml.models import PipelineRunUpdate
+
+        client = Client()
+        return client.zen_store.update_run(
+            run_id=self.id,
+            run_update=PipelineRunUpdate(status=ExecutionStatus.CANCELED),
+        )
+
     # Body and metadata properties
     @property
     def status(self) -> ExecutionStatus:

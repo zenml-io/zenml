@@ -508,8 +508,11 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.RUNNING
         elif status in [
             "CancelRequested",
-            "Failed",
             "Canceled",
+        ]:
+            return ExecutionStatus.CANCELED
+        elif status in [
+            "Failed",
             "NotResponding",
         ]:
             return ExecutionStatus.FAILED
@@ -517,6 +520,62 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline job.")
+
+    def stop_run(self, run: "PipelineRunResponse") -> None:
+        """Stops a specific pipeline run.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+
+        Raises:
+            AssertionError: If the run was not executed by this orchestrator.
+            ValueError: If the orchestrator run ID cannot be found.
+        """
+        # Make sure that the stack exists and is accessible
+        if run.stack is None:
+            raise ValueError(
+                "The stack that the run was executed on is not available "
+                "anymore."
+            )
+
+        # Make sure that the run belongs to this orchestrator
+        assert (
+            self.id
+            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
+        )
+
+        # Initialize the AzureML client
+        if connector := self.get_connector():
+            credentials = connector.connect()
+        else:
+            credentials = DefaultAzureCredential()
+
+        ml_client = MLClient(
+            credential=credentials,
+            subscription_id=self.config.subscription_id,
+            resource_group_name=self.config.resource_group,
+            workspace_name=self.config.workspace,
+        )
+
+        # Get the pipeline job ID
+        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
+        elif run.orchestrator_run_id is not None:
+            run_id = run.orchestrator_run_id
+        else:
+            raise ValueError(
+                "Can not find the orchestrator run ID, thus can not stop "
+                "the pipeline job."
+            )
+
+        try:
+            # Cancel the pipeline job
+            cancel_poller = ml_client.jobs.begin_cancel(run_id)
+            cancel_poller.result()  # Wait for the cancellation to complete
+            logger.info(f"Successfully stopped AzureML pipeline job: {run_id}")
+        except Exception as e:
+            logger.error(f"Failed to stop AzureML pipeline job: {e}")
+            raise
 
     def compute_metadata(self, job: Any) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated AzureML PipelineJob.

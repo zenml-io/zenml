@@ -629,3 +629,45 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_KUBERNETES_RUN_ID}."
             )
+
+    def stop_run(self, run: "PipelineRunResponse") -> None:
+        """Stops a specific pipeline run by deleting the Kubernetes pod/job.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+
+        Raises:
+            ValueError: If the run name cannot be determined.
+        """
+        # Try to determine the pod name from the run
+        # The pod name should be based on the orchestrator run name
+        if run.name:
+            # Sanitize the run name to match Kubernetes naming conventions
+            pod_name = kube_utils.sanitize_pod_name(
+                run.name, namespace=self.config.kubernetes_namespace
+            )
+        else:
+            raise ValueError("Cannot determine pod name for the run.")
+
+        try:
+            # Try to delete the pod
+            self._k8s_core_api.delete_namespaced_pod(
+                name=pod_name,
+                namespace=self.config.kubernetes_namespace,
+            )
+            logger.info(f"Successfully stopped Kubernetes pod: {pod_name}")
+        except Exception as e:
+            # If pod deletion fails, try to delete any associated jobs
+            try:
+                # Try to delete any jobs with the same name
+                self._k8s_batch_api.delete_namespaced_job(
+                    name=pod_name,
+                    namespace=self.config.kubernetes_namespace,
+                )
+                logger.info(f"Successfully stopped Kubernetes job: {pod_name}")
+            except Exception as job_error:
+                logger.error(
+                    f"Failed to stop Kubernetes pod/job {pod_name}: "
+                    f"Pod error: {e}, Job error: {job_error}"
+                )
+                raise

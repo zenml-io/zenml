@@ -78,6 +78,7 @@ class ExecutionStatus(StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+    CANCELED = "canceled"
 
     @property
     def is_finished(self) -> bool:
@@ -90,6 +91,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
+            ExecutionStatus.CANCELED,
         }
 
 
