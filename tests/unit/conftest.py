@@ -53,6 +53,7 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
+    PipelineDeploymentResponseResources,
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
@@ -423,17 +424,16 @@ def sample_pipeline_run(
 
     return PipelineRunResponse(
         id=uuid4(),
-        project_id=sample_project_model.id,
         name="sample_run_name",
         body=PipelineRunResponseBody(
+            user_id=sample_user_model.id,
+            project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
-            user=sample_user_model,
             status=ExecutionStatus.COMPLETED,
             tags=[],
         ),
         metadata=PipelineRunResponseMetadata(
-            project=sample_project_model,
             config=PipelineConfiguration(name="aria_pipeline"),
             is_templatable=False,
             steps_substitutions=defaultdict(lambda: substitutions.copy()),
@@ -476,15 +476,14 @@ def sample_artifact_model(sample_project_model) -> ArtifactResponse:
     """Return a sample artifact model for testing purposes."""
     return ArtifactResponse(
         id=uuid4(),
-        project_id=sample_project_model.id,
         name="sample_artifact",
         body=ArtifactResponseBody(
+            project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
             tags=[],
         ),
         metadata=ArtifactResponseMetadata(
-            project=sample_project_model,
             has_custom_name=True,
         ),
     )
@@ -497,11 +496,11 @@ def sample_artifact_version_model(
     """Return a sample artifact version model for testing purposes."""
     return ArtifactVersionResponse(
         id=uuid4(),
-        project_id=sample_project_model.id,
         body=ArtifactVersionResponseBody(
+            user_id=sample_user_model.id,
+            project_id=sample_project_model.id,
             artifact=sample_artifact_model,
             version="1",
-            user=sample_user_model,
             created=datetime.now(),
             updated=datetime.now(),
             uri="sample_uri",
@@ -511,9 +510,7 @@ def sample_artifact_version_model(
             tags=[],
             save_type=ArtifactSaveType.STEP_OUTPUT,
         ),
-        metadata=ArtifactVersionResponseMetadata(
-            project=sample_project_model,
-        ),
+        metadata=ArtifactVersionResponseMetadata(),
     )
 
 
@@ -566,24 +563,25 @@ def create_step_run(
         )
         return StepRunResponse(
             id=uuid4(),
-            project_id=sample_project_model.id,
             name=step_run_name,
             body=StepRunResponseBody(
+                user_id=sample_user_model.id,
+                project_id=sample_project_model.id,
                 status=ExecutionStatus.COMPLETED,
                 created=datetime.now(),
                 updated=datetime.now(),
-                user=sample_user_model,
-                outputs=output_artifacts or {},
             ),
             metadata=StepRunResponseMetadata(
                 pipeline_run_id=uuid4(),
                 deployment_id=uuid4(),
                 spec=spec,
                 config=config,
-                project=sample_project_model,
                 **kwargs,
             ),
-            resources=StepRunResponseResources(),
+            resources=StepRunResponseResources(
+                user=sample_user_model,
+                outputs=output_artifacts or {},
+            ),
         )
 
     return f
@@ -600,23 +598,17 @@ def create_pipeline_model(
     def f(
         **kwargs: Any,
     ) -> PipelineResponse:
-        metadata_kwargs = dict(
-            project=sample_project_model,
-        )
-        metadata_kwargs.update(kwargs)
         return PipelineResponse(
             id=uuid4(),
-            project_id=sample_project_model.id,
             name="sample_pipeline",
             body=PipelineResponseBody(
+                user_id=sample_user_model.id,
+                project_id=sample_project_model.id,
                 created=datetime.now(),
                 updated=datetime.now(),
-                user=sample_user_model,
                 tags=[],
             ),
-            metadata=PipelineResponseMetadata(
-                **metadata_kwargs,
-            ),
+            metadata=PipelineResponseMetadata(**kwargs),
         )
 
     return f
@@ -629,18 +621,20 @@ def sample_deployment_response_model(
 ) -> PipelineDeploymentResponse:
     return PipelineDeploymentResponse(
         id=uuid4(),
-        project_id=sample_project_model.id,
         body=PipelineDeploymentResponseBody(
+            user_id=sample_user_model.id,
+            project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
-            user=sample_user_model,
         ),
         metadata=PipelineDeploymentResponseMetadata(
-            project=sample_project_model,
             run_name_template="",
             pipeline_configuration={"name": ""},
             client_version="0.12.3",
             server_version="0.12.3",
+        ),
+        resources=PipelineDeploymentResponseResources(
+            user=sample_user_model,
         ),
     )
 
@@ -652,14 +646,13 @@ def sample_build_response_model(
 ) -> PipelineBuildResponse:
     return PipelineBuildResponse(
         id=uuid4(),
-        project_id=sample_project_model.id,
         body=PipelineBuildResponseBody(
+            user_id=sample_user_model.id,
+            project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
-            user=sample_user_model,
         ),
         metadata=PipelineBuildResponseMetadata(
-            project=sample_project_model,
             images={},
             is_local=False,
             contains_code=True,
@@ -674,16 +667,15 @@ def sample_code_repo_response_model(
 ) -> CodeRepositoryResponse:
     return CodeRepositoryResponse(
         id=uuid4(),
-        project_id=sample_project_model.id,
         name="name",
         body=CodeRepositoryResponseBody(
+            user_id=sample_user_model.id,
+            project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
-            user=sample_user_model,
             source={"module": "zenml", "type": "internal"},
         ),
         metadata=CodeRepositoryResponseMetadata(
-            project=sample_project_model,
             config={},
         ),
     )
@@ -727,11 +719,12 @@ def service_response(
     sample_project_model,
 ):
     body = ServiceResponseBody(
+        user_id=sample_user_model.id,
+        project_id=sample_project_model.id,
         service_type=service_type,
         labels=labels,
         created=created_time,
         updated=updated_time,
-        user=sample_user_model,
         state=admin_state,
     )
     metadata = ServiceResponseMetadata(
@@ -742,11 +735,9 @@ def service_response(
         endpoint=endpoint,
         prediction_url=prediction_url,
         health_check_url=health_check_url,
-        project=sample_project_model,
     )
     return ServiceResponse(
         id=service_id,
-        project_id=sample_project_model.id,
         name=service_name,
         body=body,
         metadata=metadata,

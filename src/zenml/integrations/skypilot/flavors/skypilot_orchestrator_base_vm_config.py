@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator base config and settings."""
 
-from typing import Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import Field
 
@@ -67,6 +67,14 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
         disk_size: the size of the OS disk in GiB.
         disk_tier: the disk performance tier to use. If None, defaults to
             ``'medium'``.
+        ports: Ports to expose. Could be an integer, a range, or a list of
+            integers and ranges. All ports will be exposed to the public internet.
+        labels: Labels to apply to instances as key-value pairs. These are
+            mapped to cloud-specific implementations (instance tags in AWS,
+            instance labels in GCP, etc.)
+        any_of: List of candidate resources to try in order of preference based on
+            cost (determined by the optimizer).
+        ordered: List of candidate resources to try in the specified order.
 
         cluster_name: name of the cluster to create/reuse.  If None,
             auto-generate a name.
@@ -88,6 +96,19 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
         stream_logs: if True, show the logs in the terminal.
         docker_run_args: Optional arguments to pass to the `docker run` command
             running inside the VM.
+        workdir: Working directory to sync to the VM. Synced to ~/sky_workdir.
+        task_name: Task name used for display purposes.
+        file_mounts: File and storage mounts configuration for remote cluster.
+        envs: Environment variables for the task.
+        task_settings: Dictionary of arbitrary settings to pass to sky.Task().
+            This allows passing future parameters added by SkyPilot without
+            requiring updates to ZenML.
+        resources_settings: Dictionary of arbitrary settings to pass to
+            sky.Resources(). This allows passing future parameters added
+            by SkyPilot without requiring updates to ZenML.
+        launch_settings: Dictionary of arbitrary settings to pass to
+            sky.launch(). This allows passing future parameters added
+            by SkyPilot without requiring updates to ZenML.
     """
 
     # Resources
@@ -103,14 +124,18 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     )
     accelerator_args: Optional[Dict[str, str]] = None
     use_spot: Optional[bool] = None
-    job_recovery: Optional[str] = None
+    job_recovery: Union[None, str, Dict[str, Any]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     region: Optional[str] = None
     zone: Optional[str] = None
     image_id: Union[Dict[str, str], str, None] = Field(
         default=None, union_mode="left_to_right"
     )
     disk_size: Optional[int] = None
-    disk_tier: Optional[Literal["high", "medium", "low"]] = None
+    disk_tier: Optional[Literal["high", "medium", "low", "ultra", "best"]] = (
+        None
+    )
 
     # Run settings
     cluster_name: Optional[str] = None
@@ -118,8 +143,24 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     idle_minutes_to_autostop: Optional[int] = 30
     down: bool = True
     stream_logs: bool = True
-
     docker_run_args: List[str] = []
+
+    # Additional SkyPilot features
+    ports: Union[None, int, str, List[Union[int, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
+    labels: Optional[Dict[str, str]] = None
+    any_of: Optional[List[Dict[str, Any]]] = None
+    ordered: Optional[List[Dict[str, Any]]] = None
+    workdir: Optional[str] = None
+    task_name: Optional[str] = None
+    file_mounts: Optional[Dict[str, Any]] = None
+    envs: Optional[Dict[str, str]] = None
+
+    # Future-proofing settings dictionaries
+    task_settings: Dict[str, Any] = {}
+    resources_settings: Dict[str, Any] = {}
+    launch_settings: Dict[str, Any] = {}
 
 
 class SkypilotBaseOrchestratorConfig(

@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import TaggableResourceTypes
@@ -34,6 +35,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_build_schemas import (
@@ -131,6 +133,37 @@ class PipelineSchema(NamedSchema, table=True):
             )
 
     @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(PipelineSchema.user)),
+                    # joinedload(jl_arg(PipelineSchema.tags)),
+                ]
+            )
+
+        return options
+
+    @classmethod
     def from_request(
         cls,
         pipeline_request: "PipelineRequest",
@@ -166,12 +199,9 @@ class PipelineSchema(NamedSchema, table=True):
         Returns:
             The created PipelineResponse.
         """
-        latest_run = self.latest_run
-
         body = PipelineResponseBody(
-            user=self.user.to_model() if self.user else None,
-            latest_run_id=latest_run.id if latest_run else None,
-            latest_run_status=latest_run.status if latest_run else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
         )
@@ -179,24 +209,26 @@ class PipelineSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = PipelineResponseMetadata(
-                project=self.project.to_model(),
                 description=self.description,
             )
 
         resources = None
         if include_resources:
+            latest_run = self.latest_run
             latest_run_user = latest_run.user if latest_run else None
 
             resources = PipelineResponseResources(
+                user=self.user.to_model() if self.user else None,
                 latest_run_user=latest_run_user.to_model()
                 if latest_run_user
                 else None,
+                latest_run_id=latest_run.id if latest_run else None,
+                latest_run_status=latest_run.status if latest_run else None,
                 tags=[tag.to_model() for tag in self.tags],
             )
 
         return PipelineResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

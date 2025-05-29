@@ -71,8 +71,8 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
+    async_fastapi_endpoint_wrapper,
     get_ip_location,
-    handle_exceptions,
     server_config,
     zen_store,
 )
@@ -222,11 +222,11 @@ class OAuthLoginRequestForm:
     LOGIN,
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
 )
+@async_fastapi_endpoint_wrapper
 @rate_limit_requests(
     day_limit=server_config().login_rate_limit_day,
     minute_limit=server_config().login_rate_limit_minute,
 )
-@handle_exceptions
 def token(
     request: Request,
     response: Response,
@@ -341,6 +341,7 @@ def logout(
     DEVICE_AUTHORIZATION,
     response_model=OAuthDeviceAuthorizationResponse,
 )
+@async_fastapi_endpoint_wrapper
 def device_authorization(
     request: Request,
     client_id: UUID = Form(...),
@@ -471,7 +472,7 @@ def device_authorization(
     API_TOKEN,
     response_model=str,
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def api_token(
     token_type: APITokenType = APITokenType.GENERIC,
     expires_in: Optional[int] = None,
@@ -582,7 +583,7 @@ def api_token(
                 f"Schedule {schedule_id} does not exist and API tokens cannot "
                 "be generated for non-existent schedules for security reasons."
             )
-        project_id = schedule.project.id
+        project_id = schedule.project_id
 
         if not schedule.active:
             raise ValueError(
@@ -603,7 +604,7 @@ def api_token(
 
         verify_permission_for_model(model=pipeline_run, action=Action.READ)
 
-        project_id = pipeline_run.project.id
+        project_id = pipeline_run.project_id
 
         if pipeline_run.status.is_finished:
             raise ValueError(

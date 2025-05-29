@@ -29,7 +29,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_get_entity,
 )
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     zen_store,
 )
 
@@ -44,7 +44,7 @@ router = APIRouter(
     "/{logs_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_logs(
     logs_id: UUID,
     hydrate: bool = True,

@@ -48,6 +48,7 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.logs import LogsRequest
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.utils import pagination_utils
 from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
@@ -193,9 +194,6 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default={},
         title="Metadata associated with this pipeline run.",
     )
-    steps: Dict[str, "StepRunResponse"] = Field(
-        default={}, title="The steps of this run."
-    )
     config: PipelineConfiguration = Field(
         title="The pipeline configuration used for this pipeline run.",
     )
@@ -237,10 +235,6 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     is_templatable: bool = Field(
         default=False,
         description="Whether a template can be created from this run.",
-    )
-    step_substitutions: Dict[str, Dict[str, str]] = Field(
-        title="Substitutions used in the step runs of this pipeline run.",
-        default_factory=dict,
     )
 
 
@@ -472,7 +466,15 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().steps
+        from zenml.client import Client
+
+        return {
+            step.name: step
+            for step in pagination_utils.depaginate(
+                Client().list_run_steps,
+                pipeline_run_id=self.id,
+            )
+        }
 
     @property
     def config(self) -> PipelineConfiguration:
@@ -554,15 +556,6 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_metadata().is_templatable
-
-    @property
-    def step_substitutions(self) -> Dict[str, Dict[str, str]]:
-        """The `step_substitutions` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().step_substitutions
 
     @property
     def model_version(self) -> Optional[ModelVersionResponse]:

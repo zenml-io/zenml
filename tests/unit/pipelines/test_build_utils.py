@@ -320,14 +320,13 @@ def test_custom_build_verification(
 
     missing_image_build = PipelineBuildResponse(
         id=uuid4(),
-        project_id=sample_deployment_response_model.project_id,
         body=PipelineBuildResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
-            user=sample_deployment_response_model.user,
+            user_id=sample_deployment_response_model.user_id,
+            project_id=sample_deployment_response_model.project_id,
         ),
         metadata=PipelineBuildResponseMetadata(
-            project=sample_deployment_response_model.project,
             images={"wrong_key": {"image": "docker_image_name"}},
             is_local=False,
             contains_code=True,
@@ -495,9 +494,10 @@ def test_local_repo_verification(
         project_id=sample_deployment_response_model.project_id,
         name="name",
         body=CodeRepositoryResponseBody(
+            user_id=sample_deployment_response_model.user_id,
+            project_id=sample_deployment_response_model.project_id,
             created=datetime.now(),
             updated=datetime.now(),
-            user=sample_deployment_response_model.user,
             source=Source(
                 module=StubCodeRepository.__module__,
                 attribute=StubCodeRepository.__name__,
@@ -505,7 +505,6 @@ def test_local_repo_verification(
             ),
         ),
         metadata=CodeRepositoryResponseMetadata(
-            project=sample_deployment_response_model.project,
             config={"key": "value"},
         ),
     )

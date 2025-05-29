@@ -59,7 +59,7 @@ from zenml.zen_server.routers.models_endpoints import (
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     set_filter_project_scope,
     zen_store,
@@ -89,7 +89,7 @@ router = APIRouter(
     deprecated=True,
     tags=["model_versions"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_model_version(
     model_version: ModelVersionRequest,
     model_id: Optional[UUID] = None,
@@ -127,7 +127,7 @@ def create_model_version(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_model_versions(
     model_version_filter_model: ModelVersionFilter = Depends(
         make_dependable(ModelVersionFilter)
@@ -176,7 +176,7 @@ def list_model_versions(
     "/{model_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_model_version(
     model_version_id: UUID,
     hydrate: bool = True,
@@ -204,7 +204,7 @@ def get_model_version(
     "/{model_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_model_version(
     model_version_id: UUID,
     model_version_update_model: ModelVersionUpdate,
@@ -238,7 +238,7 @@ def update_model_version(
     "/{model_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_model_version(
     model_version_id: UUID,
     _: AuthContext = Security(authorize),
@@ -270,7 +270,7 @@ model_version_artifacts_router = APIRouter(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_model_version_artifact_link(
     model_version_artifact_link: ModelVersionArtifactRequest,
     _: AuthContext = Security(authorize),
@@ -300,7 +300,7 @@ def create_model_version_artifact_link(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_model_version_artifact_links(
     model_version_artifact_link_filter_model: ModelVersionArtifactFilter = Depends(
         make_dependable(ModelVersionArtifactFilter)
@@ -331,7 +331,7 @@ def list_model_version_artifact_links(
     + "/{model_version_artifact_link_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_model_version_artifact_link(
     model_version_id: UUID,
     model_version_artifact_link_name_or_id: Union[str, UUID],
@@ -357,7 +357,7 @@ def delete_model_version_artifact_link(
     "/{model_version_id}" + ARTIFACTS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_all_model_version_artifact_links(
     model_version_id: UUID,
     only_links: bool = True,
@@ -392,7 +392,7 @@ model_version_pipeline_runs_router = APIRouter(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_model_version_pipeline_run_link(
     model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
     _: AuthContext = Security(authorize),
@@ -423,7 +423,7 @@ def create_model_version_pipeline_run_link(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_model_version_pipeline_run_links(
     model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilter = Depends(
         make_dependable(ModelVersionPipelineRunFilter)
@@ -454,7 +454,7 @@ def list_model_version_pipeline_run_links(
     + "/{model_version_pipeline_run_link_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_model_version_pipeline_run_link(
     model_version_id: UUID,
     model_version_pipeline_run_link_name_or_id: Union[str, UUID],

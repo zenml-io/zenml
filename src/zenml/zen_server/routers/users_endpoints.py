@@ -56,7 +56,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     verify_admin_status_if_no_rbac,
@@ -95,7 +95,7 @@ current_user_router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_users(
     user_filter_model: UserFilter = Depends(make_dependable(UserFilter)),
     hydrate: bool = False,
@@ -144,7 +144,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def create_user(
         user: UserRequest,
         auth_context: AuthContext = Security(authorize),
@@ -193,7 +193,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     "/{user_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_user(
     user_name_or_id: Union[str, UUID],
     hydrate: bool = True,
@@ -237,7 +237,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def activate_user(
         user_name_or_id: Union[str, UUID],
         user_update: UserUpdate,
@@ -297,7 +297,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def deactivate_user(
         user_name_or_id: Union[str, UUID],
         auth_context: AuthContext = Security(authorize),
@@ -345,7 +345,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def delete_user(
         user_name_or_id: Union[str, UUID],
         auth_context: AuthContext = Security(authorize),
@@ -387,7 +387,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def email_opt_in_response(
         user_name_or_id: Union[str, UUID],
         user_response: UserUpdate,
@@ -439,7 +439,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         422: error_response,
     },
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_user(
     user_name_or_id: Union[str, UUID],
     user_update: UserUpdate,
@@ -599,7 +599,7 @@ def update_user(
     "/current-user",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_current_user(
     auth_context: AuthContext = Security(authorize),
 ) -> UserResponse:
@@ -626,7 +626,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def update_myself(
         user: UserUpdate,
         request: Request,
@@ -705,7 +705,7 @@ if server_config().rbac_enabled:
             422: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def update_user_resource_membership(
         resource_type: str,
         resource_id: UUID,

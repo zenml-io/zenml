@@ -50,6 +50,7 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorResponseBody,
     ServiceConnectorResponseMetadata,
+    ServiceConnectorResponseResources,
     ServiceConnectorTypedResourcesModel,
     ServiceConnectorTypeModel,
     UserResponse,
@@ -791,7 +792,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             id=id,
             name=name,
             body=ServiceConnectorResponseBody(
-                user=user,
+                user_id=user.id if user else None,
                 created=now,
                 updated=now,
                 description=description,
@@ -803,6 +804,9 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             metadata=ServiceConnectorResponseMetadata(
                 expiration_seconds=self.expiration_seconds,
                 labels=labels or {},
+            ),
+            resources=ServiceConnectorResponseResources(
+                user=user,
             ),
         )
 

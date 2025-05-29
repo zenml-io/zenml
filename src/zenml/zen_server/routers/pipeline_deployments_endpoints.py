@@ -36,7 +36,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     workload_manager,
@@ -93,7 +93,7 @@ router = APIRouter(
     deprecated=True,
     tags=["deployments"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_deployment(
     request: Request,
     deployment: PipelineDeploymentRequest,
@@ -142,7 +142,7 @@ def create_deployment(
     deprecated=True,
     tags=["deployments"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_deployments(
     request: Request,
     deployment_filter_model: PipelineDeploymentFilter = Depends(
@@ -196,7 +196,7 @@ def list_deployments(
     "/{deployment_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_deployment(
     request: Request,
     deployment_id: UUID,
@@ -235,7 +235,7 @@ def get_deployment(
     "/{deployment_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_deployment(
     deployment_id: UUID,
     _: AuthContext = Security(authorize),
@@ -260,7 +260,7 @@ def delete_deployment(
         422: error_response,
     },
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def deployment_logs(
     deployment_id: UUID,
     offset: int = 0,
@@ -294,7 +294,7 @@ def deployment_logs(
     # Get the last pipeline run for this deployment
     pipeline_runs = store.list_runs(
         runs_filter_model=PipelineRunFilter(
-            project=deployment.project.id,
+            project=deployment.project_id,
             sort_by="asc:created",
             size=1,
             deployment_id=deployment.id,

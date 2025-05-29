@@ -55,7 +55,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     zen_store,
@@ -80,7 +80,7 @@ router = APIRouter(
     deprecated=True,
     tags=["run_templates"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_run_template(
     run_template: RunTemplateRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -117,7 +117,7 @@ def create_run_template(
     deprecated=True,
     tags=["run_templates"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_run_templates(
     filter_model: RunTemplateFilter = Depends(
         make_dependable(RunTemplateFilter)
@@ -153,7 +153,7 @@ def list_run_templates(
     "/{template_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_run_template(
     template_id: UUID,
     hydrate: bool = True,
@@ -180,7 +180,7 @@ def get_run_template(
     "/{template_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_run_template(
     template_id: UUID,
     update: RunTemplateUpdate,
@@ -207,7 +207,7 @@ def update_run_template(
     "/{template_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_run_template(
     template_id: UUID,
     _: AuthContext = Security(authorize),
@@ -235,7 +235,7 @@ if server_config().workload_manager_enabled:
             429: error_response,
         },
     )
-    @handle_exceptions
+    @async_fastapi_endpoint_wrapper
     def create_template_run(
         template_id: UUID,
         config: Optional[PipelineRunConfiguration] = None,
@@ -264,18 +264,18 @@ if server_config().workload_manager_enabled:
                 hydrate=True,
             )
             analytics_handler.metadata = {
-                "project_id": template.project.id,
+                "project_id": template.project_id,
             }
 
             verify_permission(
                 resource_type=ResourceType.PIPELINE_DEPLOYMENT,
                 action=Action.CREATE,
-                project_id=template.project.id,
+                project_id=template.project_id,
             )
             verify_permission(
                 resource_type=ResourceType.PIPELINE_RUN,
                 action=Action.CREATE,
-                project_id=template.project.id,
+                project_id=template.project_id,
             )
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 

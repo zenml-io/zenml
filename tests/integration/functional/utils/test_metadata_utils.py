@@ -74,6 +74,9 @@ def test_metadata_utils(clean_client):
     """Testing different functionalities of the log_metadata function."""
     # Run the pipeline
     first_run = pipeline_to_log_metadata()
+    first_run = clean_client.get_pipeline_run(
+        first_run.id, include_full_metadata=True
+    )
     first_steps = first_run.steps
 
     # Check if the metadata was tagged correctly
@@ -143,7 +146,7 @@ def test_metadata_utils(clean_client):
 
     # Fetch the run and steps again
     first_run_fetched = clean_client.get_pipeline_run(
-        name_id_or_prefix=first_run.id
+        name_id_or_prefix=first_run.id, include_full_metadata=True
     )
     first_steps_fetched = first_run_fetched.steps
 
@@ -171,6 +174,9 @@ def test_metadata_utils(clean_client):
 
     # Run the cached pipeline
     second_run = pipeline_to_log_metadata()
+    second_run = clean_client.get_pipeline_run(
+        second_run.id, include_full_metadata=True
+    )
     assert second_run.steps["step_multiple_calls"].run_metadata["blupus"] == 2
 
     # Test some of the invalid usages

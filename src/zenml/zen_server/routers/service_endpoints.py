@@ -38,7 +38,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     zen_store,
 )
@@ -62,7 +62,7 @@ router = APIRouter(
     deprecated=True,
     tags=["services"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_service(
     service: ServiceRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -91,7 +91,7 @@ def create_service(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_services(
     filter_model: ServiceFilter = Depends(make_dependable(ServiceFilter)),
     hydrate: bool = False,
@@ -120,7 +120,7 @@ def list_services(
     "/{service_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_service(
     service_id: UUID,
     hydrate: bool = True,
@@ -147,7 +147,7 @@ def get_service(
     "/{service_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_service(
     service_id: UUID,
     update: ServiceUpdate,
@@ -174,7 +174,7 @@ def update_service(
     "/{service_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_service(
     service_id: UUID,
     _: AuthContext = Security(authorize),

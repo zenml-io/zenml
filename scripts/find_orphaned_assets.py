@@ -420,7 +420,7 @@ def main():
         human_readable_size = get_human_readable_size(total_size)
 
         confirm = input(
-            f"⚠️  WARNING: This will delete {total_files} image assets ({human_readable_size}). Type 'YES' to confirm: "
+            f"⚠️ WARNING: This will delete {total_files} image assets ({human_readable_size}). Type 'YES' to confirm: "
         )
 
         if confirm.strip() == "YES":

@@ -108,7 +108,7 @@ class Schedule(BaseModel):
         if self.cron_expression and periodic_schedule:
             logger.warning(
                 "This schedule was created with a cron expression as well as "
-                "values for `start_time` and `interval_seconds`. The resulting "
+                "values for `start_time` and `interval_second`. The resulting "
                 "behavior depends on the concrete orchestrator implementation "
                 "but will usually ignore the interval and use the cron "
                 "expression."
