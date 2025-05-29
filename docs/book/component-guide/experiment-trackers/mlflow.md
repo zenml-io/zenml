@@ -104,24 +104,22 @@ zenml experiment-tracker register mlflow \
     --tracking_password={{mlflow_secret.password}} \
     ...
 ```
+{% hint style="warning" %}
+**PowerShell Terminal Note**
 
-> **Windows 10 Terminal Note**
-> 
-> When using the `zenml experiment-tracker register` command in **PowerShell on Windows 10**, referencing secrets using the `{{secret_name.key}}` syntax without quotes can cause the following error:
-> 
-> ```
-> zenml.exe : The command parameter was already specified.
-> ```
-> 
-> This is a quirk of how PowerShell on Windows 10 interprets braces in command-line arguments.
-> 
-> To resolve this, enclose the secret references in **double quotes**:
-> 
-> ```bash
-> --tracking_username="{{mlflow_secret.username}}" --tracking_password="{{mlflow_secret.password}}"
-> ```
-> 
-> Alternatively, PowerShell-style variables like `$($variable)` can be used, but quoted braces are more consistent with ZenML usage across platforms.
+When using the `zenml experiment-tracker register` command in **PowerShell**, referencing secrets using the `{{secret_name.key}}` syntax without quotes can cause the following error:
+
+```
+zenml.exe : The command parameter was already specified.
+```
+
+This is a quirk of how PowerShell interprets braces in command-line arguments.
+
+To resolve this, enclose the secret references in **double quotes**:
+
+```bash
+--tracking_username="{{mlflow_secret.username}}" --tracking_password="{{mlflow_secret.password}}"
+```
 
 
 {% hint style="info" %}
