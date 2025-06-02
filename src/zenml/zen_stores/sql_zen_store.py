@@ -8921,6 +8921,7 @@ class SqlZenStore(BaseZenStore):
 
         pipeline_run = session.exec(
             select(PipelineRunSchema)
+            .with_for_update()
             .options(
                 joinedload(
                     jl_arg(PipelineRunSchema.deployment), innerjoin=True
@@ -8956,14 +8957,16 @@ class SqlZenStore(BaseZenStore):
 
         if new_status != pipeline_run.status:
             run_update = PipelineRunUpdate(status=new_status)
-            if new_status in {
-                ExecutionStatus.COMPLETED,
-                ExecutionStatus.FAILED,
-            }:
+            if new_status.is_finished:
                 run_update.end_time = utc_now()
-                if pipeline_run.start_time and isinstance(
-                    pipeline_run.start_time, datetime
-                ):
+
+            pipeline_run.update(run_update)
+            session.add(pipeline_run)
+            # Commit so that we release the lock on the pipeline run.
+            session.commit()
+
+            if new_status.is_finished:
+                if pipeline_run.start_time and run_update.end_time:
                     duration_time = (
                         run_update.end_time - pipeline_run.start_time
                     )
@@ -9034,8 +9037,6 @@ class SqlZenStore(BaseZenStore):
                 self._update_onboarding_state(
                     completed_steps=completed_onboarding_steps, session=session
                 )
-            pipeline_run.update(run_update)
-            session.add(pipeline_run)
 
     # --------------------------- Triggers ---------------------------
 
