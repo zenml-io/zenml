@@ -123,7 +123,6 @@ def main() -> None:
             deployment=deployment,
             orchestrator_run_id=orchestrator_pod_name,
         )
-        assert pipeline_run
 
     pre_step_run: Optional[Callable[[str], bool]] = None
 
