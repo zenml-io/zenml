@@ -50,6 +50,7 @@ def get_default_run_name(pipeline_name: str) -> str:
 
 def create_placeholder_run(
     deployment: "PipelineDeploymentResponse",
+    orchestrator_run_id: Optional[str] = None,
     logs: Optional["LogsRequest"] = None,
 ) -> Optional["PipelineRunResponse"]:
     """Create a placeholder run for the deployment.
@@ -59,6 +60,7 @@ def create_placeholder_run(
 
     Args:
         deployment: The deployment for which to create the placeholder run.
+        orchestrator_run_id: The orchestrator run ID for the run.
         logs: The logs for the run.
 
     Returns:
@@ -82,7 +84,7 @@ def create_placeholder_run(
         # the start_time is only set once the first step starts
         # running.
         start_time=start_time,
-        orchestrator_run_id=None,
+        orchestrator_run_id=orchestrator_run_id,
         project=deployment.project_id,
         deployment=deployment.id,
         pipeline=deployment.pipeline.id if deployment.pipeline else None,

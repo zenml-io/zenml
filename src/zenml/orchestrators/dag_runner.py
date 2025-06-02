@@ -72,6 +72,7 @@ class ThreadedDagRunner:
         self,
         dag: Dict[str, List[str]],
         run_fn: Callable[[str], Any],
+        preparation_fn: Optional[Callable[[str], bool]] = None,
         finalize_fn: Optional[Callable[[Dict[str, NodeStatus]], None]] = None,
         parallel_node_startup_waiting_period: float = 0.0,
         max_parallelism: Optional[int] = None,
@@ -83,6 +84,9 @@ class ThreadedDagRunner:
                 E.g.: [(1->2), (1->3), (2->4), (3->4)] should be represented as
                 `dag={2: [1], 3: [1], 4: [2, 3]}`
             run_fn: A function `run_fn(node)` that runs a single node
+            preparation_fn: A function that is called before the node is run.
+                If provided, the function return value determines whether the
+                node should be run or can be skipped.
             finalize_fn: A function `finalize_fn(node_states)` that is called
                 when all nodes have completed.
             parallel_node_startup_waiting_period: Delay in seconds to wait in
@@ -102,6 +106,7 @@ class ThreadedDagRunner:
         self.dag = dag
         self.reversed_dag = reverse_dag(dag)
         self.run_fn = run_fn
+        self.preparation_fn = preparation_fn
         self.finalize_fn = finalize_fn
         self.nodes = dag.keys()
         self.node_states = {
@@ -166,6 +171,12 @@ class ThreadedDagRunner:
         Args:
             node: The node.
         """
+        if self.preparation_fn:
+            run_required = self.preparation_fn(node)
+            if not run_required:
+                self._finish_node(node)
+                return
+
         self._prepare_node_run(node)
 
         try:
@@ -203,8 +214,6 @@ class ThreadedDagRunner:
             node: The node.
             failed: Whether the node failed.
         """
-        # Update node status to completed.
-        assert self.node_states[node] == NodeStatus.RUNNING
         with self._lock:
             if failed:
                 self.node_states[node] = NodeStatus.FAILED

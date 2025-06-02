@@ -5577,18 +5577,16 @@ class SqlZenStore(BaseZenStore):
             # transaction to do so finishes. After the first transaction
             # finishes, the subsequent queries will not be able to find a
             # placeholder run anymore, as we already updated the
-            # orchestrator_run_id.
+            # status.
             # Note: This only locks a single row if the where clause of
-            # the query is indexed (we have a unique index due to the
-            # unique constraint on those columns). Otherwise, this will lock
-            # multiple rows or even the complete table which we want to
-            # avoid.
+            # the query is indexed. If you're modifying this, make sure to also
+            # update the index. Otherwise, this will lock multiple rows or even
+            # the complete table which we want to avoid.
             .with_for_update()
             .where(PipelineRunSchema.deployment_id == pipeline_run.deployment)
             .where(
-                PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
+                PipelineRunSchema.status == ExecutionStatus.INITIALIZING.value
             )
-            .where(PipelineRunSchema.project_id == pipeline_run.project)
         ).first()
 
         if not run_schema:
@@ -5688,27 +5686,31 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            try:
-                return (
-                    self._replace_placeholder_run(
-                        pipeline_run=pipeline_run,
-                        pre_replacement_hook=pre_creation_hook,
-                        session=session,
-                    ),
-                    True,
-                )
-            except KeyError:
-                # We were not able to find/replace a placeholder run. This could
-                # be due to one of the following three reasons:
-                # (1) There never was a placeholder run for the deployment. This
-                #     is the case if the user ran the pipeline on a schedule.
-                # (2) There was a placeholder run, but a previous pipeline run
-                #     already used it. This is the case if users rerun a
-                #     pipeline run e.g. from the orchestrator UI, as they will
-                #     use the same deployment_id with a new orchestrator_run_id.
-                # (3) A step of the same pipeline run already replaced the
-                #     placeholder run.
-                pass
+            if not pipeline_run.is_placeholder_request:
+                # Only run this is the request is not a placeholder run itself,
+                # as we don't want to replace a placeholder run with another
+                # placeholder run.
+                try:
+                    return (
+                        self._replace_placeholder_run(
+                            pipeline_run=pipeline_run,
+                            pre_replacement_hook=pre_creation_hook,
+                            session=session,
+                        ),
+                        True,
+                    )
+                except KeyError:
+                    # We were not able to find/replace a placeholder run. This could
+                    # be due to one of the following three reasons:
+                    # (1) There never was a placeholder run for the deployment. This
+                    #     is the case if the user ran the pipeline on a schedule.
+                    # (2) There was a placeholder run, but a previous pipeline run
+                    #     already used it. This is the case if users rerun a
+                    #     pipeline run e.g. from the orchestrator UI, as they will
+                    #     use the same deployment_id with a new orchestrator_run_id.
+                    # (3) A step of the same pipeline run already replaced the
+                    #     placeholder run.
+                    pass
 
             try:
                 # We now try to create a new run. The following will happen in

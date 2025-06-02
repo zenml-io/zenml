@@ -15,8 +15,7 @@
 
 import argparse
 import socket
-from typing import Any, Dict, cast
-from uuid import UUID
+from typing import Callable, Dict, Optional, cast
 
 from kubernetes import client as k8s_client
 
@@ -41,10 +40,15 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
+from zenml.orchestrators.step_run_utils import (
+    StepRunRequestFactory,
+    publish_cached_step_run,
+)
 from zenml.orchestrators.utils import (
     get_config_environment_vars,
     get_orchestrator_run_name,
 )
+from zenml.pipelines.run_utils import create_placeholder_run
 
 logger = get_logger(__name__)
 
@@ -86,20 +90,6 @@ def main() -> None:
 
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
 
-    if args.run_id and not pipeline_settings.prevent_orchestrator_pod_caching:
-        from zenml.orchestrators import cache_utils
-
-        run_required = (
-            cache_utils.create_cached_step_runs_and_prune_deployment(
-                deployment=deployment,
-                pipeline_run=client.get_pipeline_run(args.run_id),
-                stack=active_stack,
-            )
-        )
-
-        if not run_required:
-            return
-
     mount_local_stores = active_stack.orchestrator.config.is_local
 
     # Get a Kubernetes client from the active Kubernetes orchestrator, but
@@ -125,6 +115,55 @@ def main() -> None:
         # the created pod, which messes with the garbage collection logic.
         for owner_reference in owner_references:
             owner_reference.controller = False
+
+    if args.run_id:
+        pipeline_run = client.get_pipeline_run(args.run_id)
+    else:
+        pipeline_run = create_placeholder_run(
+            deployment=deployment,
+            orchestrator_run_id=orchestrator_pod_name,
+        )
+        assert pipeline_run
+
+    pre_step_run: Optional[Callable[[str], bool]] = None
+
+    if pipeline_settings.prevent_orchestrator_pod_caching:
+        step_run_request_factory = StepRunRequestFactory(
+            deployment=deployment,
+            pipeline_run=pipeline_run,
+            stack=active_stack,
+        )
+        step_runs = {}
+
+        def pre_step_run(step_name: str) -> bool:
+            """Pre-step run.
+
+            Args:
+                step_name: Name of the step.
+
+            Returns:
+                Whether the step node needs to be run.
+            """
+            step_run_request = step_run_request_factory.create_request(
+                step_name
+            )
+            try:
+                step_run_request_factory.populate_request(step_run_request)
+            except Exception as e:
+                logger.error(
+                    f"Failed to populate step run request for step {step_name}: {e}"
+                )
+                return True
+
+            if step_run_request.status == ExecutionStatus.CACHED:
+                step_run = publish_cached_step_run(
+                    step_run_request, pipeline_run
+                )
+                step_runs[step_name] = step_run
+                logger.info("Using cached version of step `%s`.", step_name)
+                return False
+
+            return True
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -249,29 +288,6 @@ def main() -> None:
         try:
             # Some steps may have failed because the pods could not be created.
             # We need to check for this and mark the step run as failed if so.
-
-            # Fetch the pipeline run using any means possible.
-            list_args: Dict[str, Any] = {}
-            if args.run_id:
-                # For a run triggered outside of a schedule, we can use the
-                # placeholder run ID to find the pipeline run.
-                list_args = dict(id=UUID(args.run_id))
-            else:
-                # For a run triggered by a schedule, we can only use the
-                # orchestrator run ID to find the pipeline run.
-                list_args = dict(orchestrator_run_id=orchestrator_pod_name)
-
-            pipeline_runs = client.list_pipeline_runs(
-                hydrate=True,
-                project=deployment.project_id,
-                deployment_id=deployment.id,
-                **list_args,
-            )
-            if not len(pipeline_runs):
-                # No pipeline run found, so we can't mark any step runs as failed.
-                return
-
-            pipeline_run = pipeline_runs[0]
             pipeline_failed = False
 
             for step_name, node_state in node_states.items():
@@ -282,16 +298,21 @@ def main() -> None:
 
                 # If steps failed for any reason, we need to mark the step run as
                 # failed, if it exists and it wasn't already in a final state.
+                step_runs = Client().list_run_steps(
+                    size=1,
+                    pipeline_run_id=pipeline_run.id,
+                    name=step_name,
+                )
 
-                step_run = pipeline_run.steps.get(step_name)
-
-                # Try to update the step run status, if it exists and is in
-                # a transient state.
-                if step_run and step_run.status in {
-                    ExecutionStatus.INITIALIZING,
-                    ExecutionStatus.RUNNING,
-                }:
-                    publish_utils.publish_failed_step_run(step_run.id)
+                if step_runs:
+                    step_run = step_runs[0]
+                    # Try to update the step run status, if it exists and is in
+                    # a transient state.
+                    if step_run and step_run.status in {
+                        ExecutionStatus.INITIALIZING,
+                        ExecutionStatus.RUNNING,
+                    }:
+                        publish_utils.publish_failed_step_run(step_run.id)
 
             # If any steps failed and the pipeline run is still in a transient
             # state, we need to mark it as failed.
@@ -319,6 +340,7 @@ def main() -> None:
         ThreadedDagRunner(
             dag=pipeline_dag,
             run_fn=run_step_on_kubernetes,
+            preparation_fn=pre_step_run,
             finalize_fn=finalize_run,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
             max_parallelism=pipeline_settings.max_parallelism,
