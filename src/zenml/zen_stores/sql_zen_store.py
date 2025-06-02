@@ -5585,6 +5585,13 @@ class SqlZenStore(BaseZenStore):
             .with_for_update()
             .where(PipelineRunSchema.deployment_id == pipeline_run.deployment)
             .where(
+                or_(
+                    PipelineRunSchema.orchestrator_run_id
+                    == pipeline_run.orchestrator_run_id,
+                    col(PipelineRunSchema.orchestrator_run_id).is_(None),
+                )
+            )
+            .where(
                 PipelineRunSchema.status == ExecutionStatus.INITIALIZING.value
             )
         ).first()

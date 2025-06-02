@@ -94,7 +94,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
         build_index(
             table_name="pipeline_run",
-            column_names=["deployment_id", "status"],
+            column_names=["deployment_id", "orchestrator_run_id", "status"],
         ),
     )
 
