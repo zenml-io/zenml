@@ -551,6 +551,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 service_account_name=service_account_name,
                 env=environment,
                 mount_local_stores=self.config.is_local,
+                extra_labels={
+                    "zenml-orchestrator-run-id": orchestrator_run_name
+                },
             )
 
             kube_utils.create_and_wait_for_pod_to_start(
@@ -630,44 +633,123 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_KUBERNETES_RUN_ID}."
             )
 
-    def stop_run(self, run: "PipelineRunResponse") -> None:
-        """Stops a specific pipeline run by deleting the Kubernetes pod/job.
+    def stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = True
+    ) -> None:
+        """Stops a specific pipeline run by gracefully terminating Kubernetes pods.
 
         Args:
             run: The run that was executed by this orchestrator.
+            graceful: If True, only stops the orchestrator pod and lets
+                running steps finish. If False, stops all pods including
+                running steps.
 
         Raises:
-            ValueError: If the run name cannot be determined.
+            ValueError: If the orchestrator run ID cannot be found.
         """
-        # Try to determine the pod name from the run
-        # The pod name should be based on the orchestrator run name
-        if run.name:
-            # Sanitize the run name to match Kubernetes naming conventions
-            pod_name = kube_utils.sanitize_pod_name(
-                run.name, namespace=self.config.kubernetes_namespace
+        # Get the orchestrator run ID which corresponds to the orchestrator pod name
+        orchestrator_run_id = run.orchestrator_run_id
+        if not orchestrator_run_id:
+            raise ValueError(
+                "Cannot determine orchestrator run ID for the run. "
+                "Unable to stop the pipeline."
             )
-        else:
-            raise ValueError("Cannot determine pod name for the run.")
 
+        logger.info(
+            f"Stopping Kubernetes pipeline run {run.id} "
+            f"(graceful={graceful}, orchestrator_run_id={orchestrator_run_id})"
+        )
+
+        pods_stopped = []
+        errors = []
+
+        # Configure graceful termination settings
+        grace_period_seconds = (
+            30  # Give pods 30 seconds to gracefully shutdown
+        )
+
+        # Always try to stop the orchestrator pod
         try:
-            # Try to delete the pod
             self._k8s_core_api.delete_namespaced_pod(
-                name=pod_name,
+                name=orchestrator_run_id,
                 namespace=self.config.kubernetes_namespace,
+                grace_period_seconds=grace_period_seconds,
             )
-            logger.info(f"Successfully stopped Kubernetes pod: {pod_name}")
+            pods_stopped.append(f"orchestrator pod: {orchestrator_run_id}")
+            logger.info(
+                f"Successfully initiated graceful stop of orchestrator pod: {orchestrator_run_id}"
+            )
         except Exception as e:
-            # If pod deletion fails, try to delete any associated jobs
+            error_msg = (
+                f"Failed to stop orchestrator pod {orchestrator_run_id}: {e}"
+            )
+            logger.warning(error_msg)
+            errors.append(error_msg)
+
+        # If not graceful, also stop all step pods
+        if not graceful:
             try:
-                # Try to delete any jobs with the same name
-                self._k8s_batch_api.delete_namespaced_job(
-                    name=pod_name,
+                # Find all pods with the orchestrator run ID label
+                label_selector = (
+                    f"zenml-orchestrator-run-id={orchestrator_run_id}"
+                )
+                pods = self._k8s_core_api.list_namespaced_pod(
                     namespace=self.config.kubernetes_namespace,
+                    label_selector=label_selector,
                 )
-                logger.info(f"Successfully stopped Kubernetes job: {pod_name}")
-            except Exception as job_error:
-                logger.error(
-                    f"Failed to stop Kubernetes pod/job {pod_name}: "
-                    f"Pod error: {e}, Job error: {job_error}"
+
+                # Filter to only include running or pending pods
+                for pod in pods.items:
+                    if pod.status.phase not in ["Running", "Pending"]:
+                        logger.debug(
+                            f"Skipping pod {pod.metadata.name} with status {pod.status.phase}"
+                        )
+                        continue
+
+                    # Skip the orchestrator pod as we already handled it
+                    if pod.metadata.name == orchestrator_run_id:
+                        continue
+
+                    try:
+                        self._k8s_core_api.delete_namespaced_pod(
+                            name=pod.metadata.name,
+                            namespace=self.config.kubernetes_namespace,
+                            grace_period_seconds=grace_period_seconds,
+                        )
+                        pods_stopped.append(f"step pod: {pod.metadata.name}")
+                        logger.info(
+                            f"Successfully initiated graceful stop of step pod: {pod.metadata.name}"
+                        )
+                    except Exception as e:
+                        error_msg = (
+                            f"Failed to stop step pod {pod.metadata.name}: {e}"
+                        )
+                        logger.warning(error_msg)
+                        errors.append(error_msg)
+
+            except Exception as e:
+                error_msg = f"Failed to list step pods for run {orchestrator_run_id}: {e}"
+                logger.warning(error_msg)
+                errors.append(error_msg)
+
+        # Summary logging
+        if pods_stopped:
+            logger.info(
+                f"Successfully initiated graceful termination of: {', '.join(pods_stopped)}"
+            )
+            logger.info(
+                f"Pods will terminate within {grace_period_seconds} seconds."
+            )
+
+        if errors:
+            error_summary = "; ".join(errors)
+            if not pods_stopped:
+                # If nothing was stopped successfully, raise an error
+                raise RuntimeError(
+                    f"Failed to stop pipeline run: {error_summary}"
                 )
-                raise
+            else:
+                # If some things were stopped but others failed, just warn
+                logger.warning(
+                    f"Partial stop operation completed with errors: {error_summary}"
+                )

@@ -145,7 +145,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 if self._stop_requested:
                     logger.info("Pipeline execution stopped by user request.")
                     break
-                    
+
                 if self.requires_resources_in_orchestration_environment(step):
                     logger.warning(
                         "Specifying step resources is not supported for the local "
@@ -154,15 +154,19 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                         step_name,
                     )
 
-                arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, deployment_id=deployment.id
+                arguments = (
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name, deployment_id=deployment.id
+                    )
                 )
 
                 settings = cast(
                     LocalDockerOrchestratorSettings,
                     self.get_settings(step),
                 )
-                image = self.get_image(deployment=deployment, step_name=step_name)
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
+                )
 
                 user = None
                 if sys.platform != "win32":
@@ -197,7 +201,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                         if self._stop_requested:
                             break
                         logger.info(line.strip().decode())
-                        
+
                 except ContainerError as e:
                     error_message = e.stderr.decode()
                     raise RuntimeError(error_message)

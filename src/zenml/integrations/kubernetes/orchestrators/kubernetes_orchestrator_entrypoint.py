@@ -19,6 +19,7 @@ from typing import Any, Dict, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
+from kubernetes.client.rest import ApiException
 
 from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
@@ -207,6 +208,7 @@ def main() -> None:
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
             owner_references=owner_references,
+            extra_labels={"zenml-orchestrator-run-id": orchestrator_pod_name},
         )
 
         kube_utils.create_and_wait_for_pod_to_start(
@@ -336,7 +338,7 @@ def main() -> None:
                     namespace=args.kubernetes_namespace,
                     secret_name=secret_name,
                 )
-            except k8s_client.rest.ApiException as e:
+            except ApiException as e:
                 logger.error(f"Error cleaning up secret {secret_name}: {e}")
 
 

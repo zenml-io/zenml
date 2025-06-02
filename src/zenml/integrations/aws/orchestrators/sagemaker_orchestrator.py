@@ -870,7 +870,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             sagemaker_client.stop_pipeline_execution(
                 PipelineExecutionArn=run_id
             )
-            logger.info(f"Successfully stopped SageMaker pipeline execution: {run_id}")
+            logger.info(
+                f"Successfully stopped SageMaker pipeline execution: {run_id}"
+            )
         except Exception as e:
             logger.error(f"Failed to stop SageMaker pipeline execution: {e}")
             raise

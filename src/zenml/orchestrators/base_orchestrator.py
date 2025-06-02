@@ -258,17 +258,12 @@ class BaseOrchestrator(StackComponent, ABC):
         except KeyboardInterrupt:
             # Handle Ctrl+C for synchronous orchestrators
             if self.config.is_synchronous and placeholder_run:
-                logger.info("Received keyboard interrupt. Attempting to stop the pipeline run...")
+                logger.info(
+                    "Received keyboard interrupt. Attempting to stop the pipeline run..."
+                )
                 try:
                     self.stop_run(placeholder_run)
                     logger.info("Pipeline run stopped successfully.")
-                    # Update the run status to CANCELED
-                    from zenml.client import Client
-                    from zenml.models import PipelineRunUpdate
-                    Client().zen_store.update_run(
-                        run_id=placeholder_run.id,
-                        run_update=PipelineRunUpdate(status=ExecutionStatus.CANCELED)
-                    )
                 except NotImplementedError:
                     logger.warning(
                         "Stop functionality not implemented for this orchestrator. "
@@ -342,11 +337,15 @@ class BaseOrchestrator(StackComponent, ABC):
             f"'{self.__class__.__name__}' orchestrator."
         )
 
-    def stop_run(self, run: "PipelineRunResponse") -> None:
+    def stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = True
+    ) -> None:
         """Stops a specific pipeline run.
 
         Args:
             run: A pipeline run response to stop.
+            graceful: If True, allows for graceful shutdown where possible.
+                If False, forces immediate termination. Default is True.
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base

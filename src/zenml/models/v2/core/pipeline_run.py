@@ -368,8 +368,12 @@ class PipelineRunResponse(
 
         return self
 
-    def stop_run(self) -> "PipelineRunResponse":
+    def stop_run(self, graceful: bool = True) -> "PipelineRunResponse":
         """Method to stop a pipeline run.
+
+        Args:
+            graceful: If True, allows for graceful shutdown where possible.
+                If False, forces immediate termination. Default is True.
 
         Returns:
             The updated pipeline run.
@@ -401,23 +405,11 @@ class PipelineRunResponse(
 
         orchestrator = cast(
             BaseOrchestrator,
-            StackComponent.from_model(
-                component_model=orchestrator_list[0]
-            ),
+            StackComponent.from_model(component_model=orchestrator_list[0]),
         )
 
         # Stop the run
-        orchestrator.stop_run(run=self)
-
-        # Update the status to CANCELED
-        from zenml.client import Client
-        from zenml.models import PipelineRunUpdate
-
-        client = Client()
-        return client.zen_store.update_run(
-            run_id=self.id,
-            run_update=PipelineRunUpdate(status=ExecutionStatus.CANCELED),
-        )
+        return orchestrator.stop_run(run=self, graceful=graceful)
 
     # Body and metadata properties
     @property

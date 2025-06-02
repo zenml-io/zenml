@@ -108,6 +108,7 @@ def build_pod_manifest(
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
+    extra_labels: Optional[Dict[str, str]] = None,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -127,6 +128,7 @@ def build_pod_manifest(
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
         owner_references: List of owner references for the pod.
+        extra_labels: Optional additional labels to add to the pod.
 
     Returns:
         Pod manifest.
@@ -157,23 +159,27 @@ def build_pod_manifest(
         containers=[container_spec],
         restart_policy="Never",
         image_pull_secrets=image_pull_secrets,
+        termination_grace_period_seconds=30,
     )
 
     if service_account_name is not None:
         pod_spec.service_account_name = service_account_name
 
-    labels = {}
-
+    # Apply pod settings if provided
     if pod_settings:
         add_pod_settings(pod_spec, pod_settings)
 
-        # Add pod_settings.labels to the labels
-        if pod_settings.labels:
-            labels.update(pod_settings.labels)
+    labels = {}
 
-    # Add run_name and pipeline_name to the labels
+    if pod_settings and pod_settings.labels:
+        labels.update(pod_settings.labels)
+    if extra_labels:
+        labels.update(extra_labels)
+
+    # Add standard ZenML labels
     labels.update(
         {
+            "app": "zenml",
             "run": kube_utils.sanitize_label(run_name),
             "pipeline": kube_utils.sanitize_label(pipeline_name),
         }

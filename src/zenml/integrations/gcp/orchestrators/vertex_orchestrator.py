@@ -1040,7 +1040,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             # Get and cancel the pipeline job
             pipeline_job = aiplatform.PipelineJob.get(run_id)
             pipeline_job.cancel()
-            logger.info(f"Successfully stopped Vertex AI pipeline job: {run_id}")
+            logger.info(
+                f"Successfully stopped Vertex AI pipeline job: {run_id}"
+            )
         except Exception as e:
             logger.error(f"Failed to stop Vertex AI pipeline job: {e}")
             raise

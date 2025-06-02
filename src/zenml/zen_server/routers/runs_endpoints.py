@@ -25,8 +25,8 @@ from zenml.constants import (
     RUNS,
     STATUS,
     STEPS,
-    VERSION_1,
     STOP,
+    VERSION_1,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
@@ -429,12 +429,15 @@ def refresh_run_status(
 @async_fastapi_endpoint_wrapper
 def stop_run(
     run_id: UUID,
+    graceful: bool = True,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Stops a specific pipeline run.
 
     Args:
         run_id: ID of the pipeline run to stop.
+        graceful: If True, allows for graceful shutdown where possible.
+            If False, forces immediate termination. Default is True.
 
     Returns:
         The updated pipeline run.
@@ -467,8 +470,8 @@ def stop_run(
         raise RuntimeError(
             f"The stack, the run '{run.id}' was executed on, is deleted."
         )
-    
-    return run.stop_run()
+
+    return run.stop_run(graceful=graceful)
 
 
 @router.get(
