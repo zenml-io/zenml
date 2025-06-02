@@ -410,6 +410,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If the Kubernetes orchestrator is not configured.
+
+        Yields:
+            Metadata dictionary.
         """
         for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
