@@ -5641,6 +5641,9 @@ class SqlZenStore(BaseZenStore):
             .where(
                 PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
             )
+            .where(
+                PipelineRunSchema.status != ExecutionStatus.INITIALIZING.value
+            )
         ).first()
 
         if not run_schema:

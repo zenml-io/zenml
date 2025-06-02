@@ -60,9 +60,7 @@ def parse_args() -> argparse.Namespace:
         Parsed args.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run_name", type=str, required=True)
     parser.add_argument("--deployment_id", type=str, required=True)
-    parser.add_argument("--kubernetes_namespace", type=str, required=True)
     parser.add_argument("--run_id", type=str, required=False)
     return parser.parse_args()
 
@@ -72,7 +70,6 @@ def main() -> None:
     # Log to the container's stdout so it can be streamed by the client.
     logger.info("Kubernetes orchestrator pod started.")
 
-    # Parse / extract args.
     args = parse_args()
 
     orchestrator_pod_name = socket.gethostname()
@@ -81,6 +78,7 @@ def main() -> None:
     active_stack = client.active_stack
     orchestrator = active_stack.orchestrator
     assert isinstance(orchestrator, KubernetesOrchestrator)
+    namespace = orchestrator.config.kubernetes_namespace
 
     deployment = client.get_deployment(args.deployment_id)
     pipeline_settings = cast(
@@ -105,7 +103,7 @@ def main() -> None:
         owner_references = kube_utils.get_pod_owner_references(
             core_api=core_api,
             pod_name=orchestrator_pod_name,
-            namespace=args.kubernetes_namespace,
+            namespace=namespace,
         )
     except Exception as e:
         logger.warning(f"Failed to get pod owner references: {str(e)}")
@@ -126,7 +124,7 @@ def main() -> None:
 
     pre_step_run: Optional[Callable[[str], bool]] = None
 
-    if pipeline_settings.prevent_orchestrator_pod_caching:
+    if not pipeline_settings.prevent_orchestrator_pod_caching:
         step_run_request_factory = StepRunRequestFactory(
             deployment=deployment,
             pipeline_run=pipeline_run,
@@ -164,6 +162,13 @@ def main() -> None:
 
             return True
 
+    step_pod_labels = {
+        "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
+        "pipeline": kube_utils.sanitize_label(
+            deployment.pipeline_configuration.name
+        ),
+    }
+
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
 
@@ -184,7 +189,7 @@ def main() -> None:
         ):
             max_length = (
                 kube_utils.calculate_max_pod_name_length_for_namespace(
-                    namespace=args.kubernetes_namespace
+                    namespace=namespace
                 )
             )
             pod_name_prefix = get_orchestrator_run_name(
@@ -194,9 +199,7 @@ def main() -> None:
         else:
             pod_name = f"{orchestrator_pod_name}-{step_name}"
 
-        pod_name = kube_utils.sanitize_pod_name(
-            pod_name, namespace=args.kubernetes_namespace
-        )
+        pod_name = kube_utils.sanitize_pod_name(pod_name, namespace=namespace)
 
         image = KubernetesOrchestrator.get_image(
             deployment=deployment, step_name=step_name
@@ -233,8 +236,6 @@ def main() -> None:
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
-            run_name=args.run_name,
-            pipeline_name=deployment.pipeline_configuration.name,
             image_name=image,
             command=step_command,
             args=step_args,
@@ -245,6 +246,7 @@ def main() -> None:
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
             owner_references=owner_references,
+            labels=step_pod_labels,
         )
 
         kube_utils.create_and_wait_for_pod_to_start(
@@ -252,7 +254,7 @@ def main() -> None:
             pod_display_name=f"pod for step `{step_name}`",
             pod_name=pod_name,
             pod_manifest=pod_manifest,
-            namespace=args.kubernetes_namespace,
+            namespace=namespace,
             startup_max_retries=settings.pod_failure_max_retries,
             startup_failure_delay=settings.pod_failure_retry_delay,
             startup_failure_backoff=settings.pod_failure_backoff,
@@ -267,7 +269,7 @@ def main() -> None:
                     incluster=True
                 ),
                 pod_name=pod_name,
-                namespace=args.kubernetes_namespace,
+                namespace=namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
                 stream_logs=True,
             )
@@ -354,7 +356,7 @@ def main() -> None:
             try:
                 kube_utils.delete_secret(
                     core_api=core_api,
-                    namespace=args.kubernetes_namespace,
+                    namespace=namespace,
                     secret_name=secret_name,
                 )
             except k8s_client.rest.ApiException as e:
