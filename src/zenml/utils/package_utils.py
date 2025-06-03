@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Union
 
 import requests
 from packaging import version
+from packaging.markers import default_environment
 from packaging.requirements import Requirement
 
 if sys.version_info < (3, 10):
@@ -137,21 +138,35 @@ def get_dependencies(
         A list of requirements.
     """
     dist = distribution(requirement.name)
+    marker_environment = default_environment()
 
     dependencies = []
+
     for req in dist.requires or []:
         parsed_req = Requirement(req)
 
         if parsed_req.marker:
-            marker_string = str(parsed_req.marker)
+            should_include = False
 
-            if marker_string.startswith("extra =="):
-                extra_name = marker_string.split("==")[1]
-                extra_name = extra_name.strip("'")
+            marker_environment["extra"] = ""
+            if parsed_req.marker.evaluate(environment=marker_environment):
+                should_include = True
 
-                if extra_name in requirement.extras:
-                    dependencies.append(parsed_req)
+            if not should_include:
+                # Not required without extras, so check if it's required with
+                # any of the requested extras
+                for extra in requirement.extras:
+                    marker_environment["extra"] = extra
+                    if parsed_req.marker.evaluate(
+                        environment=marker_environment
+                    ):
+                        should_include = True
+                        break
+
+            if should_include:
+                dependencies.append(parsed_req)
         else:
+            # No marker means always include
             dependencies.append(parsed_req)
 
     if recursive:

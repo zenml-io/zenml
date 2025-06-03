@@ -72,8 +72,10 @@ class Integration(metaclass=IntegrationMeta):
 
             if not requirement_installed(parsed_requirement):
                 logger.debug(
-                    "Requirement '%s' is not installed or installed with the wrong version.",
+                    "Requirement '%s' for integration '%s' is not installed "
+                    "or installed with the wrong version.",
                     requirement,
+                    cls.NAME,
                 )
                 return False
 
@@ -82,13 +84,15 @@ class Integration(metaclass=IntegrationMeta):
             for dependency in dependencies:
                 if not requirement_installed(dependency):
                     logger.debug(
-                        "Requirement '%s' is not installed or installed with the wrong version.",
+                        "Requirement '%s' for integration '%s' is not "
+                        "installed or installed with the wrong version.",
                         dependency,
+                        cls.NAME,
                     )
                     return False
 
         logger.debug(
-            f"Integration {cls.NAME} is installed correctly with "
+            f"Integration '{cls.NAME}' is installed correctly with "
             f"requirements {cls.get_requirements()}."
         )
         return True

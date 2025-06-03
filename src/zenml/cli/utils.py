@@ -83,11 +83,6 @@ from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
 
-if sys.version_info < (3, 10):
-    pass
-else:
-    pass
-
 if TYPE_CHECKING:
     from uuid import UUID
 
