@@ -13,10 +13,25 @@
 #  permissions and limitations under the License.
 """Utility functions for the package."""
 
-from typing import List
+import sys
+from typing import Dict, List, Optional, Union
 
 import requests
 from packaging import version
+from packaging.requirements import Requirement
+
+if sys.version_info < (3, 10):
+    from importlib_metadata import (
+        PackageNotFoundError,
+        distribution,
+        distributions,
+    )
+else:
+    from importlib.metadata import (
+        PackageNotFoundError,
+        distribution,
+        distributions,
+    )
 
 
 def is_latest_zenml_version() -> bool:
@@ -87,3 +102,83 @@ def clean_requirements(requirements: List[str]) -> List[str]:
         ):
             cleaned[package] = req
     return sorted(cleaned.values())
+
+
+def requirement_installed(requirement: Union[str, Requirement]) -> bool:
+    """Check if a requirement is installed.
+
+    Args:
+        requirement: A requirement string.
+
+    Returns:
+        True if the requirement is installed, False otherwise.
+    """
+    if isinstance(requirement, str):
+        requirement = Requirement(requirement)
+
+    try:
+        dist = distribution(requirement.name)
+    except PackageNotFoundError:
+        return False
+
+    return requirement.specifier.contains(dist.version)
+
+
+def get_dependencies(
+    requirement: Requirement, recursive: bool = False
+) -> List[Requirement]:
+    """Get the dependencies of a requirement.
+
+    Args:
+        requirement: A requirement string.
+        recursive: Whether to include recursive dependencies.
+
+    Returns:
+        A list of requirements.
+    """
+    dist = distribution(requirement.name)
+
+    dependencies = []
+    for req in dist.requires or []:
+        parsed_req = Requirement(req)
+
+        if parsed_req.marker:
+            marker_string = str(parsed_req.marker)
+
+            if marker_string.startswith("extra =="):
+                extra_name = marker_string.split("==")[1]
+                extra_name = extra_name.strip("'")
+
+                if extra_name in requirement.extras:
+                    dependencies.append(parsed_req)
+        else:
+            dependencies.append(parsed_req)
+
+    if recursive:
+        for dependency in dependencies:
+            dependencies.extend(get_dependencies(dependency, recursive=True))
+
+    return dependencies
+
+
+def get_package_information(
+    package_names: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Get package information.
+
+    Args:
+        package_names: Filter for specific package names. If no package names
+            are provided, all installed packages are returned.
+
+    Returns:
+        A dictionary of the name:version for the package names passed in or
+            all packages and their respective versions.
+    """
+    if package_names:
+        return {
+            dist.name: dist.version
+            for dist in distributions()
+            if dist.name in package_names
+        }
+
+    return {dist.name: dist.version for dist in distributions()}
