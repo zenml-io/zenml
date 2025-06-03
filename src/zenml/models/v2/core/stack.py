@@ -196,7 +196,7 @@ class StackUpdate(BaseUpdate):
             The components of the stack.
         """
         if value is None:
-            return
+            return None
 
         if value:
             artifact_stores = value.get(StackComponentType.ARTIFACT_STORE, [])
