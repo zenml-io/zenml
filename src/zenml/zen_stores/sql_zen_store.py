@@ -143,6 +143,7 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
+    RunStoppedException,
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
@@ -8423,6 +8424,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: if the step run already exists.
+            RunStoppedException: if the pipeline run is stopped or stopping.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
@@ -8435,13 +8437,15 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            self._get_reference_schema_by_id(
-                resource=step_run,
-                reference_schema=StepRunSchema,
-                reference_id=step_run.original_step_run_id,
-                session=session,
-                reference_type="original step run",
-            )
+            # Validate pipeline status before creating step
+            if run.status in [
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+            ]:
+                raise RunStoppedException(
+                    f"Cannot create step '{step_run.name}' for pipeline in "
+                    f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
+                )
 
             step_schema = StepRunSchema.from_request(
                 step_run, deployment_id=run.deployment_id
@@ -8680,6 +8684,11 @@ class SqlZenStore(BaseZenStore):
             # Update the step
             existing_step_run.update(step_run_update)
             session.add(existing_step_run)
+
+            if step_run_update.status == ExecutionStatus.STOPPED:
+                existing_step_run.pipeline_run.update(
+                    PipelineRunUpdate(status=ExecutionStatus.STOPPING)
+                )
 
             # Update the artifacts.
             for name, artifact_version_ids in step_run_update.outputs.items():

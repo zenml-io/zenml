@@ -174,6 +174,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         """
         return KubernetesOrchestratorSettings
 
+    @property
+    def supports_cancellation(self) -> bool:
+        """Whether this orchestrator supports stopping pipeline runs.
+
+        Returns:
+            True since the Kubernetes orchestrator supports cancellation.
+        """
+        return True
+
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
 
@@ -633,7 +642,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_KUBERNETES_RUN_ID}."
             )
 
-    def stop_run(
+    def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = True
     ) -> None:
         """Stops a specific pipeline run by gracefully terminating Kubernetes pods.

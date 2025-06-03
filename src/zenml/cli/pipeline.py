@@ -511,6 +511,58 @@ def list_pipeline_runs(**kwargs: Any) -> None:
         cli_utils.print_page_info(pipeline_runs)
 
 
+@runs.command("stop")
+@click.argument("run_name_or_id", type=str, required=True)
+@click.option(
+    "--graceful",
+    "-g",
+    is_flag=True,
+    default=True,
+    help="Use graceful shutdown (default). Use --no-graceful for immediate termination.",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def stop_pipeline_run(
+    run_name_or_id: str,
+    graceful: bool = True,
+    yes: bool = False,
+) -> None:
+    """Stop a running pipeline.
+
+    Args:
+        run_name_or_id: The name or ID of the pipeline run to stop.
+        graceful: If True, uses graceful shutdown. If False, forces immediate termination.
+        yes: If set, don't ask for confirmation.
+    """
+    # Ask for confirmation to stop run.
+    if not yes:
+        action = "gracefully stop" if graceful else "force stop"
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to {action} pipeline run `{run_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline run stop canceled.")
+            return
+
+    # Stop run.
+    try:
+        run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
+        run.stop_run(graceful=graceful)
+        action = "Gracefully stopped" if graceful else "Force stopped"
+        cli_utils.declare(f"{action} pipeline run '{run.name}'.")
+    except NotImplementedError:
+        cli_utils.error(
+            "The orchestrator used for this pipeline run does not support "
+            "stopping runs."
+        )
+    except Exception as e:
+        cli_utils.error(f"Failed to stop pipeline run: {e}")
+
+
 @runs.command("delete")
 @click.argument("run_name_or_id", type=str, required=True)
 @click.option(

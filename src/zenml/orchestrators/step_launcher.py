@@ -19,7 +19,6 @@ import time
 from contextlib import nullcontext
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
-from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -31,6 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
+from zenml.exceptions import RunStoppedException
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
@@ -134,7 +134,7 @@ class StepLauncher:
         self._step_name = step.spec.pipeline_parameter_name
 
         # Internal properties and methods
-        self._step_run_id: Optional[UUID] = None
+        self._step_run: Optional[StepRunResponse] = None
         self._shutdown_requested = False
         self._setup_signal_handlers()
 
@@ -144,27 +144,33 @@ class StepLauncher:
         def signal_handler(signum: int, frame: Any) -> None:
             """Handle shutdown signals gracefully."""
             logger.info(
-                f"Received signal {signum}. Shutting down step '{self._step_name}'..."
+                f"Received signal {signum}. Checking pipeline status "
+                f"for step '{self._step_name}'..."
             )
             self._shutdown_requested = True
 
-            # Try to update step status to CANCELED if we have a step run ID
-            if self._step_run_id:
+            try:
                 try:
-                    publish_utils.publish_cancelled_step_run(
-                        step_run_id=self._step_run_id,
-                    )
-                    logger.info(
-                        f"Successfully marked step '{self._step_name}' as CANCELED"
-                    )
+                    if self._step_run:
+                        client = Client()
+                        pipeline_run = client.get_pipeline_run(
+                            self._step_run.pipeline_run_id
+                        )
+                        if pipeline_run.status in [
+                            ExecutionStatus.STOPPING,
+                            ExecutionStatus.STOPPED,
+                        ]:
+                            logger.info(
+                                f"Pipeline is in {pipeline_run.status} state, stopping step execution"
+                            )
+                            raise RunStoppedException(
+                                f"Step '{self._step_name}' was stopped due to pipeline cancellation."
+                            )
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to update step status during shutdown: {e}"
-                    )
-
-            raise KeyboardInterrupt(
-                f"Step '{self._step_name}' was shut down via signal {signum}."
-            )
+                    logger.warning(f"Failed to check pipeline status: {e}")
+                    raise e
+            except Exception as e:
+                raise e
 
         # Register handlers for common termination signals
         signal.signal(signal.SIGTERM, signal_handler)
@@ -247,7 +253,7 @@ class StepLauncher:
                         step_run_request
                     )
                     # Store step run ID for signal handler
-                    self._step_run_id = step_run.id
+                    self._step_run = step_run
                     if model_version := step_run.model_version:
                         step_run_utils.log_model_version_dashboard_url(
                             model_version=model_version
@@ -306,14 +312,14 @@ class StepLauncher:
                                 force_write_logs=force_write_logs,
                             )
                             break
-                        except KeyboardInterrupt:
-                            # Handle cancellation gracefully
+                        except RunStoppedException:
+                            # Handle pipeline cancellation gracefully
                             logger.info(
-                                f"Step `{self._step_name}` was cancelled"
+                                f"Step `{self._step_name}` was stopped due to pipeline cancellation."
                             )
-                            publish_utils.publish_step_run_update(
+                            publish_utils.publish_step_run_status_update(
                                 step_run_id=step_run.id,
-                                status=ExecutionStatus.CANCELED,
+                                status=ExecutionStatus.STOPPED,
                                 end_time=utc_now(),
                             )
                             raise

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from zenml.metadata.metadata_types import MetadataType
+
+logger = get_logger(__name__)
 
 
 def publish_successful_step_run(
@@ -55,32 +58,32 @@ def publish_successful_step_run(
     )
 
 
-def publish_step_run_update(
+def publish_step_run_status_update(
     step_run_id: "UUID",
-    status: ExecutionStatus,
+    status: Optional["ExecutionStatus"] = None,
     end_time: Optional[datetime] = None,
 ) -> "StepRunResponse":
-    """Publishes a step run status update.
+    """Publishes a step run update.
 
     Args:
-        step_run_id: The ID of the step run to update.
-        status: The new status for the step run.
-        end_time: The end time for the step run. If None, will be set to current time
-            for finished statuses.
+        step_run_id: ID of the step run.
+        status: New status of the step run.
+        end_time: New end time of the step run.
 
     Returns:
         The updated step run.
     """
-    if end_time is None and status.is_finished:
-        end_time = utc_now()
+    from zenml.client import Client
 
-    return Client().zen_store.update_run_step(
+    step_run = Client().zen_store.update_run_step(
         step_run_id=step_run_id,
         step_run_update=StepRunUpdate(
             status=status,
             end_time=end_time,
         ),
     )
+
+    return step_run
 
 
 def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
@@ -92,19 +95,27 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     Returns:
         The updated step run.
     """
-    return publish_step_run_update(step_run_id, ExecutionStatus.FAILED)
+    return publish_step_run_status_update(
+        step_run_id=step_run_id,
+        status=ExecutionStatus.FAILED,
+        end_time=utc_now(),
+    )
 
 
-def publish_cancelled_step_run(step_run_id: "UUID") -> "StepRunResponse":
-    """Publishes a cancelled step run.
+def publish_stopped_step_run(step_run_id: "UUID") -> "StepRunResponse":
+    """Publish a step run with STOPPED status.
 
     Args:
-        step_run_id: The ID of the step run to update.
+        step_run_id: ID of the step run.
 
     Returns:
         The updated step run.
     """
-    return publish_step_run_update(step_run_id, ExecutionStatus.CANCELED)
+    return publish_step_run_status_update(
+        step_run_id=step_run_id,
+        status=ExecutionStatus.STOPPED,
+        end_time=utc_now(),
+    )
 
 
 def publish_failed_pipeline_run(
@@ -127,22 +138,51 @@ def publish_failed_pipeline_run(
     )
 
 
-def publish_canceled_pipeline_run(
+def publish_stopped_pipeline_run(
     pipeline_run_id: "UUID",
 ) -> "PipelineRunResponse":
-    """Publishes a canceled pipeline run.
+    """Publishes a stopped pipeline run.
 
     Args:
-        pipeline_run_id: The ID of the pipeline run to update.
+        pipeline_run_id: ID of the pipeline run.
 
     Returns:
         The updated pipeline run.
     """
+    client = Client()
+    return client.zen_store.update_run(
+        run_id=pipeline_run_id,
+        run_update=PipelineRunUpdate(
+            status=ExecutionStatus.STOPPED,
+            end_time=utc_now(),
+        ),
+    )
+
+
+def publish_pipeline_run_status_update(
+    pipeline_run_id: "UUID",
+    status: ExecutionStatus,
+    end_time: Optional[datetime] = None,
+) -> "PipelineRunResponse":
+    """Publishes a pipeline run status update.
+
+    Args:
+        pipeline_run_id: The ID of the pipeline run to update.
+        status: The new status for the pipeline run.
+        end_time: The end time for the pipeline run. If None, will be set to current time
+            for finished statuses.
+
+    Returns:
+        The updated pipeline run.
+    """
+    if end_time is None and status.is_finished:
+        end_time = utc_now()
+
     return Client().zen_store.update_run(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
-            status=ExecutionStatus.CANCELED,
-            end_time=utc_now(),
+            status=status,
+            end_time=end_time,
         ),
     )
 

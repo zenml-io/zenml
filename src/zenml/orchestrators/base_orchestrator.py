@@ -123,6 +123,15 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         return cast(BaseOrchestratorConfig, self._config)
 
+    @property
+    def supports_cancellation(self) -> bool:
+        """Whether this orchestrator supports stopping pipeline runs.
+
+        Returns:
+            True if the orchestrator supports stop_run functionality, False otherwise.
+        """
+        return False
+
     @abstractmethod
     def get_orchestrator_run_id(self) -> str:
         """Returns the run id of the active orchestrator run.
@@ -342,8 +351,65 @@ class BaseOrchestrator(StackComponent, ABC):
     ) -> None:
         """Stops a specific pipeline run.
 
+        This method should only be called if the orchestrator's
+        supports_cancellation property is True.
+
         Args:
             run: A pipeline run response to stop.
+            graceful: If True, allows for graceful shutdown where possible.
+                If False, forces immediate termination. Default is True.
+
+        Raises:
+            NotImplementedError: If any orchestrator inheriting from the base
+                class does not implement this logic.
+            IllegalOperationError: If the pipeline cannot be stopped in its
+                current state.
+        """
+        from zenml.client import Client
+        from zenml.enums import ExecutionStatus
+        from zenml.exceptions import IllegalOperationError
+        from zenml.orchestrators.publish_utils import (
+            publish_pipeline_run_status_update,
+        )
+
+        # Check if the orchestrator supports cancellation
+        if not self.supports_cancellation:
+            raise NotImplementedError(
+                f"The '{self.__class__.__name__}' orchestrator does not "
+                "support stopping pipeline runs."
+            )
+
+        # Check if pipeline can be stopped
+        if run.status.is_finished:
+            raise IllegalOperationError(
+                f"Cannot stop pipeline in {run.status} state - pipeline is already finished."
+            )
+
+        if run.status == ExecutionStatus.STOPPING:
+            raise IllegalOperationError(f"Pipeline is already being stopped.")
+
+        # Update pipeline status to STOPPING before calling concrete implementation
+        publish_pipeline_run_status_update(
+            pipeline_run_id=run.id,
+            status=ExecutionStatus.STOPPING,
+        )
+
+        # Refresh the run to get the updated status
+        updated_run = Client().get_pipeline_run(run.id)
+
+        # Now call the concrete implementation
+        self._stop_run(updated_run, graceful)
+
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = True
+    ) -> None:
+        """Concrete implementation of pipeline stopping logic.
+
+        This method should be implemented by concrete orchestrator classes
+        instead of stop_run to ensure proper status management.
+
+        Args:
+            run: A pipeline run response to stop (already updated to STOPPING status).
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is True.
 

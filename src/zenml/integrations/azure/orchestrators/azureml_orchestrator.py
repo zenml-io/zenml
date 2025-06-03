@@ -90,6 +90,15 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         return cast(AzureMLOrchestratorConfig, self._config)
 
     @property
+    def supports_cancellation(self) -> bool:
+        """Whether this orchestrator supports stopping pipeline runs.
+
+        Returns:
+            True since the AzureML orchestrator supports cancellation.
+        """
+        return True
+
+    @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the AzureML orchestrator.
 
@@ -506,11 +515,10 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.INITIALIZING
         elif status in ["Running", "Finalizing"]:
             return ExecutionStatus.RUNNING
-        elif status in [
-            "CancelRequested",
-            "Canceled",
-        ]:
-            return ExecutionStatus.CANCELED
+        elif status == "CancelRequested":
+            return ExecutionStatus.STOPPING
+        elif status == "Canceled":
+            return ExecutionStatus.STOPPED
         elif status in [
             "Failed",
             "NotResponding",
@@ -521,29 +529,16 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         else:
             raise ValueError("Unknown status for the pipeline job.")
 
-    def stop_run(self, run: "PipelineRunResponse") -> None:
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = True
+    ) -> None:
         """Stops a specific pipeline run.
 
         Args:
             run: The run that was executed by this orchestrator.
-
-        Raises:
-            AssertionError: If the run was not executed by this orchestrator.
-            ValueError: If the orchestrator run ID cannot be found.
+            graceful: If True, allows graceful shutdown where possible.
+                If False, forces immediate termination.
         """
-        # Make sure that the stack exists and is accessible
-        if run.stack is None:
-            raise ValueError(
-                "The stack that the run was executed on is not available "
-                "anymore."
-            )
-
-        # Make sure that the run belongs to this orchestrator
-        assert (
-            self.id
-            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
-        )
-
         # Initialize the AzureML client
         if connector := self.get_connector():
             credentials = connector.connect()

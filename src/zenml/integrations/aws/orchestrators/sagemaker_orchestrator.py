@@ -150,6 +150,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         return cast(SagemakerOrchestratorConfig, self._config)
 
     @property
+    def supports_cancellation(self) -> bool:
+        """Whether this orchestrator supports stopping pipeline runs.
+
+        Returns:
+            True since the SageMaker orchestrator supports cancellation.
+        """
+        return True
+
+    @property
     def validator(self) -> Optional[StackValidator]:
         """Validates the stack.
 
@@ -818,8 +827,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
         if status in ["Executing", "Stopping"]:
             return ExecutionStatus.RUNNING
-        elif status in ["Stopped"]:
-            return ExecutionStatus.CANCELED
+        elif status == "Stopping":
+            return ExecutionStatus.STOPPING
+        elif status == "Stopped":
+            return ExecutionStatus.STOPPED
         elif status in ["Failed"]:
             return ExecutionStatus.FAILED
         elif status in ["Succeeded"]:
@@ -827,29 +838,22 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         else:
             raise ValueError("Unknown status for the pipeline execution.")
 
-    def stop_run(self, run: "PipelineRunResponse") -> None:
-        """Stops a specific pipeline run.
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = True
+    ) -> None:
+        """Stops a SageMaker pipeline run.
 
         Args:
             run: The run that was executed by this orchestrator.
+            graceful: If True, allows graceful shutdown where possible.
+                If False, forces immediate termination.
 
         Raises:
-            AssertionError: If the run was not executed by this orchestrator.
-            ValueError: If the orchestrator run ID cannot be found.
+            ValueError: If the run was not executed by this orchestrator.
+            RuntimeError: If the run cannot be stopped or if the orchestrator
+                run ID cannot be found.
+            Exception: If there is an error stopping the pipeline execution.
         """
-        # Make sure that the stack exists and is accessible
-        if run.stack is None:
-            raise ValueError(
-                "The stack that the run was executed on is not available "
-                "anymore."
-            )
-
-        # Make sure that the run belongs to this orchestrator
-        assert (
-            self.id
-            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
-        )
-
         # Initialize the Sagemaker client
         session = self._get_sagemaker_session()
         sagemaker_client = session.sagemaker_client

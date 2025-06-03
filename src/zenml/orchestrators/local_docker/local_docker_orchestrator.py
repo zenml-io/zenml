@@ -76,6 +76,24 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             required_components={StackComponentType.IMAGE_BUILDER}
         )
 
+    @property
+    def config(self) -> LocalDockerOrchestratorConfig:
+        """Returns the `LocalDockerOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(LocalDockerOrchestratorConfig, self._config)
+
+    @property
+    def supports_cancellation(self) -> bool:
+        """Whether this orchestrator supports stopping pipeline runs.
+
+        Returns:
+            True since the Local Docker orchestrator supports cancellation.
+        """
+        return True
+
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
 
@@ -217,11 +235,14 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             self._current_container = None
             self._stop_requested = False
 
-    def stop_run(self, run: "PipelineRunResponse") -> None:
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = True
+    ) -> None:
         """Stops a pipeline run by setting the stop flag and killing current container.
 
         Args:
             run: The pipeline run to stop.
+            graceful: If True, allows graceful shutdown. If False, forces immediate termination.
         """
         logger.info(f"Stopping local Docker pipeline run {run.id}...")
         self._stop_requested = True

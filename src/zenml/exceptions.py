@@ -122,6 +122,10 @@ class IllegalOperationError(ZenMLBaseException):
     """Raised when an illegal operation is attempted."""
 
 
+class RunStoppedException(IllegalOperationError):
+    """Raised when trying to perform operations on a stopped/stopping pipeline run."""
+
+
 class MethodNotAllowedError(ZenMLBaseException):
     """Raised when the server does not allow a request method."""
 

@@ -141,6 +141,15 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         return cast(VertexOrchestratorConfig, self._config)
 
     @property
+    def supports_cancellation(self) -> bool:
+        """Whether this orchestrator supports stopping pipeline runs.
+
+        Returns:
+            True since the Vertex orchestrator supports cancellation.
+        """
+        return True
+
+    @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Vertex orchestrator.
 
@@ -984,9 +993,12 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         elif status in [
             PipelineState.PIPELINE_STATE_CANCELLING,
+        ]:
+            return ExecutionStatus.STOPPING
+        elif status in [
             PipelineState.PIPELINE_STATE_CANCELLED,
         ]:
-            return ExecutionStatus.CANCELED
+            return ExecutionStatus.STOPPED
         elif status in [
             PipelineState.PIPELINE_STATE_FAILED,
         ]:
@@ -994,29 +1006,16 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         else:
             raise ValueError("Unknown status for the pipeline job.")
 
-    def stop_run(self, run: "PipelineRunResponse") -> None:
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = True
+    ) -> None:
         """Stops a specific pipeline run.
 
         Args:
             run: The run that was executed by this orchestrator.
-
-        Raises:
-            AssertionError: If the run was not executed by this orchestrator.
-            ValueError: If the orchestrator run ID cannot be found.
+            graceful: If True, allows graceful shutdown where possible.
+                If False, forces immediate termination.
         """
-        # Make sure that the stack exists and is accessible
-        if run.stack is None:
-            raise ValueError(
-                "The stack that the run was executed on is not available "
-                "anymore."
-            )
-
-        # Make sure that the run belongs to this orchestrator
-        assert (
-            self.id
-            == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
-        )
-
         # Initialize the Vertex client
         credentials, project_id = self._get_authentication()
         aiplatform.init(

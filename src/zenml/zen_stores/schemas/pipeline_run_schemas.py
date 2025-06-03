@@ -516,7 +516,16 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The updated `PipelineRunSchema`.
         """
         if run_update.status:
-            self.status = run_update.status.value
+            if run_update.status == ExecutionStatus.STOPPING:
+                if all(
+                    ExecutionStatus(step_run.status).is_finished
+                    for step_run in self.step_runs
+                ):
+                    self.status = ExecutionStatus.STOPPED.value
+                else:
+                    self.status = ExecutionStatus.STOPPING.value
+            else:
+                self.status = run_update.status.value
             self.end_time = run_update.end_time
 
         self.updated = utc_now()
