@@ -53,7 +53,6 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
-    build_index,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
@@ -91,10 +90,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             "name",
             "project_id",
             name="unique_run_name_in_project",
-        ),
-        build_index(
-            table_name="pipeline_run",
-            column_names=["deployment_id", "orchestrator_run_id", "status"],
         ),
     )
 

@@ -5578,10 +5578,10 @@ class SqlZenStore(BaseZenStore):
             # finishes, the subsequent queries will not be able to find a
             # placeholder run anymore, as we already updated the
             # status.
-            # Note: This only locks a single row if the where clause of
-            # the query is indexed. If you're modifying this, make sure to also
-            # update the index. Otherwise, this will lock multiple rows or even
-            # the complete table which we want to avoid.
+            # Note: Due to our unique index on deployment_id and
+            # orchestrator_run_id, this only locks a single row. If you're
+            # modifying this WHERE clause, make sure to test/adjust so this
+            # does not lock multiple rows or even the complete table.
             .with_for_update()
             .where(PipelineRunSchema.deployment_id == pipeline_run.deployment)
             .where(
