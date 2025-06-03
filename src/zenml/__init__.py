@@ -50,7 +50,6 @@ from zenml.steps import step, get_step_context
 from zenml.steps.utils import log_step_metadata
 from zenml.utils.metadata_utils import log_metadata
 from zenml.utils.tag_utils import Tag, add_tags, remove_tags
-from zenml.entrypoints import entrypoint
 
 __all__ = [
     "add_tags",
@@ -72,5 +71,4 @@ __all__ = [
     "register_artifact",
     "show",
     "step",
-    "entrypoint",
 ]
