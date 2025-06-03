@@ -14,10 +14,12 @@
 """Class to launch (run directly or using a step operator) steps."""
 
 import os
+import signal
 import time
 from contextlib import nullcontext
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -131,6 +133,43 @@ class StepLauncher:
         self._stack = Stack.from_model(deployment.stack)
         self._step_name = step.spec.pipeline_parameter_name
 
+        # Internal properties and methods
+        self._step_run_id: Optional[UUID] = None
+        self._shutdown_requested = False
+        self._setup_signal_handlers()
+
+    def _setup_signal_handlers(self) -> None:
+        """Set up signal handlers for graceful shutdown."""
+
+        def signal_handler(signum: int, frame: Any) -> None:
+            """Handle shutdown signals gracefully."""
+            logger.info(
+                f"Received signal {signum}. Shutting down step '{self._step_name}'..."
+            )
+            self._shutdown_requested = True
+
+            # Try to update step status to CANCELED if we have a step run ID
+            if self._step_run_id:
+                try:
+                    publish_utils.publish_cancelled_step_run(
+                        step_run_id=self._step_run_id,
+                    )
+                    logger.info(
+                        f"Successfully marked step '{self._step_name}' as CANCELED"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to update step status during shutdown: {e}"
+                    )
+
+            raise KeyboardInterrupt(
+                f"Step '{self._step_name}' was shut down via signal {signum}."
+            )
+
+        # Register handlers for common termination signals
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+
     def launch(self) -> None:
         """Launches the step.
 
@@ -207,6 +246,8 @@ class StepLauncher:
                     step_run = Client().zen_store.create_run_step(
                         step_run_request
                     )
+                    # Store step run ID for signal handler
+                    self._step_run_id = step_run.id
                     if model_version := step_run.model_version:
                         step_run_utils.log_model_version_dashboard_url(
                             model_version=model_version
@@ -235,6 +276,12 @@ class StepLauncher:
                     while retries < max_retries:
                         last_retry = retries == max_retries - 1
                         try:
+                            # Check for shutdown request before running
+                            if self._shutdown_requested:
+                                raise KeyboardInterrupt(
+                                    f"Step '{self._step_name}' was shut down."
+                                )
+
                             # here pass a forced save_to_file callable to be
                             # used as a dump function to use before starting
                             # the external jobs in step operators
@@ -259,6 +306,17 @@ class StepLauncher:
                                 force_write_logs=force_write_logs,
                             )
                             break
+                        except KeyboardInterrupt:
+                            # Handle cancellation gracefully
+                            logger.info(
+                                f"Step `{self._step_name}` was cancelled"
+                            )
+                            publish_utils.publish_step_run_update(
+                                step_run_id=step_run.id,
+                                status=ExecutionStatus.CANCELED,
+                                end_time=utc_now(),
+                            )
+                            raise
                         except BaseException as e:  # noqa: E722
                             retries += 1
                             if retries < max_retries:
@@ -297,6 +355,10 @@ class StepLauncher:
                         tags=pipeline_run.config.tags,
                     )
 
+        except KeyboardInterrupt:
+            # Re-raise KeyboardInterrupt to let higher-level handlers deal with it
+            logger.info(f"Step `{self._step_name}` execution was interrupted")
+            raise
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)

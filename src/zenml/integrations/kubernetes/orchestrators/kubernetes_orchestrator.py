@@ -717,7 +717,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                             grace_period_seconds=grace_period_seconds,
                         )
                         pods_stopped.append(f"step pod: {pod.metadata.name}")
-                        logger.info(
+                        logger.debug(
                             f"Successfully initiated graceful stop of step pod: {pod.metadata.name}"
                         )
                     except Exception as e:
@@ -734,10 +734,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         # Summary logging
         if pods_stopped:
-            logger.info(
-                f"Successfully initiated graceful termination of: {', '.join(pods_stopped)}"
-            )
-            logger.info(
+            logger.debug(
+                f"Successfully initiated graceful termination of: {', '.join(pods_stopped)}. "
                 f"Pods will terminate within {grace_period_seconds} seconds."
             )
 
@@ -749,7 +747,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     f"Failed to stop pipeline run: {error_summary}"
                 )
             else:
-                # If some things were stopped but others failed, just warn
-                logger.warning(
+                # If some things were stopped but others failed, raise an error
+                raise RuntimeError(
                     f"Partial stop operation completed with errors: {error_summary}"
                 )

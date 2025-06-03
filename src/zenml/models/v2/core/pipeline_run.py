@@ -368,7 +368,7 @@ class PipelineRunResponse(
 
         return self
 
-    def stop_run(self, graceful: bool = True) -> "PipelineRunResponse":
+    def stop_run(self, graceful: bool = True) -> None:
         """Method to stop a pipeline run.
 
         Args:
@@ -409,7 +409,7 @@ class PipelineRunResponse(
         )
 
         # Stop the run
-        return orchestrator.stop_run(run=self, graceful=graceful)
+        orchestrator.stop_run(run=self, graceful=graceful)
 
     # Body and metadata properties
     @property

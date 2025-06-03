@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Utilities to publish pipeline and step runs."""
 
-from typing import TYPE_CHECKING, Dict, List
+from datetime import datetime
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
@@ -54,6 +55,34 @@ def publish_successful_step_run(
     )
 
 
+def publish_step_run_update(
+    step_run_id: "UUID",
+    status: ExecutionStatus,
+    end_time: Optional[datetime] = None,
+) -> "StepRunResponse":
+    """Publishes a step run status update.
+
+    Args:
+        step_run_id: The ID of the step run to update.
+        status: The new status for the step run.
+        end_time: The end time for the step run. If None, will be set to current time
+            for finished statuses.
+
+    Returns:
+        The updated step run.
+    """
+    if end_time is None and status.is_finished:
+        end_time = utc_now()
+
+    return Client().zen_store.update_run_step(
+        step_run_id=step_run_id,
+        step_run_update=StepRunUpdate(
+            status=status,
+            end_time=end_time,
+        ),
+    )
+
+
 def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     """Publishes a failed step run.
 
@@ -63,13 +92,19 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     Returns:
         The updated step run.
     """
-    return Client().zen_store.update_run_step(
-        step_run_id=step_run_id,
-        step_run_update=StepRunUpdate(
-            status=ExecutionStatus.FAILED,
-            end_time=utc_now(),
-        ),
-    )
+    return publish_step_run_update(step_run_id, ExecutionStatus.FAILED)
+
+
+def publish_cancelled_step_run(step_run_id: "UUID") -> "StepRunResponse":
+    """Publishes a cancelled step run.
+
+    Args:
+        step_run_id: The ID of the step run to update.
+
+    Returns:
+        The updated step run.
+    """
+    return publish_step_run_update(step_run_id, ExecutionStatus.CANCELED)
 
 
 def publish_failed_pipeline_run(
@@ -87,6 +122,26 @@ def publish_failed_pipeline_run(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.FAILED,
+            end_time=utc_now(),
+        ),
+    )
+
+
+def publish_canceled_pipeline_run(
+    pipeline_run_id: "UUID",
+) -> "PipelineRunResponse":
+    """Publishes a canceled pipeline run.
+
+    Args:
+        pipeline_run_id: The ID of the pipeline run to update.
+
+    Returns:
+        The updated pipeline run.
+    """
+    return Client().zen_store.update_run(
+        run_id=pipeline_run_id,
+        run_update=PipelineRunUpdate(
+            status=ExecutionStatus.CANCELED,
             end_time=utc_now(),
         ),
     )
