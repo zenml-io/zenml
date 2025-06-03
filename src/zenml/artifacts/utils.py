@@ -37,6 +37,7 @@ from zenml.artifacts.preexisting_data_materializer import (
 )
 from zenml.client import Client
 from zenml.constants import (
+    ENV_ZENML_SERVER,
     MODEL_METADATA_YAML_FILE_NAME,
 )
 from zenml.enums import (
@@ -820,14 +821,18 @@ def _load_artifact_store(
             an artifact store.
         NotImplementedError: If the artifact store could not be loaded.
     """
+    client = Client()
     if isinstance(artifact_store_id, str):
         artifact_store_id = UUID(artifact_store_id)
 
-    if Client().active_stack.artifact_store.id == artifact_store_id:
-        return Client().active_stack.artifact_store
+    if (
+        ENV_ZENML_SERVER not in os.environ
+        and client.active_stack.artifact_store.id == artifact_store_id
+    ):
+        return client.active_stack.artifact_store
 
     if zen_store is None:
-        zen_store = Client().zen_store
+        zen_store = client.zen_store
 
     try:
         artifact_store_model = zen_store.get_stack_component(artifact_store_id)
@@ -863,7 +868,11 @@ def _get_artifact_store_from_response_or_from_active_stack(
     client = Client()
 
     if artifact.artifact_store_id:
-        if client.active_stack.artifact_store.id == artifact.artifact_store_id:
+        if (
+            ENV_ZENML_SERVER not in os.environ
+            and client.active_stack.artifact_store.id
+            == artifact.artifact_store_id
+        ):
             return client.active_stack.artifact_store
 
         try:
