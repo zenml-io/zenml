@@ -51,6 +51,23 @@ zenml alerter register discord_alerter \
     --default_discord_channel_id=<DISCORD_CHANNEL_ID>
 ```
 
+{% hint style="info" %}
+**Using Secrets for Token Management**: Instead of passing your Discord token directly, it's recommended to store it as a ZenML secret and reference it in your alerter configuration. This approach keeps sensitive information secure:
+
+```shell
+# Create a secret for your Discord token
+zenml secret create discord_secret --discord_token=<DISCORD_TOKEN>
+
+# Register the alerter referencing the secret
+zenml alerter register discord_alerter \
+    --flavor=discord \
+    --discord_token={{discord_secret.discord_token}} \
+    --default_discord_channel_id=<DISCORD_CHANNEL_ID>
+```
+
+Learn more about [referencing secrets in stack component attributes and settings](https://docs.zenml.io/concepts/secrets#reference-secrets-in-stack-component-attributes-and-settings).
+{% endhint %}
+
 After you have registered the `discord_alerter`, you can add it to your stack like this:
 
 ```shell
@@ -69,7 +86,7 @@ If you don't see any 'Copy Channel ID' option for your channel, go to "User Sett
 
 #### DISCORD\_TOKEN
 
-This is the Discord token of your bot. You can find the instructions on how to set up a bot, invite it to your channel, and find its token[here](https://discordpy.readthedocs.io/en/latest/discord.html).
+This is the Discord token of your bot. You can find the instructions on how to set up a bot, invite it to your channel, and find its token [here](https://discordpy.readthedocs.io/en/latest/discord.html).
 
 {% hint style="warning" %}
 When inviting the bot to your channel, make sure it has at least the following permissions:
@@ -97,17 +114,63 @@ def my_formatter_step(artifact_to_be_communicated) -> str:
     return f"Here is my artifact {artifact_to_be_communicated}!"
 
 
+@step
+def process_approval_response(artifact, approved: bool) -> None:
+    if approved:
+        # Proceed with the operation
+        print(f"User approved! Processing {artifact}")
+        # Your logic here
+    else:
+        print("User disapproved. Skipping operation.")
+
+
 @pipeline
 def my_pipeline(...):
     ...
     artifact_to_be_communicated = ...
     message = my_formatter_step(artifact_to_be_communicated)
     approved = discord_alerter_ask_step(message)
-    ... # Potentially have different behavior in subsequent steps if `approved`
+    process_approval_response(artifact_to_be_communicated, approved)
 
 if __name__ == "__main__":
     my_pipeline()
 ```
+
+## Using Custom Approval Keywords
+
+You can customize which words trigger approval or disapproval by using `DiscordAlerterParameters`:
+
+```python
+from zenml.integrations.discord.steps.discord_alerter_ask_step import discord_alerter_ask_step
+from zenml.integrations.discord.alerters.discord_alerter import DiscordAlerterParameters
+
+# Custom approval/disapproval keywords
+params = DiscordAlerterParameters(
+    approve_msg_options=["deploy", "ship it", "✅"],
+    disapprove_msg_options=["stop", "cancel", "❌"]
+)
+
+approved = discord_alerter_ask_step(
+    "Deploy model to production?", 
+    params=params
+)
+```
+
+### Default Response Keywords
+
+By default, the Discord alerter recognizes these keywords:
+
+**Approval:** `approve`, `LGTM`, `ok`, `yes`  
+**Disapproval:** `decline`, `disapprove`, `no`, `reject`
+
+**Important Notes:**
+- The ask step returns a boolean (`True` for approval, `False` for disapproval/timeout)
+- **Keywords are case-sensitive** - you must respond with exact case (e.g., `LGTM` not `lgtm`)
+- If no valid response is received, the step returns `False`
+
+{% hint style="warning" %}
+**Discord Case Sensitivity**: The Discord alerter implementation requires exact case matching for approval keywords. Make sure to respond with the exact case specified (e.g., `LGTM`, not `lgtm`).
+{% endhint %}
 
 For more information and a full list of configurable attributes of the Discord alerter, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord) .
 

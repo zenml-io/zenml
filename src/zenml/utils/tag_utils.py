@@ -348,10 +348,10 @@ def add_tags(
             if isinstance(tag, Tag):
                 tag_model = client.get_tag(tag.name)
 
-                if tag.exclusive != tag_model.exclusive:
+                if bool(tag.exclusive) != tag_model.exclusive:
                     raise ValueError(
-                        f"The tag `{tag.name}` is an "
-                        f"{'exclusive' if tag_model.exclusive else 'non-exclusive'} "
+                        f"The tag `{tag.name}` is "
+                        f"{'an exclusive' if tag_model.exclusive else 'a non-exclusive'} "
                         "tag. Please update it before attaching it to a resource."
                     )
                 if tag.cascade is not None:

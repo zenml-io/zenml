@@ -38,7 +38,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     zen_store,
 )
@@ -58,7 +58,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_tag(
     tag: TagRequest,
     _: AuthContext = Security(authorize),
@@ -78,7 +78,7 @@ def create_tag(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_tags(
     tag_filter_model: TagFilter = Depends(make_dependable(TagFilter)),
     hydrate: bool = False,
@@ -105,7 +105,7 @@ def list_tags(
     "/{tag_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_tag(
     tag_name_or_id: Union[str, UUID],
     hydrate: bool = True,
@@ -132,7 +132,7 @@ def get_tag(
     "/{tag_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_tag(
     tag_id: UUID,
     tag_update_model: TagUpdate,
@@ -159,7 +159,7 @@ def update_tag(
     "/{tag_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_tag(
     tag_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),

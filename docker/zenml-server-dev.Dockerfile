@@ -29,7 +29,8 @@ RUN set -ex && \
   fi && \
   apt-get autoremove -y && \
   apt-get clean -y && \
-  rm -rf /var/lib/apt/lists/*
+  rm -rf /var/lib/apt/lists/* \
+  && pip install --upgrade pip setuptools
 
 # Create the user and group which will be used to run the ZenML server.
 RUN groupadd --gid $USER_GID $USERNAME && \
@@ -85,8 +86,7 @@ COPY --chown=$USERNAME:$USER_GID src/zenml/__init__.py ./src/zenml/
 # dependencies for reproducibility and debugging.
 # NOTE: we uninstall zenml at the end because we install it separately in the
 # final stage
-RUN pip install --upgrade pip \
-    && pip install uv \
+RUN pip install --upgrade pip uv setuptools \
     && uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] "alembic==1.15.2" \
     && uv pip uninstall zenml \
     && uv pip freeze > requirements.txt
@@ -147,7 +147,7 @@ RUN pip install --no-deps --no-cache -e .[server,secrets-aws,secrets-gcp,secrets
 
 EXPOSE 8080
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload", "--access-log"]
 CMD ["--port", "8080", "--host",  "0.0.0.0"]
 
 
@@ -160,5 +160,5 @@ RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-az
 
 EXPOSE 8080
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--access-log"]
 CMD ["--port", "8080", "--host",  "0.0.0.0"]

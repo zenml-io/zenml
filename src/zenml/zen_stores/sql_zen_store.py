@@ -14,6 +14,7 @@
 """SQL Zen Store implementation."""
 
 import base64
+import inspect
 import json
 import logging
 import math
@@ -21,6 +22,7 @@ import os
 import random
 import re
 import sys
+import threading
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -58,14 +60,16 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import func
+from sqlalchemy import QueuePool, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
 )
-from sqlalchemy.orm import Mapped, noload
+from sqlalchemy.orm import Mapped, joinedload, noload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
+from sqlmodel import Session as SqlModelSession
 
 # Important to note: The select function of SQLModel works slightly differently
 # from the select function of sqlalchemy. If you input only one entity on the
@@ -74,7 +78,6 @@ from sqlalchemy.util import immutabledict
 # the tuple. While this is convenient in most cases, in unique cases like using
 # the "add_columns" functionality, one might encounter unexpected results.
 from sqlmodel import (
-    Session,
     SQLModel,
     and_,
     col,
@@ -95,10 +98,12 @@ from zenml.analytics.utils import (
     track_handler,
 )
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
-from zenml.config.step_configurations import StepConfiguration, StepSpec
+from zenml.config.source import Source
+from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_PASSWORD,
@@ -117,6 +122,7 @@ from zenml.constants import (
     is_true_string_value,
 )
 from zenml.enums import (
+    ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
     ExecutionStatus,
@@ -221,6 +227,7 @@ from zenml.models import (
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
+    PipelineRunDAG,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineRunResponse,
@@ -317,6 +324,7 @@ from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
+from zenml.zen_stores.dag_generator import DAGGeneratorHelper
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
@@ -367,7 +375,10 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
-from zenml.zen_stores.schemas.utils import get_resource_type_name
+from zenml.zen_stores.schemas.utils import (
+    get_resource_type_name,
+    jl_arg,
+)
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
@@ -412,6 +423,81 @@ def exponential_backoff_with_jitter(
     """
     exponential_backoff = base_duration * 1.5**attempt
     return random.uniform(0, exponential_backoff)
+
+
+class Session(SqlModelSession):
+    """Session subclass that automatically tracks duration and calling context."""
+
+    def __enter__(self) -> "Session":
+        """Enter the context manager.
+
+        Returns:
+            The SqlModel session.
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            # Get the request ID from the current thread object
+            self.request_id = threading.current_thread().name
+
+            # Get SQLAlchemy connection pool info
+            assert isinstance(self.bind, Engine)
+            assert isinstance(self.bind.pool, QueuePool)
+            checked_out_connections = self.bind.pool.checkedout()
+            available_connections = self.bind.pool.checkedin()
+            overflow = self.bind.pool.overflow()
+
+            # Look up the stack to find the SQLZenStore method
+            for frame in inspect.stack():
+                if "self" in frame.frame.f_locals:
+                    instance = frame.frame.f_locals["self"]
+                    if isinstance(instance, SqlZenStore):
+                        self.caller_method = (
+                            f"{instance.__class__.__name__}.{frame.function}"
+                        )
+                        break
+            else:
+                self.caller_method = "unknown"
+
+            logger.debug(
+                f"[{self.request_id}] SQL STATS - "
+                f"'{self.caller_method}' started [ conn(active): "
+                f"{checked_out_connections} conn(idle): "
+                f"{available_connections} conn(overflow): {overflow} ]"
+            )
+
+            self.start_time = time.time()
+
+        return super().__enter__()
+
+    def __exit__(
+        self,
+        exc_type: Optional[Any],
+        exc_val: Optional[Any],
+        exc_tb: Optional[Any],
+    ) -> None:
+        """Exit the context manager.
+
+        Args:
+            exc_type: The exception type.
+            exc_val: The exception value.
+            exc_tb: The exception traceback.
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            duration = (time.time() - self.start_time) * 1000
+
+            # Get SQLAlchemy connection pool info
+            assert isinstance(self.bind, Engine)
+            assert isinstance(self.bind.pool, QueuePool)
+            checked_out_connections = self.bind.pool.checkedout()
+            available_connections = self.bind.pool.checkedin()
+            overflow = self.bind.pool.overflow()
+            logger.debug(
+                f"[{self.request_id}] SQL STATS - "
+                f"'{self.caller_method}' completed in "
+                f"{duration:.2f}ms [ conn(active): "
+                f"{checked_out_connections} conn(idle): "
+                f"{available_connections} conn(overflow): {overflow} ]"
+            )
+        super().__exit__(exc_type, exc_val, exc_tb)
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -962,6 +1048,7 @@ class SqlZenStore(BaseZenStore):
             ]
         ] = None,
         hydrate: bool = False,
+        apply_query_options_from_schema: bool = False,
     ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -982,6 +1069,8 @@ class SqlZenStore(BaseZenStore):
                 arguments and return a `List` of items.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            apply_query_options_from_schema: Flag deciding whether to apply
+                query options defined on the schema.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -1025,6 +1114,12 @@ class SqlZenStore(BaseZenStore):
                 f"{total_pages}."
             )
 
+        query_options = table.get_query_options(
+            include_metadata=hydrate, include_resources=True
+        )
+        if apply_query_options_from_schema and query_options:
+            query = query.options(*query_options)
+
         # Get a page of the actual data
         item_schemas: Sequence[AnySchema]
         if custom_fetch:
@@ -1035,9 +1130,10 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            item_schemas = session.exec(
+            query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
-            ).all()
+            )
+            item_schemas = query_result.all()
 
         # Convert this page of items from schemas to models.
         items: List[AnyResponse] = []
@@ -2906,6 +3002,10 @@ class SqlZenStore(BaseZenStore):
                         artifact_version_id=artifact_version_schema.id,
                     )
                     session.add(vis_schema)
+
+            # Commit the visualizations so potential future rollbacks don't
+            # remove them
+            session.commit()
 
             # Save tags of the artifact
             self._attach_tags_to_resources(
@@ -4996,6 +5096,330 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
+    def get_pipeline_run_dag(self, pipeline_run_id: UUID) -> PipelineRunDAG:
+        """Get the DAG of a pipeline run.
+
+        Args:
+            pipeline_run_id: The ID of the pipeline run.
+
+        Returns:
+            The DAG of the pipeline run.
+        """
+        helper = DAGGeneratorHelper()
+        with Session(self.engine) as session:
+            run = self._get_schema_by_id(
+                resource_id=pipeline_run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+                query_options=[
+                    joinedload(jl_arg(PipelineRunSchema.deployment)),
+                    # joinedload(jl_arg(PipelineRunSchema.step_runs)).sele(
+                    #     jl_arg(StepRunSchema.input_artifacts)
+                    # ),
+                    # joinedload(jl_arg(PipelineRunSchema.step_runs)).joinedload(
+                    #     jl_arg(StepRunSchema.output_artifacts)
+                    # ),
+                ],
+            )
+            assert run.deployment is not None
+            deployment = run.deployment
+            step_runs = {step.name: step for step in run.step_runs}
+
+            pipeline_configuration = PipelineConfiguration.model_validate_json(
+                deployment.pipeline_configuration
+            )
+            pipeline_configuration.finalize_substitutions(
+                start_time=run.start_time, inplace=True
+            )
+
+            steps = {
+                step_name: Step.from_dict(
+                    config_dict, pipeline_configuration=pipeline_configuration
+                )
+                for step_name, config_dict in json.loads(
+                    deployment.step_configurations
+                ).items()
+            }
+            regular_output_artifact_nodes: Dict[
+                str, Dict[str, PipelineRunDAG.Node]
+            ] = defaultdict(dict)
+
+            def _get_regular_output_artifact_node(
+                step_name: str, output_name: str
+            ) -> PipelineRunDAG.Node:
+                substituted_output_name = format_name_template(
+                    output_name,
+                    substitutions=steps[step_name].config.substitutions,
+                )
+                return regular_output_artifact_nodes[step_name][
+                    substituted_output_name
+                ]
+
+            for step_name, step in steps.items():
+                upstream_steps = set(step.spec.upstream_steps)
+
+                step_id = None
+                metadata: Dict[str, Any] = {}
+
+                step_run = step_runs.get(step_name)
+                if step_run:
+                    step_id = step_run.id
+                    metadata["status"] = step_run.status
+
+                    if step_run.end_time and step_run.start_time:
+                        metadata["duration"] = (
+                            step_run.end_time - step_run.start_time
+                        ).total_seconds()
+
+                step_node = helper.add_step_node(
+                    node_id=helper.get_step_node_id(name=step_name),
+                    id=step_id,
+                    name=step_name,
+                    **metadata,
+                )
+
+                if step_run:
+                    for input in step_run.input_artifacts:
+                        input_type = StepRunInputArtifactType(input.type)
+
+                        if input_type == StepRunInputArtifactType.STEP_OUTPUT:
+                            # This is a regular input artifact, so it is
+                            # guaranteed that an upstream step already ran and
+                            # produced the artifact.
+                            input_config = step.spec.inputs[input.name]
+                            artifact_node = _get_regular_output_artifact_node(
+                                input_config.step_name,
+                                input_config.output_name,
+                            )
+
+                            # If the upstream step and the current step are
+                            # already connected via a regular artifact, we
+                            # don't add a direct edge between the two.
+                            try:
+                                upstream_steps.remove(input_config.step_name)
+                            except KeyError:
+                                pass
+                        else:
+                            # This is not a regular input artifact, but a
+                            # dynamic (loaded inside the step), external or
+                            # lazy-loaded artifact. It might be that this was
+                            # produced by another step in this pipeline, but
+                            # we want to display them as separate nodes in the
+                            # DAG. We can therefore always create a new node
+                            # here.
+                            artifact_node = helper.add_artifact_node(
+                                node_id=helper.get_artifact_node_id(
+                                    name=input.name,
+                                    step_name=step_name,
+                                    io_type=input.type,
+                                    is_input=True,
+                                ),
+                                id=input.artifact_id,
+                                name=input.name,
+                                type=input.artifact_version.type,
+                                data_type=Source.model_validate_json(
+                                    input.artifact_version.data_type
+                                ).import_path,
+                                save_type=input.artifact_version.save_type,
+                            )
+
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            input_name=input.name,
+                            type=input_type.value,
+                        )
+
+                    for output in step_run.output_artifacts:
+                        # There is a very rare case where a node in the DAG
+                        # already exists for an output artifact. This can happen
+                        # when there are two steps that have no direct
+                        # dependency and can therefore run at the same time, and
+                        # one of them is producing an artifact that is then lazy
+                        # or dynamically loaded by the other step. We do not
+                        # want to merge these and instead display them
+                        # separately in the DAG, but if that should ever change
+                        # this would be the place to merge them.
+                        artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=output.name,
+                                step_name=step_name,
+                                io_type=output.artifact_version.save_type,
+                                is_input=False,
+                            ),
+                            id=output.artifact_id,
+                            name=output.name,
+                            type=output.artifact_version.type,
+                            data_type=Source.model_validate_json(
+                                output.artifact_version.data_type
+                            ).import_path,
+                            save_type=output.artifact_version.save_type,
+                        )
+
+                        helper.add_edge(
+                            source=step_node.node_id,
+                            target=artifact_node.node_id,
+                            output_name=output.name,
+                            type=output.artifact_version.save_type,
+                        )
+                        if (
+                            output.artifact_version.save_type
+                            == ArtifactSaveType.STEP_OUTPUT
+                        ):
+                            regular_output_artifact_nodes[step_name][
+                                output.name
+                            ] = artifact_node
+
+                    for output_name in step.config.outputs.keys():
+                        # If the step failed or is still running, we do not have
+                        # its regular outputs. So we populate the DAG with the
+                        # outputs from the config instead.
+                        substituted_output_name = format_name_template(
+                            output_name,
+                            substitutions=step.config.substitutions,
+                        )
+                        if (
+                            substituted_output_name
+                            in regular_output_artifact_nodes[step_name]
+                        ):
+                            # If the real output already exists we can skip
+                            # adding a new node for it.
+                            continue
+
+                        artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=substituted_output_name,
+                                step_name=step_name,
+                                io_type=ArtifactSaveType.STEP_OUTPUT.value,
+                                is_input=False,
+                            ),
+                            name=substituted_output_name,
+                        )
+                        helper.add_edge(
+                            source=step_node.node_id,
+                            target=artifact_node.node_id,
+                            output_name=output_name,
+                            type=ArtifactSaveType.STEP_OUTPUT.value,
+                        )
+                        regular_output_artifact_nodes[step_name][
+                            substituted_output_name
+                        ] = artifact_node
+                else:
+                    for input_name, input_config in step.spec.inputs.items():
+                        # This node should always exist, as the step
+                        # configurations are sorted and therefore all
+                        # upstream steps should have been processed already.
+                        artifact_node = _get_regular_output_artifact_node(
+                            input_config.step_name,
+                            input_config.output_name,
+                        )
+
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            input_name=input_name,
+                            type=StepRunInputArtifactType.STEP_OUTPUT.value,
+                        )
+                        # If the upstream step and the current step are
+                        # already connected via a regular artifact, we
+                        # don't add a direct edge between the two.
+                        try:
+                            upstream_steps.remove(input_config.step_name)
+                        except KeyError:
+                            pass
+
+                    for input_name in step.config.client_lazy_loaders.keys():
+                        artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=input_name,
+                                step_name=step_name,
+                                io_type=StepRunInputArtifactType.LAZY_LOADED.value,
+                                is_input=True,
+                            ),
+                            name=input_name,
+                        )
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            input_name=input_name,
+                            type=StepRunInputArtifactType.LAZY_LOADED.value,
+                        )
+
+                    for (
+                        input_name
+                    ) in step.config.model_artifacts_or_metadata.keys():
+                        artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=input_name,
+                                step_name=step_name,
+                                io_type=StepRunInputArtifactType.LAZY_LOADED.value,
+                                is_input=True,
+                            ),
+                            name=input_name,
+                        )
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            input_name=input_name,
+                            type=StepRunInputArtifactType.LAZY_LOADED.value,
+                        )
+
+                    for (
+                        input_name
+                    ) in step.config.external_input_artifacts.keys():
+                        artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=input_name,
+                                step_name=step_name,
+                                io_type=StepRunInputArtifactType.EXTERNAL.value,
+                                is_input=True,
+                            ),
+                            name=input_name,
+                        )
+                        helper.add_edge(
+                            source=artifact_node.node_id,
+                            target=step_node.node_id,
+                            input_name=input_name,
+                            type=StepRunInputArtifactType.EXTERNAL.value,
+                        )
+
+                    for output_name in step.config.outputs.keys():
+                        substituted_output_name = format_name_template(
+                            output_name,
+                            substitutions=step.config.substitutions,
+                        )
+                        artifact_node = helper.add_artifact_node(
+                            node_id=helper.get_artifact_node_id(
+                                name=substituted_output_name,
+                                step_name=step_name,
+                                io_type=ArtifactSaveType.STEP_OUTPUT.value,
+                                is_input=False,
+                            ),
+                            name=substituted_output_name,
+                        )
+                        helper.add_edge(
+                            source=step_node.node_id,
+                            target=artifact_node.node_id,
+                            output_name=output_name,
+                            type=ArtifactSaveType.STEP_OUTPUT.value,
+                        )
+                        regular_output_artifact_nodes[step_name][
+                            substituted_output_name
+                        ] = artifact_node
+
+                for upstream_step_name in upstream_steps:
+                    upstream_node = helper.get_step_node_by_name(
+                        upstream_step_name
+                    )
+                    helper.add_edge(
+                        source=upstream_node.node_id,
+                        target=step_node.node_id,
+                    )
+
+        return helper.finalize_dag(
+            pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
+        )
+
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -5096,6 +5520,7 @@ class SqlZenStore(BaseZenStore):
         self,
         run_id: UUID,
         hydrate: bool = True,
+        include_full_metadata: bool = False,
         include_python_packages: bool = False,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
@@ -5104,6 +5529,8 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: Flag deciding whether to include the
+                full metadata in the response.
             include_python_packages: Flag deciding whether to include the
                 python packages in the response.
 
@@ -5115,12 +5542,36 @@ class SqlZenStore(BaseZenStore):
                 resource_id=run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
+                query_options=PipelineRunSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
             )
             return run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 include_python_packages=include_python_packages,
+                include_full_metadata=include_full_metadata,
             )
+
+    def get_run_status(
+        self,
+        run_id: UUID,
+    ) -> Tuple[ExecutionStatus, Optional[datetime]]:
+        """Gets the status of a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The pipeline run status and end time.
+        """
+        with Session(self.engine) as session:
+            run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+            return ExecutionStatus(run.status), run.end_time
 
     def _replace_placeholder_run(
         self,
@@ -5331,6 +5782,7 @@ class SqlZenStore(BaseZenStore):
         self,
         runs_filter_model: PipelineRunFilter,
         hydrate: bool = False,
+        include_full_metadata: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
@@ -5339,6 +5791,8 @@ class SqlZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
@@ -5349,12 +5803,19 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             query = select(PipelineRunSchema)
+
             return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
                 hydrate=hydrate,
+                custom_schema_to_model_conversion=lambda schema: schema.to_model(
+                    include_metadata=hydrate,
+                    include_resources=True,
+                    include_full_metadata=include_full_metadata,
+                ),
+                apply_query_options_from_schema=True,
             )
 
     def update_run(
@@ -8224,19 +8685,36 @@ class SqlZenStore(BaseZenStore):
             step_model = step_schema.to_model(include_metadata=True)
 
             # Save input artifact IDs into the database.
-            for input_name, artifact_version_id in step_run.inputs.items():
-                input_type = self._get_step_run_input_type(
-                    input_name=input_name,
-                    step_config=step_model.config,
-                    step_spec=step_model.spec,
-                )
-                self._set_run_step_input_artifact(
-                    step_run=step_schema,
-                    artifact_version_id=artifact_version_id,
-                    name=input_name,
-                    input_type=input_type,
-                    session=session,
-                )
+            for input_name, artifact_version_ids in step_run.inputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    if step_run.original_step_run_id:
+                        # This is a cached step run, for which the input
+                        # artifacts might include manually loaded artifacts
+                        # which can not be inferred from the step config. In
+                        # this case, we check the input type of the artifact
+                        # for the original step run.
+                        input_type = self._get_step_run_input_type_from_cached_step_run(
+                            input_name=input_name,
+                            artifact_version_id=artifact_version_id,
+                            cached_step_run_id=step_run.original_step_run_id,
+                            session=session,
+                        )
+                    else:
+                        # This is a non-cached step run, which means all input
+                        # artifacts we receive at creation time are inputs that
+                        # are defined in the step config.
+                        input_type = self._get_step_run_input_type_from_config(
+                            input_name=input_name,
+                            step_config=step_model.config,
+                            step_spec=step_model.spec,
+                        )
+                    self._set_run_step_input_artifact(
+                        step_run=step_schema,
+                        artifact_version_id=artifact_version_id,
+                        name=input_name,
+                        input_type=input_type,
+                        session=session,
+                    )
 
             # Save output artifact IDs into the database.
             for name, artifact_version_ids in step_run.outputs.items():
@@ -8293,6 +8771,9 @@ class SqlZenStore(BaseZenStore):
                 resource_id=step_run_id,
                 schema_class=StepRunSchema,
                 session=session,
+                query_options=StepRunSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
             )
             return step_run.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -8326,6 +8807,7 @@ class SqlZenStore(BaseZenStore):
                 table=StepRunSchema,
                 filter_model=step_run_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_run_step(
@@ -8389,7 +8871,46 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
-    def _get_step_run_input_type(
+    def _get_step_run_input_type_from_cached_step_run(
+        self,
+        input_name: str,
+        artifact_version_id: UUID,
+        cached_step_run_id: UUID,
+        session: Session,
+    ) -> StepRunInputArtifactType:
+        """Get the input type of an artifact from a cached step run.
+
+        Args:
+            input_name: The name of the input artifact.
+            artifact_version_id: The ID of the artifact version.
+            cached_step_run_id: The ID of the cached step run.
+            session: The database session to use.
+
+        Raises:
+            RuntimeError: If no input artifact is found for the given input
+                name and artifact version ID.
+
+        Returns:
+            The input type of the artifact.
+        """
+        query = (
+            select(StepRunInputArtifactSchema.type)
+            .where(StepRunInputArtifactSchema.name == input_name)
+            .where(
+                StepRunInputArtifactSchema.artifact_id == artifact_version_id
+            )
+            .where(StepRunInputArtifactSchema.step_id == cached_step_run_id)
+        )
+        result = session.exec(query).first()
+        if result is None:
+            raise RuntimeError(
+                f"No input artifact found for input name `{input_name}`, "
+                f"artifact version `{artifact_version_id}` and step run "
+                f"`{cached_step_run_id}`."
+            )
+        return StepRunInputArtifactType(result)
+
+    def _get_step_run_input_type_from_config(
         self,
         input_name: str,
         step_config: StepConfiguration,
@@ -8554,12 +9075,16 @@ class SqlZenStore(BaseZenStore):
         from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
         pipeline_run = session.exec(
-            select(PipelineRunSchema).where(
-                PipelineRunSchema.id == pipeline_run_id
+            select(PipelineRunSchema)
+            .options(
+                joinedload(
+                    jl_arg(PipelineRunSchema.deployment), innerjoin=True
+                )
             )
+            .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
-        step_runs = session.exec(
-            select(StepRunSchema).where(
+        step_run_statuses = session.exec(
+            select(StepRunSchema.status).where(
                 StepRunSchema.pipeline_run_id == pipeline_run_id
             )
         ).all()
@@ -8567,13 +9092,11 @@ class SqlZenStore(BaseZenStore):
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
         num_steps = len(
-            pipeline_run.deployment.to_model(
-                include_metadata=True
-            ).step_configurations
+            json.loads(pipeline_run.deployment.step_configurations)
         )
         new_status = get_pipeline_run_status(
             step_statuses=[
-                ExecutionStatus(step_run.status) for step_run in step_runs
+                ExecutionStatus(status) for status in step_run_statuses
             ],
             num_steps=num_steps,
         )
@@ -8650,6 +9173,18 @@ class SqlZenStore(BaseZenStore):
                             OnboardingStep.PRODUCTION_SETUP_COMPLETED,
                         }
                     )
+                if OnboardingStep.THIRD_PIPELINE_RUN not in (
+                    self._cached_onboarding_state or {}
+                ):
+                    onboarding_state = self.get_onboarding_state()
+                    if OnboardingStep.PIPELINE_RUN in onboarding_state:
+                        completed_onboarding_steps.add(
+                            OnboardingStep.SECOND_PIPELINE_RUN
+                        )
+                    if OnboardingStep.SECOND_PIPELINE_RUN in onboarding_state:
+                        completed_onboarding_steps.add(
+                            OnboardingStep.THIRD_PIPELINE_RUN
+                        )
 
                 self._update_onboarding_state(
                     completed_steps=completed_onboarding_steps, session=session
@@ -9805,6 +10340,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         resource_type: Optional[str] = None,
         project_id: Optional[UUID] = None,
+        query_options: Optional[Sequence[ExecutableOption]] = None,
     ) -> AnySchema:
         """Query a schema by its 'id' field.
 
@@ -9816,6 +10352,7 @@ class SqlZenStore(BaseZenStore):
                 messages. If not provided, the type name will be inferred
                 from the schema class.
             project_id: Optional ID of a project to filter by.
+            query_options: Optional list of query options to apply to the query.
 
         Returns:
             The schema object.
@@ -9839,6 +10376,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
             query = query.where(schema_class.project_id == project_id)  # type: ignore[attr-defined]
+
+        if query_options:
+            query = query.options(*query_options)
 
         schema = session.exec(query).first()
 
@@ -10659,7 +11199,7 @@ class SqlZenStore(BaseZenStore):
             )
             track(
                 event=AnalyticsEvent.CREATED_MODEL_VERSION,
-                metadata={"project_id": model_version.project.id},
+                metadata={"project_id": model_version.project_id},
             )
             return True, model_version
         except EntityCreationError:
@@ -10925,6 +11465,9 @@ class SqlZenStore(BaseZenStore):
                 resource_id=model_version_id,
                 schema_class=ModelVersionSchema,
                 session=session,
+                query_options=ModelVersionSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
             )
 
             return model_version.to_model(
@@ -10960,6 +11503,7 @@ class SqlZenStore(BaseZenStore):
                 table=ModelVersionSchema,
                 filter_model=model_version_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def delete_model_version(
@@ -11505,13 +12049,10 @@ class SqlZenStore(BaseZenStore):
             except EntityExistsError:
                 if isinstance(tag, tag_utils.Tag):
                     tag_schema = self._get_tag_schema(tag.name, session)
-                    if (
-                        tag.exclusive is not None
-                        and tag.exclusive != tag_schema.exclusive
-                    ):
+                    if bool(tag.exclusive) != tag_schema.exclusive:
                         raise ValueError(
-                            f"Tag `{tag_schema.name}` has been defined as a "
-                            f"{'exclusive' if tag_schema.exclusive else 'non-exclusive'} "
+                            f"Tag `{tag_schema.name}` has been defined as "
+                            f"{'an exclusive' if tag_schema.exclusive else 'a non-exclusive'} "
                             "tag. Please update it before attaching it to resources."
                         )
                 else:
@@ -11608,16 +12149,17 @@ class SqlZenStore(BaseZenStore):
         validate_name(tag)
         self._set_request_user_id(request_model=tag, session=session)
 
-        tag_schema = TagSchema.from_request(tag)
-        session.add(tag_schema)
+        with session.begin_nested() as nested_session:
+            tag_schema = TagSchema.from_request(tag)
+            session.add(tag_schema)
 
-        try:
-            session.commit()
-        except IntegrityError:
-            session.rollback()
-            raise EntityExistsError(
-                f"Tag with name `{tag.name}` already exists."
-            )
+            try:
+                session.commit()
+            except IntegrityError:
+                nested_session.rollback()
+                raise EntityExistsError(
+                    f"Tag with name `{tag.name}` already exists."
+                )
         return tag_schema
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)

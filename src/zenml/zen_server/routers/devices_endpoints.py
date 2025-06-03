@@ -39,7 +39,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
     zen_store,
@@ -56,7 +56,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_authorized_devices(
     filter_model: OAuthDeviceFilter = Depends(
         make_dependable(OAuthDeviceFilter)
@@ -86,7 +86,7 @@ def list_authorized_devices(
     "/{device_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_authorization_device(
     device_id: UUID,
     user_code: Optional[str] = None,
@@ -114,7 +114,7 @@ def get_authorization_device(
     device = zen_store().get_authorized_device(
         device_id=device_id, hydrate=hydrate
     )
-    if not device.user:
+    if not device.user_id:
         # A device that hasn't been verified and associated with a user yet
         # can only be retrieved if the user code is specified and valid.
         if user_code:
@@ -123,7 +123,7 @@ def get_authorization_device(
             )
             if internal_device.verify_user_code(user_code=user_code):
                 return device
-    elif device.user.id == auth_context.user.id:
+    elif device.user_id == auth_context.user.id:
         return device
 
     raise KeyError(
@@ -136,7 +136,7 @@ def get_authorization_device(
     "/{device_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_authorized_device(
     device_id: UUID,
     update: OAuthDeviceUpdate,
@@ -157,7 +157,7 @@ def update_authorized_device(
             belong to the current user.
     """
     device = zen_store().get_authorized_device(device_id=device_id)
-    if not device.user or device.user.id != auth_context.user.id:
+    if not device.user_id or device.user_id != auth_context.user.id:
         raise KeyError(
             f"Unable to get device with ID {device_id}: No device with "
             "this ID found."
@@ -172,7 +172,7 @@ def update_authorized_device(
     "/{device_id}" + DEVICE_VERIFY,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def verify_authorized_device(
     device_id: UUID,
     request: OAuthDeviceVerificationRequest,
@@ -222,7 +222,10 @@ def verify_authorized_device(
 
         # Check if the device already has a user associated with it. If so, the
         # current user and the user associated with the device must be the same.
-        if device_model.user and device_model.user.id != auth_context.user.id:
+        if (
+            device_model.user_id
+            and device_model.user_id != auth_context.user.id
+        ):
             raise ValueError(
                 "Invalid request: this device is associated with another user.",
             )
@@ -276,7 +279,7 @@ def verify_authorized_device(
     "/{device_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_authorized_device(
     device_id: UUID,
     auth_context: AuthContext = Security(authorize),
@@ -292,7 +295,7 @@ def delete_authorized_device(
             belong to the current user.
     """
     device = zen_store().get_authorized_device(device_id=device_id)
-    if not device.user or device.user.id != auth_context.user.id:
+    if not device.user_id or device.user_id != auth_context.user.id:
         raise KeyError(
             f"Unable to get device with ID {device_id}: No device with "
             "this ID found."

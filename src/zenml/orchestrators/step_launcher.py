@@ -292,6 +292,10 @@ class StepLauncher:
                             artifacts=step_run.outputs,
                             model_version=model_version,
                         )
+                    step_run_utils.cascade_tags_for_output_artifacts(
+                        artifacts=step_run.outputs,
+                        tags=pipeline_run.config.tags,
+                    )
 
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
@@ -377,7 +381,7 @@ class StepLauncher:
                     pipeline_run=pipeline_run,
                     step_run=step_run,
                     step_run_info=step_run_info,
-                    input_artifacts=step_run.inputs,
+                    input_artifacts=step_run.regular_inputs,
                     output_artifact_uris=output_artifact_uris,
                     last_retry=last_retry,
                 )

@@ -194,13 +194,6 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the model",
-    )
-    producer_pipeline_run_id: Optional[UUID] = Field(
-        title="The ID of the pipeline run that generated this artifact version.",
-        default=None,
-    )
     save_type: ArtifactSaveType = Field(
         title="The save type of the artifact version.",
     )
@@ -234,10 +227,6 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
 class ArtifactVersionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for artifact versions."""
 
-    producer_step_run_id: Optional[UUID] = Field(
-        title="ID of the step run that produced this artifact.",
-        default=None,
-    )
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
@@ -248,6 +237,18 @@ class ArtifactVersionResponseMetadata(ProjectScopedResponseMetadata):
 
 class ArtifactVersionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the artifact version entity."""
+
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the artifact version.",
+    )
+    producer_step_run_id: Optional[UUID] = Field(
+        title="ID of the step run that produced this artifact.",
+        default=None,
+    )
+    producer_pipeline_run_id: Optional[UUID] = Field(
+        title="The ID of the pipeline run that generated this artifact version.",
+        default=None,
+    )
 
 
 class ArtifactVersionResponse(
@@ -280,7 +281,7 @@ class ArtifactVersionResponse(
         return self.get_body().artifact
 
     @property
-    def version(self) -> Union[str, int]:
+    def version(self) -> str:
         """The `version` property.
 
         Returns:
@@ -313,7 +314,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
     @property
     def producer_pipeline_run_id(self) -> Optional[UUID]:
@@ -322,7 +323,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().producer_pipeline_run_id
+        return self.get_resources().producer_pipeline_run_id
 
     @property
     def save_type(self) -> ArtifactSaveType:
@@ -349,7 +350,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().producer_step_run_id
+        return self.get_resources().producer_step_run_id
 
     @property
     def visualizations(
@@ -710,7 +711,6 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
     """
 
     id: Optional[UUID] = None  # type: ignore[assignment]
-    project_id: Optional[UUID] = None  # type: ignore[assignment]
     lazy_load_name: Optional[str] = None
     lazy_load_version: Optional[str] = None
     lazy_load_model_name: str

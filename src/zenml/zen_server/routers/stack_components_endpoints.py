@@ -41,7 +41,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import batch_verify_permissions_for_models
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     zen_store,
 )
@@ -71,7 +71,7 @@ types_router = APIRouter(
     deprecated=True,
     tags=["stack_components"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_stack_component(
     component: ComponentRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -105,7 +105,7 @@ def create_stack_component(
 
     from zenml.stack.utils import validate_stack_component_config
 
-    validate_stack_component_config(
+    validated_config = validate_stack_component_config(
         configuration_dict=component.configuration,
         flavor=component.flavor,
         component_type=component.type,
@@ -113,6 +113,11 @@ def create_stack_component(
         # We allow custom flavors to fail import on the server side.
         validate_custom_flavors=False,
     )
+
+    if validated_config:
+        component.configuration = validated_config.model_dump(
+            mode="json", exclude_unset=True
+        )
 
     return verify_permissions_and_create_entity(
         request_model=component,
@@ -132,7 +137,7 @@ def create_stack_component(
     deprecated=True,
     tags=["stack_components"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_stack_components(
     component_filter_model: ComponentFilter = Depends(
         make_dependable(ComponentFilter)
@@ -165,7 +170,7 @@ def list_stack_components(
     "/{component_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_stack_component(
     component_id: UUID,
     hydrate: bool = True,
@@ -192,7 +197,7 @@ def get_stack_component(
     "/{component_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_stack_component(
     component_id: UUID,
     component_update: ComponentUpdate,
@@ -211,7 +216,7 @@ def update_stack_component(
         from zenml.stack.utils import validate_stack_component_config
 
         existing_component = zen_store().get_stack_component(component_id)
-        validate_stack_component_config(
+        validated_config = validate_stack_component_config(
             configuration_dict=component_update.configuration,
             flavor=existing_component.flavor_name,
             component_type=existing_component.type,
@@ -219,6 +224,10 @@ def update_stack_component(
             # We allow custom flavors to fail import on the server side.
             validate_custom_flavors=False,
         )
+        if validated_config:
+            component_update.configuration = validated_config.model_dump(
+                mode="json", exclude_unset=True
+            )
 
     rbac_read_checks: List[BaseModel] = []
     if component_update.connector:
@@ -249,7 +258,7 @@ def update_stack_component(
     "/{component_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def deregister_stack_component(
     component_id: UUID,
     _: AuthContext = Security(authorize),
@@ -270,7 +279,7 @@ def deregister_stack_component(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_stack_component_types(
     _: AuthContext = Security(authorize),
 ) -> List[str]:

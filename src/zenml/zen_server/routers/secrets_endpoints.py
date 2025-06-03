@@ -51,7 +51,7 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     zen_store,
 )
@@ -81,7 +81,7 @@ op_router = APIRouter(
     deprecated=True,
     tags=["secrets"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_secret(
     secret: SecretRequest,
     workspace_name_or_id: Optional[Union[str, UUID]] = None,
@@ -106,7 +106,7 @@ def create_secret(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_secrets(
     secret_filter_model: SecretFilter = Depends(make_dependable(SecretFilter)),
     hydrate: bool = False,
@@ -153,7 +153,7 @@ def list_secrets(
     "/{secret_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_secret(
     secret_id: UUID,
     hydrate: bool = True,
@@ -185,7 +185,7 @@ def get_secret(
     "/{secret_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def update_secret(
     secret_id: UUID,
     secret_update: SecretUpdate,
@@ -225,7 +225,7 @@ def update_secret(
     "/{secret_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_secret(
     secret_id: UUID,
     _: AuthContext = Security(authorize),
@@ -246,7 +246,7 @@ def delete_secret(
     SECRETS_BACKUP,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def backup_secrets(
     ignore_errors: bool = True,
     delete_secrets: bool = False,
@@ -276,7 +276,7 @@ def backup_secrets(
     SECRETS_RESTORE,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def restore_secrets(
     ignore_errors: bool = False,
     delete_secrets: bool = False,

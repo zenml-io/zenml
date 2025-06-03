@@ -15,10 +15,12 @@
 
 import base64
 import json
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, Sequence, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy_utils.types.encrypted.encrypted_type import (
     AesGcmEngine,
     InvalidCiphertextError,
@@ -31,6 +33,7 @@ from zenml.models import (
     SecretResponse,
     SecretResponseBody,
     SecretResponseMetadata,
+    SecretResponseResources,
     SecretUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -40,6 +43,7 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 
 class SecretDecodeError(Exception):
@@ -77,6 +81,32 @@ class SecretSchema(NamedSchema, table=True):
         nullable=False,
     )
     user: "UserSchema" = Relationship(back_populates="secrets")
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(SecretSchema.user))])
+
+        return options
 
     @classmethod
     def _dump_secret_values(
@@ -228,11 +258,17 @@ class SecretSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = SecretResponseMetadata()
 
+        resources = None
+        if include_resources:
+            resources = SecretResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         # Don't load the secret values implicitly in the secret. The
         # SQL secret store will call `get_secret_values` to load the
         # values separately if SQL is used as the secrets store.
         body = SecretResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
             private=self.private,
@@ -242,6 +278,7 @@ class SecretSchema(NamedSchema, table=True):
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def get_secret_values(

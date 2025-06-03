@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 
 
+import os
 from typing import Annotated, Tuple
 
 import pytest
 
 from zenml import ArtifactConfig, Tag, add_tags, pipeline, remove_tags, step
+from zenml.constants import ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING
+from zenml.enums import ExecutionStatus
 
 
 @step
@@ -139,3 +142,101 @@ def test_tag_utils(clean_client):
         clean_client.update_tag(
             tag_name_or_id=non_exclusive_tag.id, exclusive=True
         )
+
+
+@pipeline(
+    tags=[Tag(name="cascade_tag", cascade=True)],
+    enable_cache=False,
+)
+def pipeline_with_cascade_tag():
+    """Pipeline definition to test the tag utils."""
+    _ = step_single_output()
+
+
+def test_cascade_tags_for_output_artifacts_of_cached_pipeline_run(
+    clean_client,
+):
+    """Test that the cascade tags are added to the output artifacts of a cached step."""
+    # Run the pipeline once without caching
+    pipeline_with_cascade_tag()
+
+    pipeline_runs = clean_client.list_pipeline_runs(sort_by="created")
+    assert len(pipeline_runs.items) == 1
+    assert (
+        pipeline_runs.items[0].steps["step_single_output"].status
+        == ExecutionStatus.COMPLETED
+    )
+    assert "cascade_tag" in [
+        t.name
+        for t in pipeline_runs.items[0]
+        .steps["step_single_output"]
+        .outputs["single"][0]
+        .tags
+    ]
+
+    # Run it once again with caching
+    pipeline_with_cascade_tag.configure(enable_cache=True)
+    pipeline_with_cascade_tag()
+    pipeline_runs = clean_client.list_pipeline_runs(sort_by="created")
+    assert len(pipeline_runs.items) == 2
+    assert (
+        pipeline_runs.items[1].steps["step_single_output"].status
+        == ExecutionStatus.CACHED
+    )
+
+    # Run it once again with caching and a new cascade tag
+    pipeline_with_cascade_tag.configure(
+        tags=[Tag(name="second_cascade_tag", cascade=True)]
+    )
+    pipeline_with_cascade_tag()
+    pipeline_runs = clean_client.list_pipeline_runs(sort_by="created")
+    assert len(pipeline_runs.items) == 3
+    assert (
+        pipeline_runs.items[2].steps["step_single_output"].status
+        == ExecutionStatus.CACHED
+    )
+
+    assert "second_cascade_tag" in [
+        t.name
+        for t in pipeline_runs.items[0]
+        .steps["step_single_output"]
+        .outputs["single"][0]
+        .tags
+    ]
+    assert "second_cascade_tag" in [
+        t.name
+        for t in pipeline_runs.items[2]
+        .steps["step_single_output"]
+        .outputs["single"][0]
+        .tags
+    ]
+
+    # Run it once again with caching (preventing client side caching) and a new cascade tag
+    os.environ[ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING] = "true"
+    pipeline_with_cascade_tag.configure(
+        tags=[Tag(name="third_cascade_tag", cascade=True)]
+    )
+    pipeline_with_cascade_tag()
+
+    pipeline_runs = clean_client.list_pipeline_runs(sort_by="created")
+    assert len(pipeline_runs.items) == 4
+    assert (
+        pipeline_runs.items[3].steps["step_single_output"].status
+        == ExecutionStatus.CACHED
+    )
+
+    assert "third_cascade_tag" in [
+        t.name
+        for t in pipeline_runs.items[0]
+        .steps["step_single_output"]
+        .outputs["single"][0]
+        .tags
+    ]
+    assert "third_cascade_tag" in [
+        t.name
+        for t in pipeline_runs.items[3]
+        .steps["step_single_output"]
+        .outputs["single"][0]
+        .tags
+    ]
+    os.environ.pop(ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, None)

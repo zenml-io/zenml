@@ -64,10 +64,9 @@ def create_placeholder_run(
     Returns:
         The placeholder run or `None` if no run was created.
     """
-    assert deployment.user
-
     if deployment.schedule:
         return None
+
     start_time = utc_now()
     run_request = PipelineRunRequest(
         name=string_utils.format_name_template(
@@ -84,7 +83,7 @@ def create_placeholder_run(
         # running.
         start_time=start_time,
         orchestrator_run_id=None,
-        project=deployment.project.id,
+        project=deployment.project_id,
         deployment=deployment.id,
         pipeline=deployment.pipeline.id if deployment.pipeline else None,
         status=ExecutionStatus.INITIALIZING,

@@ -16,10 +16,12 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -27,12 +29,14 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorResponseBody,
     ServiceConnectorResponseMetadata,
+    ServiceConnectorResponseResources,
     ServiceConnectorUpdate,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -76,6 +80,32 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     components: List["StackComponentSchema"] = Relationship(
         back_populates="connector",
     )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(ServiceConnectorSchema.user))])
+
+        return options
 
     @property
     def resource_types_list(self) -> List[str]:
@@ -241,7 +271,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             A `ServiceConnectorModel`
         """
         body = ServiceConnectorResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
             description=self.description,
@@ -265,9 +295,16 @@ class ServiceConnectorSchema(NamedSchema, table=True):
                 expiration_seconds=self.expiration_seconds,
                 labels=self.labels_dict,
             )
+        resources = None
+        if include_resources:
+            resources = ServiceConnectorResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return ServiceConnectorResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

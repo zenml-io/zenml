@@ -16,6 +16,7 @@
 import base64
 import contextlib
 import os
+import re
 import tempfile
 import zipfile
 from pathlib import Path
@@ -938,6 +939,13 @@ def _load_file_from_artifact_store(
             f"likely because the authentication credentials are not configured "
             f"in the artifact store itself. For more information, see {link}."
         )
+
+
+def _strip_timestamp_from_multiline_string(
+    input: str,
+    pattern: str = r"^\[?\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC\]?\s*",
+) -> str:
+    return re.sub(pattern, "", input, flags=re.MULTILINE)
 
 
 # --------------------

@@ -212,7 +212,7 @@ def run_template(
     ).access_token
 
     environment = {
-        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_deployment.project.id),
+        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_deployment.project_id),
         ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
         "ZENML_VERSION": zenml_version,
         "ZENML_STORE_URL": server_url,
@@ -524,7 +524,7 @@ def deployment_request_from_template(
     assert deployment.stack
     assert deployment.build
     deployment_request = PipelineDeploymentRequest(
-        project=deployment.project.id,
+        project=deployment.project_id,
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
@@ -570,9 +570,9 @@ def get_pipeline_run_analytics_metadata(
                 if not source.is_internal:
                     custom_materializer = True
 
-    assert deployment.user
-    stack_creator = stack.user
-    own_stack = stack_creator and stack_creator.id == deployment.user.id
+    assert deployment.user_id
+    stack_creator = stack.user_id
+    own_stack = stack_creator and stack_creator == deployment.user_id
 
     stack_metadata = {
         component_type.value: component_list[0].flavor_name
@@ -580,7 +580,7 @@ def get_pipeline_run_analytics_metadata(
     }
 
     return {
-        "project_id": deployment.project.id,
+        "project_id": deployment.project_id,
         "store_type": "rest",  # This method is called from within a REST endpoint
         **stack_metadata,
         "total_steps": len(deployment.step_configurations),

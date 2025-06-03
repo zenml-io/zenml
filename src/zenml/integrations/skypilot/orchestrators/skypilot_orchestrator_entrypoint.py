@@ -32,8 +32,20 @@ from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator imp
     ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID,
     SkypilotBaseOrchestrator,
 )
+from zenml.integrations.skypilot.utils import (
+    create_docker_run_command,
+    prepare_docker_setup,
+    prepare_launch_kwargs,
+    prepare_resources_kwargs,
+    prepare_task_kwargs,
+    sanitize_cluster_name,
+    sky_job_get,
+)
 from zenml.logger import get_logger
-from zenml.orchestrators.dag_runner import ThreadedDagRunner
+from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
+from zenml.orchestrators.publish_utils import (
+    publish_failed_pipeline_run,
+)
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.utils import env_utils
 
@@ -66,220 +78,235 @@ def main() -> None:
         TypeError: If the active stack's orchestrator is not an instance of
             SkypilotBaseOrchestrator.
         ValueError: If the active stack's container registry is None.
+        Exception: If the orchestration or one of the steps fails.
     """
     # Log to the container's stdout so it can be streamed by the client.
     logger.info("Skypilot orchestrator VM started.")
 
     # Parse / extract args.
     args = parse_args()
-
     orchestrator_run_id = socket.gethostname()
 
-    deployment = Client().get_deployment(args.deployment_id)
+    run = None
 
-    pipeline_dag = {
-        step_name: step.spec.upstream_steps
-        for step_name, step in deployment.step_configurations.items()
-    }
-    step_command = StepEntrypointConfiguration.get_entrypoint_command()
-    entrypoint_str = " ".join(step_command)
+    try:
+        deployment = Client().get_deployment(args.deployment_id)
 
-    active_stack = Client().active_stack
-
-    orchestrator = active_stack.orchestrator
-    if not isinstance(orchestrator, SkypilotBaseOrchestrator):
-        raise TypeError(
-            "The active stack's orchestrator is not an instance of SkypilotBaseOrchestrator."
-        )
-
-    # Set up credentials
-    orchestrator.setup_credentials()
-
-    # Set the service connector AWS profile ENV variable
-    orchestrator.prepare_environment_variable(set=True)
-
-    # get active container registry
-    container_registry = active_stack.container_registry
-    if container_registry is None:
-        raise ValueError("Container registry cannot be None.")
-
-    if docker_creds := container_registry.credentials:
-        docker_username, docker_password = docker_creds
-        setup = (
-            f"docker login --username $DOCKER_USERNAME --password "
-            f"$DOCKER_PASSWORD {container_registry.config.uri}"
-        )
-        task_envs = {
-            "DOCKER_USERNAME": docker_username,
-            "DOCKER_PASSWORD": docker_password,
+        pipeline_dag = {
+            step_name: step.spec.upstream_steps
+            for step_name, step in deployment.step_configurations.items()
         }
-    else:
-        setup = None
-        task_envs = None
+        step_command = StepEntrypointConfiguration.get_entrypoint_command()
+        entrypoint_str = " ".join(step_command)
 
-    unique_resource_configs: Dict[str, str] = {}
-    for step_name, step in deployment.step_configurations.items():
-        settings = cast(
-            SkypilotBaseOrchestratorSettings,
-            orchestrator.get_settings(step),
-        )
-        # Handle both str and Dict[str, int] types for accelerators
-        if isinstance(settings.accelerators, dict):
-            accelerators_hashable = frozenset(settings.accelerators.items())
-        elif isinstance(settings.accelerators, str):
-            accelerators_hashable = frozenset({(settings.accelerators, 1)})
-        else:
-            accelerators_hashable = None
-        resource_config = (
-            settings.instance_type,
-            settings.cpus,
-            settings.memory,
-            settings.disk_size,  # Assuming disk_size is part of the settings
-            settings.disk_tier,  # Assuming disk_tier is part of the settings
-            settings.use_spot,
-            settings.job_recovery,
-            settings.region,
-            settings.zone,
-            accelerators_hashable,
-        )
-        cluster_name_parts = [
-            orchestrator.sanitize_cluster_name(str(part))
-            for part in resource_config
-            if part is not None
-        ]
-        cluster_name = f"cluster-{orchestrator_run_id}" + "-".join(
-            cluster_name_parts
-        )
-        unique_resource_configs[step_name] = cluster_name
+        active_stack = Client().active_stack
 
-    run = Client().list_pipeline_runs(
-        sort_by="asc:created",
-        size=1,
-        deployment_id=args.deployment_id,
-        status=ExecutionStatus.INITIALIZING,
-    )[0]
-
-    logger.info("Fetching pipeline run: %s", run.id)
-
-    shared_env = get_config_environment_vars()
-
-    def run_step_on_skypilot_vm(step_name: str) -> None:
-        """Run a pipeline step in a separate Skypilot VM.
-
-        Args:
-            step_name: Name of the step.
-        """
-        cluster_name = unique_resource_configs[step_name]
-
-        image = SkypilotBaseOrchestrator.get_image(
-            deployment=deployment, step_name=step_name
-        )
-
-        step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_name, deployment_id=deployment.id
-        )
-        arguments_str = " ".join(step_args)
-
-        step = deployment.step_configurations[step_name]
-        settings = cast(
-            SkypilotBaseOrchestratorSettings,
-            orchestrator.get_settings(step),
-        )
-
-        step_env = shared_env.copy()
-        step_env.update(
-            env_utils.get_step_environment(
-                step_config=step.config, stack=active_stack
+        orchestrator = active_stack.orchestrator
+        if not isinstance(orchestrator, SkypilotBaseOrchestrator):
+            raise TypeError(
+                "The active stack's orchestrator is not an instance of SkypilotBaseOrchestrator."
             )
-        )
-        step_env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
-        docker_environment_str = " ".join(
-            f"-e {k}={v}" for k, v in step_env.items()
-        )
-        custom_run_args = " ".join(settings.docker_run_args)
-        if custom_run_args:
-            custom_run_args += " "
+        # Set up credentials
+        orchestrator.setup_credentials()
 
-        # Set up the task
-        run_command = f"docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
-        task_name = f"{deployment.id}-{step_name}-{time.time()}"
-        task = sky.Task(
-            run=run_command,
-            setup=setup,
-            envs=task_envs,
-            name=task_name,
+        # Set the service connector AWS profile ENV variable
+        orchestrator.prepare_environment_variable(set=True)
+
+        # get active container registry
+        container_registry = active_stack.container_registry
+        if container_registry is None:
+            raise ValueError("Container registry cannot be None.")
+
+        # Prepare Docker setup
+        setup, task_envs = prepare_docker_setup(
+            container_registry_uri=container_registry.config.uri,
+            credentials=container_registry.credentials,
+            use_sudo=False,  # Entrypoint doesn't use sudo
         )
-        task = task.set_resources(
-            sky.Resources(
-                cloud=orchestrator.cloud,
-                instance_type=settings.instance_type
-                or orchestrator.DEFAULT_INSTANCE_TYPE,
-                cpus=settings.cpus,
-                memory=settings.memory,
-                disk_size=settings.disk_size,
-                disk_tier=settings.disk_tier,
-                accelerators=settings.accelerators,
-                accelerator_args=settings.accelerator_args,
-                use_spot=settings.use_spot,
-                job_recovery=settings.job_recovery,
-                region=settings.region,
-                zone=settings.zone,
-                image_id=settings.image_id,
+
+        unique_resource_configs: Dict[str, str] = {}
+        for step_name, step in deployment.step_configurations.items():
+            settings = cast(
+                SkypilotBaseOrchestratorSettings,
+                orchestrator.get_settings(step),
             )
+            # Handle both str and Dict[str, int] types for accelerators
+            if isinstance(settings.accelerators, dict):
+                accelerators_hashable = frozenset(
+                    settings.accelerators.items()
+                )
+            elif isinstance(settings.accelerators, str):
+                accelerators_hashable = frozenset({(settings.accelerators, 1)})
+            else:
+                accelerators_hashable = None
+            resource_config = (
+                settings.instance_type,
+                settings.cpus,
+                settings.memory,
+                settings.disk_size,  # Assuming disk_size is part of the settings
+                settings.disk_tier,  # Assuming disk_tier is part of the settings
+                settings.use_spot,
+                settings.job_recovery,
+                settings.region,
+                settings.zone,
+                accelerators_hashable,
+            )
+            cluster_name_parts = [
+                sanitize_cluster_name(str(part))
+                for part in resource_config
+                if part is not None
+            ]
+            cluster_name = f"cluster-{orchestrator_run_id}" + "-".join(
+                cluster_name_parts
+            )
+            unique_resource_configs[step_name] = cluster_name
+
+        run = Client().list_pipeline_runs(
+            sort_by="asc:created",
+            size=1,
+            deployment_id=args.deployment_id,
+            status=ExecutionStatus.INITIALIZING,
+        )[0]
+
+        logger.info("Fetching pipeline run: %s", run.id)
+
+        shared_env = get_config_environment_vars()
+        shared_env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
+            orchestrator_run_id
         )
 
-        sky.launch(
-            task,
-            cluster_name,
-            retry_until_up=settings.retry_until_up,
-            idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
-            down=settings.down,
-            stream_logs=settings.stream_logs,
-            detach_setup=True,
-            detach_run=True,
-        )
+        def run_step_on_skypilot_vm(step_name: str) -> None:
+            """Run a pipeline step in a separate Skypilot VM.
 
-        # Wait for pod to finish.
-        logger.info(f"Waiting for pod of step `{step_name}` to start...")
+            Args:
+                step_name: Name of the step.
 
-        current_run = Client().get_pipeline_run(run.id)
-
-        step_is_finished = False
-        while not step_is_finished:
-            time.sleep(10)
-            current_run = Client().get_pipeline_run(run.id)
+            Raises:
+                Exception: If the step execution fails.
+            """
+            logger.info(f"Running step `{step_name}` on a VM...")
             try:
-                step_is_finished = current_run.steps[
-                    step_name
-                ].status.is_finished
-            except KeyError:
-                # Step is not yet in the run, so we wait for it to appear
-                continue
+                cluster_name = unique_resource_configs[step_name]
 
-        # Pop the resource configuration for this step
-        unique_resource_configs.pop(step_name)
+                image = SkypilotBaseOrchestrator.get_image(
+                    deployment=deployment, step_name=step_name
+                )
 
-        if cluster_name in unique_resource_configs.values():
-            # If there are more steps using this configuration, skip deprovisioning the cluster
-            logger.info(
-                f"Resource configuration for cluster '{cluster_name}' "
-                "is used by subsequent steps. Skipping the deprovisioning of "
-                "the cluster."
-            )
-        else:
-            # If there are no more steps using this configuration, down the cluster
-            logger.info(
-                f"Resource configuration for cluster '{cluster_name}' "
-                "is not used by subsequent steps. deprovisioning the cluster."
-            )
-            sky.down(cluster_name)
+                step_args = (
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name, deployment_id=deployment.id
+                    )
+                )
+                arguments_str = " ".join(step_args)
 
-        logger.info(f"Running step `{step_name}` on a VM is completed.")
+                step = deployment.step_configurations[step_name]
+                settings = cast(
+                    SkypilotBaseOrchestratorSettings,
+                    orchestrator.get_settings(step),
+                )
+                step_env = shared_env.copy()
+                step_env.update(
+                    env_utils.get_step_environment(
+                        step_config=step.config, stack=active_stack
+                    )
+                )
 
-    ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_skypilot_vm).run()
+                # Create the Docker run command
+                run_command = create_docker_run_command(
+                    image=image,
+                    entrypoint_str=entrypoint_str,
+                    arguments_str=arguments_str,
+                    environment=step_env,
+                    docker_run_args=settings.docker_run_args,
+                    use_sudo=False,  # Entrypoint doesn't use sudo
+                )
 
-    logger.info("Orchestration VM provisioned.")
+                task_name = f"{deployment.id}-{step_name}-{time.time()}"
+
+                # Create task kwargs
+                task_kwargs = prepare_task_kwargs(
+                    settings=settings,
+                    run_command=run_command,
+                    setup=setup,
+                    task_envs=task_envs,
+                    task_name=task_name,
+                )
+
+                task = sky.Task(**task_kwargs)
+
+                # Set resources
+                resources_kwargs = prepare_resources_kwargs(
+                    cloud=orchestrator.cloud,
+                    settings=settings,
+                    default_instance_type=orchestrator.DEFAULT_INSTANCE_TYPE,
+                )
+
+                task = task.set_resources(sky.Resources(**resources_kwargs))
+
+                # Prepare launch parameters
+                launch_kwargs = prepare_launch_kwargs(
+                    settings=settings,
+                )
+
+                # sky.launch now returns a request ID (async). Capture it so we can
+                # optionally stream logs and block until completion when desired.
+                launch_request_id = sky.launch(
+                    task,
+                    cluster_name,
+                    **launch_kwargs,
+                )
+                sky_job_get(launch_request_id, True, cluster_name)
+
+                # Pop the resource configuration for this step
+                unique_resource_configs.pop(step_name)
+
+                if cluster_name in unique_resource_configs.values():
+                    # If there are more steps using this configuration, skip deprovisioning the cluster
+                    logger.info(
+                        f"Resource configuration for cluster '{cluster_name}' "
+                        "is used by subsequent steps. Skipping the deprovisioning of "
+                        "the cluster."
+                    )
+                else:
+                    # If there are no more steps using this configuration, down the cluster
+                    logger.info(
+                        f"Resource configuration for cluster '{cluster_name}' "
+                        "is not used by subsequent steps. deprovisioning the cluster."
+                    )
+                    down_request_id = sky.down(cluster_name)
+                    # Wait for the cluster to be terminated
+                    sky.stream_and_get(down_request_id)
+
+                logger.info(
+                    f"Running step `{step_name}` on a VM is completed."
+                )
+
+            except Exception as e:
+                logger.error(f"Failed while launching step `{step_name}`: {e}")
+                raise
+
+        dag_runner = ThreadedDagRunner(
+            dag=pipeline_dag, run_fn=run_step_on_skypilot_vm
+        )
+        dag_runner.run()
+
+        failed_nodes = []
+        for node in dag_runner.nodes:
+            if dag_runner.node_states[node] == NodeStatus.FAILED:
+                failed_nodes.append(node)
+
+        if failed_nodes:
+            raise Exception(f"One or more steps failed: {failed_nodes}")
+
+    except Exception as e:
+        logger.error(f"Orchestrator failed: {e}")
+
+        # Try to mark the pipeline run as failed
+        if run:
+            publish_failed_pipeline_run(run.id)
+            logger.info("Marked pipeline run as failed in ZenML.")
+        raise
 
 
 if __name__ == "__main__":
