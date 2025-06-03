@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Functionality for standard hooks."""
 
-import io
-import sys
-
-from rich.console import Console
+import traceback
+from typing import TYPE_CHECKING
 
 from zenml import get_step_context
 from zenml.client import Client
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    pass
 
 logger = get_logger(__name__)
 
@@ -36,24 +37,60 @@ def alerter_failure_hook(exception: BaseException) -> None:
     context = get_step_context()
     alerter = Client().active_stack.alerter
     if alerter:
-        output_captured = io.StringIO()
-        original_stdout = sys.stdout
-        sys.stdout = output_captured
-        console = Console()
-        console.print_exception(show_locals=False)
-
-        sys.stdout = original_stdout
-        rich_traceback = output_captured.getvalue()
-
-        message = "*Failure Hook Notification! Step failed!*" + "\n\n"
-        message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
-        message += f"Run name: `{context.pipeline_run.name}`" + "\n"
-        message += f"Step name: `{context.step_run.name}`" + "\n"
-        message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
-        message += (
-            f"Exception: `({type(exception)}) {rich_traceback}`" + "\n\n"
+        # Use standard Python traceback instead of Rich traceback
+        tb_lines = traceback.format_exception(
+            type(exception), exception, exception.__traceback__
         )
-        alerter.post(message)
+        plain_traceback = "".join(tb_lines).strip()
+
+        # Try to use AlerterMessage for better structured alerts
+        try:
+            from zenml.models.v2.misc.alerter_models import AlerterMessage
+
+            message = AlerterMessage(
+                title="Pipeline Failure Alert",
+                body=(
+                    f"Step: {context.step_run.name}\n"
+                    f"Pipeline: {context.pipeline.name}\n"
+                    f"Run: {context.pipeline_run.name}\n"
+                    f"Parameters: {context.step_run.config.parameters}\n"
+                    f"Exception: ({type(exception).__name__}) {str(exception)}\n\n"
+                    f"{plain_traceback}"
+                ),
+                metadata={
+                    "pipeline_name": context.pipeline.name,
+                    "run_name": context.pipeline_run.name,
+                    "step_name": context.step_run.name,
+                    "exception_type": type(exception).__name__,
+                    "stack_name": Client().active_stack.name,
+                },
+            )
+            alerter.post(message)
+        except Exception as e:
+            # Fall back to string format for backwards compatibility
+            logger.debug(
+                f"Falling back to string format for alerter hook. "
+                f"Consider updating your alerter to support AlerterMessage. Error: {e}"
+            )
+            fallback_message = (
+                "*Failure Hook Notification! Step failed!*" + "\n\n"
+            )
+            fallback_message += (
+                f"Pipeline name: `{context.pipeline.name}`" + "\n"
+            )
+            fallback_message += (
+                f"Run name: `{context.pipeline_run.name}`" + "\n"
+            )
+            fallback_message += f"Step name: `{context.step_run.name}`" + "\n"
+            fallback_message += (
+                f"Parameters: `{context.step_run.config.parameters}`" + "\n"
+            )
+            fallback_message += (
+                f"Exception: `({type(exception).__name__}) {str(exception)}`"
+                + "\n\n"
+            )
+            fallback_message += f"{plain_traceback}"
+            alerter.post(fallback_message)
     else:
         logger.warning(
             "Specified standard failure hook but no alerter configured in the stack. Skipping.."
@@ -68,14 +105,48 @@ def alerter_success_hook() -> None:
     context = get_step_context()
     alerter = Client().active_stack.alerter
     if alerter:
-        message = (
-            "*Success Hook Notification! Step completed successfully*" + "\n\n"
-        )
-        message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
-        message += f"Run name: `{context.pipeline_run.name}`" + "\n"
-        message += f"Step name: `{context.step_run.name}`" + "\n"
-        message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
-        alerter.post(message)
+        # Try to use AlerterMessage for better structured alerts
+        try:
+            from zenml.models.v2.misc.alerter_models import AlerterMessage
+
+            message = AlerterMessage(
+                title="Pipeline Success Notification",
+                body=(
+                    f"Step: {context.step_run.name}\n"
+                    f"Pipeline: {context.pipeline.name}\n"
+                    f"Run: {context.pipeline_run.name}\n"
+                    f"Parameters: {context.step_run.config.parameters}"
+                ),
+                metadata={
+                    "pipeline_name": context.pipeline.name,
+                    "run_name": context.pipeline_run.name,
+                    "step_name": context.step_run.name,
+                    "stack_name": Client().active_stack.name,
+                    "status": "success",
+                },
+            )
+            alerter.post(message)
+        except Exception as e:
+            # Fall back to string format for backwards compatibility
+            logger.debug(
+                f"Falling back to string format for alerter hook. "
+                f"Consider updating your alerter to support AlerterMessage. Error: {e}"
+            )
+            fallback_message = (
+                "*Success Hook Notification! Step completed successfully*"
+                + "\n\n"
+            )
+            fallback_message += (
+                f"Pipeline name: `{context.pipeline.name}`" + "\n"
+            )
+            fallback_message += (
+                f"Run name: `{context.pipeline_run.name}`" + "\n"
+            )
+            fallback_message += f"Step name: `{context.step_run.name}`" + "\n"
+            fallback_message += (
+                f"Parameters: `{context.step_run.config.parameters}`" + "\n"
+            )
+            alerter.post(fallback_message)
     else:
         logger.warning(
             "Specified standard success hook but no alerter configured in the stack. Skipping.."
