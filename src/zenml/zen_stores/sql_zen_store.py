@@ -3001,6 +3001,10 @@ class SqlZenStore(BaseZenStore):
                     )
                     session.add(vis_schema)
 
+            # Commit the visualizations so potential future rollbacks don't
+            # remove them
+            session.commit()
+
             # Save tags of the artifact
             self._attach_tags_to_resources(
                 tags=artifact_version.tags,
@@ -11994,16 +11998,17 @@ class SqlZenStore(BaseZenStore):
         validate_name(tag)
         self._set_request_user_id(request_model=tag, session=session)
 
-        tag_schema = TagSchema.from_request(tag)
-        session.add(tag_schema)
+        with session.begin_nested() as nested_session:
+            tag_schema = TagSchema.from_request(tag)
+            session.add(tag_schema)
 
-        try:
-            session.commit()
-        except IntegrityError:
-            session.rollback()
-            raise EntityExistsError(
-                f"Tag with name `{tag.name}` already exists."
-            )
+            try:
+                session.commit()
+            except IntegrityError:
+                nested_session.rollback()
+                raise EntityExistsError(
+                    f"Tag with name `{tag.name}` already exists."
+                )
         return tag_schema
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)
