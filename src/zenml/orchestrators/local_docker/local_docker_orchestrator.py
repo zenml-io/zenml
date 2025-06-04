@@ -77,7 +77,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         )
 
     @property
-    def config(self) -> LocalDockerOrchestratorConfig:
+    def config(self) -> "LocalDockerOrchestratorConfig":
         """Returns the `LocalDockerOrchestratorConfig` config.
 
         Returns:
