@@ -14,6 +14,7 @@
 """Initialization for ZenML."""
 
 import os
+from typing import Any
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,6 +26,18 @@ with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
 from zenml.logger import init_logging  # noqa
 
 init_logging()
+
+
+def __getattr__(name: str) -> Any:
+    # We allow directly accessing the entrypoint module as `zenml.entrypoint`
+    # as this is needed for some orchestrators. Instead of directly importing
+    # the entrypoint module here, we import it dynamically. This avoids a
+    # warning when running the `zenml.entrypoints.entrypoint` module directly.
+    if name == "entrypoint":
+        from zenml.entrypoints import entrypoint
+        return entrypoint
+
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 # Need to import zenml.models before zenml.config to avoid circular imports

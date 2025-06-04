@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoints.entrypoint.main"
+ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
 DATABRICKS_WHEELS_DIRECTORY_PREFIX = "dbfs:/FileStore/zenml"
 DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
 DATABRICKS_CLUSTER_DEFAULT_NAME = "zenml-databricks-cluster"

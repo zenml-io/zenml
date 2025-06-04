@@ -89,9 +89,6 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
         dist = distribution(wheel_package)
         project_root = os.path.join(dist.locate_file("."), wheel_package)
 
-        print(f"project_root: {project_root}")
-        print(f"sys.path: {sys.path}")
-
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
             sys.path.insert(-1, project_root)
