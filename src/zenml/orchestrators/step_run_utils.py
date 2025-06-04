@@ -138,6 +138,8 @@ class StepRunRequestFactory:
             if cached_step_run := cache_utils.get_cached_step_run(
                 cache_key=cache_key
             ):
+                # TODO: maybe also fetch the docstring/source code from the
+                # cached step run?
                 request.inputs = {
                     input_name: [artifact.id for artifact in artifacts]
                     for input_name, artifacts in cached_step_run.inputs.items()
