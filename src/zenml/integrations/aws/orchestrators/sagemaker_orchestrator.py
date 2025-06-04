@@ -20,24 +20,35 @@ from typing import (
     Any,
     Dict,
     Iterator,
+    List,
     Optional,
     Tuple,
     Type,
+    Union,
     cast,
 )
 from uuid import UUID
 
 import boto3
-import sagemaker
 from botocore.exceptions import WaiterError
+from sagemaker.estimator import Estimator
+from sagemaker.inputs import TrainingInput
 from sagemaker.network import NetworkConfig
-from sagemaker.processing import ProcessingInput, ProcessingOutput
+from sagemaker.processing import ProcessingInput, ProcessingOutput, Processor
+from sagemaker.session import Session
+from sagemaker.workflow.entities import PipelineVariable
 from sagemaker.workflow.execution_variables import (
-    ExecutionVariable,
     ExecutionVariables,
 )
 from sagemaker.workflow.pipeline import Pipeline
-from sagemaker.workflow.steps import ProcessingStep, TrainingStep
+from sagemaker.workflow.step_collections import (
+    StepCollection,
+)
+from sagemaker.workflow.steps import (
+    ProcessingStep,
+    Step,
+    TrainingStep,
+)
 from sagemaker.workflow.triggers import PipelineSchedule
 
 from zenml.client import Client
@@ -215,7 +226,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         return SagemakerOrchestratorSettings
 
-    def _get_sagemaker_session(self) -> sagemaker.Session:
+    def _get_sagemaker_session(self) -> Session:
         """Method to create the sagemaker session with proper authentication.
 
         Returns:
@@ -258,7 +269,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     aws_session_token=credentials["SessionToken"],
                     region_name=self.config.region,
                 )
-        return sagemaker.Session(
+        return Session(
             boto_session=boto_session, default_bucket=self.config.bucket
         )
 
@@ -317,10 +328,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 env=step_environment,
             )
 
-            step_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
-                ExecutionVariables.PIPELINE_EXECUTION_ARN
-            )
-
             image = self.get_image(deployment=deployment, step_name=step_name)
             command = SagemakerEntrypointConfiguration.get_entrypoint_command()
             arguments = (
@@ -335,7 +342,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
 
             if step_settings.environment:
-                user_defined_environment = step_settings.environment.copy()
+                split_environment = step_settings.environment.copy()
                 # Sagemaker does not allow environment variables longer than 256
                 # characters to be passed to Processor steps. If an environment variable
                 # is longer than 256 characters, we split it into multiple environment
@@ -343,9 +350,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 # custom entrypoint configuration.
                 split_environment_variables(
                     size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
-                    env=user_defined_environment,
+                    env=split_environment,
                 )
-                step_environment.update(user_defined_environment)
+                step_environment.update(split_environment)
 
             use_training_step = (
                 step_settings.use_training_step
@@ -427,28 +434,51 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
 
             # Construct S3 inputs to container for step
-            inputs = None
+            training_inputs: Optional[
+                Union[TrainingInput, Dict[str, TrainingInput]]
+            ] = None
+            processing_inputs: Optional[List[ProcessingInput]] = None
 
             if step_settings.input_data_s3_uri is None:
                 pass
             elif isinstance(step_settings.input_data_s3_uri, str):
-                inputs = [
-                    ProcessingInput(
-                        source=step_settings.input_data_s3_uri,
-                        destination="/opt/ml/processing/input/data",
-                        s3_input_mode=step_settings.input_data_s3_mode,
+                if use_training_step:
+                    training_inputs = TrainingInput(
+                        s3_data=step_settings.input_data_s3_uri,
+                        input_mode=step_settings.input_data_s3_mode,
                     )
-                ]
-            elif isinstance(step_settings.input_data_s3_uri, dict):
-                inputs = []
-                for channel, s3_uri in step_settings.input_data_s3_uri.items():
-                    inputs.append(
+                else:
+                    processing_inputs = [
                         ProcessingInput(
-                            source=s3_uri,
-                            destination=f"/opt/ml/processing/input/data/{channel}",
+                            source=step_settings.input_data_s3_uri,
+                            destination="/opt/ml/processing/input/data",
                             s3_input_mode=step_settings.input_data_s3_mode,
                         )
-                    )
+                    ]
+            elif isinstance(step_settings.input_data_s3_uri, dict):
+                if use_training_step:
+                    training_inputs = {}
+                    for (
+                        channel,
+                        s3_uri,
+                    ) in step_settings.input_data_s3_uri.items():
+                        training_inputs[channel] = TrainingInput(
+                            s3_data=s3_uri,
+                            input_mode=step_settings.input_data_s3_mode,
+                        )
+                else:
+                    processing_inputs = []
+                    for (
+                        channel,
+                        s3_uri,
+                    ) in step_settings.input_data_s3_uri.items():
+                        processing_inputs.append(
+                            ProcessingInput(
+                                source=s3_uri,
+                                destination=f"/opt/ml/processing/input/data/{channel}",
+                                s3_input_mode=step_settings.input_data_s3_mode,
+                            )
+                        )
 
             # Construct S3 outputs from container for step
             outputs = None
@@ -481,33 +511,44 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         )
                     )
 
-            # Convert environment to a dict of strings
-            step_environment = {
+            step_environment: Dict[str, Union[str, PipelineVariable]] = {
                 key: str(value)
-                if not isinstance(value, ExecutionVariable)
+                if not isinstance(value, PipelineVariable)
                 else value
                 for key, value in step_environment.items()
             }
 
+            step_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
+                ExecutionVariables.PIPELINE_EXECUTION_ARN
+            )
+
+            sagemaker_step: Step
             if use_training_step:
                 # Create Estimator and TrainingStep
-                estimator = sagemaker.estimator.Estimator(
+                estimator = Estimator(
                     keep_alive_period_in_seconds=step_settings.keep_alive_period_in_seconds,
                     output_path=output_path,
                     environment=step_environment,
                     container_entry_point=entrypoint,
                     **args_for_step_executor,
                 )
+
                 sagemaker_step = TrainingStep(
                     name=step_name,
-                    depends_on=step.spec.upstream_steps,
-                    inputs=inputs,
+                    depends_on=cast(
+                        Optional[List[Union[str, Step, StepCollection]]],
+                        step.spec.upstream_steps,
+                    ),
+                    inputs=training_inputs,
                     estimator=estimator,
                 )
             else:
                 # Create Processor and ProcessingStep
-                processor = sagemaker.processing.Processor(
-                    entrypoint=entrypoint,
+                processor = Processor(
+                    entrypoint=cast(
+                        Optional[List[Union[str, PipelineVariable]]],
+                        entrypoint,
+                    ),
                     env=step_environment,
                     **args_for_step_executor,
                 )
@@ -515,8 +556,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 sagemaker_step = ProcessingStep(
                     name=step_name,
                     processor=processor,
-                    depends_on=step.spec.upstream_steps,
-                    inputs=inputs,
+                    depends_on=cast(
+                        Optional[List[Union[str, Step, StepCollection]]],
+                        step.spec.upstream_steps,
+                    ),
+                    inputs=processing_inputs,
                     outputs=outputs,
                 )
 
