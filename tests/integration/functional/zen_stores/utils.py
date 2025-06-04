@@ -1167,7 +1167,8 @@ remote_artifact_store_crud_test_config = CrudTestConfig(
 remote_stack_crud_test_config = CrudTestConfig(
     create_model=StackRequest(
         name=sample_name("remote_stack"),
-        components={},
+        # These will be replaced later by the conditional entities
+        components={"orchestrator": [uuid.uuid4()], "artifact_store": [uuid.uuid4()]},
     ),
     filter_model=StackFilter,
     entity_name="stack",
