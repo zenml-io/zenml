@@ -390,35 +390,12 @@ def refresh_run_status(
 
     Args:
         run_id: ID of the pipeline run to refresh.
-
-    Raises:
-        RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
-    # Verify access to the run
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=zen_store().get_run,
         hydrate=True,
     )
-
-    # Check the stack and its orchestrator
-    if run.stack is not None:
-        orchestrators = run.stack.components.get(
-            StackComponentType.ORCHESTRATOR, []
-        )
-        if orchestrators:
-            verify_permission_for_model(
-                model=orchestrators[0], action=Action.READ
-            )
-        else:
-            raise RuntimeError(
-                f"The orchestrator, the run '{run.id}' was executed with, is "
-                "deleted."
-            )
-    else:
-        raise RuntimeError(
-            f"The stack, the run '{run.id}' was executed on, is deleted."
-        )
     run.refresh_run_status()
 
 
@@ -431,47 +408,20 @@ def stop_run(
     run_id: UUID,
     graceful: bool = True,
     _: AuthContext = Security(authorize),
-) -> PipelineRunResponse:
+) -> None:
     """Stops a specific pipeline run.
 
     Args:
         run_id: ID of the pipeline run to stop.
         graceful: If True, allows for graceful shutdown where possible.
             If False, forces immediate termination. Default is True.
-
-    Returns:
-        The updated pipeline run.
-
-    Raises:
-        RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
-    # Verify access to the run
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=zen_store().get_run,
         hydrate=True,
     )
-
-    # Check the stack and its orchestrator
-    if run.stack is not None:
-        orchestrators = run.stack.components.get(
-            StackComponentType.ORCHESTRATOR, []
-        )
-        if orchestrators:
-            verify_permission_for_model(
-                model=orchestrators[0], action=Action.READ
-            )
-        else:
-            raise RuntimeError(
-                f"The orchestrator, the run '{run.id}' was executed with, is "
-                "deleted."
-            )
-    else:
-        raise RuntimeError(
-            f"The stack, the run '{run.id}' was executed on, is deleted."
-        )
-
-    return run.stop_run(graceful=graceful)
+    run.stop_run(graceful=graceful)
 
 
 @router.get(
