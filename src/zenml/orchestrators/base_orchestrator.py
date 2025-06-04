@@ -58,12 +58,17 @@ class SubmissionResult:
     def __init__(
         self,
         wait_for_completion: Optional[Callable[[], None]] = None,
-        run_metadata: Optional[Dict[str, MetadataType]] = None,
-        schedule_metadata: Optional[Dict[str, MetadataType]] = None,
+        metadata: Optional[Dict[str, MetadataType]] = None,
     ):
-        self.run_metadata = run_metadata
-        self.schedule_metadata = schedule_metadata
+        """Initialize a submission result.
+
+        Args:
+            wait_for_completion: A function that waits for the pipeline run to
+                complete.
+            metadata: Metadata for the pipeline run or schedule.
+        """
         self.wait_for_completion = wait_for_completion
+        self.metadata = metadata
 
 
 class BaseOrchestratorConfig(StackComponentConfig):
@@ -233,7 +238,6 @@ class BaseOrchestrator(StackComponent, ABC):
         Yields:
             Metadata for the pipeline run.
         """
-        return None
 
     def run(
         self,
@@ -248,6 +252,10 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack on which to run the pipeline.
             placeholder_run: An optional placeholder run for the deployment.
                 This will be deleted in case the pipeline deployment failed.
+
+        Raises:
+            RunMonitoringError: If a failure happened while monitoring the
+                pipeline run.
         """
         self._prepare_run(deployment=deployment)
 
@@ -331,23 +339,22 @@ class BaseOrchestrator(StackComponent, ABC):
                 )
 
                 if submission_result:
-                    if submission_result.run_metadata and placeholder_run:
-                        publish_pipeline_run_metadata(
-                            pipeline_run_id=placeholder_run.id,
-                            pipeline_run_metadata={
-                                self.id: submission_result.run_metadata
-                            },
-                        )
-                    if (
-                        submission_result.schedule_metadata
-                        and deployment.schedule
-                    ):
-                        publish_schedule_metadata(
-                            schedule_id=deployment.schedule.id,
-                            schedule_metadata={
-                                self.id: submission_result.schedule_metadata
-                            },
-                        )
+                    if submission_result.metadata:
+                        if placeholder_run:
+                            publish_pipeline_run_metadata(
+                                pipeline_run_id=placeholder_run.id,
+                                pipeline_run_metadata={
+                                    self.id: submission_result.metadata
+                                },
+                            )
+                        elif deployment.schedule:
+                            publish_schedule_metadata(
+                                schedule_id=deployment.schedule.id,
+                                schedule_metadata={
+                                    self.id: submission_result.metadata
+                                },
+                            )
+
                     if submission_result.wait_for_completion:
                         try:
                             submission_result.wait_for_completion()

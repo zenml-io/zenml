@@ -14,7 +14,7 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type
 from uuid import uuid4
 
 from zenml.logger import get_logger
@@ -22,6 +22,7 @@ from zenml.orchestrators import (
     BaseOrchestrator,
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
+    SubmissionResult,
 )
 from zenml.stack import Stack
 from zenml.utils import string_utils
@@ -47,7 +48,7 @@ class LocalOrchestrator(BaseOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
+    ) -> Optional[SubmissionResult]:
         """Submits a pipeline run to the orchestrator.
 
         This method should only submit the pipeline run and not wait for it to

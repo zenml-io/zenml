@@ -155,6 +155,7 @@ def deploy_pipeline(
         # Don't mark the run as failed if the error happened during monitoring
         # of the run.
         raise e.original_exception from None
+    # TODO: this doesn't catch errors before
     except Exception as e:
         if (
             placeholder_run
