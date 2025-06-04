@@ -28,16 +28,15 @@ from uuid import UUID
 
 from pydantic import model_validator
 
-from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import RunMonitoringError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
-    publish_failed_pipeline_run,
     publish_pipeline_run_metadata,
     publish_schedule_metadata,
 )
@@ -295,8 +294,14 @@ class BaseOrchestrator(StackComponent, ABC):
                 self.submit_pipeline.__func__
                 is BaseOrchestrator.submit_pipeline
             ):
-                # Support for legacy orchestrators that do not implement
-                # `submit_pipeline(...)` yet.
+                logger.warning(
+                    "The orchestrator '%s' is still using the deprecated "
+                    "`prepare_or_run_pipeline(...)` method which will be "
+                    "removed in the future. Please implement the replacement "
+                    "`submit_pipeline(...)` method for your custom "
+                    "orchestrator.",
+                    self.name,
+                )
                 if metadata_iterator := self.prepare_or_run_pipeline(
                     deployment=deployment,
                     stack=stack,
@@ -318,22 +323,12 @@ class BaseOrchestrator(StackComponent, ABC):
                                 f"run metadata: {e}"
                             )
             else:
-                try:
-                    submission_result = self.submit_pipeline(
-                        deployment=deployment,
-                        stack=stack,
-                        environment=environment,
-                        placeholder_run=placeholder_run,
-                    )
-                except:
-                    if (
-                        placeholder_run
-                        and not Client()
-                        .get_pipeline_run(placeholder_run.id, hydrate=False)
-                        .status.is_finished
-                    ):
-                        publish_failed_pipeline_run(placeholder_run.id)
-                    raise
+                submission_result = self.submit_pipeline(
+                    deployment=deployment,
+                    stack=stack,
+                    environment=environment,
+                    placeholder_run=placeholder_run,
+                )
 
                 if submission_result:
                     if submission_result.run_metadata and placeholder_run:
@@ -354,7 +349,10 @@ class BaseOrchestrator(StackComponent, ABC):
                             },
                         )
                     if submission_result.wait_for_completion:
-                        submission_result.wait_for_completion()
+                        try:
+                            submission_result.wait_for_completion()
+                        except BaseException as e:
+                            raise RunMonitoringError(original_exception=e)
         finally:
             self._cleanup_run()
 
