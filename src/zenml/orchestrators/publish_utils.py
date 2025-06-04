@@ -188,17 +188,26 @@ def publish_pipeline_run_status_update(
 
 
 def get_pipeline_run_status(
-    step_statuses: List[ExecutionStatus], num_steps: int
+    run_status: ExecutionStatus,
+    step_statuses: List[ExecutionStatus], 
+    num_steps: int
 ) -> ExecutionStatus:
     """Gets the pipeline run status for the given step statuses.
 
     Args:
+        run_status: The status of the run.
         step_statuses: The status of steps in this run.
         num_steps: The total amount of steps in this run.
 
     Returns:
         The run status.
     """
+    if run_status == ExecutionStatus.STOPPING:
+        if all(ExecutionStatus(s).is_finished for s in step_statuses):
+            return ExecutionStatus.STOPPED
+        else:
+            return ExecutionStatus.STOPPING
+
     if ExecutionStatus.FAILED in step_statuses:
         return ExecutionStatus.FAILED
     if (

@@ -5836,6 +5836,14 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             session.refresh(existing_run)
+
+            if run_update.status is not None:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=run_id,
+                    session=session,
+                )
+            session.refresh(existing_run)
+
             return existing_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -8689,11 +8697,6 @@ class SqlZenStore(BaseZenStore):
             existing_step_run.update(step_run_update)
             session.add(existing_step_run)
 
-            if step_run_update.status == ExecutionStatus.STOPPED:
-                existing_step_run.pipeline_run.update(
-                    PipelineRunUpdate(status=ExecutionStatus.STOPPING)
-                )
-
             # Update the artifacts.
             for name, artifact_version_ids in step_run_update.outputs.items():
                 for artifact_version_id in artifact_version_ids:
@@ -8954,9 +8957,8 @@ class SqlZenStore(BaseZenStore):
             json.loads(pipeline_run.deployment.step_configurations)
         )
         new_status = get_pipeline_run_status(
-            step_statuses=[
-                ExecutionStatus(status) for status in step_run_statuses
-            ],
+            run_status=ExecutionStatus(pipeline_run.status),
+            step_statuses=[ExecutionStatus(status) for status in step_run_statuses],
             num_steps=num_steps,
         )
 
