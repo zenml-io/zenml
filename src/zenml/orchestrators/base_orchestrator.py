@@ -14,11 +14,21 @@
 """Base orchestrator class."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    Optional,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import model_validator
 
+from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
@@ -26,7 +36,11 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
+from zenml.orchestrators.publish_utils import (
+    publish_failed_pipeline_run,
+    publish_pipeline_run_metadata,
+    publish_schedule_metadata,
+)
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
@@ -37,6 +51,20 @@ if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
 
 logger = get_logger(__name__)
+
+
+class SubmissionResult:
+    """Result of submitting a pipeline run."""
+
+    def __init__(
+        self,
+        wait_for_completion: Optional[Callable[[], None]] = None,
+        run_metadata: Optional[Dict[str, MetadataType]] = None,
+        schedule_metadata: Optional[Dict[str, MetadataType]] = None,
+    ):
+        self.run_metadata = run_metadata
+        self.schedule_metadata = schedule_metadata
+        self.wait_for_completion = wait_for_completion
 
 
 class BaseOrchestratorConfig(StackComponentConfig):
@@ -134,7 +162,32 @@ class BaseOrchestrator(StackComponent, ABC):
             The orchestrator run id.
         """
 
-    @abstractmethod
+    def submit_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline run to the orchestrator.
+
+        This method should only submit the pipeline run and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
+
+        Args:
+            deployment: The pipeline deployment to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment. These don't need to be set if running locally.
+            placeholder_run: An optional placeholder run for the deployment.
+
+        Returns:
+            Optional submission result.
+        """
+        return None
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -181,6 +234,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Yields:
             Metadata for the pipeline run.
         """
+        return None
 
     def run(
         self,
@@ -237,24 +291,70 @@ class BaseOrchestrator(StackComponent, ABC):
             logger.debug("Skipping client-side caching.")
 
         try:
-            if metadata_iterator := self.prepare_or_run_pipeline(
-                deployment=deployment,
-                stack=stack,
-                environment=environment,
-                placeholder_run=placeholder_run,
+            if (
+                self.submit_pipeline.__func__
+                is BaseOrchestrator.submit_pipeline
             ):
-                for metadata_dict in metadata_iterator:
-                    try:
-                        if placeholder_run:
-                            publish_pipeline_run_metadata(
-                                pipeline_run_id=placeholder_run.id,
-                                pipeline_run_metadata={self.id: metadata_dict},
+                # Support for legacy orchestrators that do not implement
+                # `submit_pipeline(...)` yet.
+                if metadata_iterator := self.prepare_or_run_pipeline(
+                    deployment=deployment,
+                    stack=stack,
+                    environment=environment,
+                    placeholder_run=placeholder_run,
+                ):
+                    for metadata_dict in metadata_iterator:
+                        try:
+                            if placeholder_run:
+                                publish_pipeline_run_metadata(
+                                    pipeline_run_id=placeholder_run.id,
+                                    pipeline_run_metadata={
+                                        self.id: metadata_dict
+                                    },
+                                )
+                        except Exception as e:
+                            logger.debug(
+                                "Something went went wrong trying to publish the"
+                                f"run metadata: {e}"
                             )
-                    except Exception as e:
-                        logger.debug(
-                            "Something went went wrong trying to publish the"
-                            f"run metadata: {e}"
+            else:
+                try:
+                    submission_result = self.submit_pipeline(
+                        deployment=deployment,
+                        stack=stack,
+                        environment=environment,
+                        placeholder_run=placeholder_run,
+                    )
+                except:
+                    if (
+                        placeholder_run
+                        and not Client()
+                        .get_pipeline_run(placeholder_run.id, hydrate=False)
+                        .status.is_finished
+                    ):
+                        publish_failed_pipeline_run(placeholder_run.id)
+                    raise
+
+                if submission_result:
+                    if submission_result.run_metadata and placeholder_run:
+                        publish_pipeline_run_metadata(
+                            pipeline_run_id=placeholder_run.id,
+                            pipeline_run_metadata={
+                                self.id: submission_result.run_metadata
+                            },
                         )
+                    if (
+                        submission_result.schedule_metadata
+                        and deployment.schedule
+                    ):
+                        publish_schedule_metadata(
+                            schedule_id=deployment.schedule.id,
+                            schedule_metadata={
+                                self.id: submission_result.schedule_metadata
+                            },
+                        )
+                    if submission_result.wait_for_completion:
+                        submission_result.wait_for_completion()
         finally:
             self._cleanup_run()
 

@@ -33,7 +33,6 @@
 import os
 from typing import (
     TYPE_CHECKING,
-    Any,
     Dict,
     List,
     Optional,
@@ -62,7 +61,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
-from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
@@ -388,24 +387,32 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         """
         return f"zenml-token-{deployment_id}"
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Runs the pipeline in Kubernetes.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline run to the orchestrator.
+
+        This method should only submit the pipeline run and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
-                environment.
+                environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
-            RuntimeError: If the Kubernetes orchestrator is not configured.
+            RuntimeError: If a schedule without cron expression is given.
+
+        Returns:
+            Optional submission result.
         """
         for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
@@ -565,18 +572,23 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 startup_timeout=settings.pod_startup_timeout,
             )
 
-            # Wait for the orchestrator pod to finish and stream logs.
             if settings.synchronous:
-                logger.info(
-                    "Waiting for Kubernetes orchestrator pod to finish..."
-                )
-                kube_utils.wait_pod(
-                    kube_client_fn=self.get_kube_client,
-                    pod_name=pod_name,
-                    namespace=self.config.kubernetes_namespace,
-                    exit_condition_lambda=kube_utils.pod_is_done,
-                    timeout_sec=settings.timeout,
-                    stream_logs=True,
+
+                def _wait_for_run_to_finish():
+                    logger.info(
+                        "Waiting for Kubernetes orchestrator pod to finish..."
+                    )
+                    kube_utils.wait_pod(
+                        kube_client_fn=self.get_kube_client,
+                        pod_name=pod_name,
+                        namespace=self.config.kubernetes_namespace,
+                        exit_condition_lambda=kube_utils.pod_is_done,
+                        timeout_sec=settings.timeout,
+                        stream_logs=True,
+                    )
+
+                return SubmissionResult(
+                    wait_for_completion=_wait_for_run_to_finish
                 )
             else:
                 logger.info(
@@ -585,6 +597,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     f"Run the following command to inspect the logs: "
                     f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
                 )
+                return None
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings
