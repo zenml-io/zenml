@@ -659,7 +659,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 "stopping naturally"
             )
             return
-        
+
         # Get the orchestrator run ID which corresponds to the orchestrator pod name
         orchestrator_run_id = run.orchestrator_run_id
         if not orchestrator_run_id:
@@ -678,9 +678,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         try:
             # Find all pods with the orchestrator run ID label
-            label_selector = (
-                f"zenml-orchestrator-run-id={orchestrator_run_id}"
-            )
+            label_selector = f"zenml-orchestrator-run-id={orchestrator_run_id}"
             pods = self._k8s_core_api.list_namespaced_pod(
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
@@ -693,7 +691,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         f"Skipping pod {pod.metadata.name} with status {pod.status.phase}"
                     )
                     continue
-
 
                 try:
                     self._k8s_core_api.delete_namespaced_pod(
@@ -713,7 +710,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     errors.append(error_msg)
 
         except Exception as e:
-            error_msg = f"Failed to list step pods for run {orchestrator_run_id}: {e}"
+            error_msg = (
+                f"Failed to list step pods for run {orchestrator_run_id}: {e}"
+            )
             logger.warning(error_msg)
             errors.append(error_msg)
 

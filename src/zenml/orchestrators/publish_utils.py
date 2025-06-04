@@ -189,8 +189,8 @@ def publish_pipeline_run_status_update(
 
 def get_pipeline_run_status(
     run_status: ExecutionStatus,
-    step_statuses: List[ExecutionStatus], 
-    num_steps: int
+    step_statuses: List[ExecutionStatus],
+    num_steps: int,
 ) -> ExecutionStatus:
     """Gets the pipeline run status for the given step statuses.
 

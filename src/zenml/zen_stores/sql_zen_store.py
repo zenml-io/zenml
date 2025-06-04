@@ -8958,7 +8958,9 @@ class SqlZenStore(BaseZenStore):
         )
         new_status = get_pipeline_run_status(
             run_status=ExecutionStatus(pipeline_run.status),
-            step_statuses=[ExecutionStatus(status) for status in step_run_statuses],
+            step_statuses=[
+                ExecutionStatus(status) for status in step_run_statuses
+            ],
             num_steps=num_steps,
         )
 
