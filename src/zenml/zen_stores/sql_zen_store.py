@@ -8975,7 +8975,8 @@ class SqlZenStore(BaseZenStore):
         session.commit()
 
         if new_status.is_finished:
-            if pipeline_run.start_time and run_update.end_time:
+            assert run_update.end_time
+            if pipeline_run.start_time:
                 duration_time = run_update.end_time - pipeline_run.start_time
                 duration_seconds = duration_time.total_seconds()
                 start_time_str = pipeline_run.start_time.strftime(
