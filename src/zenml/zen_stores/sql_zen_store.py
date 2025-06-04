@@ -5598,6 +5598,12 @@ class SqlZenStore(BaseZenStore):
             .where(
                 PipelineRunSchema.status == ExecutionStatus.INITIALIZING.value
             )
+            # In very rare cases, there can be multiple placeholder runs for
+            # the same deployment. By ordering by the orchestrator_run_id, we
+            # make sure that we use the placeholder run with the matching
+            # orchestrator_run_id if it exists, before falling back to the
+            # placeholder run without any orchestrator_run_id provided.
+            .order_by(col(PipelineRunSchema.orchestrator_run_id).nulls_last())
         ).first()
 
         if not run_schema:
