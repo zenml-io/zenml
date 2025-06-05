@@ -127,22 +127,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
 
 
 class BaseOrchestrator(StackComponent, ABC):
-    """Base class for all orchestrators.
-
-    In order to implement an orchestrator you will need to subclass from this
-    class.
-
-    How it works:
-    -------------
-    The `run(...)` method is the entrypoint that is executed when the
-    pipeline's run method is called within the user code
-    (`pipeline_instance.run(...)`).
-
-    This method will do some internal preparation and then call the
-    `prepare_or_run_pipeline(...)` method. BaseOrchestrator subclasses must
-    implement this method and either run the pipeline steps directly or deploy
-    the pipeline to some remote infrastructure.
-    """
+    """Base class for all orchestrators."""
 
     _active_deployment: Optional["PipelineDeploymentResponse"] = None
 
