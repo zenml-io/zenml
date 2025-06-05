@@ -130,10 +130,6 @@ class RunInterruptedException(ZenMLBaseException):
     """Raised when a ZenML step gets interrupted/stopped."""
 
 
-class ExecutionInterruptedException(ZenMLBaseException):
-    """Raised when a ZenML execution gets interrupted."""
-
-
 class MethodNotAllowedError(ZenMLBaseException):
     """Raised when the server does not allow a request method."""
 

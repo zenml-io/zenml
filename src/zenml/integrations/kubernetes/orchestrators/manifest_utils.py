@@ -176,10 +176,9 @@ def build_pod_manifest(
     if extra_labels:
         labels.update(extra_labels)
 
-    # Add standard ZenML labels
+    # Add run_name and pipeline_name to the labels
     labels.update(
         {
-            "app": "zenml",
             "run": kube_utils.sanitize_label(run_name),
             "pipeline": kube_utils.sanitize_label(pipeline_name),
         }
