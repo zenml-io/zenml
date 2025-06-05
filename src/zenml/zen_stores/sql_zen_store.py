@@ -462,9 +462,9 @@ class Session(SqlModelSession):
         metrics = self._get_metrics()
         return (
             f" [ "
-            f"conn(active): {metrics['active_connections']}, "
-            f"conn(idle): {metrics['idle_connections']}, "
-            f"conn(overflow): {metrics['overflow_connections']}, "
+            f"conn(active): {metrics['active_connections']} "
+            f"conn(idle): {metrics['idle_connections']} "
+            f"conn(overflow): {metrics['overflow_connections']} "
             f"current_thread: {metrics['current_thread_name']} "
             f"({metrics['current_thread_id']})"
             f" ]"
