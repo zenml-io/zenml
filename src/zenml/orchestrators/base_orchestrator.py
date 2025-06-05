@@ -193,9 +193,6 @@ class BaseOrchestrator(StackComponent, ABC):
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
-
-        Yields:
-            Metadata for the pipeline run.
         """
 
     def run(

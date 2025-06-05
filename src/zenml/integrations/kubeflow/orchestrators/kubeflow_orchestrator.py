@@ -679,6 +679,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If Kubeflow API returns an error.
+
+        Returns:
+            Optional submission result.
         """
         pipeline_name = deployment.pipeline_configuration.name
         settings = cast(

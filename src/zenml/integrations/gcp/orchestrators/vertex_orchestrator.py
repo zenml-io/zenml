@@ -652,8 +652,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             RuntimeError: If the Vertex Orchestrator fails to provision or any
                 other Runtime errors.
 
-        Yields:
-            A dictionary of metadata related to the pipeline run.
+        Returns:
+            Optional submission result.
         """
         # We have to replace the hyphens in the run name with underscores
         # and lower case the string, because the Vertex AI Pipelines service

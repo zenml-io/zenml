@@ -666,6 +666,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If Tekton API returns an error.
+
+        Returns:
+            Optional submission result.
         """
         pipeline_name = deployment.pipeline_configuration.name
         settings = cast(

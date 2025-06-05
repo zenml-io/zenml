@@ -188,6 +188,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
 
+        Raises:
+            RuntimeError: If running the pipeline fails.
+
         Returns:
             Optional submission result.
         """

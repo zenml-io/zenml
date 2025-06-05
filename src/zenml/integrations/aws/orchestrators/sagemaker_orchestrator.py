@@ -973,7 +973,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def generate_schedule_metadata(schedule_arn: str) -> Dict[str, str]:
+    def generate_schedule_metadata(
+        schedule_arn: str,
+    ) -> Dict[str, MetadataType]:
         """Attaches metadata to the ZenML Schedules.
 
         Args:
