@@ -258,7 +258,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         try:
             if (
-                self.submit_pipeline.__func__
+                getattr(self.submit_pipeline, "__func__", None)
                 is BaseOrchestrator.submit_pipeline
             ):
                 logger.warning(

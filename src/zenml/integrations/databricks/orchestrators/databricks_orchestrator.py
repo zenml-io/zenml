@@ -49,7 +49,10 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
+from zenml.orchestrators.wheeled_orchestrator import (
+    SubmissionResult,
+    WheeledOrchestrator,
+)
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
 from zenml.utils.package_utils import clean_requirements
