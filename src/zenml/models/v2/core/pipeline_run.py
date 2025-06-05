@@ -327,7 +327,7 @@ class PipelineRunResponse(
             if self.stack is None:
                 raise ValueError(
                     "The stack that this pipeline run response was executed on"
-                    "has been deleted."
+                    "is either not accessible or has been deleted."
                 )
 
             # Create the orchestrator instance
@@ -342,7 +342,7 @@ class PipelineRunResponse(
             if len(orchestrator_list) == 0:
                 raise ValueError(
                     "The orchestrator that this pipeline run response was "
-                    "executed with has been deleted."
+                    "executed with is either not accessible or has been deleted."
                 )
 
             orchestrator = cast(
@@ -367,6 +367,49 @@ class PipelineRunResponse(
                 )
 
         return self
+
+    def stop_run(self, graceful: bool = True) -> None:
+        """Method to stop a pipeline run.
+
+        Args:
+            graceful: If True, allows for graceful shutdown where possible.
+                If False, forces immediate termination. Default is True.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            ValueError: If the stack of the run response is None.
+        """
+        # Check if the stack is still accessible
+        if self.stack is None:
+            raise ValueError(
+                "The stack that this pipeline run response was executed on "
+                "is either not accessible or has been deleted."
+            )
+
+        # Create the orchestrator instance
+        from zenml.enums import StackComponentType
+        from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+        from zenml.stack.stack_component import StackComponent
+
+        # Check if the stack is still accessible
+        orchestrator_list = self.stack.components.get(
+            StackComponentType.ORCHESTRATOR, []
+        )
+        if len(orchestrator_list) == 0:
+            raise ValueError(
+                "The orchestrator that this pipeline run response was "
+                "executed with is either not accessible or has been deleted."
+            )
+
+        orchestrator = cast(
+            BaseOrchestrator,
+            StackComponent.from_model(component_model=orchestrator_list[0]),
+        )
+
+        # Stop the run
+        orchestrator.stop_run(run=self, graceful=graceful)
 
     # Body and metadata properties
     @property

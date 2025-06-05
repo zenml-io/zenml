@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Utilities to publish pipeline and step runs."""
 
-from typing import TYPE_CHECKING, Dict, List
+from datetime import datetime
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
@@ -54,6 +55,34 @@ def publish_successful_step_run(
     )
 
 
+def publish_step_run_status_update(
+    step_run_id: "UUID",
+    status: Optional["ExecutionStatus"] = None,
+    end_time: Optional[datetime] = None,
+) -> "StepRunResponse":
+    """Publishes a step run update.
+
+    Args:
+        step_run_id: ID of the step run.
+        status: New status of the step run.
+        end_time: New end time of the step run.
+
+    Returns:
+        The updated step run.
+    """
+    from zenml.client import Client
+
+    step_run = Client().zen_store.update_run_step(
+        step_run_id=step_run_id,
+        step_run_update=StepRunUpdate(
+            status=status,
+            end_time=end_time,
+        ),
+    )
+
+    return step_run
+
+
 def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     """Publishes a failed step run.
 
@@ -63,12 +92,10 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     Returns:
         The updated step run.
     """
-    return Client().zen_store.update_run_step(
+    return publish_step_run_status_update(
         step_run_id=step_run_id,
-        step_run_update=StepRunUpdate(
-            status=ExecutionStatus.FAILED,
-            end_time=utc_now(),
-        ),
+        status=ExecutionStatus.FAILED,
+        end_time=utc_now(),
     )
 
 
@@ -92,18 +119,55 @@ def publish_failed_pipeline_run(
     )
 
 
+def publish_pipeline_run_status_update(
+    pipeline_run_id: "UUID",
+    status: ExecutionStatus,
+    end_time: Optional[datetime] = None,
+) -> "PipelineRunResponse":
+    """Publishes a pipeline run status update.
+
+    Args:
+        pipeline_run_id: The ID of the pipeline run to update.
+        status: The new status for the pipeline run.
+        end_time: The end time for the pipeline run. If None, will be set to current time
+            for finished statuses.
+
+    Returns:
+        The updated pipeline run.
+    """
+    if end_time is None and status.is_finished:
+        end_time = utc_now()
+
+    return Client().zen_store.update_run(
+        run_id=pipeline_run_id,
+        run_update=PipelineRunUpdate(
+            status=status,
+            end_time=end_time,
+        ),
+    )
+
+
 def get_pipeline_run_status(
-    step_statuses: List[ExecutionStatus], num_steps: int
+    run_status: ExecutionStatus,
+    step_statuses: List[ExecutionStatus],
+    num_steps: int,
 ) -> ExecutionStatus:
     """Gets the pipeline run status for the given step statuses.
 
     Args:
+        run_status: The status of the run.
         step_statuses: The status of steps in this run.
         num_steps: The total amount of steps in this run.
 
     Returns:
         The run status.
     """
+    if run_status == ExecutionStatus.STOPPING:
+        if all(ExecutionStatus(s).is_finished for s in step_statuses):
+            return ExecutionStatus.STOPPED
+        else:
+            return ExecutionStatus.STOPPING
+
     if ExecutionStatus.FAILED in step_statuses:
         return ExecutionStatus.FAILED
     if (
