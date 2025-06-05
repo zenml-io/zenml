@@ -24,9 +24,13 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.orchestrators.publish_utils import publish_pipeline_run_metadata
+from zenml.orchestrators.publish_utils import (
+    publish_pipeline_run_metadata,
+    publish_pipeline_run_status_update,
+)
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
@@ -365,13 +369,6 @@ class BaseOrchestrator(StackComponent, ABC):
             IllegalOperationError: If the pipeline cannot be stopped in its
                 current state.
         """
-        from zenml.client import Client
-        from zenml.enums import ExecutionStatus
-        from zenml.exceptions import IllegalOperationError
-        from zenml.orchestrators.publish_utils import (
-            publish_pipeline_run_status_update,
-        )
-
         # Check if the orchestrator supports cancellation
         if not self.supports_cancellation:
             raise NotImplementedError(
@@ -386,7 +383,7 @@ class BaseOrchestrator(StackComponent, ABC):
             )
 
         if run.status == ExecutionStatus.STOPPING:
-            raise IllegalOperationError(f"Pipeline is already being stopped.")
+            raise IllegalOperationError("Pipeline is already being stopped.")
 
         # Update pipeline status to STOPPING before calling concrete implementation
         publish_pipeline_run_status_update(
@@ -394,11 +391,8 @@ class BaseOrchestrator(StackComponent, ABC):
             status=ExecutionStatus.STOPPING,
         )
 
-        # Refresh the run to get the updated status
-        updated_run = Client().get_pipeline_run(run.id)
-
         # Now call the concrete implementation
-        self._stop_run(updated_run, graceful)
+        self._stop_run(run=run, graceful=graceful)
 
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = True

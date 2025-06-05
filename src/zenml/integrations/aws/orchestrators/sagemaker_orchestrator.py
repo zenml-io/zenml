@@ -869,15 +869,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         # Map the potential outputs to ZenML ExecutionStatus. Potential values:
         # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
-        if status in ["Executing", "Stopping"]:
+        if status == "Executing":
             return ExecutionStatus.RUNNING
         elif status == "Stopping":
             return ExecutionStatus.STOPPING
         elif status == "Stopped":
             return ExecutionStatus.STOPPED
-        elif status in ["Failed"]:
+        elif status == "Failed":
             return ExecutionStatus.FAILED
-        elif status in ["Succeeded"]:
+        elif status == "Succeeded":
             return ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline execution.")

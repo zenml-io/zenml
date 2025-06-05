@@ -122,8 +122,16 @@ class IllegalOperationError(ZenMLBaseException):
     """Raised when an illegal operation is attempted."""
 
 
-class RunStoppedException(IllegalOperationError):
-    """Raised when trying to perform operations on a stopped/stopping pipeline run."""
+class RunStoppedException(ZenMLBaseException):
+    """Raised when a ZenML pipeline run gets interrupted/stopped."""
+
+
+class RunInterruptedException(ZenMLBaseException):
+    """Raised when a ZenML step gets interrupted/stopped."""
+
+
+class ExecutionInterruptedException(ZenMLBaseException):
+    """Raised when a ZenML execution gets interrupted."""
 
 
 class MethodNotAllowedError(ZenMLBaseException):

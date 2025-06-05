@@ -30,7 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
-from zenml.exceptions import RunStoppedException
+from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
@@ -135,7 +135,6 @@ class StepLauncher:
 
         # Internal properties and methods
         self._step_run: Optional[StepRunResponse] = None
-        self._shutdown_requested = False
         self._setup_signal_handlers()
 
     def _setup_signal_handlers(self) -> None:
@@ -144,33 +143,45 @@ class StepLauncher:
         def signal_handler(signum: int, frame: Any) -> None:
             """Handle shutdown signals gracefully."""
             logger.info(
-                f"Received signal {signum}. Checking pipeline status "
+                f"Received signal shutdown {signum}. Requesting shutdown "
                 f"for step '{self._step_name}'..."
             )
-            self._shutdown_requested = True
 
             try:
-                try:
+                client = Client()
+                pipeline_run = None
+
+                if self._step_run:
+                    pipeline_run = client.get_pipeline_run(
+                        self._step_run.pipeline_run_id
+                    )
+                else:
+                    pipeline_run_list = client.list_pipeline_runs(
+                        deployment_id=self._deployment.id,
+                        orchestrator_run_id=self._orchestrator_run_id,
+                    )
+                    if pipeline_run_list.items:
+                        pipeline_run = pipeline_run_list.items[0]
+
+                if pipeline_run and pipeline_run.status in [
+                    ExecutionStatus.STOPPING,
+                    ExecutionStatus.STOPPED,
+                ]:
                     if self._step_run:
-                        client = Client()
-                        pipeline_run = client.get_pipeline_run(
-                            self._step_run.pipeline_run_id
+                        publish_utils.publish_step_run_status_update(
+                            step_run_id=self._step_run.id,
+                            status=ExecutionStatus.STOPPED,
+                            end_time=utc_now(),
                         )
-                        if pipeline_run.status in [
-                            ExecutionStatus.STOPPING,
-                            ExecutionStatus.STOPPED,
-                        ]:
-                            logger.info(
-                                f"Pipeline is in {pipeline_run.status} state, stopping step execution"
-                            )
-                            raise RunStoppedException(
-                                f"Step '{self._step_name}' was stopped due to pipeline cancellation."
-                            )
-                except Exception as e:
-                    logger.warning(f"Failed to check pipeline status: {e}")
-                    raise e
+                    raise RunStoppedException("Pipeline run in stopped.")
+                else:
+                    raise RunInterruptedException(
+                        "The execution was interrupted."
+                    )
+            except (RunStoppedException, RunInterruptedException):
+                raise
             except Exception as e:
-                raise e
+                raise RunInterruptedException(str(e))
 
         # Register handlers for common termination signals
         signal.signal(signal.SIGTERM, signal_handler)
@@ -282,12 +293,6 @@ class StepLauncher:
                     while retries < max_retries:
                         last_retry = retries == max_retries - 1
                         try:
-                            # Check for shutdown request before running
-                            if self._shutdown_requested:
-                                raise KeyboardInterrupt(
-                                    f"Step '{self._step_name}' was shut down."
-                                )
-
                             # here pass a forced save_to_file callable to be
                             # used as a dump function to use before starting
                             # the external jobs in step operators
@@ -312,17 +317,11 @@ class StepLauncher:
                                 force_write_logs=force_write_logs,
                             )
                             break
-                        except RunStoppedException:
-                            # Handle pipeline cancellation gracefully
-                            logger.info(
-                                f"Step `{self._step_name}` was stopped due to pipeline cancellation."
-                            )
-                            publish_utils.publish_step_run_status_update(
-                                step_run_id=step_run.id,
-                                status=ExecutionStatus.STOPPED,
-                                end_time=utc_now(),
-                            )
-                            raise
+                        except (
+                            RunStoppedException,
+                            RunInterruptedException,
+                        ) as e:
+                            raise e
                         except BaseException as e:  # noqa: E722
                             retries += 1
                             if retries < max_retries:
@@ -360,10 +359,8 @@ class StepLauncher:
                         artifacts=step_run.outputs,
                         tags=pipeline_run.config.tags,
                     )
-
-        except KeyboardInterrupt:
-            # Re-raise KeyboardInterrupt to let higher-level handlers deal with it
-            logger.info(f"Step `{self._step_name}` execution was interrupted")
+        except RunStoppedException:
+            logger.info(f"Pipeline run `{pipeline_run.name}` stopped.")
             raise
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")

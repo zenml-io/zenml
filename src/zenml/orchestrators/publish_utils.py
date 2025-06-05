@@ -138,27 +138,6 @@ def publish_failed_pipeline_run(
     )
 
 
-def publish_stopped_pipeline_run(
-    pipeline_run_id: "UUID",
-) -> "PipelineRunResponse":
-    """Publishes a stopped pipeline run.
-
-    Args:
-        pipeline_run_id: ID of the pipeline run.
-
-    Returns:
-        The updated pipeline run.
-    """
-    client = Client()
-    return client.zen_store.update_run(
-        run_id=pipeline_run_id,
-        run_update=PipelineRunUpdate(
-            status=ExecutionStatus.STOPPED,
-            end_time=utc_now(),
-        ),
-    )
-
-
 def publish_pipeline_run_status_update(
     pipeline_run_id: "UUID",
     status: ExecutionStatus,

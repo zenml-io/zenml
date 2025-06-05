@@ -327,7 +327,7 @@ class PipelineRunResponse(
             if self.stack is None:
                 raise ValueError(
                     "The stack that this pipeline run response was executed on"
-                    "has been deleted."
+                    "is either not accessible or has been deleted."
                 )
 
             # Create the orchestrator instance
@@ -342,7 +342,7 @@ class PipelineRunResponse(
             if len(orchestrator_list) == 0:
                 raise ValueError(
                     "The orchestrator that this pipeline run response was "
-                    "executed with has been deleted."
+                    "executed with is either not accessible or has been deleted."
                 )
 
             orchestrator = cast(
@@ -385,7 +385,7 @@ class PipelineRunResponse(
         if self.stack is None:
             raise ValueError(
                 "The stack that this pipeline run response was executed on "
-                "has been deleted."
+                "is either not accessible or has been deleted."
             )
 
         # Create the orchestrator instance
@@ -400,7 +400,7 @@ class PipelineRunResponse(
         if len(orchestrator_list) == 0:
             raise ValueError(
                 "The orchestrator that this pipeline run response was "
-                "executed with has been deleted."
+                "executed with is either not accessible or has been deleted."
             )
 
         orchestrator = cast(
