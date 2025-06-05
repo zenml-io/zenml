@@ -198,13 +198,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             HyperAIServiceConnector,
         )
 
-        # Basic Docker Compose definition
         compose_definition: Dict[str, Any] = {"version": "3", "services": {}}
-
-        # Get deployment id
         deployment_id = deployment.id
 
-        # Set environment
         os.environ[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
         environment[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
 
@@ -214,12 +210,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Get image
             image = self.get_image(deployment=deployment, step_name=step_name)
 
-            # Get settings
             step_settings = cast(
                 HyperAIOrchestratorSettings, self.get_settings(step)
             )
-
-            # Define container name as combination between deployment id and step name
             container_name = f"{deployment_id}-{step_name}"
 
             # Make Compose service definition for step
@@ -252,10 +245,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     }
                 }
 
-            # Depending on whether it is a scheduled or a realtime pipeline, add
-            # potential .env file to service definition for deployment ID override.
             if deployment.schedule:
-                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment but only if it is set
+                # If running on a schedule, the run ID is set dynamically via
+                # the .env file.
                 if ENV_ZENML_HYPERAI_RUN_ID in environment:
                     del environment[ENV_ZENML_HYPERAI_RUN_ID]
                 compose_definition["services"][container_name]["env_file"] = [
@@ -288,15 +280,12 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                         }
                     )
 
-        # Convert into yaml
-        logger.info("Finalizing Docker Compose definition.")
         compose_definition_yaml: str = yaml.dump(compose_definition)
 
         # Connect to configured HyperAI instance
         logger.info(
             "Connecting to HyperAI instance and placing Docker Compose file."
         )
-        paramiko_client: paramiko.SSHClient
         if connector := self.get_connector():
             paramiko_client = connector.connect()
             if paramiko_client is None:
