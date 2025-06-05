@@ -367,9 +367,9 @@ def main() -> None:
             dag=pipeline_dag,
             run_fn=run_step_on_kubernetes,
             finalize_fn=finalize_run,
+            check_fn=check_pipeline_cancellation,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
             max_parallelism=pipeline_settings.max_parallelism,
-            check_fn=check_pipeline_cancellation,
         ).run()
         logger.info("Orchestration pod completed.")
     finally:
