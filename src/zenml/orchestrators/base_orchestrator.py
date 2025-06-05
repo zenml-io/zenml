@@ -64,7 +64,8 @@ class SubmissionResult:
 
         Args:
             wait_for_completion: A function that waits for the pipeline run to
-                complete.
+                complete. If provided, this will be called after the pipeline
+                run was submitted successfully.
             metadata: Metadata for the pipeline run or schedule.
         """
         self.wait_for_completion = wait_for_completion

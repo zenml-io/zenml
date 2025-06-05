@@ -30,9 +30,7 @@ from zenml.integrations.hyperai.flavors.hyperai_orchestrator_flavor import (
     HyperAIOrchestratorSettings,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators import (
-    ContainerizedOrchestrator,
-)
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.stack import Stack, StackValidator
 
 if TYPE_CHECKING:
@@ -159,14 +157,19 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"Failed to write {description} to HyperAI instance. Does the user have permissions to write?"
             )
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Sequentially runs all pipeline steps in Docker containers.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Assumes that:
         - A HyperAI (hyperai.ai) instance is running on the configured IP address.
@@ -179,14 +182,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             orchestrator.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
-                environment.
+                environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
 
-        Raises:
-            RuntimeError: If a step fails.
+        Returns:
+            Optional submission result.
         """
         from zenml.integrations.hyperai.service_connectors.hyperai_service_connector import (
             HyperAIServiceConnector,
@@ -510,3 +513,5 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 "A cron expression or start time is required for scheduled pipelines."
             )
+
+        return None
