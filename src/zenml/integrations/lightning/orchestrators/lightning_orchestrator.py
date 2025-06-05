@@ -16,11 +16,12 @@
 import os
 import tempfile
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from uuid import uuid4
 
 from lightning_sdk import Machine, Studio
 
+from zenml import __version__
 from zenml.constants import (
     ENV_ZENML_CUSTOM_SOURCE_ROOT,
     ENV_ZENML_WHEEL_PACKAGE_NAME,
@@ -40,9 +41,8 @@ from zenml.integrations.lightning.orchestrators.utils import (
     sanitize_studio_name,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators import SubmissionResult, WheeledOrchestrator
+from zenml.orchestrators import BaseOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.stack import StackValidator
 from zenml.utils import code_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
@@ -52,48 +52,11 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID = "ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID"
-ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "zenml.entrypoints.entrypoint"
 LIGHTNING_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 
 
-class LightningOrchestrator(WheeledOrchestrator):
-    """Base class for Orchestrator responsible for running pipelines remotely in a VM.
-
-    This orchestrator does not support running on a schedule.
-    """
-
-    @property
-    def validator(self) -> Optional[StackValidator]:
-        """Validates the stack.
-
-        In the remote case, checks that the stack contains a container registry,
-        image builder and only remote components.
-
-        Returns:
-            A `StackValidator` instance.
-        """
-
-        def _validate_remote_components(
-            stack: "Stack",
-        ) -> Tuple[bool, str]:
-            for component in stack.components.values():
-                if not component.config.is_local:
-                    continue
-
-                # return False, (
-                #    f"The Lightning orchestrator runs pipelines remotely, "
-                #    f"but the '{component.name}' {component.type.value} is "
-                #    "a local stack component and will not be available in "
-                #    "the Lightning step.\nPlease ensure that you always "
-                #    "use non-local stack components with the Lightning "
-                #    "orchestrator."
-                # )
-
-            return True, ""
-
-        return StackValidator(
-            custom_validation_function=_validate_remote_components,
-        )
+class LightningOrchestrator(BaseOrchestrator):
+    """Lightning orchestrator."""
 
     def _set_lightning_env_vars(
         self,
@@ -226,29 +189,11 @@ class LightningOrchestrator(WheeledOrchestrator):
             LightningOrchestratorSettings, self.get_settings(deployment)
         )
         if deployment.schedule:
-            if (
-                deployment.schedule.catchup
-                or deployment.schedule.interval_second
-            ):
-                logger.warning(
-                    "Lightning orchestrator only uses schedules with the "
-                    "`cron_expression` property, with optional `start_time` and/or `end_time`. "
-                    "All other properties are ignored."
-                )
-            # TODO: WTF is this? These two conditions will always fail, and there
-            # is no handling of schedules below?
-            if deployment.schedule.cron_expression is None:
-                raise ValueError(
-                    "Property `cron_expression` must be set when passing "
-                    "schedule to a Lightning orchestrator."
-                )
-            if deployment.schedule.cron_expression:
-                raise ValueError(
-                    "Property `schedule_timezone` must be set when passing "
-                    "`cron_expression` to a Lightning orchestrator."
-                    "Lightning orchestrator requires a Java Timezone ID to run the pipeline on schedule."
-                    "Please refer to https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html for more information."
-                )
+            logger.warning(
+                "Lightning Orchestrator currently does not support the "
+                "use of schedules. The `schedule` will be ignored "
+                "and the pipeline will be run immediately."
+            )
 
         # Get deployment id
         deployment_id = deployment.id
@@ -256,13 +201,6 @@ class LightningOrchestrator(WheeledOrchestrator):
         pipeline_name = deployment.pipeline_configuration.name
         orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
 
-        # Copy the repository to a temporary directory and add a setup.py file
-        # repository_temp_dir = (
-        #    self.copy_repository_to_temp_dir_and_add_setup_py()
-        # )
-
-        # Create a wheel for the package in the temporary directory
-        # wheel_path = self.create_wheel(temp_dir=repository_temp_dir)
         code_archive = code_utils.CodeArchive(
             root=source_utils.get_source_root()
         )
@@ -404,7 +342,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                 studio.run(
                     f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {custom_command}"
                 )
-            # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+
             logger.info("Running pipeline in async mode")
             studio.run(
                 f"nohup bash -c 'cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {entrypoint_string}' > log_{filename.rsplit('.', 2)[0]}.txt 2>&1 &"
@@ -502,8 +440,7 @@ class LightningOrchestrator(WheeledOrchestrator):
 
             studio.run("pip install uv")
             studio.run(f"uv pip install {requirements}")
-            studio.run("pip install zenml")
-            # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+            studio.run(f"uv pip install zenml=={__version__}")
             for command in settings.custom_commands or []:
                 output = studio.run(
                     f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
@@ -583,8 +520,7 @@ class LightningOrchestrator(WheeledOrchestrator):
 
         studio.run("pip install uv")
         studio.run(f"uv pip install {details['requirements']}")
-        studio.run("pip install zenml")
-        # studio.run(f"pip install {wheel_path.rsplit('/', 1)[-1]}")
+        studio.run(f"uv pip install zenml=={__version__}")
         for command in custom_commands or []:
             output = studio.run(
                 f"cd /teamspace/studios/this_studio/zenml_codes/{filename.rsplit('.', 2)[0]} && {command}"
