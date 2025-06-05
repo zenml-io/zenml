@@ -161,3 +161,27 @@ def publish_step_run_metadata(
             ],
             stack_component_id=stack_component_id,
         )
+
+
+def publish_schedule_metadata(
+    schedule_id: "UUID",
+    schedule_metadata: Dict["UUID", Dict[str, "MetadataType"]],
+) -> None:
+    """Publishes the given schedule metadata.
+
+    Args:
+        schedule_id: The ID of the schedule.
+        schedule_metadata: A dictionary mapping stack component IDs to the
+            metadata they created.
+    """
+    client = Client()
+    for stack_component_id, metadata in schedule_metadata.items():
+        client.create_run_metadata(
+            metadata=metadata,
+            resources=[
+                RunMetadataResource(
+                    id=schedule_id, type=MetadataResourceTypes.SCHEDULE
+                )
+            ],
+            stack_component_id=stack_component_id,
+        )
