@@ -300,19 +300,29 @@ class BaseOrchestrator(StackComponent, ABC):
                 if submission_result:
                     if submission_result.metadata:
                         if placeholder_run:
-                            publish_pipeline_run_metadata(
-                                pipeline_run_id=placeholder_run.id,
-                                pipeline_run_metadata={
-                                    self.id: submission_result.metadata
-                                },
-                            )
+                            try:
+                                publish_pipeline_run_metadata(
+                                    pipeline_run_id=placeholder_run.id,
+                                    pipeline_run_metadata={
+                                        self.id: submission_result.metadata
+                                    },
+                                )
+                            except Exception as e:
+                                logger.debug(
+                                    "Error publishing run metadata: %s", e
+                                )
                         elif deployment.schedule:
-                            publish_schedule_metadata(
-                                schedule_id=deployment.schedule.id,
-                                schedule_metadata={
-                                    self.id: submission_result.metadata
-                                },
-                            )
+                            try:
+                                publish_schedule_metadata(
+                                    schedule_id=deployment.schedule.id,
+                                    schedule_metadata={
+                                        self.id: submission_result.metadata
+                                    },
+                                )
+                            except Exception as e:
+                                logger.debug(
+                                    "Error publishing schedule metadata: %s", e
+                                )
 
                     if submission_result.wait_for_completion:
                         try:
