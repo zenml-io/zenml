@@ -426,6 +426,50 @@ def exponential_backoff_with_jitter(
 class Session(SqlModelSession):
     """Session subclass that automatically tracks duration and calling context."""
 
+    def _get_metrics(self) -> Dict[str, Any]:
+        """Get the metrics for the session.
+
+        Returns:
+            The metrics for the session.
+        """
+        # Get SQLAlchemy connection pool info
+        assert isinstance(self.bind, Engine)
+        assert isinstance(self.bind.pool, QueuePool)
+        checked_out_connections = self.bind.pool.checkedout()
+        available_connections = self.bind.pool.checkedin()
+        overflow = self.bind.pool.overflow()
+
+        # Current thread name/ID
+        current_thread_name = threading.current_thread().name
+        current_thread_id = threading.current_thread().ident
+
+        return {
+            "active_connections": checked_out_connections,
+            "idle_connections": available_connections,
+            "overflow_connections": overflow,
+            "current_thread_name": current_thread_name,
+            "current_thread_id": current_thread_id,
+        }
+
+    def _get_metrics_log_str(self) -> str:
+        """Get the metrics for the session as a string for logging.
+
+        Returns:
+            The metrics for the session as a string for logging.
+        """
+        if not logger.isEnabledFor(logging.DEBUG):
+            return ""
+        metrics = self._get_metrics()
+        return (
+            f" [ "
+            f"conn(active): {metrics['active_connections']}, "
+            f"conn(idle): {metrics['idle_connections']}, "
+            f"conn(overflow): {metrics['overflow_connections']}, "
+            f"current_thread: {metrics['current_thread_name']} "
+            f"({metrics['current_thread_id']})"
+            f" ]"
+        )
+
     def __enter__(self) -> "Session":
         """Enter the context manager.
 
@@ -435,13 +479,6 @@ class Session(SqlModelSession):
         if logger.isEnabledFor(logging.DEBUG):
             # Get the request ID from the current thread object
             self.request_id = threading.current_thread().name
-
-            # Get SQLAlchemy connection pool info
-            assert isinstance(self.bind, Engine)
-            assert isinstance(self.bind.pool, QueuePool)
-            checked_out_connections = self.bind.pool.checkedout()
-            available_connections = self.bind.pool.checkedin()
-            overflow = self.bind.pool.overflow()
 
             # Look up the stack to find the SQLZenStore method
             for frame in inspect.stack():
@@ -457,9 +494,7 @@ class Session(SqlModelSession):
 
             logger.debug(
                 f"[{self.request_id}] SQL STATS - "
-                f"'{self.caller_method}' started [ conn(active): "
-                f"{checked_out_connections} conn(idle): "
-                f"{available_connections} conn(overflow): {overflow} ]"
+                f"'{self.caller_method}' started {self._get_metrics_log_str()}"
             )
 
             self.start_time = time.time()
@@ -482,19 +517,17 @@ class Session(SqlModelSession):
         if logger.isEnabledFor(logging.DEBUG):
             duration = (time.time() - self.start_time) * 1000
 
-            # Get SQLAlchemy connection pool info
-            assert isinstance(self.bind, Engine)
-            assert isinstance(self.bind.pool, QueuePool)
-            checked_out_connections = self.bind.pool.checkedout()
-            available_connections = self.bind.pool.checkedin()
-            overflow = self.bind.pool.overflow()
+            # Add error information to the log
+            error_info = ""
+            if exc_type is not None:
+                error_info = " with ERROR"
+
             logger.debug(
                 f"[{self.request_id}] SQL STATS - "
                 f"'{self.caller_method}' completed in "
-                f"{duration:.2f}ms [ conn(active): "
-                f"{checked_out_connections} conn(idle): "
-                f"{available_connections} conn(overflow): {overflow} ]"
+                f"{duration:.2f}ms {error_info} {self._get_metrics_log_str()}"
             )
+
         super().__exit__(exc_type, exc_val, exc_tb)
 
 
