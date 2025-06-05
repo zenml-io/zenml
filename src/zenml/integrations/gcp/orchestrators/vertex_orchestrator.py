@@ -37,7 +37,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -969,13 +968,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def compute_metadata(
         self, job: aiplatform.PipelineJob
-    ) -> Iterator[Dict[str, MetadataType]]:
+    ) -> Dict[str, MetadataType]:
         """Generate run metadata based on the corresponding Vertex PipelineJob.
 
         Args:
             job: The corresponding PipelineJob object.
 
-        Yields:
+        Returns:
             A dictionary of metadata related to the pipeline run.
         """
         metadata: Dict[str, MetadataType] = {}
@@ -992,7 +991,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         if logs_url := self._compute_orchestrator_logs_url(job):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
-        yield metadata
+        return metadata
 
     @staticmethod
     def _compute_orchestrator_url(

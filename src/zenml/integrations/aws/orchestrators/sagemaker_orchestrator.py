@@ -708,7 +708,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             logger.info(f"The schedule ARN is: {triggers[0]}")
 
-            schedule_metadata = None
+            schedule_metadata = {}
             try:
                 schedule_metadata = self.generate_schedule_metadata(
                     schedule_arn=triggers[0]
