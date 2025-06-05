@@ -138,8 +138,6 @@ class StepRunRequestFactory:
             if cached_step_run := cache_utils.get_cached_step_run(
                 cache_key=cache_key
             ):
-                # TODO: maybe also fetch the docstring/source code from the
-                # cached step run?
                 request.inputs = {
                     input_name: [artifact.id for artifact in artifacts]
                     for input_name, artifacts in cached_step_run.inputs.items()
@@ -153,6 +151,15 @@ class StepRunRequestFactory:
 
                 request.status = ExecutionStatus.CACHED
                 request.end_time = request.start_time
+
+                # As a last resort, we try to reuse the docstring/source code
+                # from the cached step run. This is part of the cache key
+                # computation, so it must be identical to the one we would have
+                # computed ourselves.
+                if request.source_code is None:
+                    request.source_code = cached_step_run.source_code
+                if request.docstring is None:
+                    request.docstring = cached_step_run.docstring
 
     def _get_docstring_and_source_code(
         self, invocation_id: str
