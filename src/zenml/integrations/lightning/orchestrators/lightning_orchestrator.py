@@ -24,7 +24,6 @@ from lightning_sdk import Machine, Studio
 from zenml import __version__
 from zenml.constants import (
     ENV_ZENML_CUSTOM_SOURCE_ROOT,
-    ENV_ZENML_WHEEL_PACKAGE_NAME,
 )
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -178,10 +177,6 @@ class LightningOrchestrator(BaseOrchestrator):
                 environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
 
-        Raises:
-            ValueError: If the schedule is not set or if the cron expression
-                is not set.
-
         Returns:
             Optional submission result.
         """
@@ -219,7 +214,6 @@ class LightningOrchestrator(BaseOrchestrator):
         env_vars[ENV_ZENML_CUSTOM_SOURCE_ROOT] = (
             LIGHTNING_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
         )
-        env_vars[ENV_ZENML_WHEEL_PACKAGE_NAME] = self.package_name
 
         # Create a line-by-line export of environment variables
         env_exports = "\n".join(
