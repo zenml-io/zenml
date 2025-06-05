@@ -394,9 +394,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
-        """Submits a pipeline run to the orchestrator.
+        """Submits a pipeline to the orchestrator.
 
-        This method should only submit the pipeline run and not wait for it to
+        This method should only submit the pipeline and not wait for it to
         complete. If the orchestrator is configured to wait for the pipeline run
         to complete, a function that waits for the pipeline run to complete can
         be passed as part of the submission result.
