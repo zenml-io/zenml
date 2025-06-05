@@ -240,7 +240,7 @@ def add_tags(
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
 
     # Tag an artifact
-    elif artifact is not None:
+    elif artifact is not None and artifact_version is None:
         artifact_model = client.get_artifact(name_id_or_prefix=artifact)
         resource_id = artifact_model.id
         resource_type = TaggableResourceTypes.ARTIFACT
@@ -512,7 +512,7 @@ def remove_tags(
         resource_type = TaggableResourceTypes.PIPELINE_RUN
 
     # Remove tags from an artifact
-    elif artifact is not None:
+    elif artifact is not None and artifact_version is None:
         artifact_model = client.get_artifact(name_id_or_prefix=artifact)
         resource_id = artifact_model.id
         resource_type = TaggableResourceTypes.ARTIFACT
