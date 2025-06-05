@@ -40,8 +40,8 @@ from zenml.integrations.lightning.orchestrators.utils import (
     sanitize_studio_name,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators import SubmissionResult, WheeledOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
 from zenml.utils import code_utils, io_utils, source_utils
 
@@ -194,41 +194,33 @@ class LightningOrchestrator(WheeledOrchestrator):
         assert connector is not None
         connector.configure_local_client()
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Creates a wheel and uploads the pipeline to Lightning.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
 
-        This functions as an intermediary representation of the pipeline which
-        is then deployed to the kubeflow pipelines instance.
-
-        How it works:
-        -------------
-        Before this method is called the `prepare_pipeline_deployment()`
-        method builds a docker image that contains the code for the
-        pipeline, all steps the context around these files.
-
-        Based on this docker image a callable is created which builds
-        task for each step (`_construct_lightning_pipeline`).
-        To do this the entrypoint of the docker image is configured to
-        run the correct step within the docker image. The dependencies
-        between these task are then also configured onto each
-        task by pointing at the downstream steps.
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
-                environment.
+                environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             ValueError: If the schedule is not set or if the cron expression
                 is not set.
+
+        Returns:
+            Optional submission result.
         """
         settings = cast(
             LightningOrchestratorSettings, self.get_settings(deployment)
@@ -243,6 +235,8 @@ class LightningOrchestrator(WheeledOrchestrator):
                     "`cron_expression` property, with optional `start_time` and/or `end_time`. "
                     "All other properties are ignored."
                 )
+            # TODO: WTF is this? These two conditions will always fail, and there
+            # is no handling of schedules below?
             if deployment.schedule.cron_expression is None:
                 raise ValueError(
                     "Property `cron_expression` must be set when passing "
@@ -430,6 +424,7 @@ class LightningOrchestrator(WheeledOrchestrator):
                 env_file_path,
             )
         os.unlink(env_file_path)
+        return None
 
     def _upload_and_run_pipeline(
         self,

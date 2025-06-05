@@ -187,33 +187,6 @@ class BaseOrchestrator(StackComponent, ABC):
     ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """DEPRECATED: Prepare or run a pipeline.
 
-        Depending on the type of orchestrator you'll have to perform slightly
-        different operations.
-
-        Simple Case:
-        ------------
-        The Steps are run directly from within the same environment in which
-        the orchestrator code is executed. In this case you will need to
-        deal with implementation-specific runtime configurations (like the
-        schedule) and then iterate through the steps and finally call
-        `self.run_step(...)` to execute each step.
-
-        Advanced Case:
-        --------------
-        Most orchestrators will not run the steps directly. Instead, they
-        build some intermediate representation of the pipeline that is then
-        used to create and run the pipeline and its steps on the target
-        environment. For such orchestrators this method will have to build
-        this representation and deploy it.
-
-        Regardless of the implementation details, the orchestrator will need
-        to run each step in the target environment. For this the
-        `self.run_step(...)` method should be used.
-
-        The easiest way to make this work is by using an entrypoint
-        configuration to run single steps (`zenml.entrypoints.step_entrypoint_configuration.StepEntrypointConfiguration`)
-        or entire pipelines (`zenml.entrypoints.pipeline_entrypoint_configuration.PipelineEntrypointConfiguration`).
-
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
