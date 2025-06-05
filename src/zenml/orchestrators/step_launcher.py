@@ -321,6 +321,7 @@ class StepLauncher:
                         except (
                             RunStoppedException,
                             RunInterruptedException,
+                            KeyboardInterrupt,
                         ) as e:
                             raise e
                         except BaseException as e:  # noqa: E722
