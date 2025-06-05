@@ -543,7 +543,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"Scheduling Kubernetes run `{pod_name}` with CRON expression "
                 f'`"{cron_expression}"`.'
             )
-            return
+            return None
         else:
             # Create and run the orchestrator pod.
             pod_manifest = build_pod_manifest(
@@ -574,7 +574,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
             if settings.synchronous:
 
-                def _wait_for_run_to_finish():
+                def _wait_for_run_to_finish() -> None:
                     logger.info(
                         "Waiting for Kubernetes orchestrator pod to finish..."
                     )

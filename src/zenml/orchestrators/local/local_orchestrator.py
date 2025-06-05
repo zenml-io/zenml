@@ -96,6 +96,7 @@ class LocalOrchestrator(BaseOrchestrator):
             string_utils.get_human_readable_time(run_duration),
         )
         self._orchestrator_run_id = None
+        return None
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
