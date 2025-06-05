@@ -5603,7 +5603,11 @@ class SqlZenStore(BaseZenStore):
             # make sure that we use the placeholder run with the matching
             # orchestrator_run_id if it exists, before falling back to the
             # placeholder run without any orchestrator_run_id provided.
-            .order_by(col(PipelineRunSchema.orchestrator_run_id).nulls_last())
+            # Note: This works because both SQLite and MySQL consider NULLs
+            # to be lower than any other value. If we add support for other
+            # databases (e.g. PostgreSQL, which considers NULLs to be greater
+            # than any other value), we need to potentially adjust this.
+            .order_by(desc(PipelineRunSchema.orchestrator_run_id))
         ).first()
 
         if not run_schema:
