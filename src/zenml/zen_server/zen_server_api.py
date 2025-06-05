@@ -56,6 +56,7 @@ from zenml.constants import (
     API,
     DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS,
     HEALTH,
+    READY,
 )
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.models import ServerDeploymentType
@@ -118,6 +119,10 @@ from zenml.zen_server.utils import (
 )
 
 DASHBOARD_DIRECTORY = "dashboard"
+
+# Track active requests with an atomic counter
+active_requests_count = 0
+active_requests_lock = Lock()
 
 request_ids: ContextVar[Optional[str]] = ContextVar(
     "request_ids", default=None
@@ -379,7 +384,7 @@ async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
 
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"QUEUED {get_system_metrics_log_str()}"
+        f"QUEUED {get_system_metrics_log_str(request)}"
     )
 
     start_time = time.time()
@@ -401,7 +406,8 @@ async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
 
         logger.debug(
             f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-            f"THROTTLED after {duration:.2f}ms {get_system_metrics_log_str()}"
+            f"THROTTLED after {duration:.2f}ms "
+            f"{get_system_metrics_log_str(request)}"
         )
 
         # We return a 429 error, basically telling the client to slow down.
@@ -420,7 +426,8 @@ async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
 
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"ACCEPTED after {duration:.2f}ms {get_system_metrics_log_str()}"
+        f"ACCEPTED after {duration:.2f}ms "
+        f"{get_system_metrics_log_str(request)}"
     )
 
     try:
@@ -441,6 +448,8 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     Returns:
         The response to the request.
     """
+    global active_requests_count
+
     if not logger.isEnabledFor(logging.DEBUG):
         return await call_next(request)
 
@@ -451,25 +460,36 @@ async def log_requests(request: Request, call_next: Any) -> Any:
         request_id = f"{request_id}/{source}"
 
     request_ids.set(request_id)
+
     client_ip = request.client.host if request.client else "unknown"
     method = request.method
     url_path = request.url.path
 
+    if url_path not in [HEALTH, READY]:
+        async with active_requests_lock:
+            active_requests_count += 1
+
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"RECEIVED {get_system_metrics_log_str()}"
+        f"RECEIVED {get_system_metrics_log_str(request)}"
     )
 
     start_time = time.time()
-    response = await call_next(request)
-    duration = (time.time() - start_time) * 1000
-    status_code = response.status_code
+    try:
+        response = await call_next(request)
+        duration = (time.time() - start_time) * 1000
+        status_code = response.status_code
 
-    logger.debug(
-        f"[{request_id}] API STATS - {status_code} {method} {url_path} from "
-        f"{client_ip} took {duration:.2f}ms {get_system_metrics_log_str()}"
-    )
-    return response
+        logger.debug(
+            f"[{request_id}] API STATS - {status_code} {method} {url_path} from "
+            f"{client_ip} took {duration:.2f}ms "
+            f"{get_system_metrics_log_str(request)}"
+        )
+        return response
+    finally:
+        if url_path not in [HEALTH, READY]:
+            async with active_requests_lock:
+                active_requests_count -= 1
 
 
 app.add_middleware(
@@ -575,6 +595,18 @@ async def health() -> str:
 
     Returns:
         String representing the health status of the server.
+    """
+    return "OK"
+
+
+# Basic Ready Endpoint
+@app.head(READY, include_in_schema=False)
+@app.get(READY)
+async def ready() -> str:
+    """Get readiness status of the server.
+
+    Returns:
+        String representing the readiness status of the server.
     """
     return "OK"
 

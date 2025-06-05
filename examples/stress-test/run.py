@@ -297,7 +297,7 @@ def report_results() -> None:
     print(f"Number of steps: {len(results)}")
 
 
-@pipeline(enable_cache=False, settings=settings)
+@pipeline(enable_cache=False)
 def load_test_pipeline(
     num_parallel_steps: int, duration: int, sleep_interval: float
 ) -> None:
@@ -360,8 +360,19 @@ def load_test_pipeline(
     type=int,
     show_default=True,
 )
+@click.option(
+    "--max-parallel-steps",
+    "-m",
+    help="Maximum number of parallel steps to run",
+    required=False,
+    type=int,
+)
 def main(
-    parallel_steps: int, duration: int, sleep_interval: float, num_tags: int
+    parallel_steps: int,
+    duration: int,
+    sleep_interval: float,
+    num_tags: int,
+    max_parallel_steps: int,
 ) -> None:
     """Execute a ZenML load test with configurable parallel steps.
 
@@ -373,12 +384,19 @@ def main(
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
         num_tags: The number of tags to add to the pipeline.
+        max_parallel_steps: The maximum number of parallel steps to run.
     """
     click.echo(f"Starting load test with {parallel_steps} parallel steps...")
     click.echo(f"Duration: {duration}s, Sleep Interval: {sleep_interval}s")
 
+    if max_parallel_steps:
+        orchestrator_settings = settings["orchestrator"]
+        assert isinstance(orchestrator_settings, KubernetesOrchestratorSettings)
+        orchestrator_settings.max_parallelism = max_parallel_steps
+
     load_test_pipeline.configure(
         tags=[Tag(name=f"tag_{i}", cascade=True) for i in range(num_tags)],
+        settings=settings,
     )
 
     load_test_pipeline(

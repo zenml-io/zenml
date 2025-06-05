@@ -44,7 +44,9 @@ from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     API,
     ENV_ZENML_SERVER,
+    HEALTH,
     INFO,
+    READY,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError, OAuthError
@@ -521,6 +523,7 @@ def is_user_request(request: "Request") -> bool:
     # Define system paths that should be excluded
     system_paths: List[str] = [
         "/health",
+        "/ready",
         "/metrics",
         "/system",
         "/docs",
@@ -653,79 +656,69 @@ def set_filter_project_scope(
     )
 
 
+process = psutil.Process()
+try:
+    fd_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
+except Exception:
+    fd_limit = "N/A"
+
+
 def get_system_metrics() -> Dict[str, Any]:
     """Get comprehensive system metrics.
 
     Returns:
         Dict containing system metrics
     """
-    process = psutil.Process()
+    # Get active requests count
+    from zenml.zen_server.zen_server_api import active_requests_count
 
     # Memory limits
     memory = process.memory_info()
-    virtual_memory = psutil.virtual_memory()
-
-    # CPU limits
-    cpu_count = psutil.cpu_count()
-    cpu_percent = process.cpu_percent()
 
     # File descriptors
     try:
-        soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
         open_fds = process.num_fds() if hasattr(process, "num_fds") else None
     except Exception:
-        soft_limit, hard_limit = None, None
-        open_fds = None
-
-    # Network connections
-    connections = len(process.connections())
-    socket_count = sum(
-        1 for conn in process.connections() if conn.status != psutil.CONN_NONE
-    )
-
-    # Thread limits
-    _, thread_hard_limit = resource.getrlimit(resource.RLIMIT_NPROC)
+        open_fds = "N/A"
 
     # Current thread name/ID
-    current_thread_name = threading.current_thread().name
-    current_thread_id = threading.current_thread().ident
+    current_thread = threading.current_thread()
+    current_thread_name = current_thread.name
+    current_thread_id = current_thread.ident
 
     return {
         "memory_used_mb": memory.rss / (1024 * 1024),
-        "memory_percent": process.memory_percent(),
-        "memory_available_mb": virtual_memory.available / (1024 * 1024),
-        "cpu_count": cpu_count,
-        "cpu_percent": cpu_percent,
         "open_fds": open_fds,
-        "fd_soft_limit": soft_limit,
-        "fd_hard_limit": hard_limit,
-        "connections": connections,
-        "sockets": socket_count,
+        "fd_limit": fd_limit,
+        "active_requests": active_requests_count,
         "thread_count": threading.active_count(),
-        "thread_limit": thread_hard_limit,
         "current_thread_name": current_thread_name,
         "current_thread_id": current_thread_id,
     }
 
 
-def get_system_metrics_log_str() -> str:
+def get_system_metrics_log_str(request: "Request") -> str:
     """Get the system metrics as a string for logging.
+
+    Args:
+        request: The request object.
 
     Returns:
         The system metrics as a string for debugging logging.
     """
     if not logger.isEnabledFor(logging.DEBUG):
         return ""
+    if request.url.path in [HEALTH, READY]:
+        # Don't log system metrics for health and ready endpoints to keep them
+        # fast
+        return ""
     metrics = get_system_metrics()
     return (
         f" [ "
-        f"threads: {metrics['thread_count']}/{metrics['thread_limit']}, "
-        f"connections: {metrics['connections']}, "
-        f"sockets: {metrics['sockets']}, "
-        f"file_descriptors: {metrics['open_fds'] if metrics['open_fds'] is not None else 'N/A'}"
-        f"/{metrics['fd_soft_limit']}, "
-        f"memory: {metrics['memory_used_mb']:.1f}MB/{metrics['memory_available_mb']:.1f}MB ({metrics['memory_percent']:.1f}%), "
-        f"cpu: {metrics['cpu_percent']:.1f}% of {metrics['cpu_count']} cores"
+        f"threads: {metrics['thread_count']} "
+        f"active_requests: {metrics['active_requests']} "
+        f"file_descriptors: {metrics['open_fds']} / {metrics['fd_limit']} "
+        f"memory: {metrics['memory_used_mb']:.1f}MB "
         f"current_thread: {metrics['current_thread_name']} ({metrics['current_thread_id']})"
         f" ]"
     )

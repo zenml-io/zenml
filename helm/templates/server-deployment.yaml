@@ -212,10 +212,18 @@ spec:
             httpGet:
               path: /health
               port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           lifecycle:
             preStop:
               exec:
