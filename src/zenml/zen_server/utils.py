@@ -14,7 +14,9 @@
 """Util functions for the ZenML Server."""
 
 import inspect
+import logging
 import os
+import resource
 import threading
 from functools import wraps
 from typing import (
@@ -32,6 +34,7 @@ from typing import (
 )
 from uuid import UUID
 
+import psutil
 from pydantic import BaseModel, ValidationError
 from typing_extensions import ParamSpec
 
@@ -353,6 +356,7 @@ def async_fastapi_endpoint_wrapper(
 
             from zenml.zen_server.auth import AuthContext, set_auth_context
 
+            original_thread_name = threading.current_thread().name
             if request_id:
                 # Change the name of the current thread to the request ID
                 threading.current_thread().name = request_id
@@ -381,6 +385,9 @@ def async_fastapi_endpoint_wrapper(
                 logger.exception("API error")
                 http_exception = http_exception_from_error(error)
                 raise http_exception
+            finally:
+                # Reset the name of the current thread
+                threading.current_thread().name = original_thread_name
 
         return await run_in_threadpool(decorated, *args, **kwargs)
 
@@ -643,4 +650,82 @@ def set_filter_project_scope(
     zen_store().set_filter_project_id(
         filter_model=filter_model,
         project_name_or_id=project_name_or_id,
+    )
+
+
+def get_system_metrics() -> Dict[str, Any]:
+    """Get comprehensive system metrics.
+
+    Returns:
+        Dict containing system metrics
+    """
+    process = psutil.Process()
+
+    # Memory limits
+    memory = process.memory_info()
+    virtual_memory = psutil.virtual_memory()
+
+    # CPU limits
+    cpu_count = psutil.cpu_count()
+    cpu_percent = process.cpu_percent()
+
+    # File descriptors
+    try:
+        soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+        open_fds = process.num_fds() if hasattr(process, "num_fds") else None
+    except Exception:
+        soft_limit, hard_limit = None, None
+        open_fds = None
+
+    # Network connections
+    connections = len(process.connections())
+    socket_count = sum(
+        1 for conn in process.connections() if conn.status != psutil.CONN_NONE
+    )
+
+    # Thread limits
+    _, thread_hard_limit = resource.getrlimit(resource.RLIMIT_NPROC)
+
+    # Current thread name/ID
+    current_thread_name = threading.current_thread().name
+    current_thread_id = threading.current_thread().ident
+
+    return {
+        "memory_used_mb": memory.rss / (1024 * 1024),
+        "memory_percent": process.memory_percent(),
+        "memory_available_mb": virtual_memory.available / (1024 * 1024),
+        "cpu_count": cpu_count,
+        "cpu_percent": cpu_percent,
+        "open_fds": open_fds,
+        "fd_soft_limit": soft_limit,
+        "fd_hard_limit": hard_limit,
+        "connections": connections,
+        "sockets": socket_count,
+        "thread_count": threading.active_count(),
+        "thread_limit": thread_hard_limit,
+        "current_thread_name": current_thread_name,
+        "current_thread_id": current_thread_id,
+    }
+
+
+def get_system_metrics_log_str() -> str:
+    """Get the system metrics as a string for logging.
+
+    Returns:
+        The system metrics as a string for debugging logging.
+    """
+    if not logger.isEnabledFor(logging.DEBUG):
+        return ""
+    metrics = get_system_metrics()
+    return (
+        f" [ "
+        f"threads: {metrics['thread_count']}/{metrics['thread_limit']}, "
+        f"connections: {metrics['connections']}, "
+        f"sockets: {metrics['sockets']}, "
+        f"file_descriptors: {metrics['open_fds'] if metrics['open_fds'] is not None else 'N/A'}"
+        f"/{metrics['fd_soft_limit']}, "
+        f"memory: {metrics['memory_used_mb']:.1f}MB/{metrics['memory_available_mb']:.1f}MB ({metrics['memory_percent']:.1f}%), "
+        f"cpu: {metrics['cpu_percent']:.1f}% of {metrics['cpu_count']} cores"
+        f"current_thread: {metrics['current_thread_name']} ({metrics['current_thread_id']})"
+        f" ]"
     )

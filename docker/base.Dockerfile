@@ -184,6 +184,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
 COPY --chown=$USERNAME:$USER_GID --from=server-builder /opt/venv /opt/venv
 # Copy the requirements.txt file from the builder stage
 COPY --chown=$USERNAME:$USER_GID --from=server-builder /zenml/requirements.txt /zenml/requirements.txt
+COPY --chown=$USERNAME:$USER_GID scripts/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 ENV PATH="$VIRTUAL_ENV/bin:/home/$USERNAME/.local/bin:$PATH"
 
@@ -192,5 +194,6 @@ USER $USERNAME
 
 # Start the ZenML server
 EXPOSE 8080
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*"]
-CMD ["--port", "8080", "--host",  "0.0.0.0"]
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--port", "8080", "--host",  "0.0.0.0"]

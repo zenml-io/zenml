@@ -22,7 +22,6 @@ To run this file locally, execute:
 
 import logging
 import os
-import threading
 import time
 from asyncio import Lock, Semaphore, TimeoutError, wait_for
 from asyncio.log import logger
@@ -104,6 +103,7 @@ from zenml.zen_server.secure_headers import (
     secure_headers,
 )
 from zenml.zen_server.utils import (
+    get_system_metrics_log_str,
     initialize_feature_gate,
     initialize_memcache,
     initialize_plugins,
@@ -371,7 +371,6 @@ async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
 
     server_request_timeout = server_config().server_request_timeout
 
-    active_threads = threading.active_count()
     request_id = request_ids.get()
 
     client_ip = request.client.host if request.client else "unknown"
@@ -380,9 +379,7 @@ async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
 
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"QUEUED [ "
-        f"threads: {active_threads} "
-        f"]"
+        f"QUEUED {get_system_metrics_log_str()}"
     )
 
     start_time = time.time()
@@ -401,13 +398,10 @@ async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
     except TimeoutError:
         end_time = time.time()
         duration = (end_time - start_time) * 1000
-        active_threads = threading.active_count()
 
         logger.debug(
             f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-            f"THROTTLED after {duration:.2f}ms [ "
-            f"threads: {active_threads} "
-            f"]"
+            f"THROTTLED after {duration:.2f}ms {get_system_metrics_log_str()}"
         )
 
         # We return a 429 error, basically telling the client to slow down.
@@ -423,13 +417,10 @@ async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
         )
 
     duration = (time.time() - start_time) * 1000
-    active_threads = threading.active_count()
 
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"ACCEPTED after {duration:.2f}ms [ "
-        f"threads: {active_threads} "
-        f"]"
+        f"ACCEPTED after {duration:.2f}ms {get_system_metrics_log_str()}"
     )
 
     try:
@@ -453,9 +444,6 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     if not logger.isEnabledFor(logging.DEBUG):
         return await call_next(request)
 
-    # Get active threads count
-    active_threads = threading.active_count()
-
     request_id = request.headers.get("X-Request-ID", str(uuid4())[:8])
     # Detect if the request comes from Python, Web UI or something else
     if source := request.headers.get("User-Agent"):
@@ -469,9 +457,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
 
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"RECEIVED [ "
-        f"threads: {active_threads} "
-        f"]"
+        f"RECEIVED {get_system_metrics_log_str()}"
     )
 
     start_time = time.time()
@@ -481,9 +467,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
 
     logger.debug(
         f"[{request_id}] API STATS - {status_code} {method} {url_path} from "
-        f"{client_ip} took {duration:.2f}ms [ "
-        f"threads: {active_threads} "
-        f"]"
+        f"{client_ip} took {duration:.2f}ms {get_system_metrics_log_str()}"
     )
     return response
 
