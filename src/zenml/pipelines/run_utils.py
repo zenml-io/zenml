@@ -137,8 +137,9 @@ def deploy_pipeline(
         stack: The stack on which to run the deployment.
         placeholder_run: An optional placeholder run for the deployment.
 
+    # noqa: DAR401
     Raises:
-        Exception: Any exception that happened while deploying or running
+        BaseException: Any exception that happened while deploying or running
             (in case it happens synchronously) the pipeline.
     """
     # Prevent execution of nested pipelines which might lead to
@@ -155,8 +156,7 @@ def deploy_pipeline(
         # Don't mark the run as failed if the error happened during monitoring
         # of the run.
         raise e.original_exception from None
-    # TODO: this doesn't catch errors before
-    except Exception as e:
+    except BaseException as e:
         if (
             placeholder_run
             and not Client()
