@@ -316,9 +316,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
-            step_environment: Dict[str, Union[str, PipelineVariable]] = (
-                step_environments[step_name]
-            )
+            step_environment = step_environments[step_name]
 
             # Sagemaker does not allow environment variables longer than 256
             # characters to be passed to Processor steps. If an environment variable
@@ -513,10 +511,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         )
                     )
 
-            step_environment = {
+            final_step_environment: Dict[str, Union[str, PipelineVariable]] = {
                 key: str(value) for key, value in step_environment.items()
             }
-            step_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
+            final_step_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
                 ExecutionVariables.PIPELINE_EXECUTION_ARN
             )
 
@@ -526,7 +524,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 estimator = Estimator(
                     keep_alive_period_in_seconds=step_settings.keep_alive_period_in_seconds,
                     output_path=output_path,
-                    environment=step_environment,
+                    environment=final_step_environment,
                     container_entry_point=entrypoint,
                     **args_for_step_executor,
                 )
@@ -547,7 +545,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         Optional[List[Union[str, PipelineVariable]]],
                         entrypoint,
                     ),
-                    env=step_environment,
+                    env=final_step_environment,
                     **args_for_step_executor,
                 )
 
