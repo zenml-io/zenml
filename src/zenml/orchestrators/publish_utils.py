@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
-from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
@@ -32,8 +31,6 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from zenml.metadata.metadata_types import MetadataType
-
-logger = get_logger(__name__)
 
 
 def publish_successful_step_run(
@@ -98,22 +95,6 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     return publish_step_run_status_update(
         step_run_id=step_run_id,
         status=ExecutionStatus.FAILED,
-        end_time=utc_now(),
-    )
-
-
-def publish_stopped_step_run(step_run_id: "UUID") -> "StepRunResponse":
-    """Publish a step run with STOPPED status.
-
-    Args:
-        step_run_id: ID of the step run.
-
-    Returns:
-        The updated step run.
-    """
-    return publish_step_run_status_update(
-        step_run_id=step_run_id,
-        status=ExecutionStatus.STOPPED,
         end_time=utc_now(),
     )
 
