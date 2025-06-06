@@ -657,10 +657,11 @@ def set_filter_project_scope(
 
 
 process = psutil.Process()
+fd_limit: Union[int, str] = "N/A"
 try:
     fd_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
 except Exception:
-    fd_limit = "N/A"
+    pass
 
 
 def get_system_metrics() -> Dict[str, Any]:
@@ -676,10 +677,11 @@ def get_system_metrics() -> Dict[str, Any]:
     memory = process.memory_info()
 
     # File descriptors
+    open_fds: Union[int, str] = "N/A"
     try:
         open_fds = process.num_fds() if hasattr(process, "num_fds") else None
     except Exception:
-        open_fds = "N/A"
+        pass
 
     # Current thread name/ID
     current_thread = threading.current_thread()
