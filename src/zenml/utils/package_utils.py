@@ -14,7 +14,7 @@
 """Utility functions for the package."""
 
 import sys
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, cast
 
 import requests
 from packaging import version
@@ -138,7 +138,7 @@ def get_dependencies(
         A list of requirements.
     """
     dist = distribution(requirement.name)
-    marker_environment = default_environment()
+    marker_environment = cast(Dict[str, str], default_environment())
 
     dependencies = []
 
