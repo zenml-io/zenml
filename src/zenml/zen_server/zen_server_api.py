@@ -34,7 +34,7 @@ from uuid import uuid4
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import (
@@ -462,12 +462,11 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     request_ids.set(request_id)
 
     client_ip = request.client.host if request.client else "unknown"
-    method = request.method
     url_path = request.url.path
+    method = request.method
 
-    if url_path not in [HEALTH, READY]:
-        async with active_requests_lock:
-            active_requests_count += 1
+    async with active_requests_lock:
+        active_requests_count += 1
 
     logger.debug(
         f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
@@ -487,9 +486,8 @@ async def log_requests(request: Request, call_next: Any) -> Any:
         )
         return response
     finally:
-        if url_path not in [HEALTH, READY]:
-            async with active_requests_lock:
-                active_requests_count -= 1
+        async with active_requests_lock:
+            active_requests_count -= 1
 
 
 app.add_middleware(
@@ -536,6 +534,24 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
 
     secure_headers().framework.fastapi(response)
     return response
+
+
+@app.middleware("http")
+async def skip_health_middleware(request: Request, call_next: Any) -> Any:
+    """Skip health and ready endpoints.
+
+    Args:
+        request: The incoming request.
+        call_next: The next function to be called.
+
+    Returns:
+        The response to the request.
+    """
+    if request.url.path in [HEALTH, READY]:
+        # Skip expensive processing
+        return PlainTextResponse("ok")
+
+    return await call_next(request)
 
 
 @app.on_event("startup")

@@ -391,7 +391,9 @@ def main(
 
     if max_parallel_steps:
         orchestrator_settings = settings["orchestrator"]
-        assert isinstance(orchestrator_settings, KubernetesOrchestratorSettings)
+        assert isinstance(
+            orchestrator_settings, KubernetesOrchestratorSettings
+        )
         orchestrator_settings.max_parallelism = max_parallel_steps
 
     load_test_pipeline.configure(
