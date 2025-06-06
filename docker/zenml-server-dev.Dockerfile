@@ -150,7 +150,7 @@ RUN pip install --no-deps --no-cache -e .[server,secrets-aws,secrets-gcp,secrets
 EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload", "--access-log", "--port", "8080", "--host",  "0.0.0.0"]
+CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload", "--port", "8080", "--host",  "0.0.0.0"]
 
 
 FROM common-runtime AS runtime
@@ -163,4 +163,4 @@ RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-az
 EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--access-log", "--port", "8080", "--host",  "0.0.0.0"]
+CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--port", "8080", "--host",  "0.0.0.0"]
