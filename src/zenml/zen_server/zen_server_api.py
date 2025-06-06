@@ -37,6 +37,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import (
     BaseHTTPMiddleware,
     RequestResponseEndpoint,
@@ -115,6 +116,8 @@ from zenml.zen_server.utils import (
     is_user_request,
     run_template_executor,
     server_config,
+    start_event_loop_lag_monitor,
+    stop_event_loop_lag_monitor,
     zen_store,
 )
 
@@ -298,8 +301,13 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
                     report_user_activity = True
 
             if report_user_activity:
-                zen_store()._update_last_user_activity_timestamp(
-                    last_user_activity=last_user_activity
+                # We don't want to make a DB call here because we're in the
+                # context of the asyncio event loop and it would block the
+                # entire application for who knows how long.
+                # We use the threadpool for it.
+                await run_in_threadpool(
+                    zen_store()._update_last_user_activity_timestamp,
+                    last_user_activity=last_user_activity,
                 )
     except Exception as e:
         logger.debug(
@@ -577,10 +585,15 @@ def initialize() -> None:
         # ZenML server is running or to update the version and server URL.
         send_pro_workspace_status_update()
 
+    if logger.isEnabledFor(logging.DEBUG):
+        start_event_loop_lag_monitor()
+
 
 @app.on_event("shutdown")
 def shutdown() -> None:
     """Shutdown the ZenML server."""
+    if logger.isEnabledFor(logging.DEBUG):
+        stop_event_loop_lag_monitor()
     run_template_executor().shutdown(wait=True)
 
 

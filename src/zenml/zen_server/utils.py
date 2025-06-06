@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Util functions for the ZenML Server."""
 
+import asyncio
 import inspect
 import logging
 import os
 import resource
 import threading
+import time
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -679,7 +681,7 @@ def get_system_metrics() -> Dict[str, Any]:
     # File descriptors
     open_fds: Union[int, str] = "N/A"
     try:
-        open_fds = process.num_fds() if hasattr(process, "num_fds") else None
+        open_fds = process.num_fds() if hasattr(process, "num_fds") else "N/A"
     except Exception:
         pass
 
@@ -724,3 +726,34 @@ def get_system_metrics_log_str(request: "Request") -> str:
         f"current_thread: {metrics['current_thread_name']} ({metrics['current_thread_id']})"
         f" ]"
     )
+
+
+event_loop_lag_monitor_task: Optional[asyncio.Task[None]] = None
+
+
+def start_event_loop_lag_monitor(threshold_ms: int = 100) -> None:
+    """Start the event loop lag monitor.
+
+    Args:
+        threshold_ms: The threshold in milliseconds for the event loop lag.
+    """
+    global event_loop_lag_monitor_task
+
+    async def monitor() -> None:
+        while True:
+            start = time.perf_counter()
+            await asyncio.sleep(0)
+            delay = (time.perf_counter() - start) * 1000
+            if delay > threshold_ms:
+                logger.warning(f"⚠️  Event loop lag detected: {delay:.2f}ms")
+            await asyncio.sleep(0.5)
+
+    event_loop_lag_monitor_task = asyncio.create_task(monitor())
+
+
+def stop_event_loop_lag_monitor() -> None:
+    """Stop the event loop lag monitor."""
+    global event_loop_lag_monitor_task
+    if event_loop_lag_monitor_task:
+        event_loop_lag_monitor_task.cancel()
+        event_loop_lag_monitor_task = None
