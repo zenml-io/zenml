@@ -13,16 +13,14 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
-import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
-import pkg_resources
-from pkg_resources import Requirement
+from packaging.requirements import Requirement
 
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.stack.flavor import Flavor
-from zenml.utils.integration_utils import parse_requirement
+from zenml.utils.package_utils import get_dependencies, requirement_installed
 
 if TYPE_CHECKING:
     from zenml.plugins.base_plugin_flavor import BasePluginFlavor
@@ -69,65 +67,32 @@ class Integration(metaclass=IntegrationMeta):
         Returns:
             True if all required packages are installed, False otherwise.
         """
-        for r in cls.get_requirements():
-            try:
-                # First check if the base package is installed
-                dist = pkg_resources.get_distribution(r)
+        for requirement in cls.get_requirements():
+            parsed_requirement = Requirement(requirement)
 
-                # Next, check if the dependencies (including extras) are
-                # installed
-                deps: List[Requirement] = []
-
-                _, extras = parse_requirement(r)
-                if extras:
-                    extra_list = extras[1:-1].split(",")
-                    for extra in extra_list:
-                        try:
-                            requirements = dist.requires(extras=[extra])  # type: ignore[arg-type]
-                        except pkg_resources.UnknownExtra as e:
-                            logger.debug(f"Unknown extra: {str(e)}")
-                            return False
-                        deps.extend(requirements)
-                else:
-                    deps = dist.requires()
-
-                for ri in deps:
-                    try:
-                        # Remove the "extra == ..." part from the requirement string
-                        cleaned_req = re.sub(
-                            r"; extra == \"\w+\"", "", str(ri)
-                        )
-                        pkg_resources.get_distribution(cleaned_req)
-                    except pkg_resources.DistributionNotFound as e:
-                        logger.debug(
-                            f"Unable to find required dependency "
-                            f"'{e.req}' for requirement '{r}' "
-                            f"necessary for integration '{cls.NAME}'."
-                        )
-                        return False
-                    except pkg_resources.VersionConflict as e:
-                        logger.debug(
-                            f"Package version '{e.dist}' does not match "
-                            f"version '{e.req}' required by '{r}' "
-                            f"necessary for integration '{cls.NAME}'."
-                        )
-                        return False
-
-            except pkg_resources.DistributionNotFound as e:
+            if not requirement_installed(parsed_requirement):
                 logger.debug(
-                    f"Unable to find required package '{e.req}' for "
-                    f"integration {cls.NAME}."
+                    "Requirement '%s' for integration '%s' is not installed "
+                    "or installed with the wrong version.",
+                    requirement,
+                    cls.NAME,
                 )
                 return False
-            except pkg_resources.VersionConflict as e:
-                logger.debug(
-                    f"Package version '{e.dist}' does not match version "
-                    f"'{e.req}' necessary for integration {cls.NAME}."
-                )
-                return False
+
+            dependencies = get_dependencies(parsed_requirement)
+
+            for dependency in dependencies:
+                if not requirement_installed(dependency):
+                    logger.debug(
+                        "Requirement '%s' for integration '%s' is not "
+                        "installed or installed with the wrong version.",
+                        dependency,
+                        cls.NAME,
+                    )
+                    return False
 
         logger.debug(
-            f"Integration {cls.NAME} is installed correctly with "
+            f"Integration '{cls.NAME}' is installed correctly with "
             f"requirements {cls.get_requirements()}."
         )
         return True
