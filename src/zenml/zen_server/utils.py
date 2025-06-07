@@ -321,7 +321,7 @@ def async_fastapi_endpoint_wrapper(
     - Sets the auth_context context variable if the endpoint is authenticated.
     - Converts exceptions to HTTPExceptions with the correct status code.
     - Converts the sync endpoint function to an coroutine and runs the original
-      function in a worker threadpool. See below for more details.
+    function in a worker threadpool. See below for more details.
 
     Args:
         func: Function to decorate.
@@ -349,7 +349,13 @@ def async_fastapi_endpoint_wrapper(
 
         from zenml.zen_server.zen_server_api import request_ids
 
-        request_id = request_ids.get()
+        if logger.isEnabledFor(logging.DEBUG):
+            request_id = request_ids.get()
+            async_start_time = time.time()
+            logger.debug(
+                f"[{request_id}] ENDPOINT STATS - async {func.__name__} "
+                "STARTED"
+            )
 
         @wraps(func)
         def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
@@ -360,10 +366,18 @@ def async_fastapi_endpoint_wrapper(
 
             from zenml.zen_server.auth import AuthContext, set_auth_context
 
-            original_thread_name = threading.current_thread().name
-            if request_id:
-                # Change the name of the current thread to the request ID
-                threading.current_thread().name = request_id
+            if logger.isEnabledFor(logging.DEBUG):
+                sync_start_time = time.time()
+                duration = (time.time() - async_start_time) * 1000
+                logger.debug(
+                    f"[{request_id}] ENDPOINT STATS - sync {func.__name__} "
+                    f"STARTED after {duration:.2f}ms"
+                )
+
+                original_thread_name = threading.current_thread().name
+                if request_id:
+                    # Change the name of the current thread to the request ID
+                    threading.current_thread().name = request_id
 
             for arg in args:
                 if isinstance(arg, AuthContext):
@@ -390,10 +404,25 @@ def async_fastapi_endpoint_wrapper(
                 http_exception = http_exception_from_error(error)
                 raise http_exception
             finally:
-                # Reset the name of the current thread
-                threading.current_thread().name = original_thread_name
+                if logger.isEnabledFor(logging.DEBUG):
+                    # Reset the name of the current thread
+                    threading.current_thread().name = original_thread_name
 
-        return await run_in_threadpool(decorated, *args, **kwargs)
+                    duration = (time.time() - sync_start_time) * 1000
+                    logger.debug(
+                        f"[{request_id}] ENDPOINT STATS - sync {func.__name__} "
+                        f"took {duration:.2f}ms"
+                    )
+
+        try:
+            return await run_in_threadpool(decorated, *args, **kwargs)
+        finally:
+            if logger.isEnabledFor(logging.DEBUG):
+                duration = (time.time() - async_start_time) * 1000
+                logger.debug(
+                    f"[{request_id}] ENDPOINT STATS - async {func.__name__} "
+                    f"took {duration:.2f}ms"
+                )
 
     return async_decorated
 
@@ -731,7 +760,7 @@ def get_system_metrics_log_str(request: "Request") -> str:
 event_loop_lag_monitor_task: Optional[asyncio.Task[None]] = None
 
 
-def start_event_loop_lag_monitor(threshold_ms: int = 100) -> None:
+def start_event_loop_lag_monitor(threshold_ms: int = 50) -> None:
     """Start the event loop lag monitor.
 
     Args:
@@ -745,7 +774,13 @@ def start_event_loop_lag_monitor(threshold_ms: int = 100) -> None:
             await asyncio.sleep(0)
             delay = (time.perf_counter() - start) * 1000
             if delay > threshold_ms:
-                logger.warning(f"⚠️  Event loop lag detected: {delay:.2f}ms")
+                logger.warning(
+                    f"⚠️  Event loop lag detected: {delay:.2f}ms"
+                    "If you see this message, it means that the ZenML server is "
+                    "under heavy load and the clients might start experiencing "
+                    "connection reset errors. Please consider scaling up the "
+                    "server."
+                )
             await asyncio.sleep(0.5)
 
     event_loop_lag_monitor_task = asyncio.create_task(monitor())

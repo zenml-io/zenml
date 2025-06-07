@@ -196,4 +196,4 @@ USER $USERNAME
 EXPOSE 8080
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--port", "8080", "--host",  "0.0.0.0"]
+CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--port", "8080", "--host",  "0.0.0.0"]

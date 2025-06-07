@@ -4196,7 +4196,11 @@ class RestZenStore(BaseZenStore):
         """
 
         class AugmentedRetry(Retry):
-            """Augmented retry class that also retries on 429 status codes for POST requests."""
+            """Augmented retry class that also retries on other status codes for POST requests.
+
+            This class overrides the functionality of the Retry class to
+            selectively retry on other status codes for POST requests.
+            """
 
             def is_retry(
                 self,
@@ -4204,7 +4208,15 @@ class RestZenStore(BaseZenStore):
                 status_code: int,
                 has_retry_after: bool = False,
             ) -> bool:
-                if status_code == 429:
+                # We only retry POST requests on status codes that have a high
+                # probability of not reaching the server. On all other status
+                # codes, we don't retry them because they are idempotent:
+                #
+                #     429: Too Many Requests.
+                #     502: Bad Gateway.
+                #     503: Service Unavailable.
+                #
+                if status_code in [429, 502, 503]:
                     return True
                 return super().is_retry(method, status_code, has_retry_after)
 
@@ -4220,9 +4232,19 @@ class RestZenStore(BaseZenStore):
             # Retries are triggered for idempotent HTTP methods (GET, HEAD, PUT,
             # OPTIONS and DELETE) on specific HTTP status codes:
             #
+            #     408: Request Timeout.
+            #     429: Too Many Requests.
             #     502: Bad Gateway.
             #     503: Service Unavailable.
-            #     504: Gateway Timeout.
+            #     504: Gateway Timeout
+            #
+            # POST requests are only retried on status codes that have a high
+            # probability of not reaching the server, because they are not
+            # idempotent:
+            #
+            #     429: Too Many Requests.
+            #     502: Bad Gateway.
+            #     503: Service Unavailable.
             #
             # This also handles connection level errors, if a connection attempt
             # fails due to transient issues like:
@@ -4234,7 +4256,8 @@ class RestZenStore(BaseZenStore):
             # Additional errors retried:
             #
             #     Read Timeouts: If the server does not send a response within
-            #     the timeout period.
+            #     the timeout period (but ONLY on GET, HEAD, PUT, OPTIONS and
+            #       DELETE requests).
             #     Connection Refused: If the server refuses the connection.
             #
             retries = AugmentedRetry(
