@@ -160,7 +160,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         return cast(SagemakerOrchestratorConfig, self._config)
 
-
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates the stack.
@@ -873,7 +872,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline execution.")
-
 
     def compute_metadata(
         self,

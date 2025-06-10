@@ -140,7 +140,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         """
         return cast(VertexOrchestratorConfig, self._config)
 
-
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Vertex orchestrator.
@@ -997,7 +996,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             return ExecutionStatus.FAILED
         else:
             raise ValueError("Unknown status for the pipeline job.")
-
 
     def compute_metadata(
         self, job: aiplatform.PipelineJob

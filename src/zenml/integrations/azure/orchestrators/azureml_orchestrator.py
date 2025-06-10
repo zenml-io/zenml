@@ -89,7 +89,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         """
         return cast(AzureMLOrchestratorConfig, self._config)
 
-
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the AzureML orchestrator.
@@ -520,7 +519,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline job.")
-
 
     def compute_metadata(self, job: Any) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated AzureML PipelineJob.
