@@ -8946,9 +8946,9 @@ class SqlZenStore(BaseZenStore):
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
         step_run_statuses = session.exec(
-            select(StepRunSchema.status).where(
-                StepRunSchema.pipeline_run_id == pipeline_run_id
-            )
+            select(StepRunSchema.status)
+            .with_for_update()
+            .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
         ).all()
 
         # Deployment always exists for pipeline runs of newer versions
