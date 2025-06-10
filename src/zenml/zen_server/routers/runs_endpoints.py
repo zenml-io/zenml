@@ -406,7 +406,7 @@ def refresh_run_status(
 @async_fastapi_endpoint_wrapper
 def stop_run(
     run_id: UUID,
-    graceful: bool = True,
+    graceful: bool = False,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Stops a specific pipeline run.
@@ -414,7 +414,7 @@ def stop_run(
     Args:
         run_id: ID of the pipeline run to stop.
         graceful: If True, allows for graceful shutdown where possible.
-            If False, forces immediate termination. Default is True.
+            If False, forces immediate termination. Default is False.
     """
     run = verify_permissions_and_get_entity(
         id=run_id,
