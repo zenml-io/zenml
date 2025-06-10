@@ -439,16 +439,10 @@ class Session(SqlModelSession):
         available_connections = self.bind.pool.checkedin()
         overflow = self.bind.pool.overflow()
 
-        # Current thread name/ID
-        current_thread_name = threading.current_thread().name
-        current_thread_id = threading.current_thread().ident
-
         return {
             "active_connections": checked_out_connections,
             "idle_connections": available_connections,
             "overflow_connections": overflow,
-            "current_thread_name": current_thread_name,
-            "current_thread_id": current_thread_id,
         }
 
     def _get_metrics_log_str(self) -> str:
@@ -460,14 +454,16 @@ class Session(SqlModelSession):
         if not logger.isEnabledFor(logging.DEBUG):
             return ""
         metrics = self._get_metrics()
+        # Add the server metrics if running in a server
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            from zenml.zen_server.utils import get_system_metrics
+
+            metrics.update(get_system_metrics())
+
         return (
-            f" [ "
-            f"conn(active): {metrics['active_connections']} "
-            f"conn(idle): {metrics['idle_connections']} "
-            f"conn(overflow): {metrics['overflow_connections']} "
-            f"current_thread: {metrics['current_thread_name']} "
-            f"({metrics['current_thread_id']})"
-            f" ]"
+            " [ "
+            + " ".join([f"{key}: {value}" for key, value in metrics.items()])
+            + " ]"
         )
 
     def __enter__(self) -> "Session":

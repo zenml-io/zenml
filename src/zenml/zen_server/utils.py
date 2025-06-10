@@ -354,7 +354,7 @@ def async_fastapi_endpoint_wrapper(
             async_start_time = time.time()
             logger.debug(
                 f"[{request_id}] ENDPOINT STATS - async {func.__name__} "
-                "STARTED"
+                f"STARTED {get_system_metrics_log_str()}"
             )
 
         @wraps(func)
@@ -371,7 +371,7 @@ def async_fastapi_endpoint_wrapper(
                 duration = (time.time() - async_start_time) * 1000
                 logger.debug(
                     f"[{request_id}] ENDPOINT STATS - sync {func.__name__} "
-                    f"STARTED after {duration:.2f}ms"
+                    f"STARTED after {duration:.2f}ms {get_system_metrics_log_str()}"
                 )
 
                 original_thread_name = threading.current_thread().name
@@ -411,7 +411,7 @@ def async_fastapi_endpoint_wrapper(
                     duration = (time.time() - sync_start_time) * 1000
                     logger.debug(
                         f"[{request_id}] ENDPOINT STATS - sync {func.__name__} "
-                        f"took {duration:.2f}ms"
+                        f"took {duration:.2f}ms {get_system_metrics_log_str()}"
                     )
 
         try:
@@ -421,7 +421,7 @@ def async_fastapi_endpoint_wrapper(
                 duration = (time.time() - async_start_time) * 1000
                 logger.debug(
                     f"[{request_id}] ENDPOINT STATS - async {func.__name__} "
-                    f"took {duration:.2f}ms"
+                    f"took {duration:.2f}ms {get_system_metrics_log_str()}"
                 )
 
     return async_decorated
@@ -687,14 +687,6 @@ def set_filter_project_scope(
     )
 
 
-process = psutil.Process()
-fd_limit: Union[int, str] = "N/A"
-try:
-    fd_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
-except Exception:
-    pass
-
-
 def get_system_metrics() -> Dict[str, Any]:
     """Get comprehensive system metrics.
 
@@ -703,6 +695,13 @@ def get_system_metrics() -> Dict[str, Any]:
     """
     # Get active requests count
     from zenml.zen_server.zen_server_api import active_requests_count
+
+    process = psutil.Process()
+    fd_limit: Union[int, str] = "N/A"
+    try:
+        fd_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
+    except Exception:
+        pass
 
     # Memory limits
     memory = process.memory_info()
@@ -725,12 +724,13 @@ def get_system_metrics() -> Dict[str, Any]:
         "fd_limit": fd_limit,
         "active_requests": active_requests_count,
         "thread_count": threading.active_count(),
+        "max_worker_threads": server_config().thread_pool_size,
         "current_thread_name": current_thread_name,
         "current_thread_id": current_thread_id,
     }
 
 
-def get_system_metrics_log_str(request: "Request") -> str:
+def get_system_metrics_log_str(request: Optional["Request"] = None) -> str:
     """Get the system metrics as a string for logging.
 
     Args:
@@ -741,19 +741,15 @@ def get_system_metrics_log_str(request: "Request") -> str:
     """
     if not logger.isEnabledFor(logging.DEBUG):
         return ""
-    if request.url.path in [HEALTH, READY]:
+    if request and request.url.path in [HEALTH, READY]:
         # Don't log system metrics for health and ready endpoints to keep them
         # fast
         return ""
     metrics = get_system_metrics()
     return (
-        f" [ "
-        f"threads: {metrics['thread_count']} "
-        f"active_requests: {metrics['active_requests']} "
-        f"file_descriptors: {metrics['open_fds']} / {metrics['fd_limit']} "
-        f"memory: {metrics['memory_used_mb']:.1f}MB "
-        f"current_thread: {metrics['current_thread_name']} ({metrics['current_thread_id']})"
-        f" ]"
+        " [ "
+        + " ".join([f"{key}: {value}" for key, value in metrics.items()])
+        + " ]"
     )
 
 

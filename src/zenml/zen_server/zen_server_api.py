@@ -61,6 +61,9 @@ from zenml.constants import (
 )
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.models import ServerDeploymentType
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
@@ -466,6 +469,10 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     if source := request.headers.get("User-Agent"):
         source = source.split("/")[0]
         request_id = f"{request_id}/{source}"
+    # Generate a transaction ID for the request to differentiate between
+    # multiple retries of the same request.
+    transaction_id = str(uuid4())[:4]
+    request_id = f"{request_id}/{transaction_id}"
 
     request_ids.set(request_id)
 
@@ -573,6 +580,7 @@ def initialize() -> None:
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
+    service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
     initialize_feature_gate()
     initialize_workload_manager()

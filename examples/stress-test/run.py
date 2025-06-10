@@ -42,6 +42,7 @@ def get_kubernetes_settings(
         The Kubernetes settings for the ZenML server.
     """
     return KubernetesOrchestratorSettings(
+        service_account_name="zenml-service-account",
         pod_startup_timeout=600,
         max_parallelism=max_parallelism,
         pod_settings=KubernetesPodSettings(
@@ -257,6 +258,7 @@ def load_step(
 # The report results step is beefier than the load step because it has to fetch
 # all the artifacts from the run.
 report_kubernetes_settings = KubernetesOrchestratorSettings(
+    service_account_name="zenml-service-account",
     pod_settings=KubernetesPodSettings(
         resources={
             "requests": {"cpu": "100m", "memory": "800Mi"},
@@ -407,7 +409,9 @@ def main(
             f"max {max_parallel_steps} running steps at a time..."
         )
     else:
-        click.echo(f"Starting load test with {parallel_steps} parallel steps...")
+        click.echo(
+            f"Starting load test with {parallel_steps} parallel steps..."
+        )
     click.echo(f"Duration: {duration}s, Sleep Interval: {sleep_interval}s")
 
     kubernetes_settings = get_kubernetes_settings(max_parallel_steps)
