@@ -8587,12 +8587,13 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
+            session.commit()
+
             if step_run.status != ExecutionStatus.RUNNING:
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
 
-            session.commit()
             session.refresh(step_schema)
 
             if model_version_id := self._get_or_create_model_version_for_run(
@@ -8719,14 +8720,13 @@ class SqlZenStore(BaseZenStore):
                     input_type=StepRunInputArtifactType.MANUAL,
                     session=session,
                 )
+            session.commit()
+            session.refresh(existing_step_run)
 
             self._update_pipeline_run_status(
                 pipeline_run_id=existing_step_run.pipeline_run_id,
                 session=session,
             )
-
-            session.commit()
-            session.refresh(existing_step_run)
 
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
@@ -8947,7 +8947,6 @@ class SqlZenStore(BaseZenStore):
         ).one()
         step_run_statuses = session.exec(
             select(StepRunSchema.status)
-            .with_for_update()
             .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
         ).all()
 

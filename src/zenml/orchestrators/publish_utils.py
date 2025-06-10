@@ -162,19 +162,35 @@ def get_pipeline_run_status(
     Returns:
         The run status.
     """
+    # Any finished state
+    if run_status.is_finished:
+        return run_status
+
+    # STOPPING state
     if run_status == ExecutionStatus.STOPPING:
-        if all(ExecutionStatus(s).is_finished for s in step_statuses):
+        if all(status.is_finished for status in step_statuses):
             return ExecutionStatus.STOPPED
         else:
             return ExecutionStatus.STOPPING
 
-    if ExecutionStatus.FAILED in step_statuses:
-        return ExecutionStatus.FAILED
+    # RUNNING and INITIALIZING states
     if (
-        ExecutionStatus.RUNNING in step_statuses
-        or len(step_statuses) < num_steps
+        run_status == ExecutionStatus.RUNNING
+        or run_status == ExecutionStatus.INITIALIZING
     ):
-        return ExecutionStatus.RUNNING
+        if ExecutionStatus.FAILED in step_statuses:
+            return ExecutionStatus.FAILED
+        elif ExecutionStatus.STOPPED in step_statuses:
+            if all(status.is_finished for status in step_statuses):
+                return ExecutionStatus.STOPPED
+            else:
+                return ExecutionStatus.STOPPING
+        elif ExecutionStatus.RUNNING in step_statuses:
+            return ExecutionStatus.RUNNING
+        elif len(step_statuses) < num_steps:
+            return ExecutionStatus.RUNNING
+        else:
+            return ExecutionStatus.COMPLETED
 
     return ExecutionStatus.COMPLETED
 
