@@ -517,8 +517,8 @@ def list_pipeline_runs(**kwargs: Any) -> None:
     "--graceful",
     "-g",
     is_flag=True,
-    default=True,
-    help="Use graceful shutdown (default). Use --no-graceful for immediate termination.",
+    default=False,
+    help="Use graceful shutdown (default is False).",
 )
 @click.option(
     "--yes",
@@ -528,7 +528,7 @@ def list_pipeline_runs(**kwargs: Any) -> None:
 )
 def stop_pipeline_run(
     run_name_or_id: str,
-    graceful: bool = True,
+    graceful: bool = False,
     yes: bool = False,
 ) -> None:
     """Stop a running pipeline.

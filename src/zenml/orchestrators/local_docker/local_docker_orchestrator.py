@@ -53,9 +53,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
     does not support running on a schedule.
     """
 
-    _current_container = None
-    _stop_requested: bool = False
-
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Local Docker orchestrator.
@@ -64,17 +61,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             The settings class.
         """
         return LocalDockerOrchestratorSettings
-
-    @property
-    def validator(self) -> Optional[StackValidator]:
-        """Ensures there is an image builder in the stack.
-
-        Returns:
-            A `StackValidator` instance.
-        """
-        return StackValidator(
-            required_components={StackComponentType.IMAGE_BUILDER}
-        )
 
     @property
     def config(self) -> "LocalDockerOrchestratorConfig":
@@ -86,13 +72,15 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         return cast(LocalDockerOrchestratorConfig, self._config)
 
     @property
-    def supports_cancellation(self) -> bool:
-        """Whether this orchestrator supports stopping pipeline runs.
+    def validator(self) -> Optional[StackValidator]:
+        """Ensures there is an image builder in the stack.
 
         Returns:
-            True since the Local Docker orchestrator supports cancellation.
+            A `StackValidator` instance.
         """
-        return True
+        return StackValidator(
+            required_components={StackComponentType.IMAGE_BUILDER}
+        )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -154,104 +142,67 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         orchestrator_run_id = str(uuid4())
         environment[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
         environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
-        self._stop_requested = False
         start_time = time.time()
 
-        try:
-            # Run each step
-            for step_name, step in deployment.step_configurations.items():
-                if self._stop_requested:
-                    logger.info("Pipeline execution stopped by user request.")
-                    break
-
-                if self.requires_resources_in_orchestration_environment(step):
-                    logger.warning(
-                        "Specifying step resources is not supported for the local "
-                        "Docker orchestrator, ignoring resource configuration for "
-                        "step %s.",
-                        step_name,
-                    )
-
-                arguments = (
-                    StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
-                    )
+        # Run each step
+        for step_name, step in deployment.step_configurations.items():
+            if self.requires_resources_in_orchestration_environment(step):
+                logger.warning(
+                    "Specifying step resources is not supported for the local "
+                    "Docker orchestrator, ignoring resource configuration for "
+                    "step %s.",
+                    step_name,
                 )
 
-                settings = cast(
-                    LocalDockerOrchestratorSettings,
-                    self.get_settings(step),
-                )
-                image = self.get_image(
-                    deployment=deployment, step_name=step_name
-                )
-
-                user = None
-                if sys.platform != "win32":
-                    user = os.getuid()
-                logger.info("Running step `%s` in Docker:", step_name)
-
-                run_args = copy.deepcopy(settings.run_args)
-                docker_environment = run_args.pop("environment", {})
-                docker_environment.update(environment)
-
-                docker_volumes = run_args.pop("volumes", {})
-                docker_volumes.update(volumes)
-
-                extra_hosts = run_args.pop("extra_hosts", {})
-                extra_hosts["host.docker.internal"] = "host-gateway"
-
-                try:
-                    self._current_container = docker_client.containers.run(
-                        image=image,
-                        entrypoint=entrypoint,
-                        command=arguments,
-                        user=user,
-                        volumes=docker_volumes,
-                        environment=docker_environment,
-                        stream=True,
-                        extra_hosts=extra_hosts,
-                        detach=False,
-                        **run_args,
-                    )
-
-                    for line in self._current_container:
-                        if self._stop_requested:
-                            break
-                        logger.info(line.strip().decode())
-
-                except ContainerError as e:
-                    error_message = e.stderr.decode()
-                    raise RuntimeError(error_message)
-                finally:
-                    self._current_container = None
-
-            run_duration = time.time() - start_time
-            logger.info(
-                "Pipeline run has finished in `%s`.",
-                string_utils.get_human_readable_time(run_duration),
+            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
+                step_name=step_name, deployment_id=deployment.id
             )
-        finally:
-            self._current_container = None
-            self._stop_requested = False
 
-    def _stop_run(
-        self, run: "PipelineRunResponse", graceful: bool = True
-    ) -> None:
-        """Stops a pipeline run by setting the stop flag and killing current container.
+            settings = cast(
+                LocalDockerOrchestratorSettings,
+                self.get_settings(step),
+            )
+            image = self.get_image(deployment=deployment, step_name=step_name)
 
-        Args:
-            run: The pipeline run to stop.
-            graceful: If True, allows graceful shutdown. If False, forces immediate termination.
-        """
-        logger.info(f"Stopping local Docker pipeline run {run.id}...")
-        self._stop_requested = True
-        if self._current_container:
+            user = None
+            if sys.platform != "win32":
+                user = os.getuid()
+            logger.info("Running step `%s` in Docker:", step_name)
+
+            run_args = copy.deepcopy(settings.run_args)
+            docker_environment = run_args.pop("environment", {})
+            docker_environment.update(environment)
+
+            docker_volumes = run_args.pop("volumes", {})
+            docker_volumes.update(volumes)
+
+            extra_hosts = run_args.pop("extra_hosts", {})
+            extra_hosts["host.docker.internal"] = "host-gateway"
+
             try:
-                self._current_container.kill()
-                logger.info("Stopped running Docker container.")
-            except Exception as e:
-                logger.warning(f"Failed to stop container: {e}")
+                logs = docker_client.containers.run(
+                    image=image,
+                    entrypoint=entrypoint,
+                    command=arguments,
+                    user=user,
+                    volumes=docker_volumes,
+                    environment=docker_environment,
+                    stream=True,
+                    extra_hosts=extra_hosts,
+                    **run_args,
+                )
+
+                for line in logs:
+                    logger.info(line.strip().decode())
+            except ContainerError as e:
+                error_message = e.stderr.decode()
+                raise RuntimeError(error_message)
+
+        run_duration = time.time() - start_time
+        logger.info(
+            "Pipeline run has finished in `%s`.",
+            string_utils.get_human_readable_time(run_duration),
+        )
 
 
 class LocalDockerOrchestratorSettings(BaseSettings):

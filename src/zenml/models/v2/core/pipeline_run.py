@@ -368,12 +368,12 @@ class PipelineRunResponse(
 
         return self
 
-    def stop_run(self, graceful: bool = True) -> None:
+    def stop_run(self, graceful: bool = False) -> None:
         """Method to stop a pipeline run.
 
         Args:
             graceful: If True, allows for graceful shutdown where possible.
-                If False, forces immediate termination. Default is True.
+                If False, forces immediate termination. Default is False.
 
         Returns:
             The updated pipeline run.

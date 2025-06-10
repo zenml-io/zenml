@@ -351,7 +351,7 @@ class BaseOrchestrator(StackComponent, ABC):
         )
 
     def stop_run(
-        self, run: "PipelineRunResponse", graceful: bool = True
+        self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
         """Stops a specific pipeline run.
 
@@ -361,7 +361,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             run: A pipeline run response to stop.
             graceful: If True, allows for graceful shutdown where possible.
-                If False, forces immediate termination. Default is True.
+                If False, forces immediate termination. Default is False.
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
@@ -395,7 +395,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self._stop_run(run=run, graceful=graceful)
 
     def _stop_run(
-        self, run: "PipelineRunResponse", graceful: bool = True
+        self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
         """Concrete implementation of pipeline stopping logic.
 
