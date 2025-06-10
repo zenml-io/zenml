@@ -24,7 +24,6 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
@@ -366,8 +365,6 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
                 class does not implement this logic.
-            IllegalOperationError: If the pipeline cannot be stopped in its
-                current state.
         """
         # Check if the orchestrator supports cancellation
         if not self.supports_cancellation:
@@ -375,15 +372,6 @@ class BaseOrchestrator(StackComponent, ABC):
                 f"The '{self.__class__.__name__}' orchestrator does not "
                 "support stopping pipeline runs."
             )
-
-        # Check if pipeline can be stopped
-        if run.status.is_finished:
-            raise IllegalOperationError(
-                f"Cannot stop pipeline in {run.status} state - pipeline is already finished."
-            )
-
-        if run.status == ExecutionStatus.STOPPING:
-            raise IllegalOperationError("Pipeline is already being stopped.")
 
         # Update pipeline status to STOPPING before calling concrete implementation
         publish_pipeline_run_status_update(

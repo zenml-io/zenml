@@ -33,6 +33,7 @@ from pydantic import ConfigDict, Field
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import IllegalOperationError
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
@@ -380,6 +381,8 @@ class PipelineRunResponse(
 
         Raises:
             ValueError: If the stack of the run response is None.
+            IllegalOperationError: If the run is already in a finished state
+                or is already being stopped.
         """
         # Check if the stack is still accessible
         if self.stack is None:
@@ -387,6 +390,15 @@ class PipelineRunResponse(
                 "The stack that this pipeline run response was executed on "
                 "is either not accessible or has been deleted."
             )
+
+        # Check if pipeline can be stopped
+        if self.status.is_finished:
+            raise IllegalOperationError(
+                f"Cannot stop a run that is already in a '{self.status}' state."
+            )
+
+        if self.status == ExecutionStatus.STOPPING:
+            raise IllegalOperationError("Run is already being stopped.")
 
         # Create the orchestrator instance
         from zenml.enums import StackComponentType
