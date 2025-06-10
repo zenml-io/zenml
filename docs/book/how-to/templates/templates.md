@@ -266,10 +266,8 @@ def trigger_specific_template(df: UnmaterializedArtifact):
     
     # Option B: If you need to look up the template by name
     client = Client()
-    templates = client.list_run_templates(name="my-specific-template-name")
-    if templates.items:
-        template_id = templates.items[0].id
-        client.trigger_pipeline(template_id=template_id, run_configuration=run_config)
+    template = client.get_run_template(name="my-specific-template-name", hydrate=False)
+    client.trigger_pipeline(template_id=template.id, run_configuration=run_config)
 ```
 
 {% hint style="info" %}
