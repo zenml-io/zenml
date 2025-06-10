@@ -365,6 +365,7 @@ class LogFile(BaseModel):
     def parse_logs(cls, filename: str) -> "LogFile":
         """Parse log lines from a file."""
         log_file = cls()
+        log_lines = []
 
         with open(filename, "r") as f:
             for line in f:
@@ -413,7 +414,7 @@ class LogFile(BaseModel):
                         metrics=metrics,
                         **data,
                     )
-                    log_file.add_line(log_line)
+                    log_lines.append(log_line)
 
                 except Exception as e:
                     # Log error but continue processing
@@ -421,6 +422,12 @@ class LogFile(BaseModel):
                         f"Error parsing line: {line.strip()}\nError: {str(e)}"
                     )
                     continue
+
+            # Sort by start time
+            log_lines.sort(key=lambda x: x.timestamp)
+
+            for log_line in log_lines:
+                log_file.add_line(log_line)
 
         return log_file
 
@@ -735,6 +742,7 @@ class LogFile(BaseModel):
         end_time: Optional[Union[datetime, int, float]] = None,
         max_requests: Optional[int] = None,
         api_call_filter: Optional[List[str]] = None,
+        group_retry_requests: bool = True,
         pps: int = 30,
         ppr: int = 20,
         width: Optional[int] = None,
@@ -753,6 +761,7 @@ class LogFile(BaseModel):
             end_time: The end time of the plot (seconds since start).
             max_requests: The maximum number of requests to plot.
             api_call_filter: The API calls to filter.
+            group_retry_requests: Whether to group retry requests.
             pps: The number of pixels per second to plot.
             ppr: The number of requests per row.
             width: The width of the plot in pixels.
@@ -796,19 +805,29 @@ class LogFile(BaseModel):
                 continue
             if pod is not None and entry_point.pod != pod:
                 continue
-            api_call = "N/A"
-            if entry_point.log_type in [
-                LogType.API,
-                LogType.API_RECEIVED,
-                LogType.API_QUEUED,
-                LogType.API_THROTTLED,
-                LogType.API_ACCEPTED,
-                LogType.API_COMPLETED,
-            ]:
+
+            # Find a request log that has an API call
+            api_call_logs = [
+                log
+                for log in request_logs
+                if log.log_type
+                in [
+                    LogType.API,
+                    LogType.API_RECEIVED,
+                    LogType.API_QUEUED,
+                    LogType.API_THROTTLED,
+                    LogType.API_ACCEPTED,
+                    LogType.API_COMPLETED,
+                ]
+            ]
+            if api_call_logs:
                 api_call = (
-                    f"{entry_point.api_method} "
-                    f"{self._anonymize_api_path(entry_point.api_path)}"
+                    f"{api_call_logs[0].api_method} "
+                    f"{self._anonymize_api_path(api_call_logs[0].api_path)}"
                 )
+            else:
+                # No API call found, skip this request
+                continue
 
             if api_call_filter is not None and not any(
                 re.match(pattern, api_call) for pattern in api_call_filter
@@ -896,19 +915,20 @@ class LogFile(BaseModel):
                         "pod": pod,
                     }
 
-                # Add a "client retry" row for every other transaction
-                transaction_entry_point = transaction_entries[0]
                 transaction_rows = []
-                if (
-                    transaction_entry_point.transaction_id
-                    != request_logs[0].transaction_id
-                ):
-                    row = get_row(request_logs[0], transaction_entry_point)
-                    row["stage"] = (
-                        f"{LogType.CLIENT_RETRY.name} -> {LogType.API_RECEIVED.name}"
-                    )
-                    row["state"] = LogType.CLIENT_RETRY.name
-                    transaction_rows.append(row)
+                if group_retry_requests:
+                    transaction_entry_point = transaction_entries[0]
+                    # Add a "client retry" row for every other transaction
+                    if (
+                        transaction_entry_point.transaction_id
+                        != request_logs[0].transaction_id
+                    ):
+                        row = get_row(request_logs[0], transaction_entry_point)
+                        row["stage"] = (
+                            f"{LogType.CLIENT_RETRY.name} -> {LogType.API_RECEIVED.name}"
+                        )
+                        row["state"] = LogType.CLIENT_RETRY.name
+                        transaction_rows.append(row)
 
                 total_queued_duration = 0
                 for i in range(len(transaction_entries) - 1):

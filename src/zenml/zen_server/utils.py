@@ -687,6 +687,14 @@ def set_filter_project_scope(
     )
 
 
+process = psutil.Process()
+fd_limit: Union[int, str] = "N/A"
+try:
+    fd_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
+except Exception:
+    pass
+
+
 def get_system_metrics() -> Dict[str, Any]:
     """Get comprehensive system metrics.
 
@@ -695,13 +703,6 @@ def get_system_metrics() -> Dict[str, Any]:
     """
     # Get active requests count
     from zenml.zen_server.zen_server_api import active_requests_count
-
-    process = psutil.Process()
-    fd_limit: Union[int, str] = "N/A"
-    try:
-        fd_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
-    except Exception:
-        pass
 
     # Memory limits
     memory = process.memory_info()
