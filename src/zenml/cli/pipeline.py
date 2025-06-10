@@ -524,6 +524,7 @@ def list_pipeline_runs(**kwargs: Any) -> None:
     "--yes",
     "-y",
     is_flag=True,
+    default=False,
     help="Don't ask for confirmation.",
 )
 def stop_pipeline_run(
