@@ -140,14 +140,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         """
         return cast(VertexOrchestratorConfig, self._config)
 
-    @property
-    def supports_cancellation(self) -> bool:
-        """Whether this orchestrator supports stopping pipeline runs.
-
-        Returns:
-            True since the Vertex orchestrator supports cancellation.
-        """
-        return True
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -1006,45 +998,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         else:
             raise ValueError("Unknown status for the pipeline job.")
 
-    def _stop_run(
-        self, run: "PipelineRunResponse", graceful: bool = True
-    ) -> None:
-        """Stops a specific pipeline run.
-
-        Args:
-            run: The run that was executed by this orchestrator.
-            graceful: If True, allows graceful shutdown where possible.
-                If False, forces immediate termination.
-        """
-        # Initialize the Vertex client
-        credentials, project_id = self._get_authentication()
-        aiplatform.init(
-            project=project_id,
-            location=self.config.location,
-            credentials=credentials,
-        )
-
-        # Get the pipeline job ID
-        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
-            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
-        elif run.orchestrator_run_id is not None:
-            run_id = run.orchestrator_run_id
-        else:
-            raise ValueError(
-                "Can not find the orchestrator run ID, thus can not stop "
-                "the pipeline job."
-            )
-
-        try:
-            # Get and cancel the pipeline job
-            pipeline_job = aiplatform.PipelineJob.get(run_id)
-            pipeline_job.cancel()
-            logger.info(
-                f"Successfully stopped Vertex AI pipeline job: {run_id}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to stop Vertex AI pipeline job: {e}")
-            raise
 
     def compute_metadata(
         self, job: aiplatform.PipelineJob

@@ -160,14 +160,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         return cast(SagemakerOrchestratorConfig, self._config)
 
-    @property
-    def supports_cancellation(self) -> bool:
-        """Whether this orchestrator supports stopping pipeline runs.
-
-        Returns:
-            True since the SageMaker orchestrator supports cancellation.
-        """
-        return True
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -882,48 +874,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         else:
             raise ValueError("Unknown status for the pipeline execution.")
 
-    def _stop_run(
-        self, run: "PipelineRunResponse", graceful: bool = True
-    ) -> None:
-        """Stops a SageMaker pipeline run.
-
-        Args:
-            run: The run that was executed by this orchestrator.
-            graceful: If True, allows graceful shutdown where possible.
-                If False, forces immediate termination.
-
-        Raises:
-            ValueError: If the run was not executed by this orchestrator.
-            RuntimeError: If the run cannot be stopped or if the orchestrator
-                run ID cannot be found.
-            Exception: If there is an error stopping the pipeline execution.
-        """
-        # Initialize the Sagemaker client
-        session = self._get_sagemaker_session()
-        sagemaker_client = session.sagemaker_client
-
-        # Get the pipeline execution ARN
-        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
-            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
-        elif run.orchestrator_run_id is not None:
-            run_id = run.orchestrator_run_id
-        else:
-            raise ValueError(
-                "Can not find the orchestrator run ID, thus can not stop "
-                "the pipeline execution."
-            )
-
-        try:
-            # Stop the pipeline execution
-            sagemaker_client.stop_pipeline_execution(
-                PipelineExecutionArn=run_id
-            )
-            logger.info(
-                f"Successfully stopped SageMaker pipeline execution: {run_id}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to stop SageMaker pipeline execution: {e}")
-            raise
 
     def compute_metadata(
         self,
