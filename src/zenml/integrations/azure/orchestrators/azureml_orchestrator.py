@@ -515,7 +515,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             "NotResponding",
         ]:
             return ExecutionStatus.FAILED
-        elif status in ["Completed"]:
+        elif status == "Completed":
             return ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline job.")

@@ -967,7 +967,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         # Map the potential outputs to ZenML ExecutionStatus. Potential values:
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sagemaker/client/describe_pipeline_execution.html#
-        if status in [PipelineState.PIPELINE_STATE_UNSPECIFIED]:
+        if status == PipelineState.PIPELINE_STATE_UNSPECIFIED:
             return run.status
         elif status in [
             PipelineState.PIPELINE_STATE_QUEUED,
@@ -979,20 +979,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             PipelineState.PIPELINE_STATE_PAUSED,
         ]:
             return ExecutionStatus.RUNNING
-        elif status in [PipelineState.PIPELINE_STATE_SUCCEEDED]:
+        elif status == PipelineState.PIPELINE_STATE_SUCCEEDED:
             return ExecutionStatus.COMPLETED
-
-        elif status in [
-            PipelineState.PIPELINE_STATE_CANCELLING,
-        ]:
+        elif status == PipelineState.PIPELINE_STATE_CANCELLING:
             return ExecutionStatus.STOPPING
-        elif status in [
-            PipelineState.PIPELINE_STATE_CANCELLED,
-        ]:
+        elif status == PipelineState.PIPELINE_STATE_CANCELLED:
             return ExecutionStatus.STOPPED
-        elif status in [
-            PipelineState.PIPELINE_STATE_FAILED,
-        ]:
+        elif status == PipelineState.PIPELINE_STATE_FAILED:
             return ExecutionStatus.FAILED
         else:
             raise ValueError("Unknown status for the pipeline job.")
