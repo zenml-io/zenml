@@ -557,7 +557,7 @@ def stop_pipeline_run(
     except NotImplementedError:
         cli_utils.error(
             "The orchestrator used for this pipeline run does not support "
-            "stopping runs."
+            f"{'gracefully' if graceful else 'forcefully'} stopping runs."
         )
     except Exception as e:
         cli_utils.error(f"Failed to stop pipeline run: {e}")
