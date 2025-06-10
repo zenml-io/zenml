@@ -200,7 +200,11 @@ Learn how to get a bearer token for the curl commands [here](https://docs.zenml.
 
 ## Advanced Usage: Running Templates from Other Pipelines
 
-You can trigger templates from within other pipelines, enabling complex workflows:
+You can trigger templates from within other pipelines, enabling complex workflows. There are two ways to do this:
+
+### Method 1: Trigger by Pipeline Name (Uses Latest Template)
+
+If you want to run the latest template for a specific pipeline:
 
 ```python
 import pandas as pd
@@ -235,6 +239,7 @@ def trigger_pipeline(df: UnmaterializedArtifact):
         steps={"trainer": {"parameters": {"data_artifact_id": df.id}}}
     )
 
+    # This triggers the LATEST template for the "training_pipeline" pipeline
     Client().trigger_pipeline("training_pipeline", run_configuration=run_config)
 
 
@@ -243,6 +248,37 @@ def loads_data_and_triggers_training():
     df = load_data()
     trigger_pipeline(df)  # Will trigger the other pipeline
 ```
+
+### Method 2: Trigger by Specific Template ID
+
+If you want to run a specific template (not necessarily the latest one):
+
+```python
+@step
+def trigger_specific_template(df: UnmaterializedArtifact):
+    run_config = PipelineRunConfiguration(
+        steps={"trainer": {"parameters": {"data_artifact_id": df.id}}}
+    )
+    
+    # Option A: If you know the template ID
+    template_id = "your-template-uuid-here"
+    Client().trigger_pipeline(template_id=template_id, run_configuration=run_config)
+    
+    # Option B: If you need to look up the template by name
+    client = Client()
+    templates = client.list_run_templates(name="my-specific-template-name")
+    if templates.items:
+        template_id = templates.items[0].id
+        client.trigger_pipeline(template_id=template_id, run_configuration=run_config)
+```
+
+{% hint style="info" %}
+**Key Difference**: 
+- `Client().trigger_pipeline("pipeline_name", ...)` uses the pipeline name and runs the **latest** template for that pipeline
+- `Client().trigger_pipeline(template_id="uuid", ...)` runs a **specific** template by its unique ID
+
+If you created a template with a specific name and want to run that exact template, use Method 2.
+{% endhint %}
 
 This pattern is useful for:
 
