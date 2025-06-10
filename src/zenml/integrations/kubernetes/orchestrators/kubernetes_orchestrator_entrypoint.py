@@ -74,23 +74,37 @@ def main() -> None:
     orchestrator_pod_name = socket.gethostname()
 
     client = Client()
+    active_stack = client.active_stack
+    orchestrator = active_stack.orchestrator
+    assert isinstance(orchestrator, KubernetesOrchestrator)
 
-    deployment_config = client.get_deployment(args.deployment_id)
+    deployment = client.get_deployment(args.deployment_id)
+    pipeline_settings = cast(
+        KubernetesOrchestratorSettings,
+        orchestrator.get_settings(deployment),
+    )
 
-    pipeline_dag = {
-        step_name: step.spec.upstream_steps
-        for step_name, step in deployment_config.step_configurations.items()
-    }
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
 
-    active_stack = client.active_stack
+    if args.run_id and not pipeline_settings.prevent_orchestrator_pod_caching:
+        from zenml.orchestrators import cache_utils
+
+        run_required = (
+            cache_utils.create_cached_step_runs_and_prune_deployment(
+                deployment=deployment,
+                pipeline_run=client.get_pipeline_run(args.run_id),
+                stack=active_stack,
+            )
+        )
+
+        if not run_required:
+            return
+
     mount_local_stores = active_stack.orchestrator.config.is_local
 
     # Get a Kubernetes client from the active Kubernetes orchestrator, but
     # override the `incluster` setting to `True` since we are running inside
     # the Kubernetes cluster.
-    orchestrator = active_stack.orchestrator
-    assert isinstance(orchestrator, KubernetesOrchestrator)
     kube_client = orchestrator.get_kube_client(incluster=True)
     core_api = k8s_client.CoreV1Api(kube_client)
 
@@ -121,7 +135,7 @@ def main() -> None:
         Raises:
             Exception: If the pod fails to start.
         """
-        step_config = deployment_config.step_configurations[step_name].config
+        step_config = deployment.step_configurations[step_name].config
         settings = step_config.settings.get("orchestrator.kubernetes", None)
         settings = KubernetesOrchestratorSettings.model_validate(
             settings.model_dump() if settings else {}
@@ -147,10 +161,10 @@ def main() -> None:
         )
 
         image = KubernetesOrchestrator.get_image(
-            deployment=deployment_config, step_name=step_name
+            deployment=deployment, step_name=step_name
         )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_name, deployment_id=deployment_config.id
+            step_name=step_name, deployment_id=deployment.id
         )
 
         # We set some default minimum memory resource requests for the step pod
@@ -165,9 +179,7 @@ def main() -> None:
 
         if orchestrator.config.pass_zenml_token_as_secret:
             env.pop("ZENML_STORE_API_TOKEN", None)
-            secret_name = orchestrator.get_token_secret_name(
-                deployment_config.id
-            )
+            secret_name = orchestrator.get_token_secret_name(deployment.id)
             pod_settings.env.append(
                 {
                     "name": "ZENML_STORE_API_TOKEN",
@@ -184,7 +196,7 @@ def main() -> None:
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
             run_name=args.run_name,
-            pipeline_name=deployment_config.pipeline_configuration.name,
+            pipeline_name=deployment.pipeline_configuration.name,
             image_name=image,
             command=step_command,
             args=step_args,
@@ -251,8 +263,8 @@ def main() -> None:
 
             pipeline_runs = client.list_pipeline_runs(
                 hydrate=True,
-                project=deployment_config.project.id,
-                deployment_id=deployment_config.id,
+                project=deployment.project_id,
+                deployment_id=deployment.id,
                 **list_args,
             )
             if not len(pipeline_runs):
@@ -298,27 +310,26 @@ def main() -> None:
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
     )
-    settings = cast(
-        KubernetesOrchestratorSettings,
-        orchestrator.get_settings(deployment_config),
-    )
+
+    pipeline_dag = {
+        step_name: step.spec.upstream_steps
+        for step_name, step in deployment.step_configurations.items()
+    }
     try:
         ThreadedDagRunner(
             dag=pipeline_dag,
             run_fn=run_step_on_kubernetes,
             finalize_fn=finalize_run,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
-            max_parallelism=settings.max_parallelism,
+            max_parallelism=pipeline_settings.max_parallelism,
         ).run()
         logger.info("Orchestration pod completed.")
     finally:
         if (
             orchestrator.config.pass_zenml_token_as_secret
-            and deployment_config.schedule is None
+            and deployment.schedule is None
         ):
-            secret_name = orchestrator.get_token_secret_name(
-                deployment_config.id
-            )
+            secret_name = orchestrator.get_token_secret_name(deployment.id)
             try:
                 kube_utils.delete_secret(
                     core_api=core_api,

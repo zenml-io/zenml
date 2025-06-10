@@ -159,7 +159,7 @@ log_metadata(
 Models in ZenML represent a higher-level concept that can encapsulate multiple artifacts and steps. Logging metadata for models helps track performance and other important information:
 
 ```python
-from zenml import step, log_metadata, get_step_context
+from zenml import step, log_metadata
 
 # Method 1: Within a step that produces a model
 @step

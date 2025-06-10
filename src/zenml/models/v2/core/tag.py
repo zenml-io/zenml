@@ -125,13 +125,14 @@ class TagResponseBody(UserScopedResponseBody):
     exclusive: bool = Field(
         description="The flag signifying whether the tag is an exclusive tag."
     )
-    tagged_count: int = Field(
-        description="The count of resources tagged with this tag."
-    )
 
 
 class TagResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for tags."""
+
+    tagged_count: int = Field(
+        description="The count of resources tagged with this tag."
+    )
 
 
 class TagResponseResources(UserScopedResponseResources):
@@ -185,7 +186,7 @@ class TagResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tagged_count
+        return self.get_metadata().tagged_count
 
 
 # ------------------ Filter Model ------------------

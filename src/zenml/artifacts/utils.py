@@ -16,6 +16,7 @@
 import base64
 import contextlib
 import os
+import re
 import tempfile
 import zipfile
 from pathlib import Path
@@ -36,6 +37,7 @@ from zenml.artifacts.preexisting_data_materializer import (
 )
 from zenml.client import Client
 from zenml.constants import (
+    ENV_ZENML_SERVER,
     MODEL_METADATA_YAML_FILE_NAME,
 )
 from zenml.enums import (
@@ -819,11 +821,18 @@ def _load_artifact_store(
             an artifact store.
         NotImplementedError: If the artifact store could not be loaded.
     """
+    client = Client()
     if isinstance(artifact_store_id, str):
         artifact_store_id = UUID(artifact_store_id)
 
+    if (
+        ENV_ZENML_SERVER not in os.environ
+        and client.active_stack.artifact_store.id == artifact_store_id
+    ):
+        return client.active_stack.artifact_store
+
     if zen_store is None:
-        zen_store = Client().zen_store
+        zen_store = client.zen_store
 
     try:
         artifact_store_model = zen_store.get_stack_component(artifact_store_id)
@@ -856,9 +865,18 @@ def _load_artifact_store(
 def _get_artifact_store_from_response_or_from_active_stack(
     artifact: ArtifactVersionResponse,
 ) -> "BaseArtifactStore":
+    client = Client()
+
     if artifact.artifact_store_id:
+        if (
+            ENV_ZENML_SERVER not in os.environ
+            and client.active_stack.artifact_store.id
+            == artifact.artifact_store_id
+        ):
+            return client.active_stack.artifact_store
+
         try:
-            artifact_store_model = Client().get_stack_component(
+            artifact_store_model = client.get_stack_component(
                 component_type=StackComponentType.ARTIFACT_STORE,
                 name_id_or_prefix=artifact.artifact_store_id,
             )
@@ -880,7 +898,8 @@ def _get_artifact_store_from_response_or_from_active_stack(
                 "the environment that you are loading this artifact from "
                 "has the right dependencies."
             )
-    return Client().active_stack.artifact_store
+
+    return client.active_stack.artifact_store
 
 
 def _load_file_from_artifact_store(
@@ -938,6 +957,13 @@ def _load_file_from_artifact_store(
             f"likely because the authentication credentials are not configured "
             f"in the artifact store itself. For more information, see {link}."
         )
+
+
+def _strip_timestamp_from_multiline_string(
+    input: str,
+    pattern: str = r"^\[?\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC\]?\s*",
+) -> str:
+    return re.sub(pattern, "", input, flags=re.MULTILINE)
 
 
 # --------------------

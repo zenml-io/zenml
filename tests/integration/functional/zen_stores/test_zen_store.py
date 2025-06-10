@@ -4188,7 +4188,7 @@ class TestModel:
             for name in ["great one", "yet another one"]:
                 mv = zs.create_model_version(
                     ModelVersionRequest(
-                        project=created_model.project.id,
+                        project=created_model.project_id,
                         model=created_model.id,
                         name=name,
                     )
@@ -4257,7 +4257,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
@@ -4270,7 +4270,7 @@ class TestModelVersion:
             with pytest.raises(ValueError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        project=model.project.id,
+                        project=model.project_id,
                         model=model.id,
                         name="I will fail\n",
                     )
@@ -4282,7 +4282,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
@@ -4290,7 +4290,7 @@ class TestModelVersion:
             with pytest.raises(EntityExistsError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        project=model.project.id,
+                        project=model.project_id,
                         model=model.id,
                         name="great one",
                     )
@@ -4303,7 +4303,7 @@ class TestModelVersion:
             with pytest.raises(KeyError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        project=model.project.id,
+                        project=model.project_id,
                         model=uuid4(),
                         name="great one",
                     )
@@ -4324,7 +4324,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
@@ -4353,14 +4353,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="and yet another one",
                 )
@@ -4379,7 +4379,7 @@ class TestModelVersion:
         with ModelContext() as model:
             mv1 = clean_client.zen_store.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                     tags=["tag1", "tag2"],
@@ -4387,7 +4387,7 @@ class TestModelVersion:
             )
             mv2 = clean_client.zen_store.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="and yet another one",
                     tags=["tag3", "tag2"],
@@ -4444,7 +4444,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
@@ -4479,14 +4479,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4519,7 +4519,7 @@ class TestModelVersion:
             zs = clean_client.zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                     description="this is great",
@@ -4546,7 +4546,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
@@ -4567,7 +4567,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
@@ -4575,7 +4575,7 @@ class TestModelVersion:
             time.sleep(1)  # thanks to MySQL way of storing datetimes
             latest = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4591,14 +4591,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4650,7 +4650,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                 )
             )
@@ -4677,7 +4677,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
@@ -4702,7 +4702,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great one",
                 )
@@ -4710,7 +4710,7 @@ class TestModelVersion:
             time.sleep(1)  # thanks MySQL again!
             zs.create_model_version(
                 ModelVersionRequest(
-                    project=model.project.id,
+                    project=model.project_id,
                     model=model.id,
                     name="great second",
                 )
@@ -5119,15 +5119,6 @@ class TestModelVersionPipelineRunLinks:
 
             assert mv.pipeline_runs[prs[0].name].id == prs[0].id
             assert mv.pipeline_runs[prs[1].name].id == prs[1].id
-
-            assert (
-                mv.get_pipeline_run(prs[0].name)
-                == mv.pipeline_runs[prs[0].name]
-            )
-            assert (
-                mv.get_pipeline_run(prs[1].name)
-                == mv.pipeline_runs[prs[1].name]
-            )
 
 
 class TestTag:

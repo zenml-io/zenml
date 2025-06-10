@@ -334,8 +334,8 @@ def authenticate_credentials(
                 raise CredentialsNotValid(error)
 
             if (
-                device_model.user is None
-                or device_model.user.id != user_model.id
+                device_model.user_id is None
+                or device_model.user_id != user_model.id
             ):
                 error = (
                     f"Authentication error: device {decoded_token.device_id} "
@@ -788,7 +788,10 @@ def authenticate_external_user(
     user_agent = request.headers.get("User-Agent", "").lower()
     if "zenml/" in user_agent:
         store.update_onboarding_state(
-            completed_steps={OnboardingStep.DEVICE_VERIFIED}
+            completed_steps={
+                OnboardingStep.DEVICE_VERIFIED,
+                OnboardingStep.PRO_ONBOARDING_COMPLETED,
+            }
         )
 
     return AuthContext(user=user)

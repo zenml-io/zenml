@@ -1480,9 +1480,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model of the active stack for this client.
-
-        Raises:
-            RuntimeError: If the active stack is not set.
         """
         if env_stack_id := os.environ.get(ENV_ZENML_ACTIVE_STACK_ID):
             if not self._active_stack or self._active_stack.id != UUID(
@@ -1508,12 +1505,6 @@ class Client(metaclass=ClientMetaClass):
                 return active_stack
 
             stack_id = GlobalConfiguration().get_active_stack_id()
-
-        if not stack_id:
-            raise RuntimeError(
-                "No active stack is configured. Run "
-                "`zenml stack set STACK_NAME` to set the active stack."
-            )
 
         return self.get_stack(stack_id)
 
@@ -1550,9 +1541,6 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             stack: The stack to validate.
-
-        Raises:
-            ValidationError: If the stack configuration is invalid.
         """
         local_components: List[str] = []
         remote_components: List[str] = []
@@ -1615,13 +1603,6 @@ class Client(metaclass=ClientMetaClass):
                 f"sure that your stack is configured correctly, or try to use "
                 f"component flavors or configurations that do not require "
                 f"local resources."
-            )
-
-        if not stack.is_valid:
-            raise ValidationError(
-                "Stack configuration is invalid. A valid"
-                "stack must contain an Artifact Store and "
-                "an Orchestrator."
             )
 
     # ----------------------------- Services -----------------------------------
@@ -2573,7 +2554,7 @@ class Client(metaclass=ClientMetaClass):
                 self.list_run_templates,
                 pipeline_id=pipeline.id,
                 stack_id=stack.id if stack else None,
-                project=project or pipeline.project.id,
+                project=project or pipeline.project_id,
             )
 
             for template in templates:
@@ -3855,6 +3836,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
+        include_full_metadata: bool = False,
     ) -> PipelineRunResponse:
         """Gets a pipeline run by name, ID, or prefix.
 
@@ -3864,6 +3846,8 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             The pipeline run.
@@ -3875,6 +3859,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=allow_name_prefix_match,
             project=project,
             hydrate=hydrate,
+            include_full_metadata=include_full_metadata,
         )
 
     def list_pipeline_runs(
@@ -3913,6 +3898,7 @@ class Client(metaclass=ClientMetaClass):
         stack: Optional[Union[UUID, str]] = None,
         stack_component: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
+        include_full_metadata: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -3953,6 +3939,8 @@ class Client(metaclass=ClientMetaClass):
             stack_component: Filter by stack component name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            include_full_metadata: If True, include metadata of all steps in
+                the response.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -3995,6 +3983,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,
             hydrate=hydrate,
+            include_full_metadata=include_full_metadata,
         )
 
     def delete_pipeline_run(
@@ -6368,7 +6357,7 @@ class Client(metaclass=ClientMetaClass):
             model_version=ModelVersionRequest(
                 name=name,
                 description=description,
-                project=model.project.id,
+                project=model.project_id,
                 model=model.id,
                 tags=tags,
             )
@@ -6623,7 +6612,7 @@ class Client(metaclass=ClientMetaClass):
         if not is_valid_uuid(model_name_or_id):
             model = self.get_model(model_name_or_id, project=project)
             model_name_or_id = model.id
-            project = project or model.project.id
+            project = project or model.project_id
         if not is_valid_uuid(version_name_or_id):
             version_name_or_id = self.get_model_version(
                 model_name_or_id, version_name_or_id, project=project
@@ -7032,6 +7021,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
+        **kwargs: Any,
     ) -> AnyResponse:
         """Fetches an entity using the id, name, or partial id/name.
 
@@ -7044,6 +7034,8 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             project: The project name/ID to filter by.
+            **kwargs: Additional keyword arguments to pass to the get and list
+                methods.
 
         Returns:
             The entity with the given name, id or partial id.
@@ -7058,13 +7050,14 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(name_id_or_prefix):
-            return get_method(name_id_or_prefix, hydrate=hydrate)
+            return get_method(name_id_or_prefix, hydrate=hydrate, **kwargs)
 
         # If not a UUID, try to find by name
         assert not isinstance(name_id_or_prefix, UUID)
         list_kwargs: Dict[str, Any] = dict(
             name=f"equals:{name_id_or_prefix}",
             hydrate=hydrate,
+            **kwargs,
         )
         scope = ""
         if project:
@@ -7182,6 +7175,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
+        **kwargs: Any,
     ) -> AnyResponse:
         """Fetches an entity using a partial ID or name.
 
@@ -7193,6 +7187,8 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             project: The project name/ID to filter by.
+            **kwargs: Additional keyword arguments to pass to the get and list
+                methods.
 
         Returns:
             The entity with the given partial ID or name.
@@ -7206,6 +7202,7 @@ class Client(metaclass=ClientMetaClass):
             "logical_operator": LogicalOperators.OR,
             "id": f"startswith:{partial_id_or_name}",
             "hydrate": hydrate,
+            **kwargs,
         }
         if allow_name_prefix_match:
             list_method_args["name"] = f"startswith:{partial_id_or_name}"

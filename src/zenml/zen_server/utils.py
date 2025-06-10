@@ -15,6 +15,7 @@
 
 import inspect
 import os
+import threading
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -322,40 +323,6 @@ def async_fastapi_endpoint_wrapper(
         Decorated function.
     """
 
-    @wraps(func)
-    def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
-        # These imports can't happen at module level as this module is also
-        # used by the CLI when installed without the `server` extra
-        from fastapi import HTTPException
-        from fastapi.responses import JSONResponse
-
-        from zenml.zen_server.auth import AuthContext, set_auth_context
-
-        for arg in args:
-            if isinstance(arg, AuthContext):
-                set_auth_context(arg)
-                break
-        else:
-            for _, arg in kwargs.items():
-                if isinstance(arg, AuthContext):
-                    set_auth_context(arg)
-                    break
-
-        try:
-            return func(*args, **kwargs)
-        except OAuthError as error:
-            # The OAuthError is special because it needs to have a JSON response
-            return JSONResponse(
-                status_code=error.status_code,
-                content=error.to_dict(),
-            )
-        except HTTPException:
-            raise
-        except Exception as error:
-            logger.exception("API error")
-            http_exception = http_exception_from_error(error)
-            raise http_exception
-
     # When having a sync FastAPI endpoint, it runs the endpoint function in
     # a worker threadpool. If all threads are busy, it will queue the task.
     # The problem is that after the endpoint code returns, FastAPI will queue
@@ -369,9 +336,51 @@ def async_fastapi_endpoint_wrapper(
     # a worker thread to become available.
     # See: `fastapi.routing.serialize_response(...)` and
     # https://github.com/fastapi/fastapi/pull/888 for more information.
-    @wraps(decorated)
+    @wraps(func)
     async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
         from starlette.concurrency import run_in_threadpool
+
+        from zenml.zen_server.zen_server_api import request_ids
+
+        request_id = request_ids.get()
+
+        @wraps(func)
+        def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
+            # These imports can't happen at module level as this module is also
+            # used by the CLI when installed without the `server` extra
+            from fastapi import HTTPException
+            from fastapi.responses import JSONResponse
+
+            from zenml.zen_server.auth import AuthContext, set_auth_context
+
+            if request_id:
+                # Change the name of the current thread to the request ID
+                threading.current_thread().name = request_id
+
+            for arg in args:
+                if isinstance(arg, AuthContext):
+                    set_auth_context(arg)
+                    break
+            else:
+                for _, arg in kwargs.items():
+                    if isinstance(arg, AuthContext):
+                        set_auth_context(arg)
+                        break
+
+            try:
+                return func(*args, **kwargs)
+            except OAuthError as error:
+                # The OAuthError is special because it needs to have a JSON response
+                return JSONResponse(
+                    status_code=error.status_code,
+                    content=error.to_dict(),
+                )
+            except HTTPException:
+                raise
+            except Exception as error:
+                logger.exception("API error")
+                http_exception = http_exception_from_error(error)
+                raise http_exception
 
         return await run_in_threadpool(decorated, *args, **kwargs)
 

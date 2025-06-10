@@ -87,12 +87,6 @@ class ArtifactUpdate(BaseUpdate):
 class ArtifactResponseBody(ProjectScopedResponseBody):
     """Response body for artifacts."""
 
-    tags: List[TagResponse] = Field(
-        title="Tags associated with the model",
-    )
-    latest_version_name: Optional[str] = None
-    latest_version_id: Optional[UUID] = None
-
 
 class ArtifactResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for artifacts."""
@@ -105,6 +99,13 @@ class ArtifactResponseMetadata(ProjectScopedResponseMetadata):
 
 class ArtifactResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the Artifact Entity."""
+
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the artifact.",
+    )
+    # TODO: maybe move these back to body or figure out a better solution
+    latest_version_name: Optional[str] = None
+    latest_version_id: Optional[UUID] = None
 
 
 class ArtifactResponse(
@@ -139,7 +140,7 @@ class ArtifactResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().tags
+        return self.get_resources().tags
 
     @property
     def latest_version_name(self) -> Optional[str]:
@@ -148,7 +149,7 @@ class ArtifactResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().latest_version_name
+        return self.get_resources().latest_version_name
 
     @property
     def latest_version_id(self) -> Optional[UUID]:
@@ -157,7 +158,7 @@ class ArtifactResponse(
         Returns:
             the value of the property.
         """
-        return self.get_body().latest_version_id
+        return self.get_resources().latest_version_id
 
     @property
     def has_custom_name(self) -> bool:

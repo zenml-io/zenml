@@ -72,6 +72,9 @@ class DockerBuildConfig(BaseModel):
     dockerignore: Optional[str] = None
 
 
+_docker_settings_warnings_logged = []
+
+
 class DockerSettings(BaseSettings):
     """Settings for building Docker images to run ZenML pipelines.
 
@@ -372,6 +375,9 @@ class DockerSettings(BaseSettings):
         if isinstance(
             self.replicate_local_python_environment,
             (str, list, PythonEnvironmentExportMethod),
+        ) and (
+            "replicate_local_python_environment"
+            not in _docker_settings_warnings_logged
         ):
             logger.warning(
                 "Specifying a command (`%s`) for "
@@ -383,7 +389,9 @@ class DockerSettings(BaseSettings):
                 "file, use `DockerSettings.pyproject_path` and "
                 "`DockerSettings.pyproject_export_command` instead."
             )
-
+            _docker_settings_warnings_logged.append(
+                "replicate_local_python_environment"
+            )
         return self
 
     @model_validator(mode="before")
@@ -400,7 +408,11 @@ class DockerSettings(BaseSettings):
         Returns:
             The validated settings values.
         """
-        if "python_package_installer" not in data:
+        if (
+            "python_package_installer" not in data
+            and "python_package_installer"
+            not in _docker_settings_warnings_logged
+        ):
             logger.warning(
                 "In a future release, the default Python package installer "
                 "used by ZenML to build container images for your "
@@ -409,6 +421,7 @@ class DockerSettings(BaseSettings):
                 "`python_package_installer=PythonPackageInstaller.PIP` "
                 "in your DockerSettings."
             )
+            _docker_settings_warnings_logged.append("python_package_installer")
         return data
 
     model_config = ConfigDict(
