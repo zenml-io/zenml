@@ -177,6 +177,12 @@ As can be seen in the example, there are two basic ways of adding metrics to you
 The ZenML Evidently report step can then be inserted into your pipeline where it can take in two datasets and outputs the Evidently report generated in both JSON and HTML formats, e.g.:
 
 ```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
+# Note: docker_settings would be defined elsewhere
+# Note: data_loader, data_splitter, text_data_report, text_data_test, text_analyzer would be custom step functions
+
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
 def text_data_report_test_pipeline():
     """Links all the steps together in a pipeline."""
