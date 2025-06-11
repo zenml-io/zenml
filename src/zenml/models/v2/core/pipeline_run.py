@@ -392,11 +392,12 @@ class PipelineRunResponse(
             )
 
         # Check if pipeline can be stopped
-        if self.status.is_finished:
-            raise IllegalOperationError(
-                f"Cannot stop a run that is already in a '{self.status}' state."
-            )
+        if self.status == ExecutionStatus.COMPLETED:
+            raise IllegalOperationError("Cannot stop a run that is already completed.")
 
+        if self.status == ExecutionStatus.STOPPED:
+            raise IllegalOperationError("Run is already stopped.")
+            
         if self.status == ExecutionStatus.STOPPING:
             raise IllegalOperationError("Run is already being stopped.")
 
