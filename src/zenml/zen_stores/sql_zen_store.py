@@ -2819,7 +2819,7 @@ class SqlZenStore(BaseZenStore):
 
         if artifact is None:
             try:
-                with session.begin_nested():
+                with session.begin_nested() as nested_session:
                     artifact_request = ArtifactRequest(
                         name=name,
                         project=project_id,
@@ -2830,16 +2830,14 @@ class SqlZenStore(BaseZenStore):
                     )
                     artifact = ArtifactSchema.from_request(artifact_request)
                     session.add(artifact)
-                    session.commit()
-                session.refresh(artifact)
+                    nested_session.commit()
             except IntegrityError:
-                # We have to rollback the failed session first in order to
-                # continue using it
-                session.rollback()
                 # We failed to create the artifact due to the unique constraint
                 # for artifact names -> The artifact was already created, we can
                 # just fetch it from the DB now
                 artifact = session.exec(artifact_query).one()
+            else:
+                session.refresh(artifact)
 
         if artifact.has_custom_name is False and has_custom_name:
             # If a new version with custom name was created for an artifact
@@ -12003,17 +12001,15 @@ class SqlZenStore(BaseZenStore):
         validate_name(tag)
         self._set_request_user_id(request_model=tag, session=session)
 
-        with session.begin_nested() as nested_session:
-            tag_schema = TagSchema.from_request(tag)
-            session.add(tag_schema)
-
-            try:
-                session.commit()
-            except IntegrityError:
-                nested_session.rollback()
-                raise EntityExistsError(
-                    f"Tag with name `{tag.name}` already exists."
-                )
+        try:
+            with session.begin_nested() as nested_session:
+                tag_schema = TagSchema.from_request(tag)
+                session.add(tag_schema)
+                nested_session.commit()
+        except IntegrityError:
+            raise EntityExistsError(
+                f"Tag with name `{tag.name}` already exists."
+            )
         return tag_schema
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)
