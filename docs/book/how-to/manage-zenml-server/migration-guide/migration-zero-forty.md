@@ -95,6 +95,7 @@ int_output = last_run.steps["my_step"].outputs["int_output"].load()
 {% tabs %}
 {% tab title="Old Syntax" %}
 ```python
+from typing import Optional
 from zenml.steps import step, BaseParameters
 from zenml.pipelines import pipeline
 
