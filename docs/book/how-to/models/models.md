@@ -133,6 +133,8 @@ from zenml.artifacts.utils import save_artifact
 import pandas as pd
 from typing_extensions import Annotated
 from zenml.artifacts.artifact_config import ArtifactConfig
+from sklearn.base import ClassifierMixin
+from sklearn.ensemble import RandomForestClassifier
 
 @step(model=Model(name="MyModel", version="1.2.42"))
 def trainer(
@@ -143,6 +145,7 @@ def trainer(
     
     # Save intermediate checkpoint
     for epoch in range(10):
+        # Note: train_epoch is a custom function you'd need to implement
         model = train_epoch(model, trn_dataset)
         # Save intermediate artifact
         save_artifact(
@@ -188,7 +191,7 @@ This pattern allows pipelines to exchange data without knowing the specific arti
 
 ```python
 from typing_extensions import Annotated
-from zenml import get_pipeline_context, pipeline, Model
+from zenml import step, get_pipeline_context, pipeline, Model
 from zenml.enums import ModelStages
 import pandas as pd
 from sklearn.base import ClassifierMixin
@@ -214,7 +217,7 @@ def inference_pipeline():
     # Get the model from the pipeline context
     model = get_pipeline_context().model
     
-    # Load inference data
+    # Load inference data (you'd need to implement this function)
     inference_data = load_data()
     
     # Run prediction using the trained model artifact
@@ -243,6 +246,8 @@ from zenml import step, log_metadata, get_step_context
 def evaluate_model(model, test_data):
     """Evaluate the model and log metrics."""
     predictions = model.predict(test_data)
+    
+    # Note: You'd need to implement these metric calculation functions
     accuracy = calculate_accuracy(predictions, test_data.target)
     precision = calculate_precision(predictions, test_data.target)
     recall = calculate_recall(predictions, test_data.target)
