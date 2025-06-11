@@ -294,7 +294,7 @@ s2 -> s4
 `s1` and `s2` produce identical artifacts, however `s3` consumes materialized artifacts while `s4` consumes unmaterialized artifacts. `s4` can now use the `dict_.uri` and `list_.uri` paths directly rather than their materialized counterparts.
 
 ```python
-from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing_extensions import Annotated  # or `from typing_extensions import Annotated on Python 3.9+
 from typing import Dict, List, Tuple
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact

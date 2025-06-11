@@ -112,7 +112,7 @@ LLM to process the text.
 
 ```python
 import logging
-from typing import Annotated, List
+from typing_extensions import Annotated, List
 from utils.llm_utils import split_documents
 from zenml import ArtifactConfig, log_artifact_metadata, step
 

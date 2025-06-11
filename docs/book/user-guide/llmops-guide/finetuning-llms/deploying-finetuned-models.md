@@ -49,7 +49,7 @@ your deployment pipeline.
 ```python
 
 from zenml import pipeline
-from typing import Annotated
+from typing_extensions import Annotated
 from steps.vllm_deployer import vllm_model_deployer_step
 from zenml.integrations.vllm.services.vllm_deployment import VLLMDeploymentService
 

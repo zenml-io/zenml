@@ -57,7 +57,7 @@ int_output = last_run.get_step["my_step"].outputs["int_output"].read()
 
 {% tab title="New Syntax" %}
 ```python
-from typing import Annotated, Optional, Tuple
+from typing_extensions import Annotated, Optional, Tuple
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client

@@ -38,7 +38,7 @@ library that is easy to use and provides high-quality embeddings for a wide
 range of NLP tasks.
 
 ```python
-from typing import Annotated, List
+from typing_extensions import Annotated, List
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from structures import Document
