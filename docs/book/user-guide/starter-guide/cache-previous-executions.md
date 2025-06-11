@@ -28,6 +28,8 @@ If you run a pipeline without a schedule, ZenML will be able to compute the cach
 The caching does not automatically detect changes within the file system or on external APIs. Make sure to **manually** set caching to `False` on steps that depend on **external inputs, file-system changes,** or if the step should run regardless of caching.
 
 ```python
+from zenml import step
+
 @step(enable_cache=False)
 def load_data_from_external_system(...) -> ...:
     # This step will always be run
@@ -51,6 +53,8 @@ graph LR
 On a pipeline level, the caching policy can be set as a parameter within the `@pipeline` decorator as shown below:
 
 ```python
+from zenml import pipeline
+
 @pipeline(enable_cache=False)
 def first_pipeline(....):
     """Pipeline with cache disabled"""
@@ -79,6 +83,8 @@ The `with_options` function allows you to configure all sorts of things this way
 Caching can also be explicitly configured at a step level via a parameter of the `@step` decorator:
 
 ```python
+from zenml import step
+
 @step(enable_cache=False)
 def import_data_from_api(...):
     """Import most up-to-date data from public api"""

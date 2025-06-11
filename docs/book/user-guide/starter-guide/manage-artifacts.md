@@ -71,6 +71,8 @@ ZenML automatically versions all created artifacts using auto-incremented number
 While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model.html#zenml.model.artifact_config). This may come into play during critical runs like production releases.
 
 ```python
+from typing_extensions import Annotated
+import pandas as pd
 from zenml import step, ArtifactConfig
 
 @step
@@ -330,6 +332,8 @@ save_artifact(prediction, name="iris_predictions")
 You can also load any artifact stored within ZenML using the `load_artifact` method:
 
 ```python
+from zenml import load_artifact
+
 # Loads the latest version
 load_artifact("iris_predictions")
 ```
@@ -434,7 +438,11 @@ The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization fe
 A user can also add metadata to an artifact directly within a step using the `log_metadata` method:
 
 ```python
-from zenml import step, log_metadata
+from typing import Tuple
+from typing_extensions import Annotated
+import numpy as np
+from sklearn.base import ClassifierMixin
+from zenml import step, log_metadata, ArtifactConfig
 
 @step
 def model_finetuner_step(

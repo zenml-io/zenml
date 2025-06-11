@@ -56,6 +56,8 @@ model = Model(
 )
 
 # The step configuration will take precedence over the pipeline
+from zenml import step
+
 @step(model=model)
 def svc_trainer(...) -> ...:
     ...
@@ -112,7 +114,10 @@ The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, tha
 When configured at the pipeline or step level, the model will be available through the [StepContext](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline) or [PipelineContext](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline).
 
 ```python
-from zenml import get_step_context, get_pipeline_context, step, pipeline
+import pandas as pd
+from typing_extensions import Annotated
+from sklearn.base import ClassifierMixin
+from zenml import get_step_context, get_pipeline_context, step, pipeline, Model
 
 @step
 def svc_trainer(
@@ -147,6 +152,9 @@ def training_pipeline(gamma: float = 0.002):
 [Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), models too can take a dictionary of key-value pairs to capture their metadata. This is achieved using the `log_metadata` method:
 
 ```python
+import pandas as pd
+from typing_extensions import Annotated
+from sklearn.base import ClassifierMixin
 from zenml import get_step_context, step, log_metadata
 
 @step
@@ -154,7 +162,7 @@ def svc_trainer(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     gamma: float = 0.001,
-) -> Annotated[ClassifierMixin, "sklearn_classifier"],:
+) -> Annotated[ClassifierMixin, "sklearn_classifier"]:
     # Train and score model
     ...
     model.fit(dataset[0], dataset[1])
@@ -185,7 +193,7 @@ from zenml.client import Client
 # Get an artifact version (in this the latest `iris_classifier`)
 model_version = Client().get_model_version('iris_classifier')
 
-# Fetch it's metadata
+# Fetch its metadata
 model_version.run_metadata["accuracy"].value
 ```
 {% endtab %}
