@@ -4454,7 +4454,7 @@ class RestZenStore(BaseZenStore):
                         f"`zenml login {self.url}` to "
                         "re-authenticate to the server or authenticate using "
                         "an API key. See "
-                        "https://docs.zenml.io/how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account "
+                        "https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account "
                         "for more information."
                     )
                     # Clear the current token from the credentials store to
