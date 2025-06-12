@@ -52,6 +52,7 @@ from zenml.integrations.modal.utils import (
     get_resource_settings_from_deployment,
     get_resource_values,
     setup_modal_client,
+    stream_modal_logs_and_wait,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator
@@ -349,7 +350,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         mode_suffix = execution_mode.replace("_", "-")
         app_name_base = f"zenml-{deployment.pipeline_configuration.name.replace('_', '-')}-{mode_suffix}"
 
-        execute_step = get_or_deploy_persistent_modal_app(
+        execute_step, full_app_name = get_or_deploy_persistent_modal_app(
             app_name_base=app_name_base,
             zenml_image=zenml_image,
             execution_func=execution_func,
@@ -380,7 +381,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         def execute_modal_function(
             func_args: Tuple[Any, ...], description: str
         ) -> Any:
-            """Execute Modal function with proper sync/async control.
+            """Execute Modal function with proper sync/async control and log streaming.
 
             Args:
                 func_args: Arguments to pass to the Modal function.
@@ -389,20 +390,17 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             Returns:
                 Result of the Modal function execution.
             """
-            logger.info(f"Starting {description}")
+            # Always use .spawn() to get a FunctionCall object for log streaming
+            function_call = execute_step.spawn(*func_args)
 
             if sync_execution:
-                logger.debug("Using .remote() for synchronous execution")
-                # .remote() waits for completion but doesn't stream logs
-                result = execute_step.remote(*func_args)
-                logger.info(f"{description} completed successfully")
-                return result
-            else:
-                logger.debug(
-                    "Using .spawn() for asynchronous fire-and-forget execution"
+                logger.debug("Using synchronous execution with log streaming")
+                # Stream logs while waiting for completion using app name
+                return stream_modal_logs_and_wait(
+                    function_call, description, full_app_name
                 )
-                # .spawn() for fire-and-forget (async)
-                function_call = execute_step.spawn(*func_args)
+            else:
+                logger.debug("Using asynchronous fire-and-forget execution")
                 logger.info(
                     f"{description} started asynchronously (not waiting for completion)"
                 )
