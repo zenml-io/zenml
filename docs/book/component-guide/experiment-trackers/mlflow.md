@@ -136,6 +136,9 @@ To be able to log information from a ZenML pipeline step using the MLflow Experi
 
 ```python
 import mlflow
+import numpy as np
+import tensorflow as tf
+from zenml import step
 
 
 @step(experiment_tracker="<MLFLOW_TRACKER_STACK_COMPONENT_NAME>")

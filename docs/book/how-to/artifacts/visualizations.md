@@ -77,6 +77,7 @@ If you already have HTML, Markdown, CSV or JSON data available as a string insid
 #### Example:
 
 ```python
+from zenml import step
 from zenml.types import CSVString
 
 @step
@@ -140,6 +141,7 @@ If you want to automatically extract visualizations for all artifacts of a certa
 **1. Custom Class** First, we create a custom class to hold our matplotlib figure:
 
 ```python
+from typing import Any
 from pydantic import BaseModel
 
 class MatplotlibVisualization(BaseModel):
@@ -150,6 +152,12 @@ class MatplotlibVisualization(BaseModel):
 **2. Materializer** Next, we create a [custom materializer](materializers.md#creating-custom-materializers) that handles this class and implements the visualization logic:
 
 ```python
+import os
+from typing import Dict
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.enums import VisualizationType
+from zenml.io import fileio
+
 class MatplotlibMaterializer(BaseMaterializer):
     """Materializer that handles matplotlib figures."""
     ASSOCIATED_TYPES = (MatplotlibVisualization,)
@@ -167,6 +175,9 @@ class MatplotlibMaterializer(BaseMaterializer):
 **3. Step** Finally, we create a step that returns our custom type:
 
 ```python
+import matplotlib.pyplot as plt
+from zenml import step
+
 @step
 def create_matplotlib_visualization() -> MatplotlibVisualization:
     """Creates a matplotlib visualization."""

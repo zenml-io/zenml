@@ -30,7 +30,7 @@ We leverage some simple helper utilities that we have created for this purpose:
 
 ```python
 from typing import List
-from typing_extensions import Annotated
+from typing import Annotated
 from zenml import log_artifact_metadata, step
 from steps.url_scraping_utils import get_all_pages
 

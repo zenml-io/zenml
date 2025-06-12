@@ -154,6 +154,9 @@ If you're using some other platform to store your code, and you still want to us
 First, you'll need to subclass and implement the abstract methods of the `zenml.code_repositories.BaseCodeRepository` class:
 
 ```python
+from abc import ABC, abstractmethod
+from typing import Optional
+
 class BaseCodeRepository(ABC):
     """Base class for code repositories."""
 

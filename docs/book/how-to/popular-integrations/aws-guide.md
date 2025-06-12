@@ -352,6 +352,8 @@ aws ce create-cost-category-definition --name ZenML-Projects --rules-version 1 -
 To enable Warm Pools, use the `SagemakerOrchestratorSettings` class:
 
 ```python
+from zenml.integrations.aws.orchestrators.sagemaker import SagemakerOrchestratorSettings
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     keep_alive_period_in_seconds = 300, # 5 minutes, default value
 )

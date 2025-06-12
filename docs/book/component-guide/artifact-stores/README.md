@@ -133,8 +133,10 @@ artifact_contents = io_utils.read_file_contents_as_string(artifact_uri)
 import os
 import tempfile
 import external_lib
+from zenml.client import Client
+from zenml.io import fileio
 
-root_path = Repository().active_stack.artifact_store.path
+root_path = Client().active_stack.artifact_store.path
 
 artifact_path = os.path.join(root_path, "artifacts", "examples")
 artifact_uri = os.path.join(artifact_path, "test.json")
@@ -152,8 +154,10 @@ with tempfile.NamedTemporaryFile(
 import os
 import tempfile
 import external_lib
+from zenml.client import Client
+from zenml.io import fileio
 
-root_path = Repository().active_stack.artifact_store.path
+root_path = Client().active_stack.artifact_store.path
 
 artifact_path = os.path.join(root_path, "artifacts", "examples")
 artifact_uri = os.path.join(artifact_path, "test.json")
