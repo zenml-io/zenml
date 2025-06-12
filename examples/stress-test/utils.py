@@ -46,6 +46,7 @@ class LogType(Enum):
     ENDPOINT_SYNC_COMPLETED = "endpoint_sync_completed"
     ENDPOINT_CACHE_HIT = "endpoint_cache_hit"
     ENDPOINT_RESUMED = "endpoint_resumed"
+    ENDPOINT_TIMEOUT = "endpoint_timeout"
 
     # Database stages
     SQL = "sql"
@@ -291,6 +292,8 @@ class LogFile(BaseModel):
                 log_type = LogType.ENDPOINT_CACHE_HIT
             elif "RESUMED" in op:
                 log_type = LogType.ENDPOINT_RESUMED
+            elif "TIMEOUT" in op:
+                log_type = LogType.ENDPOINT_TIMEOUT
 
         if log_type is None:
             raise ValueError(f"Unknown ENDPOINT STATS type in line: {line}")
@@ -860,6 +863,8 @@ class LogFile(BaseModel):
                     print_label: bool = False,
                     total_queued_duration: float = 0,
                     status_code: Optional[int] = None,
+                    transaction_start: Optional[datetime] = None,
+                    transaction_end: Optional[datetime] = None,
                 ) -> Dict[str, Any]:
                     duration = (
                         next_entry.timestamp - current_entry.timestamp
@@ -891,7 +896,7 @@ class LogFile(BaseModel):
                         else f"{current_metrics.get(metric_name)}"
                         for metric_name in current_metrics.keys()
                     }
-                    metrics_columns.update(metrics.keys())
+
                     return {
                         **metrics,
                         "request": f"{api_call} ({req_id}/{next_entry.transaction_id})",
@@ -903,15 +908,24 @@ class LogFile(BaseModel):
                         "stage": f"{current_entry.log_type.name} -> {next_entry.log_type.name}",
                         "start": pd.to_datetime(current_entry.timestamp),
                         "end": pd.to_datetime(next_entry.timestamp),
+                        "transaction_start": pd.to_datetime(
+                            transaction_start or current_entry.timestamp
+                        ),
+                        "transaction_end": pd.to_datetime(
+                            transaction_end or next_entry.timestamp
+                        ),
                         "state": current_entry.log_type.name,
                         "final_state": final_state,
                         "target": current_entry.target or api_call,
                         "label": label,
                         "duration": f"{duration:.3f}s / {total_duration:.3f}s",
                         "pod": pod,
+                        "texture": next_entry.pod,
                     }
 
-                transaction_rows = []
+                transaction_rows: List[Dict[str, Any]] = []
+                transaction_start = transaction_entries[0].timestamp
+                transaction_end = transaction_entries[-1].timestamp
                 if group_retry_requests:
                     transaction_entry_point = transaction_entries[0]
                     # Add a "client retry" row for every other transaction
@@ -919,13 +933,19 @@ class LogFile(BaseModel):
                         transaction_entry_point.transaction_id
                         != request_logs[0].transaction_id
                     ):
-                        row = get_row(request_logs[0], transaction_entry_point)
+                        row = get_row(
+                            current_entry=request_logs[0],
+                            next_entry=transaction_entry_point,
+                            transaction_start=transaction_start,
+                            transaction_end=transaction_end,
+                        )
                         row["stage"] = (
                             f"{LogType.CLIENT_RETRY.name} -> {LogType.API_RECEIVED.name}"
                         )
                         row["state"] = LogType.CLIENT_RETRY.name
                         if pod is None or transaction_entry_point.pod == pod:
                             transaction_rows.append(row)
+                            transaction_start = request_logs[0].timestamp
 
                 status_code = None
                 if transaction_entries[-1].status_code is not None:
@@ -965,6 +985,8 @@ class LogFile(BaseModel):
                         print_label=i == len(transaction_entries) - 2,
                         total_queued_duration=total_queued_duration,
                         status_code=status_code,
+                        transaction_start=transaction_start,
+                        transaction_end=transaction_end,
                     )
 
                     transaction_rows.append(row)
@@ -990,14 +1012,22 @@ class LogFile(BaseModel):
                     ]
                 if not transaction_rows:
                     continue
+
+                metrics_columns.update(
+                    [
+                        transaction_entry.metrics.keys()
+                        for transaction_entry in transaction_entries
+                    ]
+                )
                 rows.append(transaction_rows)
 
             request_count += 1
             if max_requests is not None and request_count >= max_requests:
                 break
 
-        # Sort the transaction groups by the start time of the first transaction
-        rows.sort(key=lambda x: x[0]["start"])
+        if len(rows) == 0:
+            print("No rows to plot")
+            return
 
         # Flatten the rows into a single list of dictionaries
         df = pd.DataFrame([row for sublist in rows for row in sublist])
@@ -1026,6 +1056,7 @@ class LogFile(BaseModel):
             "ENDPOINT_SYNC_COMPLETED": "#17becf",  # cyan
             "ENDPOINT_CACHE_HIT": "#ff7f0e",  # orange
             "ENDPOINT_RESUMED": "#c5b0d5",  # light purple
+            "ENDPOINT_TIMEOUT": "#ff0000",  # bright red
             # SQL states
             "SQL_STARTED": "#00FF00",  # bright green
             "SQL_COMPLETED": "#ffbb78",  # light orange
@@ -1050,6 +1081,7 @@ class LogFile(BaseModel):
             height=plot_height,
             width=plot_width,
             color_discrete_map=color_map,  # Use our fixed color mapping
+            # pattern_shape="texture",  # Add patterns based on pod
             hover_data={
                 **{metric: True for metric in metrics_columns},
                 "request": True,

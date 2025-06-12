@@ -64,14 +64,16 @@ class ZenMLCloudConnection:
         Returns:
             The response.
         """
+        from zenml.zen_server.utils import get_current_request_context
+
         url = self._config.api_url + endpoint
 
+        request_context = get_current_request_context()
+
         if logger.isEnabledFor(logging.DEBUG):
-            # Get the request ID from the current thread object
-            request_id = threading.current_thread().name
             logger.debug(
-                f"[{request_id}] RBAC STATS - {method} {endpoint} started "
-                f"{get_system_metrics_log_str()}"
+                f"[{request_context.log_request_id}] RBAC STATS - {method} "
+                f"{endpoint} started {get_system_metrics_log_str()}"
             )
             start_time = time.time()
 
@@ -112,9 +114,9 @@ class ZenMLCloudConnection:
             if logger.isEnabledFor(logging.DEBUG):
                 duration = (time.time() - start_time) * 1000
                 logger.debug(
-                    f"[{request_id}] RBAC STATS - {status_code} {method} "
-                    f"{endpoint} completed in {duration:.2f}ms "
-                    f"{get_system_metrics_log_str()}"
+                    f"[{request_context.log_request_id}] RBAC STATS - "
+                    f"{status_code} {method} {endpoint} completed in "
+                    f"{duration:.2f}ms {get_system_metrics_log_str()}"
                 )
 
         return response

@@ -25,7 +25,7 @@ import sys
 import threading
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -302,6 +302,7 @@ from zenml.models import (
     UserScopedRequest,
     UserUpdate,
 )
+from zenml.models.v2.base.scoped import UserScopedResponse
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -364,6 +365,7 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
     TagResourceSchema,
     TagSchema,
+    TransactionSchema,
     TriggerExecutionSchema,
     UserSchema,
 )
@@ -387,6 +389,9 @@ if TYPE_CHECKING:
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+AnyUserScopedResponse = TypeVar(
+    "AnyUserScopedResponse", bound=UserScopedResponse
+)
 
 AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]  # noqa: F821
 AnyIdentifiedResponse = TypeVar(
@@ -473,8 +478,16 @@ class Session(SqlModelSession):
             The SqlModel session.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            # Get the request ID from the current thread object
-            self.request_id = threading.current_thread().name
+            log_request_id = ""
+            log_request = ""
+            if handle_bool_env_var(ENV_ZENML_SERVER):
+                # Running inside server
+                from zenml.zen_server.utils import get_current_request_context
+
+                # If the code is running on the server, use the auth context.
+                request_context = get_current_request_context()
+                log_request_id = request_context.log_request_id
+                log_request = request_context.log_request
 
             # Look up the stack to find the SQLZenStore method
             for frame in inspect.stack():
@@ -489,7 +502,8 @@ class Session(SqlModelSession):
                 self.caller_method = "unknown"
 
             logger.debug(
-                f"[{self.request_id}] SQL STATS - "
+                f"[{log_request_id}] SQL STATS - "
+                f"{log_request} "
                 f"'{self.caller_method}' started {self._get_metrics_log_str()}"
             )
 
@@ -512,6 +526,16 @@ class Session(SqlModelSession):
         """
         if logger.isEnabledFor(logging.DEBUG):
             duration = (time.time() - self.start_time) * 1000
+            log_request_id = ""
+            log_request = ""
+            if handle_bool_env_var(ENV_ZENML_SERVER):
+                # Running inside server
+                from zenml.zen_server.utils import get_current_request_context
+
+                # If the code is running on the server, use the auth context.
+                request_context = get_current_request_context()
+                log_request_id = request_context.log_request_id
+                log_request = request_context.log_request
 
             # Add error information to the log
             error_info = ""
@@ -519,7 +543,8 @@ class Session(SqlModelSession):
                 error_info = " with ERROR"
 
             logger.debug(
-                f"[{self.request_id}] SQL STATS - "
+                f"[{log_request_id}] SQL STATS - "
+                f"{log_request} "
                 f"'{self.caller_method}' completed in "
                 f"{duration:.2f}ms {error_info} {self._get_metrics_log_str()}"
             )
@@ -598,6 +623,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         )
     )
     backup_database: Optional[str] = None
+    transaction_retention_seconds: int = 60 * 60  # 1 hour
 
     @field_validator("secrets_store")
     @classmethod
@@ -1990,7 +2016,14 @@ class SqlZenStore(BaseZenStore):
             The created action.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=action, session=session)
+            existing_action = self._get_resource_by_transaction_id(
+                request=action,
+                schema_class=ActionSchema,
+                response_class=ActionResponse,
+                session=session,
+            )
+            if existing_action:
+                return existing_action
 
             self._verify_name_uniqueness(
                 resource=action,
@@ -2006,9 +2039,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             new_action = ActionSchema.from_request(action)
-            session.add(new_action)
-            session.commit()
-            session.refresh(new_action)
+            self._commit_resource_with_transaction(
+                request=action,
+                schema=new_action,
+                session=session,
+            )
 
             return new_action.to_model(
                 include_metadata=True, include_resources=True
@@ -2532,7 +2567,15 @@ class SqlZenStore(BaseZenStore):
             The newly created service.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=service, session=session)
+            existing_service = self._get_resource_by_transaction_id(
+                request=service,
+                schema_class=ServiceSchema,
+                response_class=ServiceResponse,
+                session=session,
+            )
+            if existing_service:
+                return existing_service
+
             # Check if a service with the given name already exists
             self._fail_if_service_with_config_exists(
                 service_request=service,
@@ -2554,9 +2597,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             service_schema = ServiceSchema.from_request(service)
-            logger.debug("Creating service: %s", service_schema)
-            session.add(service_schema)
-            session.commit()
+            self._commit_resource_with_transaction(
+                request=service,
+                schema=service_schema,
+                session=session,
+            )
 
             return service_schema.to_model(
                 include_metadata=True, include_resources=True
@@ -2679,7 +2724,14 @@ class SqlZenStore(BaseZenStore):
         """
         validate_name(artifact)
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=artifact, session=session)
+            existing_artifact = self._get_resource_by_transaction_id(
+                request=artifact,
+                schema_class=ArtifactSchema,
+                response_class=ArtifactResponse,
+                session=session,
+            )
+            if existing_artifact:
+                return existing_artifact
 
             # Check if an artifact with the given name already exists
             self._verify_name_uniqueness(
@@ -2691,8 +2743,11 @@ class SqlZenStore(BaseZenStore):
             # Create the artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
 
-            session.add(artifact_schema)
-            session.commit()
+            self._commit_resource_with_transaction(
+                request=artifact,
+                schema=artifact_schema,
+                session=session,
+            )
 
             # Save tags of the artifact.
             self._attach_tags_to_resources(
@@ -2920,9 +2975,14 @@ class SqlZenStore(BaseZenStore):
             The created artifact version.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=artifact_version, session=session
+            existing_artifact_version = self._get_resource_by_transaction_id(
+                request=artifact_version,
+                schema_class=ArtifactVersionSchema,
+                response_class=ArtifactVersionResponse,
+                session=session,
             )
+            if existing_artifact_version:
+                return existing_artifact_version
 
             self._get_reference_schema_by_id(
                 resource=artifact_version,
@@ -2964,8 +3024,11 @@ class SqlZenStore(BaseZenStore):
                                 artifact_version
                             )
                         )
-                        session.add(artifact_version_schema)
-                        session.commit()
+                        self._commit_resource_with_transaction(
+                            request=artifact_version,
+                            schema=artifact_version_schema,
+                            session=session,
+                        )
                     except IntegrityError:
                         # We have to rollback the failed session first in order
                         # to continue using it
@@ -3006,8 +3069,11 @@ class SqlZenStore(BaseZenStore):
                     artifact_version_schema = (
                         ArtifactVersionSchema.from_request(artifact_version)
                     )
-                    session.add(artifact_version_schema)
-                    session.commit()
+                    self._commit_resource_with_transaction(
+                        request=artifact_version,
+                        schema=artifact_version_schema,
+                        session=session,
+                    )
                 except IntegrityError:
                     # We have to rollback the failed session first in order
                     # to continue using it
@@ -3339,9 +3405,14 @@ class SqlZenStore(BaseZenStore):
             The newly created code repository.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=code_repository, session=session
+            existing_code_repository = self._get_resource_by_transaction_id(
+                request=code_repository,
+                schema_class=CodeRepositorySchema,
+                response_class=CodeRepositoryResponse,
+                session=session,
             )
+            if existing_code_repository:
+                return existing_code_repository
 
             self._verify_name_uniqueness(
                 resource=code_repository,
@@ -3350,9 +3421,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             new_repo = CodeRepositorySchema.from_request(code_repository)
-            session.add(new_repo)
-            session.commit()
-            session.refresh(new_repo)
+            self._commit_resource_with_transaction(
+                request=code_repository,
+                schema=new_repo,
+                session=session,
+            )
 
             return new_repo.to_model(
                 include_metadata=True, include_resources=True
@@ -3483,9 +3556,14 @@ class SqlZenStore(BaseZenStore):
                 # Set the user to None for default components
                 component.user = None
             else:
-                self._set_request_user_id(
-                    request_model=component, session=session
+                existing_component = self._get_resource_by_transaction_id(
+                    request=component,
+                    schema_class=StackComponentSchema,
+                    response_class=ComponentResponse,
+                    session=session,
                 )
+                if existing_component:
+                    return existing_component
 
             self._fail_if_component_with_name_type_exists(
                 name=component.name,
@@ -3552,10 +3630,11 @@ class SqlZenStore(BaseZenStore):
                 request=component, service_connector=service_connector
             )
 
-            session.add(new_component)
-            session.commit()
-
-            session.refresh(new_component)
+            self._commit_resource_with_transaction(
+                request=component,
+                schema=new_component,
+                session=session,
+            )
 
             return new_component.to_model(
                 include_metadata=True, include_resources=True
@@ -4063,18 +4142,24 @@ class SqlZenStore(BaseZenStore):
                 # Set the user to None for built-in flavors
                 flavor.user = None
             else:
-                self._set_request_user_id(
-                    request_model=flavor, session=session
+                existing_flavor = self._get_resource_by_transaction_id(
+                    request=flavor,
+                    schema_class=FlavorSchema,
+                    response_class=FlavorResponse,
+                    session=session,
                 )
+                if existing_flavor:
+                    return existing_flavor
+
             # Check if flavor with the same domain key (name, type) already
             # exists
-            existing_flavor = session.exec(
+            same_flavor = session.exec(
                 select(FlavorSchema)
                 .where(FlavorSchema.name == flavor.name)
                 .where(FlavorSchema.type == flavor.type)
             ).first()
 
-            if existing_flavor is not None:
+            if same_flavor is not None:
                 raise EntityExistsError(
                     f"Unable to register '{flavor.type.value}' flavor "
                     f"with name '{flavor.name}' and type '{flavor.type}': "
@@ -4105,8 +4190,12 @@ class SqlZenStore(BaseZenStore):
                     sdk_docs_url=flavor.sdk_docs_url,
                     is_custom=flavor.is_custom,
                 )
-                session.add(new_flavor)
-                session.commit()
+
+                self._commit_resource_with_transaction(
+                    request=flavor,
+                    schema=new_flavor,
+                    session=session,
+                )
 
                 return new_flavor.to_model(
                     include_metadata=True, include_resources=True
@@ -4297,13 +4386,23 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline already exists.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=pipeline, session=session)
+            existing_pipeline = self._get_resource_by_transaction_id(
+                request=pipeline,
+                schema_class=PipelineSchema,
+                response_class=PipelineResponse,
+                session=session,
+            )
+            if existing_pipeline:
+                return existing_pipeline
 
             new_pipeline = PipelineSchema.from_request(pipeline)
 
-            session.add(new_pipeline)
             try:
-                session.commit()
+                self._commit_resource_with_transaction(
+                    request=pipeline,
+                    schema=new_pipeline,
+                    session=session,
+                )
             except IntegrityError:
                 # We have to rollback the failed session first in order
                 # to continue using it
@@ -4313,7 +4412,6 @@ class SqlZenStore(BaseZenStore):
                     f"'{pipeline.project}': A pipeline with the name "
                     f"{pipeline.name} already exists."
                 )
-            session.refresh(new_pipeline)
 
             self._attach_tags_to_resources(
                 tags=pipeline.tags,
@@ -4469,7 +4567,15 @@ class SqlZenStore(BaseZenStore):
             The newly created build.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=build, session=session)
+            existing_build = self._get_resource_by_transaction_id(
+                request=build,
+                schema_class=PipelineBuildSchema,
+                response_class=PipelineBuildResponse,
+                session=session,
+            )
+            if existing_build:
+                return existing_build
+
             self._get_reference_schema_by_id(
                 resource=build,
                 reference_schema=StackSchema,
@@ -4485,9 +4591,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             new_build = PipelineBuildSchema.from_request(build)
-            session.add(new_build)
-            session.commit()
-            session.refresh(new_build)
+            self._commit_resource_with_transaction(
+                request=build,
+                schema=new_build,
+                session=session,
+            )
 
             return new_build.to_model(
                 include_metadata=True, include_resources=True
@@ -4621,9 +4729,15 @@ class SqlZenStore(BaseZenStore):
             The newly created deployment.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=deployment, session=session
+            existing_deployment = self._get_resource_by_transaction_id(
+                request=deployment,
+                schema_class=PipelineDeploymentSchema,
+                response_class=PipelineDeploymentResponse,
+                session=session,
             )
+            if existing_deployment:
+                return existing_deployment
+
             self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=StackSchema,
@@ -4676,9 +4790,11 @@ class SqlZenStore(BaseZenStore):
             new_deployment = PipelineDeploymentSchema.from_request(
                 deployment, code_reference_id=code_reference_id
             )
-            session.add(new_deployment)
-            session.commit()
-            session.refresh(new_deployment)
+            self._commit_resource_with_transaction(
+                request=deployment,
+                schema=new_deployment,
+                session=session,
+            )
 
             return new_deployment.to_model(
                 include_metadata=True, include_resources=True
@@ -4772,7 +4888,14 @@ class SqlZenStore(BaseZenStore):
             The newly created template.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=template, session=session)
+            existing_template = self._get_resource_by_transaction_id(
+                request=template,
+                schema_class=RunTemplateSchema,
+                response_class=RunTemplateResponse,
+                session=session,
+            )
+            if existing_template:
+                return existing_template
 
             self._verify_name_uniqueness(
                 resource=template,
@@ -4791,9 +4914,11 @@ class SqlZenStore(BaseZenStore):
 
             template_schema = RunTemplateSchema.from_request(request=template)
 
-            session.add(template_schema)
-            session.commit()
-            session.refresh(template_schema)
+            self._commit_resource_with_transaction(
+                request=template,
+                schema=template_schema,
+                session=session,
+            )
 
             self._attach_tags_to_resources(
                 tags=template.tags,
@@ -4962,9 +5087,14 @@ class SqlZenStore(BaseZenStore):
             The created event_source.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=event_source, session=session
+            existing_event_source = self._get_resource_by_transaction_id(
+                request=event_source,
+                schema_class=EventSourceSchema,
+                response_class=EventSourceResponse,
+                session=session,
             )
+            if existing_event_source:
+                return existing_event_source
 
             self._verify_name_uniqueness(
                 resource=event_source,
@@ -4973,9 +5103,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             new_event_source = EventSourceSchema.from_request(event_source)
-            session.add(new_event_source)
-            session.commit()
-            session.refresh(new_event_source)
+            self._commit_resource_with_transaction(
+                request=event_source,
+                schema=new_event_source,
+                session=session,
+            )
 
             return new_event_source.to_model(
                 include_metadata=True, include_resources=True
@@ -6005,7 +6137,14 @@ class SqlZenStore(BaseZenStore):
             The newly created schedule.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=schedule, session=session)
+            existing_schedule = self._get_resource_by_transaction_id(
+                request=schedule,
+                schema_class=ScheduleSchema,
+                response_class=ScheduleResponse,
+                session=session,
+            )
+            if existing_schedule:
+                return existing_schedule
 
             self._verify_name_uniqueness(
                 resource=schedule,
@@ -6029,8 +6168,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             new_schedule = ScheduleSchema.from_request(schedule)
-            session.add(new_schedule)
-            session.commit()
+            self._commit_resource_with_transaction(
+                request=schedule,
+                schema=new_schedule,
+                session=session,
+            )
             return new_schedule.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -6551,7 +6693,15 @@ class SqlZenStore(BaseZenStore):
                 the same scope.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=secret, session=session)
+            existing_secret = self._get_resource_by_transaction_id(
+                request=secret,
+                schema_class=SecretSchema,
+                response_class=SecretResponse,
+                session=session,
+            )
+            if existing_secret:
+                return existing_secret
+
             assert secret.user is not None
             # Check if a secret with the same name already exists in the same
             # scope.
@@ -6567,8 +6717,11 @@ class SqlZenStore(BaseZenStore):
             new_secret = SecretSchema.from_request(
                 secret,
             )
-            session.add(new_secret)
-            session.commit()
+            self._commit_resource_with_transaction(
+                request=secret,
+                schema=new_secret,
+                session=session,
+            )
 
             secret_model = new_secret.to_model(
                 include_metadata=True, include_resources=True
@@ -7170,9 +7323,15 @@ class SqlZenStore(BaseZenStore):
             )
 
         with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=service_connector, session=session
+            existing_service_connector = self._get_resource_by_transaction_id(
+                request=service_connector,
+                schema_class=ServiceConnectorSchema,
+                response_class=ServiceConnectorResponse,
+                session=session,
             )
+            if existing_service_connector:
+                return existing_service_connector
+
             assert service_connector.user is not None
 
             self._verify_name_uniqueness(
@@ -7193,10 +7352,11 @@ class SqlZenStore(BaseZenStore):
                     secret_id=secret_id,
                 )
 
-                session.add(new_service_connector)
-                session.commit()
-
-                session.refresh(new_service_connector)
+                self._commit_resource_with_transaction(
+                    request=service_connector,
+                    schema=new_service_connector,
+                    session=session,
+                )
             except Exception:
                 # Delete the secret if it was created
                 if secret_id:
@@ -7881,7 +8041,14 @@ class SqlZenStore(BaseZenStore):
                 # Set the user to None for default stacks
                 stack.user = None
             else:
-                self._set_request_user_id(request_model=stack, session=session)
+                existing_stack = self._get_resource_by_transaction_id(
+                    request=stack,
+                    schema_class=StackSchema,
+                    response_class=StackResponse,
+                    session=session,
+                )
+                if existing_stack:
+                    return existing_stack
 
             # For clean-up purposes, each created entity is tracked here
             service_connectors_created_ids: List[UUID] = []
@@ -8136,9 +8303,11 @@ class SqlZenStore(BaseZenStore):
                     ),
                 )
 
-                session.add(new_stack_schema)
-                session.commit()
-                session.refresh(new_stack_schema)
+                self._commit_resource_with_transaction(
+                    request=stack,
+                    schema=new_stack_schema,
+                    session=session,
+                )
 
                 for defined_component in defined_components:
                     if (
@@ -8475,7 +8644,14 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: if the step run already exists.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=step_run, session=session)
+            existing_step_run = self._get_resource_by_transaction_id(
+                request=step_run,
+                schema_class=StepRunSchema,
+                response_class=StepRunResponse,
+                session=session,
+            )
+            if existing_step_run:
+                return existing_step_run
 
             # Check if the pipeline run exists
             run = self._get_reference_schema_by_id(
@@ -8496,9 +8672,12 @@ class SqlZenStore(BaseZenStore):
             step_schema = StepRunSchema.from_request(
                 step_run, deployment_id=run.deployment_id
             )
-            session.add(step_schema)
             try:
-                session.commit()
+                self._commit_resource_with_transaction(
+                    request=step_run,
+                    schema=step_schema,
+                    session=session,
+                )
             except IntegrityError:
                 # We have to rollback the failed session first in order
                 # to continue using it
@@ -9105,7 +9284,14 @@ class SqlZenStore(BaseZenStore):
             The newly created trigger.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=trigger, session=session)
+            existing_trigger = self._get_resource_by_transaction_id(
+                request=trigger,
+                schema_class=TriggerSchema,
+                response_class=TriggerResponse,
+                session=session,
+            )
+            if existing_trigger:
+                return existing_trigger
 
             # Verify that the trigger name is unique
             self._verify_name_uniqueness(
@@ -9130,9 +9316,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             new_trigger = TriggerSchema.from_request(trigger)
-            session.add(new_trigger)
-            session.commit()
-            session.refresh(new_trigger)
+            self._commit_resource_with_transaction(
+                request=trigger,
+                schema=new_trigger,
+                session=session,
+            )
 
             return new_trigger.to_model(
                 include_metadata=True, include_resources=True
@@ -9528,7 +9716,7 @@ class SqlZenStore(BaseZenStore):
         """
         if handle_bool_env_var(ENV_ZENML_SERVER):
             # Running inside server
-            from zenml.zen_server.auth import get_auth_context
+            from zenml.zen_server.utils import get_auth_context
 
             # If the code is running on the server, use the auth context.
             auth_context = get_auth_context()
@@ -10233,6 +10421,140 @@ class SqlZenStore(BaseZenStore):
             else:
                 raise RuntimeError("Unable to convert schema to model.")
 
+    def _get_current_transaction_id(self) -> Optional[UUID]:
+        """Get the current transaction ID.
+
+        Returns:
+            The transaction ID.
+        """
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.utils import request_manager
+
+            # If the code is running on the server, use the auth context.
+            request_context = request_manager().current_request
+
+            return request_context.request_id
+
+        return None
+
+    def _get_resource_by_transaction_id(
+        self,
+        request: UserScopedRequest,
+        schema_class: Type[AnySchema],
+        response_class: Type[AnyUserScopedResponse],
+        session: Session,
+        include_metadata: bool = True,
+        include_resources: bool = True,
+    ) -> Optional[AnyUserScopedResponse]:
+        """Query a resource by the idempotency transaction used to create it, if provided.
+
+        Use the request's transaction ID and user ID to query for an existing
+        resource in the database.
+        If the resource already exists, it is returned. If it doesn't exist,
+        a new idempotency transaction is created for it.
+
+        Args:
+            request: The request that created the resource.
+            schema_class: The schema class to query. E.g., `StackSchema`.
+            response_class: The response class to return. E.g., `StackResponse`.
+            session: The database session to use.
+            include_metadata: Whether to include metadata in the response.
+            include_resources: Whether to include resources in the response.
+
+        Returns:
+            The response object, or None if no resource was created with the
+            given transaction ID.
+        """
+        if not request.user:
+            self._set_request_user_id(request_model=request, session=session)
+
+        transaction_id = self._get_current_transaction_id()
+        if not transaction_id:
+            return None
+
+        user_id = request.user
+
+        cutoff_time = utc_now() - timedelta(
+            seconds=self.config.transaction_retention_seconds
+        )
+        # Get the transaction
+        transaction = session.exec(
+            select(TransactionSchema).where(
+                TransactionSchema.id == transaction_id,
+                TransactionSchema.user_id == user_id,
+                # Don't include expired transactions
+                col(TransactionSchema.created) > cutoff_time,
+            )
+        ).first()
+
+        if not transaction:
+            return None
+
+        if transaction.resource_type != schema_class.__tablename__:
+            logger.warning(
+                f"Idempotency transaction {transaction_id} is associated "
+                f"with a {transaction.resource_type} resource, but it was "
+                f"used to retrieve a {schema_class.__tablename__} "
+                "resource. "
+                "Someone might be trying to access a resource that was "
+                "created with a different idempotency transaction. "
+                "Skipping the request."
+            )
+            return None
+
+        # Get the resource
+        resource = session.exec(
+            select(schema_class).where(
+                schema_class.id == transaction.resource_id
+            )
+        ).first()
+
+        if not resource:
+            return None
+
+        return resource.to_model(
+            include_metadata=include_metadata,
+            include_resources=include_resources,
+        )
+
+    def _commit_resource_with_transaction(
+        self,
+        request: UserScopedRequest,
+        schema: BaseSchema,
+        session: Session,
+    ) -> None:
+        """Add a resource accompanied by an idempotency transaction if necessary.
+
+        Args:
+            request: The request that created the resource.
+            schema: The schema to create.
+            session: The database session to use.
+        """
+        if request.transaction_id and request.user:
+            # Create and add a transaction
+            transaction = TransactionSchema(
+                id=request.transaction_id,
+                user_id=request.user,
+                resource_type=schema.__tablename__,
+                resource_id=schema.id,
+            )
+            session.add(transaction)
+
+        # Use this opportunity to preemptively remove expired transactions
+        cutoff_time = utc_now() - timedelta(
+            seconds=self.config.transaction_retention_seconds
+        )
+        session.execute(
+            delete(TransactionSchema).where(
+                col(TransactionSchema.created) < cutoff_time,
+            )
+        )
+
+        session.add(schema)
+        session.commit()
+        session.refresh(schema)
+
     @staticmethod
     def _get_schema_by_id(
         resource_id: UUID,
@@ -10726,7 +11048,14 @@ class SqlZenStore(BaseZenStore):
         """
         validate_name(model)
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=model, session=session)
+            existing_model = self._get_resource_by_transaction_id(
+                request=model,
+                schema_class=ModelSchema,
+                response_class=ModelResponse,
+                session=session,
+            )
+            if existing_model:
+                return existing_model
 
             self._verify_name_uniqueness(
                 resource=model,
@@ -10735,10 +11064,13 @@ class SqlZenStore(BaseZenStore):
             )
 
             model_schema = ModelSchema.from_request(model)
-            session.add(model_schema)
 
             try:
-                session.commit()
+                self._commit_resource_with_transaction(
+                    request=model,
+                    schema=model_schema,
+                    session=session,
+                )
             except IntegrityError:
                 # We have to rollback the failed session first in order
                 # to continue using it
@@ -11236,9 +11568,15 @@ class SqlZenStore(BaseZenStore):
                 )
 
         with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=model_version, session=session
+            existing_model_version = self._get_resource_by_transaction_id(
+                request=model_version,
+                schema_class=ModelVersionSchema,
+                response_class=ModelVersionResponse,
+                session=session,
             )
+            if existing_model_version:
+                return existing_model_version
+
             model = self._get_reference_schema_by_id(
                 resource=model_version,
                 reference_schema=ModelSchema,
@@ -11267,8 +11605,11 @@ class SqlZenStore(BaseZenStore):
                         model_version_number=model_version_number,
                         producer_run_id=producer_run_id,
                     )
-                    session.add(model_version_schema)
-                    session.commit()
+                    self._commit_resource_with_transaction(
+                        request=model_version,
+                        schema=model_version_schema,
+                        session=session,
+                    )
                     break
                 except IntegrityError:
                     # We have to rollback the failed session first in order to

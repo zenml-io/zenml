@@ -61,7 +61,7 @@ from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
-from zenml.zen_server.request_management import RequestManager
+from zenml.zen_server.request_management import RequestContext, RequestManager
 from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
@@ -73,6 +73,7 @@ if TYPE_CHECKING:
     from zenml.zen_server.template_execution.utils import (
         BoundedThreadPoolExecutor,
     )
+    from zenml.zen_server.auth import AuthContext
 
 
 P = ParamSpec("P")
@@ -786,3 +787,22 @@ def stop_event_loop_lag_monitor() -> None:
     if event_loop_lag_monitor_task:
         event_loop_lag_monitor_task.cancel()
         event_loop_lag_monitor_task = None
+
+
+def get_auth_context() -> Optional["AuthContext"]:
+    """Get the authentication context for the current request.
+
+    Returns:
+        The authentication context.
+    """
+    request_context = request_manager().current_request
+    return request_context.auth_context
+
+
+def get_current_request_context() -> RequestContext:
+    """Get the current request context.
+
+    Returns:
+        The current request context.
+    """
+    return request_manager().current_request

@@ -85,34 +85,6 @@ from zenml.zen_server.utils import (
 
 logger = get_logger(__name__)
 
-# create a context variable to store the authentication context
-_auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
-    "auth_context", default=None
-)
-
-
-def get_auth_context() -> Optional["AuthContext"]:
-    """Returns the current authentication context.
-
-    Returns:
-        The authentication context.
-    """
-    auth_context = _auth_context.get()
-    return auth_context
-
-
-def set_auth_context(auth_context: "AuthContext") -> "AuthContext":
-    """Sets the current authentication context.
-
-    Args:
-        auth_context: The authentication context.
-
-    Returns:
-        The authentication context.
-    """
-    _auth_context.set(auth_context)
-    return auth_context
-
 
 class AuthContext(BaseModel):
     """The authentication context."""
@@ -1162,14 +1134,11 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
                 f"{get_system_metrics_log_str(request_context.request)}"
             )
 
-            original_thread_name = threading.current_thread().name
-            # Change the name of the current thread to the request ID
-            threading.current_thread().name = request_context.log_request_id
-
             try:
-                return provider(*args, **kwargs)
+                auth_context = provider(*args, **kwargs)
+                request_context.auth_context = auth_context
+                return auth_context
             finally:
-                threading.current_thread().name = original_thread_name
                 logger.debug(
                     f"[{request_context.log_request_id}] API STATS - "
                     f"{request_context.log_request} "

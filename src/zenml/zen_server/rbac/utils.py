@@ -37,9 +37,8 @@ from zenml.models import (
     UserResponse,
     UserScopedResponse,
 )
-from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
-from zenml.zen_server.utils import rbac, server_config
+from zenml.zen_server.utils import get_auth_context, rbac, server_config
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
