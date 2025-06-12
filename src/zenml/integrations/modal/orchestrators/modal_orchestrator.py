@@ -259,10 +259,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             The configured Modal image.
-
-        Raises:
-            RuntimeError: If no Docker credentials are found.
-            ValueError: If no container registry is found.
         """
         # Get the ZenML-built image that contains all pipeline code
         image_name = self.get_image(deployment=deployment)
