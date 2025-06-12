@@ -204,7 +204,7 @@ You can trigger templates from within other pipelines, enabling complex workflow
 
 ### Method 1: Trigger by Pipeline Name (Uses Latest Template)
 
-If you want to run the latest template for a specific pipeline:
+If you want to run the latest runnable template for a specific pipeline:
 
 ```python
 import pandas as pd
