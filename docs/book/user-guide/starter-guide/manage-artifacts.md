@@ -19,7 +19,7 @@ Artifacts, the outputs of your steps and pipelines, are automatically versioned 
 Assigning custom names to your artifacts can greatly enhance their discoverability and manageability. As best practice, utilize the `Annotated` object within your steps to give precise, human-readable names to outputs:
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 import pandas as pd
 from sklearn.datasets import load_iris
 
@@ -71,7 +71,7 @@ ZenML automatically versions all created artifacts using auto-incremented number
 While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model.html#zenml.model.artifact_config). This may come into play during critical runs like production releases.
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 import pandas as pd
 from zenml import step, ArtifactConfig
 
@@ -204,7 +204,7 @@ save the artifact.
 
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 from zenml import ArtifactConfig, save_artifact, step
 from zenml.enums import ArtifactType
 
@@ -439,7 +439,7 @@ A user can also add metadata to an artifact directly within a step using the `lo
 
 ```python
 from typing import Tuple
-from typing_extensions import Annotated
+from typing import Annotated
 import numpy as np
 from sklearn.base import ClassifierMixin
 from zenml import step, log_metadata, ArtifactConfig
@@ -486,7 +486,7 @@ This section combines all the code from this section into one simple script that
 
 ```python
 from typing import Optional, Tuple
-from typing_extensions import Annotated
+from typing import Annotated
 
 import numpy as np
 from sklearn.base import ClassifierMixin

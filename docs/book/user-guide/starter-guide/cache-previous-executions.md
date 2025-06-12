@@ -110,7 +110,7 @@ This section combines all the code from this section into one simple script that
 <summary>Code Example of this Section</summary>
 
 ```python
-from typing_extensions import Tuple, Annotated
+from typing import Tuple, Annotated
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split

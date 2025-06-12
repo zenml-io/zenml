@@ -115,7 +115,7 @@ When configured at the pipeline or step level, the model will be available throu
 
 ```python
 import pandas as pd
-from typing_extensions import Annotated
+from typing import Annotated
 from sklearn.base import ClassifierMixin
 from zenml import get_step_context, get_pipeline_context, step, pipeline, Model
 
@@ -153,7 +153,7 @@ def training_pipeline(gamma: float = 0.002):
 
 ```python
 import pandas as pd
-from typing_extensions import Annotated
+from typing import Annotated
 from sklearn.base import ClassifierMixin
 from zenml import get_step_context, step, log_metadata
 

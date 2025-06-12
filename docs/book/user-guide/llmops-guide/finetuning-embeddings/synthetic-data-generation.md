@@ -42,7 +42,7 @@ providers (including Ollama) so you can use whatever you have available.
 
 ```python
 import os
-from typing_extensions import Annotated, Tuple
+from typing import Annotated, Tuple
 
 import distilabel
 from constants import (

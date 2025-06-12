@@ -64,7 +64,7 @@ In this example:
 You can name your step outputs using the `Annotated` type:
 
 ```python
-from typing_extensions import Annotated  # or `from typing_extensions import Annotated` on Python 3.9+
+from typing import Annotated  # or `from typing import Annotated` on Python 3.9+
 from typing import Tuple
 
 @step
@@ -249,7 +249,7 @@ Steps can return multiple artifacts:
 ```python
 from typing import Tuple
 from sklearn.base import ClassifierMixin
-from typing_extensions import Annotated
+from typing import Annotated
 
 @step
 def train_classifier(X_train, y_train) -> Tuple[

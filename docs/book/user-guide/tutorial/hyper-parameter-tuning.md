@@ -33,7 +33,7 @@ This tutorial focuses on the mechanics of orchestrating a grid‑search with Zen
 Create a training step that accepts the learning‑rate as an input parameter and returns both the trained model and its training accuracy:
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 from sklearn.base import ClassifierMixin
 from zenml import step
 

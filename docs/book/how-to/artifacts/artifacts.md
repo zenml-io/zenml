@@ -182,7 +182,7 @@ You can give your artifacts more meaningful names using the `Annotated` type:
 
 ```python
 from typing import Tuple
-from typing_extensions import Annotated  # or `from typing_extensions import Annotated` in Python 3.9+
+from typing import Annotated  # or `from typing import Annotated` in Python 3.9+
 import pandas as pd
 from zenml import step
 
@@ -202,7 +202,7 @@ def split_dataset(
 You can even use dynamic naming with placeholders:
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 import pandas as pd
 from zenml import step, pipeline
 

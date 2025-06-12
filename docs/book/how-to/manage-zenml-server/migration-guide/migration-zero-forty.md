@@ -57,7 +57,7 @@ int_output = last_run.get_step["my_step"].outputs["int_output"].read()
 
 {% tab title="New Syntax" %}
 ```python
-from typing_extensions import Annotated, Optional, Tuple
+from typing import Annotated, Optional, Tuple
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
@@ -405,7 +405,7 @@ def my_step() -> Output(int_output=int, str_output=str):
 {% tab title="New Syntax" %}
 ```python
 # New: Use a `Tuple` annotation and optionally assign custom output names
-from typing_extensions import Annotated
+from typing import Annotated
 from typing import Tuple
 from zenml import step
 

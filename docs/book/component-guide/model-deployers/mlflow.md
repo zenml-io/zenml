@@ -211,7 +211,7 @@ def prediction_service_loader(
 2. Within the same pipeline, use the service from previous step to run inference this time using pre-built predict method
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 import numpy as np
 from zenml import step
 from zenml.integrations.mlflow.services import MLFlowDeploymentService

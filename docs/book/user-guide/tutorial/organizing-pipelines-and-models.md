@@ -146,7 +146,7 @@ Use `ArtifactConfig` to tag artifacts as they're created:
 
 ```python
 from zenml import step, ArtifactConfig
-from typing_extensions import Annotated
+from typing import Annotated
 
 @step
 def load_data() -> Annotated[

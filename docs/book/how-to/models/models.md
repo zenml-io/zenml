@@ -131,7 +131,7 @@ Artifacts produced during pipeline runs can be linked to models to establish lin
 from zenml import step, Model
 from zenml.artifacts.utils import save_artifact
 import pandas as pd
-from typing_extensions import Annotated
+from typing import Annotated
 from zenml.artifacts.artifact_config import ArtifactConfig
 from sklearn.base import ClassifierMixin
 from sklearn.ensemble import RandomForestClassifier
@@ -190,7 +190,7 @@ One of the most powerful features of ZenML's Model Control Plane is the ability 
 This pattern allows pipelines to exchange data without knowing the specific artifact IDs:
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 from zenml import step, get_pipeline_context, pipeline, Model
 from zenml.enums import ModelStages
 import pandas as pd

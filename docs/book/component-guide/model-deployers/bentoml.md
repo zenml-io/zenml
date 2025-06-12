@@ -59,7 +59,7 @@ from bentoml.validators import DType, Shape
 from bentoml.io import PILImage
 import numpy as np
 import torch
-from typing_extensions import Annotated
+from typing import Annotated
 
 # Note: SERVICE_NAME and MODEL_NAME would be defined elsewhere
 # Note: to_numpy() would be a custom function to convert tensors to numpy arrays

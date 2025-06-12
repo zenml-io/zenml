@@ -116,7 +116,7 @@ For more information and a full list of configurable attributes of the Hugging F
 The following code example shows how to run inference against a provisioned inference endpoint:
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 from zenml import step, pipeline
 from zenml.integrations.huggingface.model_deployers import HuggingFaceModelDeployer
 from zenml.integrations.huggingface.services import HuggingFaceDeploymentService

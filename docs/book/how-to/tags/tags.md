@@ -35,7 +35,7 @@ In order to tag an artifact through the Python SDK, you can use either use\
 the `ArtifactConfig` object:
 
 ```python
-from typing_extensions import Annotated
+from typing import Annotated
 import pandas as pd
 from zenml import step, ArtifactConfig
 
