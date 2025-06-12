@@ -260,6 +260,17 @@ if templates:
 
 #### Using the REST API:
 
+For this you'll need a URL for a ZenML server. For those with a ZenML Pro
+account, you can find the URL in the dashboard in the following location:
+
+![Where to find the ZenML server URL](../.gitbook/assets/zenml-pro-server-url.png)
+
+You can also find the URL via the CLI by running:
+
+```bash
+zenml status | grep "API:" | awk '{print $2}'`
+```
+
 The REST API is ideal for external system integration, allowing you to trigger pipelines from non-Python environments:
 
 ```bash
