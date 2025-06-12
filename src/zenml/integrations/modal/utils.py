@@ -40,21 +40,39 @@ ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID = "ZENML_MODAL_ORCHESTRATOR_RUN_ID"
 
 
 def setup_modal_client(
-    token: Optional["SecretStr"] = None,
+    token_id: Optional["SecretStr"] = None,
+    token_secret: Optional["SecretStr"] = None,
     workspace: Optional[str] = None,
     environment: Optional[str] = None,
 ) -> None:
     """Setup Modal client with authentication.
 
     Args:
-        token: Modal API token for authentication.
+        token_id: Modal API token ID (ak-xxxxx format).
+        token_secret: Modal API token secret (as-xxxxx format).
         workspace: Modal workspace name.
         environment: Modal environment name.
     """
-    if token:
-        # Set Modal token from config
-        os.environ["MODAL_TOKEN_ID"] = token.get_secret_value()
-        logger.info("Using Modal token from config")
+    if token_id and token_secret:
+        # Set both token ID and secret
+        os.environ["MODAL_TOKEN_ID"] = token_id.get_secret_value()
+        os.environ["MODAL_TOKEN_SECRET"] = token_secret.get_secret_value()
+        logger.info("Using Modal token ID and secret from config")
+    elif token_id:
+        # Only token ID provided
+        os.environ["MODAL_TOKEN_ID"] = token_id.get_secret_value()
+        logger.info("Using Modal token ID from config")
+        logger.warning(
+            "Only token ID provided. Make sure MODAL_TOKEN_SECRET is set "
+            "or Modal authentication may fail."
+        )
+    elif token_secret:
+        # Only token secret provided (unusual)
+        os.environ["MODAL_TOKEN_SECRET"] = token_secret.get_secret_value()
+        logger.warning(
+            "Only token secret provided. Make sure MODAL_TOKEN_ID is set "
+            "or Modal authentication may fail."
+        )
     else:
         logger.info("Using default Modal authentication (~/.modal.toml)")
 

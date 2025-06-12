@@ -197,7 +197,8 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def _setup_modal_client(self) -> None:
         """Setup Modal client with authentication."""
         setup_modal_client(
-            token=self.config.token,
+            token_id=self.config.token_id,
+            token_secret=self.config.token_secret,
             workspace=self.config.workspace,
             environment=self.config.environment,
         )

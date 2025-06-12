@@ -59,13 +59,17 @@ class ModalStepOperatorConfig(
     """Configuration for the Modal step operator.
 
     Attributes:
-        token: Modal API token for authentication. If not provided,
-            falls back to Modal's default authentication (~/.modal.toml).
+        token_id: Modal API token ID (ak-xxxxx format) for authentication.
+        token_secret: Modal API token secret (as-xxxxx format) for authentication.
         workspace: Modal workspace name (optional).
         environment: Modal environment name (optional).
+
+    Note: If token_id and token_secret are not provided, falls back to
+    Modal's default authentication (~/.modal.toml).
     """
 
-    token: Optional[SecretStr] = None
+    token_id: Optional[SecretStr] = None
+    token_secret: Optional[SecretStr] = None
     workspace: Optional[str] = None
     environment: Optional[str] = None
 
