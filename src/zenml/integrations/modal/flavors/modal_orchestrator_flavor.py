@@ -30,12 +30,11 @@ class ModalOrchestratorSettings(BaseSettings):
     """Modal orchestrator settings.
 
     Attributes:
-        gpu: The type of GPU to use for the pipeline execution.
+        gpu: The type of GPU to use for the pipeline execution (e.g., "T4", "A100").
+            Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the pipeline execution.
         cloud: The cloud provider to use for the pipeline execution.
         environment: The Modal environment to use for the pipeline execution.
-        cpu_count: Number of CPU cores to allocate.
-        memory_mb: Memory in MB to allocate.
         timeout: Maximum execution time in seconds (default 24h).
         min_containers: Minimum containers to keep warm (replaces keep_warm).
         max_containers: Maximum concurrent containers (replaces concurrency_limit).
@@ -47,10 +46,6 @@ class ModalOrchestratorSettings(BaseSettings):
     region: Optional[str] = None
     cloud: Optional[str] = None
     environment: Optional[str] = None
-    cpu_count: Optional[int] = (
-        32  # Default 32 CPU cores for blazing fast execution
-    )
-    memory_mb: Optional[int] = 65536  # Default 64GB RAM for maximum speed
     timeout: int = 86400  # 24 hours (Modal's maximum)
     min_containers: Optional[int] = (
         1  # Keep 1 container warm for sequential execution

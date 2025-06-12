@@ -95,18 +95,38 @@ Modal provides an excellent web interface where you can monitor your pipeline ru
 
 You can access the Modal dashboard at [modal.com/apps](https://modal.com/apps) to see your running and completed functions.
 
+### Configuration overview
+
+The Modal orchestrator uses two types of settings following ZenML's standard pattern:
+
+1. **`ResourceSettings`** (standard ZenML) - for hardware resource quantities:
+   - `cpu_count` - Number of CPU cores
+   - `memory` - Memory allocation (e.g., "16GB")
+   - `gpu_count` - Number of GPUs to allocate
+
+2. **`ModalOrchestratorSettings`** (Modal-specific) - for Modal platform configuration:
+   - `gpu` - GPU type specification (e.g., "T4", "A100", "H100")
+   - `region` - Cloud region preference  
+   - `cloud` - Cloud provider selection
+   - `execution_mode` - How to run the pipeline
+   - `timeout`, `min_containers`, `max_containers` - Performance settings
+
+{% hint style="info" %}
+**GPU Configuration**: Use `ResourceSettings.gpu_count` to specify how many GPUs you need, and `ModalOrchestratorSettings.gpu` to specify what type of GPU. Modal will combine these automatically (e.g., `gpu_count=2` + `gpu="A100"` becomes `"A100:2"`).
+{% endhint %}
+
 ### Additional configuration
 
-For additional configuration of the Modal orchestrator, you can pass `ModalOrchestratorSettings` which allows you to configure resource requirements, execution modes, and cloud preferences:
+Here's how to configure both types of settings:
 
 ```python
 from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
     ModalOrchestratorSettings
 )
+from zenml.config import ResourceSettings
 
+# Configure Modal-specific settings
 modal_settings = ModalOrchestratorSettings(
-    cpu_count=16,              # Number of CPU cores
-    memory_mb=32768,           # 32GB RAM
     gpu="A100",                # GPU type (optional)
     region="us-east-1",        # Preferred region
     cloud="aws",               # Cloud provider
@@ -116,9 +136,17 @@ modal_settings = ModalOrchestratorSettings(
     max_containers=10,         # Scale up to 10 containers
 )
 
+# Configure hardware resources (quantities)
+resource_settings = ResourceSettings(
+    cpu_count=16,              # Number of CPU cores
+    memory="32GB",             # 32GB RAM
+    gpu_count=1                # Number of GPUs (combined with gpu type below)
+)
+
 @pipeline(
     settings={
-        "orchestrator": modal_settings
+        "orchestrator": modal_settings,
+        "resources": resource_settings
     }
 )
 def my_modal_pipeline():
@@ -128,45 +156,46 @@ def my_modal_pipeline():
 
 ### Resource configuration
 
-You can specify different resource requirements for individual steps:
+{% hint style="info" %}
+**Pipeline-Level Resources**: The Modal orchestrator uses pipeline-level resource settings to configure the Modal function for the entire pipeline. All steps share the same Modal function resources. Configure resources at the `@pipeline` level for best results.
+{% endhint %}
+
+You can configure pipeline-wide resource requirements using `ResourceSettings` for hardware resources and `ModalOrchestratorSettings` for Modal-specific configurations:
 
 ```python
 from zenml.config import ResourceSettings
+from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
+    ModalOrchestratorSettings
+)
 
-# Configure resources for a specific step
-@step(
+# Configure resources at the pipeline level (recommended)
+@pipeline(
     settings={
         "resources": ResourceSettings(
-            cpu_count=8,
-            memory="16GB",
-            gpu_count=1
+            cpu_count=16,
+            memory="32GB", 
+            gpu_count=1        # These resources apply to the entire pipeline
         ),
         "orchestrator": ModalOrchestratorSettings(
-            gpu="T4",
+            gpu="A100",        # GPU type for the entire pipeline
             region="us-west-2"
         )
     }
 )
-def gpu_training_step():
-    # This step will run on a GPU
-    ...
-
-@step(
-    settings={
-        "resources": ResourceSettings(
-            cpu_count=32,
-            memory="64GB"
-        )
-    }
-)
-def cpu_intensive_step():
-    # This step will run with high CPU/memory
-    ...
-
-@pipeline()
 def my_pipeline():
-    gpu_training_step()
-    cpu_intensive_step()
+    first_step()   # Runs with pipeline resources: 16 CPU, 32GB RAM, 1x A100
+    second_step()  # Runs with same resources: 16 CPU, 32GB RAM, 1x A100
+    ...
+
+@step
+def first_step():
+    # Uses pipeline-level resource configuration
+    ...
+
+@step
+def second_step():
+    # Uses same pipeline-level resource configuration
+    ...
 ```
 
 ### Execution modes
@@ -174,7 +203,11 @@ def my_pipeline():
 The Modal orchestrator supports two execution modes:
 
 1. **`pipeline` (default)**: Runs the entire pipeline in a single Modal function for maximum speed and cost efficiency
-2. **`per_step`**: Runs each step in a separate Modal function for granular control and debugging
+2. **`per_step`**: Runs each step in a separate Modal function call for granular control and debugging
+
+{% hint style="info" %}
+**Resource Sharing**: Both execution modes use the same Modal function with the same resource configuration (from pipeline-level settings). The difference is whether steps run sequentially in one function call (`pipeline`) or as separate function calls (`per_step`).
+{% endhint %}
 
 ```python
 # Fast execution (default) - entire pipeline in one function
@@ -190,22 +223,28 @@ modal_settings = ModalOrchestratorSettings(
 
 ### Using GPUs
 
-Modal makes it easy to use GPUs for your ML workloads:
+Modal makes it easy to use GPUs for your ML workloads. Use `ResourceSettings` to specify the number of GPUs and `ModalOrchestratorSettings` to specify the GPU type:
 
 ```python
+from zenml.config import ResourceSettings
+from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
+    ModalOrchestratorSettings
+)
+
 @step(
     settings={
-        "orchestrator": ModalOrchestratorSettings(
-            gpu="A100",     # or "T4", "V100", etc.
-            region="us-east-1"
-        ),
         "resources": ResourceSettings(
-            gpu_count=1
+            gpu_count=1        # Number of GPUs to allocate
+        ),
+        "orchestrator": ModalOrchestratorSettings(
+            gpu="A100",        # GPU type: "T4", "A10G", "A100", "H100"
+            region="us-east-1"
         )
     }
 )
 def train_model():
     # Your GPU-accelerated training code
+    # Modal will provision 1x A100 GPU (gpu_count=1 + gpu="A100")
     import torch
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -217,6 +256,34 @@ Available GPU types include:
 - `A10G` - Balanced performance for training and inference  
 - `A100` - High-performance for large model training
 - `H100` - Latest generation for maximum performance
+
+**Examples of GPU configurations (applied to entire pipeline):**
+
+```python
+# Pipeline with GPU - configure on first step or pipeline level
+@pipeline(
+    settings={
+        "resources": ResourceSettings(gpu_count=1),
+        "orchestrator": ModalOrchestratorSettings(gpu="A100")
+    }
+)
+def gpu_pipeline():
+    # All steps in this pipeline will have access to 1x A100 GPU
+    step_one()
+    step_two()
+
+# Multiple GPUs - configure at pipeline level
+@pipeline(
+    settings={
+        "resources": ResourceSettings(gpu_count=4),
+        "orchestrator": ModalOrchestratorSettings(gpu="A100")
+    }
+)
+def multi_gpu_pipeline():
+    # All steps in this pipeline will have access to 4x A100 GPUs
+    training_step()
+    evaluation_step()
+```
 
 ### Synchronous vs Asynchronous execution
 
@@ -254,6 +321,14 @@ modal_settings = ModalOrchestratorSettings(
     min_containers=2,    # Keep 2 containers warm
     max_containers=20,   # Scale up to 20 containers
 )
+
+@pipeline(
+    settings={
+        "orchestrator": modal_settings
+    }
+)
+def my_pipeline():
+    ...
 ```
 
 This ensures your pipelines start executing immediately without waiting for container initialization.
@@ -262,18 +337,20 @@ This ensures your pipelines start executing immediately without waiting for cont
 
 1. **Use pipeline mode for production**: The default `pipeline` execution mode runs your entire pipeline in one function, minimizing overhead and cost.
 
-2. **Configure appropriate timeouts**: Set realistic timeouts for your workloads:
+2. **Separate resource and orchestrator settings**: Use `ResourceSettings` for hardware (CPU, memory, GPU count) and `ModalOrchestratorSettings` for Modal-specific configurations (GPU type, region, etc.).
+
+3. **Configure appropriate timeouts**: Set realistic timeouts for your workloads:
    ```python
    modal_settings = ModalOrchestratorSettings(
        timeout=7200  # 2 hours
    )
    ```
 
-3. **Choose the right region**: Select regions close to your data sources to minimize transfer costs and latency.
+4. **Choose the right region**: Select regions close to your data sources to minimize transfer costs and latency.
 
-4. **Use appropriate GPU types**: Match GPU types to your workload requirements - don't use A100s for simple inference tasks.
+5. **Use appropriate GPU types**: Match GPU types to your workload requirements - don't use A100s for simple inference tasks.
 
-5. **Monitor resource usage**: Use Modal's dashboard to track your resource consumption and optimize accordingly.
+6. **Monitor resource usage**: Use Modal's dashboard to track your resource consumption and optimize accordingly.
 
 ## Troubleshooting
 
