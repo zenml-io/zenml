@@ -239,7 +239,7 @@ def trigger_pipeline(df: UnmaterializedArtifact):
         steps={"trainer": {"parameters": {"data_artifact_id": df.id}}}
     )
 
-    # This triggers the LATEST template for the "training_pipeline" pipeline
+    # This triggers the LATEST runnable template for the "training_pipeline" pipeline
     Client().trigger_pipeline("training_pipeline", run_configuration=run_config)
 
 
