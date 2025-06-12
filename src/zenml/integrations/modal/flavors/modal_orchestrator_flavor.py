@@ -16,10 +16,9 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import SecretStr
-
 from zenml.config.base_settings import BaseSettings
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.orchestrators import ModalOrchestrator
@@ -32,7 +31,8 @@ class ModalExecutionMode(str, Enum):
 
     Attributes:
         PIPELINE: Execute entire pipeline in one Modal function (fastest, default).
-        PER_STEP: Execute each step in a separate Modal function (granular control).
+        PER_STEP: Execute each step in a separate Modal function (granular
+            control).
     """
 
     PIPELINE = "pipeline"
@@ -43,7 +43,8 @@ class ModalOrchestratorSettings(BaseSettings):
     """Modal orchestrator settings.
 
     Attributes:
-        gpu: The type of GPU to use for the pipeline execution (e.g., "T4", "A100").
+        gpu: The type of GPU to use for the pipeline execution (e.g., "T4",
+            "A100").
             Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the pipeline execution.
         cloud: The cloud provider to use for the pipeline execution.
@@ -92,8 +93,8 @@ class ModalOrchestratorConfig(
     Modal's default authentication (~/.modal.toml).
     """
 
-    token_id: Optional[SecretStr] = None
-    token_secret: Optional[SecretStr] = None
+    token_id: Optional[str] = SecretField(default=None)
+    token_secret: Optional[str] = SecretField(default=None)
     workspace: Optional[str] = None
     environment: Optional[str] = None
 

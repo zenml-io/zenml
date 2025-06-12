@@ -17,7 +17,7 @@ import os
 import subprocess
 import threading
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
     import modal
@@ -30,18 +30,37 @@ from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 
-if TYPE_CHECKING:
-    from pydantic import SecretStr
-
 logger = get_logger(__name__)
 
 # Common environment variable for Modal orchestrator run ID
 ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID = "ZENML_MODAL_ORCHESTRATOR_RUN_ID"
 
 
+class ModalAuthenticationError(Exception):
+    """Exception raised for Modal authentication issues with helpful guidance."""
+
+    def __init__(self, message: str, suggestions: Optional[List[str]] = None):
+        """Initialize the authentication error with message and optional suggestions.
+
+        Args:
+            message: The error message.
+            suggestions: Optional list of suggestions for fixing the issue.
+        """
+        super().__init__(message)
+        self.suggestions = suggestions or []
+
+    def __str__(self) -> str:
+        """Return formatted error message with suggestions."""
+        base_message = super().__str__()
+        if self.suggestions:
+            suggestions_text = "\n".join(f"  • {s}" for s in self.suggestions)
+            return f"{base_message}\n\nSuggestions:\n{suggestions_text}"
+        return base_message
+
+
 def setup_modal_client(
-    token_id: Optional["SecretStr"] = None,
-    token_secret: Optional["SecretStr"] = None,
+    token_id: Optional[str] = None,
+    token_secret: Optional[str] = None,
     workspace: Optional[str] = None,
     environment: Optional[str] = None,
 ) -> None:
@@ -54,27 +73,70 @@ def setup_modal_client(
         environment: Modal environment name.
     """
     if token_id and token_secret:
+        # Validate token format
+        if not token_id.startswith("ak-"):
+            logger.warning(
+                f"Token ID format may be invalid. Expected format: ak-xxxxx, "
+                f"got: {token_id[:10]}... (truncated for security)"
+            )
+
+        if not token_secret.startswith("as-"):
+            logger.warning(
+                f"Token secret format may be invalid. Expected format: as-xxxxx, "
+                f"got: {token_secret[:10]}... (truncated for security)"
+            )
+
         # Set both token ID and secret
-        os.environ["MODAL_TOKEN_ID"] = token_id.get_secret_value()
-        os.environ["MODAL_TOKEN_SECRET"] = token_secret.get_secret_value()
+        os.environ["MODAL_TOKEN_ID"] = token_id
+        os.environ["MODAL_TOKEN_SECRET"] = token_secret
         logger.info("Using Modal token ID and secret from config")
+        logger.debug(f"Token ID starts with: {token_id[:5]}...")
+        logger.debug(f"Token secret starts with: {token_secret[:5]}...")
+
     elif token_id:
+        # Validate token format
+        if not token_id.startswith("ak-"):
+            logger.warning(
+                f"Token ID format may be invalid. Expected format: ak-xxxxx, "
+                f"got: {token_id[:10]}... (truncated for security)"
+            )
+
         # Only token ID provided
-        os.environ["MODAL_TOKEN_ID"] = token_id.get_secret_value()
+        os.environ["MODAL_TOKEN_ID"] = token_id
         logger.info("Using Modal token ID from config")
         logger.warning(
             "Only token ID provided. Make sure MODAL_TOKEN_SECRET is set "
             "or Modal authentication may fail."
         )
+        logger.debug(f"Token ID starts with: {token_id[:5]}...")
+
     elif token_secret:
+        # Validate token format
+        if not token_secret.startswith("as-"):
+            logger.warning(
+                f"Token secret format may be invalid. Expected format: as-xxxxx, "
+                f"got: {token_secret[:10]}... (truncated for security)"
+            )
+
         # Only token secret provided (unusual)
-        os.environ["MODAL_TOKEN_SECRET"] = token_secret.get_secret_value()
+        os.environ["MODAL_TOKEN_SECRET"] = token_secret
         logger.warning(
             "Only token secret provided. Make sure MODAL_TOKEN_ID is set "
             "or Modal authentication may fail."
         )
+        logger.debug(f"Token secret starts with: {token_secret[:5]}...")
+
     else:
         logger.info("Using default Modal authentication (~/.modal.toml)")
+        # Check if default auth exists
+        modal_toml_path = os.path.expanduser("~/.modal.toml")
+        if os.path.exists(modal_toml_path):
+            logger.debug(f"Found Modal config at {modal_toml_path}")
+        else:
+            logger.warning(
+                f"No Modal config found at {modal_toml_path}. "
+                "Run 'modal token new' to set up authentication."
+            )
 
     # Set workspace/environment if provided
     if workspace:
@@ -228,6 +290,7 @@ def get_or_deploy_persistent_modal_app(
     zenml_image: Any,
     execution_func: Any,
     function_name: str,
+    deployment: Any,
     gpu_values: Optional[str] = None,
     cpu_count: Optional[int] = None,
     memory_mb: Optional[int] = None,
@@ -242,13 +305,15 @@ def get_or_deploy_persistent_modal_app(
     """Get or deploy a persistent Modal app with warm containers.
 
     This function deploys a Modal app that stays alive with warm containers
-    for maximum speed between runs.
+    for maximum speed between runs. The app name includes both time window
+    and build checksum to ensure fresh deployments only when builds actually change.
 
     Args:
-        app_name_base: Base name for the app (will be suffixed with timestamp).
+        app_name_base: Base name for the app (will be suffixed with timestamp and build hash).
         zenml_image: Pre-built ZenML Docker image for Modal.
         execution_func: The function to execute in the Modal app.
         function_name: Name of the function in the app.
+        deployment: The pipeline deployment containing build information.
         gpu_values: GPU configuration string.
         cpu_count: Number of CPU cores.
         memory_mb: Memory allocation in MB.
@@ -273,9 +338,25 @@ def get_or_deploy_persistent_modal_app(
     )  # Convert hours to seconds
     time_window = current_time // window_seconds
 
-    app_name = f"{app_name_base}-{time_window}"
+    # Generate build identifier to ensure fresh deployments only when builds actually change
+    # Use deployment build checksum which only changes when Docker settings, requirements, etc. change
+    build_hash = "no-build"
+    if deployment.build and deployment.build.checksum:
+        # Use first 8 characters of build checksum for compact identifier
+        build_hash = deployment.build.checksum[:8]
+        logger.debug(f"Using build checksum: {deployment.build.checksum}")
+    else:
+        logger.warning(
+            "No build checksum available, using fallback identifier"
+        )
+
+    # Include both time window and build hash in app name
+    app_name = f"{app_name_base}-{time_window}-{build_hash}"
 
     logger.info(f"Getting/deploying persistent Modal app: {app_name}")
+    logger.debug(
+        f"App name includes time window: {time_window}, build hash: {build_hash}"
+    )
 
     # Create the app
     app = modal.App(app_name)
@@ -296,10 +377,10 @@ def get_or_deploy_persistent_modal_app(
         max_containers=effective_max_containers,  # Allow scaling
     )(execution_func)
 
-    # Try to lookup existing app in current time window, deploy if not found
+    # Try to lookup existing app with matching time window and image, deploy if not found
     try:
         logger.debug(
-            f"Checking for Modal app in current time window: {app_name}"
+            f"Checking for Modal app with time window {time_window} and build hash {build_hash}: {app_name}"
         )
 
         try:
@@ -307,7 +388,7 @@ def get_or_deploy_persistent_modal_app(
                 app_name, environment_name=environment_name or "main"
             )
             logger.info(
-                f"Found existing app '{app_name}' with fresh tokens - reusing warm containers"
+                f"Found existing app '{app_name}' with matching build and fresh time window - reusing warm containers"
             )
 
             # Try to get the function directly
@@ -330,17 +411,38 @@ def get_or_deploy_persistent_modal_app(
         except Exception:
             # App not found or other lookup error - deploy fresh app
             logger.debug(
-                "No app found for current time window, deploying fresh app"
+                "No app found for current time window and build hash, deploying fresh app"
             )
 
-        # Deploy the app
-        app.deploy(name=app_name, environment_name=environment_name or "main")
-        logger.info(
-            f"App '{app_name}' deployed with {effective_min_containers} warm containers"
-        )
-        logger.info(
-            f"View real-time logs at: https://modal.com/apps/{app_name}"
-        )
+        # Deploy the app with better error handling
+        try:
+            app.deploy(
+                name=app_name, environment_name=environment_name or "main"
+            )
+            logger.info(
+                f"App '{app_name}' deployed with {effective_min_containers} warm containers"
+            )
+            logger.info(
+                f"View real-time logs at: https://modal.com/apps/{app_name}"
+            )
+        except Exception as deploy_error:
+            error_message = str(deploy_error)
+            if (
+                "Token ID is malformed" in error_message
+                or "UNAUTHENTICATED" in error_message
+            ):
+                raise ModalAuthenticationError(
+                    "Modal authentication failed. Token ID or secret is invalid.",
+                    suggestions=[
+                        "Check that token_id starts with 'ak-' and token_secret starts with 'as-'",
+                        "Get new tokens from Modal dashboard: https://modal.com/tokens",
+                        "Or run 'modal token new' to set up ~/.modal.toml authentication",
+                        "Ensure both token_id AND token_secret are provided in orchestrator config",
+                    ],
+                ) from deploy_error
+            else:
+                # Re-raise other deployment errors as-is
+                raise
 
     except Exception as e:
         logger.error(f"Deployment failed: {e}")
@@ -414,15 +516,35 @@ def stream_modal_logs_and_wait(
     """
     logger.info(f"Starting {description}")
 
+    # Get function call ID for filtering (if available)
+    call_id = None
+    try:
+        call_id = getattr(function_call, "object_id", None)
+        if call_id:
+            logger.debug(f"Function call ID: {call_id}")
+    except Exception:
+        pass
+
+    # Wait a moment for the function to start before beginning log streaming
+    # This helps avoid capturing old logs from previous runs
+    time.sleep(1)
+
     # Start log streaming in a separate thread
     log_stream_active = threading.Event()
     log_stream_active.set()
+    start_time = time.time()
 
     def stream_logs() -> None:
         """Stream logs from Modal CLI in a separate thread."""
         try:
-            # Use modal CLI to stream logs
-            cmd = ["modal", "app", "logs", app_name, "--timestamps"]
+            # Use modal CLI to stream logs (automatically streams while app is active)
+            cmd = [
+                "modal",
+                "app",
+                "logs",
+                app_name,
+                "--timestamps",
+            ]
             logger.debug(f"Starting log stream: {' '.join(cmd)}")
 
             process = subprocess.Popen(
@@ -441,8 +563,28 @@ def stream_modal_logs_and_wait(
                     if line:
                         # Clean up the log line and forward to our logger
                         log_msg = line.strip()
-                        if log_msg and not log_msg.startswith("No logs"):
-                            logger.info(f"[Modal] {log_msg}")
+
+                        # Skip empty lines and "No logs" messages
+                        if not log_msg or log_msg.startswith("No logs"):
+                            continue
+
+                        # Try to filter out old logs by checking if they contain our call ID
+                        # or if they occurred after we started the function
+                        current_time = time.time()
+                        log_age = current_time - start_time
+
+                        # Only show logs that are likely from the current execution
+                        # Skip logs that seem to be from much earlier runs
+                        if call_id and call_id in log_msg:
+                            # This log definitely belongs to our execution
+                            logger.info(f"{log_msg}")
+                        elif (
+                            log_age < 300
+                        ):  # Only show logs from last 5 minutes
+                            # This log is recent enough to likely be ours
+                            logger.info(f"{log_msg}")
+                        # Else: skip old logs
+
                 else:
                     break
 

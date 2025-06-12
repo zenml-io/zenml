@@ -15,11 +15,10 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import SecretStr
-
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.step_operators import ModalStepOperator
@@ -68,8 +67,8 @@ class ModalStepOperatorConfig(
     Modal's default authentication (~/.modal.toml).
     """
 
-    token_id: Optional[SecretStr] = None
-    token_secret: Optional[SecretStr] = None
+    token_id: Optional[str] = SecretField(default=None)
+    token_secret: Optional[str] = SecretField(default=None)
     workspace: Optional[str] = None
     environment: Optional[str] = None
 

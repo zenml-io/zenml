@@ -359,6 +359,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             zenml_image=zenml_image,
             execution_func=execution_func,
             function_name=function_name,
+            deployment=deployment,
             gpu_values=gpu_values,
             cpu_count=cpu_count,  # Use ResourceSettings value or None (Modal default)
             memory_mb=memory_mb,  # Use ResourceSettings value or None (Modal default)
