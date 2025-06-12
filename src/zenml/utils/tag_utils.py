@@ -44,7 +44,7 @@ add_tags(tags=[...], run_template=...)
 # Manual tagging to an artifact
 add_tags(tags=[...], artifact=...)
 
-# Automatic tagging to an artifact version(within a step)
+# Automatic tagging to an artifact version (within a step)
 add_tags(tags=[...], infer_artifact=True)  # step with single output
 add_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
 
