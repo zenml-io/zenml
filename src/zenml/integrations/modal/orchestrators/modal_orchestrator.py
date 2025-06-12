@@ -25,7 +25,6 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
     cast,
 )
 from uuid import uuid4
@@ -35,18 +34,25 @@ try:
 except ImportError:
     modal = None  # type: ignore
 
-from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
-from zenml.config.resource_settings import ByteUnit
 from zenml.entrypoints.pipeline_entrypoint_configuration import (
     PipelineEntrypointConfiguration,
 )
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.enums import StackComponentType
+from zenml.integrations.modal.utils import (
+    ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
+    build_modal_image,
+    create_modal_stack_validator,
+    get_gpu_values,
+    get_or_deploy_persistent_modal_app,
+    get_resource_settings_from_deployment,
+    get_resource_values,
+    setup_modal_client,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.stack import Stack, StackValidator
@@ -61,8 +67,6 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentBase
 
 logger = get_logger(__name__)
-
-ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID = "ZENML_MODAL_ORCHESTRATOR_RUN_ID"
 
 
 def run_step_in_modal(
@@ -159,188 +163,6 @@ def run_entire_pipeline(
         raise
 
 
-def get_gpu_values(
-    settings: "ModalOrchestratorSettings", resource_settings: ResourceSettings
-) -> Optional[str]:
-    """Get the GPU values for the Modal orchestrator.
-
-    Args:
-        settings: The Modal orchestrator settings.
-        resource_settings: The resource settings.
-
-    Returns:
-        The GPU string if a count is specified, otherwise the GPU type.
-    """
-    if not settings.gpu:
-        return None
-    # Prefer resource_settings gpu_count, fallback to 1
-    gpu_count = resource_settings.gpu_count or 1
-    return f"{settings.gpu}:{gpu_count}" if gpu_count > 1 else settings.gpu
-
-
-def get_resource_values(
-    resource_settings: ResourceSettings,
-) -> Tuple[Optional[int], Optional[int]]:
-    """Get CPU and memory values from resource settings.
-
-    Args:
-        resource_settings: The resource settings.
-
-    Returns:
-        Tuple of (cpu_count, memory_mb).
-    """
-    # Get CPU count
-    cpu_count: Optional[int] = None
-    if resource_settings.cpu_count is not None:
-        cpu_count = int(resource_settings.cpu_count)
-
-    # Convert memory to MB if needed
-    memory_mb: Optional[int] = None
-    if resource_settings.memory:
-        memory_value = resource_settings.get_memory(ByteUnit.MB)
-        if memory_value is not None:
-            memory_mb = int(memory_value)
-
-    return cpu_count, memory_mb
-
-
-def get_or_deploy_persistent_modal_app(
-    pipeline_name: str,
-    zenml_image: Any,
-    gpu_values: Optional[str],
-    cpu_count: Optional[int],
-    memory_mb: Optional[int],
-    cloud: Optional[str],
-    region: Optional[str],
-    timeout: int,
-    min_containers: Optional[int],
-    max_containers: Optional[int],
-    environment_name: Optional[str] = None,
-    execution_mode: str = "single_function",
-) -> Any:
-    """Get or deploy a persistent Modal app with warm containers.
-
-    This function deploys a Modal app that stays alive with warm containers
-    for maximum speed between pipeline runs.
-
-    Args:
-        pipeline_name: Name of the pipeline.
-        zenml_image: Pre-built ZenML Docker image for Modal.
-        gpu_values: GPU configuration string.
-        cpu_count: Number of CPU cores.
-        memory_mb: Memory allocation in MB.
-        cloud: Cloud provider to use.
-        region: Region to deploy in.
-        timeout: Maximum execution timeout.
-        min_containers: Minimum containers to keep warm.
-        max_containers: Maximum containers to scale to.
-        environment_name: Modal environment name.
-        execution_mode: Execution mode for the function.
-
-    Returns:
-        The Modal function ready for execution.
-
-    Raises:
-        Exception: If deployment fails.
-    """
-    # Use pipeline name + execution mode + 2-hour window for app reuse
-    # This ensures apps get redeployed every 2 hours to refresh tokens
-    mode_suffix = execution_mode.replace("_", "-")
-
-    # Create a 2-hour timestamp window (rounds down to nearest 2-hour boundary)
-    current_time = int(time.time())
-    two_hour_window = current_time // (2 * 3600)  # 2 hours = 7200 seconds
-
-    app_name = f"zenml-{pipeline_name.replace('_', '-')}-{mode_suffix}-{two_hour_window}"
-
-    logger.info(f"Getting/deploying persistent Modal app: {app_name}")
-
-    # Create the app
-    app = modal.App(app_name)
-
-    # Ensure we have minimum containers for fast startup
-    effective_min_containers = min_containers or 1
-    effective_max_containers = max_containers or 10
-
-    # Create the execution function based on execution mode
-    if execution_mode == "per_step":
-        logger.debug("Creating per-step mode for granular execution")
-        execution_func: Any = run_step_in_modal
-        function_name = "run_step_in_modal"
-    else:
-        logger.debug("Creating pipeline mode for maximum speed")
-        execution_func = run_entire_pipeline
-        function_name = "run_entire_pipeline"
-
-    execute_step_func = app.function(
-        image=zenml_image,
-        gpu=gpu_values,
-        cpu=cpu_count,
-        memory=memory_mb,
-        cloud=cloud,
-        region=region,
-        timeout=timeout,
-        min_containers=effective_min_containers,  # Keep containers warm for speed
-        max_containers=effective_max_containers,  # Allow scaling
-    )(execution_func)
-
-    # Try to lookup existing app in current 2-hour window, deploy if not found
-    try:
-        logger.debug(
-            f"Checking for Modal app in current 2-hour window: {app_name}"
-        )
-
-        try:
-            modal.App.lookup(
-                app_name, environment_name=environment_name or "main"
-            )
-            logger.info(
-                f"Found existing app '{app_name}' with fresh tokens - reusing warm containers"
-            )
-
-            # Try to get the function directly
-            try:
-                existing_function = modal.Function.from_name(
-                    app_name,
-                    function_name,
-                    environment_name=environment_name or "main",
-                )
-                logger.debug(
-                    "Successfully retrieved function from existing app"
-                )
-                return existing_function
-            except Exception as func_error:
-                logger.warning(
-                    f"Function lookup failed: {func_error}, redeploying"
-                )
-                # Fall through to deployment
-
-        except Exception:
-            # App not found or other lookup error - deploy fresh app
-            logger.debug(
-                "No app found for current 2-hour window, deploying fresh app"
-            )
-
-        # Deploy the app
-        app.deploy(name=app_name, environment_name=environment_name or "main")
-        logger.info(
-            f"App '{app_name}' deployed with {effective_min_containers} warm containers"
-        )
-        logger.info(
-            f"View real-time logs at: https://modal.com/apps/{app_name}"
-        )
-
-    except Exception as e:
-        logger.error(f"Deployment failed: {e}")
-        raise
-
-    logger.info(
-        f"Modal app configured with min_containers={effective_min_containers}, max_containers={effective_max_containers}"
-    )
-
-    return execute_step_func
-
-
 class ModalOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running entire pipelines on Modal.
 
@@ -373,18 +195,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
     def _setup_modal_client(self) -> None:
         """Setup Modal client with authentication."""
-        if self.config.token:
-            # Set Modal token from config
-            os.environ["MODAL_TOKEN_ID"] = self.config.token.get_secret_value()
-            logger.info("Using Modal token from orchestrator config")
-        else:
-            logger.info("Using default Modal authentication (~/.modal.toml)")
-
-        # Set workspace/environment if provided
-        if self.config.workspace:
-            os.environ["MODAL_WORKSPACE"] = self.config.workspace
-        if self.config.environment:
-            os.environ["MODAL_ENVIRONMENT"] = self.config.environment
+        setup_modal_client(
+            token=self.config.token,
+            workspace=self.config.workspace,
+            environment=self.config.environment,
+        )
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -393,40 +208,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         Returns:
             A `StackValidator` instance.
         """
-
-        def _validate_remote_components(stack: "Stack") -> tuple[bool, str]:
-            if stack.artifact_store.config.is_local:
-                return False, (
-                    "The Modal orchestrator runs code remotely and "
-                    "needs to write files into the artifact store, but the "
-                    f"artifact store `{stack.artifact_store.name}` of the "
-                    "active stack is local. Please ensure that your stack "
-                    "contains a remote artifact store when using the Modal "
-                    "orchestrator."
-                )
-
-            container_registry = stack.container_registry
-            assert container_registry is not None
-
-            if container_registry.config.is_local:
-                return False, (
-                    "The Modal orchestrator runs code remotely and "
-                    "needs to push/pull Docker images, but the "
-                    f"container registry `{container_registry.name}` of the "
-                    "active stack is local. Please ensure that your stack "
-                    "contains a remote container registry when using the "
-                    "Modal orchestrator."
-                )
-
-            return True, ""
-
-        return StackValidator(
-            required_components={
-                StackComponentType.CONTAINER_REGISTRY,
-                StackComponentType.IMAGE_BUILDER,
-            },
-            custom_validation_function=_validate_remote_components,
-        )
+        return create_modal_stack_validator()
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -484,38 +266,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         # Get the ZenML-built image that contains all pipeline code
         image_name = self.get_image(deployment=deployment)
 
-        if not stack.container_registry:
-            raise ValueError(
-                "No Container registry found in the stack. "
-                "Please add a container registry and ensure "
-                "it is correctly configured."
-            )
-
-        if docker_creds := stack.container_registry.credentials:
-            docker_username, docker_password = docker_creds
-        else:
-            raise RuntimeError(
-                "No Docker credentials found for the container registry."
-            )
-
-        # Create Modal secret for registry authentication
-        registry_secret = modal.Secret.from_dict(
-            {
-                "REGISTRY_USERNAME": docker_username,
-                "REGISTRY_PASSWORD": docker_password,
-            }
-        )
-
-        # Build Modal image from the ZenML-built image
-        # Use from_registry to pull the ZenML image with authentication
-        # and install Modal dependencies
-        zenml_image = (
-            modal.Image.from_registry(image_name, secret=registry_secret)
-            .pip_install("modal")  # Install Modal in the container
-            .env(environment)
-        )
-
-        return zenml_image
+        return build_modal_image(image_name, stack, environment)
 
     def prepare_or_run_pipeline(
         self,
@@ -562,38 +313,15 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
 
         # Get resource settings from pipeline configuration
-
-        pipeline_resource_settings: Union[Dict[str, Any], Any] = (
-            deployment.pipeline_configuration.settings.get(
-                RESOURCE_SETTINGS_KEY, {}
-            )
+        resource_settings = get_resource_settings_from_deployment(
+            deployment, RESOURCE_SETTINGS_KEY
         )
-        if pipeline_resource_settings:
-            # Convert to dict if it's a BaseSettings instance
-            if hasattr(pipeline_resource_settings, "model_dump"):
-                pipeline_resource_dict = (
-                    pipeline_resource_settings.model_dump()
-                )
-            else:
-                pipeline_resource_dict = pipeline_resource_settings
-            resource_settings = ResourceSettings.model_validate(
-                pipeline_resource_dict
-            )
-        else:
-            # Fallback to first step's resource settings if no pipeline-level resources
-            if deployment.step_configurations:
-                first_step = list(deployment.step_configurations.values())[0]
-                resource_settings = first_step.config.resource_settings
-            else:
-                resource_settings = (
-                    ResourceSettings()
-                )  # Default empty settings
 
         # Build Modal image
         zenml_image = self._build_modal_image(deployment, stack, environment)
 
         # Configure resources from resource settings
-        gpu_values = get_gpu_values(settings, resource_settings)
+        gpu_values = get_gpu_values(settings.gpu, resource_settings)
         cpu_count, memory_mb = get_resource_values(resource_settings)
 
         start_time = time.time()
@@ -606,10 +334,26 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         step_names = list(deployment.step_configurations.keys())
         logger.debug(f"Found {len(step_names)} steps: {step_names}")
 
+        # Create the execution function based on execution mode
+        execution_mode = settings.execution_mode or self.config.execution_mode
+        if execution_mode == "per_step":
+            logger.debug("Creating per-step mode for granular execution")
+            execution_func: Any = run_step_in_modal
+            function_name = "run_step_in_modal"
+        else:
+            logger.debug("Creating pipeline mode for maximum speed")
+            execution_func = run_entire_pipeline
+            function_name = "run_entire_pipeline"
+
         # Get or deploy persistent Modal app with warm containers
+        mode_suffix = execution_mode.replace("_", "-")
+        app_name_base = f"zenml-{deployment.pipeline_configuration.name.replace('_', '-')}-{mode_suffix}"
+
         execute_step = get_or_deploy_persistent_modal_app(
-            pipeline_name=deployment.pipeline_configuration.name,
+            app_name_base=app_name_base,
             zenml_image=zenml_image,
+            execution_func=execution_func,
+            function_name=function_name,
             gpu_values=gpu_values,
             cpu_count=cpu_count,  # Use ResourceSettings value or None (Modal default)
             memory_mb=memory_mb,  # Use ResourceSettings value or None (Modal default)
@@ -622,14 +366,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             or self.config.max_containers,
             environment_name=settings.environment
             or self.config.environment,  # Use environment from config/settings
-            execution_mode=settings.execution_mode
-            or self.config.execution_mode,  # Use execution mode from settings
         )
 
         logger.info("Executing with deployed Modal app and warm containers")
 
         # Execute based on execution mode with improved Modal Function API usage
-        execution_mode = settings.execution_mode or self.config.execution_mode
         sync_execution = (
             settings.synchronous
             if hasattr(settings, "synchronous")

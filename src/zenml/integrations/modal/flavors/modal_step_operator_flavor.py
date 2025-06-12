@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import SecretStr
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
@@ -36,20 +38,36 @@ class ModalStepOperatorSettings(BaseSettings):
     incompatible. See more in the Modal docs at https://modal.com/docs/guide/region-selection.
 
     Attributes:
-        gpu: The type of GPU to use for the step execution.
+        gpu: The type of GPU to use for the step execution (e.g., "T4", "A100").
+            Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the step execution.
         cloud: The cloud provider to use for the step execution.
+        environment: The Modal environment to use for the step execution.
+        timeout: Maximum execution time in seconds (default 24h).
     """
 
     gpu: Optional[str] = None
     region: Optional[str] = None
     cloud: Optional[str] = None
+    environment: Optional[str] = None
+    timeout: int = 86400  # 24 hours (Modal's maximum)
 
 
 class ModalStepOperatorConfig(
     BaseStepOperatorConfig, ModalStepOperatorSettings
 ):
-    """Configuration for the Modal step operator."""
+    """Configuration for the Modal step operator.
+
+    Attributes:
+        token: Modal API token for authentication. If not provided,
+            falls back to Modal's default authentication (~/.modal.toml).
+        workspace: Modal workspace name (optional).
+        environment: Modal environment name (optional).
+    """
+
+    token: Optional[SecretStr] = None
+    workspace: Optional[str] = None
+    environment: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:
