@@ -367,6 +367,8 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             or self.config.max_containers,
             environment_name=settings.environment
             or self.config.environment,  # Use environment from config/settings
+            app_warming_window_hours=settings.app_warming_window_hours
+            or self.config.app_warming_window_hours,
         )
 
         logger.info("Executing with deployed Modal app and warm containers")

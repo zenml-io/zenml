@@ -40,6 +40,8 @@ class ModalOrchestratorSettings(BaseSettings):
         max_containers: Maximum concurrent containers (replaces concurrency_limit).
         execution_mode: Execution mode - "pipeline" (default, fastest) or "per_step" (granular control).
         synchronous: Wait for completion (True) or fire-and-forget (False).
+        app_warming_window_hours: Hours for app name window to enable container reuse.
+            Apps are reused within this time window for efficiency. Default 2 hours.
     """
 
     gpu: Optional[str] = None
@@ -54,6 +56,9 @@ class ModalOrchestratorSettings(BaseSettings):
     execution_mode: str = "pipeline"  # Default to fastest mode
     synchronous: bool = (
         True  # Wait for completion (True) or fire-and-forget (False)
+    )
+    app_warming_window_hours: float = (
+        2.0  # Default 2-hour window for app reuse
     )
 
 
