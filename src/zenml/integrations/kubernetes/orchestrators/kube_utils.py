@@ -206,8 +206,9 @@ def get_pod(
         The found pod object. None if it's not found.
     """
     try:
-        return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
-    except k8s_client.rest.ApiException as e:
+        pod = core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
+        return cast(k8s_client.V1Pod, pod)
+    except ApiException as e:
         if e.status == 404:
             return None
         raise RuntimeError from e
@@ -581,3 +582,54 @@ def get_pod_owner_references(
     return cast(
         List[k8s_client.V1OwnerReference], pod.metadata.owner_references
     )
+
+
+def compute_step_pod_name(orchestrator_run_id: str, step_name: str) -> str:
+    """Compute the step pod name for a given orchestrator run and step.
+
+    Args:
+        orchestrator_run_id: The orchestrator run ID.
+        step_name: The name of the step.
+
+    Returns:
+        The computed step pod name.
+    """
+    # Step pods follow the pattern: {orchestrator_run_id}-{step_name}
+    # We need to sanitize the step name to ensure it's valid for Kubernetes
+    sanitized_step_name = sanitize_label(step_name)
+    return f"{orchestrator_run_id}-{sanitized_step_name}"
+
+
+def get_step_pod_statuses(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    orchestrator_run_id: str,
+    step_names: List[str],
+) -> Dict[str, Optional[PodPhase]]:
+    """Get the status of multiple step pods.
+
+    Args:
+        core_api: The Kubernetes Core API client.
+        namespace: The Kubernetes namespace.
+        orchestrator_run_id: The orchestrator run ID.
+        step_names: List of step names to check.
+
+    Returns:
+        Dictionary mapping step names to their pod phases (None if pod not found).
+    """
+    step_statuses = {}
+
+    for step_name in step_names:
+        pod_name = compute_step_pod_name(orchestrator_run_id, step_name)
+        pod = get_pod(core_api, pod_name, namespace)
+
+        if pod and pod.status and pod.status.phase:
+            try:
+                step_statuses[step_name] = PodPhase(pod.status.phase)
+            except ValueError:
+                # Handle unknown pod phases
+                step_statuses[step_name] = PodPhase.UNKNOWN
+        else:
+            step_statuses[step_name] = None
+
+    return step_statuses

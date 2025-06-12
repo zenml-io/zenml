@@ -14,7 +14,16 @@
 """Base orchestrator class."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import model_validator
@@ -334,11 +343,19 @@ class BaseOrchestrator(StackComponent, ABC):
         """Cleans up the active run."""
         self._active_deployment = None
 
-    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+    def fetch_status(
+        self, run: "PipelineRunResponse", fetch_steps: bool = False
+    ) -> Tuple[ExecutionStatus, Optional[Dict[str, ExecutionStatus]]]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: A pipeline run response to fetch its status.
+            fetch_steps: If True, also fetch the status of individual steps.
+
+        Returns:
+            A tuple of (pipeline_status, step_statuses_dict).
+            If fetch_steps is False, step_statuses_dict will be None.
+            If fetch_steps is True, step_statuses_dict will be a dict (possibly empty).
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
