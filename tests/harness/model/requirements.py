@@ -20,13 +20,13 @@ from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from uuid import UUID
 
-import pkg_resources
 from pydantic import ConfigDict, Field
 
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.secret import BaseTestSecretConfigModel
 from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.utils.package_utils import requirement_installed
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
@@ -331,11 +331,9 @@ class TestRequirements(BaseTestConfigModel):
                 f"missing integrations: {', '.join(set(missing_integrations))}",
             )
 
-        try:
-            for p in self.packages:
-                pkg_resources.get_distribution(p)
-        except pkg_resources.DistributionNotFound as e:
-            return False, f"missing package: {e}"
+        for p in self.packages:
+            if not requirement_installed(p):
+                return False, f"missing package: {p}"
 
         return True, None
 
