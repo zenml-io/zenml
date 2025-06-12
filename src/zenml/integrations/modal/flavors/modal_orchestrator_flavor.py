@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Modal orchestrator flavor."""
 
+from enum import Enum
 from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import SecretStr
@@ -24,6 +25,18 @@ if TYPE_CHECKING:
     from zenml.integrations.modal.orchestrators import ModalOrchestrator
 
 MODAL_ORCHESTRATOR_FLAVOR = "modal"
+
+
+class ModalExecutionMode(str, Enum):
+    """Execution modes for the Modal orchestrator.
+
+    Attributes:
+        PIPELINE: Execute entire pipeline in one Modal function (fastest, default).
+        PER_STEP: Execute each step in a separate Modal function (granular control).
+    """
+
+    PIPELINE = "pipeline"
+    PER_STEP = "per_step"
 
 
 class ModalOrchestratorSettings(BaseSettings):
@@ -38,7 +51,7 @@ class ModalOrchestratorSettings(BaseSettings):
         timeout: Maximum execution time in seconds (default 24h).
         min_containers: Minimum containers to keep warm (replaces keep_warm).
         max_containers: Maximum concurrent containers (replaces concurrency_limit).
-        execution_mode: Execution mode - "pipeline" (default, fastest) or "per_step" (granular control).
+        execution_mode: Execution mode - PIPELINE (default, fastest) or PER_STEP (granular control).
         synchronous: Wait for completion (True) or fire-and-forget (False).
         app_warming_window_hours: Hours for app name window to enable container reuse.
             Apps are reused within this time window for efficiency. Default 2 hours.
@@ -53,7 +66,9 @@ class ModalOrchestratorSettings(BaseSettings):
         1  # Keep 1 container warm for sequential execution
     )
     max_containers: Optional[int] = 10  # Allow up to 10 concurrent containers
-    execution_mode: str = "pipeline"  # Default to fastest mode
+    execution_mode: ModalExecutionMode = (
+        ModalExecutionMode.PIPELINE
+    )  # Default to fastest mode
     synchronous: bool = (
         True  # Wait for completion (True) or fire-and-forget (False)
     )

@@ -64,6 +64,12 @@ if TYPE_CHECKING:
         ModalOrchestratorConfig,
         ModalOrchestratorSettings,
     )
+
+from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
+    ModalExecutionMode,
+)
+
+if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentBase
 
@@ -335,7 +341,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         # Create the execution function based on execution mode
         execution_mode = settings.execution_mode or self.config.execution_mode
-        if execution_mode == "per_step":
+        if execution_mode == ModalExecutionMode.PER_STEP:
             logger.debug("Creating per-step mode for granular execution")
             execution_func: Any = run_step_in_modal
             function_name = "run_step_in_modal"
@@ -345,7 +351,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             function_name = "run_entire_pipeline"
 
         # Get or deploy persistent Modal app with warm containers
-        mode_suffix = execution_mode.replace("_", "-")
+        mode_suffix = execution_mode.value.replace("_", "-")
         app_name_base = f"zenml-{deployment.pipeline_configuration.name.replace('_', '-')}-{mode_suffix}"
 
         execute_step, full_app_name = get_or_deploy_persistent_modal_app(
@@ -406,7 +412,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 )
                 return function_call
 
-        if execution_mode == "per_step":
+        if execution_mode == ModalExecutionMode.PER_STEP:
             logger.info("Using per-step mode for granular execution")
             # Execute steps individually
             for step_name in step_names:
