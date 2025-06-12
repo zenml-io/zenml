@@ -34,7 +34,16 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 import enum
 import re
 import time
-from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    TypeVar,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -47,7 +56,13 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.utils.time_utils import utc_now
+
+if TYPE_CHECKING:
+    from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
+        KubernetesOrchestratorSettings,
+    )
 
 logger = get_logger(__name__)
 
@@ -206,8 +221,9 @@ def get_pod(
         The found pod object. None if it's not found.
     """
     try:
-        return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
-    except k8s_client.rest.ApiException as e:
+        pod = core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
+        return cast(k8s_client.V1Pod, pod)
+    except ApiException as e:
         if e.status == 404:
             return None
         raise RuntimeError from e
@@ -581,3 +597,35 @@ def get_pod_owner_references(
     return cast(
         List[k8s_client.V1OwnerReference], pod.metadata.owner_references
     )
+
+
+def compute_step_pod_name(
+    step_name: str,
+    orchestrator_pod_name: str,
+    namespace: str,
+    settings: "KubernetesOrchestratorSettings",
+) -> str:
+    """Compute the step pod name for a given step.
+
+    Args:
+        step_name: The name of the step.
+        orchestrator_pod_name: The name of the orchestrator pod.
+        namespace: The namespace in which the pod will be created.
+        settings: The settings for the orchestrator.
+
+    Returns:
+        The computed step pod name.
+    """
+    prefix = settings.pod_name_prefix
+    if prefix and not orchestrator_pod_name.startswith(prefix):
+        max_length = calculate_max_pod_name_length_for_namespace(
+            namespace=namespace
+        )
+        pod_name_prefix = get_orchestrator_run_name(
+            pipeline_name=prefix, max_length=max_length
+        )
+        pod_name = f"{pod_name_prefix}-{step_name}"
+    else:
+        pod_name = f"{orchestrator_pod_name}-{step_name}"
+
+    return sanitize_pod_name(pod_name=pod_name, namespace=namespace)
