@@ -34,7 +34,7 @@ from zenml.models import (
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
-from zenml.utils import source_utils, uuid_utils
+from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -622,7 +622,9 @@ def refresh_pipeline_run(
     try:
         # Fetch and update the run
         run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
-        run.refresh_run_status(refresh_step_status=include_steps)
+        run_utils.refresh_run_status(
+            run=run, include_step_updates=include_steps
+        )
 
     except KeyError as e:
         cli_utils.error(str(e))

@@ -443,13 +443,13 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             return {}
 
     def fetch_status(
-        self, run: "PipelineRunResponse", fetch_steps: bool = False
+        self, run: "PipelineRunResponse", include_steps: bool = False
     ) -> Tuple[ExecutionStatus, Optional[Dict[str, ExecutionStatus]]]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: The run that was executed by this orchestrator.
-            fetch_steps: Whether to fetch steps (not supported for AzureML).
+            include_steps: Whether to fetch steps (not supported for AzureML).
 
         Returns:
             A tuple of (pipeline_status, step_statuses_dict).

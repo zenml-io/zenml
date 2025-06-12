@@ -34,7 +34,6 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import IllegalOperationError
-from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
@@ -311,96 +310,6 @@ class PipelineRunResponse(
         )
 
         return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
-
-    def refresh_run_status(
-        self, refresh_step_status: bool = False
-    ) -> "PipelineRunResponse":
-        """Method to refresh the status of a run if it is initializing/running.
-
-        Args:
-            refresh_step_status: If True, also refresh the status of individual steps.
-
-        Returns:
-            The updated pipeline.
-
-        Raises:
-            ValueError: If the stack of the run response is None.
-        """
-        if self.status in [
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.RUNNING,
-        ]:
-            # Check if the stack still accessible
-            if self.stack is None:
-                raise ValueError(
-                    "The stack that this pipeline run response was executed on"
-                    "is either not accessible or has been deleted."
-                )
-
-            # Create the orchestrator instance
-            from zenml.enums import StackComponentType
-            from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-            from zenml.stack.stack_component import StackComponent
-
-            # Check if the stack still accessible
-            orchestrator_list = self.stack.components.get(
-                StackComponentType.ORCHESTRATOR, []
-            )
-            if len(orchestrator_list) == 0:
-                raise ValueError(
-                    "The orchestrator that this pipeline run response was "
-                    "executed with is either not accessible or has been deleted."
-                )
-
-            orchestrator = cast(
-                BaseOrchestrator,
-                StackComponent.from_model(
-                    component_model=orchestrator_list[0]
-                ),
-            )
-
-            # Fetch the status (and optionally step statuses)
-            result = orchestrator.fetch_status(
-                run=self, fetch_steps=refresh_step_status
-            )
-
-            # Result is always a tuple: (pipeline_status, step_statuses)
-            pipeline_status, step_statuses = result
-
-            # Update step statuses if they were fetched and are available
-            if refresh_step_status and step_statuses is not None:
-                from zenml.client import Client
-                from zenml.models import StepRunUpdate
-
-                logger = get_logger(__name__)
-                client = Client()
-                for step_name, new_step_status in step_statuses.items():
-                    current_step = self.steps.get(step_name)
-                    if current_step and current_step.status != new_step_status:
-                        try:
-                            client.zen_store.update_run_step(
-                                step_run_id=current_step.id,
-                                step_run_update=StepRunUpdate(
-                                    status=new_step_status
-                                ),
-                            )
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to update status for step '{step_name}': {e}"
-                            )
-
-            # If pipeline status is different from the current status, update it
-            if pipeline_status != self.status:
-                from zenml.client import Client
-                from zenml.models import PipelineRunUpdate
-
-                client = Client()
-                return client.zen_store.update_run(
-                    run_id=self.id,
-                    run_update=PipelineRunUpdate(status=pipeline_status),
-                )
-
-        return self
 
     def stop_run(self, graceful: bool = False) -> None:
         """Method to stop a pipeline run.

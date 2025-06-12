@@ -41,6 +41,7 @@ from zenml.models import (
     StepRunFilter,
     StepRunResponse,
 )
+from zenml.utils import run_utils
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -167,7 +168,7 @@ def get_run(
     run_id: UUID,
     hydrate: bool = True,
     refresh_status: bool = False,
-    refresh_steps: bool = False,
+    refresh_step_status: bool = False,
     include_python_packages: bool = False,
     include_full_metadata: bool = False,
     _: AuthContext = Security(authorize),
@@ -180,7 +181,7 @@ def get_run(
             by including metadata fields in the response.
         refresh_status: Flag deciding whether we should try to refresh
             the status of the pipeline run using its orchestrator.
-        refresh_steps: Flag deciding whether we should also refresh
+        refresh_step_status: Flag deciding whether we should also refresh
             the status of individual steps.
         include_python_packages: Flag deciding whether to include the
             Python packages in the response.
@@ -200,7 +201,8 @@ def get_run(
         include_python_packages=include_python_packages,
         include_full_metadata=include_full_metadata,
     )
-    if refresh_status or refresh_steps:
+
+    if refresh_status:
         try:
             # For permission check, we need to verify access to the orchestrator
             if run.stack is not None:
@@ -217,7 +219,9 @@ def get_run(
                     )
 
             # Use the run's own refresh method
-            run = run.refresh_run_status(refresh_step_status=refresh_steps)
+            run = run_utils.refresh_run_status(
+                run=run, include_step_updates=refresh_step_status
+            )
 
         except Exception as e:
             logger.warning(
@@ -383,14 +387,14 @@ def get_run_dag(
 @async_fastapi_endpoint_wrapper
 def refresh_run_status(
     run_id: UUID,
-    refresh_steps: bool = False,
+    include_steps: bool = False,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Refreshes the status of a specific pipeline run.
 
     Args:
         run_id: ID of the pipeline run to refresh.
-        refresh_steps: Flag deciding whether we should also refresh
+        include_steps: Flag deciding whether we should also refresh
             the status of individual steps.
     """
     run = verify_permissions_and_get_entity(
@@ -412,7 +416,9 @@ def refresh_run_status(
                 )
 
         # Use the run's own refresh method
-        run = run.refresh_run_status(refresh_step_status=refresh_steps)
+        run = run_utils.refresh_run_status(
+            run=run, include_step_updates=include_steps
+        )
 
     except Exception as e:
         logger.warning(

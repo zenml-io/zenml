@@ -44,7 +44,6 @@ from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.utils import (
     get_config_environment_vars,
-    get_orchestrator_run_name,
 )
 
 logger = get_logger(__name__)
@@ -142,23 +141,11 @@ def main() -> None:
             settings.model_dump() if settings else {}
         )
 
-        if settings.pod_name_prefix and not orchestrator_pod_name.startswith(
-            settings.pod_name_prefix
-        ):
-            max_length = (
-                kube_utils.calculate_max_pod_name_length_for_namespace(
-                    namespace=args.kubernetes_namespace
-                )
-            )
-            pod_name_prefix = get_orchestrator_run_name(
-                settings.pod_name_prefix, max_length=max_length
-            )
-            pod_name = f"{pod_name_prefix}-{step_name}"
-        else:
-            pod_name = f"{orchestrator_pod_name}-{step_name}"
-
-        pod_name = kube_utils.sanitize_pod_name(
-            pod_name, namespace=args.kubernetes_namespace
+        pod_name = kube_utils.compute_step_pod_name(
+            namespace=args.kubernetes_namespace,
+            orchestrator_pod_name=orchestrator_pod_name,
+            step_name=step_name,
+            settings=settings,
         )
 
         image = KubernetesOrchestrator.get_image(

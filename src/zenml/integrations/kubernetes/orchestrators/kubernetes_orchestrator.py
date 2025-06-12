@@ -743,30 +743,23 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
 
     def fetch_status(
-        self, run: "PipelineRunResponse", fetch_steps: bool = False
+        self, run: "PipelineRunResponse", include_steps: bool = False
     ) -> Tuple[ExecutionStatus, Optional[Dict[str, ExecutionStatus]]]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: The run that was executed by this orchestrator.
-            fetch_steps: If True, also fetch the status of individual steps.
+            include_steps: If True, also fetch the status of individual steps.
 
         Returns:
             A tuple of (pipeline_status, step_statuses_dict).
-            If fetch_steps is False, step_statuses_dict will be None.
-            If fetch_steps is True, step_statuses_dict will be a dict (possibly empty).
+            If include_steps is False, step_statuses_dict will be None.
+            If include_steps is True, step_statuses_dict will be a dict (possibly empty).
 
         Raises:
             ValueError: If the orchestrator run ID cannot be found or if the
                 stack components are not accessible.
         """
-        # Make sure that the stack exists and is accessible
-        if run.stack is None:
-            raise ValueError(
-                "The stack that the run was executed on is not available "
-                "anymore."
-            )
-
         # Get the orchestrator run ID which corresponds to the orchestrator pod name
         orchestrator_run_id = run.orchestrator_run_id
         if not orchestrator_run_id:
@@ -782,7 +775,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             namespace=self.config.kubernetes_namespace,
         )
 
-        pipeline_status = ExecutionStatus.FAILED  # Default fallback
         if (
             orchestrator_pod
             and orchestrator_pod.status
@@ -797,13 +789,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 # Handle unknown pod phases
                 pipeline_status = ExecutionStatus.FAILED
 
-        # Fetch step statuses if requested, otherwise return None
-        if fetch_steps:
-            step_statuses = self._fetch_step_statuses(run, orchestrator_run_id)
-        else:
-            step_statuses = None
+        step_status = None
+        if include_steps:
+            step_status = self._fetch_step_status(run, orchestrator_run_id)
 
-        return pipeline_status, step_statuses
+        return pipeline_status, step_status
 
     def _map_pod_phase_to_execution_status(
         self, pod_phase: kube_utils.PodPhase
@@ -827,7 +817,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         else:  # UNKNOWN
             return ExecutionStatus.FAILED
 
-    def _fetch_step_statuses(
+    def _fetch_step_status(
         self, run: "PipelineRunResponse", orchestrator_run_id: str
     ) -> Dict[str, ExecutionStatus]:
         """Fetch the statuses of individual pipeline steps.
@@ -839,33 +829,44 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary mapping step names to their execution statuses.
         """
-        # Get all steps for this run that are not in a final state
-        steps_to_check = []
-        for step_name, step_run in run.steps.items():
-            if step_run.status not in [
-                ExecutionStatus.COMPLETED,
-                ExecutionStatus.FAILED,
-                ExecutionStatus.STOPPED,
-            ]:
-                steps_to_check.append(step_name)
-
-        if not steps_to_check:
-            return {}
-
         # Get step pod statuses
-        step_pod_statuses = kube_utils.get_step_pod_statuses(
-            core_api=self._k8s_core_api,
-            namespace=self.config.kubernetes_namespace,
-            orchestrator_run_id=orchestrator_run_id,
-            step_names=steps_to_check,
-        )
+        step_statuses = {}
+
+        for step_name, step_response in run.steps.items():
+            if step_response.status.is_finished:
+                continue
+
+            settings = step_response.config.settings.get(
+                "orchestrator.kubernetes", None
+            )
+            settings = KubernetesOrchestratorSettings.model_validate(
+                settings.model_dump() if settings else {}
+            )
+            pod_name = kube_utils.compute_step_pod_name(
+                step_name=step_name,
+                orchestrator_pod_name=orchestrator_run_id,
+                namespace=self.config.kubernetes_namespace,
+                settings=settings,
+            )
+            pod = kube_utils.get_pod(
+                core_api=self._k8s_core_api,
+                pod_name=pod_name,
+                namespace=self.config.kubernetes_namespace,
+            )
+
+            if pod and pod.status and pod.status.phase:
+                try:
+                    step_statuses[step_name] = kube_utils.PodPhase(
+                        pod.status.phase
+                    )
+                except ValueError:
+                    # Handle unknown pod phases
+                    step_statuses[step_name] = kube_utils.PodPhase.UNKNOWN
+            else:
+                step_statuses[step_name] = kube_utils.PodPhase.UNKNOWN
 
         # Convert pod statuses to execution statuses
-        step_statuses = {}
-        for step_name, pod_phase in step_pod_statuses.items():
-            if pod_phase is None:
-                continue  # Step pod not found, likely not started yet
-
+        for step_name, pod_phase in step_statuses.items():
             new_status = self._map_pod_phase_to_execution_status(pod_phase)
             step_statuses[step_name] = new_status
 

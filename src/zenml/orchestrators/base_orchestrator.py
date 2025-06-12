@@ -344,18 +344,18 @@ class BaseOrchestrator(StackComponent, ABC):
         self._active_deployment = None
 
     def fetch_status(
-        self, run: "PipelineRunResponse", fetch_steps: bool = False
+        self, run: "PipelineRunResponse", include_steps: bool = False
     ) -> Tuple[ExecutionStatus, Optional[Dict[str, ExecutionStatus]]]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: A pipeline run response to fetch its status.
-            fetch_steps: If True, also fetch the status of individual steps.
+            include_steps: If True, also fetch the status of individual steps.
 
         Returns:
             A tuple of (pipeline_status, step_statuses_dict).
-            If fetch_steps is False, step_statuses_dict will be None.
-            If fetch_steps is True, step_statuses_dict will be a dict (possibly empty).
+            If include_steps is False, step_statuses_dict will be None.
+            If include_steps is True, step_statuses_dict will be a dict (possibly empty).
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
