@@ -788,6 +788,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             except ValueError:
                 # Handle unknown pod phases
                 pipeline_status = ExecutionStatus.FAILED
+        else:
+            logger.warning(
+                f"Orchestrator pod {orchestrator_run_id} not found in namespace "
+                f"{self.config.kubernetes_namespace}"
+            )
+            pipeline_status = ExecutionStatus.FAILED
 
         step_status = None
         if include_steps:

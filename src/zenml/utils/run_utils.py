@@ -16,7 +16,7 @@
 from typing import cast
 
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.models import PipelineRunUpdate, StepRunUpdate
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
