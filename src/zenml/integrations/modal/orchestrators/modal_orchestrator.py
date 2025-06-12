@@ -209,7 +209,8 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         Returns:
             A `StackValidator` instance.
         """
-        return create_modal_stack_validator()
+        validator: StackValidator = create_modal_stack_validator()
+        return validator
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.

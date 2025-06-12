@@ -77,7 +77,8 @@ class ModalStepOperator(BaseStepOperator):
         Returns:
             The stack validator.
         """
-        return create_modal_stack_validator()
+        validator: StackValidator = create_modal_stack_validator()
+        return validator
 
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBase"
