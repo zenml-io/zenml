@@ -184,7 +184,7 @@ By default, ZenML uses the output name `output` for single output steps and `out
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
 ```python
-from typing import Annotated  # or `from typing import Annotated` on Python 3.9+
+from typing import Annotated
 from typing import Tuple
 from zenml import step
 

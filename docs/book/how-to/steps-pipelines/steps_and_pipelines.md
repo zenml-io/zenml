@@ -64,7 +64,7 @@ In this example:
 You can name your step outputs using the `Annotated` type:
 
 ```python
-from typing import Annotated  # or `from typing import Annotated` on Python 3.9+
+from typing import Annotated
 from typing import Tuple
 
 @step

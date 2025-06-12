@@ -182,7 +182,7 @@ You can give your artifacts more meaningful names using the `Annotated` type:
 
 ```python
 from typing import Tuple
-from typing import Annotated  # or `from typing import Annotated` in Python 3.9+
+from typing import Annotated
 import pandas as pd
 from zenml import step
 
