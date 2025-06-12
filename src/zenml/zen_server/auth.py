@@ -13,13 +13,18 @@
 #  permissions and limitations under the License.
 """Authentication module for ZenML server."""
 
+import functools
+import threading
 from contextvars import ContextVar
 from datetime import datetime, timedelta
-from typing import Callable, Optional, Tuple, Union
+from functools import wraps
+from typing import Any, Awaitable, Callable, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
+import anyio.to_thread
 import requests
+from anyio import CapacityLimiter
 from fastapi import Depends, Response
 from fastapi.security import (
     HTTPBasic,
@@ -73,6 +78,7 @@ from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import (
     get_zenml_headers,
     is_same_or_subdomain,
+    request_manager,
     server_config,
     zen_store,
 )
@@ -1128,4 +1134,53 @@ def authentication_provider() -> Callable[..., AuthContext]:
         raise ValueError(f"Unknown authentication scheme: {auth_scheme}")
 
 
-authorize = authentication_provider()
+def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
+    """Fetches the async authorization provider.
+
+    Returns:
+        The async authorization provider.
+    """
+    provider = authentication_provider()
+    # Create a custom thread pool limiter with a limit of 1 thread for all
+    # auth calls
+    thread_limiter = CapacityLimiter(1)
+
+    @wraps(provider)
+    async def async_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
+        from zenml.zen_server.utils import get_system_metrics_log_str
+
+        request_context = request_manager().current_request
+
+        @wraps(provider)
+        def sync_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
+            assert request_context is not None
+
+            logger.debug(
+                f"[{request_context.log_request_id}] API STATS - "
+                f"{request_context.log_request} "
+                f"AUTHORIZING "
+                f"{get_system_metrics_log_str(request_context.request)}"
+            )
+
+            original_thread_name = threading.current_thread().name
+            # Change the name of the current thread to the request ID
+            threading.current_thread().name = request_context.log_request_id
+
+            try:
+                return provider(*args, **kwargs)
+            finally:
+                threading.current_thread().name = original_thread_name
+                logger.debug(
+                    f"[{request_context.log_request_id}] API STATS - "
+                    f"{request_context.log_request} "
+                    f"AUTHORIZED "
+                    f"{get_system_metrics_log_str(request_context.request)}"
+                )
+
+        func = functools.partial(sync_authorize_fn, *args, **kwargs)
+        return await anyio.to_thread.run_sync(func, limiter=thread_limiter)
+
+    return async_authorize_fn
+
+
+authorize = get_authorization_provider()

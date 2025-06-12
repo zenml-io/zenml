@@ -61,6 +61,7 @@ from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
+from zenml.zen_server.request_management import RequestManager
 from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
@@ -87,6 +88,7 @@ _workload_manager: Optional[WorkloadManagerInterface] = None
 _run_template_executor: Optional["BoundedThreadPoolExecutor"] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
+_request_manager: Optional[RequestManager] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -312,6 +314,40 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
+def request_manager() -> RequestManager:
+    """Return the request manager.
+
+    Returns:
+        The request manager.
+
+    Raises:
+        RuntimeError: If the request manager is not initialized.
+    """
+    global _request_manager
+    if _request_manager is None:
+        raise RuntimeError("Request manager not initialized")
+    return _request_manager
+
+
+async def initialize_request_manager() -> None:
+    """Initialize the request manager."""
+    global _request_manager
+    _request_manager = RequestManager(
+        result_ttl=server_config().server_request_cache_timeout,
+        max_completed_requests=server_config().server_request_cache_max_size,
+        timeout=server_config().server_request_timeout,
+    )
+    await _request_manager.startup()
+
+
+async def cleanup_request_manager() -> None:
+    """Cleanup the request manager."""
+    global _request_manager
+    if _request_manager is not None:
+        await _request_manager.shutdown()
+        _request_manager = None
+
+
 def async_fastapi_endpoint_wrapper(
     func: Callable[P, R],
 ) -> Callable[P, Awaitable[Any]]:
@@ -345,18 +381,6 @@ def async_fastapi_endpoint_wrapper(
     # https://github.com/fastapi/fastapi/pull/888 for more information.
     @wraps(func)
     async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
-        from starlette.concurrency import run_in_threadpool
-
-        from zenml.zen_server.zen_server_api import request_ids
-
-        if logger.isEnabledFor(logging.DEBUG):
-            request_id = request_ids.get()
-            async_start_time = time.time()
-            logger.debug(
-                f"[{request_id}] ENDPOINT STATS - async {func.__name__} "
-                f"STARTED {get_system_metrics_log_str()}"
-            )
-
         @wraps(func)
         def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
             # These imports can't happen at module level as this module is also
@@ -365,19 +389,6 @@ def async_fastapi_endpoint_wrapper(
             from fastapi.responses import JSONResponse
 
             from zenml.zen_server.auth import AuthContext, set_auth_context
-
-            if logger.isEnabledFor(logging.DEBUG):
-                sync_start_time = time.time()
-                duration = (time.time() - async_start_time) * 1000
-                logger.debug(
-                    f"[{request_id}] ENDPOINT STATS - sync {func.__name__} "
-                    f"STARTED after {duration:.2f}ms {get_system_metrics_log_str()}"
-                )
-
-                original_thread_name = threading.current_thread().name
-                if request_id:
-                    # Change the name of the current thread to the request ID
-                    threading.current_thread().name = request_id
 
             for arg in args:
                 if isinstance(arg, AuthContext):
@@ -403,26 +414,12 @@ def async_fastapi_endpoint_wrapper(
                 logger.exception("API error")
                 http_exception = http_exception_from_error(error)
                 raise http_exception
-            finally:
-                if logger.isEnabledFor(logging.DEBUG):
-                    # Reset the name of the current thread
-                    threading.current_thread().name = original_thread_name
 
-                    duration = (time.time() - sync_start_time) * 1000
-                    logger.debug(
-                        f"[{request_id}] ENDPOINT STATS - sync {func.__name__} "
-                        f"took {duration:.2f}ms {get_system_metrics_log_str()}"
-                    )
-
-        try:
-            return await run_in_threadpool(decorated, *args, **kwargs)
-        finally:
-            if logger.isEnabledFor(logging.DEBUG):
-                duration = (time.time() - async_start_time) * 1000
-                logger.debug(
-                    f"[{request_id}] ENDPOINT STATS - async {func.__name__} "
-                    f"took {duration:.2f}ms {get_system_metrics_log_str()}"
-                )
+        return await request_manager().execute(
+            decorated,
+            *args,
+            **kwargs,
+        )
 
     return async_decorated
 
@@ -702,7 +699,7 @@ def get_system_metrics() -> Dict[str, Any]:
         Dict containing system metrics
     """
     # Get active requests count
-    from zenml.zen_server.zen_server_api import active_requests_count
+    from zenml.zen_server.middleware import active_requests_count
 
     # Memory limits
     memory = process.memory_info()

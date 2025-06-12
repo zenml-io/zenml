@@ -30,14 +30,22 @@ class LogType(Enum):
     API_THROTTLED = "api_throttled"
     API_ACCEPTED = "api_accepted"
     API_COMPLETED = "api_completed"
+    API_AUTHORIZING = "api_authorizing"
+    API_AUTHORIZED = "api_authorized"
+    API_UPDATING_LAST_USER_ACTIVITY = "api_updating_last_user_activity"
+    API_UPDATED_LAST_USER_ACTIVITY = "api_updated_last_user_activity"
     CLIENT_RETRY = "client_retry"
 
     # Endpoint stages
     ENDPOINT = "endpoint"
+    ENDPOINT_STARTED = "endpoint_started"
+    ENDPOINT_COMPLETED = "endpoint_completed"
     ENDPOINT_ASYNC_STARTED = "endpoint_async_started"
     ENDPOINT_ASYNC_COMPLETED = "endpoint_async_completed"
     ENDPOINT_SYNC_STARTED = "endpoint_sync_started"
     ENDPOINT_SYNC_COMPLETED = "endpoint_sync_completed"
+    ENDPOINT_CACHE_HIT = "endpoint_cache_hit"
+    ENDPOINT_RESUMED = "endpoint_resumed"
 
     # Database stages
     SQL = "sql"
@@ -148,45 +156,6 @@ class LogFile(BaseModel):
                 # If not numeric, keep as string
                 metrics_dict[key] = value
 
-        # # Extract threads
-        # if match := re.search(r"threads:\s*(\d+)", metrics_str):
-        #     metrics_dict["threads"] = int(match.group(1))
-
-        # # Extract active requests
-        # if match := re.search(r"active_requests:\s*(\d+)", metrics_str):
-        #     metrics_dict["active_requests"] = int(match.group(1))
-
-        # # Extract file descriptors
-        # if match := re.search(
-        #     r"file_descriptors:\s*(\d+)\s*/\s*(\d+)", metrics_str
-        # ):
-        #     metrics_dict["file_descriptor_count"] = int(match.group(1))
-        #     metrics_dict["file_descriptor_limit"] = int(match.group(2))
-
-        # # Extract memory
-        # if match := re.search(r"memory:\s*([\d.]+)MB", metrics_str):
-        #     metrics_dict["memory_usage"] = float(match.group(1))
-
-        # # Extract thread info
-        # if match := re.search(
-        #     r"current_thread:\s*([^(]+)\s*\(([^)]+)\)", metrics_str
-        # ):
-        #     metrics_dict["current_thread_name"] = match.group(1).strip()
-        #     metrics_dict["current_thread_id"] = match.group(2).strip()
-
-        # # Extract connection info
-        # if "conn(active)" in metrics_str:
-        #     active = re.search(r"conn\(active\):\s*(\d+)", metrics_str)
-        #     idle = re.search(r"conn\(idle\):\s*(\d+)", metrics_str)
-        #     overflow = re.search(r"conn\(overflow\):\s*(\d+)", metrics_str)
-
-        #     if active:
-        #         metrics_dict["active_connections"] = int(active.group(1))
-        #     if idle:
-        #         metrics_dict["idle_connections"] = int(idle.group(1))
-        #     if overflow:
-        #         metrics_dict["overflow_connections"] = int(overflow.group(1))
-
         return metrics_dict
 
     @staticmethod
@@ -230,39 +199,49 @@ class LogFile(BaseModel):
         data = {}
         duration = None
 
-        # Extract HTTP method and path
-        if method_path_match := re.search(
-            r"(GET|POST|PUT|DELETE|PATCH)\s+([^\s]+)", line
-        ):
-            data["api_method"] = method_path_match.group(1)
-            data["api_path"] = method_path_match.group(2)
+        api_stats_match = re.search(
+            r"API STATS - (([0-9]+) )?([A-Z]+) ([^\s]+) from (\d+\.\d+\.\d+\.\d+) ([^\[]+)",
+            line,
+        )
+        if not api_stats_match:
+            raise ValueError(f"Could not parse API STATS from line: {line}")
 
-        # Extract IP address
-        if ip_match := re.search(r"from\s+(\d+\.\d+\.\d+\.\d+)", line):
-            data["ip_address"] = ip_match.group(1)
+        data["status_code"] = (
+            int(api_stats_match.group(2)) if api_stats_match.group(2) else None
+        )
+        data["api_method"] = api_stats_match.group(3)
+        data["api_path"] = api_stats_match.group(4)
+        data["ip_address"] = api_stats_match.group(5)
+        op = api_stats_match.group(6)
 
         # Determine log type and extract duration
-        if "RECEIVED" in line:
+        if "RECEIVED" in op:
             log_type = LogType.API_RECEIVED
-        elif "QUEUED" in line:
+        elif "QUEUED" in op:
             log_type = LogType.API_QUEUED
-        elif "THROTTLED" in line:
+        elif "THROTTLED" in op:
             log_type = LogType.API_THROTTLED
             if duration_match := re.search(r"after\s+([\d.]+)ms", line):
                 duration = float(duration_match.group(1))
-        elif "ACCEPTED" in line:
+        elif "ACCEPTED" in op:
             log_type = LogType.API_ACCEPTED
             if duration_match := re.search(r"after\s+([\d.]+)ms", line):
                 duration = float(duration_match.group(1))
-        elif status_match := re.search(
-            r"(\d{3})\s+(?:GET|POST|PUT|DELETE|PATCH)", line
-        ):
+        elif "AUTHORIZING" in op:
+            log_type = LogType.API_AUTHORIZING
+        elif "AUTHORIZED" in op:
+            log_type = LogType.API_AUTHORIZED
+        elif "UPDATING LAST USER ACTIVITY" in op:
+            log_type = LogType.API_UPDATING_LAST_USER_ACTIVITY
+        elif "UPDATED LAST USER ACTIVITY" in op:
+            log_type = LogType.API_UPDATED_LAST_USER_ACTIVITY
+        elif "took" in op or "COMPLETED" in op:
             log_type = LogType.API_COMPLETED
-            data["status_code"] = int(status_match.group(1))
-            if duration_match := re.search(r"took\s+([\d.]+)ms", line):
-                duration = float(duration_match.group(1))
         else:
             raise ValueError(f"Unknown API STATS type in line: {line}")
+
+        if duration_match := re.search(r"(after|took)\s+([\d.]+)ms", op):
+            duration = float(duration_match.group(2))
 
         return log_type, data, duration
 
@@ -274,29 +253,50 @@ class LogFile(BaseModel):
         data = {}
         duration = None
 
-        # Extract target operation
-        if target_match := re.search(
-            r"ENDPOINT STATS - (?:async|sync)\s+([^\s]+)", line
-        ):
-            data["target"] = target_match.group(1)
+        endpoint_stats_match = re.search(
+            r"ENDPOINT STATS - (([A-Z]+) ([^\s]+) from (\d+\.\d+\.\d+\.\d+) )?(async|sync)?\s*([^\s]+) ([^\[]+)",
+            line,
+        )
+        if not endpoint_stats_match:
+            raise ValueError(
+                f"Could not parse endpoint stats from line: {line}"
+            )
+
+        # Extract HTTP method and path
+        data["api_method"] = endpoint_stats_match.group(2)
+        data["api_path"] = endpoint_stats_match.group(3)
+        data["ip_address"] = endpoint_stats_match.group(4)
+        sync_or_async = endpoint_stats_match.group(5)
+        data["target"] = endpoint_stats_match.group(6)
+        op = endpoint_stats_match.group(7)
 
         # Determine log type and extract duration
-        if "async" in line and "STARTED" in line:
-            log_type = LogType.ENDPOINT_ASYNC_STARTED
-        elif "async" in line and "took" in line:
-            log_type = LogType.ENDPOINT_ASYNC_COMPLETED
-            if duration_match := re.search(r"took\s+([\d.]+)ms", line):
-                duration = float(duration_match.group(1))
-        elif "sync" in line and "STARTED" in line:
-            log_type = LogType.ENDPOINT_SYNC_STARTED
-            if duration_match := re.search(r"after\s+([\d.]+)ms", line):
-                duration = float(duration_match.group(1))
-        elif "sync" in line and "took" in line:
-            log_type = LogType.ENDPOINT_SYNC_COMPLETED
-            if duration_match := re.search(r"took\s+([\d.]+)ms", line):
-                duration = float(duration_match.group(1))
+        log_type = None
+        if sync_or_async == "async":
+            if "STARTED" in op:
+                log_type = LogType.ENDPOINT_ASYNC_STARTED
+            elif "took" in op or "COMPLETED" in op:
+                log_type = LogType.ENDPOINT_ASYNC_COMPLETED
+        elif sync_or_async == "sync":
+            if "STARTED" in op:
+                log_type = LogType.ENDPOINT_SYNC_STARTED
+            elif "took" in op or "COMPLETED" in op:
+                log_type = LogType.ENDPOINT_SYNC_COMPLETED
         else:
+            if "STARTED" in op:
+                log_type = LogType.ENDPOINT_STARTED
+            elif "COMPLETED" in op or "took" in op:
+                log_type = LogType.ENDPOINT_COMPLETED
+            elif "CACHE HIT" in op:
+                log_type = LogType.ENDPOINT_CACHE_HIT
+            elif "RESUMED" in op:
+                log_type = LogType.ENDPOINT_RESUMED
+
+        if log_type is None:
             raise ValueError(f"Unknown ENDPOINT STATS type in line: {line}")
+
+        if duration_match := re.search(r"(after|took)\s+([\d.]+)ms", op):
+            duration = float(duration_match.group(2))
 
         return log_type, data, duration
 
@@ -332,8 +332,9 @@ class LogFile(BaseModel):
         if method_path_match := re.search(
             r"(GET|POST|PUT|DELETE|PATCH)\s+([^\s]+)", line
         ):
-            data["api_method"] = method_path_match.group(1)
-            data["api_path"] = method_path_match.group(2)
+            data["target"] = (
+                f"{method_path_match.group(1)} {method_path_match.group(2)}"
+            )
 
         # Determine log type and extract duration
         if "started" in line:
@@ -753,6 +754,7 @@ class LogFile(BaseModel):
         hide_y_axis: bool = False,
         min_duration: Optional[float] = None,
         min_total_duration: Optional[float] = None,
+        filter_states: Optional[List[LogType]] = None,
     ) -> None:
         """Plot request flows as a Gantt chart showing the progression of requests through stages.
 
@@ -774,6 +776,7 @@ class LogFile(BaseModel):
             min_duration: The minimum duration of a request to plot.
             min_total_duration: The minimum total duration of a request to plot
                 (includes queued time).
+            filter_states: The states to filter.
         """
         if isinstance(start_time, (int, float)):
             start_time = self.lines[0].timestamp + timedelta(
@@ -782,8 +785,8 @@ class LogFile(BaseModel):
         if isinstance(end_time, (int, float)):
             end_time = self.lines[0].timestamp + timedelta(seconds=end_time)
 
-        # Build a long-form DataFrame with (request_id, stage, start, end)
-        rows = []
+        # Build a list of transaction-grouped rows
+        rows: List[List[Dict[str, Any]]] = []
         metrics_columns = set()
         request_count = 0
         transaction_count = 0
@@ -803,22 +806,10 @@ class LogFile(BaseModel):
                 continue
             if end_time and end > end_time:
                 continue
-            if pod is not None and entry_point.pod != pod:
-                continue
 
             # Find a request log that has an API call
             api_call_logs = [
-                log
-                for log in request_logs
-                if log.log_type
-                in [
-                    LogType.API,
-                    LogType.API_RECEIVED,
-                    LogType.API_QUEUED,
-                    LogType.API_THROTTLED,
-                    LogType.API_ACCEPTED,
-                    LogType.API_COMPLETED,
-                ]
+                log for log in request_logs if log.api_path is not None
             ]
             if api_call_logs:
                 api_call = (
@@ -835,7 +826,7 @@ class LogFile(BaseModel):
                 continue
 
             # Group entries by transaction ID
-            grouped_transaction_logs = defaultdict(list)
+            grouped_transaction_logs = defaultdict(list[LogLine])
             for log in request_logs:
                 grouped_transaction_logs[log.transaction_id].append(log)
 
@@ -864,21 +855,25 @@ class LogFile(BaseModel):
                     final_state = transaction_entries[-2].log_type.name
 
                 def get_row(
-                    prev_entry: LogLine,
+                    current_entry: LogLine,
                     next_entry: LogLine,
                     print_label: bool = False,
                     total_queued_duration: float = 0,
+                    status_code: Optional[int] = None,
                 ) -> Dict[str, Any]:
                     duration = (
-                        next_entry.timestamp - prev_entry.timestamp
+                        next_entry.timestamp - current_entry.timestamp
                     ).total_seconds()
-                    prev_metrics = prev_entry.metrics
+                    current_metrics = current_entry.metrics
                     next_metrics = next_entry.metrics
                     pod = "N/A"
-                    if prev_entry.pod and prev_entry.pod == next_entry.pod:
-                        pod = prev_entry.pod
+                    if (
+                        current_entry.pod
+                        and current_entry.pod == next_entry.pod
+                    ):
+                        pod = current_entry.pod
                     else:
-                        pod = f"{prev_entry.pod} -> {next_entry.pod}"
+                        pod = f"{current_entry.pod} -> {next_entry.pod}"
                     label = ""
                     attempt_count = request_attempt_count[
                         next_entry.transaction_id
@@ -887,29 +882,30 @@ class LogFile(BaseModel):
                         attempt = ""
                         if len(request_attempt_count) > 1:
                             attempt = f" ATTEMPT {attempt_count + 1}/{len(request_attempt_count)}"
-                        label = f"{total_duration - total_queued_duration:.3f}s (+{total_queued_duration:.3f}s queued) {api_call} (RID: {req_id} TID: {next_entry.transaction_id}){attempt}"
+                        label = f"{total_duration - total_queued_duration:.3f}s (+{total_queued_duration:.3f}s queued) {status_code} {api_call} (RID: {req_id} TID: {next_entry.transaction_id}){attempt}"
 
                     metrics = {
-                        metric_name: f"{prev_metrics.get(metric_name)} -> {next_metrics.get(metric_name)}"
-                        if prev_metrics.get(metric_name)
+                        metric_name: f"{current_metrics.get(metric_name)} -> {next_metrics.get(metric_name)}"
+                        if current_metrics.get(metric_name)
                         != next_metrics.get(metric_name)
-                        else f"{prev_metrics.get(metric_name)}"
-                        for metric_name in prev_metrics.keys()
+                        else f"{current_metrics.get(metric_name)}"
+                        for metric_name in current_metrics.keys()
                     }
                     metrics_columns.update(metrics.keys())
                     return {
                         **metrics,
                         "request": f"{api_call} ({req_id}/{next_entry.transaction_id})",
                         "api_call": api_call,
+                        "status_code": status_code,
                         "request_id": req_id,
                         "transaction_id": next_entry.transaction_id,
                         "attempt": f"{attempt_count + 1}/{len(request_attempt_count)}",
-                        "stage": f"{prev_entry.log_type.name} -> {next_entry.log_type.name}",
-                        "start": pd.to_datetime(prev_entry.timestamp),
+                        "stage": f"{current_entry.log_type.name} -> {next_entry.log_type.name}",
+                        "start": pd.to_datetime(current_entry.timestamp),
                         "end": pd.to_datetime(next_entry.timestamp),
-                        "state": prev_entry.log_type.name,
+                        "state": current_entry.log_type.name,
                         "final_state": final_state,
-                        "target": prev_entry.target or api_call,
+                        "target": current_entry.target or api_call,
                         "label": label,
                         "duration": f"{duration:.3f}s / {total_duration:.3f}s",
                         "pod": pod,
@@ -928,31 +924,47 @@ class LogFile(BaseModel):
                             f"{LogType.CLIENT_RETRY.name} -> {LogType.API_RECEIVED.name}"
                         )
                         row["state"] = LogType.CLIENT_RETRY.name
-                        transaction_rows.append(row)
+                        if pod is None or transaction_entry_point.pod == pod:
+                            transaction_rows.append(row)
+
+                status_code = None
+                if transaction_entries[-1].status_code is not None:
+                    status_code = transaction_entries[-1].status_code
 
                 total_queued_duration = 0
                 for i in range(len(transaction_entries) - 1):
                     log = transaction_entries[i]
-                    next_entry = transaction_entries[i + 1]
-                    if log.log_type == LogType.API_QUEUED:
+                    next_log = transaction_entries[i + 1]
+                    if log.log_type not in [
+                        LogType.ENDPOINT_SYNC_STARTED,
+                        LogType.ENDPOINT_SYNC_COMPLETED,
+                        LogType.SQL_STARTED,
+                        LogType.SQL_COMPLETED,
+                        LogType.RBAC_STARTED,
+                        LogType.RBAC_COMPLETED,
+                    ]:
                         total_queued_duration += (
-                            next_entry.timestamp - log.timestamp
+                            next_log.timestamp - log.timestamp
                         ).total_seconds()
 
                     # If the current stage takes zero or negative time, it won't
                     # be plotted correctly.
                     # In that case, we cheat and simply simulate a one millisecond
                     # delay.
-                    if next_entry.timestamp <= log.timestamp:
-                        next_entry.timestamp = log.timestamp + timedelta(
+                    if next_log.timestamp <= log.timestamp:
+                        next_log.timestamp = log.timestamp + timedelta(
                             milliseconds=1
                         )
 
+                    if pod is not None and log.pod != pod:
+                        continue
+
                     row = get_row(
                         log,
-                        next_entry,
+                        next_log,
                         print_label=i == len(transaction_entries) - 2,
                         total_queued_duration=total_queued_duration,
+                        status_code=status_code,
                     )
 
                     transaction_rows.append(row)
@@ -967,30 +979,57 @@ class LogFile(BaseModel):
                     and total_duration < min_total_duration
                 ):
                     continue
-                rows.extend(transaction_rows)
+                if filter_states:
+                    filter_state_values = [
+                        state.name for state in filter_states
+                    ]
+                    transaction_rows = [
+                        row
+                        for row in transaction_rows
+                        if row["state"] in filter_state_values
+                    ]
+                if not transaction_rows:
+                    continue
+                rows.append(transaction_rows)
 
             request_count += 1
             if max_requests is not None and request_count >= max_requests:
                 break
 
-        df = pd.DataFrame(rows)
+        # Sort the transaction groups by the start time of the first transaction
+        rows.sort(key=lambda x: x[0]["start"])
+
+        # Flatten the rows into a single list of dictionaries
+        df = pd.DataFrame([row for sublist in rows for row in sublist])
 
         print(f"Plotting {len(rows)} entries for {request_count} requests")
 
         # Define a fixed color scheme for states
         color_map = {
+            # API states
             "API_RECEIVED": "#1f77b4",  # blue
             "API_QUEUED": "#FF1E1E",  # bright red
             "API_THROTTLED": "#d62728",  # darker red
             "API_ACCEPTED": "#2ca02c",  # green
             "API_COMPLETED": "#9467bd",  # purple
+            "API_AUTHORIZING": "#8B8000",  # dark gold/olive
+            "API_AUTHORIZED": "#9A7D0A",  # muted gold
+            "API_UPDATING_LAST_USER_ACTIVITY": "#6B8E23",  # olive drab
+            "API_UPDATED_LAST_USER_ACTIVITY": "#556B2F",  # dark olive green
             "CLIENT_RETRY": "#FFD700",  # bright gold
+            # ENDPOINT states
+            "ENDPOINT_STARTED": "#e377c2",  # pink
+            "ENDPOINT_COMPLETED": "#7f7f7f",  # gray
             "ENDPOINT_ASYNC_STARTED": "#e377c2",  # pink
             "ENDPOINT_ASYNC_COMPLETED": "#7f7f7f",  # gray
             "ENDPOINT_SYNC_STARTED": "#bcbd22",  # olive
             "ENDPOINT_SYNC_COMPLETED": "#17becf",  # cyan
+            "ENDPOINT_CACHE_HIT": "#ff7f0e",  # orange
+            "ENDPOINT_RESUMED": "#c5b0d5",  # light purple
+            # SQL states
             "SQL_STARTED": "#00FF00",  # bright green
             "SQL_COMPLETED": "#ffbb78",  # light orange
+            # RBAC states
             "RBAC_STARTED": "#98df8a",  # light green
             "RBAC_COMPLETED": "#ff9896",  # light red
         }
@@ -1015,13 +1054,11 @@ class LogFile(BaseModel):
                 **{metric: True for metric in metrics_columns},
                 "request": True,
                 "attempt": True,
-                "start": True,
-                "end": True,
+                "status_code": True,
                 "target": True,
                 "duration": True,
                 "pod": True,
                 "stage": True,
-                "final_state": True,
             },
         )
 

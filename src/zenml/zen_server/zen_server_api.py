@@ -22,51 +22,35 @@ To run this file locally, execute:
 
 import logging
 import os
-import time
-from asyncio import Lock, Semaphore, TimeoutError, wait_for
 from asyncio.log import logger
-from contextvars import ContextVar
-from datetime import datetime, timedelta
 from genericpath import isfile
-from typing import Any, List, Optional, Set
-from uuid import uuid4
+from typing import Any, List
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse, PlainTextResponse
+from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.concurrency import run_in_threadpool
-from starlette.middleware.base import (
-    BaseHTTPMiddleware,
-    RequestResponseEndpoint,
-)
-from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import (
     FileResponse,
-    JSONResponse,
     RedirectResponse,
-    Response,
 )
-from starlette.types import ASGIApp
 
 import zenml
-from zenml.analytics import source_context
 from zenml.constants import (
     API,
-    DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS,
     HEALTH,
     READY,
 )
-from zenml.enums import AuthScheme, SourceContextTypes
+from zenml.enums import AuthScheme
 from zenml.models import ServerDeploymentType
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
-from zenml.utils.time_utils import utc_now
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
+from zenml.zen_server.middleware import add_middlewares
 from zenml.zen_server.routers import (
     actions_endpoints,
     artifact_endpoint,
@@ -105,34 +89,26 @@ from zenml.zen_server.routers import (
 )
 from zenml.zen_server.secure_headers import (
     initialize_secure_headers,
-    secure_headers,
 )
 from zenml.zen_server.utils import (
-    get_system_metrics_log_str,
+    cleanup_request_manager,
     initialize_feature_gate,
     initialize_memcache,
     initialize_plugins,
     initialize_rbac,
+    initialize_request_manager,
     initialize_run_template_executor,
     initialize_workload_manager,
     initialize_zen_store,
-    is_user_request,
     run_template_executor,
     server_config,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
-    zen_store,
 )
 
 DASHBOARD_DIRECTORY = "dashboard"
 
-# Track active requests with an atomic counter
-active_requests_count = 0
-active_requests_lock = Lock()
-
-request_ids: ContextVar[Optional[str]] = ContextVar(
-    "request_ids", default=None
-)
+MAX_ALLOWED_REQUEST_RETRY_AGE_SECONDS = 600  # 10 minutes
 
 
 def relative_path(rel: str) -> str:
@@ -154,12 +130,7 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
 )
 
-# Initialize last_user_activity
-last_user_activity: datetime = utc_now()
-last_user_activity_reported: datetime = last_user_activity + timedelta(
-    seconds=-DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
-)
-last_user_activity_lock = Lock()
+add_middlewares(app)
 
 
 # Customize the default request validation handler that comes with FastAPI
@@ -180,397 +151,8 @@ def validation_exception_handler(
     return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
 
 
-class RequestBodyLimit(BaseHTTPMiddleware):
-    """Limits the size of the request body."""
-
-    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
-        """Limits the size of the request body.
-
-        Args:
-            app: The FastAPI app.
-            max_bytes: The maximum size of the request body.
-        """
-        super().__init__(app)
-        self.max_bytes = max_bytes
-
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
-        """Limits the size of the request body.
-
-        Args:
-            request: The incoming request.
-            call_next: The next function to be called.
-
-        Returns:
-            The response to the request.
-        """
-        if content_length := request.headers.get("content-length"):
-            if int(content_length) > self.max_bytes:
-                return Response(status_code=413)  # Request Entity Too Large
-
-        try:
-            return await call_next(request)
-        except Exception:
-            logger.exception("An error occurred while processing the request")
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "An unexpected error occurred."},
-            )
-
-
-class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
-    """Restrict file uploads to certain paths."""
-
-    def __init__(self, app: FastAPI, allowed_paths: Set[str]):
-        """Restrict file uploads to certain paths.
-
-        Args:
-            app: The FastAPI app.
-            allowed_paths: The allowed paths.
-        """
-        super().__init__(app)
-        self.allowed_paths = allowed_paths
-
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
-        """Restrict file uploads to certain paths.
-
-        Args:
-            request: The incoming request.
-            call_next: The next function to be called.
-
-        Returns:
-            The response to the request.
-        """
-        if request.method == "POST":
-            content_type = request.headers.get("content-type", "")
-            if (
-                "multipart/form-data" in content_type
-                and request.url.path not in self.allowed_paths
-            ):
-                return JSONResponse(
-                    status_code=403,
-                    content={
-                        "detail": "File uploads are not allowed on this endpoint."
-                    },
-                )
-
-        try:
-            return await call_next(request)
-        except Exception:
-            logger.exception("An error occurred while processing the request")
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "An unexpected error occurred."},
-            )
-
-
-ALLOWED_FOR_FILE_UPLOAD: Set[str] = set()
-
-
-@app.middleware("http")
-async def track_last_user_activity(request: Request, call_next: Any) -> Any:
-    """A middleware to track last user activity.
-
-    This middleware checks if the incoming request is a user request and
-    updates the last activity timestamp if it is.
-
-    Args:
-        request: The incoming request object.
-        call_next: A function that will receive the request as a parameter and
-            pass it to the corresponding path operation.
-
-    Returns:
-        The response to the request.
-    """
-    global last_user_activity
-    global last_user_activity_reported
-    global last_user_activity_lock
-
-    now = utc_now()
-
-    try:
-        if is_user_request(request):
-            report_user_activity = False
-            async with last_user_activity_lock:
-                last_user_activity = now
-                if (
-                    (now - last_user_activity_reported).total_seconds()
-                    > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
-                ):
-                    last_user_activity_reported = now
-                    report_user_activity = True
-
-            if report_user_activity:
-                # We don't want to make a DB call here because we're in the
-                # context of the asyncio event loop and it would block the
-                # entire application for who knows how long.
-                # We use the threadpool for it.
-                await run_in_threadpool(
-                    zen_store()._update_last_user_activity_timestamp,
-                    last_user_activity=last_user_activity,
-                )
-    except Exception as e:
-        logger.debug(
-            f"An unexpected error occurred while checking user activity: {e}"
-        )
-
-    try:
-        return await call_next(request)
-    except Exception:
-        logger.exception("An error occurred while processing the request")
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "An unexpected error occurred."},
-        )
-
-
-@app.middleware("http")
-async def infer_source_context(request: Request, call_next: Any) -> Any:
-    """A middleware to track the source of an event.
-
-    It extracts the source context from the header of incoming requests
-    and applies it to the ZenML source context on the API side. This way, the
-    outgoing analytics request can append it as an additional field.
-
-    Args:
-        request: the incoming request object.
-        call_next: a function that will receive the request as a parameter and
-            pass it to the corresponding path operation.
-
-    Returns:
-        the response to the request.
-    """
-    try:
-        s = request.headers.get(
-            source_context.name,
-            default=SourceContextTypes.API.value,
-        )
-        source_context.set(SourceContextTypes(s))
-    except Exception as e:
-        logger.warning(
-            f"An unexpected error occurred while getting the source "
-            f"context: {e}"
-        )
-        source_context.set(SourceContextTypes.API)
-
-    try:
-        return await call_next(request)
-    except Exception:
-        logger.exception("An error occurred while processing the request")
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "An unexpected error occurred."},
-        )
-
-
-request_semaphore = Semaphore(server_config().thread_pool_size)
-
-
-@app.middleware("http")
-async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
-    """Prevent read timeout client errors.
-
-    Args:
-        request: The incoming request.
-        call_next: The next function to be called.
-
-    Returns:
-        The response to the request.
-    """
-    # Only process the REST API requests because these are the ones that
-    # take the most time to complete.
-    if not request.url.path.startswith(API):
-        return await call_next(request)
-
-    server_request_timeout = server_config().server_request_timeout
-
-    request_id = request_ids.get()
-
-    client_ip = request.client.host if request.client else "unknown"
-    method = request.method
-    url_path = request.url.path
-
-    logger.debug(
-        f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"QUEUED {get_system_metrics_log_str(request)}"
-    )
-
-    start_time = time.time()
-
-    try:
-        # Here we wait until a worker thread is available to process the
-        # request with a timeout value that is set to be lower than the
-        # what the client is willing to wait for (i.e. lower than the
-        # client's HTTP request timeout). The rationale is that we want to
-        # respond to the client before it times out and decides to retry the
-        # request (which would overwhelm the server).
-        await wait_for(
-            request_semaphore.acquire(),
-            timeout=server_request_timeout,
-        )
-    except TimeoutError:
-        end_time = time.time()
-        duration = (end_time - start_time) * 1000
-
-        logger.debug(
-            f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-            f"THROTTLED after {duration:.2f}ms "
-            f"{get_system_metrics_log_str(request)}"
-        )
-
-        # We return a 429 error, basically telling the client to slow down.
-        # For the client, the 429 error is more meaningful than a ReadTimeout
-        # error, because it also tells the client two additional things:
-        #
-        # 1. The server is alive.
-        # 2. The server hasn't processed the request, so even if the request
-        #    is not idempotent, it's safe to retry it.
-        return JSONResponse(
-            {"error": "Server too busy. Please try again later."},
-            status_code=429,
-        )
-
-    duration = (time.time() - start_time) * 1000
-
-    logger.debug(
-        f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"ACCEPTED after {duration:.2f}ms "
-        f"{get_system_metrics_log_str(request)}"
-    )
-
-    try:
-        return await call_next(request)
-    finally:
-        request_semaphore.release()
-
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next: Any) -> Any:
-    """Log requests to the ZenML server.
-
-    Args:
-        request: The incoming request object.
-        call_next: A function that will receive the request as a parameter and
-            pass it to the corresponding path operation.
-
-    Returns:
-        The response to the request.
-    """
-    global active_requests_count
-
-    if not logger.isEnabledFor(logging.DEBUG):
-        return await call_next(request)
-
-    request_id = request.headers.get("X-Request-ID", str(uuid4())[:8])
-    # Detect if the request comes from Python, Web UI or something else
-    if source := request.headers.get("User-Agent"):
-        source = source.split("/")[0]
-        request_id = f"{request_id}/{source}"
-    # Generate a transaction ID for the request to differentiate between
-    # multiple retries of the same request.
-    transaction_id = str(uuid4())[:4]
-    request_id = f"{request_id}/{transaction_id}"
-
-    request_ids.set(request_id)
-
-    client_ip = request.client.host if request.client else "unknown"
-    url_path = request.url.path
-    method = request.method
-
-    async with active_requests_lock:
-        active_requests_count += 1
-
-    logger.debug(
-        f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
-        f"RECEIVED {get_system_metrics_log_str(request)}"
-    )
-
-    start_time = time.time()
-    try:
-        response = await call_next(request)
-        duration = (time.time() - start_time) * 1000
-        status_code = response.status_code
-
-        logger.debug(
-            f"[{request_id}] API STATS - {status_code} {method} {url_path} from "
-            f"{client_ip} took {duration:.2f}ms "
-            f"{get_system_metrics_log_str(request)}"
-        )
-        return response
-    finally:
-        async with active_requests_lock:
-            active_requests_count -= 1
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=server_config().cors_allow_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.add_middleware(
-    RequestBodyLimit, max_bytes=server_config().max_request_body_size_in_bytes
-)
-app.add_middleware(
-    RestrictFileUploadsMiddleware, allowed_paths=ALLOWED_FOR_FILE_UPLOAD
-)
-
-
-@app.middleware("http")
-async def set_secure_headers(request: Request, call_next: Any) -> Any:
-    """Middleware to set secure headers.
-
-    Args:
-        request: The incoming request.
-        call_next: The next function to be called.
-
-    Returns:
-        The response with secure headers set.
-    """
-    try:
-        response = await call_next(request)
-    except Exception:
-        logger.exception("An error occurred while processing the request")
-        response = JSONResponse(
-            status_code=500,
-            content={"detail": "An unexpected error occurred."},
-        )
-
-    # If the request is for the openAPI docs, don't set secure headers
-    if request.url.path.startswith("/docs") or request.url.path.startswith(
-        "/redoc"
-    ):
-        return response
-
-    secure_headers().framework.fastapi(response)
-    return response
-
-
-@app.middleware("http")
-async def skip_health_middleware(request: Request, call_next: Any) -> Any:
-    """Skip health and ready endpoints.
-
-    Args:
-        request: The incoming request.
-        call_next: The next function to be called.
-
-    Returns:
-        The response to the request.
-    """
-    if request.url.path in [HEALTH, READY]:
-        # Skip expensive processing
-        return PlainTextResponse("ok")
-
-    return await call_next(request)
-
-
 @app.on_event("startup")
-def initialize() -> None:
+async def initialize() -> None:
     """Initialize the ZenML server."""
     cfg = server_config()
     # Set the maximum number of worker threads
@@ -580,6 +162,7 @@ def initialize() -> None:
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
+    await initialize_request_manager()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
     initialize_feature_gate()
@@ -598,10 +181,11 @@ def initialize() -> None:
 
 
 @app.on_event("shutdown")
-def shutdown() -> None:
+async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
+    await cleanup_request_manager()
     run_template_executor().shutdown(wait=True)
 
 
