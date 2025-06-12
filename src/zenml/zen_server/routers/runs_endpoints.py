@@ -41,6 +41,7 @@ from zenml.models import (
     StepRunFilter,
     StepRunResponse,
 )
+from zenml.utils import run_utils
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -421,7 +422,7 @@ def stop_run(
         get_method=zen_store().get_run,
         hydrate=True,
     )
-    run.stop_run(graceful=graceful)
+    run_utils.stop_run(run=run, graceful=graceful)
 
 
 @router.get(

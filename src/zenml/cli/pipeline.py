@@ -34,7 +34,7 @@ from zenml.models import (
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
-from zenml.utils import source_utils, uuid_utils
+from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -552,7 +552,7 @@ def stop_pipeline_run(
     # Stop run.
     try:
         run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
-        run.stop_run(graceful=graceful)
+        run_utils.stop_run(run=run, graceful=graceful)
         action = "Gracefully stopped" if graceful else "Force stopped"
         cli_utils.declare(f"{action} pipeline run '{run.name}'.")
     except NotImplementedError:
