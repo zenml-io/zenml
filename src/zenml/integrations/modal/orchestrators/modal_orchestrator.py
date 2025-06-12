@@ -91,7 +91,7 @@ def run_step_in_modal(
     Raises:
         Exception: If step execution fails.
     """
-    logger.info(f"Running step '{step_name}' in Modal")
+    logger.info(f"Running step '{step_name}' remotely")
     sys.stdout.flush()
 
     # Set the orchestrator run ID in the Modal environment
@@ -296,11 +296,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         _ = placeholder_run  # Mark as intentionally unused
         if modal is None:
             raise RuntimeError(
-                "Modal is not installed. Please install it with: pip install modal"
+                "Required dependencies not installed. Please install with: pip install modal"
             )
         if deployment.schedule:
             logger.warning(
-                "Modal Orchestrator currently does not support the "
+                "Serverless Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
@@ -333,7 +333,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         # Execute steps using Modal's fast container spin-up with persistent app
         logger.info(
-            "Starting pipeline execution with persistent Modal functions"
+            "Starting pipeline execution with persistent serverless functions"
         )
 
         step_names = list(deployment.step_configurations.keys())
@@ -376,7 +376,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             or self.config.app_warming_window_hours,
         )
 
-        logger.info("Executing with deployed Modal app and warm containers")
+        logger.info(
+            "Executing with deployed serverless application and warm containers"
+        )
 
         # Execute based on execution mode with improved Modal Function API usage
         sync_execution = (
@@ -424,7 +426,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                     )
                 except Exception as e:
                     logger.error(f"Step '{step_name}' failed: {e}")
-                    logger.info("Check Modal dashboard for detailed logs")
+                    logger.info("Check platform dashboard for detailed logs")
                     raise
         else:
             # Default: execute entire pipeline in one function
@@ -435,7 +437,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 )
             except Exception as e:
                 logger.error(f"Pipeline failed: {e}")
-                logger.info("Check Modal dashboard for detailed logs")
+                logger.info("Check platform dashboard for detailed logs")
                 raise
 
         run_duration = time.time() - start_time

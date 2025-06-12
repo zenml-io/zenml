@@ -89,7 +89,7 @@ def setup_modal_client(
         # Set both token ID and secret
         os.environ["MODAL_TOKEN_ID"] = token_id
         os.environ["MODAL_TOKEN_SECRET"] = token_secret
-        logger.info("Using Modal token ID and secret from config")
+        logger.info("Using platform token ID and secret from config")
         logger.debug(f"Token ID starts with: {token_id[:5]}...")
         logger.debug(f"Token secret starts with: {token_secret[:5]}...")
 
@@ -103,10 +103,10 @@ def setup_modal_client(
 
         # Only token ID provided
         os.environ["MODAL_TOKEN_ID"] = token_id
-        logger.info("Using Modal token ID from config")
+        logger.info("Using platform token ID from config")
         logger.warning(
             "Only token ID provided. Make sure MODAL_TOKEN_SECRET is set "
-            "or Modal authentication may fail."
+            "or platform authentication may fail."
         )
         logger.debug(f"Token ID starts with: {token_id[:5]}...")
 
@@ -122,19 +122,19 @@ def setup_modal_client(
         os.environ["MODAL_TOKEN_SECRET"] = token_secret
         logger.warning(
             "Only token secret provided. Make sure MODAL_TOKEN_ID is set "
-            "or Modal authentication may fail."
+            "or platform authentication may fail."
         )
         logger.debug(f"Token secret starts with: {token_secret[:5]}...")
 
     else:
-        logger.info("Using default Modal authentication (~/.modal.toml)")
+        logger.info("Using default platform authentication (~/.modal.toml)")
         # Check if default auth exists
         modal_toml_path = os.path.expanduser("~/.modal.toml")
         if os.path.exists(modal_toml_path):
-            logger.debug(f"Found Modal config at {modal_toml_path}")
+            logger.debug(f"Found platform config at {modal_toml_path}")
         else:
             logger.warning(
-                f"No Modal config found at {modal_toml_path}. "
+                f"No platform config found at {modal_toml_path}. "
                 "Run 'modal token new' to set up authentication."
             )
 
@@ -253,11 +253,11 @@ def create_modal_stack_validator() -> StackValidator:
     def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
         if stack.artifact_store.config.is_local:
             return False, (
-                "Modal components run code remotely and "
+                "Serverless components run code remotely and "
                 "need to write files into the artifact store, but the "
                 f"artifact store `{stack.artifact_store.name}` of the "
                 "active stack is local. Please ensure that your stack "
-                "contains a remote artifact store when using Modal "
+                "contains a remote artifact store when using serverless "
                 "components."
             )
 
@@ -266,11 +266,11 @@ def create_modal_stack_validator() -> StackValidator:
 
         if container_registry.config.is_local:
             return False, (
-                "Modal components run code remotely and "
+                "Serverless components run code remotely and "
                 "need to push/pull Docker images, but the "
                 f"container registry `{container_registry.name}` of the "
                 "active stack is local. Please ensure that your stack "
-                "contains a remote container registry when using Modal "
+                "contains a remote container registry when using serverless "
                 "components."
             )
 
@@ -353,7 +353,9 @@ def get_or_deploy_persistent_modal_app(
     # Include both time window and build hash in app name
     app_name = f"{app_name_base}-{time_window}-{build_hash}"
 
-    logger.info(f"Getting/deploying persistent Modal app: {app_name}")
+    logger.info(
+        f"Getting/deploying persistent serverless application: {app_name}"
+    )
     logger.debug(
         f"App name includes time window: {time_window}, build hash: {build_hash}"
     )
@@ -380,7 +382,7 @@ def get_or_deploy_persistent_modal_app(
     # Try to lookup existing app with matching time window and image, deploy if not found
     try:
         logger.debug(
-            f"Checking for Modal app with time window {time_window} and build hash {build_hash}: {app_name}"
+            f"Checking for serverless application with time window {time_window} and build hash {build_hash}: {app_name}"
         )
 
         try:
@@ -422,9 +424,6 @@ def get_or_deploy_persistent_modal_app(
             logger.info(
                 f"App '{app_name}' deployed with {effective_min_containers} warm containers"
             )
-            logger.info(
-                f"View real-time logs at: https://modal.com/apps/{app_name}"
-            )
         except Exception as deploy_error:
             error_message = str(deploy_error)
             if (
@@ -432,10 +431,10 @@ def get_or_deploy_persistent_modal_app(
                 or "UNAUTHENTICATED" in error_message
             ):
                 raise ModalAuthenticationError(
-                    "Modal authentication failed. Token ID or secret is invalid.",
+                    "Platform authentication failed. Token ID or secret is invalid.",
                     suggestions=[
                         "Check that token_id starts with 'ak-' and token_secret starts with 'as-'",
-                        "Get new tokens from Modal dashboard: https://modal.com/tokens",
+                        "Get new tokens from the platform dashboard",
                         "Or run 'modal token new' to set up ~/.modal.toml authentication",
                         "Ensure both token_id AND token_secret are provided in orchestrator config",
                     ],
@@ -449,7 +448,7 @@ def get_or_deploy_persistent_modal_app(
         raise
 
     logger.info(
-        f"Modal app configured with min_containers={effective_min_containers}, max_containers={effective_max_containers}"
+        f"Serverless application configured with min_containers={effective_min_containers}, max_containers={effective_max_containers}"
     )
 
     return execute_step_func, app_name
@@ -535,7 +534,7 @@ def stream_modal_logs_and_wait(
     start_time = time.time()
 
     def stream_logs() -> None:
-        """Stream logs from Modal CLI in a separate thread."""
+        """Stream logs from platform CLI in a separate thread."""
         try:
             # Use modal CLI to stream logs (automatically streams while app is active)
             cmd = [
@@ -598,7 +597,7 @@ def stream_modal_logs_and_wait(
 
         except FileNotFoundError:
             logger.warning(
-                "Modal CLI not found. Install with: pip install modal"
+                "Platform CLI not found. Install with: pip install modal"
             )
         except Exception as e:
             logger.debug(f"Log streaming error: {e}")
