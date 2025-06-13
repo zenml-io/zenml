@@ -23,7 +23,7 @@ from zenml.utils.secret_utils import SecretField
 if TYPE_CHECKING:
     from zenml.integrations.modal.orchestrators import ModalOrchestrator
 
-MODAL_ORCHESTRATOR_FLAVOR = "modal"
+from zenml.integrations.modal import MODAL_ORCHESTRATOR_FLAVOR
 
 
 class ModalExecutionMode(str, Enum):

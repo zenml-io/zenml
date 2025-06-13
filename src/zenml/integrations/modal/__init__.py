@@ -47,7 +47,5 @@ class ModalIntegration(Integration):
         return [ModalOrchestratorFlavor, ModalStepOperatorFlavor]
 
 
-# Import utils module to make it discoverable by mypy
-from zenml.integrations.modal import utils  # noqa: F401
 
 
