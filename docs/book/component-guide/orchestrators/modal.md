@@ -55,9 +55,8 @@ To use the Modal orchestrator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/README.md) as part of your stack.
 * A [remote container registry](../container-registries/README.md) as part of your stack.
-* Modal CLI installed and authenticated:
+* Modal authenticated:
   ```shell
-  pip install modal
   modal setup
   ```
 
@@ -95,7 +94,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 You can get your Modal token from the [Modal dashboard](https://modal.com/settings/tokens).
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Modal functions. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Modal functions. Check out [this page](https://docs.zenml.io/concepts/containerization) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Modal orchestrator:
@@ -249,6 +248,22 @@ modal_settings = ModalOrchestratorSettings(
 )
 ```
 
+### Base image requirements
+
+{% hint style="info" %}
+**Docker Image Customization**
+
+ZenML will automatically build a Docker image that includes your code and dependencies, then use it to run your pipeline on Modal. The base image and dependencies you configure will determine what's available in your Modal execution environment.
+
+Key considerations:
+- **Base image**: Choose an appropriate base image for your workload (e.g., `python:3.9-slim`, `ubuntu:20.04`, or specialized ML images)
+- **Dependencies**: Ensure all required packages are specified in your `requirements.txt` or Docker settings
+- **System packages**: If you need system-level packages, configure them in your Docker settings
+- **Environment variables**: Configure any necessary environment variables in your ZenML pipeline or Docker settings
+
+Check out the [ZenML Docker customization guide](https://docs.zenml.io/how-to/customize-docker-builds) for detailed information on customizing your execution environment.
+{% endhint %}
+
 ### Using GPUs
 
 Modal makes it easy to use GPUs for your ML workloads. Use `ResourceSettings` to specify the number of GPUs and `ModalOrchestratorSettings` to specify the GPU type:
@@ -365,6 +380,31 @@ modal_settings = ModalOrchestratorSettings(
 )
 ```
 
+### How it works: Modal Apps and Functions
+
+{% hint style="info" %}
+**Implementation Details**
+
+The ZenML Modal orchestrator implements pipeline execution using Modal's app and function architecture:
+
+**Modal App Deployment**: 
+- ZenML creates a persistent Modal app with a unique name that includes a time window and build checksum
+- The app stays deployed and available for a configurable time period (default: 2 hours)
+- Apps are automatically reused within the time window if the Docker image hasn't changed
+- This eliminates the overhead of redeploying apps for consecutive pipeline runs
+
+**Function Execution**:
+- Your pipeline runs inside Modal functions within the deployed app
+- In `pipeline` mode (default): The entire pipeline executes in a single function call
+- In `per_step` mode: Each step runs as a separate function call within the same app
+- Functions can maintain warm containers between executions for faster startup
+
+**Container Management**:
+- Modal manages container lifecycle automatically based on your `min_containers` and `max_containers` settings
+- Warm containers stay ready with your Docker image loaded and dependencies installed
+- Cold containers are spun up on-demand when warm containers are unavailable
+{% endhint %}
+
 ### Warm containers for faster execution
 
 Modal orchestrator uses persistent apps with warm containers to minimize cold starts:
@@ -386,18 +426,61 @@ def my_pipeline():
 
 This ensures your pipelines start executing immediately without waiting for container initialization.
 
-{% hint style="info" %}
-**Cost Implications of Container Warming**
+{% hint style="warning" %}
+**Cost Implications and Optimization**
 
-Keeping warm containers (`min_containers > 0`) incurs costs even when your pipelines are not running, as Modal charges for idle container time. Consider these factors:
+Understanding Modal orchestrator costs helps optimize your spend:
 
-- **Development**: Use `min_containers=0` to minimize costs during development
-- **Production**: Use `min_containers=1-2` for fast startup times on frequent workloads
-- **Resource costs**: Warm containers with GPUs are significantly more expensive than CPU-only containers
-- **Time window**: Containers are reused within a 2-hour window by default (configurable via `app_warming_window_hours`)
+**Container Costs**:
+- **Warm containers** (`min_containers > 0`): You pay for idle time even when pipelines aren't running
+- **Cold containers**: Only pay when actually executing, but incur startup time (~30-60 seconds)
+- **GPU containers**: Significantly more expensive than CPU-only containers for idle time
 
-Monitor your Modal dashboard to track idle container costs and adjust settings based on your usage patterns.
+**App Deployment Costs**:
+- **App reuse**: No additional cost when reusing apps within the time window (default: 2 hours)
+- **New deployments**: Small deployment overhead for each new app (new time window or changed Docker image)
+
+**Execution Mode Costs**:
+- **Pipeline mode**: Most cost-effective - single function call for entire pipeline
+- **Per-step mode**: Higher cost due to multiple function calls, but better for debugging
+
+**Cost Optimization Strategies**:
+- **Development**: Use `min_containers=0` to avoid idle costs
+- **Production (frequent)**: Use `min_containers=1-2` for pipelines running multiple times per hour
+- **Production (infrequent)**: Use `min_containers=0` for pipelines running less than once per hour
+- **GPU workloads**: Be especially careful with `min_containers` due to high GPU idle costs
+- **Time windows**: Adjust `app_warming_window_hours` based on your pipeline frequency
+
+Monitor your Modal dashboard to track container utilization and costs, then adjust settings accordingly.
 {% endhint %}
+
+### App reuse and warming windows
+
+You can control how long Modal apps stay deployed and available for reuse:
+
+```python
+modal_settings = ModalOrchestratorSettings(
+    app_warming_window_hours=4.0,  # Keep apps deployed for 4 hours
+    min_containers=1,              # Keep 1 container warm
+    max_containers=5               # Scale up to 5 containers
+)
+
+@pipeline(settings={"orchestrator": modal_settings})
+def my_pipeline():
+    # This pipeline will reuse the same Modal app if run within 4 hours
+    # and the Docker image hasn't changed
+    ...
+```
+
+**App Reuse Benefits**:
+- **Faster execution**: No app deployment time for subsequent runs
+- **Cost efficiency**: No repeated deployment overhead
+- **Consistent environment**: Same app instance for related pipeline runs
+
+**When apps are recreated**:
+- After the warming window expires (default: 2 hours)
+- When the Docker image changes (new dependencies, code changes)
+- When resource requirements change significantly
 
 ## Best practices
 
