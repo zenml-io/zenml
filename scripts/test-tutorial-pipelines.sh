@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/bin/bash
+set -uo pipefail
 
 # Script to test all tutorial pipelines from the vscode-tutorial-extension repo
 # This script should be run from the root of the ZenML repository
