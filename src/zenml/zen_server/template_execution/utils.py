@@ -193,7 +193,6 @@ def run_template(
     zenml_version = build.zenml_version
 
     placeholder_run = create_placeholder_run(deployment=new_deployment)
-    assert placeholder_run
 
     report_usage(
         feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,

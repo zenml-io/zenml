@@ -152,6 +152,15 @@ class StepRunRequestFactory:
                 request.status = ExecutionStatus.CACHED
                 request.end_time = request.start_time
 
+                # As a last resort, we try to reuse the docstring/source code
+                # from the cached step run. This is part of the cache key
+                # computation, so it must be identical to the one we would have
+                # computed ourselves.
+                if request.source_code is None:
+                    request.source_code = cached_step_run.source_code
+                if request.docstring is None:
+                    request.docstring = cached_step_run.docstring
+
     def _get_docstring_and_source_code(
         self, invocation_id: str
     ) -> Tuple[Optional[str], Optional[str]]:
@@ -334,26 +343,14 @@ def create_cached_step_runs(
                 # -> We don't need to do anything here
                 continue
 
-            step_run = Client().zen_store.create_run_step(step_run_request)
+            step_run = publish_cached_step_run(
+                step_run_request, pipeline_run=pipeline_run
+            )
 
             # Include the newly created step run in the step runs dictionary to
             # avoid fetching it again later when downstream steps need it for
             # input resolution.
             step_runs[invocation_id] = step_run
-
-            if (
-                model_version := step_run.model_version
-                or pipeline_run.model_version
-            ):
-                link_output_artifacts_to_model_version(
-                    artifacts=step_run.outputs,
-                    model_version=model_version,
-                )
-
-            cascade_tags_for_output_artifacts(
-                artifacts=step_run.outputs,
-                tags=pipeline_run.config.tags,
-            )
 
             logger.info("Using cached version of step `%s`.", invocation_id)
             cached_invocations.add(invocation_id)
@@ -427,3 +424,31 @@ def cascade_tags_for_output_artifacts(
                 tags=[t.name for t in cascade_tags],
                 artifact_version_id=output_artifact.id,
             )
+
+
+def publish_cached_step_run(
+    request: "StepRunRequest", pipeline_run: "PipelineRunResponse"
+) -> "StepRunResponse":
+    """Create a cached step run and link to model version and tags.
+
+    Args:
+        request: The request for the step run.
+        pipeline_run: The pipeline run of the step.
+
+    Returns:
+        The createdstep run.
+    """
+    step_run = Client().zen_store.create_run_step(request)
+
+    if model_version := step_run.model_version or pipeline_run.model_version:
+        link_output_artifacts_to_model_version(
+            artifacts=step_run.outputs,
+            model_version=model_version,
+        )
+
+    cascade_tags_for_output_artifacts(
+        artifacts=step_run.outputs,
+        tags=pipeline_run.config.tags,
+    )
+
+    return step_run
