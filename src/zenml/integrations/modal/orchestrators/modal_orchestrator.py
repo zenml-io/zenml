@@ -91,7 +91,12 @@ def run_step_in_modal(
     Raises:
         Exception: If step execution fails.
     """
-    logger.info(f"Running step '{step_name}' remotely")
+    # Get pipeline run ID for debugging/logging
+    pipeline_run_id = os.environ.get("ZENML_PIPELINE_RUN_ID", "unknown")
+
+    logger.info(
+        f"Running step '{step_name}' remotely (pipeline run: {pipeline_run_id})"
+    )
     sys.stdout.flush()
 
     # Set the orchestrator run ID in the Modal environment
@@ -136,11 +141,15 @@ def run_entire_pipeline(
     Raises:
         Exception: If pipeline execution fails.
     """
+    # Get pipeline run ID for debugging/logging
+    pipeline_run_id = os.environ.get("ZENML_PIPELINE_RUN_ID", "unknown")
+
     logger.info(
         "Starting entire pipeline using PipelineEntrypointConfiguration",
         extra={
             "deployment_id": deployment_id,
             "orchestrator_run_id": orchestrator_run_id,
+            "pipeline_run_id": pipeline_run_id,
         },
     )
 
@@ -308,9 +317,18 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         # Setup Modal authentication
         self._setup_modal_client()
 
-        # Generate orchestrator run ID
+        # Generate orchestrator run ID and include pipeline run ID for isolation
         orchestrator_run_id = str(uuid4())
+
+        # Include pipeline run ID to prevent conflicts when same container
+        # handles multiple pipeline runs rapidly
+        pipeline_run_id = placeholder_run.id if placeholder_run else "unknown"
+
         environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
+        environment["ZENML_PIPELINE_RUN_ID"] = str(pipeline_run_id)
+
+        logger.debug(f"Pipeline run ID: {pipeline_run_id}")
+        logger.debug(f"Orchestrator run ID: {orchestrator_run_id}")
 
         # Get settings from pipeline configuration (applies to entire pipeline)
         settings = cast(
