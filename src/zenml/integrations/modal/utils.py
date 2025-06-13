@@ -146,7 +146,11 @@ class ModalAuthenticationError(Exception):
         self.suggestions = suggestions or []
 
     def __str__(self) -> str:
-        """Return formatted error message with suggestions."""
+        """Return formatted error message with suggestions.
+
+        Returns:
+            Formatted error message, optionally with suggestions.
+        """
         base_message = super().__str__()
         if self.suggestions:
             suggestions_text = "\n".join(f"  • {s}" for s in self.suggestions)
@@ -255,9 +259,10 @@ def get_gpu_values(
     """
     if not gpu_type:
         return None
-    # Prefer resource_settings gpu_count, fallback to 1
-    gpu_count = resource_settings.gpu_count or 1
-    return f"{gpu_type}:{gpu_count}" if gpu_count > 1 else gpu_type
+    gpu_count = resource_settings.gpu_count
+    if gpu_count is None or gpu_count == 0:
+        return gpu_type
+    return f"{gpu_type}:{gpu_count}"
 
 
 def get_resource_values(
@@ -425,7 +430,7 @@ def get_or_deploy_persistent_modal_app(
         Tuple of (Modal function ready for execution, full app name).
 
     Raises:
-        Exception: If deployment fails.
+        ModalAuthenticationError: If platform authentication fails.
     """
     # Create timestamp window for app reuse (rounds down to nearest window boundary)
     current_time = int(time.time())
