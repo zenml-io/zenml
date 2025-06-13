@@ -26,6 +26,13 @@ fi
 cd tutorial-repo
 
 echo "📁 Current directory: $(pwd)"
+
+# Verify utils.py exists (required by most pipelines)
+if [ ! -f "utils.py" ]; then
+    echo "⚠️  WARNING: utils.py not found in tutorial repository root"
+    echo "   Pipelines may fail to import utils module"
+fi
+
 echo "📋 Discovering pipeline files..."
 
 # Define all pipeline files to test
@@ -56,7 +63,7 @@ for pipeline in "${PIPELINE_FILES[@]}"; do
         echo "🔍 Testing pipeline: $pipeline"
         echo "----------------------------------------"
         
-        if timeout 300 python "$pipeline"; then
+        if timeout 300 env PYTHONPATH="$(pwd):$PYTHONPATH" python "$pipeline"; then
             echo "✅ PASSED: $pipeline"
             ((PASSED++))
         else
