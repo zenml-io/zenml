@@ -22,6 +22,20 @@ You should use the Modal orchestrator if:
 * you need easy access to GPUs and high-performance computing resources.
 * you prefer a simple setup process without complex Kubernetes configurations.
 
+## When NOT to use it
+
+The Modal orchestrator may not be the best choice if:
+
+* **You need fine-grained step isolation**: Modal runs entire pipelines in single functions by default, which means all steps share the same resources and environment. For pipelines requiring different resource configurations per step, consider the [Modal step operator](../step-operators/modal.md) instead.
+
+* **You have strict data locality requirements**: Modal runs in specific cloud regions and may not be suitable if you need to keep data processing within specific geographic boundaries or on-premises.
+
+* **You require very long-running pipelines**: While Modal supports up to 24-hour timeouts, extremely long-running batch jobs (days/weeks) might be better suited for other orchestrators.
+
+* **You need complex workflow patterns**: Modal orchestrator is optimized for straightforward ML pipelines. If you need complex DAG patterns, conditional logic, or dynamic pipeline generation, other orchestrators might be more suitable.
+
+* **Cost optimization for infrequent workloads**: While Modal is cost-effective for regular workloads, very infrequent pipelines (running once per month) might benefit from traditional infrastructure that doesn't incur per-execution overhead.
+
 ## How to deploy it
 
 The Modal orchestrator runs on Modal's cloud infrastructure, so you don't need to deploy or manage any servers. You just need:
@@ -69,7 +83,8 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 # Register the orchestrator with explicit credentials
 zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=modal \
-    --token=<MODAL_TOKEN> \
+    --token-id=<MODAL_TOKEN_ID> \
+    --token-secret=<MODAL_TOKEN_SECRET> \
     --workspace=<MODAL_WORKSPACE> \
     --synchronous=true
 
@@ -96,6 +111,17 @@ Modal provides an excellent web interface where you can monitor your pipeline ru
 You can access the Modal dashboard at [modal.com/apps](https://modal.com/apps) to see your running and completed functions.
 
 ### Configuration overview
+
+{% hint style="info" %}
+**Modal Orchestrator vs Step Operator**
+
+ZenML offers both a [Modal orchestrator](modal.md) and a [Modal step operator](../step-operators/modal.md). Choose based on your needs:
+
+- **Modal Orchestrator**: Runs entire pipelines on Modal's infrastructure. Best for complete pipeline execution with consistent resource requirements.
+- **Modal Step Operator**: Runs individual steps on Modal while keeping orchestration local. Best for selectively running compute-intensive steps (like training) on Modal while keeping other steps local.
+
+Use the orchestrator for full cloud execution, use the step operator for hybrid local/cloud workflows.
+{% endhint %}
 
 The Modal orchestrator uses two types of settings following ZenML's standard pattern:
 
@@ -158,6 +184,8 @@ def my_modal_pipeline():
 
 {% hint style="info" %}
 **Pipeline-Level Resources**: The Modal orchestrator uses pipeline-level resource settings to configure the Modal function for the entire pipeline. All steps share the same Modal function resources. Configure resources at the `@pipeline` level for best results.
+
+**Resource Fallback Behavior**: If no pipeline-level resource settings are provided, the orchestrator will automatically use the highest resource requirements found across all steps in the pipeline. This ensures adequate resources for all steps while maintaining the single-function execution model.
 {% endhint %}
 
 You can configure pipeline-wide resource requirements using `ResourceSettings` for hardware resources and `ModalOrchestratorSettings` for Modal-specific configurations:
@@ -202,8 +230,8 @@ def second_step():
 
 The Modal orchestrator supports two execution modes:
 
-1. **`pipeline` (default)**: Runs the entire pipeline in a single Modal function for maximum speed and cost efficiency
-2. **`per_step`**: Runs each step in a separate Modal function call for granular control and debugging
+1. **`pipeline` (default)**: Runs the entire pipeline in a single Modal function for minimal overhead and cost efficiency. Steps execute sequentially with no cold starts or function call overhead between them.
+2. **`per_step`**: Runs each step in a separate Modal function call for granular control and debugging. Better for pipelines where steps can run in parallel or have very different resource requirements.
 
 {% hint style="info" %}
 **Resource Sharing**: Both execution modes use the same Modal function with the same resource configuration (from pipeline-level settings). The difference is whether steps run sequentially in one function call (`pipeline`) or as separate function calls (`per_step`).
@@ -224,6 +252,19 @@ modal_settings = ModalOrchestratorSettings(
 ### Using GPUs
 
 Modal makes it easy to use GPUs for your ML workloads. Use `ResourceSettings` to specify the number of GPUs and `ModalOrchestratorSettings` to specify the GPU type:
+
+{% hint style="warning" %}
+**Base Image Requirements for GPU Usage**
+
+When using GPUs, ensure your base Docker image includes the appropriate CUDA runtime and drivers. Modal's GPU instances come with CUDA pre-installed, but your application dependencies (like PyTorch, TensorFlow) must be compatible with the CUDA version.
+
+For optimal GPU performance:
+- Use CUDA-compatible base images (e.g., `nvidia/cuda:11.8-runtime-ubuntu20.04`)
+- Install GPU-compatible versions of ML frameworks in your Docker requirements
+- Test your GPU setup locally before deploying to Modal
+
+ZenML will use your base image configuration from the container registry, so ensure GPU compatibility is built into your image.
+{% endhint %}
 
 ```python
 from zenml.config import ResourceSettings
@@ -303,6 +344,18 @@ modal_settings = ModalOrchestratorSettings(
 
 ### Authentication with different environments
 
+{% hint style="info" %}
+**Best Practice: Separate Stacks for Different Environments**
+
+Consider creating separate ZenML stacks for different environments (development, staging, production), each configured with different Modal environments and workspaces. This provides better isolation and allows for different resource configurations per environment.
+
+For example:
+- **Development stack**: Uses Modal "dev" environment with smaller resource limits
+- **Production stack**: Uses Modal "production" environment with production-grade resources and credentials
+
+This approach helps prevent accidental deployment to production and allows for environment-specific configurations.
+{% endhint %}
+
 For production deployments, you can specify different Modal environments:
 
 ```python
@@ -332,6 +385,19 @@ def my_pipeline():
 ```
 
 This ensures your pipelines start executing immediately without waiting for container initialization.
+
+{% hint style="info" %}
+**Cost Implications of Container Warming**
+
+Keeping warm containers (`min_containers > 0`) incurs costs even when your pipelines are not running, as Modal charges for idle container time. Consider these factors:
+
+- **Development**: Use `min_containers=0` to minimize costs during development
+- **Production**: Use `min_containers=1-2` for fast startup times on frequent workloads
+- **Resource costs**: Warm containers with GPUs are significantly more expensive than CPU-only containers
+- **Time window**: Containers are reused within a 2-hour window by default (configurable via `app_warming_window_hours`)
+
+Monitor your Modal dashboard to track idle container costs and adjust settings based on your usage patterns.
+{% endhint %}
 
 ## Best practices
 
@@ -371,5 +437,3 @@ This ensures your pipelines start executing immediately without waiting for cont
 - Use `zenml logs` to view detailed pipeline execution logs
 
 For more information and a full list of configurable attributes of the Modal orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html#zenml.integrations.modal.orchestrators).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
