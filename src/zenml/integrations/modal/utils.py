@@ -36,6 +36,102 @@ logger = get_logger(__name__)
 ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID = "ZENML_MODAL_ORCHESTRATOR_RUN_ID"
 
 
+class ModalLogStreamer:
+    """Stream logs from Modal CLI in a separate thread."""
+
+    def __init__(self, app_name: str, call_id: Optional[str], logger: Any):
+        """Initialize the log streamer.
+
+        Args:
+            app_name: Name of the Modal app to stream logs from.
+            call_id: Optional function call ID for filtering logs.
+            logger: Logger instance to use for output.
+        """
+        self.app_name = app_name
+        self.call_id = call_id
+        self.logger = logger
+        self.log_stream_active = threading.Event()
+        self.log_thread: Optional[threading.Thread] = None
+
+    def start(self) -> None:
+        """Start log streaming in a background thread."""
+        self.log_stream_active.set()
+        self.log_thread = threading.Thread(
+            target=self._stream_logs, daemon=True
+        )
+        self.log_thread.start()
+
+    def stop(self) -> None:
+        """Stop log streaming."""
+        self.log_stream_active.clear()
+        if self.log_thread:
+            # Give the log thread a moment to clean up
+            time.sleep(0.5)
+
+    def _stream_logs(self) -> None:
+        """Stream logs from Modal CLI."""
+        try:
+            # Use modal CLI to stream logs (automatically streams while app is active)
+            cmd = [
+                "modal",
+                "app",
+                "logs",
+                self.app_name,
+                "--timestamps",
+            ]
+            self.logger.debug(f"Starting log stream: {' '.join(cmd)}")
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,  # Line buffered
+                universal_newlines=True,
+            )
+
+            # Stream logs line by line
+            while self.log_stream_active.is_set() and process.poll() is None:
+                if process.stdout:
+                    line = process.stdout.readline()
+                    if line:
+                        # Clean up the log line and forward to our logger
+                        log_msg = line.strip()
+
+                        # Skip empty lines and "No logs" messages
+                        if not log_msg or log_msg.startswith("No logs"):
+                            continue
+
+                        # Filter logs based on function call ID when available
+                        # If no call ID, show all logs (Modal CLI handles recency)
+                        if self.call_id and self.call_id in log_msg:
+                            # This log definitely belongs to our execution
+                            self.logger.info(f"{log_msg}")
+                        elif not self.call_id:
+                            # No call ID available, show all logs from Modal CLI stream
+                            # Modal CLI already filters for recent/relevant logs
+                            self.logger.info(f"{log_msg}")
+                        # Else: skip logs that don't match our call ID
+
+                else:
+                    break
+
+            # Clean up process
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+
+        except FileNotFoundError:
+            self.logger.warning(
+                "Modal CLI not found. Install with: pip install modal"
+            )
+        except Exception as e:
+            self.logger.debug(f"Log streaming error: {e}")
+
+
 class ModalAuthenticationError(Exception):
     """Exception raised for Modal authentication issues with helpful guidance."""
 
@@ -482,10 +578,38 @@ def get_resource_settings_from_deployment(
             pipeline_resource_dict
         )
     else:
-        # Fallback to first step's resource settings if no pipeline-level resources
+        # Fallback to highest resource requirements across all steps
         if deployment.step_configurations:
-            first_step = list(deployment.step_configurations.values())[0]
-            resource_settings = first_step.config.resource_settings
+            # Find step with highest resource requirements for modal execution
+            max_cpu = 0
+            max_memory = 0
+            max_gpu = 0
+            best_step_resources = ResourceSettings()
+
+            for step_config in deployment.step_configurations.values():
+                step_resources = step_config.config.resource_settings
+                step_cpu = step_resources.cpu_count or 0
+                step_memory = step_resources.get_memory() or 0
+                step_gpu = step_resources.gpu_count or 0
+
+                # Calculate resource "score" to find most demanding step
+                resource_score = (
+                    step_cpu + (step_memory / 1024) + (step_gpu * 10)
+                )
+                best_score = max_cpu + (max_memory / 1024) + (max_gpu * 10)
+
+                if resource_score > best_score:
+                    max_cpu = step_cpu
+                    max_memory = step_memory
+                    max_gpu = step_gpu
+                    best_step_resources = step_resources
+
+            logger.info(
+                f"No pipeline-level resource settings found. Using highest resource "
+                f"requirements from steps: {max_cpu} CPUs, {max_memory / 1024:.1f}GB memory, "
+                f"{max_gpu} GPUs"
+            )
+            resource_settings = best_step_resources
         else:
             resource_settings = ResourceSettings()  # Default empty settings
 
@@ -528,83 +652,9 @@ def stream_modal_logs_and_wait(
     # This helps avoid capturing old logs from previous runs
     time.sleep(1)
 
-    # Start log streaming in a separate thread
-    log_stream_active = threading.Event()
-    log_stream_active.set()
-    start_time = time.time()
-
-    def stream_logs() -> None:
-        """Stream logs from platform CLI in a separate thread."""
-        try:
-            # Use modal CLI to stream logs (automatically streams while app is active)
-            cmd = [
-                "modal",
-                "app",
-                "logs",
-                app_name,
-                "--timestamps",
-            ]
-            logger.debug(f"Starting log stream: {' '.join(cmd)}")
-
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,  # Line buffered
-                universal_newlines=True,
-            )
-
-            # Stream logs line by line
-            while log_stream_active.is_set() and process.poll() is None:
-                if process.stdout:
-                    line = process.stdout.readline()
-                    if line:
-                        # Clean up the log line and forward to our logger
-                        log_msg = line.strip()
-
-                        # Skip empty lines and "No logs" messages
-                        if not log_msg or log_msg.startswith("No logs"):
-                            continue
-
-                        # Try to filter out old logs by checking if they contain our call ID
-                        # or if they occurred after we started the function
-                        current_time = time.time()
-                        log_age = current_time - start_time
-
-                        # Only show logs that are likely from the current execution
-                        # Skip logs that seem to be from much earlier runs
-                        if call_id and call_id in log_msg:
-                            # This log definitely belongs to our execution
-                            logger.info(f"{log_msg}")
-                        elif (
-                            log_age < 300
-                        ):  # Only show logs from last 5 minutes
-                            # This log is recent enough to likely be ours
-                            logger.info(f"{log_msg}")
-                        # Else: skip old logs
-
-                else:
-                    break
-
-            # Clean up process
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-
-        except FileNotFoundError:
-            logger.warning(
-                "Platform CLI not found. Install with: pip install modal"
-            )
-        except Exception as e:
-            logger.debug(f"Log streaming error: {e}")
-
-    # Start log streaming thread
-    log_thread = threading.Thread(target=stream_logs, daemon=True)
-    log_thread.start()
+    # Create and start log streaming
+    log_streamer = ModalLogStreamer(app_name, call_id, logger)
+    log_streamer.start()
 
     try:
         # Poll for function completion
@@ -637,6 +687,4 @@ def stream_modal_logs_and_wait(
         raise
     finally:
         # Stop log streaming
-        log_stream_active.clear()
-        # Give the log thread a moment to clean up
-        time.sleep(0.5)
+        log_streamer.stop()
