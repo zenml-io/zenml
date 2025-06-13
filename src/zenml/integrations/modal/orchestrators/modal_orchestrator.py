@@ -43,6 +43,9 @@ from zenml.entrypoints.pipeline_entrypoint_configuration import (
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
+from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
+    ModalExecutionMode,
+)
 from zenml.integrations.modal.utils import (
     ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
     build_modal_image,
@@ -64,12 +67,6 @@ if TYPE_CHECKING:
         ModalOrchestratorConfig,
         ModalOrchestratorSettings,
     )
-
-from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
-    ModalExecutionMode,
-)
-
-if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentBase
 
