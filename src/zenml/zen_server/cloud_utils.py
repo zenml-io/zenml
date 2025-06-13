@@ -1,7 +1,6 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
 import logging
-import threading
 import time
 from datetime import datetime, timedelta
 from threading import RLock
@@ -68,11 +67,16 @@ class ZenMLCloudConnection:
 
         url = self._config.api_url + endpoint
 
-        request_context = get_current_request_context()
+        log_request_id = "N/A"
+        try:
+            request_context = get_current_request_context()
+            log_request_id = request_context.log_request_id
+        except RuntimeError:
+            pass
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                f"[{request_context.log_request_id}] RBAC STATS - {method} "
+                f"[{log_request_id}] RBAC STATS - {method} "
                 f"{endpoint} started {get_system_metrics_log_str()}"
             )
             start_time = time.time()
@@ -114,7 +118,7 @@ class ZenMLCloudConnection:
             if logger.isEnabledFor(logging.DEBUG):
                 duration = (time.time() - start_time) * 1000
                 logger.debug(
-                    f"[{request_context.log_request_id}] RBAC STATS - "
+                    f"[{log_request_id}] RBAC STATS - "
                     f"{status_code} {method} {endpoint} completed in "
                     f"{duration:.2f}ms {get_system_metrics_log_str()}"
                 )

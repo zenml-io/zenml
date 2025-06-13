@@ -161,8 +161,8 @@ async def initialize() -> None:
     )
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
-    initialize_zen_store()
     await initialize_request_manager()
+    initialize_zen_store()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
     initialize_feature_gate()
@@ -185,8 +185,8 @@ async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
-    await cleanup_request_manager()
     run_template_executor().shutdown(wait=True)
+    await cleanup_request_manager()
 
 
 DASHBOARD_REDIRECT_URL = None

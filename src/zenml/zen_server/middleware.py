@@ -21,7 +21,6 @@ To run this file locally, execute:
 """
 
 import logging
-import threading
 from asyncio import Lock
 from asyncio.log import logger
 from datetime import datetime, timedelta

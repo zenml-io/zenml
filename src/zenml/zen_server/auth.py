@@ -14,8 +14,6 @@
 """Authentication module for ZenML server."""
 
 import functools
-import threading
-from contextvars import ContextVar
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, Awaitable, Callable, Optional, Tuple, Union

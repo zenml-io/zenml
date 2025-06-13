@@ -70,10 +70,10 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.zen_server.auth import AuthContext
     from zenml.zen_server.template_execution.utils import (
         BoundedThreadPoolExecutor,
     )
-    from zenml.zen_server.auth import AuthContext
 
 
 P = ParamSpec("P")
@@ -334,6 +334,7 @@ async def initialize_request_manager() -> None:
     """Initialize the request manager."""
     global _request_manager
     _request_manager = RequestManager(
+        deduplicate=server_config().server_request_deduplication,
         result_ttl=server_config().server_request_cache_timeout,
         max_completed_requests=server_config().server_request_cache_max_size,
         timeout=server_config().server_request_timeout,
@@ -388,18 +389,6 @@ def async_fastapi_endpoint_wrapper(
             # used by the CLI when installed without the `server` extra
             from fastapi import HTTPException
             from fastapi.responses import JSONResponse
-
-            from zenml.zen_server.auth import AuthContext, set_auth_context
-
-            for arg in args:
-                if isinstance(arg, AuthContext):
-                    set_auth_context(arg)
-                    break
-            else:
-                for _, arg in kwargs.items():
-                    if isinstance(arg, AuthContext):
-                        set_auth_context(arg)
-                        break
 
             try:
                 return func(*args, **kwargs)

@@ -14,11 +14,9 @@
 """Request management utilities."""
 
 import asyncio
-import logging
-import threading
 import time
 from contextvars import ContextVar
-from typing import Any, Callable, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from uuid import UUID, uuid4
 
 from fastapi import Request
@@ -26,7 +24,10 @@ from fastapi.responses import JSONResponse
 
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
-from zenml.zen_server.auth import AuthContext
+
+if TYPE_CHECKING:
+    from zenml.zen_server.auth import AuthContext
+
 
 logger = get_logger(__name__)
 
@@ -45,6 +46,7 @@ class RequestContext:
         """
         self.request = request
         self.request_id = request.headers.get("X-Request-ID", str(uuid4())[:8])
+        self.transaction_id: Optional[UUID] = None
         transaction_id = request.headers.get("Idempotency-Key")
         if transaction_id:
             try:
@@ -61,7 +63,7 @@ class RequestContext:
         self.source = request.headers.get("User-Agent") or ""
         self.received_at = utc_now()
 
-        self.auth_context: Optional[AuthContext] = None
+        self.auth_context: Optional["AuthContext"] = None
 
     @property
     def process_time(self) -> float:
@@ -214,6 +216,7 @@ class RequestManager:
 
     def __init__(
         self,
+        deduplicate: bool = True,
         result_ttl: float = 60.0,
         max_completed_requests: int = 100,
         timeout: float = 20.0,
@@ -221,6 +224,7 @@ class RequestManager:
         """Initialize the request manager.
 
         Args:
+            deduplicate: Whether to deduplicate requests.
             result_ttl: The time to live for cached results. Comes into effect
                 after a request is completed and is reset every time the result
                 is fetched.
@@ -231,6 +235,7 @@ class RequestManager:
                 this, a 429 error will be returned to the client to slow down
                 the request rate.
         """
+        self.deduplicate = deduplicate
         self.requests: Dict[UUID, RequestRecord] = dict()
         self.lock = asyncio.Lock()
         self.result_ttl = result_ttl
@@ -480,8 +485,10 @@ class RequestManager:
         async with self.lock:
             # Check for a cached result first
             transaction_id = request_context.transaction_id
-            cache_result = True
-            if await self._verify_duplicate_request_forgery(request_context):
+            cache_result = self.deduplicate and transaction_id is not None
+            if cache_result and await self._verify_duplicate_request_forgery(
+                request_context
+            ):
                 # It was detected that this request might be a forgery of a
                 # previously executed request. This might happen if the
                 # request has different request headers but the same request
@@ -519,7 +526,7 @@ class RequestManager:
             else:
                 # Start execution in background, store the future
                 fut = asyncio.get_event_loop().create_future()
-                if cache_result:
+                if cache_result and transaction_id is not None:
                     self.requests[transaction_id] = RequestRecord(
                         future=fut, request_context=request_context
                     )
@@ -546,7 +553,7 @@ class RequestManager:
             async with self.lock:
                 # We successfully completed the request, so the result cache is
                 # no longer needed.
-                if transaction_id in self.requests:
+                if cache_result and transaction_id in self.requests:
                     del self.requests[transaction_id]
 
             logger.debug(

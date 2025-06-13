@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of idempotency transaction tables."""
 
+from typing import List
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column
-from sqlmodel import Field
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import (
@@ -27,22 +28,11 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class TransactionSchema(BaseSchema, table=True):
-    """SQL Model for transaction."""
+    """SQL Model for transactions."""
 
     __tablename__ = "transaction"
-    __table_args__ = (
-        build_index(
-            table_name=__tablename__,
-            column_names=[
-                "resource_id",
-                "resource_type",
-                "id",
-            ],
-        ),
-    )
 
-    resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
-    resource_id: UUID
+    completed: bool = Field(default=False)
     user_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -51,3 +41,35 @@ class TransactionSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+    resources: List["TransactionResourceSchema"] = Relationship(
+        back_populates="transaction",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+
+
+class TransactionResourceSchema(SQLModel, table=True):
+    """SQL Model for resources that are part of a transaction."""
+
+    __tablename__ = "transaction_resource"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "resource_id",
+                "resource_type",
+                "transaction_id",
+            ],
+        ),
+    )
+
+    transaction_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=TransactionSchema.__tablename__,
+        source_column="transaction_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    transaction: "TransactionSchema" = Relationship(back_populates="resources")
+    resource_id: UUID
+    resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))

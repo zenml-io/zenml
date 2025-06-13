@@ -310,18 +310,25 @@ class LogFile(BaseModel):
         duration = None
 
         # Extract target operation
-        if target_match := re.search(r"SQL STATS.*'([^']+)'", line):
-            data["target"] = target_match.group(1)
+        if target_match := re.search(
+            r"SQL STATS.*(([A-Z]+) ([^\s]+) from (\d+\.\d+\.\d+\.\d+) )?.*'([^']+)'",
+            line,
+        ):
+            data["api_method"] = target_match.group(2)
+            data["api_path"] = target_match.group(3)
+            data["ip_address"] = target_match.group(4)
+            data["target"] = target_match.group(5)
 
         # Determine log type and extract duration
-        if "started" in line:
+        if "started" or "STARTED" in line:
             log_type = LogType.SQL_STARTED
-        elif "completed" in line:
+        elif "completed" or "COMPLETED" in line:
             log_type = LogType.SQL_COMPLETED
-            if duration_match := re.search(r"in\s+([\d.]+)ms", line):
-                duration = float(duration_match.group(1))
         else:
             raise ValueError(f"Unknown SQL STATS type in line: {line}")
+
+        if duration_match := re.search(r"in\s+([\d.]+)ms", line):
+            duration = float(duration_match.group(1))
 
         return log_type, data, duration
 
@@ -886,8 +893,8 @@ class LogFile(BaseModel):
                     if print_label:
                         attempt = ""
                         if len(request_attempt_count) > 1:
-                            attempt = f" ATTEMPT {attempt_count + 1}/{len(request_attempt_count)}"
-                        label = f"{total_duration - total_queued_duration:.3f}s (+{total_queued_duration:.3f}s queued) {status_code} {api_call} (RID: {req_id} TID: {next_entry.transaction_id}){attempt}"
+                            attempt = f" | {attempt_count + 1}/{len(request_attempt_count)}"
+                        label = f"[{req_id} | {next_entry.transaction_id}{attempt}] {total_duration - total_queued_duration:.3f}s (+{total_queued_duration:.3f}s queued) {status_code} {api_call}"
 
                     metrics = {
                         metric_name: f"{current_metrics.get(metric_name)} -> {next_metrics.get(metric_name)}"
@@ -896,6 +903,11 @@ class LogFile(BaseModel):
                         else f"{current_metrics.get(metric_name)}"
                         for metric_name in current_metrics.keys()
                     }
+
+                    transaction_start = (
+                        transaction_start or current_entry.timestamp
+                    )
+                    transaction_end = transaction_end or next_entry.timestamp
 
                     return {
                         **metrics,
@@ -928,24 +940,24 @@ class LogFile(BaseModel):
                 transaction_end = transaction_entries[-1].timestamp
                 if group_retry_requests:
                     transaction_entry_point = transaction_entries[0]
-                    # Add a "client retry" row for every other transaction
-                    if (
-                        transaction_entry_point.transaction_id
-                        != request_logs[0].transaction_id
-                    ):
-                        row = get_row(
-                            current_entry=request_logs[0],
-                            next_entry=transaction_entry_point,
-                            transaction_start=transaction_start,
-                            transaction_end=transaction_end,
-                        )
-                        row["stage"] = (
-                            f"{LogType.CLIENT_RETRY.name} -> {LogType.API_RECEIVED.name}"
-                        )
-                        row["state"] = LogType.CLIENT_RETRY.name
-                        if pod is None or transaction_entry_point.pod == pod:
+                    if pod is None or transaction_entry_point.pod == pod:
+                        transaction_start = request_logs[0].timestamp
+                        # Add a "client retry" row for every other transaction
+                        if (
+                            transaction_entry_point.transaction_id
+                            != request_logs[0].transaction_id
+                        ):
+                            row = get_row(
+                                current_entry=request_logs[0],
+                                next_entry=transaction_entry_point,
+                                transaction_start=transaction_start,
+                                transaction_end=transaction_end,
+                            )
+                            row["stage"] = (
+                                f"{LogType.CLIENT_RETRY.name} -> {LogType.API_RECEIVED.name}"
+                            )
+                            row["state"] = LogType.CLIENT_RETRY.name
                             transaction_rows.append(row)
-                            transaction_start = request_logs[0].timestamp
 
                 status_code = None
                 if transaction_entries[-1].status_code is not None:
@@ -1013,12 +1025,9 @@ class LogFile(BaseModel):
                 if not transaction_rows:
                     continue
 
-                metrics_columns.update(
-                    [
-                        transaction_entry.metrics.keys()
-                        for transaction_entry in transaction_entries
-                    ]
-                )
+                for transaction_entry in transaction_entries:
+                    metrics_columns.update(transaction_entry.metrics.keys())
+
                 rows.append(transaction_rows)
 
             request_count += 1

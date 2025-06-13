@@ -357,6 +357,7 @@ class ServerConfiguration(BaseModel):
 
     thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
     server_request_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT
+    server_request_deduplication: bool = True
     server_request_cache_timeout: int = (
         DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
     )
