@@ -111,6 +111,13 @@ kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 
 #### Additional configuration
 
+Some configuration options for the Kubernetes step operator can only be set through the step operator config when you register it (and cannot be changed per-step):
+- `kubernetes_namespace` (default: "zenml"): The Kubernetes namespace to use for running the step pods. The namespace must already exist in the Kubernetes cluster.
+- `incluster` (default: False): If `True`, the step operator will run the step inside the same Kubernetes cluster as the orchestrator, ignoring the `kubernetes_context`.
+- `kubernetes_context`: The name of the Kubernetes context to use for running steps (ignored if using a service connector or `incluster`).
+
+All other configuration options listed below can be set either through the step operator config or overridden using settings.
+
 For additional configuration of the Kubernetes step operator, you can pass `KubernetesStepOperatorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
@@ -218,7 +225,6 @@ kubernetes_settings = KubernetesStepOperatorSettings(
             "team": "data-science"
         }
     },
-    kubernetes_namespace="ml-pipelines",
     service_account_name="zenml-pipeline-runner"
 )
 
