@@ -693,7 +693,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         "your client side credentials that you are "
                         "is not configured correctly to schedule sagemaker "
                         "pipelines. For more information, please check:"
-                        "https://docs.zenml.io/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules"
+                        "https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules"
                     )
             else:
                 scheduler_role_arn = self.config.scheduler_role

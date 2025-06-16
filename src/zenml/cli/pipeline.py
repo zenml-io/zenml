@@ -552,7 +552,7 @@ def stop_pipeline_run(
     # Stop run.
     try:
         run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
-        run.stop_run(graceful=graceful)
+        run_utils.stop_run(run=run, graceful=graceful)
         action = "Gracefully stopped" if graceful else "Force stopped"
         cli_utils.declare(f"{action} pipeline run '{run.name}'.")
     except NotImplementedError:

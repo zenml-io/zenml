@@ -449,7 +449,7 @@ def stop_run(
         get_method=zen_store().get_run,
         hydrate=True,
     )
-    run.stop_run(graceful=graceful)
+    run_utils.stop_run(run=run, graceful=graceful)
 
 
 @router.get(

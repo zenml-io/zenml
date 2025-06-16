@@ -3002,10 +3002,6 @@ class SqlZenStore(BaseZenStore):
                     )
                     session.add(vis_schema)
 
-            # Commit the visualizations so potential future rollbacks don't
-            # remove them
-            session.commit()
-
             # Save tags of the artifact
             self._attach_tags_to_resources(
                 tags=artifact_version.tags,
@@ -5189,9 +5185,19 @@ class SqlZenStore(BaseZenStore):
                             # we want to display them as separate nodes in the
                             # DAG. We can therefore always create a new node
                             # here.
+                            is_manual_load = (
+                                input.type == StepRunInputArtifactType.MANUAL
+                            )
                             artifact_node = helper.add_artifact_node(
                                 node_id=helper.get_artifact_node_id(
-                                    name=input.name,
+                                    # For manual loads, the name might not be
+                                    # unique, so we use the artifact ID instead.
+                                    # We don't need to keep the name consistent
+                                    # with placeholder nodes as they don't exist
+                                    # for manual loads.
+                                    name=str(input.artifact_id)
+                                    if is_manual_load
+                                    else input.name,
                                     step_name=step_name,
                                     io_type=input.type,
                                     is_input=True,
@@ -5222,9 +5228,20 @@ class SqlZenStore(BaseZenStore):
                         # want to merge these and instead display them
                         # separately in the DAG, but if that should ever change
                         # this would be the place to merge them.
+                        is_manual_save = (
+                            output.artifact_version.save_type
+                            == ArtifactSaveType.MANUAL
+                        )
                         artifact_node = helper.add_artifact_node(
                             node_id=helper.get_artifact_node_id(
-                                name=output.name,
+                                # For manual saves, the name might not be
+                                # unique, so we use the artifact ID instead.
+                                # We don't need to keep the name consistent
+                                # with placeholder nodes as they don't exist
+                                # for manual saves.
+                                name=str(output.artifact_id)
+                                if is_manual_save
+                                else output.name,
                                 step_name=step_name,
                                 io_type=output.artifact_version.save_type,
                                 is_input=False,
@@ -12016,17 +12033,16 @@ class SqlZenStore(BaseZenStore):
         validate_name(tag)
         self._set_request_user_id(request_model=tag, session=session)
 
-        with session.begin_nested() as nested_session:
-            tag_schema = TagSchema.from_request(tag)
-            session.add(tag_schema)
+        tag_schema = TagSchema.from_request(tag)
+        session.add(tag_schema)
 
-            try:
-                session.commit()
-            except IntegrityError:
-                nested_session.rollback()
-                raise EntityExistsError(
-                    f"Tag with name `{tag.name}` already exists."
-                )
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            raise EntityExistsError(
+                f"Tag with name `{tag.name}` already exists."
+            )
         return tag_schema
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)
@@ -12407,6 +12423,7 @@ class SqlZenStore(BaseZenStore):
                             other_runs_with_same_tag = self.list_runs(
                                 PipelineRunFilter(
                                     id=f"notequals:{resource.id}",
+                                    project=resource.project.id,
                                     pipeline_id=resource.pipeline_id,
                                     tags=[tag_schema.name],
                                 )
@@ -12431,6 +12448,7 @@ class SqlZenStore(BaseZenStore):
                                 self.list_artifact_versions(
                                     ArtifactVersionFilter(
                                         id=f"notequals:{resource.id}",
+                                        project=resource.project.id,
                                         artifact_id=resource.artifact_id,
                                         tags=[tag_schema.name],
                                     )
@@ -12460,6 +12478,7 @@ class SqlZenStore(BaseZenStore):
                                 older_templates = self.list_run_templates(
                                     RunTemplateFilter(
                                         id=f"notequals:{resource.id}",
+                                        project=resource.project.id,
                                         pipeline_id=scope_id,
                                         tags=[tag_schema.name],
                                     )

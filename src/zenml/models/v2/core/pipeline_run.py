@@ -24,7 +24,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -33,7 +32,6 @@ from pydantic import ConfigDict, Field
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import IllegalOperationError
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
@@ -310,63 +308,6 @@ class PipelineRunResponse(
         )
 
         return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
-
-    def stop_run(self, graceful: bool = False) -> None:
-        """Method to stop a pipeline run.
-
-        Args:
-            graceful: If True, allows for graceful shutdown where possible.
-                If False, forces immediate termination. Default is False.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            ValueError: If the stack of the run response is None.
-            IllegalOperationError: If the run is already in a finished state
-                or is already being stopped.
-        """
-        # Check if the stack is still accessible
-        if self.stack is None:
-            raise ValueError(
-                "The stack that this pipeline run response was executed on "
-                "is either not accessible or has been deleted."
-            )
-
-        # Check if pipeline can be stopped
-        if self.status == ExecutionStatus.COMPLETED:
-            raise IllegalOperationError(
-                "Cannot stop a run that is already completed."
-            )
-
-        if self.status == ExecutionStatus.STOPPED:
-            raise IllegalOperationError("Run is already stopped.")
-
-        if self.status == ExecutionStatus.STOPPING:
-            raise IllegalOperationError("Run is already being stopped.")
-
-        # Create the orchestrator instance
-        from zenml.enums import StackComponentType
-        from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-        from zenml.stack.stack_component import StackComponent
-
-        # Check if the stack is still accessible
-        orchestrator_list = self.stack.components.get(
-            StackComponentType.ORCHESTRATOR, []
-        )
-        if len(orchestrator_list) == 0:
-            raise ValueError(
-                "The orchestrator that this pipeline run response was "
-                "executed with is either not accessible or has been deleted."
-            )
-
-        orchestrator = cast(
-            BaseOrchestrator,
-            StackComponent.from_model(component_model=orchestrator_list[0]),
-        )
-
-        # Stop the run
-        orchestrator.stop_run(run=self, graceful=graceful)
 
     # Body and metadata properties
     @property

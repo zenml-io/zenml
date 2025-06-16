@@ -651,6 +651,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             ValueError: If the orchestrator run ID cannot be found.
+            RuntimeError: If we fail to stop the run.
         """
         # If graceful, do nothing and let the orchestrator handle the stop naturally
         if graceful:

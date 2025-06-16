@@ -73,7 +73,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
                     "The 'custom_docker_base_image_name' field has been "
                     "deprecated. To use a custom base container image with your "
                     "orchestrators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/how-to/infrastructure-deployment/customize-docker-builds)."
+                    "pipeline (see https://docs.zenml.io/concepts/containerization)."
                 )
 
         return data
@@ -216,6 +216,10 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack on which to run the pipeline.
             placeholder_run: An optional placeholder run for the deployment.
                 This will be deleted in case the pipeline deployment failed.
+
+        Raises:
+            KeyboardInterrupt: If the orchestrator is synchronous and the
+                pipeline run is keyboard interrupted.
         """
         self._prepare_run(deployment=deployment)
 

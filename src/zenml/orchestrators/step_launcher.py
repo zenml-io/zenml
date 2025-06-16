@@ -141,7 +141,17 @@ class StepLauncher:
         """Set up signal handlers for graceful shutdown."""
 
         def signal_handler(signum: int, frame: Any) -> None:
-            """Handle shutdown signals gracefully."""
+            """Handle shutdown signals gracefully.
+
+            Args:
+                signum: The signal number.
+                frame: The frame of the signal handler.
+
+            Raises:
+                RunStoppedException: If the pipeline run is stopped by the user.
+                RunInterruptedException: If the execution is interrupted for any
+                    other reason.
+            """
             logger.info(
                 f"Received signal shutdown {signum}. Requesting shutdown "
                 f"for step '{self._step_name}'..."
@@ -192,7 +202,10 @@ class StepLauncher:
         """Launches the step.
 
         Raises:
-            BaseException: If the step failed to launch, run, or publish.
+            KeyboardInterrupt: If the execution is keyboard interrupted.
+            RunStoppedException: If the pipeline run is stopped by the user.
+            RunInterruptedException: If the execution is interrupted for any
+                other reason.
         """
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
