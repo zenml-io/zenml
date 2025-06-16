@@ -392,7 +392,7 @@ As shown in the example, we can get additional information about the current run
 Putting it all together, here's a complete example that demonstrates how to load the model trained by the `svc_trainer` step of an example pipeline:
 
 ```python
-from typing_extensions import Tuple, Annotated
+from typing import Tuple, Annotated
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
