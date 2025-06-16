@@ -686,7 +686,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     f"Stack {stack.name} does not support scheduling. "
                     "Not all orchestrator types support scheduling, "
                     "kindly consult with "
-                    "https://docs.zenml.io/how-to/build-pipelines/schedule-a-pipeline "
+                    "https://docs.zenml.io/concepts/steps_and_pipelines/scheduling "
                     "for details."
                 )
             if schedule.name:
