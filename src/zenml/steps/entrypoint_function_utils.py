@@ -83,7 +83,7 @@ class StepArtifact:
             "you're trying to unpack the return value of your step but the "
             "step only returns a single artifact. For more information on how "
             "to add type annotations to your step to indicate multiple "
-            "artifacts visit https://docs.zenml.io/how-to/build-pipelines/step-output-typing-and-annotation#type-annotations."
+            "artifacts visit https://docs.zenml.io/concepts/steps_and_pipelines#multiple-return-values."
         )
 
 
