@@ -28,6 +28,13 @@ When to use each:
 You can configure various aspects of a pipeline using the `configure` method:
 
 ```python
+from zenml import pipeline
+
+# Assuming MyPipeline is your pipeline function
+# @pipeline
+# def MyPipeline():
+#     ...
+
 # Create a pipeline
 my_pipeline = MyPipeline()
 
@@ -63,6 +70,9 @@ my_pipeline.with_options(config_file="path_to_yaml_file")()
 You can configure individual steps with the `@step` decorator:
 
 ```python
+import tensorflow as tf
+from zenml import step
+
 @step(
     settings={
         # Custom materializer for handling output serialization
@@ -85,6 +95,8 @@ def train_model() -> tf.keras.Model:
 You can directly specify which stack components a step should use. This feature is only available for experiment trackers and stack components:
 
 ```python
+from zenml import step
+
 @step(experiment_tracker="mlflow_tracker", step_operator="vertex_ai")
 def train_model():
     # This step will use MLflow for tracking and run on Vertex AI
@@ -99,6 +111,8 @@ def evaluate_model():
 This direct specification is a concise way to assign different stack components to different steps. You can combine this with settings to configure the specific behavior of those components:
 
 ```python
+from zenml import step
+
 @step(step_operator="nameofstepoperator", settings={"step_operator": {"estimator_args": {"instance_type": "m7g.medium"}}})
 def my_step():
     # This step will use the specified step operator with custom instance type
