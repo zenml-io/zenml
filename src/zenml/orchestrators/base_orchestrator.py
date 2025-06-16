@@ -207,6 +207,10 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack on which to run the pipeline.
             placeholder_run: An optional placeholder run for the deployment.
                 This will be deleted in case the pipeline deployment failed.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not support stopping
+                pipeline runs.
         """
         self._prepare_run(deployment=deployment)
 
