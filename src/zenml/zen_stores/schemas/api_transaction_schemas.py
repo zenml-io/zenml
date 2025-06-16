@@ -17,8 +17,11 @@ from datetime import datetime, timedelta
 from typing import Any, Optional
 from uuid import UUID
 
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field
 
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
     ApiTransactionRequest,
     ApiTransactionResponse,
@@ -41,7 +44,15 @@ class ApiTransactionSchema(BaseSchema, table=True):
     method: str
     url: str
     completed: bool = Field(default=False)
-    result: Optional[bytes] = Field(default=None, nullable=True)
+    result: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        ),
+    )
     expired: Optional[datetime] = Field(default=None, nullable=True)
 
     user_id: UUID = build_foreign_key_field(
@@ -74,7 +85,7 @@ class ApiTransactionSchema(BaseSchema, table=True):
         **kwargs: Any,
     ) -> ApiTransactionResponse:
         """Convert the SQL model to a ZenML model."""
-        return ApiTransactionResponse(
+        response = ApiTransactionResponse(
             id=self.id,
             body=ApiTransactionResponseBody(
                 method=self.method,
@@ -83,13 +94,16 @@ class ApiTransactionSchema(BaseSchema, table=True):
                 updated=self.updated,
                 user_id=self.user_id,
                 completed=self.completed,
-                result=self.result.decode() if self.result else None,
             ),
         )
+        if self.result is not None:
+            response.set_result(self.result)
+        return response
 
     def update(self, update: ApiTransactionUpdate) -> "ApiTransactionSchema":
         """Update the API transaction."""
-        self.result = update.result.encode() if update.result else None
+        if update.result is not None:
+            self.result = update.get_result()
         self.updated = utc_now()
         self.expired = self.updated + timedelta(seconds=update.cache_time)
         return self

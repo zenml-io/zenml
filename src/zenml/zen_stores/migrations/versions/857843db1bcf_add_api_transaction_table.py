@@ -9,6 +9,7 @@ Create Date: 2025-06-13 19:47:14.165158
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 
 # revision identifiers, used by Alembic.
 revision = "857843db1bcf"
@@ -30,7 +31,13 @@ def upgrade() -> None:
         ),
         sa.Column("url", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("completed", sa.Boolean(), nullable=False),
-        sa.Column("result", sa.LargeBinary(), nullable=True),
+        sa.Column(
+            "result",
+            MEDIUMTEXT
+            if op.get_bind().dialect.name == "mysql"
+            else sa.String(length=16777215),
+            nullable=True,
+        ),
         sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("expired", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(

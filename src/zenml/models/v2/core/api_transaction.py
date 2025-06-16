@@ -20,7 +20,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
@@ -30,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
@@ -59,13 +60,33 @@ class ApiTransactionRequest(UserScopedRequest):
 class ApiTransactionUpdate(BaseUpdate):
     """Update model for stack components."""
 
-    result: Optional[str] = Field(
+    result: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
         title="The response payload.",
     )
     cache_time: int = Field(
         title="The time in seconds that the transaction is kept around after "
         "completion."
     )
+
+    def get_result(self) -> Optional[str]:
+        """Get the result of the API transaction.
+
+        Returns:
+            the result of the API transaction.
+        """
+        result = self.result
+        if result is None:
+            return None
+        return result.get_secret_value()
+
+    def set_result(self, result: str) -> None:
+        """Set the result of the API transaction.
+
+        Args:
+            result: the result of the API transaction.
+        """
+        self.result = SecretStr(result)
 
 
 # ------------------ Response Model ------------------
@@ -83,7 +104,8 @@ class ApiTransactionResponseBody(UserScopedResponseBody):
     completed: bool = Field(
         title="Whether the transaction is completed.",
     )
-    result: Optional[str] = Field(
+    result: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
         title="The response payload.",
     )
 
@@ -143,10 +165,29 @@ class ApiTransactionResponse(
         return self.get_body().completed
 
     @property
-    def result(self) -> Optional[str]:
+    def result(self) -> Optional[PlainSerializedSecretStr]:
         """The `result` property.
 
         Returns:
             the value of the property.
         """
         return self.get_body().result
+
+    def get_result(self) -> Optional[str]:
+        """Get the result of the API transaction.
+
+        Returns:
+            the result of the API transaction.
+        """
+        result = self.result
+        if result is None:
+            return None
+        return result.get_secret_value()
+
+    def set_result(self, result: str) -> None:
+        """Set the result of the API transaction.
+
+        Args:
+            result: the result of the API transaction.
+        """
+        self.get_body().result = SecretStr(result)

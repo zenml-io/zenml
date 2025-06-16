@@ -14,6 +14,7 @@
 """Request management utilities."""
 
 import asyncio
+import base64
 import json
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
@@ -22,6 +23,7 @@ from uuid import UUID, uuid4
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.models import ApiTransactionRequest, ApiTransactionUpdate
 from zenml.utils.json_utils import pydantic_encoder
@@ -228,7 +230,7 @@ class RequestManager:
         """Shutdown the request manager."""
         pass
 
-    async def run_and_cache_result(
+    async def async_run_and_cache_result(
         self,
         func: Callable[..., Any],
         request_record: RequestRecord,
@@ -261,7 +263,7 @@ class RequestManager:
             f"{get_system_metrics_log_str(request_context.request)}"
         )
 
-        def run_sync_endpoint(*args: Any, **kwargs: Any) -> Any:
+        def sync_run_and_cache_result(*args: Any, **kwargs: Any) -> Any:
             from zenml.zen_server.utils import zen_store
 
             logger.debug(
@@ -294,9 +296,10 @@ class RequestManager:
 
                         # The transaction already completed, we can return the
                         # result right away.
-                        if api_transaction.result is not None:
+                        result = api_transaction.get_result()
+                        if result is not None:
                             return Response(
-                                api_transaction.result,
+                                base64.b64decode(result),
                                 media_type="application/json",
                             )
                         else:
@@ -335,27 +338,50 @@ class RequestManager:
                     raise
 
                 if deduplicate and transaction_id is not None:
-                    try:
-                        cached_result = json.dumps(
-                            result, default=pydantic_encoder
+                    cache_result = True
+                    result_to_cache: Optional[bytes] = None
+                    if result is not None:
+                        try:
+                            result_to_cache = base64.b64encode(
+                                json.dumps(
+                                    result, default=pydantic_encoder
+                                ).encode("utf-8")
+                            )
+                        except Exception:
+                            # If the result is not serializable, we don't cache it.
+                            cache_result = False
+                            logger.exception(
+                                f"Failed to serialize result of {func.__name__} "
+                                f"for transaction {transaction_id}. Skipping "
+                                "caching."
+                            )
+                        else:
+                            if len(result_to_cache) > MEDIUMTEXT_MAX_LENGTH:
+                                # If the result is too large, we also don't cache it.
+                                cache_result = False
+                                logger.exception(
+                                    f"Result of {func.__name__} "
+                                    f"for transaction {transaction_id} is too "
+                                    "large. Skipping caching."
+                                )
+
+                    if cache_result:
+                        api_transaction_update = ApiTransactionUpdate(
+                            cache_time=self.transaction_ttl,
                         )
-                    except Exception:
-                        # If the result is not serializable, we don't cache it.
-                        logger.exception(
-                            f"Failed to serialize result of {func.__name__} "
-                            f"for transaction {transaction_id}. Skipping "
-                            "caching."
-                        )
-                        zen_store().delete_api_transaction(
-                            api_transaction_id=transaction_id,
-                        )
-                    else:
+                        if result_to_cache is not None:
+                            api_transaction_update.set_result(
+                                result_to_cache.decode("utf-8")
+                            )
                         zen_store().finalize_api_transaction(
                             api_transaction_id=transaction_id,
-                            api_transaction_update=ApiTransactionUpdate(
-                                result=cached_result,
-                                cache_time=self.transaction_ttl,
-                            ),
+                            api_transaction_update=api_transaction_update,
+                        )
+                    else:
+                        # If the result is not cacheable, there is no point in
+                        # keeping the transaction around.
+                        zen_store().delete_api_transaction(
+                            api_transaction_id=transaction_id,
                         )
 
                 return result
@@ -369,7 +395,7 @@ class RequestManager:
 
         try:
             result = await run_in_threadpool(
-                run_sync_endpoint, *args, **kwargs
+                sync_run_and_cache_result, *args, **kwargs
             )
         except Exception as e:
             result = e
@@ -455,7 +481,7 @@ class RequestManager:
                     # Also record the transaction for deduplication.
                     self.transactions[transaction_id] = request_record
                 asyncio.create_task(
-                    self.run_and_cache_result(
+                    self.async_run_and_cache_result(
                         func,
                         request_record,
                         *args,
