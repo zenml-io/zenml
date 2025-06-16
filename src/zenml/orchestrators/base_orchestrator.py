@@ -209,8 +209,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 This will be deleted in case the pipeline deployment failed.
 
         Raises:
-            NotImplementedError: If the orchestrator does not support stopping
-                pipeline runs.
+            KeyboardInterrupt: If the orchestrator is synchronous and the
+                pipeline run is keyboard interrupted.
         """
         self._prepare_run(deployment=deployment)
 
