@@ -54,7 +54,6 @@ from zenml.orchestrators import (
 )
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils
 from zenml.utils.package_utils import clean_requirements
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -70,20 +69,13 @@ logger = get_logger(__name__)
 ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
 DATABRICKS_WHEELS_DIRECTORY_PREFIX = "dbfs:/FileStore/zenml"
 DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
-DATABRICKS_CLUSTER_DEFAULT_NAME = "zenml-databricks-cluster"
 DATABRICKS_SPARK_DEFAULT_VERSION = "15.3.x-scala2.12"
 DATABRICKS_JOB_ID_PARAMETER_REFERENCE = "{{job.id}}"
 DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 
 
 class DatabricksOrchestrator(WheeledOrchestrator):
-    """Base class for Orchestrator responsible for running pipelines remotely in a VM.
-
-    This orchestrator does not support running on a schedule.
-    """
-
-    # The default instance type to use if none is specified in settings
-    DEFAULT_INSTANCE_TYPE: Optional[str] = None
+    """Databricks orchestrator."""
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -170,28 +162,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID}."
             )
-
-    @property
-    def root_directory(self) -> str:
-        """Path to the root directory for all files concerning this orchestrator.
-
-        Returns:
-            Path to the root directory.
-        """
-        return os.path.join(
-            io_utils.get_global_config_directory(),
-            "databricks",
-            str(self.id),
-        )
-
-    @property
-    def pipeline_directory(self) -> str:
-        """Returns path to a directory in which the kubeflow pipeline files are stored.
-
-        Returns:
-            Path to the pipeline directory.
-        """
-        return os.path.join(self.root_directory, "pipelines")
 
     def setup_credentials(self) -> None:
         """Set up credentials for the orchestrator."""
@@ -334,11 +304,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
         )
-        # Get a filepath to use to save the finished yaml to
-        fileio.makedirs(self.pipeline_directory)
-        pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{orchestrator_run_name}.yaml"
-        )
 
         # Copy the repository to a temporary directory and add a setup.py file
         repository_temp_dir = (
@@ -376,11 +341,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         )
 
         fileio.rmtree(repository_temp_dir)
-
-        logger.info(
-            "Writing Databricks workflow definition to `%s`.",
-            pipeline_file_path,
-        )
 
         # using the databricks client uploads the pipeline to databricks
         job_cluster_key = self.sanitize_name(f"{deployment_id}")
