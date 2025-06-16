@@ -274,7 +274,7 @@ account, you can find the URL in the dashboard in the following location:
 You can also find the URL via the CLI by running:
 
 ```bash
-zenml status | grep "API:" | awk '{print $2}'`
+zenml status | grep "API:" | awk '{print $2}'
 ```
 
 {% hint style="warning" %}
