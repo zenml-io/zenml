@@ -125,7 +125,7 @@ Some configuration options for the Kubernetes orchestrator can only be set throu
 
 - **`incluster`** (default: False): If `True`, the orchestrator will run the pipeline inside the same Kubernetes cluster it is running in, ignoring the `kubernetes_context`.
 - **`kubernetes_context`**: The name of the Kubernetes context to use for running pipelines (ignored if using a service connector or `incluster`).
-- **`kubernetes_namespace`** (default: "zenml"): The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster.
+- **`kubernetes_namespace`** (default: "zenml"): The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster. In that namespace, it will automatically create a Kubernetes service account called `zenml-service-account` and grant it `edit` RBAC role in that namespace.
 - **`local`** (default: False): If `True`, the orchestrator assumes it is connected to a local Kubernetes cluster and enables additional validations and operations for local development.
 - **`skip_local_validations`** (default: False): If `True`, skips the local validations that would otherwise be performed when `local` is set.
 - **`parallel_step_startup_waiting_period`**: How long (in seconds) to wait between starting parallel steps, useful for distributing server load in highly parallel pipelines.
