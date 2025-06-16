@@ -32,7 +32,6 @@ class KubernetesStepOperatorSettings(BaseSettings):
     """Settings for the Kubernetes step operator.
 
     Attributes:
-        kubernetes_namespace: Name of the Kubernetes namespace to be used.
         pod_settings: Pod settings to apply to pods executing the steps.
         service_account_name: Name of the service account to use for the pod.
         privileged: If the container should be run in privileged mode.
@@ -46,7 +45,6 @@ class KubernetesStepOperatorSettings(BaseSettings):
             pod startup retries.
     """
 
-    kubernetes_namespace: str = "zenml"
     pod_settings: Optional[KubernetesPodSettings] = None
     service_account_name: Optional[str] = None
     privileged: bool = False
@@ -62,6 +60,7 @@ class KubernetesStepOperatorConfig(
     """Configuration for the Kubernetes step operator.
 
     Attributes:
+        kubernetes_namespace: Name of the Kubernetes namespace to be used.
         incluster: If `True`, the step operator will run the pipeline inside the
             same cluster in which the orchestrator is running. For this to work,
             the pod running the orchestrator needs permissions to create new
@@ -73,6 +72,7 @@ class KubernetesStepOperatorConfig(
             this field is ignored. Otherwise, it is mandatory.
     """
 
+    kubernetes_namespace: str = "zenml"
     incluster: bool = False
     kubernetes_context: Optional[str] = None
 

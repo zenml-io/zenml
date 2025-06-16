@@ -73,7 +73,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
             not try to compute cached steps before starting the step pods.
     """
 
-    kubernetes_namespace: str = "zenml"
     synchronous: bool = True
     timeout: int = 0
     service_account_name: Optional[str] = None
@@ -125,6 +124,7 @@ class KubernetesOrchestratorConfig(
 
     incluster: bool = False
     kubernetes_context: Optional[str] = None
+    kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False
     parallel_step_startup_waiting_period: Optional[float] = None
