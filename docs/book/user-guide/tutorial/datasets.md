@@ -151,7 +151,7 @@ When working with multiple data sources, it's crucial to design flexible pipelin
 
 ```python
 from zenml import step, pipeline
-from typing_extensions import Annotated
+from typing import Annotated
 
 @step(output_materializer=CSVDatasetMaterializer)
 def extract_data_local(data_path: str = "data/raw_data.csv") -> CSVDataset:
