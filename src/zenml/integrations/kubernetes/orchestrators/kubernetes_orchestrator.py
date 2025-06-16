@@ -47,7 +47,7 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.config.base_settings import BaseSettings
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
@@ -742,3 +742,139 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 f"No running step pods found for pipeline run {orchestrator_run_id}"
             )
+
+    def fetch_status(
+        self, run: "PipelineRunResponse", include_steps: bool = False
+    ) -> Tuple[ExecutionStatus, Optional[Dict[str, ExecutionStatus]]]:
+        """Refreshes the status of a specific pipeline run.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+            include_steps: If True, also fetch the status of individual steps.
+
+        Returns:
+            A tuple of (pipeline_status, step_statuses_dict).
+            If include_steps is False, step_statuses_dict will be None.
+            If include_steps is True, step_statuses_dict will be a dict (possibly empty).
+
+        Raises:
+            ValueError: If the orchestrator run ID cannot be found or if the
+                stack components are not accessible.
+        """
+        # Get the orchestrator run ID which corresponds to the orchestrator pod name
+        orchestrator_run_id = run.orchestrator_run_id
+        if not orchestrator_run_id:
+            raise ValueError(
+                "Cannot determine orchestrator run ID for the run. "
+                "Unable to fetch the status."
+            )
+
+        # Check the orchestrator pod status
+        orchestrator_pod = kube_utils.get_pod(
+            core_api=self._k8s_core_api,
+            pod_name=orchestrator_run_id,
+            namespace=self.config.kubernetes_namespace,
+        )
+
+        if (
+            orchestrator_pod
+            and orchestrator_pod.status
+            and orchestrator_pod.status.phase
+        ):
+            try:
+                pod_phase = kube_utils.PodPhase(orchestrator_pod.status.phase)
+                pipeline_status = self._map_pod_phase_to_execution_status(
+                    pod_phase
+                )
+            except ValueError:
+                # Handle unknown pod phases
+                pipeline_status = ExecutionStatus.FAILED
+        else:
+            logger.warning(
+                f"Orchestrator pod {orchestrator_run_id} not found in namespace "
+                f"{self.config.kubernetes_namespace}"
+            )
+            pipeline_status = ExecutionStatus.FAILED
+
+        step_status = None
+        if include_steps:
+            step_status = self._fetch_step_status(run, orchestrator_run_id)
+
+        return pipeline_status, step_status
+
+    def _map_pod_phase_to_execution_status(
+        self, pod_phase: kube_utils.PodPhase
+    ) -> ExecutionStatus:
+        """Map Kubernetes pod phase to ZenML execution status.
+
+        Args:
+            pod_phase: The Kubernetes pod phase.
+
+        Returns:
+            The corresponding ZenML execution status.
+        """
+        if pod_phase == kube_utils.PodPhase.PENDING:
+            return ExecutionStatus.INITIALIZING
+        elif pod_phase == kube_utils.PodPhase.RUNNING:
+            return ExecutionStatus.RUNNING
+        elif pod_phase == kube_utils.PodPhase.SUCCEEDED:
+            return ExecutionStatus.COMPLETED
+        elif pod_phase == kube_utils.PodPhase.FAILED:
+            return ExecutionStatus.FAILED
+        else:  # UNKNOWN
+            return ExecutionStatus.FAILED
+
+    def _fetch_step_status(
+        self, run: "PipelineRunResponse", orchestrator_run_id: str
+    ) -> Dict[str, ExecutionStatus]:
+        """Fetch the statuses of individual pipeline steps.
+
+        Args:
+            run: The pipeline run response.
+            orchestrator_run_id: The orchestrator run ID.
+
+        Returns:
+            A dictionary mapping step names to their execution statuses.
+        """
+        # Get step pod statuses
+        step_statuses = {}
+
+        for step_name, step_response in run.steps.items():
+            if step_response.status.is_finished:
+                continue
+
+            settings = step_response.config.settings.get(
+                "orchestrator.kubernetes", None
+            )
+            settings = KubernetesOrchestratorSettings.model_validate(
+                settings.model_dump() if settings else {}
+            )
+            pod_name = kube_utils.compute_step_pod_name(
+                step_name=step_name,
+                orchestrator_pod_name=orchestrator_run_id,
+                namespace=self.config.kubernetes_namespace,
+                settings=settings,
+            )
+            pod = kube_utils.get_pod(
+                core_api=self._k8s_core_api,
+                pod_name=pod_name,
+                namespace=self.config.kubernetes_namespace,
+            )
+
+            if pod and pod.status and pod.status.phase:
+                try:
+                    step_statuses[step_name] = kube_utils.PodPhase(
+                        pod.status.phase
+                    )
+                except ValueError:
+                    # Handle unknown pod phases
+                    step_statuses[step_name] = kube_utils.PodPhase.UNKNOWN
+            else:
+                step_statuses[step_name] = kube_utils.PodPhase.UNKNOWN
+
+        # Convert pod statuses to execution statuses
+        for step_name, pod_phase in step_statuses.items():
+            new_status = self._map_pod_phase_to_execution_status(pod_phase)
+            step_statuses[step_name] = new_status
+
+        return step_statuses

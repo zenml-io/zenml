@@ -604,16 +604,27 @@ def delete_pipeline_run(
 
 @runs.command("refresh")
 @click.argument("run_name_or_id", type=str, required=True)
-def refresh_pipeline_run(run_name_or_id: str) -> None:
+@click.option(
+    "--include-steps",
+    is_flag=True,
+    default=False,
+    help="Also refresh the status of individual steps.",
+)
+def refresh_pipeline_run(
+    run_name_or_id: str, include_steps: bool = False
+) -> None:
     """Refresh the status of a pipeline run.
 
     Args:
         run_name_or_id: The name or ID of the pipeline run to refresh.
+        include_steps: If True, also refresh the status of individual steps.
     """
     try:
         # Fetch and update the run
         run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
-        run.refresh_run_status()
+        run_utils.refresh_run_status(
+            run=run, include_step_updates=include_steps
+        )
 
     except KeyError as e:
         cli_utils.error(str(e))

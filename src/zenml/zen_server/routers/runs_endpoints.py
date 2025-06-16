@@ -168,6 +168,7 @@ def get_run(
     run_id: UUID,
     hydrate: bool = True,
     refresh_status: bool = False,
+    refresh_step_status: bool = False,
     include_python_packages: bool = False,
     include_full_metadata: bool = False,
     _: AuthContext = Security(authorize),
@@ -180,6 +181,8 @@ def get_run(
             by including metadata fields in the response.
         refresh_status: Flag deciding whether we should try to refresh
             the status of the pipeline run using its orchestrator.
+        refresh_step_status: Flag deciding whether we should also refresh
+            the status of individual steps.
         include_python_packages: Flag deciding whether to include the
             Python packages in the response.
         include_full_metadata: Flag deciding whether to include the
@@ -198,10 +201,15 @@ def get_run(
         include_python_packages=include_python_packages,
         include_full_metadata=include_full_metadata,
     )
+
     if refresh_status:
         try:
-            # Check the stack and its orchestrator
+            # For permission check, we need to verify access to the orchestrator
             if run.stack is not None:
+                verify_permission_for_model(
+                    model=run.stack, action=Action.READ
+                )
+
                 orchestrators = run.stack.components.get(
                     StackComponentType.ORCHESTRATOR, []
                 )
@@ -209,17 +217,11 @@ def get_run(
                     verify_permission_for_model(
                         model=orchestrators[0], action=Action.READ
                     )
-                else:
-                    raise RuntimeError(
-                        f"The orchestrator, the run '{run.id}' was executed "
-                        "with, is deleted."
-                    )
-            else:
-                raise RuntimeError(
-                    f"The stack, the run '{run.id}' was executed on, is deleted."
-                )
 
-            run = run.refresh_run_status()
+            # Use the run's own refresh method
+            run = run_utils.refresh_run_status(
+                run=run, include_step_updates=refresh_step_status
+            )
 
         except Exception as e:
             logger.warning(
@@ -378,26 +380,51 @@ def get_run_dag(
     return zen_store().get_pipeline_run_dag(run_id)
 
 
-@router.get(
+@router.post(
     "/{run_id}" + REFRESH,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
 def refresh_run_status(
     run_id: UUID,
+    include_steps: bool = False,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Refreshes the status of a specific pipeline run.
 
     Args:
         run_id: ID of the pipeline run to refresh.
+        include_steps: Flag deciding whether we should also refresh
+            the status of individual steps.
     """
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=zen_store().get_run,
         hydrate=True,
     )
-    run.refresh_run_status()
+
+    try:
+        # For permission check, we need to verify access to the orchestrator
+        if run.stack is not None:
+            verify_permission_for_model(model=run.stack, action=Action.READ)
+            orchestrators = run.stack.components.get(
+                StackComponentType.ORCHESTRATOR, []
+            )
+            if orchestrators:
+                verify_permission_for_model(
+                    model=orchestrators[0], action=Action.READ
+                )
+
+        # Use the run's own refresh method
+        run = run_utils.refresh_run_status(
+            run=run, include_step_updates=include_steps
+        )
+
+    except Exception as e:
+        logger.warning(
+            "An error occurred while refreshing the status of the "
+            f"pipeline run: {e}"
+        )
 
 
 @router.post(
