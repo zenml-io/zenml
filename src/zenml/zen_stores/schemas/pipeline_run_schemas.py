@@ -259,6 +259,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         from zenml.zen_stores.schemas import ModelVersionSchema
 
         options = [
+            joinedload(jl_arg(PipelineRunSchema.deployment)).defer(
+                jl_arg(PipelineDeploymentSchema.step_configurations)
+            ),
             joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.pipeline)
             ),
