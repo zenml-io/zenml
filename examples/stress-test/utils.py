@@ -45,6 +45,7 @@ class LogType(Enum):
     ENDPOINT_SYNC_STARTED = "endpoint_sync_started"
     ENDPOINT_SYNC_COMPLETED = "endpoint_sync_completed"
     ENDPOINT_CACHE_HIT = "endpoint_cache_hit"
+    ENDPOINT_DELAYED = "endpoint_delayed"
     ENDPOINT_RESUMED = "endpoint_resumed"
     ENDPOINT_TIMEOUT = "endpoint_timeout"
 
@@ -281,6 +282,10 @@ class LogFile(BaseModel):
         elif sync_or_async == "sync":
             if "STARTED" in op:
                 log_type = LogType.ENDPOINT_SYNC_STARTED
+            elif "CACHE HIT" in op:
+                log_type = LogType.ENDPOINT_CACHE_HIT
+            elif "DELAYED" in op:
+                log_type = LogType.ENDPOINT_DELAYED
             elif "took" in op or "COMPLETED" in op:
                 log_type = LogType.ENDPOINT_SYNC_COMPLETED
         else:
@@ -294,6 +299,8 @@ class LogFile(BaseModel):
                 log_type = LogType.ENDPOINT_RESUMED
             elif "TIMEOUT" in op:
                 log_type = LogType.ENDPOINT_TIMEOUT
+            elif "DELAYED" in op:
+                log_type = LogType.ENDPOINT_DELAYED
 
         if log_type is None:
             raise ValueError(f"Unknown ENDPOINT STATS type in line: {line}")
@@ -320,9 +327,9 @@ class LogFile(BaseModel):
             data["target"] = target_match.group(5)
 
         # Determine log type and extract duration
-        if "started" or "STARTED" in line:
+        if "started" in line or "STARTED" in line:
             log_type = LogType.SQL_STARTED
-        elif "completed" or "COMPLETED" in line:
+        elif "completed" in line or "COMPLETED" in line:
             log_type = LogType.SQL_COMPLETED
         else:
             raise ValueError(f"Unknown SQL STATS type in line: {line}")
@@ -1066,6 +1073,7 @@ class LogFile(BaseModel):
             "ENDPOINT_CACHE_HIT": "#ff7f0e",  # orange
             "ENDPOINT_RESUMED": "#c5b0d5",  # light purple
             "ENDPOINT_TIMEOUT": "#ff0000",  # bright red
+            "ENDPOINT_DELAYED": "#0000FF",  # bright blue
             # SQL states
             "SQL_STARTED": "#00FF00",  # bright green
             "SQL_COMPLETED": "#ffbb78",  # light orange

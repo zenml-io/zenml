@@ -14,15 +14,17 @@
 """Request management utilities."""
 
 import asyncio
-import time
+import json
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from uuid import UUID, uuid4
 
-from fastapi import Request
+from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
 from zenml.logger import get_logger
+from zenml.models import ApiTransactionRequest, ApiTransactionUpdate
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
@@ -109,46 +111,24 @@ class RequestContext:
         duration = (current_time - self.received_at).total_seconds() * 1000
         return f"{duration:.2f}ms"
 
-    def is_retry(self, request_context: "RequestContext") -> bool:
-        """Check if the request context is a retry of the this request context.
+    @property
+    def is_cacheable(self) -> bool:
+        """Check if the request is cacheable.
 
-        Args:
-            request_context: The request context to check.
+        Returns:
+            Whether the request is cacheable.
         """
-        # The similarities between the two requests must be very strictly
-        # verified to avoid replay attacks:
-        #
-        # 1. They must have the same idempotency transaction ID.
-        if request_context.transaction_id != self.transaction_id:
-            return False
-
-        # 2. They must have the same URL and method
-        if (
-            request_context.request.url != self.request.url
-            or request_context.request.method != self.request.method
-        ):
-            return False
-
-        # 3. If the original request was authenticated, the new request must
-        # also be authenticated with the same account.
-        if self.auth_context is not None and (
-            request_context.auth_context is None
-            or (
-                request_context.auth_context.user.id
-                != self.auth_context.user.id
-            )
-        ):
-            return False
-
-        return True
+        # Only cache requests that are authenticated and are part of a
+        # transaction.
+        return (
+            self.auth_context is not None and self.transaction_id is not None
+        )
 
 
 class RequestRecord:
     """A record of an in-flight or cached request."""
 
-    future: Optional[asyncio.Future[Any]] = None
-    result_timestamp: Optional[float] = None
-    result: Any = None
+    future: asyncio.Future[Any]
     request_context: RequestContext
 
     def __init__(
@@ -162,6 +142,7 @@ class RequestRecord:
         """
         self.future = future
         self.request_context = request_context
+        self.completed = False
 
     def set_result(self, result: Any) -> None:
         """Set the result of the request.
@@ -169,11 +150,8 @@ class RequestRecord:
         Args:
             result: The result of the request.
         """
-        if self.future:
-            self.future.set_result(result)
-            self.future = None
-        self.result = result
-        self.result_timestamp = time.time()
+        self.future.set_result(result)
+        self.completed = True
 
     def set_exception(self, exception: Exception) -> None:
         """Set the exception of the request.
@@ -181,68 +159,38 @@ class RequestRecord:
         Args:
             exception: The exception of the request.
         """
-        if self.future:
-            self.future.set_exception(exception)
-            self.future = None
-        self.result = exception
-        self.result_timestamp = time.time()
-
-    def fetch_result(self) -> Any:
-        """Fetch the result of the request.
-
-        Returns:
-            The result of the request.
-
-        Raises:
-            Exception: The exception of the request, if one is stored instead
-                of a result.
-        """
-        try:
-            if isinstance(self.result, Exception):
-                raise self.result
-            return self.result
-        finally:
-            # Reset the result timestamp every time it is fetched
-            self.result_timestamp = time.time()
+        self.future.set_exception(exception)
+        self.completed = True
 
 
 class RequestManager:
     """A manager for requests.
 
     This class is used to manage requests by caching the results of requests
-    that have already been executed. It also handles cleanup of expired
-    requests and limits the number of completed requests.
+    that have already been executed.
     """
 
     def __init__(
         self,
+        transaction_ttl: int,
+        request_timeout: float,
         deduplicate: bool = True,
-        result_ttl: float = 60.0,
-        max_completed_requests: int = 100,
-        timeout: float = 20.0,
     ) -> None:
         """Initialize the request manager.
 
         Args:
+            transaction_ttl: The time to live for cached transactions. Comes
+                into effect after a request is completed.
+            request_timeout: The timeout for requests. If a request takes longer
+                than this, a 429 error will be returned to the client to slow
+                down the request rate.
             deduplicate: Whether to deduplicate requests.
-            result_ttl: The time to live for cached results. Comes into effect
-                after a request is completed and is reset every time the result
-                is fetched.
-            max_completed_requests: The maximum number of completed requests to
-                keep. This is used to limit the memory usage of the
-                manager.
-            timeout: The timeout for requests. If a request takes longer than
-                this, a 429 error will be returned to the client to slow down
-                the request rate.
         """
         self.deduplicate = deduplicate
-        self.requests: Dict[UUID, RequestRecord] = dict()
+        self.transactions: Dict[UUID, RequestRecord] = dict()
         self.lock = asyncio.Lock()
-        self.result_ttl = result_ttl
-        self.max_completed_requests = max_completed_requests
-        self.timeout = timeout
-        self.cleanup_task: Optional[asyncio.Task[None]] = None
-        self.shutdown_event = asyncio.Event()
+        self.transaction_ttl = transaction_ttl
+        self.request_timeout = request_timeout
 
         self.request_contexts: ContextVar[Optional[RequestContext]] = (
             ContextVar("request_contexts", default=None)
@@ -273,100 +221,17 @@ class RequestManager:
         self.request_contexts.set(request_context)
 
     async def startup(self) -> None:
-        """Start the request manager.
-
-        This method starts a background task that periodically cleans up
-        expired requests and limits the number of completed requests.
-        """
-        self.cleanup_task = asyncio.create_task(self._periodic_cleanup())
+        """Start the request manager."""
+        pass
 
     async def shutdown(self) -> None:
-        """Shutdown the request manager.
-
-        This method stops the background task that periodically cleans up
-        expired requests and limits the number of completed requests.
-        """
-        self.shutdown_event.set()
-        if self.cleanup_task:
-            await self.cleanup_task
-
-    async def _periodic_cleanup(self) -> None:
-        """Periodic cleanup task.
-
-        Periodically clean up expired requests and limit the number of
-        completed requests.
-        """
-        while not self.shutdown_event.is_set():
-            await self._cleanup()
-            await asyncio.sleep(5)
-
-    async def _cleanup(self) -> None:
-        """Clean up expired requests and limit the number of completed requests.
-
-        This method is called periodically by the background task as well as
-        opportunistically when a request is completed to clean up expired
-        requests and limit the number of completed requests.
-        """
-        async with self.lock:
-            now = time.time()
-
-            completed_requests = [
-                (request_id, record.result_timestamp)
-                for request_id, record in self.requests.items()
-                if record.result_timestamp is not None
-            ]
-
-            # Remove expired completed requests
-            for i in reversed(range(len(completed_requests))):
-                request_id, result_timestamp = completed_requests[i]
-                if now - result_timestamp > self.result_ttl:
-                    del self.requests[request_id]
-                    del completed_requests[i]
-
-            # If we have more completed requests than allowed, remove oldest ones
-            if len(completed_requests) > self.max_completed_requests:
-                # Sort by timestamp, oldest first
-                completed_requests.sort(key=lambda x: x[1])
-                for request_id, _ in completed_requests[
-                    : self.max_completed_requests
-                ]:
-                    del self.requests[request_id]
-
-    async def _verify_duplicate_request_forgery(
-        self, request_context: RequestContext
-    ) -> bool:
-        """Verify if the request is a forgery of a previously executed request.
-
-        A forgery is a request that has the same transaction ID as a previously
-        executed request, but has different request parameters.
-
-        Args:
-            request_context: The request context to verify.
-
-        Returns:
-            True if the request is a forgery of a previously executed request,
-            False otherwise.
-        """
-        if request_context.transaction_id not in self.requests:
-            # This is not a forgery, it's a new request
-            return False
-
-        # A previous request with the same transaction ID exists.
-        previous_request = self.requests[request_context.transaction_id]
-
-        if not previous_request.request_context.is_retry(request_context):
-            # This is a forgery: it's a new request with the same transaction
-            # ID but it does not qualify as a retry according to the request
-            # parameters.
-            return True
-
-        # This is a retry of a previously executed request.
-        return False
+        """Shutdown the request manager."""
+        pass
 
     async def run_and_cache_result(
         self,
         func: Callable[..., Any],
-        cache_enabled: bool,
+        request_record: RequestRecord,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -377,7 +242,7 @@ class RequestManager:
 
         Args:
             func: The function to execute.
-            cache_enabled: Whether to cache the result when done.
+            request_record: The request record to cache the result in.
             *args: The arguments to pass to the function.
             **kwargs: The keyword arguments to pass to the function.
         """
@@ -385,7 +250,9 @@ class RequestManager:
 
         from zenml.zen_server.utils import get_system_metrics_log_str
 
-        request_context = self.current_request
+        request_context = request_record.request_context
+        transaction_id = request_context.transaction_id
+        deduplicate = self.deduplicate and request_context.is_cacheable
 
         logger.debug(
             f"[{request_context.log_request_id}] ENDPOINT STATS - "
@@ -394,7 +261,9 @@ class RequestManager:
             f"{get_system_metrics_log_str(request_context.request)}"
         )
 
-        def run_func_with_logs(*args: Any, **kwargs: Any) -> Any:
+        def run_sync_endpoint(*args: Any, **kwargs: Any) -> Any:
+            from zenml.zen_server.utils import zen_store
+
             logger.debug(
                 f"[{request_context.log_request_id}] ENDPOINT STATS - "
                 f"{request_context.log_request} "
@@ -403,7 +272,93 @@ class RequestManager:
             )
 
             try:
-                return func(*args, **kwargs)
+                # Create or get the API transaction from the database
+                if deduplicate and transaction_id is not None:
+                    api_transaction, transaction_created = (
+                        zen_store().get_or_create_api_transaction(
+                            api_transaction=ApiTransactionRequest(
+                                transaction_id=transaction_id,
+                                method=request_context.request.method,
+                                url=str(request_context.request.url),
+                            )
+                        )
+                    )
+                    if api_transaction.completed:
+                        logger.debug(
+                            f"[{request_context.log_request_id}] "
+                            "ENDPOINT STATS - "
+                            f"{request_context.log_request} "
+                            f"sync {func.__name__} CACHE HIT "
+                            f"{get_system_metrics_log_str(request_context.request)}"
+                        )
+
+                        # The transaction already completed, we can return the
+                        # result right away.
+                        if api_transaction.result is not None:
+                            return Response(
+                                api_transaction.result,
+                                media_type="application/json",
+                            )
+                        else:
+                            return
+
+                    elif not transaction_created:
+                        logger.debug(
+                            f"[{request_context.log_request_id}] "
+                            "ENDPOINT STATS - "
+                            f"{request_context.log_request} "
+                            f"sync {func.__name__} DELAYED "
+                            f"{get_system_metrics_log_str(request_context.request)}"
+                        )
+
+                        # The transaction is being processed by another server
+                        # instance. We need to wait for it to complete. Instead
+                        # of blocking this worker thread, we return a 429 error
+                        # to the client to force it to retry later.
+                        return JSONResponse(
+                            {
+                                "error": "Server too busy. Please try again later."
+                            },
+                            status_code=429,
+                        )
+
+                try:
+                    result = func(*args, **kwargs)
+                except Exception:
+                    if deduplicate and transaction_id is not None:
+                        # We don't cache exceptions. If the client retries, the
+                        # request will be executed again and the exception, if
+                        # persistent, will be raised again.
+                        zen_store().delete_api_transaction(
+                            api_transaction_id=transaction_id,
+                        )
+                    raise
+
+                if deduplicate and transaction_id is not None:
+                    try:
+                        cached_result = json.dumps(
+                            result, default=pydantic_encoder
+                        )
+                    except Exception:
+                        # If the result is not serializable, we don't cache it.
+                        logger.exception(
+                            f"Failed to serialize result of {func.__name__} "
+                            f"for transaction {transaction_id}. Skipping "
+                            "caching."
+                        )
+                        zen_store().delete_api_transaction(
+                            api_transaction_id=transaction_id,
+                        )
+                    else:
+                        zen_store().finalize_api_transaction(
+                            api_transaction_id=transaction_id,
+                            api_transaction_update=ApiTransactionUpdate(
+                                result=cached_result,
+                                cache_time=self.transaction_ttl,
+                            ),
+                        )
+
+                return result
             finally:
                 logger.debug(
                     f"[{request_context.log_request_id}] ENDPOINT STATS - "
@@ -414,10 +369,15 @@ class RequestManager:
 
         try:
             result = await run_in_threadpool(
-                run_func_with_logs, *args, **kwargs
+                run_sync_endpoint, *args, **kwargs
             )
         except Exception as e:
             result = e
+
+        if deduplicate:
+            async with self.lock:
+                if transaction_id in self.transactions:
+                    del self.transactions[transaction_id]
 
         logger.debug(
             f"[{request_context.log_request_id}] ENDPOINT STATS - "
@@ -426,19 +386,10 @@ class RequestManager:
             f"{get_system_metrics_log_str(request_context.request)}"
         )
 
-        if cache_enabled:
-            async with self.lock:
-                if request_context.transaction_id in self.requests:
-                    if isinstance(result, Exception):
-                        self.requests[
-                            request_context.transaction_id
-                        ].set_exception(result)
-                    else:
-                        self.requests[
-                            request_context.transaction_id
-                        ].set_result(result)
-
-        await self._cleanup()
+        if isinstance(result, Exception):
+            request_record.set_exception(result)
+        else:
+            request_record.set_result(result)
 
     async def execute(
         self,
@@ -479,82 +430,52 @@ class RequestManager:
             f"{get_system_metrics_log_str(request_context.request)}"
         )
 
-        # Clean up expired requests
-        await self._cleanup()
+        transaction_id = request_context.transaction_id
+        deduplicate = self.deduplicate and request_context.is_cacheable
 
         async with self.lock:
-            # Check for a cached result first
-            transaction_id = request_context.transaction_id
-            cache_result = self.deduplicate and transaction_id is not None
-            if cache_result and await self._verify_duplicate_request_forgery(
-                request_context
-            ):
-                # It was detected that this request might be a forgery of a
-                # previously executed request. This might happen if the
-                # request has different request headers but the same request
-                # ID, for example if the request is processed by a proxy,
-                # so we still want to process it, but we log a warning and
-                # bypass the request deduplication.
-                logger.warning(
-                    f"[{request_context.log_request_id}] "
-                    f"FORGERY DETECTED: "
-                    f"{request_context.log_request}. "
+            if deduplicate and transaction_id in self.transactions:
+                # The transaction is still being processed on the same
+                # server instance. We just wait for it to complete.
+                fut = self.transactions[transaction_id].future
+                logger.debug(
+                    f"[{request_context.log_request_id}] ENDPOINT STATS - "
+                    f"{request_context.log_request} "
+                    f"{func.__name__} RESUMED "
+                    f"{get_system_metrics_log_str(request_context.request)}"
                 )
-                # Mark the request as not being cached/deduplicated
-                cache_result = False
-
-            if cache_result and transaction_id in self.requests:
-                cached_request = self.requests[transaction_id]
-                if cached_request.future is None:
-                    logger.debug(
-                        f"[{request_context.log_request_id}] ENDPOINT STATS - "
-                        f"{request_context.log_request} "
-                        f"{func.__name__} CACHE HIT "
-                        f"{get_system_metrics_log_str(request_context.request)}"
-                    )
-                    # Request has already been executed, result is available
-                    return cached_request.fetch_result()
-                else:
-                    logger.debug(
-                        f"[{request_context.log_request_id}] ENDPOINT STATS - "
-                        f"{request_context.log_request} "
-                        f"{func.__name__} RESUMED "
-                        f"{get_system_metrics_log_str(request_context.request)}"
-                    )
-                    # Request is still in-flight, wait for it to complete
-                    fut = cached_request.future
             else:
-                # Start execution in background, store the future
+                # Start execution in background, use the future to wait for it
+                # to complete.
                 fut = asyncio.get_event_loop().create_future()
-                if cache_result and transaction_id is not None:
-                    self.requests[transaction_id] = RequestRecord(
-                        future=fut, request_context=request_context
-                    )
+                request_record = RequestRecord(
+                    future=fut, request_context=request_context
+                )
+                if deduplicate and transaction_id is not None:
+                    # Also record the transaction for deduplication.
+                    self.transactions[transaction_id] = request_record
                 asyncio.create_task(
                     self.run_and_cache_result(
                         func,
-                        cache_result,
+                        request_record,
                         *args,
                         **kwargs,
                     )
                 )
 
-        # Wait for the request to complete, with timeout
+        # Wait for the request to complete; timeout if deduplication is enabled
         try:
             # We take into account the time that has already elapsed since the
             # request was received to avoid keeping the request for too long.
-            timeout = max(0, self.timeout - request_context.process_time)
+            timeout = max(
+                0, self.request_timeout - request_context.process_time
+            )
             result = await asyncio.wait_for(
                 # We use asyncio.shield to prevent the request from being
                 # cancelled when the timeout is reached.
                 asyncio.shield(fut),
-                timeout=timeout,
+                timeout=timeout if deduplicate else None,
             )
-            async with self.lock:
-                # We successfully completed the request, so the result cache is
-                # no longer needed.
-                if cache_result and transaction_id in self.requests:
-                    del self.requests[transaction_id]
 
             logger.debug(
                 f"[{request_context.log_request_id}] ENDPOINT STATS - "

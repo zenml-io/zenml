@@ -159,6 +159,9 @@ from zenml.models import (
     APIKeyResponse,
     APIKeyRotateRequest,
     APIKeyUpdate,
+    ApiTransactionRequest,
+    ApiTransactionResponse,
+    ApiTransactionUpdate,
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
@@ -330,6 +333,7 @@ from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
     ActionSchema,
     APIKeySchema,
+    ApiTransactionSchema,
     ArtifactSchema,
     ArtifactVersionSchema,
     BaseSchema,
@@ -2496,6 +2500,186 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(api_key)
             session.commit()
+
+    # -------------------- API Transactions --------------------
+
+    def _get_api_transaction(
+        self,
+        api_transaction_id: UUID,
+        session: Session,
+        method: Optional[str] = None,
+        url: Optional[str] = None,
+    ) -> ApiTransactionSchema:
+        """Retrieve or create a new API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to retrieve.
+            session: The session to use for the query.
+            method: The HTTP method of the API transaction.
+            url: The URL of the API transaction.
+
+        Returns:
+            The API transaction.
+
+        Raises:
+            KeyError: If the API transaction does not exist.
+            EntityExistsError: If the API transaction exists but is not owned by
+                the current user.
+        """
+        api_transaction_schema = session.exec(
+            select(ApiTransactionSchema).where(
+                ApiTransactionSchema.id == api_transaction_id
+            )
+        ).first()
+
+        if not api_transaction_schema:
+            raise KeyError(
+                f"API transaction with ID {api_transaction_id} not found."
+            )
+
+        # As a security measure, we don't allow users to access other users'
+        # API transactions.
+        if (
+            api_transaction_schema.user_id
+            != self._get_active_user(session=session).id
+        ):
+            raise EntityExistsError(
+                f"Unable to create API transaction with ID "
+                f"{api_transaction_id}: A transaction with "
+                "the same ID already exists for a different user."
+            )
+
+        # As another security measure, we don't allow the same transaction
+        # ID to be used with different method or URL.
+        if (
+            method is not None
+            and api_transaction_schema.method != method
+            or url is not None
+            and api_transaction_schema.url != url
+        ):
+            raise EntityExistsError(
+                f"Unable to get API transaction with ID "
+                f"{api_transaction_id}: A transaction with "
+                "the same ID already exists with a different method or URL."
+            )
+
+        return api_transaction_schema
+
+    def _cleanup_expired_api_transactions(self, session: Session) -> None:
+        """Delete completed API transactions that have expired.
+
+        Args:
+            session: The session to use for the query.
+        """
+        session.execute(
+            delete(ApiTransactionSchema).where(
+                col(ApiTransactionSchema.completed),
+                col(ApiTransactionSchema.expired) < utc_now(),
+            )
+        )
+        session.commit()
+
+    def get_or_create_api_transaction(
+        self, api_transaction: ApiTransactionRequest
+    ) -> Tuple[ApiTransactionResponse, bool]:
+        """Retrieve or create a new API transaction.
+
+        Args:
+            api_transaction: The API transaction to retrieve or create.
+
+        Returns:
+            The API transaction and a boolean indicating whether the transaction
+            was created.
+        """
+        with Session(self.engine) as session:
+            self._cleanup_expired_api_transactions(session=session)
+            self._set_request_user_id(
+                request_model=api_transaction, session=session
+            )
+
+            api_transaction_schema = ApiTransactionSchema.from_request(
+                api_transaction
+            )
+            session.add(api_transaction_schema)
+            created = False
+            try:
+                session.commit()
+                session.refresh(api_transaction_schema)
+                created = True
+            except IntegrityError:
+                # We have to rollback the failed session first in order to
+                # continue using it
+                session.rollback()
+                api_transaction_schema = self._get_api_transaction(
+                    api_transaction_id=api_transaction_schema.id,
+                    method=api_transaction.method,
+                    url=api_transaction.url,
+                    session=session,
+                )
+
+            return (
+                api_transaction_schema.to_model(
+                    include_metadata=True, include_resources=True
+                ),
+                created,
+            )
+
+    def finalize_api_transaction(
+        self,
+        api_transaction_id: UUID,
+        api_transaction_update: ApiTransactionUpdate,
+    ) -> ApiTransactionResponse:
+        """Finalize an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to update.
+            api_transaction_update: The update to be applied to the API transaction.
+
+        Returns:
+            The updated API transaction.
+        """
+        with Session(self.engine) as session:
+            self._cleanup_expired_api_transactions(session=session)
+            api_transaction_schema = self._get_api_transaction(
+                api_transaction_id=api_transaction_id,
+                session=session,
+            )
+
+            if api_transaction_schema.completed:
+                raise KeyError(
+                    f"Unable to finalize API transaction with ID "
+                    f"{api_transaction_id}: The transaction has already been "
+                    "finalized."
+                )
+
+            api_transaction_schema.update(update=api_transaction_update)
+            api_transaction_schema.completed = True
+            session.add(api_transaction_schema)
+            session.commit()
+
+            session.refresh(api_transaction_schema)
+            return api_transaction_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_api_transaction(self, api_transaction_id: UUID) -> None:
+        """Delete an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to delete.
+        """
+        with Session(self.engine) as session:
+            self._cleanup_expired_api_transactions(session=session)
+            try:
+                transaction = self._get_api_transaction(
+                    api_transaction_id=api_transaction_id,
+                    session=session,
+                )
+            except KeyError:
+                pass
+            else:
+                session.delete(transaction)
+                session.commit()
 
     # -------------------- Services --------------------
 
@@ -9540,7 +9724,7 @@ class SqlZenStore(BaseZenStore):
         """
         if handle_bool_env_var(ENV_ZENML_SERVER):
             # Running inside server
-            from zenml.zen_server.auth import get_auth_context
+            from zenml.zen_server.utils import get_auth_context
 
             # If the code is running on the server, use the auth context.
             auth_context = get_auth_context()

@@ -45,7 +45,6 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
-    DEFAULT_ZENML_SERVER_REQUEST_CACHE_MAX_SIZE,
     DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT,
     DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
@@ -360,9 +359,6 @@ class ServerConfiguration(BaseModel):
     server_request_deduplication: bool = True
     server_request_cache_timeout: int = (
         DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
-    )
-    server_request_cache_max_size: int = (
-        DEFAULT_ZENML_SERVER_REQUEST_CACHE_MAX_SIZE
     )
 
     max_request_body_size_in_bytes: int = (
