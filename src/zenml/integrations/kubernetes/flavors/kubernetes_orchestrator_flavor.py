@@ -34,8 +34,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
     """Settings for the Kubernetes orchestrator.
 
     Attributes:
-        kubernetes_namespace: Name of the Kubernetes namespace to be used.
-            If not provided, `zenml` namespace will be used.
         synchronous: If `True`, the client running a pipeline using this
             orchestrator waits until all steps finish running. If `False`,
             the client returns immediately and the pipeline is executed
@@ -106,6 +104,8 @@ class KubernetesOrchestratorConfig(
         kubernetes_context: Name of a Kubernetes context to run pipelines in.
             If the stack component is linked to a Kubernetes service connector,
             this field is ignored. Otherwise, it is mandatory.
+        kubernetes_namespace: Name of the Kubernetes namespace to be used.
+            If not provided, `zenml` namespace will be used.
         local: If `True`, the orchestrator will assume it is connected to a
             local kubernetes cluster and will perform additional validations and
             operations to allow using the orchestrator in combination with other
