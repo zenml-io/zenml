@@ -24,6 +24,7 @@ from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import ApiTransactionRequest, ApiTransactionUpdate
 from zenml.utils.json_utils import pydantic_encoder
@@ -47,6 +48,9 @@ class RequestContext:
 
         Args:
             request: The request.
+
+        Raises:
+            ValueError: If the idempotency key is not a valid UUID.
         """
         self.request = request
         self.request_id = request.headers.get("X-Request-ID", str(uuid4())[:8])
@@ -233,6 +237,7 @@ class RequestManager:
     async def async_run_and_cache_result(
         self,
         func: Callable[..., Any],
+        deduplicate: bool,
         request_record: RequestRecord,
         *args: Any,
         **kwargs: Any,
@@ -244,6 +249,8 @@ class RequestManager:
 
         Args:
             func: The function to execute.
+            deduplicate: Whether to enable or disable request deduplication for
+                this request.
             request_record: The request record to cache the result in.
             *args: The arguments to pass to the function.
             **kwargs: The keyword arguments to pass to the function.
@@ -254,7 +261,6 @@ class RequestManager:
 
         request_context = request_record.request_context
         transaction_id = request_context.transaction_id
-        deduplicate = self.deduplicate and request_context.is_cacheable
 
         logger.debug(
             f"[{request_context.log_request_id}] ENDPOINT STATS - "
@@ -266,6 +272,10 @@ class RequestManager:
         def sync_run_and_cache_result(*args: Any, **kwargs: Any) -> Any:
             from zenml.zen_server.utils import zen_store
 
+            # Copy the deduplicate flag to a local variable to avoid modifying
+            # the argument in the outer scope.
+            deduplicate_request = deduplicate
+
             logger.debug(
                 f"[{request_context.log_request_id}] ENDPOINT STATS - "
                 f"{request_context.log_request} "
@@ -275,60 +285,74 @@ class RequestManager:
 
             try:
                 # Create or get the API transaction from the database
-                if deduplicate and transaction_id is not None:
-                    api_transaction, transaction_created = (
-                        zen_store().get_or_create_api_transaction(
-                            api_transaction=ApiTransactionRequest(
-                                transaction_id=transaction_id,
-                                method=request_context.request.method,
-                                url=str(request_context.request.url),
+                if deduplicate_request:
+                    assert transaction_id is not None
+                    try:
+                        api_transaction, transaction_created = (
+                            zen_store().get_or_create_api_transaction(
+                                api_transaction=ApiTransactionRequest(
+                                    transaction_id=transaction_id,
+                                    method=request_context.request.method,
+                                    url=str(request_context.request.url),
+                                )
                             )
                         )
-                    )
-                    if api_transaction.completed:
-                        logger.debug(
+                    except EntityExistsError:
+                        logger.error(
                             f"[{request_context.log_request_id}] "
-                            "ENDPOINT STATS - "
-                            f"{request_context.log_request} "
-                            f"sync {func.__name__} CACHE HIT "
-                            f"{get_system_metrics_log_str(request_context.request)}"
+                            f"Transaction {transaction_id} already exists "
+                            f"with method {request_context.request.method} and "
+                            f"URL {str(request_context.request.url)}. Skipping "
+                            "caching."
                         )
+                        deduplicate_request = False
 
-                        # The transaction already completed, we can return the
-                        # result right away.
-                        result = api_transaction.get_result()
-                        if result is not None:
-                            return Response(
-                                base64.b64decode(result),
-                                media_type="application/json",
+                    if deduplicate_request:
+                        if api_transaction.completed:
+                            logger.debug(
+                                f"[{request_context.log_request_id}] "
+                                "ENDPOINT STATS - "
+                                f"{request_context.log_request} "
+                                f"sync {func.__name__} CACHE HIT "
+                                f"{get_system_metrics_log_str(request_context.request)}"
                             )
-                        else:
-                            return
 
-                    elif not transaction_created:
-                        logger.debug(
-                            f"[{request_context.log_request_id}] "
-                            "ENDPOINT STATS - "
-                            f"{request_context.log_request} "
-                            f"sync {func.__name__} DELAYED "
-                            f"{get_system_metrics_log_str(request_context.request)}"
-                        )
+                            # The transaction already completed, we can return the
+                            # result right away.
+                            result = api_transaction.get_result()
+                            if result is not None:
+                                return Response(
+                                    base64.b64decode(result),
+                                    media_type="application/json",
+                                )
+                            else:
+                                return
 
-                        # The transaction is being processed by another server
-                        # instance. We need to wait for it to complete. Instead
-                        # of blocking this worker thread, we return a 429 error
-                        # to the client to force it to retry later.
-                        return JSONResponse(
-                            {
-                                "error": "Server too busy. Please try again later."
-                            },
-                            status_code=429,
-                        )
+                        elif not transaction_created:
+                            logger.debug(
+                                f"[{request_context.log_request_id}] "
+                                "ENDPOINT STATS - "
+                                f"{request_context.log_request} "
+                                f"sync {func.__name__} DELAYED "
+                                f"{get_system_metrics_log_str(request_context.request)}"
+                            )
+
+                            # The transaction is being processed by another server
+                            # instance. We need to wait for it to complete. Instead
+                            # of blocking this worker thread, we return a 429 error
+                            # to the client to force it to retry later.
+                            return JSONResponse(
+                                {
+                                    "error": "Server too busy. Please try again later."
+                                },
+                                status_code=429,
+                            )
 
                 try:
                     result = func(*args, **kwargs)
                 except Exception:
-                    if deduplicate and transaction_id is not None:
+                    if deduplicate_request:
+                        assert transaction_id is not None
                         # We don't cache exceptions. If the client retries, the
                         # request will be executed again and the exception, if
                         # persistent, will be raised again.
@@ -337,7 +361,8 @@ class RequestManager:
                         )
                     raise
 
-                if deduplicate and transaction_id is not None:
+                if deduplicate_request:
+                    assert transaction_id is not None
                     cache_result = True
                     result_to_cache: Optional[bytes] = None
                     if result is not None:
@@ -420,6 +445,7 @@ class RequestManager:
     async def execute(
         self,
         func: Callable[..., Any],
+        deduplicate: Optional[bool],
         *args: Any,
         **kwargs: Any,
     ) -> Any:
@@ -434,15 +460,14 @@ class RequestManager:
 
         Args:
             func: The function to execute.
+            deduplicate: Whether to enable or disable request deduplication for
+                this request. If not specified, by default, the deduplication
+                is enabled for POST requests and disabled for other requests.
             *args: The arguments to pass to the function.
             **kwargs: The keyword arguments to pass to the function.
 
         Returns:
             The result of the request.
-
-        Raises:
-            Exception: The cached exception of the request, if one is cached
-                instead of a result.
         """
         from zenml.zen_server.utils import get_system_metrics_log_str
 
@@ -457,7 +482,15 @@ class RequestManager:
         )
 
         transaction_id = request_context.transaction_id
-        deduplicate = self.deduplicate and request_context.is_cacheable
+
+        if deduplicate is None:
+            # If not specified, by default, the deduplication is enabled for
+            # POST requests and disabled for other requests.
+            deduplicate = request_context.request.method == "POST"
+
+        deduplicate = (
+            deduplicate and self.deduplicate and request_context.is_cacheable
+        )
 
         async with self.lock:
             if deduplicate and transaction_id in self.transactions:
@@ -477,12 +510,14 @@ class RequestManager:
                 request_record = RequestRecord(
                     future=fut, request_context=request_context
                 )
-                if deduplicate and transaction_id is not None:
+                if deduplicate:
+                    assert transaction_id is not None
                     # Also record the transaction for deduplication.
                     self.transactions[transaction_id] = request_record
                 asyncio.create_task(
                     self.async_run_and_cache_result(
                         func,
+                        deduplicate,
                         request_record,
                         *args,
                         **kwargs,

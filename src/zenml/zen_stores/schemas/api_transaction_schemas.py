@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, String
+from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field
 
@@ -42,7 +42,7 @@ class ApiTransactionSchema(BaseSchema, table=True):
     __tablename__ = "api_transaction"
 
     method: str
-    url: str
+    url: str = Field(sa_column=Column(TEXT, nullable=False))
     completed: bool = Field(default=False)
     result: Optional[str] = Field(
         default=None,
@@ -68,7 +68,14 @@ class ApiTransactionSchema(BaseSchema, table=True):
     def from_request(
         cls, request: ApiTransactionRequest
     ) -> "ApiTransactionSchema":
-        """Create a new API transaction from a request."""
+        """Create a new API transaction from a request.
+
+        Args:
+            request: The API transaction request.
+
+        Returns:
+            The API transaction schema.
+        """
         assert request.user is not None, "User must be set."
         return cls(
             id=request.transaction_id,
@@ -84,7 +91,16 @@ class ApiTransactionSchema(BaseSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> ApiTransactionResponse:
-        """Convert the SQL model to a ZenML model."""
+        """Convert the SQL model to a ZenML model.
+
+        Args:
+            include_metadata: Whether to include metadata in the response.
+            include_resources: Whether to include resources in the response.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            The API transaction response.
+        """
         response = ApiTransactionResponse(
             id=self.id,
             body=ApiTransactionResponseBody(
@@ -101,7 +117,14 @@ class ApiTransactionSchema(BaseSchema, table=True):
         return response
 
     def update(self, update: ApiTransactionUpdate) -> "ApiTransactionSchema":
-        """Update the API transaction."""
+        """Update the API transaction.
+
+        Args:
+            update: The API transaction update.
+
+        Returns:
+            The API transaction schema.
+        """
         if update.result is not None:
             self.result = update.get_result()
         self.updated = utc_now()

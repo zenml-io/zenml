@@ -101,7 +101,7 @@ def create_model(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_models(
     model_filter_model: ModelFilter = Depends(make_dependable(ModelFilter)),
     hydrate: bool = False,
@@ -130,7 +130,7 @@ def list_models(
     "/{model_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_model(
     model_id: UUID,
     hydrate: bool = True,
@@ -155,7 +155,7 @@ def get_model(
     "/{model_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def update_model(
     model_id: UUID,
     model_update: ModelUpdate,

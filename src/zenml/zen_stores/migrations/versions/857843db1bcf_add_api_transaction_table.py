@@ -29,7 +29,7 @@ def upgrade() -> None:
         sa.Column(
             "method", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
-        sa.Column("url", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("url", sa.TEXT(), nullable=False),
         sa.Column("completed", sa.Boolean(), nullable=False),
         sa.Column(
             "result",

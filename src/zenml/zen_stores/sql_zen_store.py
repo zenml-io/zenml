@@ -2637,6 +2637,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated API transaction.
+
+        Raises:
+            KeyError: If the API transaction has already been finalized.
         """
         with Session(self.engine) as session:
             self._cleanup_expired_api_transactions(session=session)

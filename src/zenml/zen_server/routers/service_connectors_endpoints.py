@@ -124,7 +124,7 @@ def create_service_connector(
     deprecated=True,
     tags=["service_connectors"],
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_service_connectors(
     connector_filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
@@ -198,7 +198,7 @@ def list_service_connectors(
     deprecated=True,
     tags=["service_connectors"],
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_service_connector_resources(
     filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
@@ -234,7 +234,7 @@ def list_service_connector_resources(
     "/{connector_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_service_connector(
     connector_id: UUID,
     expand_secrets: bool = True,
@@ -324,7 +324,7 @@ def delete_service_connector(
     SERVICE_CONNECTOR_VERIFY,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def validate_and_verify_service_connector_config(
     connector: ServiceConnectorRequest,
     list_resources: bool = True,
@@ -357,7 +357,7 @@ def validate_and_verify_service_connector_config(
     "/{connector_id}" + SERVICE_CONNECTOR_VERIFY,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def validate_and_verify_service_connector(
     connector_id: UUID,
     resource_type: Optional[str] = None,
@@ -398,7 +398,7 @@ def validate_and_verify_service_connector(
     "/{connector_id}" + SERVICE_CONNECTOR_CLIENT,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_service_connector_client(
     connector_id: UUID,
     resource_type: Optional[str] = None,
