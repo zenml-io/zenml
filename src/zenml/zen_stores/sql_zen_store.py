@@ -143,6 +143,7 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
+    RunStoppedException,
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
@@ -5852,6 +5853,14 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             session.refresh(existing_run)
+
+            if run_update.status is not None:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=run_id,
+                    session=session,
+                )
+            session.refresh(existing_run)
+
             return existing_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -8444,6 +8453,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: if the step run already exists.
+            RunStoppedException: if the pipeline run is stopped or stopping.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
@@ -8456,13 +8466,15 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            self._get_reference_schema_by_id(
-                resource=step_run,
-                reference_schema=StepRunSchema,
-                reference_id=step_run.original_step_run_id,
-                session=session,
-                reference_type="original step run",
-            )
+            # Validate pipeline status before creating step
+            if run.status in [
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+            ]:
+                raise RunStoppedException(
+                    f"Cannot create step '{step_run.name}' for pipeline in "
+                    f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
+                )
 
             step_schema = StepRunSchema.from_request(
                 step_run, deployment_id=run.deployment_id
@@ -8592,12 +8604,13 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
+            session.commit()
+
             if step_run.status != ExecutionStatus.RUNNING:
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
 
-            session.commit()
             session.refresh(step_schema)
 
             if model_version_id := self._get_or_create_model_version_for_run(
@@ -8724,14 +8737,13 @@ class SqlZenStore(BaseZenStore):
                     input_type=StepRunInputArtifactType.MANUAL,
                     session=session,
                 )
+            session.commit()
+            session.refresh(existing_step_run)
 
             self._update_pipeline_run_status(
                 pipeline_run_id=existing_step_run.pipeline_run_id,
                 session=session,
             )
-
-            session.commit()
-            session.refresh(existing_step_run)
 
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
@@ -8962,6 +8974,7 @@ class SqlZenStore(BaseZenStore):
             json.loads(pipeline_run.deployment.step_configurations)
         )
         new_status = get_pipeline_run_status(
+            run_status=ExecutionStatus(pipeline_run.status),
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
             ],

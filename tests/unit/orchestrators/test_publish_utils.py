@@ -97,7 +97,9 @@ def test_pipeline_run_status_computation(
     """Tests computing a pipeline run status from step statuses."""
     assert (
         publish_utils.get_pipeline_run_status(
-            step_statuses=step_statuses, num_steps=num_steps
+            run_status=ExecutionStatus.RUNNING,
+            step_statuses=step_statuses,
+            num_steps=num_steps,
         )
         == expected_run_status
     )
