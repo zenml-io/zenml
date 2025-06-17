@@ -358,6 +358,7 @@ from zenml.zen_stores.schemas import (
     ServiceConnectorSchema,
     StackComponentSchema,
     StackSchema,
+    StepConfigurationSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
     StepRunParentsSchema,
@@ -4653,6 +4654,23 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(new_deployment)
             session.commit()
+
+            for index, (step_name, step_configuration) in enumerate(
+                deployment.step_configurations.items()
+            ):
+                step_configuration_schema = StepConfigurationSchema(
+                    index=index,
+                    name=step_name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_configuration.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    deployment_id=new_deployment.id,
+                )
+                session.add(step_configuration_schema)
+            session.commit()
             session.refresh(new_deployment)
 
             return new_deployment.to_model(
@@ -5122,12 +5140,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             steps = {
-                step_name: Step.from_dict(
-                    config_dict, pipeline_configuration=pipeline_configuration
+                config_table.name: Step.from_dict(
+                    json.loads(config_table.config),
+                    pipeline_configuration=pipeline_configuration,
                 )
-                for step_name, config_dict in json.loads(
-                    deployment.step_configurations
-                ).items()
+                for config_table in deployment.get_step_configurations()
             }
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
@@ -8949,9 +8966,7 @@ class SqlZenStore(BaseZenStore):
 
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
-        num_steps = len(
-            json.loads(pipeline_run.deployment.step_configurations)
-        )
+        num_steps = pipeline_run.deployment.step_count
         new_status = get_pipeline_run_status(
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses

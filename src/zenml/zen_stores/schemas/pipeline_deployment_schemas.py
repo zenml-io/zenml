@@ -19,9 +19,9 @@ from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, object_session
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, asc, col, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
@@ -62,14 +62,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
     # Fields
     pipeline_configuration: str = Field(
-        sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
-            nullable=False,
-        )
-    )
-    step_configurations: str = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -174,6 +166,46 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
+    step_configurations: List["StepConfigurationSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "order_by": "asc(StepConfigurationSchema.index)",
+        }
+    )
+    step_count: int
+
+    def get_step_configurations(
+        self, include: Optional[List[str]] = None
+    ) -> List["StepConfigurationSchema"]:
+        """Get step configurations for the deployment.
+
+        Args:
+            include: List of step names to include. If not given, all step
+                configurations will be included.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            List of step configurations.
+        """
+        if session := object_session(self):
+            query = (
+                select(StepConfigurationSchema)
+                .where(StepConfigurationSchema.deployment_id == self.id)
+                .order_by(asc(StepConfigurationSchema.index))
+            )
+
+            if include:
+                query = query.where(
+                    col(StepConfigurationSchema.name).in_(include)
+                )
+
+            return list(session.execute(query).scalars().all())
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch step configurations."
+            )
 
     @classmethod
     def get_query_options(
@@ -230,14 +262,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentSchema`.
         """
-        # Don't include the merged config in the step configurations, we
-        # reconstruct it in the `to_model` method using the pipeline
-        # configuration.
-        step_configurations = {
-            invocation_id: step.model_dump(mode="json", exclude={"config"})
-            for invocation_id, step in request.step_configurations.items()
-        }
-
         client_env = json.dumps(request.client_environment)
         if len(client_env) > TEXT_FIELD_MAX_LENGTH:
             logger.warning(
@@ -257,10 +281,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
-            step_configurations=json.dumps(
-                step_configurations,
-                sort_keys=False,
-            ),
+            step_count=len(request.step_configurations),
             client_environment=client_env,
             client_version=request.client_version,
             server_version=request.server_version,
@@ -308,16 +329,12 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 self.pipeline_configuration
             )
             step_configurations = {}
-            for invocation_id, step in json.loads(
-                self.step_configurations
-            ).items():
-                if (
-                    step_configuration_filter is not None
-                    and invocation_id not in step_configuration_filter
-                ):
-                    continue
-                step_configurations[invocation_id] = Step.from_dict(
-                    step, pipeline_configuration
+            for step_configuration in self.get_step_configurations(
+                include=step_configuration_filter
+            ):
+                step_configurations[step_configuration.name] = Step.from_dict(
+                    json.loads(step_configuration.config),
+                    pipeline_configuration,
                 )
 
             client_environment = json.loads(self.client_environment)
@@ -359,3 +376,29 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             metadata=metadata,
             resources=resources,
         )
+
+
+class StepConfigurationSchema(BaseSchema, table=True):
+    """SQL Model for step configurations."""
+
+    __tablename__ = "step_configuration"
+
+    index: int
+    name: str
+    config: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
+
+    deployment_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineDeploymentSchema.__tablename__,
+        source_column="deployment_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
