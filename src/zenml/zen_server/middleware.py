@@ -11,14 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Zen Server API.
-
-To run this file locally, execute:
-
-    ```
-    uvicorn zenml.zen_server.zen_server_api:app --reload
-    ```
-"""
+"""Server middlewares."""
 
 import logging
 from asyncio import Lock
