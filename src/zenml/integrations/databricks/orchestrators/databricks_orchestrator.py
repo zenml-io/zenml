@@ -15,7 +15,7 @@
 
 import itertools
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
@@ -48,10 +48,12 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.models.v2.core.schedule import ScheduleResponse
+from zenml.orchestrators import (
+    SubmissionResult,
+    WheeledOrchestrator,
+)
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.orchestrators.wheeled_orchestrator import WheeledOrchestrator
 from zenml.stack import StackValidator
-from zenml.utils import io_utils
 from zenml.utils.package_utils import clean_requirements
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -67,20 +69,13 @@ logger = get_logger(__name__)
 ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
 DATABRICKS_WHEELS_DIRECTORY_PREFIX = "dbfs:/FileStore/zenml"
 DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
-DATABRICKS_CLUSTER_DEFAULT_NAME = "zenml-databricks-cluster"
 DATABRICKS_SPARK_DEFAULT_VERSION = "15.3.x-scala2.12"
 DATABRICKS_JOB_ID_PARAMETER_REFERENCE = "{{job.id}}"
 DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 
 
 class DatabricksOrchestrator(WheeledOrchestrator):
-    """Base class for Orchestrator responsible for running pipelines remotely in a VM.
-
-    This orchestrator does not support running on a schedule.
-    """
-
-    # The default instance type to use if none is specified in settings
-    DEFAULT_INSTANCE_TYPE: Optional[str] = None
+    """Databricks orchestrator."""
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -168,69 +163,39 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 f"{ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID}."
             )
 
-    @property
-    def root_directory(self) -> str:
-        """Path to the root directory for all files concerning this orchestrator.
-
-        Returns:
-            Path to the root directory.
-        """
-        return os.path.join(
-            io_utils.get_global_config_directory(),
-            "databricks",
-            str(self.id),
-        )
-
-    @property
-    def pipeline_directory(self) -> str:
-        """Returns path to a directory in which the kubeflow pipeline files are stored.
-
-        Returns:
-            Path to the pipeline directory.
-        """
-        return os.path.join(self.root_directory, "pipelines")
-
     def setup_credentials(self) -> None:
         """Set up credentials for the orchestrator."""
         connector = self.get_connector()
         assert connector is not None
         connector.configure_local_client()
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Creates a wheel and uploads the pipeline to Databricks.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
 
-        This functions as an intermediary representation of the pipeline which
-        is then deployed to the kubeflow pipelines instance.
-
-        How it works:
-        -------------
-        Before this method is called the `prepare_pipeline_deployment()`
-        method builds a docker image that contains the code for the
-        pipeline, all steps the context around these files.
-
-        Based on this docker image a callable is created which builds
-        task for each step (`_construct_databricks_pipeline`).
-        To do this the entrypoint of the docker image is configured to
-        run the correct step within the docker image. The dependencies
-        between these task are then also configured onto each
-        task by pointing at the downstream steps.
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
-                environment.
+                environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             ValueError: If the schedule is not set or if the cron expression
                 is not set.
+
+        Returns:
+            Optional submission result.
         """
         settings = cast(
             DatabricksOrchestratorSettings, self.get_settings(deployment)
@@ -339,11 +304,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
         )
-        # Get a filepath to use to save the finished yaml to
-        fileio.makedirs(self.pipeline_directory)
-        pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{orchestrator_run_name}.yaml"
-        )
 
         # Copy the repository to a temporary directory and add a setup.py file
         repository_temp_dir = (
@@ -382,11 +342,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         fileio.rmtree(repository_temp_dir)
 
-        logger.info(
-            "Writing Databricks workflow definition to `%s`.",
-            pipeline_file_path,
-        )
-
         # using the databricks client uploads the pipeline to databricks
         job_cluster_key = self.sanitize_name(f"{deployment_id}")
         self._upload_and_run_pipeline(
@@ -399,6 +354,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             job_cluster_key=job_cluster_key,
             schedule=deployment.schedule,
         )
+        return None
 
     def _upload_and_run_pipeline(
         self,

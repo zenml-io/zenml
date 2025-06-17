@@ -84,9 +84,6 @@ class StubOrchestrator(BaseOrchestrator):
     def config(self) -> StubOrchestratorConfig:
         return self._config
 
-    def prepare_or_run_pipeline(self, **kwargs):
-        pass
-
     def get_orchestrator_run_id(self) -> str:
         return "some_run_id"
 

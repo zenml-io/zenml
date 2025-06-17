@@ -28,17 +28,14 @@ class BaseOrchestratorConfig(StackComponentConfig):
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all ZenML orchestrators"""
 
-    @abstractmethod
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
-        deployment: PipelineDeploymentResponseModel,
-        stack: Stack,
+        deployment: "PipelineDeploymentResponse",
+        stack: "Stack",
         environment: Dict[str, str],
-        placeholder_run: Optional[PipelineRunResponse] = None,
-    ) -> Any:
-        """Prepares and runs the pipeline outright or returns an intermediate
-        pipeline representation that gets deployed.
-        """
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator."""
 
     @abstractmethod
     def get_orchestrator_run_id(self) -> str:
@@ -84,7 +81,7 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 If you want to create your own custom flavor for an orchestrator, you can follow the following steps:
 
-1. Create a class that inherits from the `BaseOrchestrator` class and implement the abstract `prepare_or_run_pipeline(...)` and `get_orchestrator_run_id()` methods.
+1. Create a class that inherits from the `BaseOrchestrator` class and implement the abstract `submit_pipeline(...)` and `get_orchestrator_run_id()` methods.
 2. If you need to provide any configuration, create a class that inherits from the `BaseOrchestratorConfig` class and add your configuration parameters.
 3. Bring both the implementation and the configuration together by inheriting from the `BaseOrchestratorFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
 
@@ -125,11 +122,14 @@ The design behind this interaction lets us separate the configuration of the fla
 ## Implementation guide
 
 1. **Create your orchestrator class:** This class should either inherit from `BaseOrchestrator`, or more commonly from `ContainerizedOrchestrator`. If your orchestrator uses container images to run code, you should inherit from `ContainerizedOrchestrator` which handles building all Docker images for the pipeline to be executed. If your orchestator does not use container images, you'll be responsible that the execution environment contains all the necessary requirements and code files to run the pipeline.
-2.  **Implement the `prepare_or_run_pipeline(...)` method:** This method is responsible for running or scheduling the pipeline. In most cases, this means converting the pipeline into a format that your orchestration tool understands and running it. To do so, you should:
+2.  **Implement the `submit_pipeline(...)` method:** This method is responsible for submitting the pipeline run or schedule. In most cases, this means converting the pipeline into a format that your orchestration backend understands and submitting it. To do so, you should:
 
     * Loop over all steps of the pipeline and configure your orchestration tool to run the correct command and arguments in the correct Docker image
     * Make sure the passed environment variables are set when the container is run
     * Make sure the containers are running in the correct order
+
+    * If you want to store any metadata for the run or schedule, return it as part of the `SubmissionResult`.
+    * If your orchestrator is configured to run synchronous, make sure to return a `wait_for_completion` closure in the `SubmissionResult`.
 
     Check out the [code sample](custom.md#code-sample) below for more details on how to fetch the Docker image, command, arguments and step order.
 3. **Implement the `get_orchestrator_run_id()` method:** This must return a ID that is different for each pipeline run, but identical if called from within Docker containers running different steps of the same pipeline run. If your orchestrator is based on an external tool like Kubeflow or Airflow, it is usually best to use an unique ID provided by this tool.
@@ -152,7 +152,7 @@ from typing import Dict
 
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.models import PipelineDeploymentResponseModel, PipelineRunResponse
-from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.stack import Stack
 
 
@@ -165,13 +165,13 @@ class MyOrchestrator(ContainerizedOrchestrator):
         # can usually use the run ID of that tool here.
         ...
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> None:
+    ) -> Optional[SubmissionResult]:
         # If your orchestrator supports scheduling, you should handle the schedule
         # configured by the user. Otherwise you might raise an exception or log a warning
         # that the orchestrator doesn't support scheduling
@@ -209,6 +209,13 @@ class MyOrchestrator(ContainerizedOrchestrator):
             # specific resources were specified for this step:
             if self.requires_resources_in_orchestration_environment(step):
                 resources = step.config.resource_settings
+
+        if self.config.synchronous:
+            def _wait_for_completion() -> None:
+                # Query your orchestrator backend to wait until the run has finished.
+                # If possible, you can also stream the logs of the pipeline run here.
+            
+            return SubmissionResult(wait_for_completion=_wait_for_completion)
 ```
 
 {% hint style="info" %}
