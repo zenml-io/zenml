@@ -33,6 +33,7 @@ from zenml.constants import (
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
+    DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
     DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
@@ -355,6 +356,7 @@ class ServerConfiguration(BaseModel):
     auto_activate: bool = False
 
     thread_pool_size: int = DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE
+    auth_thread_pool_size: int = DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE
     server_request_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT
     server_request_deduplication: bool = True
     server_request_cache_timeout: int = (

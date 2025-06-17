@@ -24,7 +24,7 @@ import re
 import sys
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -59,7 +59,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, func
+from sqlalchemy import QueuePool, func, update
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -2577,7 +2577,6 @@ class SqlZenStore(BaseZenStore):
                 col(ApiTransactionSchema.expired) < utc_now(),
             )
         )
-        session.commit()
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2592,7 +2591,6 @@ class SqlZenStore(BaseZenStore):
             was created.
         """
         with Session(self.engine) as session:
-            self._cleanup_expired_api_transactions(session=session)
             self._set_request_user_id(
                 request_model=api_transaction, session=session
             )
@@ -2628,42 +2626,37 @@ class SqlZenStore(BaseZenStore):
         self,
         api_transaction_id: UUID,
         api_transaction_update: ApiTransactionUpdate,
-    ) -> ApiTransactionResponse:
+    ) -> None:
         """Finalize an API transaction.
 
         Args:
             api_transaction_id: The ID of the API transaction to update.
             api_transaction_update: The update to be applied to the API transaction.
 
-        Returns:
-            The updated API transaction.
-
         Raises:
-            KeyError: If the API transaction has already been finalized.
+            KeyError: If the API transaction is not found.
         """
         with Session(self.engine) as session:
-            self._cleanup_expired_api_transactions(session=session)
-            api_transaction_schema = self._get_api_transaction(
-                api_transaction_id=api_transaction_id,
-                session=session,
+            updated = utc_now()
+            expired = updated + timedelta(
+                seconds=api_transaction_update.cache_time
             )
-
-            if api_transaction_schema.completed:
-                raise KeyError(
-                    f"Unable to finalize API transaction with ID "
-                    f"{api_transaction_id}: The transaction has already been "
-                    "finalized."
+            result = session.execute(
+                update(ApiTransactionSchema)
+                .where(col(ApiTransactionSchema.id) == api_transaction_id)
+                .values(
+                    completed=True,
+                    updated=updated,
+                    expired=expired,
                 )
-
-            api_transaction_schema.update(update=api_transaction_update)
-            api_transaction_schema.completed = True
-            session.add(api_transaction_schema)
+            )
+            self._cleanup_expired_api_transactions(session=session)
             session.commit()
 
-            session.refresh(api_transaction_schema)
-            return api_transaction_schema.to_model(
-                include_metadata=True, include_resources=True
-            )
+            if result.rowcount == 0:  # type: ignore[attr-defined]
+                raise KeyError(
+                    f"API transaction with ID {api_transaction_id} not found."
+                )
 
     def delete_api_transaction(self, api_transaction_id: UUID) -> None:
         """Delete an API transaction.
@@ -2672,17 +2665,12 @@ class SqlZenStore(BaseZenStore):
             api_transaction_id: The ID of the API transaction to delete.
         """
         with Session(self.engine) as session:
-            self._cleanup_expired_api_transactions(session=session)
-            try:
-                transaction = self._get_api_transaction(
-                    api_transaction_id=api_transaction_id,
-                    session=session,
+            session.execute(
+                delete(ApiTransactionSchema).where(
+                    col(ApiTransactionSchema.id) == api_transaction_id
                 )
-            except KeyError:
-                pass
-            else:
-                session.delete(transaction)
-                session.commit()
+            )
+            session.commit()
 
     # -------------------- Services --------------------
 

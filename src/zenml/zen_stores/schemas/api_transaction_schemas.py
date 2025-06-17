@@ -32,6 +32,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
+    build_index,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
@@ -40,7 +41,15 @@ class ApiTransactionSchema(BaseSchema, table=True):
     """SQL Model for API transactions."""
 
     __tablename__ = "api_transaction"
-
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "completed",
+                "expired",
+            ],
+        ),
+    )
     method: str
     url: str = Field(sa_column=Column(TEXT, nullable=False))
     completed: bool = Field(default=False)

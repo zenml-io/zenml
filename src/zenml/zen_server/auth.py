@@ -1113,7 +1113,7 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
     provider = authentication_provider()
     # Create a custom thread pool limiter with a limit of 1 thread for all
     # auth calls
-    thread_limiter = CapacityLimiter(1)
+    thread_limiter = CapacityLimiter(server_config().auth_thread_pool_size)
 
     @wraps(provider)
     async def async_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:

@@ -108,8 +108,6 @@ from zenml.zen_server.utils import (
 
 DASHBOARD_DIRECTORY = "dashboard"
 
-MAX_ALLOWED_REQUEST_RETRY_AGE_SECONDS = 600  # 10 minutes
-
 
 def relative_path(rel: str) -> str:
     """Get the absolute path of a path relative to the ZenML server module.

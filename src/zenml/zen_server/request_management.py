@@ -37,9 +37,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-MAX_ALLOWED_REQUEST_RETRY_AGE_SECONDS = 600  # 10 minutes
-
-
 class RequestContext:
     """Context for a request."""
 
