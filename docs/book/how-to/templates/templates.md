@@ -261,7 +261,7 @@ def trigger_specific_template(df: UnmaterializedArtifact):
     )
     
     # Option A: If you know the template ID
-    template_id = "your-template-uuid-here"
+    template_id = UUID(<YOUR-TEMPLATE-ID>)
     Client().trigger_pipeline(template_id=template_id, run_configuration=run_config)
     
     # Option B: If you need to look up the template by name
