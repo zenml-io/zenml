@@ -69,6 +69,11 @@ from zenml import step, pipeline
 from zenml.integrations.slack.steps.slack_alerter_ask_step import slack_alerter_ask_step
 
 @step
+def train_model():
+    # Training logic here - this is a placeholder function
+    return "trained_model_object"
+
+@step
 def deploy_model(model, approved: bool) -> None:
     if approved:
         # Deploy the model to production

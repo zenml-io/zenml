@@ -28,6 +28,8 @@ Without templates, each scenario would require:
 
 - **Through Python**: Data scientists can programmatically trigger templates with custom parameters
   ```python
+  from zenml.client import Client
+  
   Client().trigger_pipeline(
       template_id="daily-retraining",
       run_configuration={
