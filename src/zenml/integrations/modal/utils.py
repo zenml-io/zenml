@@ -80,17 +80,14 @@ class ModalLogStreamer:
                 "--timestamps",
             ]
             self.logger.debug(f"Starting log stream: {' '.join(cmd)}")
-
-            process = subprocess.Popen(
+            with subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,  # Line buffered
                 universal_newlines=True,
-            )
-
-            # Stream logs line by line
+            ) as process:
             while self.log_stream_active.is_set() and process.poll() is None:
                 if process.stdout:
                     line = process.stdout.readline()
