@@ -278,6 +278,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         include_python_packages: bool = False,
+        step_configuration_filter: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> PipelineDeploymentResponse:
         """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponse`.
@@ -286,6 +287,9 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -303,8 +307,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             pipeline_configuration = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )
-            step_configurations = json.loads(self.step_configurations)
-            for invocation_id, step in step_configurations.items():
+            step_configurations = {}
+            for invocation_id, step in json.loads(
+                self.step_configurations
+            ).items():
+                if (
+                    step_configuration_filter is not None
+                    and invocation_id not in step_configuration_filter
+                ):
+                    continue
                 step_configurations[invocation_id] = Step.from_dict(
                     step, pipeline_configuration
                 )

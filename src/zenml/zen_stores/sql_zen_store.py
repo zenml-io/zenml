@@ -4660,7 +4660,10 @@ class SqlZenStore(BaseZenStore):
             )
 
     def get_deployment(
-        self, deployment_id: UUID, hydrate: bool = True
+        self,
+        deployment_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -4668,6 +4671,9 @@ class SqlZenStore(BaseZenStore):
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
 
         Returns:
             The deployment.
@@ -4681,7 +4687,9 @@ class SqlZenStore(BaseZenStore):
             )
 
             return deployment.to_model(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                step_configuration_filter=step_configuration_filter,
             )
 
     def list_deployments(
