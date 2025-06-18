@@ -336,9 +336,9 @@ async def initialize_request_manager() -> None:
     """Initialize the request manager."""
     global _request_manager
     _request_manager = RequestManager(
-        deduplicate=server_config().server_request_deduplication,
-        transaction_ttl=server_config().server_request_cache_timeout,
-        request_timeout=server_config().server_request_timeout,
+        deduplicate=server_config().request_deduplication,
+        transaction_ttl=server_config().request_cache_timeout,
+        request_timeout=server_config().request_timeout,
     )
     await _request_manager.startup()
 
