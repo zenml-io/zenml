@@ -112,7 +112,9 @@ def upgrade() -> None:
         )
 
     with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
-        batch_op.alter_column("step_count", nullable=False)
+        batch_op.alter_column(
+            "step_count", existing_type=sa.Integer(), nullable=False
+        )
         batch_op.drop_column("step_configurations")
 
     # ### end Alembic commands ###
