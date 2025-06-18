@@ -760,6 +760,7 @@ class LogFile(BaseModel):
         end_time: Optional[Union[datetime, int, float]] = None,
         max_requests: Optional[int] = None,
         api_call_filter: Optional[List[str]] = None,
+        invert_api_call_filter: bool = False,
         group_retry_requests: bool = True,
         pps: int = 30,
         ppr: int = 20,
@@ -780,6 +781,7 @@ class LogFile(BaseModel):
             end_time: The end time of the plot (seconds since start).
             max_requests: The maximum number of requests to plot.
             api_call_filter: The API calls to filter.
+            invert_api_call_filter: Whether to invert the API call filter.
             group_retry_requests: Whether to group retry requests.
             pps: The number of pixels per second to plot.
             ppr: The number of requests per row.
@@ -837,10 +839,14 @@ class LogFile(BaseModel):
                 # No API call found, skip this request
                 continue
 
-            if api_call_filter is not None and not any(
-                re.match(pattern, api_call) for pattern in api_call_filter
-            ):
-                continue
+            if api_call_filter is not None:
+                matched = any(
+                    re.match(pattern, api_call) for pattern in api_call_filter
+                )
+                if invert_api_call_filter:
+                    matched = not matched
+                if not matched:
+                    continue
 
             # Group entries by transaction ID
             grouped_transaction_logs = defaultdict(list[LogLine])

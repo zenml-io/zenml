@@ -59,7 +59,10 @@ def get_kubernetes_settings(
                     "effect": "NoSchedule",
                 }
             ],
-            env=[{"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"}],
+            env=[
+                {"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"},
+                {"name": "ZENML_ENABLE_RICH_TRACEBACK", "value": "false"},
+            ],
         ),
         orchestrator_pod_settings=KubernetesPodSettings(
             resources={
@@ -273,7 +276,10 @@ report_kubernetes_settings = KubernetesOrchestratorSettings(
                 "effect": "NoSchedule",
             }
         ],
-        env=[{"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"}],
+        env=[
+            {"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"},
+            {"name": "ZENML_ENABLE_RICH_TRACEBACK", "value": "false"},
+        ],
     ),
 )
 

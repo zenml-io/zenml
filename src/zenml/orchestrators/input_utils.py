@@ -65,17 +65,37 @@ def resolve_step_inputs(
     steps_to_fetch.difference_update(step_runs.keys())
 
     if steps_to_fetch:
-        step_runs.update(
-            {
-                run_step.name: run_step
-                for run_step in pagination_utils.depaginate(
-                    Client().list_run_steps,
-                    pipeline_run_id=pipeline_run.id,
-                    project=pipeline_run.project_id,
-                    name="oneof:" + json.dumps(list(steps_to_fetch)),
-                )
-            }
-        )
+        # The list of steps might be too big to fit in the default max URL
+        # length of 8KB supported by most servers. So we need to split it into
+        # smaller chunks.
+        steps_list = list(steps_to_fetch)
+        chunks = []
+        current_chunk = []
+        current_length = 0
+        # stay under 6KB for good measure.
+        max_chunk_length = 6000
+
+        for step_name in steps_list:
+            current_chunk.append(step_name)
+            current_length += len(step_name)
+
+            if current_length > max_chunk_length:
+                chunks.append(current_chunk)
+                current_chunk = []
+                current_length = 0
+
+        for chunk in chunks:
+            step_runs.update(
+                {
+                    run_step.name: run_step
+                    for run_step in pagination_utils.depaginate(
+                        Client().list_run_steps,
+                        pipeline_run_id=pipeline_run.id,
+                        project=pipeline_run.project_id,
+                        name="oneof:" + json.dumps(chunk),
+                    )
+                }
+            )
 
     input_artifacts: Dict[str, StepRunInputResponse] = {}
     for name, input_ in step.spec.inputs.items():
