@@ -35,9 +35,7 @@ def upgrade() -> None:
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column(
             "config",
-            sa.String(length=16777215).with_variant(
-                mysql.MEDIUMTEXT(), "mysql"
-            ),
+            sa.String(length=16777215).with_variant(mysql.MEDIUMTEXT, "mysql"),
             nullable=False,
         ),
         sa.Column(
