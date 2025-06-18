@@ -16,3 +16,6 @@
 from zenml.integrations.polars.materializers.dataframe_materializer import (  # noqa
     PolarsMaterializer,
 )
+from zenml.integrations.polars.materializers.lazyframe_materializer import ( # noqa
+    PolarsLazyMaterializer,
+)
