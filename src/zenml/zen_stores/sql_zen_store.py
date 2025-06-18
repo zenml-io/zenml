@@ -2648,6 +2648,7 @@ class SqlZenStore(BaseZenStore):
                     completed=True,
                     updated=updated,
                     expired=expired,
+                    result=api_transaction_update.get_result(),
                 )
             )
             self._cleanup_expired_api_transactions(session=session)

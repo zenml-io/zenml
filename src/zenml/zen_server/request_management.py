@@ -381,7 +381,8 @@ class RequestManager:
                             if len(result_to_cache) > MEDIUMTEXT_MAX_LENGTH:
                                 # If the result is too large, we also don't cache it.
                                 cache_result = False
-                                logger.exception(
+                                result_to_cache = None
+                                logger.error(
                                     f"Result of {func.__name__} "
                                     f"for transaction {transaction_id} is too "
                                     "large. Skipping caching."
