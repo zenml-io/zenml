@@ -17,7 +17,7 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String
+from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload, object_session
 from sqlalchemy.sql.base import ExecutableOption
@@ -382,6 +382,13 @@ class StepConfigurationSchema(BaseSchema, table=True):
     """SQL Model for step configurations."""
 
     __tablename__ = "step_configuration"
+    __table_args__ = (
+        UniqueConstraint(
+            "deployment_id",
+            "name",
+            name="unique_step_name_for_deployment",
+        ),
+    )
 
     index: int
     name: str
