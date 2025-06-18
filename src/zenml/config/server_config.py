@@ -359,9 +359,7 @@ class ServerConfiguration(BaseModel):
     auth_thread_pool_size: int = DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE
     request_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT
     request_deduplication: bool = True
-    request_cache_timeout: int = (
-        DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
-    )
+    request_cache_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
 
     max_request_body_size_in_bytes: int = (
         DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
