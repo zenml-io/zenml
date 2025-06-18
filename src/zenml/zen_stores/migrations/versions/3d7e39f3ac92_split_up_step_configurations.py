@@ -1,6 +1,6 @@
-"""Split up step configurations [4111cb9ac010].
+"""Split up step configurations [3d7e39f3ac92].
 
-Revision ID: 4111cb9ac010
+Revision ID: 3d7e39f3ac92
 Revises: 0.83.0
 Create Date: 2025-06-17 17:45:31.702617
 
@@ -17,7 +17,7 @@ from sqlalchemy.dialects import mysql
 from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
-revision = "4111cb9ac010"
+revision = "3d7e39f3ac92"
 down_revision = "0.83.0"
 branch_labels = None
 depends_on = None
@@ -50,6 +50,9 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint(
+            "deployment_id", "name", name="unique_step_name_for_deployment"
+        ),
     )
     with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
         batch_op.add_column(
