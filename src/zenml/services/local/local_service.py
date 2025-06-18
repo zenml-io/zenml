@@ -414,7 +414,8 @@ class LocalDaemonService(BaseService):
             p = psutil.Process(pid)
         except psutil.Error:
             logger.error(
-                "Could not find process for for service '%s' ...", self
+                "Could not find process for service '%s' ...",
+                self,
             )
             return
         if force:

@@ -39,7 +39,7 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     server_config,
 )
 
@@ -53,7 +53,7 @@ router = APIRouter(
 @router.get(
     INFO,
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_stack_deployment_info(
     provider: StackDeploymentProvider,
     _: AuthContext = Security(authorize),
@@ -73,7 +73,7 @@ def get_stack_deployment_info(
 @router.get(
     CONFIG,
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_stack_deployment_config(
     request: Request,
     provider: StackDeploymentProvider,
@@ -139,7 +139,7 @@ def get_stack_deployment_config(
 @router.get(
     STACK,
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_deployed_stack(
     provider: StackDeploymentProvider,
     stack_name: str,

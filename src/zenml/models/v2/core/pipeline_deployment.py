@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import Any, Dict, Optional, TypeVar, Union
+from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -22,7 +22,6 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.models.v2.base.base import BaseZenModel
-from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -41,9 +40,6 @@ from zenml.models.v2.core.pipeline_build import (
 )
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
-from zenml.models.v2.core.trigger import TriggerResponse
-
-TriggerPage = TypeVar("TriggerPage", bound=Page[TriggerResponse])
 
 # ------------------ Request Model ------------------
 
@@ -188,10 +184,6 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
 
 class PipelineDeploymentResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
-
-    triggers: TriggerPage = Field(  # type: ignore[valid-type]
-        title="The triggers configured with this event source.",
-    )
 
 
 class PipelineDeploymentResponse(

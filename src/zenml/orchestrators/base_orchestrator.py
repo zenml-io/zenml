@@ -61,7 +61,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
                     "The 'custom_docker_base_image_name' field has been "
                     "deprecated. To use a custom base container image with your "
                     "orchestrators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/how-to/infrastructure-deployment/customize-docker-builds)."
+                    "pipeline (see https://docs.zenml.io/concepts/containerization)."
                 )
 
         return data
@@ -220,29 +220,18 @@ class BaseOrchestrator(StackComponent, ABC):
             and not deployment.schedule
             and not prevent_client_side_caching
         ):
-            from zenml.orchestrators import step_run_utils
+            from zenml.orchestrators import cache_utils
 
-            cached_invocations = step_run_utils.create_cached_step_runs(
-                deployment=deployment,
-                pipeline_run=placeholder_run,
-                stack=stack,
+            run_required = (
+                cache_utils.create_cached_step_runs_and_prune_deployment(
+                    deployment=deployment,
+                    pipeline_run=placeholder_run,
+                    stack=stack,
+                )
             )
 
-            for invocation_id in cached_invocations:
-                # Remove the cached step invocations from the deployment so
-                # the orchestrator does not try to run them
-                deployment.step_configurations.pop(invocation_id)
-
-            for step in deployment.step_configurations.values():
-                for invocation_id in cached_invocations:
-                    if invocation_id in step.spec.upstream_steps:
-                        step.spec.upstream_steps.remove(invocation_id)
-
-            if len(deployment.step_configurations) == 0:
-                # All steps were cached, we update the pipeline run status and
-                # don't actually use the orchestrator to run the pipeline
+            if not run_required:
                 self._cleanup_run()
-                logger.info("All steps of the pipeline run were cached.")
                 return
         else:
             logger.debug("Skipping client-side caching.")

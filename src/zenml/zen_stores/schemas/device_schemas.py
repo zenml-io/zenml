@@ -15,10 +15,12 @@
 
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Sequence, Tuple
 from uuid import UUID
 
 from passlib.context import CryptContext
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Relationship
 
 from zenml.enums import OAuthDeviceStatus
@@ -29,12 +31,14 @@ from zenml.models import (
     OAuthDeviceResponse,
     OAuthDeviceResponseBody,
     OAuthDeviceResponseMetadata,
+    OAuthDeviceResponseResources,
     OAuthDeviceUpdate,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 
 class OAuthDeviceSchema(BaseSchema, table=True):
@@ -68,6 +72,36 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship(back_populates="auth_devices")
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(OAuthDeviceSchema.user)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def _generate_user_code(cls) -> str:
@@ -230,7 +264,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             )
 
         body = OAuthDeviceResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
             client_id=self.client_id,
@@ -241,10 +275,16 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             ip_address=self.ip_address,
             hostname=self.hostname,
         )
+        resources = None
+        if include_resources:
+            resources = OAuthDeviceResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
         return OAuthDeviceResponse(
             id=self.id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def to_internal_model(
@@ -269,6 +309,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             id=device_model.id,
             body=device_model.body,
             metadata=device_model.metadata,
+            resources=device_model.resources,
             user_code=self.user_code,
             device_code=self.device_code,
         )

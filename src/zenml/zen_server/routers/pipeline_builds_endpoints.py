@@ -36,7 +36,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
-    handle_exceptions,
+    async_fastapi_endpoint_wrapper,
     make_dependable,
     zen_store,
 )
@@ -60,7 +60,7 @@ router = APIRouter(
     deprecated=True,
     tags=["builds"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def create_build(
     build: PipelineBuildRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -97,7 +97,7 @@ def create_build(
     deprecated=True,
     tags=["builds"],
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def list_builds(
     build_filter_model: PipelineBuildFilter = Depends(
         make_dependable(PipelineBuildFilter)
@@ -133,7 +133,7 @@ def list_builds(
     "/{build_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def get_build(
     build_id: UUID,
     hydrate: bool = True,
@@ -158,7 +158,7 @@ def get_build(
     "/{build_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@handle_exceptions
+@async_fastapi_endpoint_wrapper
 def delete_build(
     build_id: UUID,
     _: AuthContext = Security(authorize),

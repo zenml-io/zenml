@@ -20,11 +20,17 @@ To run this file locally, execute:
     ```
 """
 
+import logging
 import os
+import threading
+import time
+from asyncio import Lock, Semaphore, TimeoutError, wait_for
 from asyncio.log import logger
+from contextvars import ContextVar
 from datetime import datetime, timedelta
 from genericpath import isfile
-from typing import Any, List, Set
+from typing import Any, List, Optional, Set
+from uuid import uuid4
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
@@ -113,6 +119,10 @@ from zenml.zen_server.utils import (
 
 DASHBOARD_DIRECTORY = "dashboard"
 
+request_ids: ContextVar[Optional[str]] = ContextVar(
+    "request_ids", default=None
+)
+
 
 def relative_path(rel: str) -> str:
     """Get the absolute path of a path relative to the ZenML server module.
@@ -138,6 +148,7 @@ last_user_activity: datetime = utc_now()
 last_user_activity_reported: datetime = last_user_activity + timedelta(
     seconds=-DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
 )
+last_user_activity_lock = Lock()
 
 
 # Customize the default request validation handler that comes with FastAPI
@@ -247,51 +258,6 @@ class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
 
 ALLOWED_FOR_FILE_UPLOAD: Set[str] = set()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=server_config().cors_allow_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.add_middleware(
-    RequestBodyLimit, max_bytes=server_config().max_request_body_size_in_bytes
-)
-app.add_middleware(
-    RestrictFileUploadsMiddleware, allowed_paths=ALLOWED_FOR_FILE_UPLOAD
-)
-
-
-@app.middleware("http")
-async def set_secure_headers(request: Request, call_next: Any) -> Any:
-    """Middleware to set secure headers.
-
-    Args:
-        request: The incoming request.
-        call_next: The next function to be called.
-
-    Returns:
-        The response with secure headers set.
-    """
-    try:
-        response = await call_next(request)
-    except Exception:
-        logger.exception("An error occurred while processing the request")
-        response = JSONResponse(
-            status_code=500,
-            content={"detail": "An unexpected error occurred."},
-        )
-
-    # If the request is for the openAPI docs, don't set secure headers
-    if request.url.path.startswith("/docs") or request.url.path.startswith(
-        "/redoc"
-    ):
-        return response
-
-    secure_headers().framework.fastapi(response)
-    return response
-
 
 @app.middleware("http")
 async def track_last_user_activity(request: Request, call_next: Any) -> Any:
@@ -310,23 +276,29 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
     """
     global last_user_activity
     global last_user_activity_reported
+    global last_user_activity_lock
 
     now = utc_now()
 
     try:
         if is_user_request(request):
-            last_user_activity = now
+            report_user_activity = False
+            async with last_user_activity_lock:
+                last_user_activity = now
+                if (
+                    (now - last_user_activity_reported).total_seconds()
+                    > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
+                ):
+                    last_user_activity_reported = now
+                    report_user_activity = True
+
+            if report_user_activity:
+                zen_store()._update_last_user_activity_timestamp(
+                    last_user_activity=last_user_activity
+                )
     except Exception as e:
         logger.debug(
             f"An unexpected error occurred while checking user activity: {e}"
-        )
-    if (
-        (now - last_user_activity_reported).total_seconds()
-        > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
-    ):
-        last_user_activity_reported = now
-        zen_store()._update_last_user_activity_timestamp(
-            last_user_activity=last_user_activity
         )
 
     try:
@@ -376,6 +348,190 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
             status_code=500,
             content={"detail": "An unexpected error occurred."},
         )
+
+
+request_semaphore = Semaphore(server_config().thread_pool_size)
+
+
+@app.middleware("http")
+async def prevent_read_timeout(request: Request, call_next: Any) -> Any:
+    """Prevent read timeout client errors.
+
+    Args:
+        request: The incoming request.
+        call_next: The next function to be called.
+
+    Returns:
+        The response to the request.
+    """
+    # Only process the REST API requests because these are the ones that
+    # take the most time to complete.
+    if not request.url.path.startswith(API):
+        return await call_next(request)
+
+    server_request_timeout = server_config().server_request_timeout
+
+    active_threads = threading.active_count()
+    request_id = request_ids.get()
+
+    client_ip = request.client.host if request.client else "unknown"
+    method = request.method
+    url_path = request.url.path
+
+    logger.debug(
+        f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
+        f"QUEUED [ "
+        f"threads: {active_threads} "
+        f"]"
+    )
+
+    start_time = time.time()
+
+    try:
+        # Here we wait until a worker thread is available to process the
+        # request with a timeout value that is set to be lower than the
+        # what the client is willing to wait for (i.e. lower than the
+        # client's HTTP request timeout). The rationale is that we want to
+        # respond to the client before it times out and decides to retry the
+        # request (which would overwhelm the server).
+        await wait_for(
+            request_semaphore.acquire(),
+            timeout=server_request_timeout,
+        )
+    except TimeoutError:
+        end_time = time.time()
+        duration = (end_time - start_time) * 1000
+        active_threads = threading.active_count()
+
+        logger.debug(
+            f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
+            f"THROTTLED after {duration:.2f}ms [ "
+            f"threads: {active_threads} "
+            f"]"
+        )
+
+        # We return a 429 error, basically telling the client to slow down.
+        # For the client, the 429 error is more meaningful than a ReadTimeout
+        # error, because it also tells the client two additional things:
+        #
+        # 1. The server is alive.
+        # 2. The server hasn't processed the request, so even if the request
+        #    is not idempotent, it's safe to retry it.
+        return JSONResponse(
+            {"error": "Server too busy. Please try again later."},
+            status_code=429,
+        )
+
+    duration = (time.time() - start_time) * 1000
+    active_threads = threading.active_count()
+
+    logger.debug(
+        f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
+        f"ACCEPTED after {duration:.2f}ms [ "
+        f"threads: {active_threads} "
+        f"]"
+    )
+
+    try:
+        return await call_next(request)
+    finally:
+        request_semaphore.release()
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next: Any) -> Any:
+    """Log requests to the ZenML server.
+
+    Args:
+        request: The incoming request object.
+        call_next: A function that will receive the request as a parameter and
+            pass it to the corresponding path operation.
+
+    Returns:
+        The response to the request.
+    """
+    if not logger.isEnabledFor(logging.DEBUG):
+        return await call_next(request)
+
+    # Get active threads count
+    active_threads = threading.active_count()
+
+    request_id = request.headers.get("X-Request-ID", str(uuid4())[:8])
+    # Detect if the request comes from Python, Web UI or something else
+    if source := request.headers.get("User-Agent"):
+        source = source.split("/")[0]
+        request_id = f"{request_id}/{source}"
+
+    request_ids.set(request_id)
+    client_ip = request.client.host if request.client else "unknown"
+    method = request.method
+    url_path = request.url.path
+
+    logger.debug(
+        f"[{request_id}] API STATS - {method} {url_path} from {client_ip} "
+        f"RECEIVED [ "
+        f"threads: {active_threads} "
+        f"]"
+    )
+
+    start_time = time.time()
+    response = await call_next(request)
+    duration = (time.time() - start_time) * 1000
+    status_code = response.status_code
+
+    logger.debug(
+        f"[{request_id}] API STATS - {status_code} {method} {url_path} from "
+        f"{client_ip} took {duration:.2f}ms [ "
+        f"threads: {active_threads} "
+        f"]"
+    )
+    return response
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=server_config().cors_allow_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(
+    RequestBodyLimit, max_bytes=server_config().max_request_body_size_in_bytes
+)
+app.add_middleware(
+    RestrictFileUploadsMiddleware, allowed_paths=ALLOWED_FOR_FILE_UPLOAD
+)
+
+
+@app.middleware("http")
+async def set_secure_headers(request: Request, call_next: Any) -> Any:
+    """Middleware to set secure headers.
+
+    Args:
+        request: The incoming request.
+        call_next: The next function to be called.
+
+    Returns:
+        The response with secure headers set.
+    """
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("An error occurred while processing the request")
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred."},
+        )
+
+    # If the request is for the openAPI docs, don't set secure headers
+    if request.url.path.startswith("/docs") or request.url.path.startswith(
+        "/redoc"
+    ):
+        return response
+
+    secure_headers().framework.fastapi(response)
+    return response
 
 
 @app.on_event("startup")

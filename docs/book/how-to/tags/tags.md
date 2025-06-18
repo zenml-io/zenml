@@ -35,6 +35,8 @@ In order to tag an artifact through the Python SDK, you can use either use\
 the `ArtifactConfig` object:
 
 ```python
+from typing import Annotated
+import pandas as pd
 from zenml import step, ArtifactConfig
 
 @step
@@ -98,7 +100,7 @@ Alternatively, you can use the same function within a step without\
 specifying any arguments, which will automatically tag the run:
 
 ```python
-from zenml import step
+from zenml import step, add_tags
 
 @step
 def my_step():
@@ -134,6 +136,8 @@ model = Model(
 )
 
 # Use this tagged model in your steps and pipelines as needed
+from zenml import pipeline
+
 @pipeline(model=model)
 def my_pipeline(...):
     ...
@@ -205,6 +209,7 @@ Alternatively, you can also create an exclusive tag separately and use it later:
 
 ```python
 from zenml.client import Client
+from zenml import pipeline
 
 Client().create_tag(name="an_exclusive_tag", exclusive=True)
 

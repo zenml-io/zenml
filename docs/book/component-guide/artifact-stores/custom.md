@@ -21,7 +21,8 @@ The Artifact Store establishes one of the main components in every ZenML stack. 
 Putting all these considerations together, we end up with the following implementation:
 
 ```python
-
+from abc import abstractmethod
+from typing import Any, ClassVar, List, Set, Union
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent, StackComponentConfig
 
@@ -40,7 +41,7 @@ class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores."""
 
     @abstractmethod
-    def open(self, name: PathType, mode: str = "r") -> Any:
+    def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path."""
 
     @abstractmethod
@@ -106,8 +107,8 @@ class BaseArtifactStoreFlavor(Flavor):
 
     @property
     @abstractmethod
-    def name(self) -> Type["BaseArtifactStore"]:
-        """Returns the name of the flavor."""
+    def name(self) -> str:
+        """Returns the flavor's string identifier."""
 
     @property
     def type(self) -> StackComponentType:

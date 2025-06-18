@@ -239,7 +239,7 @@ def web_login(
         else:
             # There was another error with the request
             raise AuthorizationException(
-                f"Error: {response.status_code} {response.json()['error']}"
+                f"Error: {response.status_code} {response.text}"
             )
 
     # Save the token in the credentials store

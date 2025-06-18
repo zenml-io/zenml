@@ -268,9 +268,14 @@ def status() -> None:
         # Write about the active entities
         scope = "repository" if client.uses_local_configuration else "global"
         cli_utils.declare(f"  The active user is: '{client.active_user.name}'")
-        cli_utils.declare(
-            f"  The active project is: '{client.active_project.name}'"
-        )
+
+        try:
+            cli_utils.declare(
+                f"  The active project is: '{client.active_project.name}' ({scope})"
+            )
+        except RuntimeError:
+            cli_utils.declare("  No active project set.")
+
         cli_utils.declare(
             f"  The active stack is: '{client.active_stack_model.name}' ({scope})"
         )
@@ -408,7 +413,7 @@ def connect(
             "filesystem and is no longer supported. The web login workflow will "
             "be used instead. An alternative for non-interactive environments "
             "is to create and use a service account API key (see "
-            "https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account "
+            "https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account "
             "for more information)."
         )
 

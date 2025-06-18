@@ -172,7 +172,6 @@ zenml_examples/
 # VS Code and Cursor gunk
 .vscode/
 design/
-CLAUDE.md
 
 # pyenv local version file
 .python-version
@@ -197,8 +196,8 @@ examples/feast_feature_store/feast_feature_repo/data/registry.db
 zenml_tutorial/
 
 # Claude settings
-CLAUDE.md
 **/.claude/settings.local.json
+.claude/
 
 .local/
 # PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow
