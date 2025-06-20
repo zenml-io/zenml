@@ -99,10 +99,10 @@ def create_entity_docs(
                 module_md = (
                     f"# {item_name}\n\n"
                     f"::: {zenml_import_path}.{item.stem}\n"
-                    f"    handler: python\n"
-                    f"    rendering:\n"
+                    f"    options:\n"
                     f"      show_root_heading: true\n"
                     f"      show_source: true\n"
+                    f"      members: true\n"
                 )
 
                 if md_prefix:
@@ -123,8 +123,7 @@ def create_entity_docs(
                         f"# [{item_name}]"
                         f"({index_link})\n\n"
                         f"::: {zenml_import_path}.{item.stem}\n"
-                        f"    handler: python\n"
-                        f"    selection:\n"
+                        f"    options:\n"
                         f"        members: false\n"
                     )
                     index_file_contents.append(index_entry)

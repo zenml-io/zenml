@@ -21,8 +21,35 @@ plugins:
         python:
           setup_commands:
             - import docs.sys_modules_mock
-          rendering:
+          options:
+            # Include all public members, not just those in __all__
+            members: true
+            inherited_members: false
+            # Show all submodules automatically 
+            show_submodules: true
+            # Include functions, classes, modules, attributes
+            docstring_style: google
+            # Selection options
+            filters:
+              - "!^_"  # Exclude private members (starting with _)
+              - "^__init__$"  # But include __init__ methods
+              - "^__new__$"   # And __new__ methods
+            # Rendering options
             show_source: true
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_object_full_path: false
+            show_category_heading: true
+            # Group members by category
+            group_by_category: true
+            # Show type annotations
+            show_signature_annotations: true
+            # Show return type annotations
+            show_return_annotations: true
+            # Show the bases of classes
+            show_bases: true
+            # Merge init method documentation into class docstring
+            merge_init_into_class: true
 
 # This setting ensures links don't use directory URLs
 use_directory_urls: false
