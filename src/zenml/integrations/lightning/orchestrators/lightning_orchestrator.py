@@ -198,7 +198,8 @@ class LightningOrchestrator(WheeledOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Creates a wheel and uploads the pipeline to Lightning.
@@ -222,8 +223,11 @@ class LightningOrchestrator(WheeledOrchestrator):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -280,7 +284,7 @@ class LightningOrchestrator(WheeledOrchestrator):
             code_path = code_file.name
         filename = f"{orchestrator_run_name}.tar.gz"
         # Construct the env variables for the pipeline
-        env_vars = environment.copy()
+        env_vars = base_environment.copy()
         orchestrator_run_id = str(uuid4())
         env_vars[ENV_ZENML_LIGHTNING_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
         # Set up some variables for configuration
