@@ -16,7 +16,7 @@
 #
 
 import time
-from typing import Annotated, Any, Dict, Tuple
+from typing import Annotated, Any, Dict, Optional, Tuple
 
 import click
 
@@ -29,45 +29,63 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
-kubernetes_settings = KubernetesOrchestratorSettings(
-    pod_startup_timeout=600,
-    pod_settings=KubernetesPodSettings(
-        resources={
-            "requests": {"cpu": "100m", "memory": "500Mi"},
-            # "limits": {"memory": "500Mi"},    -> grows linearly with number of steps
-        },
-        node_selectors={"pool": "workloads"},
-        tolerations=[
-            {
-                "key": "pool",
-                "operator": "Equal",
-                "value": "workloads",
-                "effect": "NoSchedule",
-            }
-        ],
-        env=[{"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"}],
-    ),
-    orchestrator_pod_settings=KubernetesPodSettings(
-        resources={
-            "requests": {"cpu": "100m", "memory": "500Mi"},
-            # "limits": {"memory": "500Mi"}, # -> grows linearly with number of steps
-        },
-        node_selectors={"pool": "workloads"},
-        tolerations=[
-            {
-                "key": "pool",
-                "operator": "Equal",
-                "value": "workloads",
-                "effect": "NoSchedule",
-            }
-        ],
-    ),
-)
+
+def get_kubernetes_settings(
+    max_parallelism: Optional[int],
+) -> KubernetesOrchestratorSettings:
+    """Get the Kubernetes settings for the ZenML server.
+
+    Args:
+        max_parallelism: The maximum number of parallel steps to run.
+
+    Returns:
+        The Kubernetes settings for the ZenML server.
+    """
+    return KubernetesOrchestratorSettings(
+        service_account_name="zenml-service-account",
+        pod_startup_timeout=600,
+        max_parallelism=max_parallelism,
+        pod_settings=KubernetesPodSettings(
+            resources={
+                "requests": {"cpu": "100m", "memory": "500Mi"},
+                # "limits": {"memory": "500Mi"},    -> grows linearly with number of steps
+            },
+            node_selectors={"pool": "workloads"},
+            tolerations=[
+                {
+                    "key": "pool",
+                    "operator": "Equal",
+                    "value": "workloads",
+                    "effect": "NoSchedule",
+                }
+            ],
+            env=[
+                {"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"},
+                {"name": "ZENML_ENABLE_RICH_TRACEBACK", "value": "false"},
+            ],
+        ),
+        orchestrator_pod_settings=KubernetesPodSettings(
+            resources={
+                "requests": {"cpu": "100m", "memory": "500Mi"},
+                # "limits": {"memory": "500Mi"}, # -> grows linearly with number of steps
+            },
+            node_selectors={"pool": "workloads"},
+            tolerations=[
+                {
+                    "key": "pool",
+                    "operator": "Equal",
+                    "value": "workloads",
+                    "effect": "NoSchedule",
+                }
+            ],
+        ),
+    )
+
 
 docker_settings = DockerSettings(
     python_package_installer=PythonPackageInstaller.UV,
 )
-settings = {"docker": docker_settings, "orchestrator": kubernetes_settings}
+settings = {"docker": docker_settings}
 
 
 @step
@@ -243,6 +261,7 @@ def load_step(
 # The report results step is beefier than the load step because it has to fetch
 # all the artifacts from the run.
 report_kubernetes_settings = KubernetesOrchestratorSettings(
+    service_account_name="zenml-service-account",
     pod_settings=KubernetesPodSettings(
         resources={
             "requests": {"cpu": "100m", "memory": "800Mi"},
@@ -257,7 +276,10 @@ report_kubernetes_settings = KubernetesOrchestratorSettings(
                 "effect": "NoSchedule",
             }
         ],
-        env=[{"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"}],
+        env=[
+            {"name": "ZENML_LOGGING_VERBOSITY", "value": "debug"},
+            {"name": "ZENML_ENABLE_RICH_TRACEBACK", "value": "false"},
+        ],
     ),
 )
 
@@ -297,7 +319,7 @@ def report_results() -> None:
     print(f"Number of steps: {len(results)}")
 
 
-@pipeline(enable_cache=False, settings=settings)
+@pipeline(enable_cache=False)
 def load_test_pipeline(
     num_parallel_steps: int, duration: int, sleep_interval: float
 ) -> None:
@@ -360,8 +382,20 @@ def load_test_pipeline(
     type=int,
     show_default=True,
 )
+@click.option(
+    "--max-parallel-steps",
+    "-m",
+    help="Maximum number of parallel steps to run",
+    required=False,
+    default=None,
+    type=int,
+)
 def main(
-    parallel_steps: int, duration: int, sleep_interval: float, num_tags: int
+    parallel_steps: int,
+    duration: int,
+    sleep_interval: float,
+    num_tags: int,
+    max_parallel_steps: Optional[int] = None,
 ) -> None:
     """Execute a ZenML load test with configurable parallel steps.
 
@@ -373,12 +407,25 @@ def main(
         duration: The duration of the load test in seconds.
         sleep_interval: The interval to sleep between API calls in seconds.
         num_tags: The number of tags to add to the pipeline.
+        max_parallel_steps: The maximum number of parallel steps to run.
     """
-    click.echo(f"Starting load test with {parallel_steps} parallel steps...")
+    if max_parallel_steps:
+        click.echo(
+            f"Starting load test with {parallel_steps} parallel steps with "
+            f"max {max_parallel_steps} running steps at a time..."
+        )
+    else:
+        click.echo(
+            f"Starting load test with {parallel_steps} parallel steps..."
+        )
     click.echo(f"Duration: {duration}s, Sleep Interval: {sleep_interval}s")
+
+    kubernetes_settings = get_kubernetes_settings(max_parallel_steps)
+    settings["orchestrator"] = kubernetes_settings
 
     load_test_pipeline.configure(
         tags=[Tag(name=f"tag_{i}", cascade=True) for i in range(num_tags)],
+        settings=settings,
     )
 
     load_test_pipeline(

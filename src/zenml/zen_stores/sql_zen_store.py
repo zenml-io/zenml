@@ -22,10 +22,9 @@ import os
 import random
 import re
 import sys
-import threading
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -60,7 +59,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, func
+from sqlalchemy import QueuePool, func, update
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -160,6 +159,9 @@ from zenml.models import (
     APIKeyResponse,
     APIKeyRotateRequest,
     APIKeyUpdate,
+    ApiTransactionRequest,
+    ApiTransactionResponse,
+    ApiTransactionUpdate,
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
@@ -331,6 +333,7 @@ from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
     ActionSchema,
     APIKeySchema,
+    ApiTransactionSchema,
     ArtifactSchema,
     ArtifactVersionSchema,
     BaseSchema,
@@ -427,6 +430,46 @@ def exponential_backoff_with_jitter(
 class Session(SqlModelSession):
     """Session subclass that automatically tracks duration and calling context."""
 
+    def _get_metrics(self) -> Dict[str, Any]:
+        """Get the metrics for the session.
+
+        Returns:
+            The metrics for the session.
+        """
+        # Get SQLAlchemy connection pool info
+        assert isinstance(self.bind, Engine)
+        assert isinstance(self.bind.pool, QueuePool)
+        checked_out_connections = self.bind.pool.checkedout()
+        available_connections = self.bind.pool.checkedin()
+        overflow = self.bind.pool.overflow()
+
+        return {
+            "active_connections": checked_out_connections,
+            "idle_connections": available_connections,
+            "overflow_connections": overflow,
+        }
+
+    def _get_metrics_log_str(self) -> str:
+        """Get the metrics for the session as a string for logging.
+
+        Returns:
+            The metrics for the session as a string for logging.
+        """
+        if not logger.isEnabledFor(logging.DEBUG):
+            return ""
+        metrics = self._get_metrics()
+        # Add the server metrics if running in a server
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            from zenml.zen_server.utils import get_system_metrics
+
+            metrics.update(get_system_metrics())
+
+        return (
+            " [ "
+            + " ".join([f"{key}: {value}" for key, value in metrics.items()])
+            + " ]"
+        )
+
     def __enter__(self) -> "Session":
         """Enter the context manager.
 
@@ -434,15 +477,19 @@ class Session(SqlModelSession):
             The SqlModel session.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            # Get the request ID from the current thread object
-            self.request_id = threading.current_thread().name
+            self.log_request_id = "N/A"
+            self.log_request = ""
+            if handle_bool_env_var(ENV_ZENML_SERVER):
+                # Running inside server
+                from zenml.zen_server.utils import get_current_request_context
 
-            # Get SQLAlchemy connection pool info
-            assert isinstance(self.bind, Engine)
-            assert isinstance(self.bind.pool, QueuePool)
-            checked_out_connections = self.bind.pool.checkedout()
-            available_connections = self.bind.pool.checkedin()
-            overflow = self.bind.pool.overflow()
+                # If the code is running on the server, use the auth context.
+                try:
+                    request_context = get_current_request_context()
+                    self.log_request_id = request_context.log_request_id
+                    self.log_request = request_context.log_request
+                except RuntimeError:
+                    pass
 
             # Look up the stack to find the SQLZenStore method
             for frame in inspect.stack():
@@ -457,10 +504,9 @@ class Session(SqlModelSession):
                 self.caller_method = "unknown"
 
             logger.debug(
-                f"[{self.request_id}] SQL STATS - "
-                f"'{self.caller_method}' started [ conn(active): "
-                f"{checked_out_connections} conn(idle): "
-                f"{available_connections} conn(overflow): {overflow} ]"
+                f"[{self.log_request_id}] SQL STATS - "
+                f"{self.log_request} "
+                f"'{self.caller_method}' STARTED {self._get_metrics_log_str()}"
             )
 
             self.start_time = time.time()
@@ -483,19 +529,18 @@ class Session(SqlModelSession):
         if logger.isEnabledFor(logging.DEBUG):
             duration = (time.time() - self.start_time) * 1000
 
-            # Get SQLAlchemy connection pool info
-            assert isinstance(self.bind, Engine)
-            assert isinstance(self.bind.pool, QueuePool)
-            checked_out_connections = self.bind.pool.checkedout()
-            available_connections = self.bind.pool.checkedin()
-            overflow = self.bind.pool.overflow()
+            # Add error information to the log
+            error_info = ""
+            if exc_type is not None:
+                error_info = " with ERROR"
+
             logger.debug(
-                f"[{self.request_id}] SQL STATS - "
-                f"'{self.caller_method}' completed in "
-                f"{duration:.2f}ms [ conn(active): "
-                f"{checked_out_connections} conn(idle): "
-                f"{available_connections} conn(overflow): {overflow} ]"
+                f"[{self.log_request_id}] SQL STATS - "
+                f"{self.log_request} "
+                f"'{self.caller_method}' COMPLETED in "
+                f"{duration:.2f}ms {error_info} {self._get_metrics_log_str()}"
             )
+
         super().__exit__(exc_type, exc_val, exc_tb)
 
 
@@ -2455,6 +2500,178 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.delete(api_key)
+            session.commit()
+
+    # -------------------- API Transactions --------------------
+
+    def _get_api_transaction(
+        self,
+        api_transaction_id: UUID,
+        session: Session,
+        method: Optional[str] = None,
+        url: Optional[str] = None,
+    ) -> ApiTransactionSchema:
+        """Retrieve or create a new API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to retrieve.
+            session: The session to use for the query.
+            method: The HTTP method of the API transaction.
+            url: The URL of the API transaction.
+
+        Returns:
+            The API transaction.
+
+        Raises:
+            KeyError: If the API transaction does not exist.
+            EntityExistsError: If the API transaction exists but is not owned by
+                the current user.
+        """
+        api_transaction_schema = session.exec(
+            select(ApiTransactionSchema).where(
+                ApiTransactionSchema.id == api_transaction_id
+            )
+        ).first()
+
+        if not api_transaction_schema:
+            raise KeyError(
+                f"API transaction with ID {api_transaction_id} not found."
+            )
+
+        # As a security measure, we don't allow users to access other users'
+        # API transactions.
+        if (
+            api_transaction_schema.user_id
+            != self._get_active_user(session=session).id
+        ):
+            raise EntityExistsError(
+                f"Unable to create API transaction with ID "
+                f"{api_transaction_id}: A transaction with "
+                "the same ID already exists for a different user."
+            )
+
+        # As another security measure, we don't allow the same transaction
+        # ID to be used with different method or URL.
+        if (
+            method is not None
+            and api_transaction_schema.method != method
+            or url is not None
+            and api_transaction_schema.url != url
+        ):
+            raise EntityExistsError(
+                f"Unable to get API transaction with ID "
+                f"{api_transaction_id}: A transaction with "
+                "the same ID already exists with a different method or URL."
+            )
+
+        return api_transaction_schema
+
+    def _cleanup_expired_api_transactions(self, session: Session) -> None:
+        """Delete completed API transactions that have expired.
+
+        Args:
+            session: The session to use for the query.
+        """
+        session.execute(
+            delete(ApiTransactionSchema).where(
+                col(ApiTransactionSchema.completed),
+                col(ApiTransactionSchema.expired) < utc_now(),
+            )
+        )
+
+    def get_or_create_api_transaction(
+        self, api_transaction: ApiTransactionRequest
+    ) -> Tuple[ApiTransactionResponse, bool]:
+        """Retrieve or create a new API transaction.
+
+        Args:
+            api_transaction: The API transaction to retrieve or create.
+
+        Returns:
+            The API transaction and a boolean indicating whether the transaction
+            was created.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=api_transaction, session=session
+            )
+
+            api_transaction_schema = ApiTransactionSchema.from_request(
+                api_transaction
+            )
+            session.add(api_transaction_schema)
+            created = False
+            try:
+                session.commit()
+                session.refresh(api_transaction_schema)
+                created = True
+            except IntegrityError:
+                # We have to rollback the failed session first in order to
+                # continue using it
+                session.rollback()
+                api_transaction_schema = self._get_api_transaction(
+                    api_transaction_id=api_transaction_schema.id,
+                    method=api_transaction.method,
+                    url=api_transaction.url,
+                    session=session,
+                )
+
+            return (
+                api_transaction_schema.to_model(
+                    include_metadata=True, include_resources=True
+                ),
+                created,
+            )
+
+    def finalize_api_transaction(
+        self,
+        api_transaction_id: UUID,
+        api_transaction_update: ApiTransactionUpdate,
+    ) -> None:
+        """Finalize an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to update.
+            api_transaction_update: The update to be applied to the API transaction.
+
+        Raises:
+            KeyError: If the API transaction is not found.
+        """
+        with Session(self.engine) as session:
+            updated = utc_now()
+            expired = updated + timedelta(
+                seconds=api_transaction_update.cache_time
+            )
+            result = session.execute(
+                update(ApiTransactionSchema)
+                .where(col(ApiTransactionSchema.id) == api_transaction_id)
+                .values(
+                    completed=True,
+                    updated=updated,
+                    expired=expired,
+                    result=api_transaction_update.get_result(),
+                )
+            )
+            self._cleanup_expired_api_transactions(session=session)
+            session.commit()
+
+            if result.rowcount == 0:  # type: ignore[attr-defined]
+                raise KeyError(
+                    f"API transaction with ID {api_transaction_id} not found."
+                )
+
+    def delete_api_transaction(self, api_transaction_id: UUID) -> None:
+        """Delete an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to delete.
+        """
+        with Session(self.engine) as session:
+            session.execute(
+                delete(ApiTransactionSchema).where(
+                    col(ApiTransactionSchema.id) == api_transaction_id
+                )
+            )
             session.commit()
 
     # -------------------- Services --------------------
@@ -9517,7 +9734,7 @@ class SqlZenStore(BaseZenStore):
         """
         if handle_bool_env_var(ENV_ZENML_SERVER):
             # Running inside server
-            from zenml.zen_server.auth import get_auth_context
+            from zenml.zen_server.utils import get_auth_context
 
             # If the code is running on the server, use the auth context.
             auth_context = get_auth_context()

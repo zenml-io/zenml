@@ -1,7 +1,7 @@
 """Split up step configurations [3d7e39f3ac92].
 
 Revision ID: 3d7e39f3ac92
-Revises: 0.83.0
+Revises: 857843db1bcf
 Create Date: 2025-06-17 17:45:31.702617
 
 """
@@ -18,7 +18,7 @@ from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "3d7e39f3ac92"
-down_revision = "0.83.0"
+down_revision = "857843db1bcf"
 branch_labels = None
 depends_on = None
 

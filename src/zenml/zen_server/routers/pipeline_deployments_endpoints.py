@@ -142,7 +142,7 @@ def create_deployment(
     deprecated=True,
     tags=["deployments"],
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_deployments(
     request: Request,
     deployment_filter_model: PipelineDeploymentFilter = Depends(
@@ -196,7 +196,7 @@ def list_deployments(
     "/{deployment_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_deployment(
     request: Request,
     deployment_id: UUID,
