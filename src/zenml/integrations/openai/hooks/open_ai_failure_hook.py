@@ -13,10 +13,8 @@
 #  permissions and limitations under the License.
 """Functionality for OpenAI standard hooks."""
 
-import html
-import re
 import traceback
-from typing import List, Match, Optional
+from typing import Optional
 
 from openai import OpenAI
 
@@ -24,255 +22,13 @@ from zenml import get_step_context
 from zenml.client import Client
 from zenml.hooks import get_failure_template
 from zenml.logger import get_logger
+from zenml.utils.markdown_utils import (
+    FULL_MARKDOWN_OPTIONS,
+    MarkdownOutputFormat,
+    format_markdown,
+)
 
 logger = get_logger(__name__)
-
-
-def _escape_html_safely(text: str) -> str:
-    """Escapes HTML characters to prevent injection.
-
-    Args:
-        text: The text to escape.
-
-    Returns:
-        HTML-escaped string.
-    """
-    return html.escape(text)
-
-
-def _format_code_blocks(text: str) -> str:
-    """Formats markdown code blocks (```) to HTML.
-
-    Args:
-        text: The text containing code blocks.
-
-    Returns:
-        Text with code blocks converted to HTML.
-    """
-    # This pattern matches:
-    # - Opening ``` optionally followed by a language identifier
-    # - Content (possibly multi-line)
-    # - Closing ```
-    pattern = r"```([\w\+\#\-\.]+)?\s*\n?([\s\S]*?)\n?\s*```"
-
-    def replacer(match: Match[str]) -> str:
-        # Get the code and unescape HTML entities since we escaped everything earlier
-        code = html.unescape(match.group(2))
-        return f'<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace; overflow-x: auto; margin: 10px 0;"><code>{code}</code></pre>'
-
-    return re.sub(pattern, replacer, text)
-
-
-def _format_inline_code(text: str) -> str:
-    """Formats inline code (`) to HTML, avoiding already processed HTML tags.
-
-    Args:
-        text: The text containing inline code.
-
-    Returns:
-        Text with inline code converted to HTML.
-    """
-    # Split by HTML tags
-    parts = re.split(r"(<pre.*?</pre>|<code.*?</code>)", text, flags=re.DOTALL)
-    result_parts: List[str] = []
-
-    for i, part in enumerate(parts):
-        # Skip processing parts that are HTML tags (odd-indexed parts after the split)
-        if i % 2 == 1:
-            result_parts.append(part)
-        else:
-            # Process inline code in text parts
-            processed = re.sub(
-                r"`([^`]+)`",
-                r'<code style="background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: monospace;">\1</code>',
-                part,
-            )
-            result_parts.append(processed)
-
-    return "".join(result_parts)
-
-
-def _format_bold(text: str) -> str:
-    """Formats bold text (**text**) to HTML.
-
-    Args:
-        text: The text containing bold markdown.
-
-    Returns:
-        Text with bold markdown converted to HTML.
-    """
-    return re.sub(r"\*\*([^*\n]+)\*\*", r"<strong>\1</strong>", text)
-
-
-def _format_italics(text: str) -> str:
-    """Formats italic text (*text* and _text_) to HTML.
-
-    Args:
-        text: The text containing italic markdown.
-
-    Returns:
-        Text with italic markdown converted to HTML.
-    """
-
-    # Process single asterisks (but not ones that are part of bold)
-    def process_single_asterisks(text: str) -> str:
-        pattern = r"\*([^*\n]+)\*"
-
-        def replacer(match: Match[str]) -> str:
-            # Check if it's surrounded by other asterisks (part of bold)
-            full_match = match.group(0)
-            if "**" in full_match:
-                return full_match
-            return f"<em>{match.group(1)}</em>"
-
-        return re.sub(pattern, replacer, text)
-
-    text = process_single_asterisks(text)
-    # Process underscores
-    text = re.sub(r"_([^_\n]+)_", r"<em>\1</em>", text)
-    return text
-
-
-def _format_headers(text: str) -> str:
-    """Formats markdown headers (# ## ###) to HTML.
-
-    Args:
-        text: The text containing markdown headers.
-
-    Returns:
-        Text with headers converted to HTML.
-    """
-    text = re.sub(r"^# (.+)$", r"<h1>\1</h1>", text, flags=re.MULTILINE)
-    text = re.sub(r"^## (.+)$", r"<h2>\1</h2>", text, flags=re.MULTILINE)
-    text = re.sub(r"^### (.+)$", r"<h3>\1</h3>", text, flags=re.MULTILINE)
-    return text
-
-
-def _format_numbered_lists(text: str) -> str:
-    """Converts numbered lists to bullet points for consistency.
-
-    Args:
-        text: The text containing numbered lists.
-
-    Returns:
-        Text with numbered lists converted to bullet points.
-    """
-    numbered_list_pattern = r"^(\d+)\.\s+(.+)$"
-    lines = text.split("\n")
-    result_lines: List[str] = []
-
-    for line in lines:
-        match = re.match(numbered_list_pattern, line)
-        if match:
-            # Convert to a bullet point instead of keeping the number
-            result_lines.append(f"• {match.group(2)}")
-        else:
-            result_lines.append(line)
-
-    return "\n".join(result_lines)
-
-
-def _format_bullet_lists(text: str) -> str:
-    """Formats bullet lists to HTML unordered lists.
-
-    Args:
-        text: The text containing bullet lists.
-
-    Returns:
-        Text with bullet lists converted to HTML.
-    """
-    bullet_list_pattern = r"^[\*\-\+•]\s+(.+)$"
-    lines = text.split("\n")
-    in_list = False
-    result_lines: List[str] = []
-
-    for line in lines:
-        match = re.match(bullet_list_pattern, line)
-        if match:
-            if not in_list:
-                result_lines.append("<ul>")
-                in_list = True
-            result_lines.append(f"<li>{match.group(1)}</li>")
-        else:
-            if in_list:
-                result_lines.append("</ul>")
-                in_list = False
-            result_lines.append(line)
-
-    if in_list:
-        result_lines.append("</ul>")
-
-    return "\n".join(result_lines)
-
-
-def _format_paragraphs(text: str) -> str:
-    """Formats paragraphs and handles line breaks.
-
-    Args:
-        text: The text to format into paragraphs.
-
-    Returns:
-        Text with proper paragraph formatting.
-    """
-    paragraphs = re.split(r"\n\s*\n", text)
-    processed_paragraphs: List[str] = []
-
-    for p in paragraphs:
-        if not p.strip():
-            continue
-
-        # Skip wrapping with <p> if the content already has block-level HTML
-        if re.match(r"^\s*<(pre|h[1-6]|ul|ol|table|blockquote)", p.strip()):
-            processed_paragraphs.append(p.strip())
-        else:
-            # Replace single newlines with <br> within paragraphs
-            processed_p = re.sub(r"\n", "<br>", p.strip())
-            processed_paragraphs.append(f"<p>{processed_p}</p>")
-
-    return "\n".join(processed_paragraphs)
-
-
-def _format_markdown_for_html(markdown_text: str) -> str:
-    """Formats markdown text for HTML display.
-
-    Args:
-        markdown_text: The markdown text to format.
-
-    Returns:
-        HTML formatted string.
-    """
-    # First escape HTML characters to prevent injection
-    # We'll unescape code blocks later
-    safe_text = _escape_html_safely(markdown_text)
-
-    # Apply transformations in the correct order
-    result = safe_text
-
-    # 1. Process code blocks first (to prevent other formatting inside code)
-    result = _format_code_blocks(result)
-
-    # 2. Process inline code (avoiding already processed HTML tags)
-    result = _format_inline_code(result)
-
-    # 3. Process bold formatting
-    result = _format_bold(result)
-
-    # 4. Process italic formatting
-    result = _format_italics(result)
-
-    # 5. Process headers
-    result = _format_headers(result)
-
-    # 6. Process numbered lists (converts to bullets)
-    result = _format_numbered_lists(result)
-
-    # 7. Process bullet lists
-    result = _format_bullet_lists(result)
-
-    # 8. Process paragraphs and line breaks
-    result = _format_paragraphs(result)
-
-    return result
 
 
 def openai_alerter_failure_hook_helper(
@@ -391,7 +147,11 @@ OpenAI ChatGPT's suggestion (model = {model_name}) on how to fix it:
             additional_content = [
                 {
                     "title": f"OpenAI ChatGPT's suggestion (model = {model_name})",
-                    "content": _format_markdown_for_html(suggestion)
+                    "content": format_markdown(
+                        suggestion,
+                        output_format=MarkdownOutputFormat.HTML,
+                        options=FULL_MARKDOWN_OPTIONS,
+                    )
                     if suggestion
                     else "No suggestion available.",
                     "bg_color": "#f0f7ff",

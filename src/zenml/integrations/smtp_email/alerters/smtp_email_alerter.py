@@ -14,11 +14,10 @@
 """Implementation for SMTP Email flavor of alerter component."""
 
 import html
-import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any, List, Optional, Type, Union, cast
+from typing import Any, Optional, Type, Union, cast
 
 from pydantic import BaseModel, field_validator
 from typing_extensions import Never
@@ -32,6 +31,11 @@ from zenml.integrations.smtp_email.flavors.smtp_email_alerter_flavor import (
 from zenml.integrations.smtp_email.utils import validate_email
 from zenml.logger import get_logger
 from zenml.models.v2.misc.alerter_models import AlerterMessage
+from zenml.utils.markdown_utils import (
+    EMAIL_MARKDOWN_OPTIONS,
+    MarkdownOutputFormat,
+    format_markdown,
+)
 
 logger = get_logger(__name__)
 
@@ -243,71 +247,14 @@ class SMTPEmailAlerter(BaseAlerter):
         ):
             return params.html_body
 
-        # Properly format the message for HTML
-        # - Escape HTML entities first for security
-        # - Replace newlines with <br> tags
-        # - Add <pre> tags for code blocks
-        # - Convert Markdown-style formatting to HTML (backticks, asterisks)
-        formatted_message = message
+        # Use unified markdown utilities to format the message for HTML
+        formatted_message = ""
         if message:
-            # First, escape HTML entities to prevent XSS
-            safe_message = html.escape(message)
-
-            # Helper function to process markdown-style formatting
-            def process_markdown_line(line: str) -> str:
-                # Handle backticks for code
-                # Process inline code with backticks - replace `code` with <code>code</code>
-                # Note: We're working with already escaped HTML, so we need to be careful
-                line = re.sub(
-                    r"`([^`]+)`",
-                    r'<code style="background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: monospace;">\1</code>',
-                    line,
-                )
-
-                # Process bold with asterisks - replace *text* with <strong>text</strong>
-                line = re.sub(r"\*([^*\n]+)\*", r"<strong>\1</strong>", line)
-
-                # Process italic with underscores - replace _text_ with <em>text</em>
-                line = re.sub(r"_([^_\n]+)_", r"<em>\1</em>", line)
-
-                return line
-
-            # Check if the message contains a traceback or code block
-            if "Traceback" in safe_message or "File " in safe_message:
-                # For tracebacks, use <pre> to preserve formatting
-                formatted_parts: List[str] = []
-                in_traceback = False
-                for line in safe_message.split("\n"):
-                    if "Traceback" in line or in_traceback or "File " in line:
-                        in_traceback = True
-                        if not formatted_parts or not formatted_parts[
-                            -1
-                        ].startswith("<pre"):
-                            formatted_parts.append(
-                                "<pre style='font-family: monospace; white-space: pre-wrap; font-size: 12px; background-color: #f8f8f8; padding: 10px; border-radius: 3px;'>"
-                            )
-                        formatted_parts[-1] += line + "\n"
-                    else:
-                        if formatted_parts and formatted_parts[-1].startswith(
-                            "<pre"
-                        ):
-                            formatted_parts[-1] += "</pre>"
-                        # Process markdown formatting on non-traceback lines
-                        formatted_line = process_markdown_line(line)
-                        formatted_parts.append(formatted_line + "<br>")
-
-                # Close the last pre tag if needed
-                if formatted_parts and formatted_parts[-1].startswith("<pre"):
-                    formatted_parts[-1] += "</pre>"
-
-                formatted_message = "".join(formatted_parts)
-            else:
-                # For regular messages, process each line for markdown and replace newlines with <br> tags
-                formatted_lines = []
-                for line in safe_message.split("\n"):
-                    formatted_line = process_markdown_line(line)
-                    formatted_lines.append(formatted_line)
-                formatted_message = "<br>".join(formatted_lines)
+            formatted_message = format_markdown(
+                message,
+                output_format=MarkdownOutputFormat.HTML,
+                options=EMAIL_MARKDOWN_OPTIONS,
+            )
 
         if (
             params
