@@ -593,9 +593,20 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
+    <nav class="md-nav" aria-label="console">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.console-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attributes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#zenml.console.console" class="md-nav__link">
     <span class="md-ellipsis">
       console
@@ -603,8 +614,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#zenml.console.error_console" class="md-nav__link">
     <span class="md-ellipsis">
       error_console
@@ -612,8 +623,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#zenml.console.zenml_custom_theme" class="md-nav__link">
     <span class="md-ellipsis">
       zenml_custom_theme
@@ -621,13 +632,23 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#zenml.console.zenml_style_defaults" class="md-nav__link">
     <span class="md-ellipsis">
       zenml_style_defaults
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2945,9 +2966,20 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
+    <nav class="md-nav" aria-label="console">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.console-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attributes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Attributes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#zenml.console.console" class="md-nav__link">
     <span class="md-ellipsis">
       console
@@ -2955,8 +2987,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#zenml.console.error_console" class="md-nav__link">
     <span class="md-ellipsis">
       error_console
@@ -2964,8 +2996,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#zenml.console.zenml_custom_theme" class="md-nav__link">
     <span class="md-ellipsis">
       zenml_custom_theme
@@ -2973,13 +3005,23 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#zenml.console.zenml_style_defaults" class="md-nav__link">
     <span class="md-ellipsis">
       zenml_style_defaults
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3009,7 +3051,12 @@
 
 
 
-<a id="zenml.console"></a>
+<h2 id="zenml.console" class="doc doc-heading">
+            <code>zenml.console</code>
+
+
+</h2>
+
     <div class="doc doc-contents first">
 
         <p>ZenML console implementation.</p>
@@ -3028,20 +3075,20 @@
 
 
 
-
+<h3 id="zenml.console-attributes">Attributes</h3>
 
 <div class="doc doc-object doc-attribute">
 
 
 
-<h2 id="zenml.console.console" class="doc doc-heading">
+<h4 id="zenml.console.console" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">(</span><span class="n">theme</span><span class="o">=</span><span class="n">zenml_custom_theme</span><span class="p">,</span> <span class="n">markup</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
 
-</h2>
+</h4>
 
 
     <div class="doc doc-contents ">
@@ -3054,14 +3101,14 @@
 
 
 
-<h2 id="zenml.console.error_console" class="doc doc-heading">
+<h4 id="zenml.console.error_console" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">error_console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">(</span><span class="n">stderr</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="n">zenml_custom_theme</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
 
-</h2>
+</h4>
 
 
     <div class="doc doc-contents ">
@@ -3074,14 +3121,14 @@
 
 
 
-<h2 id="zenml.console.zenml_custom_theme" class="doc doc-heading">
+<h4 id="zenml.console.zenml_custom_theme" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">zenml_custom_theme</span> <span class="o">=</span> <span class="n">Theme</span><span class="p">(</span><span class="n">zenml_style_defaults</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
 
-</h2>
+</h4>
 
 
     <div class="doc doc-contents ">
@@ -3094,14 +3141,14 @@
 
 
 
-<h2 id="zenml.console.zenml_style_defaults" class="doc doc-heading">
+<h4 id="zenml.console.zenml_style_defaults" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">zenml_style_defaults</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;info&#39;</span><span class="p">:</span> <span class="n">Style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="s1">&#39;warning&#39;</span><span class="p">:</span> <span class="n">Style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;yellow&#39;</span><span class="p">),</span> <span class="s1">&#39;danger&#39;</span><span class="p">:</span> <span class="n">Style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="n">Style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">underline</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="s1">&#39;error&#39;</span><span class="p">:</span> <span class="n">Style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)}</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
 
-</h2>
+</h4>
 
 
     <div class="doc doc-contents ">
