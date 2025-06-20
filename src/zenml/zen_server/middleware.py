@@ -64,6 +64,9 @@ last_user_activity_reported: datetime = last_user_activity + timedelta(
     seconds=-DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
 )
 last_user_activity_lock = Lock()
+# Create a custom thread pool limiter with a limit of 1 thread for all
+# user activity updates
+last_user_activity_thread_limiter = CapacityLimiter(1)
 
 
 class RequestBodyLimit(BaseHTTPMiddleware):
@@ -154,9 +157,6 @@ class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
 
 
 ALLOWED_FOR_FILE_UPLOAD: Set[str] = set()
-# Create a custom thread pool limiter with a limit of 1 thread for all
-# user activity updates
-last_user_activity_thread_limiter = CapacityLimiter(1)
 
 
 async def track_last_user_activity(request: Request, call_next: Any) -> Any:
