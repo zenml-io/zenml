@@ -90,6 +90,14 @@ This would create the following visualization in the dashboard:
 
 ![CSV Visualization Example](../../.gitbook/assets/artifact_visualization_csv.png)
 
+{% hint style="info" %}
+**Shared CSS for Consistent Visualizations**
+
+When creating multiple HTML visualizations across your pipeline, consider using a shared CSS file to maintain consistent styling. Create a central CSS file with your design system (colors, components, layouts) and Python utilities to load it into your HTML templates. This approach eliminates code duplication, ensures visual consistency across all reports, and makes it easy to update styling across all visualizations from a single location.
+
+You can create helper functions that return complete HTML templates with shared styles, and use CSS variables for theme management. This pattern is especially valuable for teams generating multiple HTML reports or dashboards where maintaining a professional, cohesive appearance is important.
+{% endhint %}
+
 Another example is visualizing a matplotlib plot by embedding the image in an HTML string:
 
 ```python
