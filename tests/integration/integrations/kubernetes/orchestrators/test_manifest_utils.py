@@ -34,8 +34,6 @@ def test_build_pod_manifest_metadata():
     """Test that the metadata is correctly set in the manifest."""
     manifest: V1Pod = build_pod_manifest(
         pod_name="test_name",
-        run_name="test_run",
-        pipeline_name="test_pipeline",
         image_name="test_image",
         command=["test", "command"],
         args=["test", "args"],
@@ -43,6 +41,7 @@ def test_build_pod_manifest_metadata():
         pod_settings=KubernetesPodSettings(
             annotations={"blupus_loves": "strawberries"},
         ),
+        labels={"run": "test-run", "pipeline": "test-pipeline"},
     )
     assert isinstance(manifest, V1Pod)
 
@@ -97,8 +96,6 @@ def test_build_pod_manifest_pod_settings(
     """Test that the pod settings are correctly set in the manifest."""
     manifest: V1Pod = build_pod_manifest(
         pod_name="test_name",
-        run_name="test_run",
-        pipeline_name="test_pipeline",
         image_name="test_image",
         command=["test", "command"],
         args=["test", "args"],
@@ -125,8 +122,6 @@ def test_build_cron_job_manifest_pod_settings(
     manifest: V1CronJob = build_cron_job_manifest(
         cron_expression="* * * * *",
         pod_name="test_name",
-        run_name="test_run",
-        pipeline_name="test_pipeline",
         image_name="test_image",
         command=["test", "command"],
         args=["test", "args"],

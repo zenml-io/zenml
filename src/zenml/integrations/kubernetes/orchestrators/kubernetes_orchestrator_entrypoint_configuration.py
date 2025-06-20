@@ -18,9 +18,7 @@ from typing import TYPE_CHECKING, List, Optional, Set
 if TYPE_CHECKING:
     from uuid import UUID
 
-RUN_NAME_OPTION = "run_name"
 DEPLOYMENT_ID_OPTION = "deployment_id"
-NAMESPACE_OPTION = "kubernetes_namespace"
 RUN_ID_OPTION = "run_id"
 
 
@@ -35,9 +33,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
             Entrypoint options.
         """
         options = {
-            RUN_NAME_OPTION,
             DEPLOYMENT_ID_OPTION,
-            NAMESPACE_OPTION,
         }
         return options
 
@@ -58,29 +54,21 @@ class KubernetesOrchestratorEntrypointConfiguration:
     @classmethod
     def get_entrypoint_arguments(
         cls,
-        run_name: str,
         deployment_id: "UUID",
-        kubernetes_namespace: str,
         run_id: Optional["UUID"] = None,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            run_name: Name of the ZenML run.
             deployment_id: ID of the deployment.
-            kubernetes_namespace: Name of the Kubernetes namespace.
             run_id: Optional ID of the pipeline run. Not set for scheduled runs.
 
         Returns:
             List of entrypoint arguments.
         """
         args = [
-            f"--{RUN_NAME_OPTION}",
-            run_name,
             f"--{DEPLOYMENT_ID_OPTION}",
             str(deployment_id),
-            f"--{NAMESPACE_OPTION}",
-            kubernetes_namespace,
         ]
 
         if run_id:
