@@ -7,6 +7,12 @@ description: Add more resources to your pipeline configuration.
 Now that we have our pipeline up and running in the cloud, you might be wondering how ZenML figured out what sort of dependencies to install in the Docker image that we just ran on the VM. The answer lies in the [runner script we executed (i.e. run.py)](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py#L215), in particular, these lines:
 
 ```python
+import os
+
+# Assuming training_pipeline is imported from your pipeline module
+# from my_project.pipelines import training_pipeline
+
+pipeline_args = {}
 pipeline_args["config_path"] = os.path.join(
     config_folder, "training_rf.yaml"
 )
@@ -22,6 +28,8 @@ The above commands [configure our training pipeline](../starter-guide/create-an-
 The `with_options` command that points to a YAML config is only one way to configure a pipeline. We can also directly configure a pipeline or a step in the decorator:
 
 ```python
+from zenml import pipeline
+
 @pipeline(settings=...)
 ```
 
@@ -89,6 +97,8 @@ parameters:
 This parameters key aligns with the parameters that the pipeline expects. In this case, the pipeline expects a string called `model_type` that will inform it which type of model to use:
 
 ```python
+from zenml import pipeline
+
 @pipeline
 def training_pipeline(model_type: str):
     ...

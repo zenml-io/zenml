@@ -130,6 +130,7 @@ Here is an example how you can use the `AzureMLStepOperatorSettings` to define
 a compute instance:
 
 ```python
+from zenml import step
 from zenml.integrations.azure.flavors import AzureMLStepOperatorSettings
 
 azureml_settings = AzureMLStepOperatorSettings(

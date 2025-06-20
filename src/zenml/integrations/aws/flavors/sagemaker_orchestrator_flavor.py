@@ -190,7 +190,7 @@ class SagemakerOrchestratorConfig(
         scheduler_role: The ARN of the IAM role that will be assumed by
             the EventBridge service to launch Sagemaker pipelines
             (For more details regarding the required permissions, please check:
-            https://docs.zenml.io/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules)
+            https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules)
         aws_access_key_id: The AWS access key ID to use to authenticate to AWS.
             If not provided, the value from the default AWS config will be used.
         aws_secret_access_key: The AWS secret access key to use to authenticate

@@ -13,10 +13,21 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import boto3
-import sagemaker
+from sagemaker.estimator import Estimator
+from sagemaker.inputs import TrainingInput
+from sagemaker.session import Session
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -216,7 +227,7 @@ class SagemakerStepOperator(BaseStepOperator):
         else:
             boto_session = boto3.Session()
 
-        session = sagemaker.Session(
+        session = Session(
             boto_session=boto_session, default_bucket=self.config.bucket
         )
 
@@ -232,9 +243,7 @@ class SagemakerStepOperator(BaseStepOperator):
         estimator_args["sagemaker_session"] = session
 
         # Create Estimator
-        estimator = sagemaker.estimator.Estimator(
-            image_name, self.config.role, **estimator_args
-        )
+        estimator = Estimator(image_name, self.config.role, **estimator_args)
 
         # SageMaker allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
         step_name = Client().get_run_step(info.step_run_id).name
@@ -248,18 +257,14 @@ class SagemakerStepOperator(BaseStepOperator):
         )
 
         # Construct training input object, if necessary
-        inputs = None
+        inputs: Optional[Union[TrainingInput, Dict[str, TrainingInput]]] = None
 
         if isinstance(settings.input_data_s3_uri, str):
-            inputs = sagemaker.inputs.TrainingInput(
-                s3_data=settings.input_data_s3_uri
-            )
+            inputs = TrainingInput(s3_data=settings.input_data_s3_uri)
         elif isinstance(settings.input_data_s3_uri, dict):
             inputs = {}
             for channel, s3_uri in settings.input_data_s3_uri.items():
-                inputs[channel] = sagemaker.inputs.TrainingInput(
-                    s3_data=s3_uri
-                )
+                inputs[channel] = TrainingInput(s3_data=s3_uri)
 
         experiment_config = {}
         if settings.experiment_name:

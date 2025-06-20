@@ -182,7 +182,7 @@ def get_config_environment_vars(
                         "service account API key to authenticate to the ZenML "
                         "server instead of your regular user account. For more "
                         "information, see "
-                        "https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account"
+                        "https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account"
                     )
 
                 # The schedule, pipeline run or step run credentials are scoped to

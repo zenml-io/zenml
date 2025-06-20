@@ -171,7 +171,7 @@ def get_neptune_run() -> "Run":
             "Unable to get neptune run: The experiment tracker has not been "
             "initialized. To solve this, make sure you use the experiment "
             "tracker in your step. See "
-            "https://docs.zenml.io/stack-components/experiment-trackers/neptune#how-do-you-use-it "
+            "https://docs.zenml.io/stacks/stack-components/experiment-trackers/neptune#how-do-you-use-it "
             "for more information."
         )
 

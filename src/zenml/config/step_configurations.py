@@ -380,9 +380,22 @@ class Step(StrictBaseModel):
             config = StepConfiguration.model_validate(
                 data["step_config_overrides"]
             )
-            config = config.apply_pipeline_configuration(
+            data["config"] = config.apply_pipeline_configuration(
                 pipeline_configuration
             )
-            data["config"] = config
+        else:
+            # We still need to apply the pipeline substitutions for legacy step
+            # objects which include the full config object.
+            from zenml.config.pipeline_configurations import (
+                PipelineConfiguration,
+            )
+
+            config = StepConfiguration.model_validate(data["config"])
+            data["config"] = config.apply_pipeline_configuration(
+                PipelineConfiguration(
+                    name=pipeline_configuration.name,
+                    substitutions=pipeline_configuration.substitutions,
+                )
+            )
 
         return cls.model_validate(data)

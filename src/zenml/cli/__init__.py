@@ -80,7 +80,7 @@ You can also pass in a directory path manually using the
 zenml init --path /path/to/dir
 ```
 
-If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/how-to/project-setup-and-management/collaborate-with-team/project-templates)
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/user-guides/best-practices/project-templates)
 to generate a ready-to-use project scaffold in your repository, you can do so by
 passing the ``--template`` option:
 
@@ -232,7 +232,7 @@ and `and` keywords.
 Artifact Stores
 ---------------
 
-In ZenML, [the artifact store](https://docs.zenml.io/stack-components/artifact-stores)
+In ZenML, [the artifact store](https://docs.zenml.io/stacks/stack-components/artifact-stores)
 is where all the inputs and outputs of your pipeline steps are stored. By
 default, ZenML initializes your repository with an artifact store with
 everything kept on your local machine. You can get a better understanding
@@ -327,7 +327,7 @@ zenml artifact-store --help
 Orchestrators
 -------------
 
-An [orchestrator](https://docs.zenml.io/stack-components/orchestrators)
+An [orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators)
 is a special kind of backend that manages the running of each step of the
 pipeline. Orchestrators administer the actual pipeline runs. By default,
 ZenML initializes your repository with an orchestrator that runs everything
@@ -422,7 +422,7 @@ zenml orchestrators --help
 Container Registries
 --------------------
 
-[The container registry](https://docs.zenml.io/stack-components/container-registries)
+[The container registry](https://docs.zenml.io/stacks/stack-components/container-registries)
 is where all the images that are used by a container-based orchestrator are
 stored. To get a better understanding regarding container registries, use
 the command:
@@ -517,7 +517,7 @@ zenml container-registry --help
 Data Validators
 ---------------
 
-In ZenML, [data validators](https://docs.zenml.io/stack-components/data-validators)
+In ZenML, [data validators](https://docs.zenml.io/stacks/stack-components/data-validators)
 help you profile and validate your data.
 
 By default, a default ZenML local stack will not register a data validator. If
@@ -604,7 +604,7 @@ zenml data-validator --help
 Experiment Trackers
 -------------------
 
-[Experiment trackers](https://docs.zenml.io/stack-components/experiment-trackers)
+[Experiment trackers](https://docs.zenml.io/stacks/stack-components/experiment-trackers)
  let you track your ML experiments by logging the parameters
 and allow you to compare between different runs. To get a better
 understanding regarding experiment trackers, use the command:
@@ -700,7 +700,7 @@ zenml experiment-tracker --help
 Model Deployers
 ---------------
 
-[Model deployers](https://docs.zenml.io/stack-components/model-deployers)
+[Model deployers](https://docs.zenml.io/stacks/stack-components/model-deployers)
 are stack components responsible for online model serving. They are responsible
 for deploying models to a remote server. Model deployers also act as a registry
 for models that are served with ZenML. To get a better understanding regarding
@@ -837,7 +837,7 @@ zenml model-deployer --help
 Step Operators
 --------------
 
-[Step operators](https://docs.zenml.io/stack-components/step-operators)
+[Step operators](https://docs.zenml.io/stacks/stack-components/step-operators)
 allow you to run individual steps in a custom environment different from the
 default one used by your active orchestrator. One example use-case is to run a
 training step of your pipeline in an environment with GPUs available. To get
@@ -932,7 +932,7 @@ zenml step-operator --help
 Alerters
 --------
 
-In ZenML, [alerters](https://docs.zenml.io/stack-components/alerters)
+In ZenML, [alerters](https://docs.zenml.io/stacks/stack-components/alerters)
 allow you to send alerts from within your pipeline.
 
 By default, a default ZenML local stack will not register an alerter. If
@@ -1017,7 +1017,7 @@ zenml alerter --help
 Feature Stores
 --------------
 
-[Feature stores](https://docs.zenml.io/stack-components/feature-stores)
+[Feature stores](https://docs.zenml.io/stacks/stack-components/feature-stores)
 allow data teams to serve data via an offline store and an online low-latency
 store where data is kept in sync between the two. To get a better understanding
 regarding feature stores, use the command:
@@ -1114,7 +1114,7 @@ zenml feature-store --help
 Annotators
 ----------
 
-[Annotators](https://docs.zenml.io/stack-components/annotators)
+[Annotators](https://docs.zenml.io/stacks/stack-components/annotators)
 enable the use of data annotation as part of your ZenML stack and pipelines.
 
 By default, a default ZenML local stack will not register an annotator. If
@@ -1206,7 +1206,7 @@ zenml annotator --help
 Image Builders
 --------------
 
-In ZenML, [image builders](https://docs.zenml.io/stack-components/image-builders)
+In ZenML, [image builders](https://docs.zenml.io/stacks/stack-components/image-builders)
 allow you to build container images such
 that your machine-learning pipelines and steps can be executed in remote
 environments.
@@ -1295,7 +1295,7 @@ zenml image-builder --help
 Model Registries
 ----------------
 
-[Model registries](https://docs.zenml.io/stack-components/model-registries)
+[Model registries](https://docs.zenml.io/stacks/stack-components/model-registries)
 are centralized repositories that facilitate the collaboration and management
 of machine learning models. To get a better understanding regarding model
 registries as a concept, use the command:
@@ -1985,7 +1985,7 @@ Secrets management
 ------------------
 
 ZenML offers a way to [securely store secrets associated with your other
-stack components and infrastructure](https://docs.zenml.io/getting-started/deploying-zenml/secret-management).
+stack components and infrastructure](https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management).
 A ZenML Secret is a collection or grouping of key-value pairs stored by the
 ZenML secrets store. ZenML Secrets are identified by a unique name which
 allows you to fetch or reference them in your pipelines and stacks.
@@ -2082,7 +2082,7 @@ challenge in configuring uninterrupted, secure access to infrastructure
 resources. In ZenML, Service Connectors streamline this process by abstracting
 away the complexity of authentication and help you connect your stack to your
 resources. You can find the full docs on the ZenML service connectors
-[here](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management).
+[here](https://docs.zenml.io/stacks/service-connectors/auth-management).
 
 The ZenML CLI features a variety of commands to help you manage your service
 connectors. First of all, to explore all the types of service connectors
@@ -2112,7 +2112,7 @@ zenml service-connector register SERVICE_CONNECTOR_NAME \
 ```
 
 For more details on how to create a service connector, please refer to our
-[docs](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management).
+[docs](https://docs.zenml.io/stacks/service-connectors/auth-management).
 
 To check if your service connector is registered properly, you can `verify` it.
 By doing this, you can both check if it is configured correctly and also, you
@@ -2366,7 +2366,7 @@ defining the pipeline is not in your current directory, the module path consists
 of the full path to the file, separated by dots, e.g.
 `some_directory.some_file.my_pipeline`.
 
-To [build Docker images for your pipeline](https://docs.zenml.io/how-to/infrastructure-deployment/customize-docker-builds)
+To [build Docker images for your pipeline](https://docs.zenml.io/concepts/containerization)
 without actually running the pipeline, use:
 
 ```bash
@@ -2429,7 +2429,7 @@ Tagging your resources with ZenML
 ---------------------------------
 
 When you are using ZenML, you can [use tags to organize and categorize your
-assets](https://docs.zenml.io/how-to/handle-data-artifacts/tagging).
+assets](https://docs.zenml.io/concepts/tags).
 This way, you can streamline your workflows and enhance the discoverability of
 your resources more easily.
 

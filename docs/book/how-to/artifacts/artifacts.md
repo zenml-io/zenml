@@ -66,11 +66,15 @@ When calling a step, inputs can be either artifacts or parameters:
 * **Parameters** are literal values provided directly to the step. They aren't stored as artifacts but are recorded with the pipeline run.
 
 ```python
+import pandas as pd
+from zenml import step, pipeline
+
 @step
 def train_model(data: pd.DataFrame, learning_rate: float) -> object:
     """Step with both artifact and parameter inputs."""
     # data is an artifact (output from another step)
     # learning_rate is a parameter (literal value)
+    # Note: create_model would be your own model creation function
     model = create_model(learning_rate)
     model.fit(data)
     return model
@@ -116,6 +120,8 @@ Type annotations are important when working with artifacts as they:
 ```python
 from typing import Tuple
 import numpy as np
+import pandas as pd
+from zenml import step
 
 @step
 def preprocess_data(df: pd.DataFrame) -> np.ndarray:
@@ -176,7 +182,9 @@ You can give your artifacts more meaningful names using the `Annotated` type:
 
 ```python
 from typing import Tuple
-from typing_extensions import Annotated  # or `from typing import Annotated` in Python 3.9+
+from typing import Annotated
+import pandas as pd
+from zenml import step
 
 @step
 def split_dataset(
@@ -194,10 +202,15 @@ def split_dataset(
 You can even use dynamic naming with placeholders:
 
 ```python
+from typing import Annotated
+import pandas as pd
+from zenml import step, pipeline
+
 @step
 def extract_data(source: str) -> Annotated[pd.DataFrame, "{dataset_type}_data"]:
     """Extract data with a dynamically named output."""
     # Implementation...
+    data = pd.DataFrame()  # Your data extraction logic here
     return data
 
 @pipeline
@@ -237,8 +250,11 @@ When a step produces an output, ZenML automatically selects the appropriate mate
 Here's how materializers work in practice:
 
 ```python
+from zenml import step
+from sklearn.linear_model import LinearRegression
+
 @step
-def train_model(X_train, y_train) -> sklearn.linear_model.LinearRegression:
+def train_model(X_train, y_train) -> LinearRegression:
     """Train a model and return it as an artifact."""
     model = LinearRegression()
     model.fit(X_train, y_train)

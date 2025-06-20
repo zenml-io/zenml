@@ -77,6 +77,7 @@ If you already have HTML, Markdown, CSV or JSON data available as a string insid
 #### Example:
 
 ```python
+from zenml import step
 from zenml.types import CSVString
 
 @step
@@ -88,6 +89,14 @@ def my_step() -> CSVString:
 This would create the following visualization in the dashboard:
 
 ![CSV Visualization Example](../../.gitbook/assets/artifact_visualization_csv.png)
+
+{% hint style="info" %}
+**Shared CSS for Consistent Visualizations**
+
+When creating multiple HTML visualizations across your pipeline, consider using a shared CSS file to maintain consistent styling. Create a central CSS file with your design system (colors, components, layouts) and Python utilities to load it into your HTML templates. This approach eliminates code duplication, ensures visual consistency across all reports, and makes it easy to update styling across all visualizations from a single location.
+
+You can create helper functions that return complete HTML templates with shared styles, and use CSS variables for theme management. This pattern is especially valuable for teams generating multiple HTML reports or dashboards where maintaining a professional, cohesive appearance is important.
+{% endhint %}
 
 Another example is visualizing a matplotlib plot by embedding the image in an HTML string:
 
@@ -140,6 +149,7 @@ If you want to automatically extract visualizations for all artifacts of a certa
 **1. Custom Class** First, we create a custom class to hold our matplotlib figure:
 
 ```python
+from typing import Any
 from pydantic import BaseModel
 
 class MatplotlibVisualization(BaseModel):
@@ -150,6 +160,12 @@ class MatplotlibVisualization(BaseModel):
 **2. Materializer** Next, we create a [custom materializer](materializers.md#creating-custom-materializers) that handles this class and implements the visualization logic:
 
 ```python
+import os
+from typing import Dict
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.enums import VisualizationType
+from zenml.io import fileio
+
 class MatplotlibMaterializer(BaseMaterializer):
     """Materializer that handles matplotlib figures."""
     ASSOCIATED_TYPES = (MatplotlibVisualization,)
@@ -167,6 +183,9 @@ class MatplotlibMaterializer(BaseMaterializer):
 **3. Step** Finally, we create a step that returns our custom type:
 
 ```python
+import matplotlib.pyplot as plt
+from zenml import step
+
 @step
 def create_matplotlib_visualization() -> MatplotlibVisualization:
     """Creates a matplotlib visualization."""

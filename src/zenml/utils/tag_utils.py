@@ -44,7 +44,7 @@ add_tags(tags=[...], run_template=...)
 # Manual tagging to an artifact
 add_tags(tags=[...], artifact=...)
 
-# Automatic tagging to an artifact version(within a step)
+# Automatic tagging to an artifact version (within a step)
 add_tags(tags=[...], infer_artifact=True)  # step with single output
 add_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
 
@@ -148,7 +148,7 @@ def add_tags(
     *,
     tags: List[Union[str, Tag]],
     artifact_name: str,
-    artifact_version: Optional[str] = None,
+    artifact_version: str,
 ) -> None: ...
 
 
@@ -191,7 +191,7 @@ def add_tags(
     artifact_version_id: Optional[UUID] = None,
     artifact_name: Optional[str] = None,
     artifact_version: Optional[str] = None,
-    infer_artifact: bool = False,
+    infer_artifact: Optional[bool] = None,
 ) -> None:
     """Add tags to various resource types in a generalized way.
 
@@ -220,19 +220,52 @@ def add_tags(
     resource_type = None
 
     # Tag a pipeline
-    if pipeline is not None:
+    if pipeline is not None and all(
+        v is None
+        for v in [
+            run,
+            run_template,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
         pipeline_model = client.get_pipeline(name_id_or_prefix=pipeline)
         resource_id = pipeline_model.id
         resource_type = TaggableResourceTypes.PIPELINE
 
     # Tag a run by ID
-    elif run is not None:
+    elif run is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run_template,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
         run_model = client.get_pipeline_run(name_id_or_prefix=run)
         resource_id = run_model.id
         resource_type = TaggableResourceTypes.PIPELINE_RUN
 
     # Tag a run template
-    elif run_template is not None:
+    elif run_template is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
         run_template_model = client.get_run_template(
             name_id_or_prefix=run_template
         )
@@ -240,26 +273,68 @@ def add_tags(
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
 
     # Tag an artifact
-    elif artifact is not None:
+    elif artifact is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
         artifact_model = client.get_artifact(name_id_or_prefix=artifact)
         resource_id = artifact_model.id
         resource_type = TaggableResourceTypes.ARTIFACT
 
+    # Tag an artifact version by its ID
+    elif artifact_version_id is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            artifact,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
+        resource_id = artifact_version_id
+        resource_type = TaggableResourceTypes.ARTIFACT_VERSION
+
     # Tag an artifact version by its name and version
-    elif artifact_name is not None and artifact_version is not None:
+    elif (artifact_name is not None and artifact_version is not None) and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            artifact,
+            artifact_version_id,
+            infer_artifact,
+        ]
+    ):
         artifact_version_model = client.get_artifact_version(
             name_id_or_prefix=artifact_name, version=artifact_version
         )
         resource_id = artifact_version_model.id
         resource_type = TaggableResourceTypes.ARTIFACT_VERSION
 
-    # Tag an artifact version by its ID
-    elif artifact_version_id is not None:
-        resource_id = artifact_version_id
-        resource_type = TaggableResourceTypes.ARTIFACT_VERSION
-
     # Tag an artifact version through the step context
-    elif infer_artifact is True:
+    elif infer_artifact is True and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            artifact,
+            artifact_version_id,
+            artifact_version,
+        ]
+    ):
         resource_type = TaggableResourceTypes.ARTIFACT_VERSION
 
         try:
@@ -308,12 +383,14 @@ def add_tags(
     elif all(
         v is None
         for v in [
+            pipeline,
             run,
+            run_template,
+            artifact,
             artifact_version_id,
             artifact_name,
             artifact_version,
-            pipeline,
-            run_template,
+            infer_artifact,
         ]
     ):
         try:
@@ -437,7 +514,7 @@ def remove_tags(
     *,
     tags: List[str],
     artifact_name: str,
-    artifact_version: Optional[str] = None,
+    artifact_version: str,
 ) -> None: ...
 
 
@@ -464,7 +541,7 @@ def remove_tags(
     artifact_version_id: Optional[UUID] = None,
     artifact_name: Optional[str] = None,
     artifact_version: Optional[str] = None,
-    infer_artifact: bool = False,
+    infer_artifact: Optional[bool] = None,
 ) -> None:
     """Remove tags from various resource types in a generalized way.
 
@@ -492,13 +569,35 @@ def remove_tags(
     resource_type = None
 
     # Remove tags from a pipeline
-    if pipeline is not None:
+    if pipeline is not None and all(
+        v is None
+        for v in [
+            run_template,
+            run,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
         pipeline_model = client.get_pipeline(name_id_or_prefix=pipeline)
         resource_id = pipeline_model.id
         resource_type = TaggableResourceTypes.PIPELINE
 
     # Remove tags from a run template
-    elif run_template is not None:
+    elif run_template is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            artifact,
+            artifact_version_id,
+            artifact_version,
+            artifact_name,
+            infer_artifact,
+        ]
+    ):
         run_template_model = client.get_run_template(
             name_id_or_prefix=run_template
         )
@@ -506,32 +605,85 @@ def remove_tags(
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
 
     # Remove tags from a run
-    elif run is not None:
+    elif run is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run_template,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
         run_model = client.get_pipeline_run(name_id_or_prefix=run)
         resource_id = run_model.id
         resource_type = TaggableResourceTypes.PIPELINE_RUN
 
     # Remove tags from an artifact
-    elif artifact is not None:
+    elif artifact is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run_template,
+            run,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
         artifact_model = client.get_artifact(name_id_or_prefix=artifact)
         resource_id = artifact_model.id
         resource_type = TaggableResourceTypes.ARTIFACT
 
+    # Remove tags from an artifact version by its ID
+    elif artifact_version_id is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run_template,
+            run,
+            artifact,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
+        resource_id = artifact_version_id
+        resource_type = TaggableResourceTypes.ARTIFACT_VERSION
+
     # Remove tags from an artifact version by its name and version
-    elif artifact_name is not None and artifact_version is not None:
+    elif (artifact_name is not None and artifact_version is not None) and all(
+        v is None
+        for v in [
+            pipeline,
+            run_template,
+            run,
+            artifact,
+            artifact_version_id,
+            infer_artifact,
+        ]
+    ):
         artifact_version_model = client.get_artifact_version(
             name_id_or_prefix=artifact_name, version=artifact_version
         )
         resource_id = artifact_version_model.id
         resource_type = TaggableResourceTypes.ARTIFACT_VERSION
 
-    # Remove tags from an artifact version by its ID
-    elif artifact_version_id is not None:
-        resource_id = artifact_version_id
-        resource_type = TaggableResourceTypes.ARTIFACT_VERSION
-
     # Remove tags from an artifact version through the step context
-    elif infer_artifact is True:
+    elif infer_artifact is True and all(
+        v is None
+        for v in [
+            pipeline,
+            run_template,
+            run,
+            artifact,
+            artifact_version_id,
+            artifact_version,
+        ]
+    ):
         try:
             from zenml.steps.step_context import get_step_context
 
@@ -579,12 +731,14 @@ def remove_tags(
     elif all(
         v is None
         for v in [
+            pipeline,
             run,
+            run_template,
+            artifact,
             artifact_version_id,
             artifact_name,
             artifact_version,
-            pipeline,
-            run_template,
+            infer_artifact,
         ]
     ):
         try:

@@ -47,10 +47,14 @@ Create a new class that inherits from `BaseMaterializer`:
 
 ```python
 import os
+import json
 from typing import Type, Any, Dict
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.metadata.metadata_types import MetadataType
+
+# Assume MyClass is your custom class defined elsewhere
+# from mymodule import MyClass
 
 class MyClassMaterializer(BaseMaterializer):
     """Materializer for MyClass objects."""
@@ -103,6 +107,7 @@ Once you've defined the materializer, you can use it in your pipeline:
 
 ```python
 from zenml import step, pipeline
+# from mymodule import MyClass, MyClassMaterializer
 
 @step(output_materializers=MyClassMaterializer)
 def create_my_class() -> MyClass:
@@ -145,6 +150,7 @@ You can register a materializer globally to override the default materializer fo
 
 ```python
 from zenml.materializers.materializer_registry import materializer_registry
+from zenml.materializers.base_materializer import BaseMaterializer
 import pandas as pd
 
 # Create a custom pandas materializer
@@ -288,7 +294,7 @@ s2 -> s4
 `s1` and `s2` produce identical artifacts, however `s3` consumes materialized artifacts while `s4` consumes unmaterialized artifacts. `s4` can now use the `dict_.uri` and `list_.uri` paths directly rather than their materialized counterparts.
 
 ```python
-from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Annotated
 from typing import Dict, List, Tuple
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact

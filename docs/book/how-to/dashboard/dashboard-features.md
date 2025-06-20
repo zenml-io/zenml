@@ -28,9 +28,12 @@ This visualization enables you to:
 - Track pipeline execution status in real-time
 
 ```python
+from zenml import pipeline
+
 # Pipelines automatically generate visualizations in the dashboard
 @pipeline
 def my_training_pipeline():
+    # Note: load_data, preprocess, train_model, evaluate_model would be custom step functions
     data = load_data()
     processed_data = preprocess(data)
     model = train_model(processed_data)
@@ -156,7 +159,7 @@ With the dashboard, you can browse the full set of metadata attributes and apply
 Customizable metadata views adapt to different analysis needs, whether you're comparing accuracy across runs or examining resource utilization patterns. This metadata visualization integrates seamlessly with artifact lineage tracking, creating a complete picture of your ML workflow from inputs to outputs.
 
 ```python
-from zenml import log_metadata, get_step_context
+from zenml import step, log_metadata, get_step_context
 
 @step
 def evaluate():

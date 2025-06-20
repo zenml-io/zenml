@@ -5184,9 +5184,19 @@ class SqlZenStore(BaseZenStore):
                             # we want to display them as separate nodes in the
                             # DAG. We can therefore always create a new node
                             # here.
+                            is_manual_load = (
+                                input.type == StepRunInputArtifactType.MANUAL
+                            )
                             artifact_node = helper.add_artifact_node(
                                 node_id=helper.get_artifact_node_id(
-                                    name=input.name,
+                                    # For manual loads, the name might not be
+                                    # unique, so we use the artifact ID instead.
+                                    # We don't need to keep the name consistent
+                                    # with placeholder nodes as they don't exist
+                                    # for manual loads.
+                                    name=str(input.artifact_id)
+                                    if is_manual_load
+                                    else input.name,
                                     step_name=step_name,
                                     io_type=input.type,
                                     is_input=True,
@@ -5217,9 +5227,20 @@ class SqlZenStore(BaseZenStore):
                         # want to merge these and instead display them
                         # separately in the DAG, but if that should ever change
                         # this would be the place to merge them.
+                        is_manual_save = (
+                            output.artifact_version.save_type
+                            == ArtifactSaveType.MANUAL
+                        )
                         artifact_node = helper.add_artifact_node(
                             node_id=helper.get_artifact_node_id(
-                                name=output.name,
+                                # For manual saves, the name might not be
+                                # unique, so we use the artifact ID instead.
+                                # We don't need to keep the name consistent
+                                # with placeholder nodes as they don't exist
+                                # for manual saves.
+                                name=str(output.artifact_id)
+                                if is_manual_save
+                                else output.name,
                                 step_name=step_name,
                                 io_type=output.artifact_version.save_type,
                                 is_input=False,
@@ -8921,6 +8942,7 @@ class SqlZenStore(BaseZenStore):
 
         pipeline_run = session.exec(
             select(PipelineRunSchema)
+            .with_for_update()
             .options(
                 joinedload(
                     jl_arg(PipelineRunSchema.deployment), innerjoin=True
@@ -8946,96 +8968,100 @@ class SqlZenStore(BaseZenStore):
             num_steps=num_steps,
         )
 
-        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
-            # If the pipeline run is a placeholder run, no step has been started
-            # for the run yet. This means the orchestrator hasn't started
+        if new_status == pipeline_run.status or (
+            pipeline_run.is_placeholder_run() and not new_status.is_finished
+        ):
+            # The status hasn't changed -> no need to update the status.
+            # If the pipeline run is a placeholder run (=no step has been started
+            # for the run yet), this means the orchestrator hasn't started
             # running yet, and this method is most likely being called as
             # part of the creation of some cached steps. In this case, we don't
             # update the status unless the run is finished.
+
+            # Commit so that we release the lock on the pipeline run.
+            session.commit()
             return
 
-        if new_status != pipeline_run.status:
-            run_update = PipelineRunUpdate(status=new_status)
-            if new_status in {
-                ExecutionStatus.COMPLETED,
-                ExecutionStatus.FAILED,
-            }:
-                run_update.end_time = utc_now()
-                if pipeline_run.start_time and isinstance(
-                    pipeline_run.start_time, datetime
-                ):
-                    duration_time = (
-                        run_update.end_time - pipeline_run.start_time
-                    )
-                    duration_seconds = duration_time.total_seconds()
-                    start_time_str = pipeline_run.start_time.strftime(
-                        "%Y-%m-%dT%H:%M:%S.%fZ"
-                    )
-                else:
-                    start_time_str = None
-                    duration_seconds = None
+        run_update = PipelineRunUpdate(status=new_status)
+        if new_status.is_finished:
+            run_update.end_time = utc_now()
 
-                stack = pipeline_run.deployment.stack
-                assert stack
-                stack_metadata = {
-                    str(component.type): component.flavor
-                    for component in stack.components
-                }
-                with track_handler(
-                    AnalyticsEvent.RUN_PIPELINE_ENDED
-                ) as analytics_handler:
-                    analytics_handler.metadata = {
-                        "project_id": pipeline_run.project_id,
-                        "pipeline_run_id": pipeline_run_id,
-                        "template_id": pipeline_run.deployment.template_id,
-                        "status": new_status,
-                        "num_steps": num_steps,
-                        "start_time": start_time_str,
-                        "end_time": run_update.end_time.strftime(
-                            "%Y-%m-%dT%H:%M:%S.%fZ"
-                        ),
-                        "duration_seconds": duration_seconds,
-                        **stack_metadata,
-                    }
+        pipeline_run.update(run_update)
+        session.add(pipeline_run)
+        # Commit so that we release the lock on the pipeline run.
+        session.commit()
 
-                completed_onboarding_steps: Set[str] = {
-                    OnboardingStep.PIPELINE_RUN,
-                    OnboardingStep.STARTER_SETUP_COMPLETED,
-                }
-                if stack_metadata["orchestrator"] not in {
-                    "local",
-                    "local_docker",
-                }:
-                    completed_onboarding_steps.update(
-                        {
-                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
-                        }
-                    )
-                if stack_metadata["artifact_store"] != "local":
-                    completed_onboarding_steps.update(
-                        {
-                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
-                            OnboardingStep.PRODUCTION_SETUP_COMPLETED,
-                        }
-                    )
-                if OnboardingStep.THIRD_PIPELINE_RUN not in (
-                    self._cached_onboarding_state or {}
-                ):
-                    onboarding_state = self.get_onboarding_state()
-                    if OnboardingStep.PIPELINE_RUN in onboarding_state:
-                        completed_onboarding_steps.add(
-                            OnboardingStep.SECOND_PIPELINE_RUN
-                        )
-                    if OnboardingStep.SECOND_PIPELINE_RUN in onboarding_state:
-                        completed_onboarding_steps.add(
-                            OnboardingStep.THIRD_PIPELINE_RUN
-                        )
-
-                self._update_onboarding_state(
-                    completed_steps=completed_onboarding_steps, session=session
+        if new_status.is_finished:
+            assert run_update.end_time
+            if pipeline_run.start_time:
+                duration_time = run_update.end_time - pipeline_run.start_time
+                duration_seconds = duration_time.total_seconds()
+                start_time_str = pipeline_run.start_time.strftime(
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
                 )
-            pipeline_run.update(run_update)
-            session.add(pipeline_run)
+            else:
+                start_time_str = None
+                duration_seconds = None
+
+            stack = pipeline_run.deployment.stack
+            assert stack
+            stack_metadata = {
+                str(component.type): component.flavor
+                for component in stack.components
+            }
+            with track_handler(
+                AnalyticsEvent.RUN_PIPELINE_ENDED
+            ) as analytics_handler:
+                analytics_handler.metadata = {
+                    "project_id": pipeline_run.project_id,
+                    "pipeline_run_id": pipeline_run_id,
+                    "template_id": pipeline_run.deployment.template_id,
+                    "status": new_status,
+                    "num_steps": num_steps,
+                    "start_time": start_time_str,
+                    "end_time": run_update.end_time.strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ),
+                    "duration_seconds": duration_seconds,
+                    **stack_metadata,
+                }
+
+            completed_onboarding_steps: Set[str] = {
+                OnboardingStep.PIPELINE_RUN,
+                OnboardingStep.STARTER_SETUP_COMPLETED,
+            }
+            if stack_metadata["orchestrator"] not in {
+                "local",
+                "local_docker",
+            }:
+                completed_onboarding_steps.update(
+                    {
+                        OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
+                    }
+                )
+            if stack_metadata["artifact_store"] != "local":
+                completed_onboarding_steps.update(
+                    {
+                        OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
+                        OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                    }
+                )
+            if OnboardingStep.THIRD_PIPELINE_RUN not in (
+                self._cached_onboarding_state or {}
+            ):
+                onboarding_state = self.get_onboarding_state()
+                if OnboardingStep.PIPELINE_RUN in onboarding_state:
+                    completed_onboarding_steps.add(
+                        OnboardingStep.SECOND_PIPELINE_RUN
+                    )
+                if OnboardingStep.SECOND_PIPELINE_RUN in onboarding_state:
+                    completed_onboarding_steps.add(
+                        OnboardingStep.THIRD_PIPELINE_RUN
+                    )
+
+            self._update_onboarding_state(
+                completed_steps=completed_onboarding_steps, session=session
+            )
 
     # --------------------------- Triggers ---------------------------
 
@@ -12384,6 +12410,7 @@ class SqlZenStore(BaseZenStore):
                             other_runs_with_same_tag = self.list_runs(
                                 PipelineRunFilter(
                                     id=f"notequals:{resource.id}",
+                                    project=resource.project.id,
                                     pipeline_id=resource.pipeline_id,
                                     tags=[tag_schema.name],
                                 )
@@ -12408,6 +12435,7 @@ class SqlZenStore(BaseZenStore):
                                 self.list_artifact_versions(
                                     ArtifactVersionFilter(
                                         id=f"notequals:{resource.id}",
+                                        project=resource.project.id,
                                         artifact_id=resource.artifact_id,
                                         tags=[tag_schema.name],
                                     )
@@ -12437,6 +12465,7 @@ class SqlZenStore(BaseZenStore):
                                 older_templates = self.list_run_templates(
                                     RunTemplateFilter(
                                         id=f"notequals:{resource.id}",
+                                        project=resource.project.id,
                                         pipeline_id=scope_id,
                                         tags=[tag_schema.name],
                                     )

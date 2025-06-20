@@ -58,7 +58,7 @@ def log_model_metadata(
         "The `log_model_metadata` function is deprecated and will soon be "
         "removed. Instead, you can consider using: "
         "`log_metadata(metadata={...}, infer_model=True)` instead. For more "
-        "info: https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model"
+        "info: https://docs.zenml.io/concepts/metadata#attaching-metadata-to-models"
     )
 
     from zenml import log_metadata
