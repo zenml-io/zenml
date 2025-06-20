@@ -144,6 +144,12 @@ These parameters make it an ideal candidate for external triggering scenarios wh
 This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
+{% hint style="info" %}
+**Important: Workspace API vs ZenML Pro API**
+
+Run Templates use your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). This distinction is crucial for authentication - you'll need Workspace API credentials (like service accounts), not ZenML Pro API tokens.
+{% endhint %}
+
 [Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
 
 ### Creating a Run Template
@@ -260,6 +266,23 @@ if templates:
 
 #### Using the REST API:
 
+For this you'll need a URL for a ZenML server. For those with a ZenML Pro
+account, you can find the URL in the dashboard in the following location:
+
+![Where to find the ZenML server URL](../.gitbook/assets/zenml-pro-server-url.png)
+
+You can also find the URL via the CLI by running:
+
+```bash
+zenml status | grep "API:" | awk '{print $2}'
+```
+
+{% hint style="warning" %}
+**Important: Use Workspace API, Not ZenML Pro API**
+
+Run templates are triggered via your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). Make sure you're using the correct URL from your workspace dashboard.
+{% endhint %}
+
 The REST API is ideal for external system integration, allowing you to trigger pipelines from non-Python environments:
 
 ```bash
@@ -303,6 +326,12 @@ curl -X 'POST' \
 
 When using the REST API for external systems, proper token management is critical:
 
+{% hint style="success" %}
+**Best Practice: Use Service Accounts for Automation**
+
+For production run template triggering, **always use service accounts with API keys** instead of personal access tokens. Personal tokens expire after 1 hour and are tied to individual users, making them unsuitable for automation.
+{% endhint %}
+
 ```python
 from zenml.client import Client
 
@@ -322,6 +351,12 @@ token = Client().create_service_account_token(
 print(f"Store this token securely: {token.token}")
 # Make sure to save this token value securely
 ```
+
+**Why service accounts are better for automation:**
+- **Long-lived**: Tokens don't expire automatically like user tokens (1 hour)
+- **Dedicated**: Not tied to individual team members who might leave
+- **Secure**: Can be granted minimal permissions needed for the task
+- **Traceable**: Clear audit trail of which system performed actions
 
 Use this token in your API calls, and store it securely in your external system
 (e.g., as a GitHub Secret, AWS Secret, or environment variable). Read more

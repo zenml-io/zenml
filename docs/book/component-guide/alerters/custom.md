@@ -77,6 +77,7 @@ Creating your own custom alerter can be done in four steps:
 1.  Create a class that inherits from the `BaseAlerter` and implement the `post()` and `ask()` methods.
 
     ```python
+    import logging
     from typing import Optional, Union
 
     from zenml.alerter import BaseAlerter, BaseAlerterStepParameters

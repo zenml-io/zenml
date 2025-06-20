@@ -24,6 +24,8 @@ First, let's look at the main concepts that play a role during the development s
 Steps are functions annotated with the `@step` decorator. The easiest one could look like this.
 
 ```python
+from zenml import step
+
 @step
 def step_1() -> str:
     """Returns a string."""
@@ -33,6 +35,8 @@ def step_1() -> str:
 These functions can also have inputs and outputs. For ZenML to work properly, these should preferably be typed.
 
 ```python
+from zenml import step
+
 @step(enable_cache=False)
 def step_2(input_one: str, input_two: str) -> str:
     """Combines the two strings passed in."""
@@ -53,6 +57,8 @@ Pipelines and steps are defined in code using Python _decorators_ or _classes_. 
 Even though pipelines are simple Python functions, you are only allowed to call steps within this function. The inputs for steps called within a pipeline can either be the outputs of previous steps or alternatively, you can pass in values directly (as long as they're JSON-serializable).
 
 ```python
+from zenml import pipeline
+
 @pipeline
 def my_pipeline():
     output_step_one = step_1()
