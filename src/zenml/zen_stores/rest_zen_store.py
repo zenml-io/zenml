@@ -1631,7 +1631,10 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_deployment(
-        self, deployment_id: UUID, hydrate: bool = True
+        self,
+        deployment_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -1639,6 +1642,9 @@ class RestZenStore(BaseZenStore):
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
 
         Returns:
             The deployment.
@@ -1647,7 +1653,10 @@ class RestZenStore(BaseZenStore):
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
             response_model=PipelineDeploymentResponse,
-            params={"hydrate": hydrate},
+            params={
+                "hydrate": hydrate,
+                "step_configuration_filter": step_configuration_filter,
+            },
         )
 
     def list_deployments(

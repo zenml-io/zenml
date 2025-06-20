@@ -35,6 +35,7 @@ from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
+    StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -92,6 +93,7 @@ __all__ = [
     "OAuthDeviceSchema",
     "PipelineBuildSchema",
     "PipelineDeploymentSchema",
+    "StepConfigurationSchema",
     "PipelineRunSchema",
     "PipelineSchema",
     "RunMetadataResourceSchema",

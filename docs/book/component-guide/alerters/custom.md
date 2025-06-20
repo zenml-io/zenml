@@ -25,6 +25,11 @@ The `ask()` method is particularly useful for implementing human-in-the-loop wor
 Then base abstraction looks something like this:
 
 ```python
+from abc import ABC
+from typing import Optional
+from zenml.stack import StackComponent
+from zenml.alerter import BaseAlerterStepParameters
+
 class BaseAlerter(StackComponent, ABC):
     """Base class for all ZenML alerters."""
 
@@ -52,6 +57,7 @@ Creating your own custom alerter can be done in four steps:
 1.  Create a class that inherits from the `BaseAlerter` and implement the `post()` and `ask()` methods.
 
     ```python
+    import logging
     from typing import Optional
 
     from zenml.alerter import BaseAlerter, BaseAlerterStepParameters

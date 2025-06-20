@@ -131,7 +131,7 @@ from zenml.client import Client
 # E.g, You can use a different channel ID through the settings. However, if you 
 # want to use the `ask` functionality, make sure that you app is invited to 
 # this channel first.
-@step(settings={"alerter": {"slack_channel_id": <SLACK_CHANNEL_ID>}})
+@step(settings={"alerter": {"slack_channel_id": "YOUR_SLACK_CHANNEL_ID"}})
 def post_statement() -> None:
     alerter = Client().active_stack.alerter
     alerter.post("Posting to another channel!")

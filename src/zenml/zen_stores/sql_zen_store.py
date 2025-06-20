@@ -361,6 +361,7 @@ from zenml.zen_stores.schemas import (
     ServiceConnectorSchema,
     StackComponentSchema,
     StackSchema,
+    StepConfigurationSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
     StepRunParentsSchema,
@@ -4866,6 +4867,23 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(new_deployment)
             session.commit()
+
+            for index, (step_name, step_configuration) in enumerate(
+                deployment.step_configurations.items()
+            ):
+                step_configuration_schema = StepConfigurationSchema(
+                    index=index,
+                    name=step_name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_configuration.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    deployment_id=new_deployment.id,
+                )
+                session.add(step_configuration_schema)
+            session.commit()
             session.refresh(new_deployment)
 
             return new_deployment.to_model(
@@ -4873,7 +4891,10 @@ class SqlZenStore(BaseZenStore):
             )
 
     def get_deployment(
-        self, deployment_id: UUID, hydrate: bool = True
+        self,
+        deployment_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -4881,6 +4902,9 @@ class SqlZenStore(BaseZenStore):
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
 
         Returns:
             The deployment.
@@ -4894,7 +4918,9 @@ class SqlZenStore(BaseZenStore):
             )
 
             return deployment.to_model(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                step_configuration_filter=step_configuration_filter,
             )
 
     def list_deployments(
@@ -5327,12 +5353,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             steps = {
-                step_name: Step.from_dict(
-                    config_dict, pipeline_configuration=pipeline_configuration
+                config_table.name: Step.from_dict(
+                    json.loads(config_table.config),
+                    pipeline_configuration=pipeline_configuration,
                 )
-                for step_name, config_dict in json.loads(
-                    deployment.step_configurations
-                ).items()
+                for config_table in deployment.get_step_configurations()
             }
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
@@ -9160,11 +9185,6 @@ class SqlZenStore(BaseZenStore):
         pipeline_run = session.exec(
             select(PipelineRunSchema)
             .with_for_update()
-            .options(
-                joinedload(
-                    jl_arg(PipelineRunSchema.deployment), innerjoin=True
-                )
-            )
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
         step_run_statuses = session.exec(
@@ -9175,9 +9195,7 @@ class SqlZenStore(BaseZenStore):
 
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
-        num_steps = len(
-            json.loads(pipeline_run.deployment.step_configurations)
-        )
+        num_steps = pipeline_run.deployment.step_count
         new_status = get_pipeline_run_status(
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
@@ -12627,6 +12645,7 @@ class SqlZenStore(BaseZenStore):
                             other_runs_with_same_tag = self.list_runs(
                                 PipelineRunFilter(
                                     id=f"notequals:{resource.id}",
+                                    project=resource.project.id,
                                     pipeline_id=resource.pipeline_id,
                                     tags=[tag_schema.name],
                                 )
@@ -12651,6 +12670,7 @@ class SqlZenStore(BaseZenStore):
                                 self.list_artifact_versions(
                                     ArtifactVersionFilter(
                                         id=f"notequals:{resource.id}",
+                                        project=resource.project.id,
                                         artifact_id=resource.artifact_id,
                                         tags=[tag_schema.name],
                                     )
@@ -12680,6 +12700,7 @@ class SqlZenStore(BaseZenStore):
                                 older_templates = self.list_run_templates(
                                     RunTemplateFilter(
                                         id=f"notequals:{resource.id}",
+                                        project=resource.project.id,
                                         pipeline_id=scope_id,
                                         tags=[tag_schema.name],
                                     )
