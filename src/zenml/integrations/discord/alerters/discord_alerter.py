@@ -246,24 +246,47 @@ class DiscordAlerter(BaseAlerter):
         finally:
             # Ensure client is closed properly
             if not client.is_closed():
-                loop.run_until_complete(client.close())
+                if loop.is_running():
+                    # If loop is still running, schedule cleanup
+                    asyncio.create_task(client.close())
+                else:
+                    # If loop is closed, we can't run cleanup
+                    try:
+                        loop.run_until_complete(client.close())
+                    except RuntimeError as e:
+                        if "cannot be called on a running loop" not in str(e):
+                            raise
 
-            # Give a small delay for cleanup
-            loop.run_until_complete(asyncio.sleep(0.25))
+            # Only proceed with cleanup if loop is not closed
+            if not loop.is_closed():
+                # Give a small delay for cleanup
+                try:
+                    loop.run_until_complete(asyncio.sleep(0.25))
+                except RuntimeError:
+                    # Loop might be closed, skip cleanup
+                    pass
 
-            # Cancel all remaining tasks
-            pending = asyncio.all_tasks(loop)
-            for task in pending:
-                task.cancel()
+                # Cancel all remaining tasks
+                try:
+                    pending = asyncio.all_tasks(loop)
+                    for task in pending:
+                        task.cancel()
 
-            # Wait for task cancellation
-            if pending:
-                loop.run_until_complete(
-                    asyncio.gather(*pending, return_exceptions=True)
-                )
+                    # Wait for task cancellation
+                    if pending:
+                        loop.run_until_complete(
+                            asyncio.gather(*pending, return_exceptions=True)
+                        )
+                except RuntimeError:
+                    # Loop might be closed, skip cleanup
+                    pass
 
-            # Close the event loop
-            loop.close()
+                # Close the event loop
+                try:
+                    loop.close()
+                except RuntimeError:
+                    # Loop already closed
+                    pass
 
     def post(
         self,

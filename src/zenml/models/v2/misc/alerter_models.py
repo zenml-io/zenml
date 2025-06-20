@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AlerterMessage(BaseModel):
@@ -27,5 +27,5 @@ class AlerterMessage(BaseModel):
 
     title: Optional[str] = None
     body: Optional[str] = None
-    metadata: Dict[str, Any] = {}
-    images: List[str] = []
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    images: List[str] = Field(default_factory=list)
