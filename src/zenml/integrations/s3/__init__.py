@@ -23,6 +23,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 S3_ARTIFACT_STORE_FLAVOR = "s3"
+ZENML_ARTIFACT_STORE_FLAVOR = "zenml"
 
 
 class S3Integration(Integration):
@@ -47,7 +48,13 @@ class S3Integration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.s3.flavors import S3ArtifactStoreFlavor
+        from zenml.integrations.s3.flavors import (
+            S3ArtifactStoreFlavor,
+            ZenMLArtifactStoreFlavor,
+        )
 
-        return [S3ArtifactStoreFlavor]
+        return [
+            S3ArtifactStoreFlavor,
+            ZenMLArtifactStoreFlavor,
+        ]
 
