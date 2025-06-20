@@ -64,7 +64,7 @@ for pipeline in "${PIPELINE_FILES[@]}"; do
         echo "🔍 Testing pipeline: $pipeline"
         echo "----------------------------------------"
         
-        if timeout 300 env PYTHONPATH="$(pwd):$PYTHONPATH" python "$pipeline"; then
+        if timeout 300 env PYTHONPATH="$(pwd):${PYTHONPATH:-}" python "$pipeline"; then
             echo "✅ PASSED: $pipeline"
             ((PASSED++))
         else
