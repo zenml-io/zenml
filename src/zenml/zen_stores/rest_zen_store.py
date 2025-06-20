@@ -18,6 +18,7 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
+from threading import RLock
 from typing import (
     Any,
     ClassVar,
@@ -39,6 +40,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    PrivateAttr,
     ValidationError,
     field_validator,
     model_validator,
@@ -440,6 +442,7 @@ class RestZenStore(BaseZenStore):
     _api_token: Optional[APIToken] = None
     _session: Optional[requests.Session] = None
     _server_info: Optional[ServerModel] = None
+    _session_lock: RLock = PrivateAttr(default_factory=RLock)
 
     # ====================================
     # ZenML Store interface implementation
@@ -4208,64 +4211,75 @@ class RestZenStore(BaseZenStore):
                     return True
                 return super().is_retry(method, status_code, has_retry_after)
 
-        if self._session is None:
-            # We only need to initialize the session once over the lifetime
-            # of the client. We can swap the token out when it expires.
-            if self.config.verify_ssl is False:
-                urllib3.disable_warnings(
-                    urllib3.exceptions.InsecureRequestWarning
+        with self._session_lock:
+            if self._session is None:
+                # We only need to initialize the session once over the lifetime
+                # of the client. We can swap the token out when it expires.
+                if self.config.verify_ssl is False:
+                    urllib3.disable_warnings(
+                        urllib3.exceptions.InsecureRequestWarning
+                    )
+
+                self._session = requests.Session()
+                # Retries are triggered for idempotent HTTP methods (GET, HEAD, PUT,
+                # OPTIONS and DELETE) on specific HTTP status codes:
+                #
+                #     502: Bad Gateway.
+                #     503: Service Unavailable.
+                #     504: Gateway Timeout.
+                #
+                # This also handles connection level errors, if a connection attempt
+                # fails due to transient issues like:
+                #
+                #     DNS resolution errors.
+                #     Connection timeouts.
+                #     Network disruptions.
+                #
+                # Additional errors retried:
+                #
+                #     Read Timeouts: If the server does not send a response within
+                #     the timeout period.
+                #     Connection Refused: If the server refuses the connection.
+                #
+                retries = AugmentedRetry(
+                    connect=5,
+                    read=8,
+                    redirect=3,
+                    status=10,
+                    allowed_methods=[
+                        "HEAD",
+                        "GET",
+                        "PUT",
+                        "DELETE",
+                        "OPTIONS",
+                    ],
+                    status_forcelist=[
+                        408,  # Request Timeout
+                        429,  # Too Many Requests
+                        502,  # Bad Gateway
+                        503,  # Service Unavailable
+                        504,  # Gateway Timeout
+                    ],
+                    other=3,
+                    backoff_factor=1,
+                )
+                self._session.mount(
+                    "https://", HTTPAdapter(max_retries=retries)
+                )
+                self._session.mount(
+                    "http://", HTTPAdapter(max_retries=retries)
+                )
+                self._session.verify = self.config.verify_ssl
+                # Use a custom user agent to identify the ZenML client in the server
+                # logs.
+                self._session.headers.update(
+                    {"User-Agent": "zenml/" + zenml.__version__}
                 )
 
-            self._session = requests.Session()
-            # Retries are triggered for idempotent HTTP methods (GET, HEAD, PUT,
-            # OPTIONS and DELETE) on specific HTTP status codes:
-            #
-            #     502: Bad Gateway.
-            #     503: Service Unavailable.
-            #     504: Gateway Timeout.
-            #
-            # This also handles connection level errors, if a connection attempt
-            # fails due to transient issues like:
-            #
-            #     DNS resolution errors.
-            #     Connection timeouts.
-            #     Network disruptions.
-            #
-            # Additional errors retried:
-            #
-            #     Read Timeouts: If the server does not send a response within
-            #     the timeout period.
-            #     Connection Refused: If the server refuses the connection.
-            #
-            retries = AugmentedRetry(
-                connect=5,
-                read=8,
-                redirect=3,
-                status=10,
-                allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS"],
-                status_forcelist=[
-                    408,  # Request Timeout
-                    429,  # Too Many Requests
-                    502,  # Bad Gateway
-                    503,  # Service Unavailable
-                    504,  # Gateway Timeout
-                ],
-                other=3,
-                backoff_factor=1,
-            )
-            self._session.mount("https://", HTTPAdapter(max_retries=retries))
-            self._session.mount("http://", HTTPAdapter(max_retries=retries))
-            self._session.verify = self.config.verify_ssl
-            # Use a custom user agent to identify the ZenML client in the server
-            # logs.
-            self._session.headers.update(
-                {"User-Agent": "zenml/" + zenml.__version__}
-            )
-
-        # Note that we return an unauthenticated session here. An API token
-        # is only fetched and set in the authorization header when and if it is
-        # needed.
-        return self._session
+            # Note that we return an unauthenticated session here. An API token
+            # is only fetched and set in the authorization header when and if it is
+            # needed.
+            return self._session
 
     def authenticate(self, force: bool = False) -> None:
         """Authenticate or re-authenticate to the ZenML server.
@@ -4386,12 +4400,13 @@ class RestZenStore(BaseZenStore):
             CredentialsNotValid: if the request fails due to invalid
                 client credentials.
         """
-        self.session.headers.update(
-            {source_context.name: source_context.get().value}
-        )
         # Add a request ID to the request headers
         request_id = str(uuid4())[:8]
-        self.session.headers.update({"X-Request-ID": request_id})
+        request_headers = {
+            "X-Request-ID": request_id,
+            source_context.name: source_context.get().value,
+        }
+
         path = url.removeprefix(self.url)
         start_time = time.time()
         logger.debug(
@@ -4419,6 +4434,7 @@ class RestZenStore(BaseZenStore):
                     self.session.request(
                         method,
                         url,
+                        headers=request_headers,
                         params=params if params else {},
                         verify=self.config.verify_ssl,
                         timeout=timeout or self.config.http_timeout,
@@ -4432,62 +4448,94 @@ class RestZenStore(BaseZenStore):
                 # authenticated at all.
                 credentials_store = get_credentials_store()
 
-                if self._api_token is None:
-                    # The last request was not authenticated with an API
-                    # token at all. We authenticate here and then try the
-                    # request again, this time with a valid API token in the
-                    # header.
-                    logger.debug(
-                        f"The last request with ID {request_id} was not "
-                        f"authenticated: {e}\n"
-                        "Re-authenticating and retrying..."
+                previous_token = (
+                    self._api_token.access_token if self._api_token else None
+                )
+                api_token_from_credentials = credentials_store.get_token(
+                    self.url
+                )
+                old_credential_token = (
+                    api_token_from_credentials.access_token
+                    if api_token_from_credentials
+                    else None
+                )
+
+                # We now wait for the session lock to be acquired. In the meantime,
+                # other threads might have already re-authenticated.
+                with self._session_lock:
+                    current_token = (
+                        self._api_token.access_token
+                        if self._api_token
+                        else None
                     )
-                    self.authenticate()
-                elif not credentials_store.can_login(self.url):
-                    # The request failed either because we're not
-                    # authenticated or our current credentials are not valid
-                    # anymore.
-                    logger.error(
-                        "The current token is no longer valid, and "
-                        "it is not possible to generate a new token using the "
-                        "configured credentials. Please run "
-                        f"`zenml login {self.url}` to "
-                        "re-authenticate to the server or authenticate using "
-                        "an API key. See "
-                        "https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account "
-                        "for more information."
-                    )
-                    # Clear the current token from the credentials store to
-                    # force a new authentication flow next time.
-                    get_credentials_store().clear_token(self.url)
-                    raise e
-                elif not re_authenticated:
-                    # The last request was authenticated with an API token
-                    # that was rejected by the server. We attempt a
-                    # re-authentication here and then retry the request.
-                    logger.debug(
-                        f"The last request with ID {request_id} was authenticated "
-                        "with an API token that was rejected by the server: "
-                        f"{e}\n"
-                        "Re-authenticating and retrying..."
-                    )
-                    re_authenticated = True
-                    self.authenticate(
-                        # Ignore the current token and force a re-authentication
-                        force=True
-                    )
-                else:
-                    # The last request was made after re-authenticating but
-                    # still failed. Bailing out.
-                    logger.debug(
-                        f"The last request with ID {request_id} failed after "
-                        "re-authenticating: {e}\n"
-                        "Bailing out..."
-                    )
-                    raise CredentialsNotValid(
-                        "The current credentials are no longer valid. Please "
-                        "log in again using 'zenml login'."
-                    ) from e
+
+                    if current_token and current_token != previous_token:
+                        if current_token != old_credential_token:
+                            # The token from the credentials store has been
+                            # refreshed by another thread, which means that
+                            # we don't need to try to re-authenticate.
+                            re_authenticated = True
+
+                        # The token has been refreshed by another thread.
+                        # Retry the request.
+                        continue
+
+                    if self._api_token is None:
+                        # The last request was not authenticated with an API
+                        # token at all. We authenticate here and then try the
+                        # request again, this time with a valid API token in the
+                        # header.
+                        logger.debug(
+                            f"The last request with ID {request_id} was not "
+                            f"authenticated: {e}\n"
+                            "Re-authenticating and retrying..."
+                        )
+                        self.authenticate()
+                    elif not credentials_store.can_login(self.url):
+                        # The request failed either because we're not
+                        # authenticated or our current credentials are not valid
+                        # anymore.
+                        logger.error(
+                            "The current token is no longer valid, and "
+                            "it is not possible to generate a new token using the "
+                            "configured credentials. Please run "
+                            f"`zenml login {self.url}` to "
+                            "re-authenticate to the server or authenticate using "
+                            "an API key. See "
+                            "https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account "
+                            "for more information."
+                        )
+                        # Clear the current token from the credentials store to
+                        # force a new authentication flow next time.
+                        credentials_store.clear_token(self.url)
+                        raise e
+                    elif not re_authenticated:
+                        # The last request was authenticated with an API token
+                        # that was rejected by the server. We attempt a
+                        # re-authentication here and then retry the request.
+                        logger.debug(
+                            f"The last request with ID {request_id} was authenticated "
+                            "with an API token that was rejected by the server: "
+                            f"{e}\n"
+                            "Re-authenticating and retrying..."
+                        )
+                        re_authenticated = True
+                        self.authenticate(
+                            # Ignore the current token and force a re-authentication
+                            force=True
+                        )
+                    else:
+                        # The last request was made after re-authenticating but
+                        # still failed. Bailing out.
+                        logger.debug(
+                            f"The last request with ID {request_id} failed after "
+                            "re-authenticating: {e}\n"
+                            "Bailing out..."
+                        )
+                        raise CredentialsNotValid(
+                            "The current credentials are no longer valid. Please "
+                            "log in again using 'zenml login'."
+                        ) from e
             finally:
                 end_time = time.time()
                 duration = (end_time - start_time) * 1000
