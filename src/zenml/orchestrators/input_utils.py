@@ -77,7 +77,7 @@ def resolve_step_inputs(
 
         for step_name in steps_list:
             current_chunk.append(step_name)
-            current_length += len(step_name)
+            current_length += len(step_name) + 5  # 5 is for the JSON encoding
 
             if current_length > max_chunk_length:
                 chunks.append(current_chunk)

@@ -17,7 +17,6 @@ import asyncio
 import inspect
 import logging
 import os
-import resource
 import sys
 import threading
 import time
@@ -691,6 +690,8 @@ def set_filter_project_scope(
 process = psutil.Process()
 fd_limit: Union[int, str] = "N/A"
 if sys.platform != "win32":
+    import resource
+
     try:
         fd_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
     except Exception:
