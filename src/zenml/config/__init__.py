@@ -23,12 +23,23 @@ configuration. This ``GlobalConfiguration`` object handles the serialization and
 deserialization of the configuration options that are stored in the file in
 order to persist the configuration across sessions.
 """
-from zenml.config.docker_settings import DockerSettings
-from zenml.config.resource_settings import ResourceSettings
+from zenml.config.docker_settings import (
+    DockerSettings,
+    PythonPackageInstaller,
+    PythonEnvironmentExportMethod,
+)
+from zenml.config.resource_settings import ResourceSettings, ByteUnit
 from zenml.config.retry_config import StepRetryConfig
+from zenml.config.schedule import Schedule
+from zenml.config.store_config import StoreConfiguration
 
 __all__ = [
     "DockerSettings",
+    "PythonPackageInstaller",
+    "PythonEnvironmentExportMethod",
     "ResourceSettings",
+    "ByteUnit",
     "StepRetryConfig",
+    "Schedule",
+    "StoreConfiguration",
 ]
