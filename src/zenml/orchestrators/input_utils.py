@@ -84,6 +84,9 @@ def resolve_step_inputs(
                 current_chunk = []
                 current_length = 0
 
+        if current_chunk:
+            chunks.append(current_chunk)
+
         for chunk in chunks:
             step_runs.update(
                 {

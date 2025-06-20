@@ -866,10 +866,10 @@ class LogFile(BaseModel):
                 )
             }
 
+            transaction_count = 0
             for _, transaction_entries in grouped_transaction_logs.items():
                 if len(transaction_entries) < 2:
                     continue
-                transaction_count += 1
                 start = transaction_entries[0].timestamp
                 end = transaction_entries[-1].timestamp
                 total_duration = (end - start).total_seconds()
@@ -1041,9 +1041,12 @@ class LogFile(BaseModel):
                 for transaction_entry in transaction_entries:
                     metrics_columns.update(transaction_entry.metrics.keys())
 
-                rows.append(transaction_rows)
+                if transaction_rows:
+                    rows.append(transaction_rows)
+                    transaction_count += 1
 
-            request_count += 1
+            if transaction_count > 0:
+                request_count += 1
             if max_requests is not None and request_count >= max_requests:
                 break
 
