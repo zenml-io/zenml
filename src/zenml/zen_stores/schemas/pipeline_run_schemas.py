@@ -389,19 +389,36 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             RuntimeError: if the model creation fails.
         """
         if self.deployment is not None:
-            deployment = self.deployment.to_model(
-                include_metadata=True,
-                include_python_packages=include_python_packages,
+            config = PipelineConfiguration.model_validate_json(
+                self.deployment.pipeline_configuration
             )
+            client_environment = json.loads(self.deployment.client_environment)
 
-            config = deployment.pipeline_configuration
-            client_environment = deployment.client_environment
-
-            stack = deployment.stack
-            pipeline = deployment.pipeline
-            build = deployment.build
-            schedule = deployment.schedule
-            code_reference = deployment.code_reference
+            stack = (
+                self.deployment.stack.to_model()
+                if self.deployment.stack
+                else None
+            )
+            pipeline = (
+                self.deployment.pipeline.to_model()
+                if self.deployment.pipeline
+                else None
+            )
+            build = (
+                self.deployment.build.to_model()
+                if self.deployment.build
+                else None
+            )
+            schedule = (
+                self.deployment.schedule.to_model()
+                if self.deployment.schedule
+                else None
+            )
+            code_reference = (
+                self.deployment.code_reference.to_model()
+                if self.deployment.code_reference
+                else None
+            )
 
         elif self.pipeline_configuration is not None:
             config = PipelineConfiguration.model_validate_json(

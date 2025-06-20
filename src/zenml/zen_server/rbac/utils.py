@@ -120,12 +120,16 @@ def dehydrate_response_model(
         )
 
     dehydrated_values = {}
+    skip_dehydration = getattr(model, "__zenml_skip_dehydration__", [])
     # See `get_subresources_for_model(...)` for a detailed explanation why we
     # need to use `model.__iter__()` here
     for key, value in model.__iter__():
-        dehydrated_values[key] = _dehydrate_value(
-            value, permissions=permissions
-        )
+        if key in skip_dehydration:
+            dehydrated_values[key] = value
+        else:
+            dehydrated_values[key] = _dehydrate_value(
+                value, permissions=permissions
+            )
 
     return type(model).model_validate(dehydrated_values)
 
@@ -579,8 +583,10 @@ def get_subresources_for_model(
         for item in model:
             resources.update(_get_subresources_for_value(item))
     else:
-        for _, value in model.__iter__():
-            resources.update(_get_subresources_for_value(value))
+        skip_dehydration = getattr(model, "__zenml_skip_dehydration__", [])
+        for key, value in model.__iter__():
+            if key not in skip_dehydration:
+                resources.update(_get_subresources_for_value(value))
 
     return resources
 
