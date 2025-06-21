@@ -174,8 +174,8 @@ resource intensive to test all possible combinations of these deployments and
 stack configurations, which does not make it feasible to do so as part of a
 CI/CD pipeline.  
 
-The ZenML CI relies on a combination of unit tests, integration tests and
-end-to-end system tests to ensure that the codebase is working as expected:
+The ZenML CI relies on a combination of unit tests, integration tests, 
+end-to-end system tests and tutorial pipeline regression tests to ensure that the codebase is working as expected:
 
 * unit-tests are tests that isolate and test a single unit of the codebase,
 like a function, class or module. They are fast and should not usually require
@@ -198,6 +198,12 @@ perspective, e.g. by running a full ZenML example project from start to finish
 and verifying that the pipelines runs as expected. These tests are usually very
 resource intensive and time consuming. Same as with integration tests, they
 are often highly reusable across different deployments and stack configurations.
+* tutorial pipeline regression tests are tests that run all pipeline examples
+from the ZenML VSCode tutorial extension repository against the current ZenML
+codebase to ensure that core changes don't break the tutorial examples. These
+tests install ZenML from the current branch (not PyPI) and run each tutorial
+pipeline individually, providing early detection of breaking changes that would
+affect user-facing examples.
 
 To address the mentioned concerns, the testing strategy chosen for ZenML can
 be summarized as follows:
