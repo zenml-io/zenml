@@ -6,7 +6,7 @@ description: Orchestrating your pipelines to run on Modal's serverless cloud pla
 
 Using the ZenML `modal` integration, you can orchestrate and scale your ML pipelines on [Modal's](https://modal.com/) serverless cloud platform with minimal setup and maximum efficiency.
 
-The Modal orchestrator is designed for speed and cost-effectiveness, running entire pipelines in single serverless functions to minimize cold starts and optimize resource utilization.
+The Modal orchestrator is designed for speed and cost-effectiveness, running entire pipelines using an intelligent app persistence strategy that reuses warm containers while ensuring proper isolation between different builds.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
@@ -26,7 +26,7 @@ You should use the Modal orchestrator if:
 
 The Modal orchestrator may not be the best choice if:
 
-* **You need fine-grained step isolation**: Modal runs entire pipelines in single functions by default, which means all steps share the same resources and environment. For pipelines requiring different resource configurations per step, consider the [Modal step operator](../step-operators/modal.md) instead.
+* **You need fine-grained step isolation**: Modal runs entire pipelines in single functions, which means all steps share the same resources and environment. For pipelines requiring different resource configurations per step, consider the [Modal step operator](../step-operators/modal.md) instead.
 
 * **You have strict data locality requirements**: Modal runs in specific cloud regions and may not be suitable if you need to keep data processing within specific geographic boundaries or on-premises.
 
@@ -133,8 +133,9 @@ The Modal orchestrator uses two types of settings following ZenML's standard pat
    - `gpu` - GPU type specification (e.g., "T4", "A100", "H100")
    - `region` - Cloud region preference  
    - `cloud` - Cloud provider selection
-   - `execution_mode` - How to run the pipeline
+   - `modal_environment` - Modal environment name (e.g., "main", "dev", "prod")
    - `timeout`, `min_containers`, `max_containers` - Performance settings
+   - `synchronous` - Wait for completion (True) or fire-and-forget (False)
 
 {% hint style="info" %}
 **GPU Configuration**: Use `ResourceSettings.gpu_count` to specify how many GPUs you need, and `ModalOrchestratorSettings.gpu` to specify what type of GPU. Modal will combine these automatically (e.g., `gpu_count=2` + `gpu="A100"` becomes `"A100:2"`).
@@ -155,10 +156,11 @@ modal_settings = ModalOrchestratorSettings(
     gpu="A100",                # GPU type (optional)
     region="us-east-1",        # Preferred region
     cloud="aws",               # Cloud provider
-    execution_mode="pipeline", # or "per_step"
+    modal_environment="main",  # Modal environment name
     timeout=3600,              # 1 hour timeout
     min_containers=1,          # Keep warm containers
     max_containers=10,         # Scale up to 10 containers
+    synchronous=True,          # Wait for completion
 )
 
 # Configure hardware resources (quantities)
@@ -225,28 +227,19 @@ def second_step():
     ...
 ```
 
-### Execution modes
+### App Persistence Architecture
 
-The Modal orchestrator supports two execution modes:
+The Modal orchestrator uses an intelligent app persistence strategy:
 
-1. **`pipeline` (default)**: Runs the entire pipeline in a single Modal function for minimal overhead and cost efficiency. Steps execute sequentially with no cold starts or function call overhead between them.
-2. **`per_step`**: Runs each step in a separate Modal function call for granular control and debugging. Better for pipelines where steps can run in parallel or have very different resource requirements.
+- **Apps are persistent per pipeline**: Each pipeline gets its own Modal app that stays warm
+- **Functions are unique per build/run**: Different builds get separate functions for proper isolation
+- **Automatic reuse**: Same pipeline with same dependencies reuses warm apps
+- **Smart isolation**: Different dependencies trigger new deployments for safety
 
-{% hint style="info" %}
-**Resource Sharing**: Both execution modes use the same Modal function with the same resource configuration (from pipeline-level settings). The difference is whether steps run sequentially in one function call (`pipeline`) or as separate function calls (`per_step`).
-{% endhint %}
-
-```python
-# Fast execution (default) - entire pipeline in one function
-modal_settings = ModalOrchestratorSettings(
-    execution_mode="pipeline"
-)
-
-# Granular execution - each step separate (useful for debugging)
-modal_settings = ModalOrchestratorSettings(
-    execution_mode="per_step"
-)
-```
+This architecture provides the best of both worlds:
+- **Performance**: Warm containers eliminate cold start delays
+- **Isolation**: Different builds don't interfere with each other
+- **Cost efficiency**: Apps are reused when safe to do so
 
 ### Base image requirements
 
@@ -375,34 +368,39 @@ For production deployments, you can specify different Modal environments:
 
 ```python
 modal_settings = ModalOrchestratorSettings(
-    environment="production",  # or "staging", "dev", etc.
+    modal_environment="production",  # or "staging", "dev", etc.
     workspace="my-company"
 )
 ```
 
-### How it works: Modal Apps and Functions
+### How it works: App = Pipeline, Function = Build
 
 {% hint style="info" %}
-**Implementation Details**
+**Smart Architecture for Performance and Isolation**
 
-The ZenML Modal orchestrator implements pipeline execution using Modal's app and function architecture:
+The ZenML Modal orchestrator uses an innovative "App = Pipeline, Function = Build" architecture:
 
-**Modal App Deployment**: 
-- ZenML creates a persistent Modal app with a unique name that includes a time window and build checksum
-- The app stays deployed and available for a configurable time period (default: 2 hours)
-- Apps are automatically reused within the time window if the Docker image hasn't changed
-- This eliminates the overhead of redeploying apps for consecutive pipeline runs
+**Pipeline-Level Apps**: 
+- Each pipeline gets its own persistent Modal app (e.g., `zenml-pipeline-training-pipeline`)
+- Apps stay warm and reusable across multiple runs of the same pipeline
+- App names are stable, enabling long-term container warmth
 
-**Function Execution**:
-- Your pipeline runs inside Modal functions within the deployed app
-- In `pipeline` mode (default): The entire pipeline executes in a single function call
-- In `per_step` mode: Each step runs as a separate function call within the same app
-- Functions can maintain warm containers between executions for faster startup
+**Build-Specific Functions**:
+- Each unique build/dependency combination gets its own function within the app
+- Function names include build hashes to ensure isolation (e.g., `run_build_abc123_def456`)
+- Different dependencies = different functions = proper isolation
+- Same dependencies = same function = maximum reuse
+
+**Execution Flow**:
+- Your entire pipeline runs in a single function call using `PipelineEntrypoint`
+- Maximum speed with minimal overhead
+- Warm containers provide near-instant startup
+- Fresh execution context prevents conflicts between runs
 
 **Container Management**:
-- Modal manages container lifecycle automatically based on your `min_containers` and `max_containers` settings
-- Warm containers stay ready with your Docker image loaded and dependencies installed
-- Cold containers are spun up on-demand when warm containers are unavailable
+- Modal manages container lifecycle based on your `min_containers` and `max_containers` settings
+- Warm containers stay ready with your Docker image and dependencies loaded
+- Apps persist across runs, functions are deployed fresh when needed
 {% endhint %}
 
 ### Warm containers for faster execution
