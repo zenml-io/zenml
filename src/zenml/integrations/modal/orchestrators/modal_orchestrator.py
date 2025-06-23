@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of a Modal orchestrator."""
 
+import hashlib
 import os
 import time
 import traceback
@@ -205,6 +206,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             Exception: If pipeline execution fails.
+
+        Returns:
+            None if the pipeline is executed synchronously, otherwise an iterator of metadata dictionaries.
         """
         if deployment.schedule:
             logger.warning(
@@ -247,8 +251,21 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             "Starting pipeline execution with persistent serverless functions"
         )
 
-        # Use simplified app naming based on deployment ID
-        app_name_base = f"zenml-pipeline-{deployment.id}"
+        # Use image-based app naming for build-specific persistence
+        # This allows multiple pipelines with the same image/build to reuse the same Modal app
+        # Different builds get different apps, ensuring proper dependency isolation
+        image_name = self.get_image(deployment=deployment)
+        # Create a safe app name from the image name (hash if too long)
+        safe_image_name = (
+            image_name.replace("/", "-").replace(":", "-").replace(".", "-")
+        )
+        if (
+            len(safe_image_name) > 50
+        ):  # Modal app names should be reasonable length
+            # Use hash to ensure uniqueness while keeping reasonable length
+            image_hash = hashlib.md5(image_name.encode()).hexdigest()[:8]
+            safe_image_name = f"hashed-{image_hash}"
+        app_name_base = f"zenml-{safe_image_name}"
 
         execute_step, full_app_name = get_or_deploy_persistent_modal_app(
             app_name_base=app_name_base,
