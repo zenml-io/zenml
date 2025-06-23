@@ -25,7 +25,6 @@ from zenml.models import (
     ProjectScopedFilter,
     UserScopedRequest,
 )
-from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
     report_usage,
@@ -42,7 +41,11 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
-from zenml.zen_server.utils import server_config, set_filter_project_scope
+from zenml.zen_server.utils import (
+    get_auth_context,
+    server_config,
+    set_filter_project_scope,
+)
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]

@@ -97,7 +97,7 @@ def create_build(
     deprecated=True,
     tags=["builds"],
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_builds(
     build_filter_model: PipelineBuildFilter = Depends(
         make_dependable(PipelineBuildFilter)
@@ -133,7 +133,7 @@ def list_builds(
     "/{build_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_build(
     build_id: UUID,
     hydrate: bool = True,

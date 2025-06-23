@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """Util functions for the ZenML Server."""
 
+import asyncio
 import inspect
+import logging
 import os
+import sys
 import threading
+import time
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -29,9 +33,11 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    overload,
 )
 from uuid import UUID
 
+import psutil
 from pydantic import BaseModel, ValidationError
 from typing_extensions import ParamSpec
 
@@ -41,7 +47,9 @@ from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     API,
     ENV_ZENML_SERVER,
+    HEALTH,
     INFO,
+    READY,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError, OAuthError
@@ -54,6 +62,7 @@ from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
+from zenml.zen_server.request_management import RequestContext, RequestManager
 from zenml.zen_server.template_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
@@ -62,6 +71,7 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.zen_server.auth import AuthContext
     from zenml.zen_server.template_execution.utils import (
         BoundedThreadPoolExecutor,
     )
@@ -80,6 +90,7 @@ _workload_manager: Optional[WorkloadManagerInterface] = None
 _run_template_executor: Optional["BoundedThreadPoolExecutor"] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
+_request_manager: Optional[RequestManager] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -305,86 +316,115 @@ def server_config() -> ServerConfiguration:
     return _server_config
 
 
+def request_manager() -> RequestManager:
+    """Return the request manager.
+
+    Returns:
+        The request manager.
+
+    Raises:
+        RuntimeError: If the request manager is not initialized.
+    """
+    global _request_manager
+    if _request_manager is None:
+        raise RuntimeError("Request manager not initialized")
+    return _request_manager
+
+
+async def initialize_request_manager() -> None:
+    """Initialize the request manager."""
+    global _request_manager
+    _request_manager = RequestManager(
+        deduplicate=server_config().request_deduplication,
+        transaction_ttl=server_config().request_cache_timeout,
+        request_timeout=server_config().request_timeout,
+    )
+    await _request_manager.startup()
+
+
+async def cleanup_request_manager() -> None:
+    """Cleanup the request manager."""
+    global _request_manager
+    if _request_manager is not None:
+        await _request_manager.shutdown()
+        _request_manager = None
+
+
+@overload
 def async_fastapi_endpoint_wrapper(
     func: Callable[P, R],
-) -> Callable[P, Awaitable[Any]]:
+) -> Callable[P, Awaitable[Any]]: ...
+
+
+@overload
+def async_fastapi_endpoint_wrapper(
+    *, deduplicate: Optional[bool] = None
+) -> Callable[[Callable[P, R]], Callable[P, Awaitable[Any]]]: ...
+
+
+def async_fastapi_endpoint_wrapper(
+    func: Optional[Callable[P, R]] = None,
+    *,
+    deduplicate: Optional[bool] = None,
+) -> Union[
+    Callable[P, Awaitable[Any]],
+    Callable[[Callable[P, R]], Callable[P, Awaitable[Any]]],
+]:
     """Decorator for FastAPI endpoints.
 
     This decorator for FastAPI endpoints does the following:
-    - Sets the auth_context context variable if the endpoint is authenticated.
     - Converts exceptions to HTTPExceptions with the correct status code.
-    - Converts the sync endpoint function to an coroutine and runs the original
-      function in a worker threadpool. See below for more details.
+    - Uses the request manager to deduplicate requests and to convert the sync
+    endpoint function to a coroutine.
+    - Optionally enables idempotency for the endpoint.
 
     Args:
         func: Function to decorate.
+        deduplicate: Whether to enable or disable request deduplication for
+            this endpoint. If not specified, by default, the deduplication is
+            enabled for POST requests and disabled for other requests.
 
     Returns:
         Decorated function.
     """
 
-    # When having a sync FastAPI endpoint, it runs the endpoint function in
-    # a worker threadpool. If all threads are busy, it will queue the task.
-    # The problem is that after the endpoint code returns, FastAPI will queue
-    # another task in the same threadpool to serialize the response. If there
-    # are many tasks already in the queue, this means that the response
-    # serialization will wait for a long time instead of returning the response
-    # immediately. By making our endpoints async and then immediately
-    # dispatching them to the threadpool ourselves (which is essentially what
-    # FastAPI does when having a sync endpoint), we can avoid this problem.
-    # The serialization logic will now run on the event loop and not wait for
-    # a worker thread to become available.
-    # See: `fastapi.routing.serialize_response(...)` and
-    # https://github.com/fastapi/fastapi/pull/888 for more information.
-    @wraps(func)
-    async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
-        from starlette.concurrency import run_in_threadpool
-
-        from zenml.zen_server.zen_server_api import request_ids
-
-        request_id = request_ids.get()
-
+    def decorator(func: Callable[P, R]) -> Callable[P, Awaitable[Any]]:
         @wraps(func)
-        def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
-            # These imports can't happen at module level as this module is also
-            # used by the CLI when installed without the `server` extra
-            from fastapi import HTTPException
-            from fastapi.responses import JSONResponse
+        async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
+            @wraps(func)
+            def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
+                # These imports can't happen at module level as this module is also
+                # used by the CLI when installed without the `server` extra
+                from fastapi import HTTPException
+                from fastapi.responses import JSONResponse
 
-            from zenml.zen_server.auth import AuthContext, set_auth_context
+                try:
+                    return func(*args, **kwargs)
+                except OAuthError as error:
+                    # The OAuthError is special because it needs to have a JSON response
+                    return JSONResponse(
+                        status_code=error.status_code,
+                        content=error.to_dict(),
+                    )
+                except HTTPException:
+                    raise
+                except Exception as error:
+                    logger.exception("API error")
+                    http_exception = http_exception_from_error(error)
+                    raise http_exception
 
-            if request_id:
-                # Change the name of the current thread to the request ID
-                threading.current_thread().name = request_id
+            return await request_manager().execute(
+                decorated,
+                deduplicate,
+                *args,
+                **kwargs,
+            )
 
-            for arg in args:
-                if isinstance(arg, AuthContext):
-                    set_auth_context(arg)
-                    break
-            else:
-                for _, arg in kwargs.items():
-                    if isinstance(arg, AuthContext):
-                        set_auth_context(arg)
-                        break
+        return async_decorated
 
-            try:
-                return func(*args, **kwargs)
-            except OAuthError as error:
-                # The OAuthError is special because it needs to have a JSON response
-                return JSONResponse(
-                    status_code=error.status_code,
-                    content=error.to_dict(),
-                )
-            except HTTPException:
-                raise
-            except Exception as error:
-                logger.exception("API error")
-                http_exception = http_exception_from_error(error)
-                raise http_exception
-
-        return await run_in_threadpool(decorated, *args, **kwargs)
-
-    return async_decorated
+    if func is None:
+        return decorator
+    return decorator(func)
 
 
 # Code from https://github.com/tiangolo/fastapi/issues/1474#issuecomment-1160633178
@@ -514,6 +554,7 @@ def is_user_request(request: "Request") -> bool:
     # Define system paths that should be excluded
     system_paths: List[str] = [
         "/health",
+        "/ready",
         "/metrics",
         "/system",
         "/docs",
@@ -644,3 +685,129 @@ def set_filter_project_scope(
         filter_model=filter_model,
         project_name_or_id=project_name_or_id,
     )
+
+
+process = psutil.Process()
+fd_limit: Union[int, str] = "N/A"
+if sys.platform != "win32":
+    import resource
+
+    try:
+        fd_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
+    except Exception:
+        pass
+
+
+def get_system_metrics() -> Dict[str, Any]:
+    """Get comprehensive system metrics.
+
+    Returns:
+        Dict containing system metrics
+    """
+    # Get active requests count
+    from zenml.zen_server.middleware import active_requests_count
+
+    # Memory limits
+    memory = process.memory_info()
+
+    # File descriptors
+    open_fds: Union[int, str] = "N/A"
+    try:
+        open_fds = process.num_fds() if hasattr(process, "num_fds") else "N/A"
+    except Exception:
+        pass
+
+    # Current thread name/ID
+    current_thread = threading.current_thread()
+    current_thread_name = current_thread.name
+    current_thread_id = current_thread.ident
+
+    return {
+        "memory_used_mb": memory.rss / (1024 * 1024),
+        "open_fds": open_fds,
+        "fd_limit": fd_limit,
+        "active_requests": active_requests_count,
+        "thread_count": threading.active_count(),
+        "max_worker_threads": server_config().thread_pool_size,
+        "current_thread_name": current_thread_name,
+        "current_thread_id": current_thread_id,
+    }
+
+
+def get_system_metrics_log_str(request: Optional["Request"] = None) -> str:
+    """Get the system metrics as a string for logging.
+
+    Args:
+        request: The request object.
+
+    Returns:
+        The system metrics as a string for debugging logging.
+    """
+    if not logger.isEnabledFor(logging.DEBUG):
+        return ""
+    if request and request.url.path in [HEALTH, READY]:
+        # Don't log system metrics for health and ready endpoints to keep them
+        # fast
+        return ""
+    metrics = get_system_metrics()
+    return (
+        " [ "
+        + " ".join([f"{key}: {value}" for key, value in metrics.items()])
+        + " ]"
+    )
+
+
+event_loop_lag_monitor_task: Optional[asyncio.Task[None]] = None
+
+
+def start_event_loop_lag_monitor(threshold_ms: int = 50) -> None:
+    """Start the event loop lag monitor.
+
+    Args:
+        threshold_ms: The threshold in milliseconds for the event loop lag.
+    """
+    global event_loop_lag_monitor_task
+
+    async def monitor() -> None:
+        while True:
+            start = time.perf_counter()
+            await asyncio.sleep(0)
+            delay = (time.perf_counter() - start) * 1000
+            if delay > threshold_ms:
+                logger.warning(
+                    f"⚠️  Event loop lag detected: {delay:.2f}ms"
+                    "If you see this message, it means that the ZenML server is "
+                    "under heavy load and the clients might start experiencing "
+                    "connection reset errors. Please consider scaling up the "
+                    "server."
+                )
+            await asyncio.sleep(0.5)
+
+    event_loop_lag_monitor_task = asyncio.create_task(monitor())
+
+
+def stop_event_loop_lag_monitor() -> None:
+    """Stop the event loop lag monitor."""
+    global event_loop_lag_monitor_task
+    if event_loop_lag_monitor_task:
+        event_loop_lag_monitor_task.cancel()
+        event_loop_lag_monitor_task = None
+
+
+def get_auth_context() -> Optional["AuthContext"]:
+    """Get the authentication context for the current request.
+
+    Returns:
+        The authentication context.
+    """
+    request_context = request_manager().current_request
+    return request_context.auth_context
+
+
+def get_current_request_context() -> RequestContext:
+    """Get the current request context.
+
+    Returns:
+        The current request context.
+    """
+    return request_manager().current_request
