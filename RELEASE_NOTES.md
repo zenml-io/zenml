@@ -2,6 +2,31 @@
 
 # 0.83.1
 
+The `0.83.1` release delivers significant **performance improvements** and optimizations that enhance ZenML's efficiency and responsiveness. This release focuses on architectural improvements including step configuration separation from deployment, idempotent POST requests with request caching, and enhanced artifact loading performance, alongside important bug fixes and documentation updates.
+
+## ⚡ Performance Improvements
+
+- **Architectural Enhancement**: Separated step configurations from deployment for improved modularity and reduced overhead
+- **Request Optimization**: Implemented idempotent POST requests with intelligent request caching for faster API responses
+- **Artifact Loading**: Enhanced artifact loading performance by using the active artifact store as cache
+
+## Fixes
+
+- Fixed potential race condition during pipeline run status updates
+- Fixed missing artifact nodes in DAG visualization
+- Fixed run template fetching issues that could cause errors during pipeline execution
+- Fixed missing pipeline substitutions for legacy steps
+- Reset active project after deleting local database
+
+## Documentation
+
+- Updated Kubernetes configuration documentation with clearer guidance
+- Enhanced run template documentation with better examples and explanations
+- Added shared CSS guidance for HTML visualizations
+- Updated kaniko project status documentation
+- Fixed authentication confusion in ZenML Pro API documentation
+
+
 ## What's Changed
 * More explicit handling of carriage return logs in steps by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3714
 * Add `0.82.1` to the legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3715
