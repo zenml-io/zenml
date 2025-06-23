@@ -59,7 +59,12 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
         - name: zenml-config
+        {{- if .Values.zenml.database.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "zenml.fullname" . }}-config
+        {{- else }}
           emptyDir: {}
+        {{- end }}
       {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
         # define a volume that will hold a backup of the database
         - name: db-backup
