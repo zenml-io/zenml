@@ -566,7 +566,7 @@ def _fail_if_authentication_environment_variables_set() -> None:
         not return until the server exits or is stopped with CTRL+C
 
       * `--docker`: start the local ZenML server as a Docker container instead
-        of a local background process. Only used when running `zenml login --local`
+        of a local background process.
 
       * `--port`: use a custom TCP port value for the local ZenML server
 
