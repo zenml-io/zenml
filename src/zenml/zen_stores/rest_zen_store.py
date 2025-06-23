@@ -1631,7 +1631,10 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_deployment(
-        self, deployment_id: UUID, hydrate: bool = True
+        self,
+        deployment_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -1639,6 +1642,9 @@ class RestZenStore(BaseZenStore):
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
 
         Returns:
             The deployment.
@@ -1647,7 +1653,10 @@ class RestZenStore(BaseZenStore):
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
             response_model=PipelineDeploymentResponse,
-            params={"hydrate": hydrate},
+            params={
+                "hydrate": hydrate,
+                "step_configuration_filter": step_configuration_filter,
+            },
         )
 
     def list_deployments(
@@ -4194,20 +4203,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             A requests session.
         """
-
-        class AugmentedRetry(Retry):
-            """Augmented retry class that also retries on 429 status codes for POST requests."""
-
-            def is_retry(
-                self,
-                method: str,
-                status_code: int,
-                has_retry_after: bool = False,
-            ) -> bool:
-                if status_code == 429:
-                    return True
-                return super().is_retry(method, status_code, has_retry_after)
-
         if self._session is None:
             # We only need to initialize the session once over the lifetime
             # of the client. We can swap the token out when it expires.
@@ -4217,12 +4212,14 @@ class RestZenStore(BaseZenStore):
                 )
 
             self._session = requests.Session()
-            # Retries are triggered for idempotent HTTP methods (GET, HEAD, PUT,
-            # OPTIONS and DELETE) on specific HTTP status codes:
+            # Retries are triggered for all HTTP methods (GET, HEAD, POST, PUT,
+            # PATCH, OPTIONS and DELETE) on specific HTTP status codes:
             #
+            #     408: Request Timeout.
+            #     429: Too Many Requests.
             #     502: Bad Gateway.
             #     503: Service Unavailable.
-            #     504: Gateway Timeout.
+            #     504: Gateway Timeout
             #
             # This also handles connection level errors, if a connection attempt
             # fails due to transient issues like:
@@ -4237,12 +4234,20 @@ class RestZenStore(BaseZenStore):
             #     the timeout period.
             #     Connection Refused: If the server refuses the connection.
             #
-            retries = AugmentedRetry(
+            retries = Retry(
                 connect=5,
                 read=8,
                 redirect=3,
                 status=10,
-                allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS"],
+                allowed_methods=[
+                    "HEAD",
+                    "GET",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "OPTIONS",
+                ],
                 status_forcelist=[
                     408,  # Request Timeout
                     429,  # Too Many Requests
@@ -4389,14 +4394,6 @@ class RestZenStore(BaseZenStore):
         self.session.headers.update(
             {source_context.name: source_context.get().value}
         )
-        # Add a request ID to the request headers
-        request_id = str(uuid4())[:8]
-        self.session.headers.update({"X-Request-ID": request_id})
-        path = url.removeprefix(self.url)
-        start_time = time.time()
-        logger.debug(
-            f"Sending {method} request to {path} with request ID {request_id}..."
-        )
 
         # If the server replies with a credentials validation (401 Unauthorized)
         # error, we (re-)authenticate and retry the request here in the
@@ -4413,18 +4410,31 @@ class RestZenStore(BaseZenStore):
         # two times: once after initial authentication and once after
         # re-authentication.
         re_authenticated = False
+        path = url.removeprefix(self.url)
         while True:
+            # Add a request ID to the request headers
+            request_id = str(uuid4())[:8]
+            self.session.headers.update({"X-Request-ID": request_id})
+            # Add an idempotency key to the request headers to ensure that
+            # requests are idempotent.
+            self.session.headers.update({"Idempotency-Key": str(uuid4())})
+
+            start_time = time.time()
+            logger.debug(f"[{request_id}] {method} {path} started...")
+            status_code = "failed"
+
             try:
-                return self._handle_response(
-                    self.session.request(
-                        method,
-                        url,
-                        params=params if params else {},
-                        verify=self.config.verify_ssl,
-                        timeout=timeout or self.config.http_timeout,
-                        **kwargs,
-                    )
+                response = self.session.request(
+                    method,
+                    url,
+                    params=params if params else {},
+                    verify=self.config.verify_ssl,
+                    timeout=timeout or self.config.http_timeout,
+                    **kwargs,
                 )
+
+                status_code = str(response.status_code)
+                return self._handle_response(response)
             except CredentialsNotValid as e:
                 # NOTE: CredentialsNotValid is raised only when the server
                 # explicitly indicates that the credentials are not valid and
@@ -4438,7 +4448,7 @@ class RestZenStore(BaseZenStore):
                     # request again, this time with a valid API token in the
                     # header.
                     logger.debug(
-                        f"The last request with ID {request_id} was not "
+                        f"[{request_id}] The last request was not "
                         f"authenticated: {e}\n"
                         "Re-authenticating and retrying..."
                     )
@@ -4466,7 +4476,7 @@ class RestZenStore(BaseZenStore):
                     # that was rejected by the server. We attempt a
                     # re-authentication here and then retry the request.
                     logger.debug(
-                        f"The last request with ID {request_id} was authenticated "
+                        f"[{request_id}] The last request was authenticated "
                         "with an API token that was rejected by the server: "
                         f"{e}\n"
                         "Re-authenticating and retrying..."
@@ -4480,7 +4490,7 @@ class RestZenStore(BaseZenStore):
                     # The last request was made after re-authenticating but
                     # still failed. Bailing out.
                     logger.debug(
-                        f"The last request with ID {request_id} failed after "
+                        f"[{request_id}] The last request failed after "
                         "re-authenticating: {e}\n"
                         "Bailing out..."
                     )
@@ -4492,7 +4502,7 @@ class RestZenStore(BaseZenStore):
                 end_time = time.time()
                 duration = (end_time - start_time) * 1000
                 logger.debug(
-                    f"Request to {path} with request ID {request_id} took "
+                    f"[{request_id}] {status_code} {method} {path} took "
                     f"{duration:.2f}ms."
                 )
 

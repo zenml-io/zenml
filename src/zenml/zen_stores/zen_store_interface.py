@@ -1296,7 +1296,10 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_deployment(
-        self, deployment_id: UUID, hydrate: bool = True
+        self,
+        deployment_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -1304,6 +1307,9 @@ class ZenStoreInterface(ABC):
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
 
         Returns:
             The deployment.

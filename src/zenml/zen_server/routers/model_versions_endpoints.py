@@ -127,7 +127,7 @@ def create_model_version(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_model_versions(
     model_version_filter_model: ModelVersionFilter = Depends(
         make_dependable(ModelVersionFilter)
@@ -176,7 +176,7 @@ def list_model_versions(
     "/{model_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_model_version(
     model_version_id: UUID,
     hydrate: bool = True,
@@ -204,7 +204,7 @@ def get_model_version(
     "/{model_version_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def update_model_version(
     model_version_id: UUID,
     model_version_update_model: ModelVersionUpdate,
