@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of a Modal orchestrator."""
 
-import hashlib
 import os
 import time
 import traceback
@@ -79,6 +78,8 @@ def run_entire_pipeline(
 
     try:
         logger.debug("Initializing pipeline entrypoint configuration")
+        logger.debug(f"Deployment ID: {deployment_id}")
+        logger.debug(f"Orchestrator Run ID: {orchestrator_run_id}")
 
         # Create the entrypoint arguments
         args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
@@ -225,6 +226,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
+        # Pass pipeline run ID for proper isolation (following other orchestrators' pattern)
+        if placeholder_run:
+            environment["ZENML_PIPELINE_RUN_ID"] = str(placeholder_run.id)
+            logger.debug(f"Pipeline run ID: {placeholder_run.id}")
+
         logger.debug(f"Orchestrator run ID: {orchestrator_run_id}")
 
         # Get settings from pipeline configuration (applies to entire pipeline)
@@ -251,21 +257,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             "Starting pipeline execution with persistent serverless functions"
         )
 
-        # Use image-based app naming for build-specific persistence
-        # This allows multiple pipelines with the same image/build to reuse the same Modal app
-        # Different builds get different apps, ensuring proper dependency isolation
-        image_name = self.get_image(deployment=deployment)
-        # Create a safe app name from the image name (hash if too long)
-        safe_image_name = (
-            image_name.replace("/", "-").replace(":", "-").replace(".", "-")
-        )
-        if (
-            len(safe_image_name) > 50
-        ):  # Modal app names should be reasonable length
-            # Use hash to ensure uniqueness while keeping reasonable length
-            image_hash = hashlib.md5(image_name.encode()).hexdigest()[:8]
-            safe_image_name = f"hashed-{image_hash}"
-        app_name_base = f"zenml-{safe_image_name}"
+        # TEMPORARY: Use orchestrator run ID for complete isolation during testing
+        # TODO: Revert to image-based naming once step conflict issue is resolved
+        app_name_base = f"zenml-run-{orchestrator_run_id}"
 
         execute_step, full_app_name = get_or_deploy_persistent_modal_app(
             app_name_base=app_name_base,
