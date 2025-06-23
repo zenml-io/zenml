@@ -493,22 +493,11 @@ def get_or_deploy_persistent_modal_app(
                 f"Found existing app '{app_name}' with matching build and fresh time window - reusing warm containers"
             )
 
-            # Try to get the function directly
-            try:
-                existing_function = modal.Function.from_name(
-                    app_name,
-                    function_name,
-                    environment_name=environment_name or "main",
-                )
-                logger.debug(
-                    "Successfully retrieved function from existing app"
-                )
-                return existing_function, app_name
-            except Exception as func_error:
-                logger.warning(
-                    f"Function lookup failed: {func_error}, redeploying"
-                )
-                # Fall through to deployment
+            # For the app=pipeline, function=build architecture, we always redeploy
+            # to ensure fresh function deployment even if app exists
+            logger.info(
+                f"App exists but redeploying to ensure fresh function '{function_name}' deployment"
+            )
 
         except Exception:
             # App not found or other lookup error - deploy fresh app

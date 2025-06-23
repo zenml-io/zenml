@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of a Modal orchestrator."""
 
+import hashlib
 import os
 import time
 import traceback
@@ -257,15 +258,24 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             "Starting pipeline execution with persistent serverless functions"
         )
 
-        # TEMPORARY: Use orchestrator run ID for complete isolation during testing
-        # TODO: Revert to image-based naming once step conflict issue is resolved
-        app_name_base = f"zenml-run-{orchestrator_run_id}"
+        # NEW ARCHITECTURE: App = Pipeline (persistent), Function = Build (isolated)
+        # App stays warm per pipeline, functions handle different builds within the app
+        pipeline_name = deployment.pipeline_configuration.name.replace(
+            "_", "-"
+        )
+        app_name_base = f"zenml-pipeline-{pipeline_name}"
+
+        # Function name based on build + run for complete isolation
+        image_name = self.get_image(deployment=deployment)
+        image_hash = hashlib.md5(image_name.encode()).hexdigest()[:8]
+        run_suffix = orchestrator_run_id[-8:]  # Last 8 chars of run ID
+        function_name = f"run_build_{image_hash}_{run_suffix}"
 
         execute_step, full_app_name = get_or_deploy_persistent_modal_app(
             app_name_base=app_name_base,
             zenml_image=zenml_image,
             execution_func=run_entire_pipeline,
-            function_name="run_entire_pipeline",
+            function_name=function_name,
             deployment=deployment,
             gpu_values=gpu_values,
             cpu_count=cpu_count,  # Use ResourceSettings value or None (Modal default)
