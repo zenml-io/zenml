@@ -48,7 +48,7 @@ class ModalOrchestratorSettings(BaseSettings):
             Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the pipeline execution.
         cloud: The cloud provider to use for the pipeline execution.
-        environment: The Modal environment to use for the pipeline execution.
+        modal_environment: The Modal environment to use for the pipeline execution.
         timeout: Maximum execution time in seconds (default 24h).
         min_containers: Minimum containers to keep warm (replaces keep_warm).
         max_containers: Maximum concurrent containers (replaces concurrency_limit).
@@ -61,7 +61,7 @@ class ModalOrchestratorSettings(BaseSettings):
     gpu: Optional[str] = None
     region: Optional[str] = None
     cloud: Optional[str] = None
-    environment: Optional[str] = None
+    modal_environment: Optional[str] = None
     timeout: int = 86400  # 24 hours (Modal's maximum)
     min_containers: Optional[int] = (
         1  # Keep 1 container warm for sequential execution
@@ -87,7 +87,7 @@ class ModalOrchestratorConfig(
         token_id: Modal API token ID (ak-xxxxx format) for authentication.
         token_secret: Modal API token secret (as-xxxxx format) for authentication.
         workspace: Modal workspace name (optional).
-        environment: Modal environment name (optional).
+        modal_environment: Modal environment name (optional).
 
     Note: If token_id and token_secret are not provided, falls back to
     Modal's default authentication (~/.modal.toml).
@@ -96,7 +96,7 @@ class ModalOrchestratorConfig(
     token_id: Optional[str] = SecretField(default=None)
     token_secret: Optional[str] = SecretField(default=None)
     workspace: Optional[str] = None
-    environment: Optional[str] = None
+    modal_environment: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:
@@ -112,9 +112,9 @@ class ModalOrchestratorConfig(
         """Whether the orchestrator runs synchronous or not.
 
         Returns:
-            True since the orchestrator waits for completion.
+            Whether the orchestrator runs synchronous or not.
         """
-        return True
+        return self.synchronous
 
 
 class ModalOrchestratorFlavor(BaseOrchestratorFlavor):

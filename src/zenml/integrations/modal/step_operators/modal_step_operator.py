@@ -126,7 +126,7 @@ class ModalStepOperator(BaseStepOperator):
             token_id=self.config.token_id,
             token_secret=self.config.token_secret,
             workspace=self.config.workspace,
-            environment=self.config.environment,
+            environment=self.config.modal_environment,
         )
 
         # Build Modal image using shared utility

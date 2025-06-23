@@ -88,30 +88,32 @@ class ModalLogStreamer:
                 bufsize=1,  # Line buffered
                 universal_newlines=True,
             ) as process:
-            while self.log_stream_active.is_set() and process.poll() is None:
-                if process.stdout:
-                    line = process.stdout.readline()
-                    if line:
-                        # Clean up the log line and forward to our logger
-                        log_msg = line.strip()
+                while (
+                    self.log_stream_active.is_set() and process.poll() is None
+                ):
+                    if process.stdout:
+                        line = process.stdout.readline()
+                        if line:
+                            # Clean up the log line and forward to our logger
+                            log_msg = line.strip()
 
-                        # Skip empty lines and "No logs" messages
-                        if not log_msg or log_msg.startswith("No logs"):
-                            continue
+                            # Skip empty lines and "No logs" messages
+                            if not log_msg or log_msg.startswith("No logs"):
+                                continue
 
-                        # Filter logs based on function call ID when available
-                        # If no call ID, show all logs (Modal CLI handles recency)
-                        if self.call_id and self.call_id in log_msg:
-                            # This log definitely belongs to our execution
-                            self.logger.info(f"{log_msg}")
-                        elif not self.call_id:
-                            # No call ID available, show all logs from Modal CLI stream
-                            # Modal CLI already filters for recent/relevant logs
-                            self.logger.info(f"{log_msg}")
-                        # Else: skip logs that don't match our call ID
+                            # Filter logs based on function call ID when available
+                            # If no call ID, show all logs (Modal CLI handles recency)
+                            if self.call_id and self.call_id in log_msg:
+                                # This log definitely belongs to our execution
+                                self.logger.info(f"{log_msg}")
+                            elif not self.call_id:
+                                # No call ID available, show all logs from Modal CLI stream
+                                # Modal CLI already filters for recent/relevant logs
+                                self.logger.info(f"{log_msg}")
+                            # Else: skip logs that don't match our call ID
 
-                else:
-                    break
+                    else:
+                        break
 
             # Clean up process
             if process.poll() is None:

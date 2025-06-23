@@ -41,14 +41,14 @@ class ModalStepOperatorSettings(BaseSettings):
             Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the step execution.
         cloud: The cloud provider to use for the step execution.
-        environment: The Modal environment to use for the step execution.
+        modal_environment: The Modal environment to use for the step execution.
         timeout: Maximum execution time in seconds (default 24h).
     """
 
     gpu: Optional[str] = None
     region: Optional[str] = None
     cloud: Optional[str] = None
-    environment: Optional[str] = None
+    modal_environment: Optional[str] = None
     timeout: int = 86400  # 24 hours (Modal's maximum)
 
 
@@ -61,7 +61,7 @@ class ModalStepOperatorConfig(
         token_id: Modal API token ID (ak-xxxxx format) for authentication.
         token_secret: Modal API token secret (as-xxxxx format) for authentication.
         workspace: Modal workspace name (optional).
-        environment: Modal environment name (optional).
+        modal_environment: Modal environment name (optional).
 
     Note: If token_id and token_secret are not provided, falls back to
     Modal's default authentication (~/.modal.toml).
@@ -70,7 +70,7 @@ class ModalStepOperatorConfig(
     token_id: Optional[str] = SecretField(default=None)
     token_secret: Optional[str] = SecretField(default=None)
     workspace: Optional[str] = None
-    environment: Optional[str] = None
+    modal_environment: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:
