@@ -7196,7 +7196,7 @@ only used as a fallback materializer inside the materializer registry.</p>
             <span class="s2">&quot;the artifacts cannot be loaded when running with a different &quot;</span>
             <span class="s2">&quot;Python version. Please consider implementing a custom &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;materializer for type `</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">` according to the &quot;</span>
-            <span class="s2">&quot;instructions at https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types&quot;</span>
+            <span class="s2">&quot;instructions at https://docs.zenml.io/concepts/artifacts/materializers&quot;</span>
         <span class="p">)</span>
 
     <span class="c1"># save python version for validation on loading</span>
@@ -10654,7 +10654,7 @@ return {
                 <span class="sa">f</span><span class="s2">&quot;Invalid materializer class &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. When creating a &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;custom materializer, make sure to specify at least one &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;type in its ASSOCIATED_TYPES class variable.&quot;</span><span class="p">,</span>
-                <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types&quot;</span><span class="p">,</span>
+                <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://docs.zenml.io/concepts/artifacts/materializers&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># Validate associated artifact type.</span>
@@ -10669,7 +10669,7 @@ return {
                     <span class="sa">f</span><span class="s2">&quot;custom materializer, make sure to specify a valid &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;artifact type in its ASSOCIATED_ARTIFACT_TYPE class &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;variable.&quot;</span><span class="p">,</span>
-                    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types&quot;</span><span class="p">,</span>
+                    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://docs.zenml.io/concepts/artifacts/materializers&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="c1"># Validate associated data types.</span>
@@ -10678,7 +10678,7 @@ return {
                 <span class="k">raise</span> <span class="n">MaterializerInterfaceError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Associated type </span><span class="si">{</span><span class="n">associated_type</span><span class="si">}</span><span class="s2"> for materializer &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not a class.&quot;</span><span class="p">,</span>
-                    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types&quot;</span><span class="p">,</span>
+                    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://docs.zenml.io/concepts/artifacts/materializers&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="c1"># Register the materializer.</span>
@@ -13082,7 +13082,7 @@ only used as a fallback materializer inside the materializer registry.</p>
             <span class="s2">&quot;the artifacts cannot be loaded when running with a different &quot;</span>
             <span class="s2">&quot;Python version. Please consider implementing a custom &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;materializer for type `</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">` according to the &quot;</span>
-            <span class="s2">&quot;instructions at https://docs.zenml.io/how-to/handle-data-artifacts/handle-custom-data-types&quot;</span>
+            <span class="s2">&quot;instructions at https://docs.zenml.io/concepts/artifacts/materializers&quot;</span>
         <span class="p">)</span>
 
     <span class="c1"># save python version for validation on loading</span>

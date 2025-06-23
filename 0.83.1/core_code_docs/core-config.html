@@ -6243,7 +6243,7 @@ from the artifact store.</p>
                     <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -6457,7 +6457,7 @@ from the artifact store.</p>
                     <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -6917,7 +6917,7 @@ steps.</p>
                     <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -9150,7 +9150,7 @@ from the artifact store.</p>
                     <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -9989,19 +9989,23 @@ property is first accessed according to the global store configuration.</p>
 <span class="normal">759</span>
 <span class="normal">760</span>
 <span class="normal">761</span>
-<span class="normal">762</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_active_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponse&quot;</span><span class="p">:</span>
+<span class="normal">762</span>
+<span class="normal">763</span>
+<span class="normal">764</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_active_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponse&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a model of the active project for the local client.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The model of the active project.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">project_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_active_project_id</span><span class="p">()</span>
+    <span class="c1"># Initialize the store first. This might create a local database if it</span>
+    <span class="c1"># doesn&#39;t exist yet, which will then refresh our active project ID.</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zen_store</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_project</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_project</span>
 
     <span class="n">project</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span>
-        <span class="n">project_name_or_id</span><span class="o">=</span><span class="n">project_id</span><span class="p">,</span>
+        <span class="n">project_name_or_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_active_project_id</span><span class="p">(),</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_active_project</span><span class="p">(</span><span class="n">project</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -10072,9 +10076,7 @@ property is first accessed according to the global store configuration.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">764</span>
-<span class="normal">765</span>
-<span class="normal">766</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">766</span>
 <span class="normal">767</span>
 <span class="normal">768</span>
 <span class="normal">769</span>
@@ -10090,7 +10092,9 @@ property is first accessed according to the global store configuration.</p>
 <span class="normal">779</span>
 <span class="normal">780</span>
 <span class="normal">781</span>
-<span class="normal">782</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_active_project_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+<span class="normal">782</span>
+<span class="normal">783</span>
+<span class="normal">784</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_active_project_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the ID of the active project.</span>
 
 <span class="sd">    Returns:</span>
@@ -10155,9 +10159,7 @@ property is first accessed according to the global store configuration.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">784</span>
-<span class="normal">785</span>
-<span class="normal">786</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">786</span>
 <span class="normal">787</span>
 <span class="normal">788</span>
 <span class="normal">789</span>
@@ -10167,7 +10169,9 @@ property is first accessed according to the global store configuration.</p>
 <span class="normal">793</span>
 <span class="normal">794</span>
 <span class="normal">795</span>
-<span class="normal">796</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_active_stack_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+<span class="normal">796</span>
+<span class="normal">797</span>
+<span class="normal">798</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_active_stack_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the ID of the active stack.</span>
 
 <span class="sd">    If the active stack doesn&#39;t exist yet, the ZenStore is reinitialized.</span>
@@ -11862,7 +11866,7 @@ constructor.</p>
                     <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -12634,7 +12638,7 @@ is passed as a secret reference.</p>
                     <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -13958,12 +13962,7 @@ ZenML server ID.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">551</span>
-<span class="normal">552</span>
-<span class="normal">553</span>
-<span class="normal">554</span>
-<span class="normal">555</span>
-<span class="normal">556</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">556</span>
 <span class="normal">557</span>
 <span class="normal">558</span>
 <span class="normal">559</span>
@@ -13972,7 +13971,12 @@ ZenML server ID.</p>
 <span class="normal">562</span>
 <span class="normal">563</span>
 <span class="normal">564</span>
-<span class="normal">565</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_auth_cookie_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_auth_cookie_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the authentication cookie name.</span>
 
 <span class="sd">    If not configured, the cookie name is set to a value computed from the</span>
@@ -14033,12 +14037,7 @@ ZenML server ID.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">567</span>
-<span class="normal">568</span>
-<span class="normal">569</span>
-<span class="normal">570</span>
-<span class="normal">571</span>
-<span class="normal">572</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">572</span>
 <span class="normal">573</span>
 <span class="normal">574</span>
 <span class="normal">575</span>
@@ -14046,7 +14045,12 @@ ZenML server ID.</p>
 <span class="normal">577</span>
 <span class="normal">578</span>
 <span class="normal">579</span>
-<span class="normal">580</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_external_server_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_external_server_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the external server ID.</span>
 
 <span class="sd">    If not configured, the regular ZenML server ID is used.</span>
@@ -14106,12 +14110,7 @@ ZenML server ID.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">536</span>
-<span class="normal">537</span>
-<span class="normal">538</span>
-<span class="normal">539</span>
-<span class="normal">540</span>
-<span class="normal">541</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">541</span>
 <span class="normal">542</span>
 <span class="normal">543</span>
 <span class="normal">544</span>
@@ -14119,7 +14118,12 @@ ZenML server ID.</p>
 <span class="normal">546</span>
 <span class="normal">547</span>
 <span class="normal">548</span>
-<span class="normal">549</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_jwt_token_audience</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span>
+<span class="normal">553</span>
+<span class="normal">554</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_jwt_token_audience</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the JWT token audience.</span>
 
 <span class="sd">    If not configured, the audience is set to the ZenML Server ID.</span>
@@ -14179,12 +14183,7 @@ ZenML server ID.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">521</span>
-<span class="normal">522</span>
-<span class="normal">523</span>
-<span class="normal">524</span>
-<span class="normal">525</span>
-<span class="normal">526</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">526</span>
 <span class="normal">527</span>
 <span class="normal">528</span>
 <span class="normal">529</span>
@@ -14192,7 +14191,12 @@ ZenML server ID.</p>
 <span class="normal">531</span>
 <span class="normal">532</span>
 <span class="normal">533</span>
-<span class="normal">534</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_jwt_token_issuer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_jwt_token_issuer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the JWT token issuer.</span>
 
 <span class="sd">    If not configured, the issuer is set to the ZenML Server ID.</span>
@@ -14255,12 +14259,7 @@ ZenML server ID.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">582</span>
-<span class="normal">583</span>
-<span class="normal">584</span>
-<span class="normal">585</span>
-<span class="normal">586</span>
-<span class="normal">587</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">587</span>
 <span class="normal">588</span>
 <span class="normal">589</span>
 <span class="normal">590</span>
@@ -14333,7 +14332,12 @@ ZenML server ID.</p>
 <span class="normal">657</span>
 <span class="normal">658</span>
 <span class="normal">659</span>
-<span class="normal">660</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
+<span class="normal">663</span>
+<span class="normal">664</span>
+<span class="normal">665</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_server_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServerConfiguration&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the server configuration.</span>
 
@@ -14612,12 +14616,7 @@ authenticate the ZenML server with the ZenML Pro API.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">711</span>
-<span class="normal">712</span>
-<span class="normal">713</span>
-<span class="normal">714</span>
-<span class="normal">715</span>
-<span class="normal">716</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">716</span>
 <span class="normal">717</span>
 <span class="normal">718</span>
 <span class="normal">719</span>
@@ -14628,7 +14627,12 @@ authenticate the ZenML server with the ZenML Pro API.</p>
 <span class="normal">724</span>
 <span class="normal">725</span>
 <span class="normal">726</span>
-<span class="normal">727</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">727</span>
+<span class="normal">728</span>
+<span class="normal">729</span>
+<span class="normal">730</span>
+<span class="normal">731</span>
+<span class="normal">732</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_server_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServerProConfiguration&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the server Pro configuration.</span>
 
@@ -14700,15 +14704,15 @@ authenticate the ZenML server with the ZenML Pro API.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">69</span>
-<span class="normal">70</span>
-<span class="normal">71</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">71</span>
 <span class="normal">72</span>
 <span class="normal">73</span>
 <span class="normal">74</span>
 <span class="normal">75</span>
 <span class="normal">76</span>
-<span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_jwt_secret_key</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_jwt_secret_key</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a random JWT secret key.</span>
 
 <span class="sd">    This key is used to sign and verify generated JWT tokens.</span>
@@ -16473,7 +16477,20 @@ step configuration.</p>
 <span class="normal">385</span>
 <span class="normal">386</span>
 <span class="normal">387</span>
-<span class="normal">388</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -16497,10 +16514,23 @@ step configuration.</p>
         <span class="n">config</span> <span class="o">=</span> <span class="n">StepConfiguration</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span>
             <span class="n">data</span><span class="p">[</span><span class="s2">&quot;step_config_overrides&quot;</span><span class="p">]</span>
         <span class="p">)</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">apply_pipeline_configuration</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">apply_pipeline_configuration</span><span class="p">(</span>
             <span class="n">pipeline_configuration</span>
         <span class="p">)</span>
-        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># We still need to apply the pipeline substitutions for legacy step</span>
+        <span class="c1"># objects which include the full config object.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.pipeline_configurations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">PipelineConfiguration</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">config</span> <span class="o">=</span> <span class="n">StepConfiguration</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">])</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">apply_pipeline_configuration</span><span class="p">(</span>
+            <span class="n">PipelineConfiguration</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">substitutions</span><span class="o">=</span><span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">substitutions</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>

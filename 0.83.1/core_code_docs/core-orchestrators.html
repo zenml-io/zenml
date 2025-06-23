@@ -7585,7 +7585,7 @@ This will be deleted in case the pipeline deployment failed.</p>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
                     <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -12025,7 +12025,7 @@ This will be deleted in case the pipeline deployment failed.</p>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
                     <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -14435,7 +14435,30 @@ the current step.</p>
 <span class="normal">187</span>
 <span class="normal">188</span>
 <span class="normal">189</span>
-<span class="normal">190</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve_step_inputs</span><span class="p">(</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve_step_inputs</span><span class="p">(</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span>
     <span class="n">pipeline_run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">,</span>
     <span class="n">step_runs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -14472,17 +14495,40 @@ the current step.</p>
     <span class="n">steps_to_fetch</span><span class="o">.</span><span class="n">difference_update</span><span class="p">(</span><span class="n">step_runs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
     <span class="k">if</span> <span class="n">steps_to_fetch</span><span class="p">:</span>
-        <span class="n">step_runs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="n">run_step</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">run_step</span>
-                <span class="k">for</span> <span class="n">run_step</span> <span class="ow">in</span> <span class="n">pagination_utils</span><span class="o">.</span><span class="n">depaginate</span><span class="p">(</span>
-                    <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">list_run_steps</span><span class="p">,</span>
-                    <span class="n">pipeline_run_id</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-                    <span class="n">project</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">project_id</span><span class="p">,</span>
-                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;oneof:&quot;</span> <span class="o">+</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">steps_to_fetch</span><span class="p">)),</span>
-                <span class="p">)</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
+        <span class="c1"># The list of steps might be too big to fit in the default max URL</span>
+        <span class="c1"># length of 8KB supported by most servers. So we need to split it into</span>
+        <span class="c1"># smaller chunks.</span>
+        <span class="n">steps_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">steps_to_fetch</span><span class="p">)</span>
+        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_length</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># stay under 6KB for good measure.</span>
+        <span class="n">max_chunk_length</span> <span class="o">=</span> <span class="mi">6000</span>
+
+        <span class="k">for</span> <span class="n">step_name</span> <span class="ow">in</span> <span class="n">steps_list</span><span class="p">:</span>
+            <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_name</span><span class="p">)</span>
+            <span class="n">current_length</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">step_name</span><span class="p">)</span> <span class="o">+</span> <span class="mi">5</span>  <span class="c1"># 5 is for the JSON encoding</span>
+
+            <span class="k">if</span> <span class="n">current_length</span> <span class="o">&gt;</span> <span class="n">max_chunk_length</span><span class="p">:</span>
+                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">)</span>
+                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">current_length</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
+            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">:</span>
+            <span class="n">step_runs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="n">run_step</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">run_step</span>
+                    <span class="k">for</span> <span class="n">run_step</span> <span class="ow">in</span> <span class="n">pagination_utils</span><span class="o">.</span><span class="n">depaginate</span><span class="p">(</span>
+                        <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">list_run_steps</span><span class="p">,</span>
+                        <span class="n">pipeline_run_id</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                        <span class="n">project</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">project_id</span><span class="p">,</span>
+                        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;oneof:&quot;</span> <span class="o">+</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">chunk</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
 
     <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepRunInputResponse</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">input_</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -15261,7 +15307,7 @@ environment.</p>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
                     <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -16604,7 +16650,7 @@ environment.</p>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
                     <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -17196,7 +17242,7 @@ of what can be passed.)</p>
                     <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
                     <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
                     <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/getting-started/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -22009,7 +22055,7 @@ token.</p>
                         <span class="s2">&quot;service account API key to authenticate to the ZenML &quot;</span>
                         <span class="s2">&quot;server instead of your regular user account. For more &quot;</span>
                         <span class="s2">&quot;information, see &quot;</span>
-                        <span class="s2">&quot;https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account&quot;</span>
+                        <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account&quot;</span>
                     <span class="p">)</span>
 
                 <span class="c1"># The schedule, pipeline run or step run credentials are scoped to</span>
