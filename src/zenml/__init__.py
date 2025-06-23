@@ -48,6 +48,7 @@ from zenml.model.model import Model
 from zenml.pipelines import get_pipeline_context, pipeline
 from zenml.steps import step, get_step_context
 from zenml.steps.utils import log_step_metadata
+from zenml.types import Prompt
 from zenml.utils.metadata_utils import log_metadata
 from zenml.utils.tag_utils import Tag, add_tags, remove_tags
 from zenml.entrypoints import entrypoint
@@ -68,6 +69,7 @@ __all__ = [
     "Model",
     "link_artifact_to_model",
     "pipeline",
+    "Prompt",
     "save_artifact",
     "register_artifact",
     "show",

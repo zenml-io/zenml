@@ -339,6 +339,15 @@ from zenml.models.v2.core.project import (
     ProjectResponseBody,
     ProjectResponseMetadata,
 )
+from zenml.models.v2.core.prompt import (
+    PromptRequest,
+    PromptUpdate,
+    PromptFilter,
+    PromptResponse,
+    PromptResponseBody,
+    PromptResponseMetadata,
+    PromptResponseResources,
+)
 
 # V2 Misc
 from zenml.models.v2.misc.service_connector_type import (
@@ -787,6 +796,13 @@ __all__ = [
     "ProjectResponse",
     "ProjectResponseBody",
     "ProjectResponseMetadata",
+    "PromptRequest",
+    "PromptUpdate",
+    "PromptFilter",
+    "PromptResponse",
+    "PromptResponseBody",
+    "PromptResponseMetadata",
+    "PromptResponseResources",
     # V2 Misc
     "AuthenticationMethodModel",
     "DeployedStack",
