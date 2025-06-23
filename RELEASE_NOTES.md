@@ -6291,7 +6291,7 @@ creating pipelines. It also improves the Airflow orchestrator logic to accommoda
 * Numerous bugs and performance improvements. #136, @bcdurak great job with #142
 * Added new docs with a low level API guide. #143
 
-[Our roadmap](https://zenml.hellonext.co/roadmap) goes into further detail on the timeline. Vote on the [next features now](https://github.com/zenml-io/zenml/discussions).
+[Our roadmap](https://zenml.io/roadmap) goes into further detail on the timeline. 
 
 We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) and [examples](examples) to get a hang of the new system.
 
@@ -6339,7 +6339,7 @@ be included in the non-RC version of this release.
 * Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
 * Dependency management including Docker support is planned.
 
-[Our roadmap](https://zenml.hellonext.co/roadmap) goes into further detail on the timeline.
+[Our roadmap](https://zenml.io./roadmap) goes into further detail on the timeline.
 
 We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) 
 and [examples](examples) to get a hang of the new system.
@@ -6388,7 +6388,7 @@ be included in the non-RC version of this release.
 * Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
 * Dependency management including Docker support is planned.
 
-[Our roadmap](https://zenml.hellonext.co/roadmap) goes into further detail on the timeline.
+[Our roadmap](https://zenml.io/roadmap) goes into further detail on the timeline.
 
 We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) 
 and [examples](examples) to get a hang of the new system.
