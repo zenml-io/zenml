@@ -31,12 +31,10 @@ from uuid import UUID
 
 from pydantic import (
     BaseModel,
-    SecretStr,
     ValidationError,
 )
 from pydantic._internal._model_construction import ModelMetaclass
 
-from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS,
     SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS,
@@ -617,34 +615,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             ) from e
 
         # Unpack the authentication configuration
-        config = model.configuration.copy()
-        if isinstance(model, ServiceConnectorResponse) and model.secret_id:
-            try:
-                secret = Client().get_secret(model.secret_id)
-            except KeyError as e:
-                raise ValueError(
-                    f"could not fetch secret with ID '{model.secret_id}' "
-                    f"referenced in the connector configuration: {e}"
-                ) from e
-
-            if secret.has_missing_values:
-                raise ValueError(
-                    f"secret with ID '{model.secret_id}' referenced in the "
-                    "connector configuration has missing values. This can "
-                    "happen for example if your user lacks the permissions "
-                    "required to access the secret."
-                )
-
-            config.update(secret.secret_values)
-
-        if model.secrets:
-            config.update(
-                {
-                    k: v.get_secret_value()
-                    for k, v in model.secrets.items()
-                    if v
-                }
-            )
+        config = model.configuration.plain
 
         if method_spec.config_class is None:
             raise ValueError(
@@ -657,8 +628,15 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         try:
             auth_config = method_spec.config_class(**config)
         except ValidationError as e:
+            hint = ""
+            if isinstance(model, ServiceConnectorResponse):
+                hint = (
+                    "If the error is related to missing secret attributes, "
+                    "you might be missing permissions to access the service "
+                    "connector's secret values."
+                )
             raise ValueError(
-                f"connector configuration is not valid: {e}"
+                f"connector configuration is not valid: {e}\n{hint}"
             ) from e
 
         assert isinstance(auth_config, AuthenticationConfig)

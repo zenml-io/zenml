@@ -5736,23 +5736,16 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Validate and configure the resources
-        if configuration is not None:
+        connector_update.validate_and_configure_resources(
+            connector_type=connector,
+            resource_types=resource_types,
+            resource_id=resource_id,
             # The supplied configuration is a drop-in replacement for the
-            # existing configuration and secrets
-            connector_update.validate_and_configure_resources(
-                connector_type=connector,
-                resource_types=resource_types,
-                resource_id=resource_id,
-                configuration=configuration,
-            )
-        else:
-            connector_update.validate_and_configure_resources(
-                connector_type=connector,
-                resource_types=resource_types,
-                resource_id=resource_id,
-                configuration=connector_model.configuration,
-                secrets=connector_model.secrets,
-            )
+            # existing configuration
+            configuration=configuration
+            if configuration is not None
+            else connector_model.configuration,
+        )
 
         # Add the labels
         if labels is not None:

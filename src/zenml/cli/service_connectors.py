@@ -1445,7 +1445,7 @@ def update_service_connector(
                 default=False,
             )
 
-        existing_config = connector.full_configuration
+        existing_config = connector.configuration.plain
 
         if confirm:
             # Here we reconfigure the connector or update the existing
@@ -1582,7 +1582,7 @@ def update_service_connector(
         # Non-interactive configuration
 
         # Apply the configuration from the command line arguments
-        config_dict = connector.full_configuration
+        config_dict = connector.configuration.plain
         config_dict.update(parsed_args)
 
         if not resource_type and not connector.is_multi_type:

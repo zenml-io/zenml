@@ -54,7 +54,6 @@ from packaging import version
 from pydantic import (
     ConfigDict,
     Field,
-    SecretStr,
     SerializeAsAny,
     field_validator,
     model_validator,
@@ -6743,6 +6742,37 @@ class SqlZenStore(BaseZenStore):
         if self.backup_secrets_store:
             self.backup_secrets_store.delete_secret_values(secret_id=secret_id)
 
+    def _create_secret_schema(
+        self, secret: SecretRequest, session: Session, hidden: bool = False
+    ) -> SecretSchema:
+        """Creates a new secret schema.
+
+        Args:
+            secret: The secret to create.
+            session: The session to use.
+            hidden: Whether the secret is hidden.
+        """
+        new_secret = SecretSchema.from_request(
+            secret,
+        )
+        session.add(new_secret)
+        session.commit()
+
+        try:
+            # Set the secret values in the configured secrets store
+            self._set_secret_values(
+                secret_id=new_secret.id, values=secret.secret_values
+            )
+        except:
+            # If setting the secret values fails, delete the secret from the
+            # database.
+            with Session(self.engine) as session:
+                session.delete(new_secret)
+                session.commit()
+            raise
+
+        return new_secret
+
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequest) -> SecretResponse:
         """Creates a new secret.
@@ -6777,31 +6807,17 @@ class SqlZenStore(BaseZenStore):
             if secret_exists:
                 raise EntityExistsError(msg)
 
-            new_secret = SecretSchema.from_request(
-                secret,
+            new_secret = self._create_secret_schema(
+                secret=secret,
+                session=session,
             )
-            session.add(new_secret)
-            session.commit()
 
             secret_model = new_secret.to_model(
                 include_metadata=True, include_resources=True
             )
 
-        try:
-            # Set the secret values in the configured secrets store
-            self._set_secret_values(
-                secret_id=new_secret.id, values=secret.secret_values
-            )
-        except:
-            # If setting the secret values fails, delete the secret from the
-            # database.
-            with Session(self.engine) as session:
-                session.delete(new_secret)
-                session.commit()
-            raise
-
-        secret_model.set_secrets(secret.secret_values)
-        return secret_model
+            secret_model.set_secrets(secret.secret_values)
+            return secret_model
 
     def get_secret(
         self, secret_id: UUID, hydrate: bool = True
@@ -6821,7 +6837,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             secret_in_db = session.exec(
-                select(SecretSchema).where(SecretSchema.id == secret_id)
+                select(SecretSchema).where(
+                    SecretSchema.id == secret_id,
+                    # Don't return hidden secrets
+                    col(SecretSchema.hidden).is_(False),
+                )
             ).first()
             if (
                 secret_in_db is None
@@ -6870,6 +6890,10 @@ class SqlZenStore(BaseZenStore):
                 self._get_active_user(session).id
             )
             query = select(SecretSchema)
+            # Don't return hidden secrets
+            query = query.where(
+                col(SecretSchema.hidden).is_(False),
+            )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -6910,7 +6934,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_secret = session.exec(
-                select(SecretSchema).where(SecretSchema.id == secret_id)
+                select(SecretSchema).where(
+                    SecretSchema.id == secret_id,
+                    # Don't update hidden secrets
+                    col(SecretSchema.hidden).is_(False),
+                )
             ).first()
 
             active_user = self._get_active_user(session)
@@ -6978,6 +7006,27 @@ class SqlZenStore(BaseZenStore):
 
         return secret_model
 
+    def _delete_secret_schema(self, secret_id: UUID, session: Session) -> None:
+        """Deletes a secret schema.
+
+        Args:
+            secret_id: The ID of the secret to delete.
+            session: The session to use.
+        """
+        # Delete the secret values in the configured secrets store
+        try:
+            self._delete_secret_values(secret_id=secret_id)
+        except KeyError:
+            # If the secret values don't exist in the secrets store, we don't
+            # need to raise an error.
+            pass
+
+        secret_in_db = session.exec(
+            select(SecretSchema).where(SecretSchema.id == secret_id)
+        ).one()
+        session.delete(secret_in_db)
+        session.commit()
+
     def delete_secret(self, secret_id: UUID) -> None:
         """Delete a secret.
 
@@ -6989,7 +7038,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_secret = session.exec(
-                select(SecretSchema).where(SecretSchema.id == secret_id)
+                select(SecretSchema).where(
+                    SecretSchema.id == secret_id,
+                    # Don't delete hidden secrets
+                    col(SecretSchema.hidden).is_(False),
+                )
             ).first()
 
             if not existing_secret or (
@@ -7003,19 +7056,7 @@ class SqlZenStore(BaseZenStore):
                     "not owned by the current user."
                 )
 
-            # Delete the secret values in the configured secrets store
-            try:
-                self._delete_secret_values(secret_id=secret_id)
-            except KeyError:
-                # If the secret values don't exist in the secrets store, we don't
-                # need to raise an error.
-                pass
-
-            secret_in_db = session.exec(
-                select(SecretSchema).where(SecretSchema.id == secret_id)
-            ).one()
-            session.delete(secret_in_db)
-            session.commit()
+            self._delete_secret_schema(secret_id=secret_id, session=session)
 
     def backup_secrets(
         self, ignore_errors: bool = True, delete_secrets: bool = False
@@ -7379,7 +7420,6 @@ class SqlZenStore(BaseZenStore):
                 resource_types=service_connector.resource_types,
                 resource_id=service_connector.resource_id,
                 configuration=service_connector.configuration,
-                secrets=service_connector.secrets,
             )
 
         with Session(self.engine) as session:
@@ -7397,7 +7437,8 @@ class SqlZenStore(BaseZenStore):
             # Create the secret
             secret_id = self._create_connector_secret(
                 connector_name=service_connector.name,
-                secrets=service_connector.secrets,
+                secrets=service_connector.configuration.secrets,
+                session=session,
             )
             try:
                 # Create the service connector
@@ -7524,16 +7565,13 @@ class SqlZenStore(BaseZenStore):
         set to None in the model, the field is not updated, but there are
         special rules concerning some fields:
 
-        * the `configuration` and `secrets` fields together represent a full
-        valid configuration update, not just a partial update. If either is
-        set (i.e. not None) in the update, their values are merged together and
-        will replace the existing configuration and secrets values.
+        * the `configuration` field represents a full valid configuration
+        update, not just a partial update. If it is set (i.e. not None) in the
+        update, its values will replace the existing configuration values.
         * the `resource_id` field value is also a full replacement value: if set
         to `None`, the resource ID is removed from the service connector.
         * the `expiration_seconds` field value is also a full replacement value:
         if set to `None`, the expiration is removed from the service connector.
-        * the `secret_id` field value in the update is ignored, given that
-        secrets are managed internally by the ZenML store.
         * the `labels` field is also a full labels update: if set (i.e. not
         `None`), all existing labels are removed and replaced by the new labels
         in the update.
@@ -7631,24 +7669,24 @@ class SqlZenStore(BaseZenStore):
                 update.auth_method = (
                     update.auth_method or existing_connector_model.auth_method
                 )
-                # Validate the configuration update. If the configuration or
-                # secrets fields are set, together they are merged into a
-                # full configuration that is validated against the connector
-                # type schema and replaces the existing configuration and
-                # secrets values
+                # Validate the configuration update. If the configuration is
+                # set, it is validated against the connector type schema and
+                # replaces the existing configuration values
                 update.validate_and_configure_resources(
                     connector_type=connector_type,
                     resource_types=update.resource_types,
                     resource_id=update.resource_id,
                     configuration=update.configuration,
-                    secrets=update.secrets,
                 )
 
-            # Update secret
-            secret_id = self._update_connector_secret(
-                existing_connector=existing_connector_model,
-                updated_connector=update,
-            )
+            if update.configuration is not None:
+                # Update secret
+                secret_id = self._update_connector_secret(
+                    connector_name=existing_connector.name,
+                    existing_secret_id=existing_connector.secret_id,
+                    secrets=update.configuration.secrets,
+                    session=session,
+                )
 
             existing_connector.update(
                 connector_update=update, secret_id=secret_id
@@ -7693,7 +7731,10 @@ class SqlZenStore(BaseZenStore):
 
             if service_connector.secret_id:
                 try:
-                    self.delete_secret(service_connector.secret_id)
+                    self._delete_secret_schema(
+                        secret_id=service_connector.secret_id,
+                        session=session,
+                    )
                 except KeyError:
                     # If the secret doesn't exist anymore, we can ignore
                     # this error
@@ -7704,7 +7745,8 @@ class SqlZenStore(BaseZenStore):
     def _create_connector_secret(
         self,
         connector_name: str,
-        secrets: Optional[Dict[str, Optional[SecretStr]]],
+        secrets: Dict[str, PlainSerializedSecretStr],
+        session: Session,
     ) -> Optional[UUID]:
         """Creates a new secret to store the service connector secret credentials.
 
@@ -7712,6 +7754,7 @@ class SqlZenStore(BaseZenStore):
             connector_name: The name of the service connector for which to
                 create a secret.
             secrets: The secret credentials to store.
+            session: The session to use.
 
         Returns:
             The ID of the newly created secret or None, if the service connector
@@ -7729,19 +7772,22 @@ class SqlZenStore(BaseZenStore):
         # that is not already in use
         while True:
             secret_name = f"connector-{connector_name}-{random_str(4)}".lower()
-            existing_secrets = self.list_secrets(
-                SecretFilter(
-                    name=secret_name,
+            existing_secrets = session.exec(
+                select(SecretSchema).where(
+                    SecretSchema.name == secret_name,
                 )
-            )
-            if not existing_secrets.size:
+            ).all()
+            if not existing_secrets:
                 try:
-                    return self.create_secret(
+                    return self._create_secret_schema(
                         SecretRequest(
                             name=secret_name,
                             private=False,
-                            values=secrets,
-                        )
+                            values=secrets,  # type: ignore[arg-type]
+                        ),
+                        session=session,
+                        # Hide service connector secrets from the user
+                        hidden=True,
                     ).id
                 except KeyError:
                     # The secret already exists, try again
@@ -7811,48 +7857,51 @@ class SqlZenStore(BaseZenStore):
 
     def _update_connector_secret(
         self,
-        existing_connector: ServiceConnectorResponse,
-        updated_connector: ServiceConnectorUpdate,
+        connector_name: str,
+        existing_secret_id: Optional[UUID],
+        secrets: Dict[str, PlainSerializedSecretStr],
+        session: Session,
     ) -> Optional[UUID]:
         """Updates the secret for a service connector.
 
-        If the secrets field in the service connector update is set (i.e. not
-        None), the existing secret, if any, is replaced. If the secrets field is
-        set to an empty dict, the existing secret is deleted.
-
         Args:
-            existing_connector: Existing service connector for which to update a
-                secret.
-            updated_connector: Updated service connector.
+            connector_name: The name of the service connector for which to
+                update a secret.
+            existing_secret_id: The ID of the existing secret to update, if one
+                exists.
+            secrets: The secrets to store.
+            session: The session to use.
 
         Returns:
             The ID of the updated secret or None, if the new service connector
             does not contain any secret credentials.
         """
-        if updated_connector.secrets is None:
-            # If the connector update does not contain a secrets update, keep
-            # the existing secret (if any)
-            return existing_connector.secret_id
-
-        # Delete the existing secret (if any), to be replaced by the new secret
-        if existing_connector.secret_id:
-            try:
-                self.delete_secret(existing_connector.secret_id)
-            except KeyError:
-                # Ignore if the secret no longer exists
-                pass
-
         # If the new service connector does not contain any secret credentials,
         # return None
-        if not updated_connector.secrets:
+        if not secrets:
+            if existing_secret_id:
+                try:
+                    self.delete_secret(existing_secret_id)
+                except KeyError:
+                    # Ignore if the secret no longer exists
+                    pass
             return None
 
-        assert existing_connector.user is not None
-        # A secret does not exist yet, create a new one
-        return self._create_connector_secret(
-            connector_name=updated_connector.name or existing_connector.name,
-            secrets=updated_connector.secrets,
+        if not existing_secret_id:
+            # A secret does not exist yet, create a new one
+            return self._create_connector_secret(
+                connector_name=connector_name,
+                secrets=secrets,
+                session=session,
+            )
+
+        # Update the existing secret - we only need to update the values
+        self._update_secret_values(
+            secret_id=existing_secret_id,
+            values={k: v.get_secret_value() for k, v in secrets.items()},
+            overwrite=True,
         )
+        return existing_secret_id
 
     def verify_service_connector_config(
         self,
