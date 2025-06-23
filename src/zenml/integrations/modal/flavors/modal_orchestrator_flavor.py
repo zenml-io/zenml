@@ -81,7 +81,7 @@ class ModalOrchestratorSettings(BaseSettings):
 class ModalOrchestratorConfig(
     BaseOrchestratorConfig, ModalOrchestratorSettings
 ):
-    """Modal orchestrator config optimized for BLAZING FAST execution.
+    """Modal orchestrator config.
 
     Attributes:
         token_id: Modal API token ID (ak-xxxxx format) for authentication.
