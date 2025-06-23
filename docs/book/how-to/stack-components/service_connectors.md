@@ -129,6 +129,8 @@ zenml artifact-store register s3-store \
 When using service connectors, your pipeline code remains clean and focused on ML logic:
 
 ```python
+from zenml import step
+
 # Without service connectors
 @step
 def upload_model(model):
@@ -141,7 +143,7 @@ def upload_model(model):
 
 # With service connectors
 @step
-def upload_model(model):
+def upload_model_with_connector(model):
     # Authentication handled by the service connector
     # No credential handling required
     from zenml.integrations.s3.artifact_stores import S3ArtifactStore

@@ -594,6 +594,7 @@ def api_token(
     if pipeline_run_id:
         # The pipeline run must exist and the run must not be concluded
         try:
+            # TODO: this is expensive, we should only fetch the minimum data here
             pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=True)
         except KeyError:
             raise ValueError(

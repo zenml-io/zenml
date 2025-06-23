@@ -138,6 +138,8 @@ COPY --chown=$USERNAME:$USER_GID --from=builder /zenml/requirements.txt /zenml/r
 # Copy source code
 COPY --chown=$USERNAME:$USER_GID README.md pyproject.toml ./
 COPY --chown=$USERNAME:$USER_GID src src
+COPY --chown=$USERNAME:$USER_GID scripts/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 FROM common-runtime AS local-runtime
 
@@ -147,8 +149,8 @@ RUN pip install --no-deps --no-cache -e .[server,secrets-aws,secrets-gcp,secrets
 
 EXPOSE 8080
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload", "--access-log"]
-CMD ["--port", "8080", "--host",  "0.0.0.0"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload", "--port", "8080", "--host",  "0.0.0.0"]
 
 
 FROM common-runtime AS runtime
@@ -160,5 +162,5 @@ RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-az
 
 EXPOSE 8080
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--access-log"]
-CMD ["--port", "8080", "--host",  "0.0.0.0"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--port", "8080", "--host",  "0.0.0.0"]
