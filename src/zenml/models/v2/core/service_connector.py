@@ -633,7 +633,6 @@ class ServiceConnectorResponse(
         resource_types: Optional[Union[str, List[str]]] = None,
         resource_id: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
-        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
     ) -> None:
         """Validate and configure the resources that the connector can be used to access.
 
@@ -646,7 +645,6 @@ class ServiceConnectorResponse(
             resource_id: Uniquely identifies a specific resource instance that
                 the connector instance can be used to access.
             configuration: The connector configuration.
-            secrets: The connector secrets.
         """
         _validate_and_configure_resources(
             connector=self,
@@ -654,7 +652,6 @@ class ServiceConnectorResponse(
             resource_types=resource_types,
             resource_id=resource_id,
             configuration=configuration,
-            secrets=secrets,
         )
 
     # Body and metadata properties
@@ -877,7 +874,6 @@ def _validate_and_configure_resources(
     resource_types: Optional[Union[str, List[str]]] = None,
     resource_id: Optional[str] = None,
     configuration: Optional[Dict[str, Any]] = None,
-    secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
 ) -> None:
     """Validate and configure the resources that a connector can be used to access.
 
@@ -891,7 +887,6 @@ def _validate_and_configure_resources(
         resource_id: Uniquely identifies a specific resource instance that
             the connector instance can be used to access.
         configuration: The connector configuration.
-        secrets: The connector secrets.
 
     Raises:
         ValueError: If the connector configuration is not valid.
@@ -970,16 +965,14 @@ def _validate_and_configure_resources(
         )
         update_connector_body.supports_instances = False
 
-    if configuration is None and secrets is None:
-        # No configuration or secrets provided
+    if configuration is None:
+        # No configuration provided
         return
 
     update_connector_metadata.configuration = {}
-    update_connector_metadata.secrets = {}
 
-    # Validate and configure the connector configuration and secrets
+    # Validate and configure the connector configuration
     configuration = configuration or {}
-    secrets = secrets or {}
     supported_attrs = []
     for attr_name, attr_schema in auth_method_spec.config_schema.get(
         "properties", {}

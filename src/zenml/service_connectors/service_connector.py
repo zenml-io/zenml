@@ -64,32 +64,6 @@ class AuthenticationConfig(BaseModel):
     """Base authentication configuration."""
 
     @property
-    def secret_values(self) -> Dict[str, SecretStr]:
-        """Get the secret values as a dictionary.
-
-        Returns:
-            A dictionary of all secret values in the configuration.
-        """
-        return {
-            k: v
-            for k, v in self.model_dump(exclude_none=True).items()
-            if isinstance(v, SecretStr)
-        }
-
-    @property
-    def non_secret_values(self) -> Dict[str, str]:
-        """Get the non-secret values as a dictionary.
-
-        Returns:
-            A dictionary of all non-secret values in the configuration.
-        """
-        return {
-            k: v
-            for k, v in self.model_dump(exclude_none=True).items()
-            if not isinstance(v, SecretStr)
-        }
-
-    @property
     def all_values(self) -> Dict[str, Any]:
         """Get all values as a dictionary.
 
@@ -748,8 +722,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             connector_type=spec,
             resource_types=self.resource_type,
             resource_id=self.resource_id,
-            configuration=self.config.non_secret_values,
-            secrets=self.config.secret_values,  # type: ignore[arg-type]
+            configuration=self.config.all_values,
         )
 
         return model
@@ -815,8 +788,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             connector_type=spec,
             resource_types=self.resource_type,
             resource_id=self.resource_id,
-            configuration=self.config.non_secret_values,
-            secrets=self.config.secret_values,  # type: ignore[arg-type]
+            configuration=self.config.all_values,
         )
 
         return model
