@@ -41,6 +41,7 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (
 from zenml.integrations.modal.utils import (
     ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
     build_modal_image,
+    generate_sandbox_tags,
     get_gpu_values,
     get_resource_values,
     setup_modal_client,
@@ -133,6 +134,7 @@ def run_step_on_modal(
                 step_name=step_name,
                 zenml_image=zenml_image,
                 entrypoint_command=entrypoint_command,
+                deployment=deployment,
                 gpu_values=gpu_values,
                 cpu_count=cpu_count,
                 memory_mb=memory_mb,
@@ -153,6 +155,7 @@ async def _execute_step_sandbox(
     step_name: str,
     zenml_image: Any,
     entrypoint_command: list,
+    deployment: Any,
     gpu_values: str = None,
     cpu_count: int = None,
     memory_mb: int = None,
@@ -168,6 +171,7 @@ async def _execute_step_sandbox(
         step_name: Name of the step
         zenml_image: Pre-built ZenML Docker image for Modal
         entrypoint_command: Command to execute in the sandbox
+        deployment: Pipeline deployment for tagging
         gpu_values: GPU configuration string
         cpu_count: Number of CPU cores
         memory_mb: Memory allocation in MB
@@ -183,6 +187,15 @@ async def _execute_step_sandbox(
 
     logger.info(f"Creating sandbox for step {step_name}")
 
+    # Generate tags for the step sandbox
+    step_tags = generate_sandbox_tags(
+        pipeline_name=deployment.pipeline_configuration.name,
+        deployment_id=str(deployment.id),
+        execution_mode="PER_STEP",
+        step_name=step_name,
+    )
+    logger.info(f"Step sandbox tags: {step_tags}")
+
     with modal.enable_output():
         # Create sandbox for this step
         sb = await modal.Sandbox.create.aio(
@@ -196,6 +209,9 @@ async def _execute_step_sandbox(
             app=app,
             timeout=timeout,
         )
+
+        # Set tags on the step sandbox
+        sb.set_tags(step_tags)
 
         # Wait for step completion
         await sb.wait.aio()

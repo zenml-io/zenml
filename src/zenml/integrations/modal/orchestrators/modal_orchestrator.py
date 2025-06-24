@@ -41,6 +41,7 @@ from zenml.integrations.modal.utils import (
     ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
     build_modal_image,
     create_modal_stack_validator,
+    generate_sandbox_tags,
     get_gpu_values,
     get_resource_settings_from_deployment,
     get_resource_values,
@@ -246,6 +247,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                         app_name=app_name,
                         zenml_image=zenml_image,
                         entrypoint_command=entrypoint_command,
+                        deployment=deployment,
+                        execution_mode=execution_mode.value,
+                        run_id=str(placeholder_run.id)
+                        if placeholder_run
+                        else None,
                         gpu_values=gpu_values,
                         cpu_count=cpu_count,
                         memory_mb=memory_mb,
@@ -267,6 +273,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                         app_name=app_name,
                         zenml_image=zenml_image,
                         entrypoint_command=entrypoint_command,
+                        deployment=deployment,
+                        execution_mode=execution_mode.value,
+                        run_id=str(placeholder_run.id)
+                        if placeholder_run
+                        else None,
                         gpu_values=gpu_values,
                         cpu_count=cpu_count,
                         memory_mb=memory_mb,
@@ -294,6 +305,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         app_name: str,
         zenml_image: Any,
         entrypoint_command: List[str],
+        deployment: "PipelineDeploymentResponse",
+        execution_mode: str,
+        run_id: Optional[str] = None,
         gpu_values: Optional[str] = None,
         cpu_count: Optional[int] = None,
         memory_mb: Optional[int] = None,
@@ -309,6 +323,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             app_name: Name of the Modal app
             zenml_image: Pre-built ZenML Docker image for Modal
             entrypoint_command: Command to execute in the sandbox
+            deployment: Pipeline deployment for tagging
+            execution_mode: Execution mode for tagging
+            run_id: Pipeline run ID for tagging
             gpu_values: GPU configuration string
             cpu_count: Number of CPU cores
             memory_mb: Memory allocation in MB
@@ -327,6 +344,15 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         logger.info("Creating sandbox for pipeline execution")
 
+        # Generate tags for the sandbox
+        sandbox_tags = generate_sandbox_tags(
+            pipeline_name=deployment.pipeline_configuration.name,
+            deployment_id=str(deployment.id),
+            execution_mode=execution_mode,
+            run_id=run_id,
+        )
+        logger.info(f"Sandbox tags: {sandbox_tags}")
+
         with modal.enable_output():
             # Create sandbox with the entrypoint command
             sb = await modal.Sandbox.create.aio(
@@ -341,12 +367,15 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 timeout=timeout,
             )
 
+            # Set tags on the sandbox for organization
+            sb.set_tags(sandbox_tags)
+
             logger.info("Sandbox created, executing pipeline...")
 
             if synchronous:
                 # Stream output while waiting for completion
                 logger.info("Streaming pipeline execution logs...")
-                async for line in sb.stdout.aio():
+                async for line in sb.stdout:
                     # Stream logs to stdout with proper formatting
                     print(line, end="")
 

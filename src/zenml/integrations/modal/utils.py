@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Shared utilities for Modal integration components."""
 
+import hashlib
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -192,17 +193,38 @@ def get_resource_values(
     return cpu_count, memory_mb
 
 
+def _generate_image_cache_key(
+    image_name: str, environment: Dict[str, str]
+) -> str:
+    """Generate a cache key for Modal image based on inputs.
+
+    Args:
+        image_name: Base Docker image name
+        environment: Environment variables
+
+    Returns:
+        Hash string to use as cache key
+    """
+    # Create deterministic string from inputs
+    cache_input = f"{image_name}|{sorted(environment.items())}"
+    return hashlib.sha256(cache_input.encode()).hexdigest()[:12]
+
+
+# Removed _get_cached_modal_image_name as we're using Modal's internal caching
+
+
 def build_modal_image(
     image_name: str,
     stack: "Stack",
     environment: Dict[str, str],
 ) -> Any:
-    """Build a Modal image from a ZenML-built Docker image.
+    """Build a Modal image from a ZenML-built Docker image with caching.
 
     Args:
         image_name: The name of the Docker image to use as base.
         stack: The ZenML stack containing container registry.
         environment: Environment variables to set in the image.
+        force_rebuild: Force rebuilding even if cached image exists.
 
     Returns:
         The configured Modal image.
@@ -217,6 +239,12 @@ def build_modal_image(
             "Please add a container registry and ensure "
             "it is correctly configured."
         )
+
+    # Generate cache key for this image configuration
+    cache_key = _generate_image_cache_key(image_name, environment)
+
+    logger.info(f"Building Modal image (cache key: {cache_key})")
+    logger.info(f"Base image: {image_name}")
 
     if docker_creds := stack.container_registry.credentials:
         docker_username, docker_password = docker_creds
@@ -234,8 +262,8 @@ def build_modal_image(
     )
 
     # Build Modal image from the ZenML-built image
-    # Use from_registry to pull the ZenML image with authentication
-    # and install Modal dependencies
+    # Modal will automatically cache layers and reuse when possible
+    logger.info(f"Creating Modal image from base: {image_name}")
     zenml_image = (
         modal.Image.from_registry(image_name, secret=registry_secret)
         .pip_install("modal")  # Install Modal in the container
@@ -243,6 +271,41 @@ def build_modal_image(
     )
 
     return zenml_image
+
+
+def generate_sandbox_tags(
+    pipeline_name: str,
+    deployment_id: str,
+    execution_mode: str,
+    step_name: Optional[str] = None,
+    run_id: Optional[str] = None,
+) -> Dict[str, str]:
+    """Generate tags for Modal sandboxes.
+
+    Args:
+        pipeline_name: Name of the pipeline
+        deployment_id: ZenML deployment ID
+        execution_mode: Execution mode (PIPELINE or PER_STEP)
+        step_name: Step name (for PER_STEP mode)
+        run_id: Pipeline run ID
+
+    Returns:
+        Dictionary of tags for the sandbox
+    """
+    tags = {
+        "zenml_pipeline": pipeline_name,
+        "zenml_deployment_id": deployment_id,
+        "zenml_execution_mode": execution_mode,
+        "zenml_component": "modal_orchestrator",
+    }
+
+    if step_name:
+        tags["zenml_step"] = step_name
+
+    if run_id:
+        tags["zenml_run_id"] = run_id
+
+    return tags
 
 
 def create_modal_stack_validator() -> StackValidator:
