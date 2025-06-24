@@ -129,6 +129,7 @@ class StepRunRequest(ProjectScopedRequest):
     parent_step_ids: List[UUID] = Field(
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
+        deprecated=True,
     )
     inputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the input artifact versions of the step run.",
