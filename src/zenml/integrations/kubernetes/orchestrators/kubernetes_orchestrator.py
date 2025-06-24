@@ -400,30 +400,23 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
 
-                This method should only submit the pipeline and not wait for it to
-                complete. If the orchestrator is configured to wait for the pipeline run
-                to complete, a function that waits for the pipeline run to complete can
-                be passed as part of the submission result.
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
-                Args:
-                    deployment: The pipeline deployment to submit.
-                    stack: The stack the pipeline will run on.
-                    environment: Environment variables to set in the orchestration
-                        environment. These don't need to be set if running locally.
-                    placeholder_run: An optional placeholder run for the deployment.
+        Args:
+            deployment: The pipeline deployment to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment. These don't need to be set if running locally.
+            placeholder_run: An optional placeholder run for the deployment.
 
-                Raises:
-        <<<<<<< HEAD
-                    RuntimeError: If the Kubernetes orchestrator is not configured.
+        Raises:
+            RuntimeError: If a schedule without cron expression is given.
 
-                Yields:
-                    Metadata dictionary.
-        =======
-                    RuntimeError: If a schedule without cron expression is given.
-
-                Returns:
-                    Optional submission result.
-        >>>>>>> develop
+        Returns:
+            Optional submission result.
         """
         for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
