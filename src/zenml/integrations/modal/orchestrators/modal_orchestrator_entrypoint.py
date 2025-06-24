@@ -16,7 +16,7 @@
 import argparse
 import asyncio
 import os
-from typing import Any, Dict, cast
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 import modal
@@ -154,15 +154,15 @@ async def _execute_step_sandbox(
     app_name: str,
     step_name: str,
     zenml_image: Any,
-    entrypoint_command: list,
+    entrypoint_command: List[str],
     deployment: Any,
-    gpu_values: str = None,
-    cpu_count: int = None,
-    memory_mb: int = None,
-    cloud: str = None,
-    region: str = None,
+    gpu_values: Optional[str] = None,
+    cpu_count: Optional[int] = None,
+    memory_mb: Optional[int] = None,
+    cloud: Optional[str] = None,
+    region: Optional[str] = None,
     timeout: int = 86400,
-    environment_name: str = None,
+    environment_name: Optional[str] = None,
 ) -> None:
     """Execute a single step using Modal sandbox.
 
@@ -278,7 +278,13 @@ def finalize_run(
 
 
 def main() -> None:
-    """Entrypoint of the Modal orchestrator sandbox."""
+    """Entrypoint of the Modal orchestrator sandbox.
+
+    This entrypoint is used to execute the pipeline in a Modal sandbox.
+
+    Raises:
+        Exception: If the pipeline execution fails.
+    """
     logger.info("Modal orchestrator sandbox started.")
 
     args = parse_args()

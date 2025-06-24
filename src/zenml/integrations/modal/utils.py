@@ -210,21 +210,17 @@ def _generate_image_cache_key(
     return hashlib.sha256(cache_input.encode()).hexdigest()[:12]
 
 
-# Removed _get_cached_modal_image_name as we're using Modal's internal caching
-
-
 def build_modal_image(
     image_name: str,
     stack: "Stack",
     environment: Dict[str, str],
 ) -> Any:
-    """Build a Modal image from a ZenML-built Docker image with caching.
+    """Build a Modal image from a ZenML-built Docker image.
 
     Args:
         image_name: The name of the Docker image to use as base.
         stack: The ZenML stack containing container registry.
         environment: Environment variables to set in the image.
-        force_rebuild: Force rebuilding even if cached image exists.
 
     Returns:
         The configured Modal image.
@@ -260,6 +256,9 @@ def build_modal_image(
             "REGISTRY_PASSWORD": docker_password,
         }
     )
+
+    # Build new Modal image and register it with consistent name
+    logger.info(f"🔨 Building Modal image from base: {image_name}")
 
     # Build Modal image from the ZenML-built image
     # Modal will automatically cache layers and reuse when possible

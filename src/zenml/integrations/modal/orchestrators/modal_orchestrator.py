@@ -355,6 +355,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         with modal.enable_output():
             # Create sandbox with the entrypoint command
+            # Note: Modal sandboxes inherit environment from the image
             sb = await modal.Sandbox.create.aio(
                 *entrypoint_command,  # Pass as separate arguments to avoid shell quoting issues
                 image=zenml_image,
