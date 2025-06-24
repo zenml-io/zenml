@@ -6,7 +6,7 @@ description: Orchestrating your pipelines to run on Modal's serverless cloud pla
 
 Using the ZenML `modal` integration, you can orchestrate and scale your ML pipelines on [Modal's](https://modal.com/) serverless cloud platform with minimal setup and maximum efficiency.
 
-The Modal orchestrator is designed for speed and cost-effectiveness, running entire pipelines using an intelligent app persistence strategy that reuses warm containers while ensuring proper isolation between different builds.
+The Modal orchestrator is designed for speed and cost-effectiveness, running entire pipelines using Modal sandboxes with persistent app architecture for maximum flexibility and efficiency.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
@@ -26,7 +26,7 @@ You should use the Modal orchestrator if:
 
 The Modal orchestrator may not be the best choice if:
 
-* **You need fine-grained step isolation**: Modal runs entire pipelines in single functions, which means all steps share the same resources and environment. For pipelines requiring different resource configurations per step, consider the [Modal step operator](../step-operators/modal.md) instead.
+* **You need fine-grained step isolation**: Modal orchestrator runs entire pipelines in single sandboxes, which means all steps share the same resources and environment. For pipelines requiring different resource configurations per step, consider the [Modal step operator](../step-operators/modal.md) instead.
 
 * **You have strict data locality requirements**: Modal runs in specific cloud regions and may not be suitable if you need to keep data processing within specific geographic boundaries or on-premises.
 
@@ -227,19 +227,20 @@ def second_step():
     ...
 ```
 
-### App Persistence Architecture
+### Sandbox Architecture
 
-The Modal orchestrator uses an intelligent app persistence strategy:
+The Modal orchestrator uses a simplified sandbox-based architecture:
 
-- **Apps are persistent per pipeline**: Each pipeline gets its own Modal app that stays warm
-- **Functions are unique per build/run**: Different builds get separate functions for proper isolation
-- **Automatic reuse**: Same pipeline with same dependencies reuses warm apps
-- **Smart isolation**: Different dependencies trigger new deployments for safety
+- **Persistent apps per pipeline**: Each pipeline gets its own Modal app that stays alive
+- **Dynamic sandboxes for execution**: Each pipeline run creates a fresh sandbox for complete isolation
+- **Built-in output streaming**: Modal automatically handles log streaming and output capture
+- **Maximum flexibility**: Sandboxes can execute arbitrary commands and provide better isolation
 
-This architecture provides the best of both worlds:
-- **Performance**: Warm containers eliminate cold start delays
-- **Isolation**: Different builds don't interfere with each other
-- **Cost efficiency**: Apps are reused when safe to do so
+This architecture provides optimal benefits:
+- **Simplicity**: No complex app deployment or time window management
+- **Flexibility**: Sandboxes offer more dynamic execution capabilities than functions
+- **Isolation**: Each run gets a completely fresh execution environment
+- **Performance**: Persistent apps eliminate deployment overhead
 
 ### Base image requirements
 
@@ -373,44 +374,47 @@ modal_settings = ModalOrchestratorSettings(
 )
 ```
 
-### How it works: App = Pipeline, Function = Build
+### How it works: Persistent Apps + Dynamic Sandboxes
 
 {% hint style="info" %}
-**Smart Architecture for Performance and Isolation**
+**Simplified Architecture for Maximum Flexibility**
 
-The ZenML Modal orchestrator uses an innovative "App = Pipeline, Function = Build" architecture:
+The ZenML Modal orchestrator uses a streamlined "Persistent Apps + Dynamic Sandboxes" architecture:
 
-**Pipeline-Level Apps**: 
+**Persistent Pipeline Apps**: 
 - Each pipeline gets its own persistent Modal app (e.g., `zenml-pipeline-training-pipeline`)
-- Apps stay warm and reusable across multiple runs of the same pipeline
-- App names are stable, enabling long-term container warmth
+- Apps stay alive across multiple runs using `modal.App.lookup(create_if_missing=True)`
+- No complex time windows or deployment logic - truly persistent
 
-**Build-Specific Functions**:
-- Each unique build/dependency combination gets its own function within the app
-- Function names include build hashes to ensure isolation (e.g., `run_build_abc123_def456`)
-- Different dependencies = different functions = proper isolation
-- Same dependencies = same function = maximum reuse
+**Dynamic Execution Sandboxes**:
+- Each pipeline run creates a fresh Modal sandbox for complete isolation
+- Sandboxes execute arbitrary commands with maximum flexibility
+- Built-in output streaming via `modal.enable_output()`
+- Fresh execution environment prevents any conflicts between runs
 
 **Execution Flow**:
-- Your entire pipeline runs in a single function call using `PipelineEntrypoint`
-- Maximum speed with minimal overhead
-- Warm containers provide near-instant startup
-- Fresh execution context prevents conflicts between runs
+- Your entire pipeline runs in a single sandbox using `PipelineEntrypoint`
+- Simple app lookup or creation, then sandbox execution
+- Automatic log streaming and output capture
+- Complete isolation between different pipeline runs
 
-**Container Management**:
-- Modal manages container lifecycle based on your `min_containers` and `max_containers` settings
-- Warm containers stay ready with your Docker image and dependencies loaded
-- Apps persist across runs, functions are deployed fresh when needed
+**Benefits**:
+- **Simplicity**: No complex app deployment or reuse logic
+- **Flexibility**: Sandboxes can execute any commands dynamically
+- **Isolation**: Each run gets completely fresh execution context
+- **Performance**: Persistent apps eliminate deployment overhead
 {% endhint %}
 
-### Warm containers for faster execution
+### Fast execution with persistent apps
 
-Modal orchestrator uses persistent apps with warm containers to minimize cold starts:
+Modal orchestrator uses persistent apps to minimize startup overhead:
 
 ```python
 modal_settings = ModalOrchestratorSettings(
-    min_containers=2,    # Keep 2 containers warm
-    max_containers=20,   # Scale up to 20 containers
+    region="us-east-1",           # Preferred region
+    cloud="aws",                  # Cloud provider  
+    modal_environment="main",     # Modal environment
+    timeout=3600,                 # 1 hour timeout
 )
 
 @pipeline(
@@ -422,63 +426,32 @@ def my_pipeline():
     ...
 ```
 
-This ensures your pipelines start executing immediately without waiting for container initialization.
+This ensures your pipelines start executing quickly by reusing persistent apps and creating fresh sandboxes for isolation.
 
 {% hint style="warning" %}
 **Cost Implications and Optimization**
 
-Understanding Modal orchestrator costs helps optimize your spend:
+Understanding Modal orchestrator costs with sandbox architecture:
 
-**Container Costs**:
-- **Warm containers** (`min_containers > 0`): You pay for idle time even when pipelines aren't running
-- **Cold containers**: Only pay when actually executing, but incur startup time (~30-60 seconds)
-- **GPU containers**: Significantly more expensive than CPU-only containers for idle time
+**Execution Costs**:
+- **Pay-per-use**: You only pay when sandboxes are actively running
+- **No idle costs**: Persistent apps don't incur costs when not executing
+- **Sandbox overhead**: Minimal - sandboxes start quickly on persistent apps
 
-**App Deployment Costs**:
-- **App reuse**: No additional cost when reusing apps within the time window (default: 2 hours)
-- **New deployments**: Small deployment overhead for each new app (new time window or changed Docker image)
-
-**Execution Mode Costs**:
-- **Pipeline mode**: Most cost-effective - single function call for entire pipeline
-- **Per-step mode**: Higher cost due to multiple function calls, but better for debugging
+**Resource Optimization**:
+- **GPU usage**: Only allocated during actual pipeline execution
+- **Memory and CPU**: Charged only for sandbox execution time
+- **Storage**: Docker images are cached across runs on persistent apps
 
 **Cost Optimization Strategies**:
-- **Development**: Use `min_containers=0` to avoid idle costs
-- **Production (frequent)**: Use `min_containers=1-2` for pipelines running multiple times per hour
-- **Production (infrequent)**: Use `min_containers=0` for pipelines running less than once per hour
-- **GPU workloads**: Be especially careful with `min_containers` due to high GPU idle costs
-- **Time windows**: Adjust `app_warming_window_hours` based on your pipeline frequency
+- **Efficient pipelines**: Optimize pipeline execution time to reduce costs
+- **Right-size resources**: Use appropriate CPU/memory/GPU for your workload
+- **Regional selection**: Choose regions close to your data sources
+- **Timeout management**: Set appropriate timeouts to avoid runaway costs
 
-Monitor your Modal dashboard to track container utilization and costs, then adjust settings accordingly.
+Monitor your Modal dashboard to track sandbox execution time and resource usage for cost optimization.
 {% endhint %}
 
-### App reuse and warming windows
-
-You can control how long Modal apps stay deployed and available for reuse:
-
-```python
-modal_settings = ModalOrchestratorSettings(
-    app_warming_window_hours=4.0,  # Keep apps deployed for 4 hours
-    min_containers=1,              # Keep 1 container warm
-    max_containers=5               # Scale up to 5 containers
-)
-
-@pipeline(settings={"orchestrator": modal_settings})
-def my_pipeline():
-    # This pipeline will reuse the same Modal app if run within 4 hours
-    # and the Docker image hasn't changed
-    ...
-```
-
-**App Reuse Benefits**:
-- **Faster execution**: No app deployment time for subsequent runs
-- **Cost efficiency**: No repeated deployment overhead
-- **Consistent environment**: Same app instance for related pipeline runs
-
-**When apps are recreated**:
-- After the warming window expires (default: 2 hours)
-- When the Docker image changes (new dependencies, code changes)
-- When resource requirements change significantly
 
 ## Best practices
 

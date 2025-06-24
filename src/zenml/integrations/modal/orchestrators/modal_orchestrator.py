@@ -13,43 +13,40 @@
 #  permissions and limitations under the License.
 """Implementation of a Modal orchestrator."""
 
-import hashlib
+import asyncio
 import os
-import time
-import traceback
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     Iterator,
+    List,
     Optional,
-    Tuple,
     Type,
     cast,
 )
 from uuid import uuid4
 
+import modal
+
 from zenml.config.base_settings import BaseSettings
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
-from zenml.entrypoints.pipeline_entrypoint_configuration import (
-    PipelineEntrypointConfiguration,
+from zenml.integrations.modal.orchestrators.modal_orchestrator_entrypoint_configuration import (
+    ModalOrchestratorEntrypointConfiguration,
 )
 from zenml.integrations.modal.utils import (
     ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
     build_modal_image,
     create_modal_stack_validator,
     get_gpu_values,
-    get_or_deploy_persistent_modal_app,
     get_resource_settings_from_deployment,
     get_resource_values,
     setup_modal_client,
-    stream_modal_logs_and_wait,
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.stack import Stack, StackValidator
-from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
@@ -61,53 +58,11 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def run_entire_pipeline(
-    deployment_id: str,
-    orchestrator_run_id: str,
-) -> None:
-    """Execute entire pipeline using PipelineEntrypointConfiguration for maximum efficiency.
-
-    Args:
-        deployment_id: ID of the pipeline deployment.
-        orchestrator_run_id: ID of the orchestrator run.
-
-    Raises:
-        Exception: If pipeline execution fails.
-    """
-    # Set the orchestrator run ID in the Modal environment
-    os.environ[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
-
-    try:
-        logger.debug("Initializing pipeline entrypoint configuration")
-        logger.debug(f"Deployment ID: {deployment_id}")
-        logger.debug(f"Orchestrator Run ID: {orchestrator_run_id}")
-
-        # Create the entrypoint arguments
-        args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id=deployment_id
-        )
-
-        logger.debug("Creating pipeline configuration")
-        config = PipelineEntrypointConfiguration(arguments=args)
-
-        logger.info("Executing entire pipeline")
-        config.run()
-
-        logger.info("Entire pipeline completed successfully")
-
-    except Exception as e:
-        error_details = traceback.format_exc()
-        logger.error(f"Error executing pipeline: {e}")
-        logger.debug(f"Full traceback:\n{error_details}")
-        raise
-
-
 class ModalOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running entire pipelines on Modal.
 
-    This orchestrator runs complete pipelines in a single Modal function
-    for maximum speed and efficiency, avoiding the overhead of multiple
-    step executions.
+    This orchestrator runs complete pipelines using Modal sandboxes
+    for maximum flexibility and efficiency with persistent app architecture.
     """
 
     @property
@@ -251,104 +206,116 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         gpu_values = get_gpu_values(settings.gpu, resource_settings)
         cpu_count, memory_mb = get_resource_values(resource_settings)
 
-        start_time = time.time()
+        # Execute pipeline using Modal sandboxes for maximum flexibility
+        logger.info("Starting pipeline execution with Modal sandboxes")
 
-        # Execute steps using Modal's fast container spin-up with persistent app
-        logger.info(
-            "Starting pipeline execution with persistent serverless functions"
-        )
-
-        # NEW ARCHITECTURE: App = Pipeline (persistent), Function = Build (isolated)
-        # App stays warm per pipeline, functions handle different builds within the app
+        # SANDBOX ARCHITECTURE: Simple persistent app per pipeline
         pipeline_name = deployment.pipeline_configuration.name.replace(
             "_", "-"
         )
-        app_name_base = f"zenml-pipeline-{pipeline_name}"
+        app_name = f"zenml-pipeline-{pipeline_name}"
 
-        # Function name based on build + run for complete isolation
-        image_name = self.get_image(deployment=deployment)
-        image_hash = hashlib.md5(image_name.encode()).hexdigest()[:8]
-        run_suffix = orchestrator_run_id[-8:]  # Last 8 chars of run ID
-        function_name = f"run_build_{image_hash}_{run_suffix}"
-
-        execute_step, full_app_name = get_or_deploy_persistent_modal_app(
-            app_name_base=app_name_base,
-            zenml_image=zenml_image,
-            execution_func=run_entire_pipeline,
-            function_name=function_name,
-            deployment=deployment,
-            gpu_values=gpu_values,
-            cpu_count=cpu_count,  # Use ResourceSettings value or None (Modal default)
-            memory_mb=memory_mb,  # Use ResourceSettings value or None (Modal default)
-            cloud=settings.cloud or self.config.cloud,
-            region=settings.region or self.config.region,
-            timeout=settings.timeout or self.config.timeout,
-            min_containers=settings.min_containers
-            or self.config.min_containers,
-            max_containers=settings.max_containers
-            or self.config.max_containers,
-            environment_name=settings.modal_environment
-            or self.config.modal_environment,  # Use modal_environment from config/settings
-            app_warming_window_hours=settings.app_warming_window_hours
-            or self.config.app_warming_window_hours,
+        # Build entrypoint command and args for the orchestrator sandbox
+        command = (
+            ModalOrchestratorEntrypointConfiguration.get_entrypoint_command()
         )
-
-        logger.info(
-            "Executing with deployed serverless application and warm containers"
+        args = (
+            ModalOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
+                deployment_id=deployment.id,
+                orchestrator_run_id=orchestrator_run_id,
+                run_id=placeholder_run.id if placeholder_run else None,
+            )
         )
+        entrypoint_command = command + args
 
-        # Execute based on execution mode with improved Modal Function API usage
-        sync_execution = (
-            settings.synchronous
-            if hasattr(settings, "synchronous")
-            else self.config.synchronous
-        )
-
-        def execute_modal_function(
-            func_args: Tuple[Any, ...], description: str
-        ) -> Any:
-            """Execute Modal function with proper sync/async control and log streaming.
-
-            Args:
-                func_args: Arguments to pass to the Modal function.
-                description: Description of the operation for logging.
-
-            Returns:
-                Result of the Modal function execution.
-            """
-            # Always use .spawn() to get a FunctionCall object for log streaming
-            function_call = execute_step.spawn(*func_args)
-
-            if sync_execution:
-                logger.debug("Using synchronous execution with log streaming")
-                # Stream logs while waiting for completion using app name
-                return stream_modal_logs_and_wait(
-                    function_call, description, full_app_name
-                )
-            else:
-                logger.debug("Using asynchronous fire-and-forget execution")
-                logger.info(
-                    f"{description} started asynchronously (not waiting for completion)"
-                )
-                return function_call
-
-        # Execute entire pipeline in one function
+        # Execute using sandbox
         try:
-            execute_modal_function(
-                (deployment.id, orchestrator_run_id),
-                "Pipeline execution",
+            asyncio.run(
+                self._execute_pipeline_sandbox(
+                    app_name=app_name,
+                    zenml_image=zenml_image,
+                    entrypoint_command=entrypoint_command,
+                    gpu_values=gpu_values,
+                    cpu_count=cpu_count,
+                    memory_mb=memory_mb,
+                    cloud=settings.cloud or self.config.cloud,
+                    region=settings.region or self.config.region,
+                    timeout=settings.timeout or self.config.timeout,
+                    environment_name=settings.modal_environment
+                    or self.config.modal_environment,
+                    synchronous=settings.synchronous
+                    if hasattr(settings, "synchronous")
+                    else self.config.synchronous,
+                )
             )
         except Exception as e:
-            logger.error(f"Pipeline failed: {e}")
-            logger.info("Check platform dashboard for detailed logs")
+            logger.error(f"Pipeline execution failed: {e}")
+            logger.info("Check Modal dashboard for detailed logs")
             raise
 
-        run_duration = time.time() - start_time
-
-        # Log completion
-        logger.info(
-            "Pipeline run has finished in `%s`.",
-            string_utils.get_human_readable_time(run_duration),
-        )
+        logger.info("Pipeline execution completed successfully")
 
         return None
+
+    async def _execute_pipeline_sandbox(
+        self,
+        app_name: str,
+        zenml_image: Any,
+        entrypoint_command: List[str],
+        gpu_values: Optional[str] = None,
+        cpu_count: Optional[int] = None,
+        memory_mb: Optional[int] = None,
+        cloud: Optional[str] = None,
+        region: Optional[str] = None,
+        timeout: int = 86400,
+        environment_name: Optional[str] = None,
+        synchronous: bool = True,
+    ) -> None:
+        """Execute pipeline using Modal sandbox.
+
+        Args:
+            app_name: Name of the Modal app
+            zenml_image: Pre-built ZenML Docker image for Modal
+            entrypoint_command: Command to execute in the sandbox
+            gpu_values: GPU configuration string
+            cpu_count: Number of CPU cores
+            memory_mb: Memory allocation in MB
+            cloud: Cloud provider to use
+            region: Region to deploy in
+            timeout: Maximum execution timeout
+            environment_name: Modal environment name
+            synchronous: Whether to wait for completion
+        """
+        # Create persistent app (will reuse if exists)
+        app = modal.App.lookup(
+            app_name, create_if_missing=True, environment_name=environment_name
+        )
+
+        logger.info(f"Using Modal app: {app_name}")
+
+        logger.info("Creating sandbox for pipeline execution")
+
+        with modal.enable_output():
+            # Create sandbox with the entrypoint command
+            sb = await modal.Sandbox.create.aio(
+                *entrypoint_command,  # Pass as separate arguments to avoid shell quoting issues
+                image=zenml_image,
+                gpu=gpu_values,
+                cpu=cpu_count,
+                memory=memory_mb,
+                cloud=cloud,
+                region=region,
+                app=app,
+                timeout=timeout,
+            )
+
+            logger.info("Sandbox created, executing pipeline...")
+
+            if synchronous:
+                # Wait for completion and stream output
+                await sb.wait.aio()
+                logger.info("Pipeline execution completed")
+            else:
+                logger.info(
+                    "Pipeline started asynchronously (not waiting for completion)"
+                )
