@@ -14,10 +14,10 @@
 """Base and meta classes for ZenML integrations."""
 
 import re
+from importlib.metadata import PackageNotFoundError, distribution
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
-import pkg_resources
-from pkg_resources import Requirement
+from packaging.requirements import Requirement
 
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
@@ -72,24 +72,39 @@ class Integration(metaclass=IntegrationMeta):
         for r in cls.get_requirements():
             try:
                 # First check if the base package is installed
-                dist = pkg_resources.get_distribution(r)
+                package_name, extras = parse_requirement(r)
+                dist = distribution(package_name)
 
                 # Next, check if the dependencies (including extras) are
                 # installed
-                deps: List[Requirement] = []
+                deps: List[str] = []
 
-                _, extras = parse_requirement(r)
                 if extras:
                     extra_list = extras[1:-1].split(",")
                     for extra in extra_list:
                         try:
-                            requirements = dist.requires(extras=[extra])  # type: ignore[arg-type]
-                        except pkg_resources.UnknownExtra as e:
-                            logger.debug(f"Unknown extra: {str(e)}")
+                            # Get requires for specific extra
+                            if (
+                                dist.requires
+                                and extra
+                                in dist.metadata.get_all("Provides-Extra", [])
+                            ):
+                                extra_deps = [
+                                    req
+                                    for req in dist.requires
+                                    if f'extra == "{extra}"' in req
+                                ]
+                                deps.extend(extra_deps)
+                            else:
+                                logger.debug(f"Unknown extra: {extra}")
+                                return False
+                        except Exception as e:
+                            logger.debug(
+                                f"Error processing extra {extra}: {str(e)}"
+                            )
                             return False
-                        deps.extend(requirements)
                 else:
-                    deps = dist.requires()
+                    deps = list(dist.requires or [])
 
                 for ri in deps:
                     try:
@@ -97,32 +112,44 @@ class Integration(metaclass=IntegrationMeta):
                         cleaned_req = re.sub(
                             r"; extra == \"\w+\"", "", str(ri)
                         )
-                        pkg_resources.get_distribution(cleaned_req)
-                    except pkg_resources.DistributionNotFound as e:
+                        req_obj = Requirement(cleaned_req)
+                        dep_dist = distribution(req_obj.name)
+
+                        # Check version compatibility
+                        if (
+                            req_obj.specifier
+                            and not req_obj.specifier.contains(
+                                dep_dist.version
+                            )
+                        ):
+                            logger.debug(
+                                f"Package version '{dep_dist.version}' does not match "
+                                f"version '{req_obj.specifier}' required by '{r}' "
+                                f"necessary for integration '{cls.NAME}'."
+                            )
+                            return False
+                    except PackageNotFoundError:
                         logger.debug(
                             f"Unable to find required dependency "
-                            f"'{e.req}' for requirement '{r}' "
+                            f"'{cleaned_req}' for requirement '{r}' "
                             f"necessary for integration '{cls.NAME}'."
                         )
                         return False
-                    except pkg_resources.VersionConflict as e:
+                    except Exception as e:
                         logger.debug(
-                            f"Package version '{e.dist}' does not match "
-                            f"version '{e.req}' required by '{r}' "
-                            f"necessary for integration '{cls.NAME}'."
+                            f"Error checking dependency '{cleaned_req}': {str(e)}"
                         )
                         return False
 
-            except pkg_resources.DistributionNotFound as e:
+            except PackageNotFoundError:
                 logger.debug(
-                    f"Unable to find required package '{e.req}' for "
+                    f"Unable to find required package '{package_name}' for "
                     f"integration {cls.NAME}."
                 )
                 return False
-            except pkg_resources.VersionConflict as e:
+            except Exception as e:
                 logger.debug(
-                    f"Package version '{e.dist}' does not match version "
-                    f"'{e.req}' necessary for integration {cls.NAME}."
+                    f"Error checking package '{package_name}': {str(e)}"
                 )
                 return False
 

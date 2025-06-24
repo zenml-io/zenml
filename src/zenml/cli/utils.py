@@ -21,6 +21,11 @@ import re
 import shutil
 import subprocess
 import sys
+from importlib.metadata import (
+    PackageNotFoundError,
+    distribution,
+    distributions,
+)
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -40,7 +45,6 @@ from typing import (
 )
 
 import click
-import pkg_resources
 import yaml
 from pydantic import BaseModel, SecretStr
 from rich import box, table
@@ -1120,9 +1124,9 @@ def is_installed_in_python_environment(package: str) -> bool:
         True if the package is installed, False otherwise.
     """
     try:
-        pkg_resources.get_distribution(package)
+        distribution(package)
         return True
-    except pkg_resources.DistributionNotFound:
+    except PackageNotFoundError:
         return False
 
 
@@ -2511,16 +2515,18 @@ def get_package_information(
         A dictionary of the name:version for the package names passed in or
             all packages and their respective versions.
     """
-    import pkg_resources
+    all_packages = {
+        dist.metadata["name"].lower(): dist.version for dist in distributions()
+    }
 
     if package_names:
         return {
-            pkg.key: pkg.version
-            for pkg in pkg_resources.working_set
-            if pkg.key in package_names
+            name: version
+            for name, version in all_packages.items()
+            if name in package_names
         }
 
-    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
+    return all_packages
 
 
 def print_user_info(info: Dict[str, Any]) -> None:
@@ -2618,9 +2624,9 @@ def is_jupyter_installed() -> bool:
         bool: True if Jupyter notebook is installed, False otherwise.
     """
     try:
-        pkg_resources.get_distribution("notebook")
+        distribution("notebook")
         return True
-    except pkg_resources.DistributionNotFound:
+    except PackageNotFoundError:
         return False
 
 
