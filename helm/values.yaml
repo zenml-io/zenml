@@ -275,6 +275,7 @@ zenml:
 
     # If set to true, path where the local database is created will be
     # mounted as a persistent volume so the data is not lost on pod restarts.
+    # Only relevant for local sqlite database.
     persistence:
       enabled: false
       size: 1Gi

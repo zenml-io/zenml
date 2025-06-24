@@ -59,7 +59,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
         - name: zenml-config
-        {{- if .Values.zenml.database.persistence.enabled }}
+        {{- if and .Values.zenml.database.persistence.enabled (not .Values.zenml.database.url) }}
           persistentVolumeClaim:
             claimName: {{ include "zenml.fullname" . }}-config
         {{- else }}

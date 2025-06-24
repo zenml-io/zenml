@@ -1,4 +1,4 @@
-{{- if .Values.zenml.database.persistence.enabled }}
+{{- if and .Values.zenml.database.persistence.enabled (not .Values.zenml.database.url) }}
 {{- $pvc_name := printf "%s-config" (include "zenml.fullname" .) -}}
 {{- $pvc := (lookup "v1" "PersistentVolumeClaim" .Release.Namespace $pvc_name) }}
 {{- if not $pvc }}
