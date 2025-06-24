@@ -24,7 +24,7 @@ RUN_ID_OPTION = "run_id"
 
 
 class ModalOrchestratorEntrypointConfiguration:
-    """Entrypoint configuration for the Modal orchestrator sandbox."""
+    """Entrypoint configuration for the orchestrator sandbox."""
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
