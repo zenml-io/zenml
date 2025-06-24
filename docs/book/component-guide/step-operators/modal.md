@@ -80,7 +80,7 @@ zenml step-operator register <NAME> \
     --token-id=<MODAL_TOKEN_ID> \
     --token-secret=<MODAL_TOKEN_SECRET> \
     --workspace=<MODAL_WORKSPACE> \
-    --environment=<MODAL_ENVIRONMENT>
+    --modal-environment=<MODAL_ENVIRONMENT>
 zenml stack update -s <NAME> ...
 ```
 
@@ -115,7 +115,7 @@ The Modal step operator uses two types of settings following ZenML's standard pa
    - `gpu` - GPU type specification (e.g., "T4", "A100", "H100")
    - `region` - Cloud region preference  
    - `cloud` - Cloud provider selection
-   - `environment` - Modal environment name
+   - `modal_environment` - Modal environment name
    - `timeout` - Maximum execution time in seconds
 
 {% hint style="info" %}
@@ -134,7 +134,7 @@ modal_settings = ModalStepOperatorSettings(
     gpu="A100",                # GPU type (optional)
     region="us-east-1",       # Preferred region
     cloud="aws",              # Cloud provider
-    environment="production", # Modal environment
+    modal_environment="production", # Modal environment
     timeout=3600,             # 1 hour timeout
 )
 
@@ -189,7 +189,7 @@ For production deployments, you can specify different Modal environments and wor
 
 ```python
 modal_settings = ModalStepOperatorSettings(
-    environment="production",  # or "staging", "dev", etc.
+    modal_environment="production",  # or "staging", "dev", etc.
     workspace="my-company",    # Modal workspace name
     gpu="A100",
     region="us-east-1",
@@ -205,7 +205,7 @@ zenml step-operator register modal_prod \
     --token-id=<MODAL_TOKEN_ID> \
     --token-secret=<MODAL_TOKEN_SECRET> \
     --workspace="production-workspace" \
-    --environment="production"
+    --modal-environment="production"
 ```
 
 ### Resource configuration notes
