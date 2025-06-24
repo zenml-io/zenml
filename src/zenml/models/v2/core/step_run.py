@@ -199,6 +199,12 @@ class StepRunResponseBody(ProjectScopedResponseBody):
 class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for step runs."""
 
+    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+        "config",
+        "spec",
+        "metadata",
+    ]
+
     # Configuration
     config: "StepConfiguration" = Field(title="The configuration of the step.")
     spec: "StepSpec" = Field(title="The spec of the step.")
