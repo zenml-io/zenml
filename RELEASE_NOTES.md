@@ -1,4 +1,63 @@
 <!-- markdown-link-check-disable -->
+
+# 0.83.1
+
+The `0.83.1` release delivers significant **performance improvements** and optimizations that enhance ZenML's efficiency and responsiveness. This release focuses on architectural improvements including step configuration separation from deployment, idempotent POST requests with request caching, and enhanced artifact loading performance, alongside important bug fixes and documentation updates.
+
+## ⚡ Performance Improvements
+
+- **Architectural Enhancement**: Separated step configurations from deployment for improved modularity and reduced overhead
+- **Request Optimization**: Implemented idempotent POST requests with intelligent request caching for faster API responses
+- **Artifact Loading**: Enhanced artifact loading performance by using the active artifact store as cache
+
+## Fixes
+
+- Fixed potential race condition during pipeline run status updates
+- Fixed missing artifact nodes in DAG visualization
+- Fixed run template fetching issues that could cause errors during pipeline execution
+- Fixed missing pipeline substitutions for legacy steps
+- Reset active project after deleting local database
+
+## Documentation
+
+- Updated Kubernetes configuration documentation with clearer guidance
+- Enhanced run template documentation with better examples and explanations
+- Added shared CSS guidance for HTML visualizations
+- Updated kaniko project status documentation
+- Fixed authentication confusion in ZenML Pro API documentation
+
+
+## What's Changed
+* More explicit handling of carriage return logs in steps by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3714
+* Add `0.82.1` to the legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3715
+* Reset active project after deleting local database by @schustmi in https://github.com/zenml-io/zenml/pull/3689
+* Keep visualizations when using existing tag by @schustmi in https://github.com/zenml-io/zenml/pull/3710
+* Use the active artifact store as cache when loading artifacts by @stefannica in https://github.com/zenml-io/zenml/pull/3721
+* Fix potential race condition during run status update by @schustmi in https://github.com/zenml-io/zenml/pull/3720
+* Random cleanup and bugfixes by @schustmi in https://github.com/zenml-io/zenml/pull/3709
+* Added documentation for a PowerShell quirk when referencing secrets in experiment tracker by @hala201 in https://github.com/zenml-io/zenml/pull/3717
+* Fix some links by @htahir1 in https://github.com/zenml-io/zenml/pull/3729
+* Fix run template fetching by @schustmi in https://github.com/zenml-io/zenml/pull/3726
+* Fix missing artifact nodes in DAG by @schustmi in https://github.com/zenml-io/zenml/pull/3727
+* Revert "Keep visualizations when using existing tag" by @stefannica in https://github.com/zenml-io/zenml/pull/3732
+* Tag improvements by @bcdurak in https://github.com/zenml-io/zenml/pull/3724
+* Improve docs imports by @strickvl in https://github.com/zenml-io/zenml/pull/3731
+* Kubernetes configuration documentation update by @bcdurak in https://github.com/zenml-io/zenml/pull/3736
+* Fix authentication confusion in ZenML Pro API documentation by @strickvl in https://github.com/zenml-io/zenml/pull/3734
+* Include missing pipeline substitutions for legacy steps by @schustmi in https://github.com/zenml-io/zenml/pull/3740
+* Better run template docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3730
+* Add shared CSS guidance for HTML visualizations by @strickvl in https://github.com/zenml-io/zenml/pull/3742
+* Update kaniko project status in docs by @strickvl in https://github.com/zenml-io/zenml/pull/3744
+* Fix line breaks in llms.txt docs by @strickvl in https://github.com/zenml-io/zenml/pull/3746
+* Separate step configurations from deployment by @schustmi in https://github.com/zenml-io/zenml/pull/3739
+* Dynamically import entrypoint in root __init__ by @schustmi in https://github.com/zenml-io/zenml/pull/3728
+* Idempotent POST requests, request caching and other performance improvements by @stefannica in https://github.com/zenml-io/zenml/pull/3738
+
+## New Contributors
+* @hala201 made their first contribution in https://github.com/zenml-io/zenml/pull/3717
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.83.0...0.83.1
+
 # 0.83.0
 
 🚀 **Major Performance Release** - ZenML 0.83.0 introduces significant performance improvements and response optimizations that dramatically reduce API response times and database query overhead. This release includes breaking changes and is **not compatible with earlier client/server versions**.
@@ -6232,7 +6291,7 @@ creating pipelines. It also improves the Airflow orchestrator logic to accommoda
 * Numerous bugs and performance improvements. #136, @bcdurak great job with #142
 * Added new docs with a low level API guide. #143
 
-[Our roadmap](https://zenml.hellonext.co/roadmap) goes into further detail on the timeline. Vote on the [next features now](https://github.com/zenml-io/zenml/discussions).
+[Our roadmap](https://zenml.io/roadmap) goes into further detail on the timeline. 
 
 We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) and [examples](examples) to get a hang of the new system.
 
@@ -6280,7 +6339,7 @@ be included in the non-RC version of this release.
 * Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
 * Dependency management including Docker support is planned.
 
-[Our roadmap](https://zenml.hellonext.co/roadmap) goes into further detail on the timeline.
+[Our roadmap](https://zenml.io./roadmap) goes into further detail on the timeline.
 
 We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) 
 and [examples](examples) to get a hang of the new system.
@@ -6329,7 +6388,7 @@ be included in the non-RC version of this release.
 * Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
 * Dependency management including Docker support is planned.
 
-[Our roadmap](https://zenml.hellonext.co/roadmap) goes into further detail on the timeline.
+[Our roadmap](https://zenml.io/roadmap) goes into further detail on the timeline.
 
 We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) 
 and [examples](examples) to get a hang of the new system.

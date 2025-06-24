@@ -8779,18 +8779,17 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
                 session.refresh(step_schema)
 
-            # Save parent step IDs into the database.
-            for parent_step_id in step_run.parent_step_ids:
-                self._set_run_step_parent_step(
-                    child_step_run=step_schema,
-                    parent_id=parent_step_id,
-                    session=session,
-                )
-
             session.commit()
             session.refresh(step_schema)
 
             step_model = step_schema.to_model(include_metadata=True)
+
+            for upstream_step in step_model.spec.upstream_steps:
+                self._set_run_step_parent_step(
+                    child_step_run=step_schema,
+                    parent_step_name=upstream_step,
+                    session=session,
+                )
 
             # Save input artifact IDs into the database.
             for input_name, artifact_version_ids in step_run.inputs.items():
@@ -9047,22 +9046,33 @@ class SqlZenStore(BaseZenStore):
             return StepRunInputArtifactType.MANUAL
 
     def _set_run_step_parent_step(
-        self, child_step_run: StepRunSchema, parent_id: UUID, session: Session
+        self,
+        child_step_run: StepRunSchema,
+        parent_step_name: str,
+        session: Session,
     ) -> None:
         """Sets the parent step run for a step run.
 
         Args:
             child_step_run: The child step run to set the parent for.
-            parent_id: The ID of the parent step run to set a child for.
+            parent_step_name: The name of the parent step run to set a child for.
             session: The database session to use.
+
+        Raises:
+            RuntimeError: If the parent step run is not found.
         """
-        parent_step_run = self._get_reference_schema_by_id(
-            resource=child_step_run,
-            reference_schema=StepRunSchema,
-            reference_id=parent_id,
-            session=session,
-            reference_type="parent step",
-        )
+        parent_step_run = session.exec(
+            select(StepRunSchema)
+            .where(StepRunSchema.name == parent_step_name)
+            .where(
+                StepRunSchema.pipeline_run_id == child_step_run.pipeline_run_id
+            )
+        ).first()
+        if parent_step_run is None:
+            raise RuntimeError(
+                f"Parent step run `{parent_step_name}` not found for step run "
+                f"`{child_step_run.name}`."
+            )
 
         # Check if the parent step is already set.
         assignment = session.exec(

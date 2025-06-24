@@ -9,6 +9,7 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
     SkypilotBaseOrchestratorSettings,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators import SubmissionResult
 
 logger = get_logger(__name__)
 
@@ -235,7 +236,9 @@ def prepare_launch_kwargs(
     return {k: v for k, v in launch_kwargs.items() if v is not None}
 
 
-def sky_job_get(request_id: str, stream_logs: bool, cluster_name: str) -> Any:
+def sky_job_get(
+    request_id: str, stream_logs: bool, cluster_name: str
+) -> Optional[SubmissionResult]:
     """Handle SkyPilot request results based on stream_logs setting.
 
     SkyPilot API exec and launch methods are asynchronous and return a request ID.
@@ -249,10 +252,7 @@ def sky_job_get(request_id: str, stream_logs: bool, cluster_name: str) -> Any:
         cluster_name: The name of the cluster to tail logs for.
 
     Returns:
-        The result of the SkyPilot operation.
-
-    Raises:
-        Exception: If the SkyPilot job fails.
+        Optional submission result.
     """
     if stream_logs:
         # Stream logs and wait for completion
@@ -261,13 +261,17 @@ def sky_job_get(request_id: str, stream_logs: bool, cluster_name: str) -> Any:
         # Just wait for completion without streaming logs
         job_id, _ = sky.get(request_id)
 
-    status = 0  # 0=Successful, 100=Failed
+    _wait_for_completion = None
     if stream_logs:
-        status = sky.tail_logs(
-            cluster_name=cluster_name, job_id=job_id, follow=True
-        )
 
-    if status != 0:
-        raise Exception(f"SkyPilot job {job_id} failed with status {status}")
+        def _wait_for_completion() -> None:
+            status = 0  # 0=Successful, 100=Failed
+            status = sky.tail_logs(
+                cluster_name=cluster_name, job_id=job_id, follow=True
+            )
+            if status != 0:
+                raise Exception(
+                    f"SkyPilot job {job_id} failed with status {status}"
+                )
 
-    return job_id
+    return SubmissionResult(wait_for_completion=_wait_for_completion)
