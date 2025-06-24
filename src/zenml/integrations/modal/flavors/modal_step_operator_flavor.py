@@ -61,16 +61,16 @@ class ModalStepOperatorConfig(
         token_id: Modal API token ID (ak-xxxxx format) for authentication.
         token_secret: Modal API token secret (as-xxxxx format) for authentication.
         workspace: Modal workspace name (optional).
-        modal_environment: Modal environment name (optional).
 
     Note: If token_id and token_secret are not provided, falls back to
     Modal's default authentication (~/.modal.toml).
+    All other configuration options (modal_environment, gpu, region, etc.) 
+    are inherited from ModalStepOperatorSettings.
     """
 
     token_id: Optional[str] = SecretField(default=None)
     token_secret: Optional[str] = SecretField(default=None)
     workspace: Optional[str] = None
-    modal_environment: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:
