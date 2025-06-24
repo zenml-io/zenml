@@ -5897,7 +5897,7 @@ class Client(metaclass=ClientMetaClass):
                 name_id_or_prefix=name_id_or_prefix,
                 allow_name_prefix_match=False,
                 expand_secrets=True,
-            )            
+            )
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=service_connector
@@ -6025,7 +6025,7 @@ class Client(metaclass=ClientMetaClass):
                 name_id_or_prefix=name_id_or_prefix,
                 allow_name_prefix_match=False,
                 expand_secrets=True,
-            )            
+            )
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=service_connector

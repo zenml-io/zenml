@@ -6752,6 +6752,9 @@ class SqlZenStore(BaseZenStore):
             secret: The secret to create.
             session: The session to use.
             internal: Whether the secret is internal.
+
+        Returns:
+            The newly created secret schema.
         """
         new_secret = SecretSchema.from_request(
             secret,
@@ -6768,9 +6771,8 @@ class SqlZenStore(BaseZenStore):
         except:
             # If setting the secret values fails, delete the secret from the
             # database.
-            with Session(self.engine) as session:
-                session.delete(new_secret)
-                session.commit()
+            session.delete(new_secret)
+            session.commit()
             raise
 
         return new_secret
@@ -7565,7 +7567,14 @@ class SqlZenStore(BaseZenStore):
         def to_model_and_expand_secrets(
             schema: ServiceConnectorSchema,
         ) -> ServiceConnectorResponse:
-            """Convert a service connector schema to a model and expand the secrets."""
+            """Convert a service connector schema to a model and expand the secrets.
+
+            Args:
+                schema: The service connector schema to convert.
+
+            Returns:
+                The converted service connector model.
+            """
             model = schema.to_model(
                 include_metadata=hydrate, include_resources=True
             )
