@@ -1130,7 +1130,7 @@ def describe_service_connector(
         try:
             connector = client.get_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
-                expand_secrets=True,
+                expand_secrets=show_secrets,
             )
         except KeyError as err:
             cli_utils.error(str(err))

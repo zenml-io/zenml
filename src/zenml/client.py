@@ -5676,7 +5676,9 @@ class Client(metaclass=ClientMetaClass):
         connector_model = self.get_service_connector(
             name_id_or_prefix,
             allow_name_prefix_match=False,
-            expand_secrets=True,
+            # We need the existing secrets only if a new configuration is not
+            # provided.
+            expand_secrets=configuration is None,
         )
 
         connector_instance: Optional[ServiceConnector] = None
@@ -5890,6 +5892,12 @@ class Client(metaclass=ClientMetaClass):
                 list_resources=list_resources,
             )
         else:
+            # Get the service connector model, with full secrets
+            service_connector = self.get_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                expand_secrets=True,
+            )            
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=service_connector
@@ -6012,6 +6020,12 @@ class Client(metaclass=ClientMetaClass):
                 # server-side implementation may not be able to do so
                 connector_client.verify()
         else:
+            # Get the service connector model, with full secrets
+            service_connector = self.get_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                expand_secrets=True,
+            )            
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=service_connector

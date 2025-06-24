@@ -7824,6 +7824,7 @@ class SqlZenStore(BaseZenStore):
                 try:
                     return self._create_secret_schema(
                         SecretRequest(
+                            user=self._get_active_user(session=session).id,
                             name=secret_name,
                             private=False,
                             values=secrets,

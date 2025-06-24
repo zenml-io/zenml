@@ -131,7 +131,17 @@ class ServiceConnectorConfiguration(Dict[str, Any]):
             the schema for the custom type.
         """
         return core_schema.no_info_after_validator_function(
-            cls, handler(core_schema.dict_schema())
+            cls,
+            handler(
+                core_schema.dict_schema(
+                    keys_schema=core_schema.str_schema(),
+                    values_schema=core_schema.any_schema(),
+                )
+            ),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda v: v.plain,
+                when_used="json",
+            ),
         )
 
 
