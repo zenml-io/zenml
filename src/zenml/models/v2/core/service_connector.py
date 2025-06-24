@@ -74,6 +74,19 @@ class ServiceConnectorConfiguration(Dict[str, Any]):
         return {k: v for k, v in self.items() if isinstance(v, SecretStr)}
 
     @property
+    def plain_secrets(self) -> Dict[str, str]:
+        """Get the plain secrets from the configuration.
+
+        Returns:
+            A dictionary of secrets.
+        """
+        return {
+            k: v.get_secret_value()
+            for k, v in self.items()
+            if isinstance(v, SecretStr)
+        }
+
+    @property
     def non_secrets(self) -> Dict[str, Any]:
         """Get the non-secrets from the configuration.
 
@@ -696,6 +709,16 @@ class ServiceConnectorResponse(
             value: the new value for the connector type.
         """
         self.get_body().connector_type = value
+
+    def validate_configuration(self) -> None:
+        """Validate the configuration of the connector."""
+        if isinstance(self.connector_type, ServiceConnectorTypeModel):
+            self.validate_and_configure_resources(
+                connector_type=self.connector_type,
+                resource_types=self.resource_types,
+                resource_id=self.resource_id,
+                configuration=self.configuration,
+            )
 
     def validate_and_configure_resources(
         self,

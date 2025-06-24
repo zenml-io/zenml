@@ -2408,6 +2408,8 @@ class RestZenStore(BaseZenStore):
             response_model=ServiceConnectorResponse,
         )
         self._populate_connector_type(connector_model)
+        # Call this to properly split the secrets from the configuration
+        connector_model.validate_configuration()
         return connector_model
 
     def get_service_connector(
@@ -2435,6 +2437,9 @@ class RestZenStore(BaseZenStore):
             params={"hydrate": hydrate, "expand_secrets": expand_secrets},
         )
         self._populate_connector_type(connector_model)
+        if expand_secrets:
+            # Call this to properly split the secrets from the configuration
+            connector_model.validate_configuration()
         return connector_model
 
     def list_service_connectors(
@@ -2463,6 +2468,10 @@ class RestZenStore(BaseZenStore):
             params={"hydrate": hydrate, "expand_secrets": expand_secrets},
         )
         self._populate_connector_type(*connector_models.items)
+        if expand_secrets:
+            # Call this to properly split the secrets from the configuration
+            for connector_model in connector_models.items:
+                connector_model.validate_configuration()
         return connector_models
 
     def update_service_connector(
@@ -2502,6 +2511,8 @@ class RestZenStore(BaseZenStore):
             route=SERVICE_CONNECTORS,
         )
         self._populate_connector_type(connector_model)
+        # Call this to properly split the secrets from the configuration
+        connector_model.validate_configuration()
         return connector_model
 
     def delete_service_connector(self, service_connector_id: UUID) -> None:
@@ -2668,6 +2679,8 @@ class RestZenStore(BaseZenStore):
 
         connector = ServiceConnectorResponse.model_validate(response_body)
         self._populate_connector_type(connector)
+        # Call this to properly split the secrets from the configuration
+        connector.validate_configuration()
         return connector
 
     def list_service_connector_resources(

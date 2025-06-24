@@ -25,7 +25,7 @@ from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
-from pydantic import SecretStr, ValidationError
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from tests.integration.functional.utils import sample_name
@@ -110,6 +110,7 @@ from zenml.models import (
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountUpdate,
+    ServiceConnectorConfiguration,
     ServiceConnectorFilter,
     ServiceConnectorUpdate,
     StackFilter,
@@ -3212,7 +3213,7 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
 
 
 def test_connector_with_no_secrets():
-    """Tests that a connector with no secrets has no attached secret."""
+    """Tests a connector with no secrets."""
     client = Client()
     store = client.zen_store
 
@@ -3232,24 +3233,24 @@ def test_connector_with_no_secrets():
         assert connector.auth_method == "paw-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "aria"
-        assert connector.configuration == config
-        assert len(connector.secrets) == 0
-        assert connector.secret_id is None
+        assert connector.configuration.plain == config
+        assert len(connector.configuration.secrets) == 0
 
-        registered_connector = store.get_service_connector(connector.id)
+        registered_connector = store.get_service_connector(
+            connector.id, expand_secrets=True
+        )
 
         assert registered_connector.id == connector.id
         assert registered_connector.name == connector.name
         assert registered_connector.type == connector.type
         assert registered_connector.auth_method == connector.auth_method
         assert registered_connector.resource_types == connector.resource_types
-        assert registered_connector.configuration == config
-        assert len(registered_connector.secrets) == 0
-        assert registered_connector.secret_id is None
+        assert registered_connector.configuration.plain == config
+        assert len(registered_connector.configuration.secrets) == 0
 
 
 def test_connector_with_secrets():
-    """Tests that a connector with secrets has an attached secret."""
+    """Tests a connector with secrets."""
     client = Client()
     store = client.zen_store
 
@@ -3258,8 +3259,8 @@ def test_connector_with_secrets():
         "foods": "tuna",
     }
     secrets = {
-        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
-        "dreams": SecretStr("notyourbusiness"),
+        "hiding-place": "thatsformetoknowandyouneverfindout",
+        "dreams": "notyourbusiness",
     }
     with ServiceConnectorContext(
         connector_type="cat'o'matic",
@@ -3274,25 +3275,20 @@ def test_connector_with_secrets():
         assert connector.auth_method == "paw-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "blupus"
-        assert connector.configuration == config
-        assert len(connector.secrets) == 0
-        assert connector.secret_id is not None
+        assert connector.configuration.plain == config
+        assert connector.configuration.plain_secrets == secrets
 
-        secret = store.get_secret(connector.secret_id)
-        assert secret.id == connector.secret_id
-        assert secret.name.startswith(f"connector-{connector.name}")
-        assert secret.values == secrets
-
-        registered_connector = store.get_service_connector(connector.id)
+        registered_connector = store.get_service_connector(
+            connector.id, expand_secrets=True
+        )
 
         assert registered_connector.id == connector.id
         assert registered_connector.name == connector.name
         assert registered_connector.type == connector.type
         assert registered_connector.auth_method == connector.auth_method
         assert registered_connector.resource_types == connector.resource_types
-        assert registered_connector.configuration == config
-        assert len(registered_connector.secrets) == 0
-        assert registered_connector.secret_id == connector.secret_id
+        assert registered_connector.configuration.plain == config
+        assert registered_connector.configuration.plain_secrets == secrets
 
 
 def test_connector_with_no_config_no_secrets():
@@ -3312,19 +3308,21 @@ def test_connector_with_no_config_no_secrets():
         assert connector.resource_types == ["spacecat"]
         assert connector.resource_id == "axl"
         assert len(connector.configuration) == 0
-        assert len(connector.secrets) == 0
-        assert connector.secret_id is None
+        assert len(connector.configuration.plain) == 0
+        assert len(connector.configuration.secrets) == 0
 
-        registered_connector = store.get_service_connector(connector.id)
+        registered_connector = store.get_service_connector(
+            connector.id, expand_secrets=True
+        )
 
         assert registered_connector.id == connector.id
         assert registered_connector.name == connector.name
         assert registered_connector.type == connector.type
         assert registered_connector.auth_method == connector.auth_method
         assert registered_connector.resource_types == connector.resource_types
-        assert len(connector.configuration) == 0
-        assert len(registered_connector.secrets) == 0
-        assert registered_connector.secret_id is None
+        assert len(registered_connector.configuration) == 0
+        assert len(registered_connector.configuration.plain) == 0
+        assert len(registered_connector.configuration.secrets) == 0
 
 
 def test_connector_with_labels():
@@ -3337,8 +3335,8 @@ def test_connector_with_labels():
         "foods": "tuna",
     }
     secrets = {
-        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
-        "dreams": SecretStr("notyourbusiness"),
+        "hiding-place": "thatsformetoknowandyouneverfindout",
+        "dreams": "notyourbusiness",
     }
     labels = {
         "whereabouts": "unknown",
@@ -3358,26 +3356,21 @@ def test_connector_with_labels():
         assert connector.auth_method == "tail-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "aria"
-        assert connector.configuration == config
-        assert len(connector.secrets) == 0
-        assert connector.secret_id is not None
+        assert connector.configuration.plain == config
+        assert connector.configuration.plain_secrets == secrets
         assert connector.labels == labels
 
-        secret = store.get_secret(connector.secret_id)
-        assert secret.id == connector.secret_id
-        assert secret.name.startswith(f"connector-{connector.name}")
-        assert secret.values == secrets
-
-        registered_connector = store.get_service_connector(connector.id)
+        registered_connector = store.get_service_connector(
+            connector.id, expand_secrets=True
+        )
 
         assert registered_connector.id == connector.id
         assert registered_connector.name == connector.name
         assert registered_connector.type == connector.type
         assert registered_connector.auth_method == connector.auth_method
         assert registered_connector.resource_types == connector.resource_types
-        assert registered_connector.configuration == config
-        assert len(registered_connector.secrets) == 0
-        assert registered_connector.secret_id == connector.secret_id
+        assert registered_connector.configuration.plain == config
+        assert registered_connector.configuration.plain_secrets == secrets
         assert registered_connector.labels == labels
 
 
@@ -3391,8 +3384,8 @@ def test_connector_secret_share_lifespan():
         "foods": "tuna",
     }
     secrets = {
-        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
-        "dreams": SecretStr("notyourbusiness"),
+        "hiding-place": "thatsformetoknowandyouneverfindout",
+        "dreams": "notyourbusiness",
     }
     with ServiceConnectorContext(
         connector_type="cat'o'matic",
@@ -3407,22 +3400,13 @@ def test_connector_secret_share_lifespan():
         assert connector.auth_method == "paw-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "blupus"
-        assert connector.configuration == config
-        assert len(connector.secrets) == 0
-        assert connector.secret_id is not None
-
-        secret = store.get_secret(connector.secret_id)
-        assert secret.id == connector.secret_id
-        assert secret.name.startswith(f"connector-{connector.name}")
-        assert secret.values == secrets
+        assert connector.configuration.plain == config
+        assert connector.configuration.plain_secrets == secrets
 
         store.delete_service_connector(connector.id)
 
         with pytest.raises(KeyError):
             store.get_service_connector(connector.id)
-
-        with pytest.raises(KeyError):
-            store.get_secret(connector.secret_id)
 
 
 def test_connector_name_reuse_for_same_user_fails():
@@ -3479,8 +3463,8 @@ def test_connector_list():
         "foods": "tuna",
     }
     secrets1 = {
-        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
-        "dreams": SecretStr("notyourbusiness"),
+        "hiding-place": "thatsformetoknowandyouneverfindout",
+        "dreams": "notyourbusiness",
     }
     labels1 = {
         "whereabouts": "unknown",
@@ -3491,8 +3475,8 @@ def test_connector_list():
         "foods": "everything",
     }
     secrets2 = {
-        "hiding-place": SecretStr("someplaceyouwillneverfindme"),
-        "dreams": SecretStr("milkandmiceandeverythingnice"),
+        "hiding-place": "someplaceyouwillneverfindme",
+        "dreams": "milkandmiceandeverythingnice",
     }
     labels2 = {
         "whereabouts": "everywhere",
@@ -3503,8 +3487,8 @@ def test_connector_list():
         "foods": "cheese",
     }
     secrets3 = {
-        "hiding-place": SecretStr("underthebed"),
-        "dreams": SecretStr("cheesecheesecheese"),
+        "hiding-place": "underthebed",
+        "dreams": "cheesecheesecheese",
     }
     labels3 = {
         "whereabouts": "unknown",
@@ -3678,7 +3662,7 @@ def _update_connector_and_test(
     new_resource_types: Optional[List[str]] = None,
     new_resource_id_or_not: Optional[Tuple[Optional[str]]] = None,
     new_config: Optional[Dict[str, str]] = None,
-    new_secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+    new_secrets: Optional[Dict[str, str]] = None,
     new_expires_at: Optional[datetime] = None,
     new_expiration_seconds_or_not: Optional[Tuple[Optional[int]]] = None,
     new_labels: Optional[Dict[str, str]] = None,
@@ -3692,8 +3676,8 @@ def _update_connector_and_test(
         "foods": "tuna",
     }
     secrets = {
-        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
-        "dreams": SecretStr("notyourbusiness"),
+        "hiding-place": "thatsformetoknowandyouneverfindout",
+        "dreams": "notyourbusiness",
     }
     labels = {
         "whereabouts": "unknown",
@@ -3716,15 +3700,9 @@ def _update_connector_and_test(
         assert connector.auth_method == "paw-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "blupus"
-        assert connector.configuration == config
-        assert len(connector.secrets) == 0
-        assert connector.secret_id is not None
+        assert connector.configuration.plain == config
+        assert connector.configuration.plain_secrets == secrets
         assert connector.labels == labels
-
-        secret = store.get_secret(connector.secret_id)
-        assert secret.id == connector.secret_id
-        assert secret.name.startswith(f"connector-{connector.name}")
-        assert secret.values == secrets
 
         # Update the connector
         # NOTE: we need to pass the `resource_id` and `expiration_seconds`
@@ -3740,6 +3718,9 @@ def _update_connector_and_test(
             if new_expiration_seconds_or_not
             else connector.expiration_seconds
         )
+        new_sc_config = ServiceConnectorConfiguration(**new_config or {})
+        if new_secrets:
+            new_sc_config.add_secrets(new_secrets)
         store.update_service_connector(
             connector.id,
             update=ServiceConnectorUpdate(
@@ -3748,8 +3729,7 @@ def _update_connector_and_test(
                 auth_method=new_auth_method,
                 resource_types=new_resource_types,
                 resource_id=new_resource_id,
-                configuration=new_config,
-                secrets=new_secrets,
+                configuration=new_sc_config,
                 expires_at=new_expires_at,
                 expiration_seconds=new_expiration_seconds,
                 labels=new_labels,
@@ -3773,56 +3753,29 @@ def _update_connector_and_test(
             or connector.resource_types
         )
         assert registered_connector.resource_id == new_resource_id
-        assert len(registered_connector.secrets) == 0
 
-        # the `configuration` and `secrets` fields represent a full
-        # valid configuration update, not just a partial update. If either is
-        # set (i.e. not None) in the update, their values
-        # will replace the existing configuration and secrets values.
+        # the `configuration` field represents a full
+        # valid configuration update, not just a partial update. If it is
+        # set (i.e. not None) in the update, its values will replace the
+        # existing configuration values.
 
         if new_config is not None:
-            assert registered_connector.configuration == new_config or {}
+            assert registered_connector.configuration.plain == new_config
         else:
             assert (
-                registered_connector.configuration == connector.configuration
+                registered_connector.configuration.plain
+                == connector.configuration.plain
             )
 
         if new_secrets is not None:
-            if not new_secrets:
-                # Existing secret is deleted if no new secrets are provided
-                assert registered_connector.secret_id is None
-            else:
-                # New secret is created if secrets are updated
-                assert registered_connector.secret_id != connector.secret_id
+            assert (
+                registered_connector.configuration.plain_secrets == new_secrets
+            )
         else:
-            assert registered_connector.secret_id == connector.secret_id
-
-        assert registered_connector.labels == new_labels or connector.labels
-
-        if new_secrets is not None:
-            if not new_secrets:
-                # Existing secret is deleted if secrets are removed
-                with pytest.raises(KeyError):
-                    store.get_secret(connector.secret_id)
-            else:
-                # Previous secret is deleted if secrets are updated
-                with pytest.raises(KeyError):
-                    store.get_secret(connector.secret_id)
-
-                # Check that a new secret has been created
-                new_secret = store.get_secret(registered_connector.secret_id)
-                assert new_secret.id == registered_connector.secret_id
-                # Secret name should have changed
-                assert new_secret.name.startswith(
-                    f"connector-{new_name or connector.name}"
-                )
-                assert new_secret.values == new_secrets
-        else:
-            new_secret = store.get_secret(connector.secret_id)
-            assert new_secret.id == connector.secret_id
-            # Secret name should not have changed
-            assert new_secret.name == secret.name
-            assert new_secret.values == secrets
+            assert (
+                registered_connector.configuration.plain_secrets
+                == connector.configuration.plain_secrets
+            )
 
 
 def test_connector_update_name():
@@ -3865,8 +3818,8 @@ def test_connector_update_config():
         "chase": "own-tail",
     }
     new_secrets = {
-        "hiding-place": SecretStr("anotherplaceyouwillneverfindme"),
-        "food": SecretStr("firebreathingdragon"),
+        "hiding-place": "anotherplaceyouwillneverfindme",
+        "food": "firebreathingdragon",
     }
 
     _update_connector_and_test(
@@ -4001,8 +3954,8 @@ def test_connector_validation():
             "name": "aria",
         }
         secrets = {
-            "hiding_spot": SecretStr("thatsformetoknowandyouneverfindout"),
-            "secret_word": SecretStr("meowmeowmeow"),
+            "hiding_spot": "thatsformetoknowandyouneverfindout",
+            "secret_word": "meowmeowmeow",
         }
         with ServiceConnectorContext(
             connector_type=connector_type,
@@ -4011,18 +3964,15 @@ def test_connector_validation():
             configuration=config,
             secrets=secrets,
         ) as connector:
-            assert connector.configuration == config
-            assert connector.secrets == {}
-            assert connector.secret_id is not None
-            secret = store.get_secret(connector.secret_id)
-            assert secret.values == secrets
+            assert connector.configuration.plain == config
+            assert connector.configuration.plain_secrets == secrets
 
         # Only required attributes
         config = {
             "name": "aria",
         }
         secrets = {
-            "secret_word": SecretStr("meowmeowmeow"),
+            "secret_word": "meowmeowmeow",
         }
         with ServiceConnectorContext(
             connector_type=connector_type,
@@ -4031,16 +3981,13 @@ def test_connector_validation():
             configuration=config,
             secrets=secrets,
         ) as connector:
-            assert connector.configuration == config
-            assert connector.secrets == {}
-            assert connector.secret_id is not None
-            secret = store.get_secret(connector.secret_id)
-            assert secret.values == secrets
+            assert connector.configuration.plain == config
+            assert connector.configuration.plain_secrets == secrets
 
         # Missing required configuration attribute
         config = {}
         secrets = {
-            "secret_word": SecretStr("meowmeowmeow"),
+            "secret_word": "meowmeowmeow",
         }
         with pytest.raises(ValueError):
             with ServiceConnectorContext(
@@ -4073,24 +4020,19 @@ def test_connector_validation():
             "name": "aria",
         }
         secrets = {
-            "hiding_spot": SecretStr("thatsformetoknowandyouneverfindout"),
-            "secret_word": SecretStr("meowmeowmeow"),
+            "hiding_spot": "thatsformetoknowandyouneverfindout",
+            "secret_word": "meowmeowmeow",
         }
         full_config = config.copy()
-        full_config.update(
-            {k: v.get_secret_value() for k, v in secrets.items()}
-        )
+        full_config.update(secrets)
         with ServiceConnectorContext(
             connector_type=connector_type,
             auth_method="voice-print",
             resource_types=[resource_type_one, resource_type_two],
             configuration=full_config,
         ) as connector:
-            assert connector.configuration == config
-            assert connector.secrets == {}
-            assert connector.secret_id is not None
-            secret = store.get_secret(connector.secret_id)
-            assert secret.values == secrets
+            assert connector.configuration.plain == config
+            assert connector.configuration.plain_secrets == secrets
 
         # Different auth method
         with pytest.raises(ValueError):
