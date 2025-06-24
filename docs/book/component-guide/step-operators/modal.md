@@ -13,10 +13,18 @@ description: Executing individual steps in Modal.
 
 ZenML offers both a [Modal step operator](modal.md) and a [Modal orchestrator](../orchestrators/modal.md). Choose based on your needs:
 
-- **Modal Step Operator**: Runs individual steps on Modal while keeping orchestration local. Best for selectively running compute-intensive steps (like training) on Modal while keeping other steps local.
-- **Modal Orchestrator**: Runs entire pipelines on Modal's infrastructure. Best for complete pipeline execution with consistent resource requirements.
+| Feature | Modal Step Operator | Modal Orchestrator |
+|---------|-------------------|-------------------|
+| **Execution Scope** | Individual steps only | Entire pipeline |
+| **Orchestration** | Local ZenML | Remote Modal |
+| **Resource Flexibility** | Per-step resources | Pipeline-wide resources |
+| **Cost Model** | Pay per step execution | Pay per pipeline execution |
+| **Setup Complexity** | Simple | Requires remote ZenML |
+| **Best For** | Hybrid workflows, selective GPU usage | Full cloud execution, production |
 
-Use the step operator for hybrid local/cloud workflows, use the orchestrator for full cloud execution.
+**Quick Decision Guide**:
+- **Use Step Operator**: Need GPUs for only some steps, have local data dependencies, want hybrid local/cloud workflow
+- **Use Orchestrator**: Want full cloud execution, production deployment, consistent resource requirements
 {% endhint %}
 
 You should use the Modal step operator if:
@@ -47,7 +55,29 @@ To use the Modal step operator:
 
 ### How to use it
 
-To use the Modal step operator, we need:
+#### Quick Start (5 minutes)
+
+```bash
+# 1. Install Modal integration
+zenml integration install modal
+
+# 2. Setup Modal authentication
+modal setup
+
+# 3. Register step operator
+zenml step-operator register modal_step --flavor=modal
+zenml stack update -s modal_step
+
+# 4. Use in your code
+@step(step_operator="modal_step")
+def train_model():
+    # This step runs on Modal
+    pass
+```
+
+#### Full Setup Requirements
+
+To use the Modal step operator, you need:
 
 * The ZenML `modal` integration installed. If you haven't done so, run
 
