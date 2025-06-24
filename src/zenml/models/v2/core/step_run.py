@@ -129,6 +129,7 @@ class StepRunRequest(ProjectScopedRequest):
     parent_step_ids: List[UUID] = Field(
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
+        deprecated=True,
     )
     inputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the input artifact versions of the step run.",
@@ -198,6 +199,12 @@ class StepRunResponseBody(ProjectScopedResponseBody):
 
 class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for step runs."""
+
+    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+        "config",
+        "spec",
+        "metadata",
+    ]
 
     # Configuration
     config: "StepConfiguration" = Field(title="The configuration of the step.")

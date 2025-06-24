@@ -207,6 +207,15 @@ dashboard_url: {{ .ZenML.dashboardURL | quote }}
 {{- if .ZenML.threadPoolSize }}
 thread_pool_size: {{ .ZenML.threadPoolSize | quote }}
 {{- end }}
+{{- if .ZenML.authThreadPoolSize }}
+auth_thread_pool_size: {{ .ZenML.authThreadPoolSize | quote }}
+{{- end }}
+{{- if .ZenML.requestTimeout }}
+request_timeout: {{ .ZenML.requestTimeout | quote }}
+{{- end }}
+{{- if .ZenML.requestCacheTimeout }}
+request_cache_timeout: {{ .ZenML.requestCacheTimeout | quote }}
+{{- end }}
 {{- if .ZenML.auth.jwtTokenAlgorithm }}
 jwt_token_algorithm: {{ .ZenML.auth.jwtTokenAlgorithm | quote }}
 {{- end }}

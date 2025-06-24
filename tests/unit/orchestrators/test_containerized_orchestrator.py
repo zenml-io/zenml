@@ -30,15 +30,6 @@ class StubContainerizedOrchestrator(ContainerizedOrchestrator):
     def get_orchestrator_run_id(self) -> str:
         return ""
 
-    def prepare_or_run_pipeline(
-        self,
-        deployment,
-        stack,
-        environment,
-        placeholder_run=None,
-    ):
-        pass
-
 
 def _get_orchestrator() -> StubContainerizedOrchestrator:
     return StubContainerizedOrchestrator(

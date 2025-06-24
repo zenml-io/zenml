@@ -290,10 +290,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         step = None
         if self.deployment is not None:
-            step_configurations = json.loads(
-                self.deployment.step_configurations
+            step_configurations = self.deployment.get_step_configurations(
+                include=[self.name]
             )
-            if self.name in step_configurations:
+            if step_configurations:
                 pipeline_configuration = (
                     PipelineConfiguration.model_validate_json(
                         self.deployment.pipeline_configuration
@@ -304,7 +304,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     inplace=True,
                 )
                 step = Step.from_dict(
-                    step_configurations[self.name],
+                    json.loads(step_configurations[0].config),
                     pipeline_configuration=pipeline_configuration,
                 )
         if not step and self.step_configuration:

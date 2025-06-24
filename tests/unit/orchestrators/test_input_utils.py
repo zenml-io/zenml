@@ -59,7 +59,7 @@ def test_input_resolution(
         }
     )
 
-    input_artifacts, parent_ids = input_utils.resolve_step_inputs(
+    input_artifacts = input_utils.resolve_step_inputs(
         step=step, pipeline_run=sample_pipeline_run
     )
     assert input_artifacts == {
@@ -68,7 +68,6 @@ def test_input_resolution(
             **sample_artifact_version_model.model_dump(),
         )
     }
-    assert parent_ids == [step_run.id]
 
 
 def test_input_resolution_with_missing_step_run(mocker, sample_pipeline_run):

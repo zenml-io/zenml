@@ -12,6 +12,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import RunMonitoringError
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
@@ -136,8 +137,9 @@ def deploy_pipeline(
         stack: The stack on which to run the deployment.
         placeholder_run: An optional placeholder run for the deployment.
 
+    # noqa: DAR401
     Raises:
-        Exception: Any exception that happened while deploying or running
+        BaseException: Any exception that happened while deploying or running
             (in case it happens synchronously) the pipeline.
     """
     # Prevent execution of nested pipelines which might lead to
@@ -150,16 +152,19 @@ def deploy_pipeline(
             deployment=deployment,
             placeholder_run=placeholder_run,
         )
-    except Exception as e:
+    except RunMonitoringError as e:
+        # Don't mark the run as failed if the error happened during monitoring
+        # of the run.
+        raise e.original_exception from None
+    except BaseException as e:
         if (
             placeholder_run
-            and Client()
+            and not Client()
             .get_pipeline_run(placeholder_run.id, hydrate=False)
-            .status
-            == ExecutionStatus.INITIALIZING
+            .status.is_finished
         ):
-            # The run failed during the initialization phase -> We change it's
-            # status to `Failed`
+            # We failed during/before the submission of the run, so we mark the
+            # run as failed if it is still in an initializing/running state.
             publish_failed_pipeline_run(placeholder_run.id)
 
         raise e
