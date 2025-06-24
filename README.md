@@ -125,7 +125,7 @@ from zenml import pipeline
 @pipeline
 def my_training_pipeline():
     # ... steps to train a model
-    pass
+    return model
 
 if __name__ == "__main__":
     my_training_pipeline()
@@ -145,10 +145,10 @@ _**Visual idea:** A short GIF showing `zenml stack list`, `zenml stack set local
 
 ### Automatic Versioning for MLOps and LLMOps
 
-ZenML automatically tracks every component of your AI workflow, from datasets and models to prompts and pipeline configurations. Whether you're training a classic scikit-learn classifier or evaluating a RAG pipeline, you get complete lineage and reproducibility, which is crucial for debugging, compliance (like the EU AI Act), and building trust in your systems.
+ZenML automatically tracks every component of your AI workflow, from datasets and models to prompts and pipeline configurations. Whether you're training a classic `scikit-learn` classifier or evaluating a RAG pipeline, you get complete lineage and reproducibility, which is crucial for debugging, compliance (like the EU AI Act), and building trust in your systems.
 
 ```python
-from zenml import step, pipeline, Model
+from zenml import log_metadata, step, pipeline, Model
 from typing_extensions import Annotated
 import pandas as pd
 
@@ -172,11 +172,10 @@ def model_trainer(data: pd.DataFrame) -> Annotated[Classifier, "sklearn_model"]:
 def llm_evaluator(results: list) -> Annotated[float, "hallucination_score"]:
     # ... evaluation logic ...
     cost = len(results) * 0.001
-    
+  
     # Log custom metadata back to ZenML
-    from zenml.client import Client
-    Client().active_step_run.log_metadata({"total_cost_usd": cost})
-    
+    log_metadata({"total_eval_cost_usd": cost})
+
     hallucination_score = 0.1
     return hallucination_score
 ```
@@ -190,25 +189,24 @@ _**Visual idea:** A screenshot of the ZenML dashboard showing a model's version 
 ZenML integrates with the tools you already use, creating a seamless workflow from experimentation to production. Connect your favorite experiment tracker, alerter, or deployment tool with a single line of configuration.
 
 ```python
-from zenml import pipeline, step
-from zenml.integrations.slack.alerters.slack_alerter import SlackAlerter
+# before you run your pipeline
+# $ zenml stack set alerter_stack
 
-# Configure your pipeline with an experiment tracker and an alerter
-@pipeline(
-    experiment_tracker="my_mlflow_tracker",
-    alerter=SlackAlerter(pipeline_run_name="my_training_pipeline_{{date}}")
-)
-def training_pipeline_with_integrations():
+from zenml import pipeline, step
+from zenml.hooks import alerter_failure_hook
+
+@pipeline(experiment_tracker="my_mlflow_tracker")
+def llm_finetuning_pipeline():
     # ... call your steps here
     pass
-    
+
 # Use integrations at the step level
-@step
-def model_trainer():
+@step(on_failure=alerter_failure_hook)
+def llm_trainer():
     # Your training code here. MLflow autologging is enabled by the
     # pipeline-level experiment_tracker.
     ...
-    
+
 # The pipeline will automatically post to Slack if it fails
 ```
 _**Visual idea:** A gallery of integration logos (MLflow, Slack, Kubeflow, etc.) or a diagram showing ZenML connecting various tools._
