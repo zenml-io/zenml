@@ -19,7 +19,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -60,7 +59,6 @@ from zenml.constants import (
 )
 from zenml.enums import (
     ExecutionStatus,
-    MetadataResourceTypes,
     StackComponentType,
 )
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
@@ -73,7 +71,7 @@ from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_conf
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
-from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
@@ -273,19 +271,24 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             boto_session=boto_session, default_bucket=self.config.bucket
         )
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Iterator[Dict[str, MetadataType]]:
-        """Prepares or runs a pipeline on Sagemaker.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The deployment to prepare or run.
-            stack: The stack to run on.
+            deployment: The pipeline deployment to submit.
+            stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
@@ -300,8 +303,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 AWS SageMaker NetworkConfig class.
             ValueError: If the schedule is not valid.
 
-        Yields:
-            A dictionary of metadata related to the pipeline run.
+        Returns:
+            Optional submission result.
         """
         # sagemaker requires pipelineName to use alphanum and hyphens only
         unsanitized_orchestrator_run_name = get_orchestrator_run_name(
@@ -695,7 +698,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         "your client side credentials that you are "
                         "is not configured correctly to schedule sagemaker "
                         "pipelines. For more information, please check:"
-                        "https://docs.zenml.io/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules"
+                        "https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules"
                     )
             else:
                 scheduler_role_arn = self.config.scheduler_role
@@ -707,26 +710,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             logger.info(f"The schedule ARN is: {triggers[0]}")
 
+            schedule_metadata = {}
             try:
-                from zenml.models import RunMetadataResource
-
                 schedule_metadata = self.generate_schedule_metadata(
                     schedule_arn=triggers[0]
                 )
-
-                Client().create_run_metadata(
-                    metadata=schedule_metadata,  # type: ignore[arg-type]
-                    resources=[
-                        RunMetadataResource(
-                            id=deployment.schedule.id,
-                            type=MetadataResourceTypes.SCHEDULE,
-                        )
-                    ],
-                )
             except Exception as e:
                 logger.debug(
-                    "There was an error attaching metadata to the "
-                    f"schedule: {e}"
+                    "There was an error generating schedule metadata: %s", e
                 )
 
             logger.info(
@@ -751,6 +742,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 f"`aws scheduler delete-schedule --name {schedule_name}`"
             )
+            return SubmissionResult(metadata=schedule_metadata)
         else:
             # Execute the pipeline immediately if no schedule is specified
             execution = pipeline.start()
@@ -759,33 +751,40 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "when using the Sagemaker Orchestrator."
             )
 
-            # Yield metadata based on the generated execution object
-            yield from self.compute_metadata(
+            run_metadata = self.compute_metadata(
                 execution_arn=execution.arn, settings=settings
             )
 
-            # mainly for testing purposes, we wait for the pipeline to finish
+            _wait_for_completion = None
             if settings.synchronous:
-                logger.info(
-                    "Executing synchronously. Waiting for pipeline to "
-                    "finish... \n"
-                    "At this point you can `Ctrl-C` out without cancelling the "
-                    "execution."
-                )
-                try:
-                    execution.wait(
-                        delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+
+                def _wait_for_completion() -> None:
+                    logger.info(
+                        "Executing synchronously. Waiting for pipeline to "
+                        "finish... \n"
+                        "At this point you can `Ctrl-C` out without cancelling the "
+                        "execution."
                     )
-                    logger.info("Pipeline completed successfully.")
-                except WaiterError:
-                    raise RuntimeError(
-                        "Timed out while waiting for pipeline execution to "
-                        "finish. For long-running pipelines we recommend "
-                        "configuring your orchestrator for asynchronous "
-                        "execution. The following command does this for you: \n"
-                        f"`zenml orchestrator update {self.name} "
-                        f"--synchronous=False`"
-                    )
+                    try:
+                        execution.wait(
+                            delay=POLLING_DELAY,
+                            max_attempts=MAX_POLLING_ATTEMPTS,
+                        )
+                        logger.info("Pipeline completed successfully.")
+                    except WaiterError:
+                        raise RuntimeError(
+                            "Timed out while waiting for pipeline execution to "
+                            "finish. For long-running pipelines we recommend "
+                            "configuring your orchestrator for asynchronous "
+                            "execution. The following command does this for you: \n"
+                            f"`zenml orchestrator update {self.name} "
+                            f"--synchronous=False`"
+                        )
+
+            return SubmissionResult(
+                wait_for_completion=_wait_for_completion,
+                metadata=run_metadata,
+            )
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -800,20 +799,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
 
-        run_metadata: Dict[str, "MetadataType"] = {}
-
         settings = cast(
             SagemakerOrchestratorSettings,
             self.get_settings(Client().get_pipeline_run(run_id)),
         )
 
-        for metadata in self.compute_metadata(
+        return self.compute_metadata(
             execution_arn=execution_arn,
             settings=settings,
-        ):
-            run_metadata.update(metadata)
-
-        return run_metadata
+        )
 
     def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
         """Refreshes the status of a specific pipeline run.
@@ -875,14 +869,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         self,
         execution_arn: str,
         settings: SagemakerOrchestratorSettings,
-    ) -> Iterator[Dict[str, MetadataType]]:
+    ) -> Dict[str, MetadataType]:
         """Generate run metadata based on the generated Sagemaker Execution.
 
         Args:
             execution_arn: The ARN of the pipeline execution.
             settings: The Sagemaker orchestrator settings.
 
-        Yields:
+        Returns:
             A dictionary of metadata related to the pipeline run.
         """
         # Orchestrator Run ID
@@ -903,7 +897,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         ):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
-        yield metadata
+        return metadata
 
     def _compute_orchestrator_url(
         self,
@@ -981,7 +975,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def generate_schedule_metadata(schedule_arn: str) -> Dict[str, str]:
+    def generate_schedule_metadata(
+        schedule_arn: str,
+    ) -> Dict[str, MetadataType]:
         """Attaches metadata to the ZenML Schedules.
 
         Args:

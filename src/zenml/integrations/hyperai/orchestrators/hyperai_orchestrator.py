@@ -30,9 +30,7 @@ from zenml.integrations.hyperai.flavors.hyperai_orchestrator_flavor import (
     HyperAIOrchestratorSettings,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators import (
-    ContainerizedOrchestrator,
-)
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.stack import Stack, StackValidator
 
 if TYPE_CHECKING:
@@ -159,15 +157,20 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"Failed to write {description} to HyperAI instance. Does the user have permissions to write?"
             )
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Sequentially runs all pipeline steps in Docker containers.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Assumes that:
         - A HyperAI (hyperai.ai) instance is running on the configured IP address.
@@ -180,7 +183,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             orchestrator.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
@@ -190,19 +193,18 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
-            RuntimeError: If a step fails.
+            RuntimeError: If running the pipeline fails.
+
+        Returns:
+            Optional submission result.
         """
         from zenml.integrations.hyperai.service_connectors.hyperai_service_connector import (
             HyperAIServiceConnector,
         )
 
-        # Basic Docker Compose definition
         compose_definition: Dict[str, Any] = {"version": "3", "services": {}}
-
-        # Get deployment id
         deployment_id = deployment.id
 
-        # Set environment in os.environ
         os.environ[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
 
         # Add each step as a service to the Docker Compose definition
@@ -211,12 +213,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             # Get image
             image = self.get_image(deployment=deployment, step_name=step_name)
 
-            # Get settings
             step_settings = cast(
                 HyperAIOrchestratorSettings, self.get_settings(step)
             )
-
-            # Define container name as combination between deployment id and step name
             container_name = f"{deployment_id}-{step_name}"
 
             # Make Compose service definition for step
@@ -287,15 +286,12 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                         }
                     )
 
-        # Convert into yaml
-        logger.info("Finalizing Docker Compose definition.")
         compose_definition_yaml: str = yaml.dump(compose_definition)
 
         # Connect to configured HyperAI instance
         logger.info(
             "Connecting to HyperAI instance and placing Docker Compose file."
         )
-        paramiko_client: paramiko.SSHClient
         if connector := self.get_connector():
             paramiko_client = connector.connect()
             if paramiko_client is None:
@@ -515,3 +511,5 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 "A cron expression or start time is required for scheduled pipelines."
             )
+
+        return None

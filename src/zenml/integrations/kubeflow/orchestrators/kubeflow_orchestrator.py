@@ -69,7 +69,7 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
-from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, settings_utils
@@ -466,40 +466,23 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         return pipeline_task
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Creates a kfp yaml file.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
 
-        This functions as an intermediary representation of the pipeline which
-        is then deployed to the kubeflow pipelines instance.
-
-        How it works:
-        -------------
-        Before this method is called the `prepare_pipeline_deployment()`
-        method builds a docker image that contains the code for the
-        pipeline, all steps the context around these files.
-
-        Based on this docker image a callable is created which builds
-        container_ops for each step (`_construct_kfp_pipeline`).
-        To do this the entrypoint of the docker image is configured to
-        run the correct step within the docker image. The dependencies
-        between these container_ops are then also configured onto each
-        container_op by pointing at the downstream steps.
-
-        This callable is then compiled into a kfp yaml file that is used as
-        the intermediary representation of the kubeflow pipeline.
-
-        This file, together with some metadata, runtime configurations is
-        then uploaded into the kubeflow pipelines cluster for execution.
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
@@ -511,6 +494,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If trying to run a pipeline in a notebook
                 environment.
+
+        Returns:
+            Optional submission result.
         """
         # First check whether the code running in a notebook
         if Environment.in_notebook():
@@ -644,7 +630,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         # using the kfp client uploads the pipeline to kubeflow pipelines and
         # runs it there
-        self._upload_and_run_pipeline(
+        return self._upload_and_run_pipeline(
             deployment=deployment,
             pipeline_file_path=pipeline_file_path,
             run_name=orchestrator_run_name,
@@ -655,7 +641,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         pipeline_file_path: str,
         run_name: str,
-    ) -> None:
+    ) -> Optional[SubmissionResult]:
         """Tries to upload and run a KFP pipeline.
 
         Args:
@@ -665,6 +651,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If Kubeflow API returns an error.
+
+        Returns:
+            Optional submission result.
         """
         pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
@@ -760,8 +749,14 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 )
 
                 if settings.synchronous:
-                    client.wait_for_run_completion(
-                        run_id=result.run_id, timeout=settings.timeout
+
+                    def _wait_for_completion() -> None:
+                        client.wait_for_run_completion(
+                            run_id=result.run_id, timeout=settings.timeout
+                        )
+
+                    return SubmissionResult(
+                        wait_for_completion=_wait_for_completion
                     )
         except urllib3.exceptions.HTTPError as error:
             if kubernetes_context:
@@ -782,6 +777,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             logger.warning(
                 f"Failed to upload Kubeflow pipeline: {error}. {msg}",
             )
+
+        return None
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.

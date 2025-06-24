@@ -117,7 +117,7 @@ With the fundamentals in hand, let’s escalate our simple pipeline to a complet
 Let's start with the imports.
 
 ```python
-from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
+from typing import Annotated
 from typing import Tuple
 import pandas as pd
 from sklearn.datasets import load_iris
@@ -286,7 +286,7 @@ This section combines all the code from this section into one simple script that
 <summary>Code Example of this Section</summary>
 
 ```python
-from typing_extensions import Tuple, Annotated
+from typing import Tuple, Annotated
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split

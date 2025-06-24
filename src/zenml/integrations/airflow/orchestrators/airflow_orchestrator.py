@@ -38,7 +38,7 @@ from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
@@ -191,18 +191,23 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         if self.config.local:
             stack.check_local_paths()
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Creates and writes an Airflow DAG zip file.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
@@ -210,6 +215,9 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             step_environments: Environment variables to set when executing
                 specific steps.
             placeholder_run: An optional placeholder run for the deployment.
+
+        Returns:
+            Optional submission result.
         """
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)
@@ -281,6 +289,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             dag_generator_values=dag_generator_values,
             output_dir=pipeline_settings.dag_output_dir or self.dags_directory,
         )
+        return None
 
     def _apply_resource_settings(
         self,

@@ -34,6 +34,7 @@ from zenml.orchestrators import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
     ContainerizedOrchestrator,
+    SubmissionResult,
 )
 from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils, string_utils
@@ -91,18 +92,23 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID}."
             )
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Sequentially runs all pipeline steps in local Docker containers.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
@@ -113,6 +119,9 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If a step fails.
+
+        Returns:
+            Optional submission result.
         """
         if deployment.schedule:
             logger.warning(
@@ -202,6 +211,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
         )
+        return None
 
 
 class LocalDockerOrchestratorSettings(BaseSettings):

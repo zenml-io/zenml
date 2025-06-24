@@ -286,7 +286,7 @@ def register_stack(
                 "ZenML needs to be accessible from the cloud provider to allow "
                 "the stack and its components to be registered automatically. "
                 "Please deploy ZenML in a remote environment as described in "
-                "the documentation: https://docs.zenml.io/getting-started/deploying-zenml "
+                "the documentation: https://docs.zenml.io/deploying-zenml/deploying-zenml "
                 "or use a managed ZenML Pro server instance for quick access "
                 "to this feature and more: https://www.zenml.io/pro"
             )
@@ -1548,7 +1548,7 @@ def deploy(
             "ZenML needs to be accessible from the cloud provider to allow the "
             "stack and its components to be registered automatically. "
             "Please deploy ZenML in a remote environment as described in the "
-            "documentation: https://docs.zenml.io/getting-started/deploying-zenml "
+            "documentation: https://docs.zenml.io/deploying-zenml/deploying-zenml "
             "or use a managed ZenML Pro server instance for quick access to "
             "this feature and more: https://www.zenml.io/pro"
         )

@@ -106,7 +106,7 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/getting-started/deploying-zenml/secret-management"
+                        "https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"
                     )
                 continue
 

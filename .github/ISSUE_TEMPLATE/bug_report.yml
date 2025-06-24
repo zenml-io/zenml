@@ -25,7 +25,7 @@ body:
         < 0.36.0, then remove the `-s` flag above. If using ZenML version < 0.8.0,
         then paste in Python version, OS, ZenML version, and installed integrations.
     validations:
-      required: true
+      required: false
   - type: textarea
     id: what-happened
     attributes:

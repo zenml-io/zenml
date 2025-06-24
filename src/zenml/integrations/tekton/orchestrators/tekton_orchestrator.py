@@ -46,7 +46,7 @@ from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
@@ -455,21 +455,23 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
         return dsl.container_component(dynamic_func)
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Runs the pipeline on Tekton.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
 
-        This function first compiles the ZenML pipeline into a Tekton yaml
-        and then applies this configuration to run the pipeline.
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
@@ -481,6 +483,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook
                 environment.
+
+        Returns:
+            Optional submission result.
         """
         # First check whether the code running in a notebook
         if Environment.in_notebook():
@@ -611,7 +616,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
         # using the kfp client uploads the pipeline to Tekton pipelines and
         # runs it there
-        self._upload_and_run_pipeline(
+        return self._upload_and_run_pipeline(
             deployment=deployment,
             pipeline_file_path=pipeline_file_path,
             run_name=orchestrator_run_name,
@@ -622,7 +627,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         pipeline_file_path: str,
         run_name: str,
-    ) -> None:
+    ) -> Optional[SubmissionResult]:
         """Tries to upload and run a KFP pipeline.
 
         Args:
@@ -632,6 +637,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If Tekton API returns an error.
+
+        Returns:
+            Optional submission result.
         """
         pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
@@ -727,8 +735,14 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 )
 
                 if settings.synchronous:
-                    client.wait_for_run_completion(
-                        run_id=result.run_id, timeout=settings.timeout
+
+                    def _wait_for_completion() -> None:
+                        client.wait_for_run_completion(
+                            run_id=result.run_id, timeout=settings.timeout
+                        )
+
+                    return SubmissionResult(
+                        wait_for_completion=_wait_for_completion
                     )
         except urllib3.exceptions.HTTPError as error:
             if kubernetes_context:
@@ -749,6 +763,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             logger.warning(
                 f"Failed to upload Tekton pipeline: {error}. {msg}",
             )
+
+        return None
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.

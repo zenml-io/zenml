@@ -15,7 +15,7 @@
 
 import os
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
 from uuid import uuid4
 
 import sky
@@ -43,6 +43,7 @@ from zenml.integrations.skypilot.utils import (
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     ContainerizedOrchestrator,
+    SubmissionResult,
 )
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -153,18 +154,23 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             set: Whether to set the environment variables or not.
         """
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Runs each pipeline step in a separate Skypilot container.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
@@ -176,6 +182,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         Raises:
             Exception: If the pipeline run fails.
             RuntimeError: If the code is running in a notebook.
+
+        Returns:
+            Optional submission result.
         """
         # First check whether the code is running in a notebook.
         if Environment.in_notebook():
@@ -370,7 +379,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     cluster_name,
                     **launch_kwargs,
                 )
-                sky_job_get(launch_job_id, settings.stream_logs, cluster_name)
+                return sky_job_get(
+                    launch_job_id, settings.stream_logs, cluster_name
+                )
 
             else:
                 # Prepare exec parameters with additional launch settings
@@ -403,7 +414,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     **exec_kwargs,
                 )
                 assert settings.cluster_name is not None
-                sky_job_get(
+                return sky_job_get(
                     exec_job_id, settings.stream_logs, settings.cluster_name
                 )
 

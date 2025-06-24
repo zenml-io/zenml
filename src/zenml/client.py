@@ -3569,7 +3569,9 @@ class Client(metaclass=ClientMetaClass):
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_run_template,
-            list_method=self.list_run_templates,
+            list_method=functools.partial(
+                self.list_run_templates, hidden=None
+            ),
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
             project=project,

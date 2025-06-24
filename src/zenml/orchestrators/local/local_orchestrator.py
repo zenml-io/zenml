@@ -14,14 +14,15 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type
 from uuid import uuid4
 
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import (
+from zenml.orchestrators import (
+    BaseOrchestrator,
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
+    SubmissionResult,
 )
 from zenml.stack import Stack
 from zenml.utils import string_utils
@@ -42,25 +43,33 @@ class LocalOrchestrator(BaseOrchestrator):
 
     _orchestrator_run_id: Optional[str] = None
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Iterates through all steps and executes them sequentially.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
-            stack: The stack on which the pipeline is deployed.
+            deployment: The pipeline deployment to submit.
+            stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
             step_environments: Environment variables to set when executing
                 specific steps.
             placeholder_run: An optional placeholder run for the deployment.
+
+        Returns:
+            Optional submission result.
         """
         if deployment.schedule:
             logger.warning(
@@ -91,6 +100,7 @@ class LocalOrchestrator(BaseOrchestrator):
             string_utils.get_human_readable_time(run_duration),
         )
         self._orchestrator_run_id = None
+        return None
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
