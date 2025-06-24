@@ -110,7 +110,7 @@ zenml step-operator register <NAME> \
     --token-id=<MODAL_TOKEN_ID> \
     --token-secret=<MODAL_TOKEN_SECRET> \
     --workspace=<MODAL_WORKSPACE> \
-    --modal-environment=<MODAL_ENVIRONMENT>
+    --modal_environment=<MODAL_ENVIRONMENT>
 zenml stack update -s <NAME> ...
 ```
 
@@ -235,7 +235,7 @@ zenml step-operator register modal_prod \
     --token-id=<MODAL_TOKEN_ID> \
     --token-secret=<MODAL_TOKEN_SECRET> \
     --workspace="production-workspace" \
-    --modal-environment="production"
+    --modal_environment="production"
 ```
 
 ### Resource configuration notes
