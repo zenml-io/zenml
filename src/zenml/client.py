@@ -28,6 +28,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -1183,6 +1184,7 @@ class Client(metaclass=ClientMetaClass):
         components: Mapping[StackComponentType, Union[str, UUID]],
         stack_spec_file: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Sequence[Union[UUID, str]]] = None,
     ) -> StackResponse:
         """Registers a stack and its components.
 
@@ -1191,6 +1193,7 @@ class Client(metaclass=ClientMetaClass):
             components: dictionary which maps component types to component names
             stack_spec_file: path to the stack spec file
             labels: The labels of the stack.
+            secrets: The secrets of the stack.
 
         Returns:
             The model of the registered stack.
@@ -1214,6 +1217,7 @@ class Client(metaclass=ClientMetaClass):
             components=stack_components,
             stack_spec_path=stack_spec_file,
             labels=labels,
+            secrets=secrets,
         )
 
         self._validate_stack_configuration(stack=stack)
@@ -1313,6 +1317,8 @@ class Client(metaclass=ClientMetaClass):
         component_updates: Optional[
             Dict[StackComponentType, List[Union[UUID, str]]]
         ] = None,
+        add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
+        remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
     ) -> StackResponse:
         """Updates a stack and its components.
 
@@ -1324,6 +1330,8 @@ class Client(metaclass=ClientMetaClass):
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
                 lists of new stack component names or ids.
+            add_secrets: The secrets to add to the stack.
+            remove_secrets: The secrets to remove from the stack.
 
         Returns:
             The model of the updated stack.
@@ -1380,6 +1388,12 @@ class Client(metaclass=ClientMetaClass):
                 k: v for k, v in existing_labels.items() if v is not None
             }
             update_model.labels = existing_labels
+
+        if add_secrets:
+            update_model.add_secrets = list(add_secrets)
+
+        if remove_secrets:
+            update_model.remove_secrets = list(remove_secrets)
 
         updated_stack = self.zen_store.update_stack(
             stack_id=stack.id,
@@ -1971,6 +1985,7 @@ class Client(metaclass=ClientMetaClass):
         component_type: StackComponentType,
         configuration: Dict[str, str],
         labels: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Sequence[Union[UUID, str]]] = None,
     ) -> "ComponentResponse":
         """Registers a stack component.
 
@@ -1980,6 +1995,7 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
+            secrets: The secrets of the stack component.
 
         Returns:
             The model of the registered component.
@@ -2009,6 +2025,7 @@ class Client(metaclass=ClientMetaClass):
                 mode="json", exclude_unset=True
             ),
             labels=labels,
+            secrets=secrets,
         )
 
         # Register the new model
@@ -2026,6 +2043,8 @@ class Client(metaclass=ClientMetaClass):
         disconnect: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
+        add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
+        remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
     ) -> ComponentResponse:
         """Updates a stack component.
 
@@ -2041,6 +2060,8 @@ class Client(metaclass=ClientMetaClass):
             connector_id: The new connector id of the stack component.
             connector_resource_id: The new connector resource id of the
                 stack component.
+            add_secrets: The secrets to add to the stack component.
+            remove_secrets: The secrets to remove from the stack component.
 
         Returns:
             The updated stack component.
@@ -2124,6 +2145,12 @@ class Client(metaclass=ClientMetaClass):
                 update_model.connector_resource_id = (
                     existing_component.connector_resource_id
                 )
+
+        if add_secrets:
+            update_model.add_secrets = list(add_secrets)
+
+        if remove_secrets:
+            update_model.remove_secrets = list(remove_secrets)
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
