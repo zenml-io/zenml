@@ -223,6 +223,7 @@ To improve visualization in the ZenML dashboard, you can group metadata into log
 
 ```python
 from zenml import log_metadata
+from zenml.metadata.metadata_types import StorageSize
 
 log_metadata(
     metadata={

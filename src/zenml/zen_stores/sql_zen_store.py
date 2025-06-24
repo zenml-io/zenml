@@ -22,10 +22,9 @@ import os
 import random
 import re
 import sys
-import threading
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -60,7 +59,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, func
+from sqlalchemy import QueuePool, func, update
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -160,6 +159,9 @@ from zenml.models import (
     APIKeyResponse,
     APIKeyRotateRequest,
     APIKeyUpdate,
+    ApiTransactionRequest,
+    ApiTransactionResponse,
+    ApiTransactionUpdate,
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
@@ -331,6 +333,7 @@ from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
     ActionSchema,
     APIKeySchema,
+    ApiTransactionSchema,
     ArtifactSchema,
     ArtifactVersionSchema,
     BaseSchema,
@@ -358,6 +361,7 @@ from zenml.zen_stores.schemas import (
     ServiceConnectorSchema,
     StackComponentSchema,
     StackSchema,
+    StepConfigurationSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
     StepRunParentsSchema,
@@ -426,6 +430,46 @@ def exponential_backoff_with_jitter(
 class Session(SqlModelSession):
     """Session subclass that automatically tracks duration and calling context."""
 
+    def _get_metrics(self) -> Dict[str, Any]:
+        """Get the metrics for the session.
+
+        Returns:
+            The metrics for the session.
+        """
+        # Get SQLAlchemy connection pool info
+        assert isinstance(self.bind, Engine)
+        assert isinstance(self.bind.pool, QueuePool)
+        checked_out_connections = self.bind.pool.checkedout()
+        available_connections = self.bind.pool.checkedin()
+        overflow = self.bind.pool.overflow()
+
+        return {
+            "active_connections": checked_out_connections,
+            "idle_connections": available_connections,
+            "overflow_connections": overflow,
+        }
+
+    def _get_metrics_log_str(self) -> str:
+        """Get the metrics for the session as a string for logging.
+
+        Returns:
+            The metrics for the session as a string for logging.
+        """
+        if not logger.isEnabledFor(logging.DEBUG):
+            return ""
+        metrics = self._get_metrics()
+        # Add the server metrics if running in a server
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            from zenml.zen_server.utils import get_system_metrics
+
+            metrics.update(get_system_metrics())
+
+        return (
+            " [ "
+            + " ".join([f"{key}: {value}" for key, value in metrics.items()])
+            + " ]"
+        )
+
     def __enter__(self) -> "Session":
         """Enter the context manager.
 
@@ -433,15 +477,19 @@ class Session(SqlModelSession):
             The SqlModel session.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            # Get the request ID from the current thread object
-            self.request_id = threading.current_thread().name
+            self.log_request_id = "N/A"
+            self.log_request = ""
+            if handle_bool_env_var(ENV_ZENML_SERVER):
+                # Running inside server
+                from zenml.zen_server.utils import get_current_request_context
 
-            # Get SQLAlchemy connection pool info
-            assert isinstance(self.bind, Engine)
-            assert isinstance(self.bind.pool, QueuePool)
-            checked_out_connections = self.bind.pool.checkedout()
-            available_connections = self.bind.pool.checkedin()
-            overflow = self.bind.pool.overflow()
+                # If the code is running on the server, use the auth context.
+                try:
+                    request_context = get_current_request_context()
+                    self.log_request_id = request_context.log_request_id
+                    self.log_request = request_context.log_request
+                except RuntimeError:
+                    pass
 
             # Look up the stack to find the SQLZenStore method
             for frame in inspect.stack():
@@ -456,10 +504,9 @@ class Session(SqlModelSession):
                 self.caller_method = "unknown"
 
             logger.debug(
-                f"[{self.request_id}] SQL STATS - "
-                f"'{self.caller_method}' started [ conn(active): "
-                f"{checked_out_connections} conn(idle): "
-                f"{available_connections} conn(overflow): {overflow} ]"
+                f"[{self.log_request_id}] SQL STATS - "
+                f"{self.log_request} "
+                f"'{self.caller_method}' STARTED {self._get_metrics_log_str()}"
             )
 
             self.start_time = time.time()
@@ -482,19 +529,18 @@ class Session(SqlModelSession):
         if logger.isEnabledFor(logging.DEBUG):
             duration = (time.time() - self.start_time) * 1000
 
-            # Get SQLAlchemy connection pool info
-            assert isinstance(self.bind, Engine)
-            assert isinstance(self.bind.pool, QueuePool)
-            checked_out_connections = self.bind.pool.checkedout()
-            available_connections = self.bind.pool.checkedin()
-            overflow = self.bind.pool.overflow()
+            # Add error information to the log
+            error_info = ""
+            if exc_type is not None:
+                error_info = " with ERROR"
+
             logger.debug(
-                f"[{self.request_id}] SQL STATS - "
-                f"'{self.caller_method}' completed in "
-                f"{duration:.2f}ms [ conn(active): "
-                f"{checked_out_connections} conn(idle): "
-                f"{available_connections} conn(overflow): {overflow} ]"
+                f"[{self.log_request_id}] SQL STATS - "
+                f"{self.log_request} "
+                f"'{self.caller_method}' COMPLETED in "
+                f"{duration:.2f}ms {error_info} {self._get_metrics_log_str()}"
             )
+
         super().__exit__(exc_type, exc_val, exc_tb)
 
 
@@ -2456,6 +2502,178 @@ class SqlZenStore(BaseZenStore):
             session.delete(api_key)
             session.commit()
 
+    # -------------------- API Transactions --------------------
+
+    def _get_api_transaction(
+        self,
+        api_transaction_id: UUID,
+        session: Session,
+        method: Optional[str] = None,
+        url: Optional[str] = None,
+    ) -> ApiTransactionSchema:
+        """Retrieve or create a new API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to retrieve.
+            session: The session to use for the query.
+            method: The HTTP method of the API transaction.
+            url: The URL of the API transaction.
+
+        Returns:
+            The API transaction.
+
+        Raises:
+            KeyError: If the API transaction does not exist.
+            EntityExistsError: If the API transaction exists but is not owned by
+                the current user.
+        """
+        api_transaction_schema = session.exec(
+            select(ApiTransactionSchema).where(
+                ApiTransactionSchema.id == api_transaction_id
+            )
+        ).first()
+
+        if not api_transaction_schema:
+            raise KeyError(
+                f"API transaction with ID {api_transaction_id} not found."
+            )
+
+        # As a security measure, we don't allow users to access other users'
+        # API transactions.
+        if (
+            api_transaction_schema.user_id
+            != self._get_active_user(session=session).id
+        ):
+            raise EntityExistsError(
+                f"Unable to create API transaction with ID "
+                f"{api_transaction_id}: A transaction with "
+                "the same ID already exists for a different user."
+            )
+
+        # As another security measure, we don't allow the same transaction
+        # ID to be used with different method or URL.
+        if (
+            method is not None
+            and api_transaction_schema.method != method
+            or url is not None
+            and api_transaction_schema.url != url
+        ):
+            raise EntityExistsError(
+                f"Unable to get API transaction with ID "
+                f"{api_transaction_id}: A transaction with "
+                "the same ID already exists with a different method or URL."
+            )
+
+        return api_transaction_schema
+
+    def _cleanup_expired_api_transactions(self, session: Session) -> None:
+        """Delete completed API transactions that have expired.
+
+        Args:
+            session: The session to use for the query.
+        """
+        session.execute(
+            delete(ApiTransactionSchema).where(
+                col(ApiTransactionSchema.completed),
+                col(ApiTransactionSchema.expired) < utc_now(),
+            )
+        )
+
+    def get_or_create_api_transaction(
+        self, api_transaction: ApiTransactionRequest
+    ) -> Tuple[ApiTransactionResponse, bool]:
+        """Retrieve or create a new API transaction.
+
+        Args:
+            api_transaction: The API transaction to retrieve or create.
+
+        Returns:
+            The API transaction and a boolean indicating whether the transaction
+            was created.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=api_transaction, session=session
+            )
+
+            api_transaction_schema = ApiTransactionSchema.from_request(
+                api_transaction
+            )
+            session.add(api_transaction_schema)
+            created = False
+            try:
+                session.commit()
+                session.refresh(api_transaction_schema)
+                created = True
+            except IntegrityError:
+                # We have to rollback the failed session first in order to
+                # continue using it
+                session.rollback()
+                api_transaction_schema = self._get_api_transaction(
+                    api_transaction_id=api_transaction_schema.id,
+                    method=api_transaction.method,
+                    url=api_transaction.url,
+                    session=session,
+                )
+
+            return (
+                api_transaction_schema.to_model(
+                    include_metadata=True, include_resources=True
+                ),
+                created,
+            )
+
+    def finalize_api_transaction(
+        self,
+        api_transaction_id: UUID,
+        api_transaction_update: ApiTransactionUpdate,
+    ) -> None:
+        """Finalize an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to update.
+            api_transaction_update: The update to be applied to the API transaction.
+
+        Raises:
+            KeyError: If the API transaction is not found.
+        """
+        with Session(self.engine) as session:
+            updated = utc_now()
+            expired = updated + timedelta(
+                seconds=api_transaction_update.cache_time
+            )
+            result = session.execute(
+                update(ApiTransactionSchema)
+                .where(col(ApiTransactionSchema.id) == api_transaction_id)
+                .values(
+                    completed=True,
+                    updated=updated,
+                    expired=expired,
+                    result=api_transaction_update.get_result(),
+                )
+            )
+            self._cleanup_expired_api_transactions(session=session)
+            session.commit()
+
+            if result.rowcount == 0:  # type: ignore[attr-defined]
+                raise KeyError(
+                    f"API transaction with ID {api_transaction_id} not found."
+                )
+
+    def delete_api_transaction(self, api_transaction_id: UUID) -> None:
+        """Delete an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to delete.
+        """
+        with Session(self.engine) as session:
+            session.execute(
+                delete(ApiTransactionSchema).where(
+                    col(ApiTransactionSchema.id) == api_transaction_id
+                )
+            )
+            session.commit()
+
     # -------------------- Services --------------------
 
     @staticmethod
@@ -3000,10 +3218,6 @@ class SqlZenStore(BaseZenStore):
                         artifact_version_id=artifact_version_schema.id,
                     )
                     session.add(vis_schema)
-
-            # Commit the visualizations so potential future rollbacks don't
-            # remove them
-            session.commit()
 
             # Save tags of the artifact
             self._attach_tags_to_resources(
@@ -4653,6 +4867,23 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(new_deployment)
             session.commit()
+
+            for index, (step_name, step_configuration) in enumerate(
+                deployment.step_configurations.items()
+            ):
+                step_configuration_schema = StepConfigurationSchema(
+                    index=index,
+                    name=step_name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_configuration.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    deployment_id=new_deployment.id,
+                )
+                session.add(step_configuration_schema)
+            session.commit()
             session.refresh(new_deployment)
 
             return new_deployment.to_model(
@@ -4660,7 +4891,10 @@ class SqlZenStore(BaseZenStore):
             )
 
     def get_deployment(
-        self, deployment_id: UUID, hydrate: bool = True
+        self,
+        deployment_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -4668,6 +4902,9 @@ class SqlZenStore(BaseZenStore):
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
 
         Returns:
             The deployment.
@@ -4681,7 +4918,9 @@ class SqlZenStore(BaseZenStore):
             )
 
             return deployment.to_model(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                step_configuration_filter=step_configuration_filter,
             )
 
     def list_deployments(
@@ -5114,12 +5353,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             steps = {
-                step_name: Step.from_dict(
-                    config_dict, pipeline_configuration=pipeline_configuration
+                config_table.name: Step.from_dict(
+                    json.loads(config_table.config),
+                    pipeline_configuration=pipeline_configuration,
                 )
-                for step_name, config_dict in json.loads(
-                    deployment.step_configurations
-                ).items()
+                for config_table in deployment.get_step_configurations()
             }
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
@@ -5188,9 +5426,19 @@ class SqlZenStore(BaseZenStore):
                             # we want to display them as separate nodes in the
                             # DAG. We can therefore always create a new node
                             # here.
+                            is_manual_load = (
+                                input.type == StepRunInputArtifactType.MANUAL
+                            )
                             artifact_node = helper.add_artifact_node(
                                 node_id=helper.get_artifact_node_id(
-                                    name=input.name,
+                                    # For manual loads, the name might not be
+                                    # unique, so we use the artifact ID instead.
+                                    # We don't need to keep the name consistent
+                                    # with placeholder nodes as they don't exist
+                                    # for manual loads.
+                                    name=str(input.artifact_id)
+                                    if is_manual_load
+                                    else input.name,
                                     step_name=step_name,
                                     io_type=input.type,
                                     is_input=True,
@@ -5221,9 +5469,20 @@ class SqlZenStore(BaseZenStore):
                         # want to merge these and instead display them
                         # separately in the DAG, but if that should ever change
                         # this would be the place to merge them.
+                        is_manual_save = (
+                            output.artifact_version.save_type
+                            == ArtifactSaveType.MANUAL
+                        )
                         artifact_node = helper.add_artifact_node(
                             node_id=helper.get_artifact_node_id(
-                                name=output.name,
+                                # For manual saves, the name might not be
+                                # unique, so we use the artifact ID instead.
+                                # We don't need to keep the name consistent
+                                # with placeholder nodes as they don't exist
+                                # for manual saves.
+                                name=str(output.artifact_id)
+                                if is_manual_save
+                                else output.name,
                                 step_name=step_name,
                                 io_type=output.artifact_version.save_type,
                                 is_input=False,
@@ -8520,18 +8779,17 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
                 session.refresh(step_schema)
 
-            # Save parent step IDs into the database.
-            for parent_step_id in step_run.parent_step_ids:
-                self._set_run_step_parent_step(
-                    child_step_run=step_schema,
-                    parent_id=parent_step_id,
-                    session=session,
-                )
-
             session.commit()
             session.refresh(step_schema)
 
             step_model = step_schema.to_model(include_metadata=True)
+
+            for upstream_step in step_model.spec.upstream_steps:
+                self._set_run_step_parent_step(
+                    child_step_run=step_schema,
+                    parent_step_name=upstream_step,
+                    session=session,
+                )
 
             # Save input artifact IDs into the database.
             for input_name, artifact_version_ids in step_run.inputs.items():
@@ -8788,22 +9046,33 @@ class SqlZenStore(BaseZenStore):
             return StepRunInputArtifactType.MANUAL
 
     def _set_run_step_parent_step(
-        self, child_step_run: StepRunSchema, parent_id: UUID, session: Session
+        self,
+        child_step_run: StepRunSchema,
+        parent_step_name: str,
+        session: Session,
     ) -> None:
         """Sets the parent step run for a step run.
 
         Args:
             child_step_run: The child step run to set the parent for.
-            parent_id: The ID of the parent step run to set a child for.
+            parent_step_name: The name of the parent step run to set a child for.
             session: The database session to use.
+
+        Raises:
+            RuntimeError: If the parent step run is not found.
         """
-        parent_step_run = self._get_reference_schema_by_id(
-            resource=child_step_run,
-            reference_schema=StepRunSchema,
-            reference_id=parent_id,
-            session=session,
-            reference_type="parent step",
-        )
+        parent_step_run = session.exec(
+            select(StepRunSchema)
+            .where(StepRunSchema.name == parent_step_name)
+            .where(
+                StepRunSchema.pipeline_run_id == child_step_run.pipeline_run_id
+            )
+        ).first()
+        if parent_step_run is None:
+            raise RuntimeError(
+                f"Parent step run `{parent_step_name}` not found for step run "
+                f"`{child_step_run.name}`."
+            )
 
         # Check if the parent step is already set.
         assignment = session.exec(
@@ -8925,11 +9194,7 @@ class SqlZenStore(BaseZenStore):
 
         pipeline_run = session.exec(
             select(PipelineRunSchema)
-            .options(
-                joinedload(
-                    jl_arg(PipelineRunSchema.deployment), innerjoin=True
-                )
-            )
+            .with_for_update()
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
         step_run_statuses = session.exec(
@@ -8940,9 +9205,7 @@ class SqlZenStore(BaseZenStore):
 
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
-        num_steps = len(
-            json.loads(pipeline_run.deployment.step_configurations)
-        )
+        num_steps = pipeline_run.deployment.step_count
         new_status = get_pipeline_run_status(
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
@@ -8950,96 +9213,100 @@ class SqlZenStore(BaseZenStore):
             num_steps=num_steps,
         )
 
-        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
-            # If the pipeline run is a placeholder run, no step has been started
-            # for the run yet. This means the orchestrator hasn't started
+        if new_status == pipeline_run.status or (
+            pipeline_run.is_placeholder_run() and not new_status.is_finished
+        ):
+            # The status hasn't changed -> no need to update the status.
+            # If the pipeline run is a placeholder run (=no step has been started
+            # for the run yet), this means the orchestrator hasn't started
             # running yet, and this method is most likely being called as
             # part of the creation of some cached steps. In this case, we don't
             # update the status unless the run is finished.
+
+            # Commit so that we release the lock on the pipeline run.
+            session.commit()
             return
 
-        if new_status != pipeline_run.status:
-            run_update = PipelineRunUpdate(status=new_status)
-            if new_status in {
-                ExecutionStatus.COMPLETED,
-                ExecutionStatus.FAILED,
-            }:
-                run_update.end_time = utc_now()
-                if pipeline_run.start_time and isinstance(
-                    pipeline_run.start_time, datetime
-                ):
-                    duration_time = (
-                        run_update.end_time - pipeline_run.start_time
-                    )
-                    duration_seconds = duration_time.total_seconds()
-                    start_time_str = pipeline_run.start_time.strftime(
-                        "%Y-%m-%dT%H:%M:%S.%fZ"
-                    )
-                else:
-                    start_time_str = None
-                    duration_seconds = None
+        run_update = PipelineRunUpdate(status=new_status)
+        if new_status.is_finished:
+            run_update.end_time = utc_now()
 
-                stack = pipeline_run.deployment.stack
-                assert stack
-                stack_metadata = {
-                    str(component.type): component.flavor
-                    for component in stack.components
-                }
-                with track_handler(
-                    AnalyticsEvent.RUN_PIPELINE_ENDED
-                ) as analytics_handler:
-                    analytics_handler.metadata = {
-                        "project_id": pipeline_run.project_id,
-                        "pipeline_run_id": pipeline_run_id,
-                        "template_id": pipeline_run.deployment.template_id,
-                        "status": new_status,
-                        "num_steps": num_steps,
-                        "start_time": start_time_str,
-                        "end_time": run_update.end_time.strftime(
-                            "%Y-%m-%dT%H:%M:%S.%fZ"
-                        ),
-                        "duration_seconds": duration_seconds,
-                        **stack_metadata,
-                    }
+        pipeline_run.update(run_update)
+        session.add(pipeline_run)
+        # Commit so that we release the lock on the pipeline run.
+        session.commit()
 
-                completed_onboarding_steps: Set[str] = {
-                    OnboardingStep.PIPELINE_RUN,
-                    OnboardingStep.STARTER_SETUP_COMPLETED,
-                }
-                if stack_metadata["orchestrator"] not in {
-                    "local",
-                    "local_docker",
-                }:
-                    completed_onboarding_steps.update(
-                        {
-                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
-                        }
-                    )
-                if stack_metadata["artifact_store"] != "local":
-                    completed_onboarding_steps.update(
-                        {
-                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
-                            OnboardingStep.PRODUCTION_SETUP_COMPLETED,
-                        }
-                    )
-                if OnboardingStep.THIRD_PIPELINE_RUN not in (
-                    self._cached_onboarding_state or {}
-                ):
-                    onboarding_state = self.get_onboarding_state()
-                    if OnboardingStep.PIPELINE_RUN in onboarding_state:
-                        completed_onboarding_steps.add(
-                            OnboardingStep.SECOND_PIPELINE_RUN
-                        )
-                    if OnboardingStep.SECOND_PIPELINE_RUN in onboarding_state:
-                        completed_onboarding_steps.add(
-                            OnboardingStep.THIRD_PIPELINE_RUN
-                        )
-
-                self._update_onboarding_state(
-                    completed_steps=completed_onboarding_steps, session=session
+        if new_status.is_finished:
+            assert run_update.end_time
+            if pipeline_run.start_time:
+                duration_time = run_update.end_time - pipeline_run.start_time
+                duration_seconds = duration_time.total_seconds()
+                start_time_str = pipeline_run.start_time.strftime(
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
                 )
-            pipeline_run.update(run_update)
-            session.add(pipeline_run)
+            else:
+                start_time_str = None
+                duration_seconds = None
+
+            stack = pipeline_run.deployment.stack
+            assert stack
+            stack_metadata = {
+                str(component.type): component.flavor
+                for component in stack.components
+            }
+            with track_handler(
+                AnalyticsEvent.RUN_PIPELINE_ENDED
+            ) as analytics_handler:
+                analytics_handler.metadata = {
+                    "project_id": pipeline_run.project_id,
+                    "pipeline_run_id": pipeline_run_id,
+                    "template_id": pipeline_run.deployment.template_id,
+                    "status": new_status,
+                    "num_steps": num_steps,
+                    "start_time": start_time_str,
+                    "end_time": run_update.end_time.strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ),
+                    "duration_seconds": duration_seconds,
+                    **stack_metadata,
+                }
+
+            completed_onboarding_steps: Set[str] = {
+                OnboardingStep.PIPELINE_RUN,
+                OnboardingStep.STARTER_SETUP_COMPLETED,
+            }
+            if stack_metadata["orchestrator"] not in {
+                "local",
+                "local_docker",
+            }:
+                completed_onboarding_steps.update(
+                    {
+                        OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
+                    }
+                )
+            if stack_metadata["artifact_store"] != "local":
+                completed_onboarding_steps.update(
+                    {
+                        OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
+                        OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                    }
+                )
+            if OnboardingStep.THIRD_PIPELINE_RUN not in (
+                self._cached_onboarding_state or {}
+            ):
+                onboarding_state = self.get_onboarding_state()
+                if OnboardingStep.PIPELINE_RUN in onboarding_state:
+                    completed_onboarding_steps.add(
+                        OnboardingStep.SECOND_PIPELINE_RUN
+                    )
+                if OnboardingStep.SECOND_PIPELINE_RUN in onboarding_state:
+                    completed_onboarding_steps.add(
+                        OnboardingStep.THIRD_PIPELINE_RUN
+                    )
+
+            self._update_onboarding_state(
+                completed_steps=completed_onboarding_steps, session=session
+            )
 
     # --------------------------- Triggers ---------------------------
 
@@ -9477,7 +9744,7 @@ class SqlZenStore(BaseZenStore):
         """
         if handle_bool_env_var(ENV_ZENML_SERVER):
             # Running inside server
-            from zenml.zen_server.auth import get_auth_context
+            from zenml.zen_server.utils import get_auth_context
 
             # If the code is running on the server, use the auth context.
             auth_context = get_auth_context()
@@ -11998,17 +12265,16 @@ class SqlZenStore(BaseZenStore):
         validate_name(tag)
         self._set_request_user_id(request_model=tag, session=session)
 
-        with session.begin_nested() as nested_session:
-            tag_schema = TagSchema.from_request(tag)
-            session.add(tag_schema)
+        tag_schema = TagSchema.from_request(tag)
+        session.add(tag_schema)
 
-            try:
-                session.commit()
-            except IntegrityError:
-                nested_session.rollback()
-                raise EntityExistsError(
-                    f"Tag with name `{tag.name}` already exists."
-                )
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            raise EntityExistsError(
+                f"Tag with name `{tag.name}` already exists."
+            )
         return tag_schema
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)
@@ -12389,6 +12655,7 @@ class SqlZenStore(BaseZenStore):
                             other_runs_with_same_tag = self.list_runs(
                                 PipelineRunFilter(
                                     id=f"notequals:{resource.id}",
+                                    project=resource.project.id,
                                     pipeline_id=resource.pipeline_id,
                                     tags=[tag_schema.name],
                                 )
@@ -12413,6 +12680,7 @@ class SqlZenStore(BaseZenStore):
                                 self.list_artifact_versions(
                                     ArtifactVersionFilter(
                                         id=f"notequals:{resource.id}",
+                                        project=resource.project.id,
                                         artifact_id=resource.artifact_id,
                                         tags=[tag_schema.name],
                                     )
@@ -12442,6 +12710,7 @@ class SqlZenStore(BaseZenStore):
                                 older_templates = self.list_run_templates(
                                     RunTemplateFilter(
                                         id=f"notequals:{resource.id}",
+                                        project=resource.project.id,
                                         pipeline_id=scope_id,
                                         tags=[tag_schema.name],
                                     )

@@ -265,7 +265,7 @@ def init(
         f"will only take effect when you're running ZenML from the initialized "
         f"repository root, or from a subdirectory. For more information on "
         f"repositories and configurations, please visit "
-        f"https://docs.zenml.io/user-guides/production-guide/understand-stacks."
+        f"https://docs.zenml.io/user-guides/production-guide/understand-stacks"
     )
 
 

@@ -121,25 +121,33 @@ kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 
 ### Additional configuration
 
-The Kubernetes orchestrator will by default use a Kubernetes namespace called `zenml` to run pipelines. In that namespace, it will automatically create a Kubernetes service account called `zenml-service-account` and grant it `edit` RBAC role in that namespace. To customize these settings, you can configure the following additional attributes in the Kubernetes orchestrator:
+Some configuration options for the Kubernetes orchestrator can only be set through the orchestrator config when you register it (and cannot be changed per-run or per-step through the settings):
 
-* `kubernetes_namespace`: The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster.
-* `service_account_name`: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
-* `pass_zenml_token_as_secret`: By default, the Kubernetes orchestrator will pass a short-lived API token to authenticate to the ZenML server as an environment variable as part of the Pod manifest. If you want this token to be stored in a Kubernetes secret instead, set `pass_zenml_token_as_secret=True` when registering your orchestrator. If you do so, make sure the service connector that you configure for your has permissions to create Kubernetes secrets. Additionally, the service account used for the Pods running your pipeline must have permissions to delete secrets, otherwise the cleanup will fail and you'll be left with orphaned secrets.
-* `pod_name_prefix`: Prefix for the pod names. A random suffix and the step name will be appended to create unique pod names.
-* `pod_startup_timeout`: The maximum time to wait for a pending step pod to start (in seconds). The orchestrator will delete the pending pod after this time has elapsed and raise an error. If configured, the `pod_failure_retry_delay` and `pod_failure_backoff` settings will also be used to calculate the delay between retries.
-* `pod_failure_retry_delay`: The delay (in seconds) between retries to create a step pod that fails to start.
-* `pod_failure_max_retries`: The maximum number of retries to create a step pod that fails to start.
-* `pod_failure_backoff`: The backoff factor to use for retrying to create a step pod that fails to start.
-* `max_parallelism`: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For
-pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used
-to specify the maximum amount of steps pods that can be running at any time.
-* `successful_jobs_history_limit`, `failed_jobs_history_limit` and `ttl_seconds_after_finished`: Control the cleanup behavior of jobs and pods created by the orchestrator.
+- **`incluster`** (default: False): If `True`, the orchestrator will run the pipeline inside the same Kubernetes cluster it is running in, ignoring the `kubernetes_context`.
+- **`kubernetes_context`**: The name of the Kubernetes context to use for running pipelines (ignored if using a service connector or `incluster`).
+- **`kubernetes_namespace`** (default: "zenml"): The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster. In that namespace, it will automatically create a Kubernetes service account called `zenml-service-account` and grant it `edit` RBAC role in that namespace.
+- **`local`** (default: False): If `True`, the orchestrator assumes it is connected to a local Kubernetes cluster and enables additional validations and operations for local development.
+- **`skip_local_validations`** (default: False): If `True`, skips the local validations that would otherwise be performed when `local` is set.
+- **`parallel_step_startup_waiting_period`**: How long (in seconds) to wait between starting parallel steps, useful for distributing server load in highly parallel pipelines.
+- **`pass_zenml_token_as_secret`** (default: False): By default, the Kubernetes orchestrator will pass a short-lived API token to authenticate to the ZenML server as an environment variable as part of the Pod manifest. If you want this token to be stored in a Kubernetes secret instead, set `pass_zenml_token_as_secret=True` when registering your orchestrator. If you do so, make sure the service connector that you configure for your has permissions to create Kubernetes secrets. Additionally, the service account used for the Pods running your pipeline must have permissions to delete secrets, otherwise the cleanup will fail and you'll be left with orphaned secrets.
 
-For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
+The following configuration options can be set either through the orchestrator config or overridden using `KubernetesOrchestratorSettings` (at the pipeline or step level):
 
-* `pod_settings`: Node selectors, labels, affinity, and tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
-* `orchestrator_pod_settings`: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+- **`synchronous`** (default: True): If `True`, the client waits for all steps to finish; if `False`, the pipeline runs asynchronously.
+- **`timeout`** (default: 0): How many seconds to wait for synchronous runs. `0` means to wait indefinitely.
+- **`service_account_name`**: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
+- **`step_pod_service_account_name`**: Name of the service account to use for the step pods.
+- **`privileged`** (default: False): If the container should be run in privileged mode.
+- **`pod_settings`**: Node selectors, labels, affinity, and tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+- **`orchestrator_pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+- **`pod_name_prefix`**: Prefix for the pod names. A random suffix and the step name will be appended to create unique pod names.
+- **`pod_startup_timeout`** (default: 600): The maximum time to wait for a pending step pod to start (in seconds). The orchestrator will delete the pending pod after this time has elapsed and raise an error. If configured, the `pod_failure_retry_delay` and `pod_failure_backoff` settings will also be used to calculate the delay between retries.
+- **`pod_failure_max_retries`** (default: 3): The maximum number of retries to create a step pod that fails to start.
+- **`pod_failure_retry_delay`** (default: 10): The delay (in seconds) between retries to create a step pod that fails to start.
+- **`pod_failure_backoff`** (default: 1.0): The backoff factor for pod failure retries and pod startup retries.
+- **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
+- **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
+- **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
@@ -267,7 +275,6 @@ kubernetes_settings = KubernetesOrchestratorSettings(
             "component": "pipeline-runner"
         }
     },
-    kubernetes_namespace="ml-pipelines",
     service_account_name="zenml-pipeline-runner"
 )
 
