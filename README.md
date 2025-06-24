@@ -1,7 +1,7 @@
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">Beyond The Demo: Production-Grade AI Systems</h1>
-  <h3 align="center">ZenML brings battle-tested MLOps practices to your AI applications, handling evaluation, monitoring, and deployment at scale</h3>
+  <h1 align="center">The Orchestration & Observability Layer for Production AI</h1>
+  <h3 align="center">ZenML brings battle-tested MLOps practices to all your AI applications – from traditional ML to the latest LLMs – handling evaluation, monitoring, and deployment at scale.</h3>
 </div>
 
 <!-- PROJECT SHIELDS -->
@@ -79,7 +79,7 @@ Need help with documentation? Visit our [docs site](https://docs.zenml.io) for c
 
 ## ⭐️ Show Your Support
 
-If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out. 
+If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out.
 
 Thank you for your support! 🌟
 
@@ -100,159 +100,65 @@ Take a tour with the guided quickstart by running:
 zenml go
 ```
 
-## 🪄 From Prototype to Production: AI Made Simple
+## 🎯 The Hidden Complexity of Production AI
 
-### Create AI pipelines with minimal code changes
+You've built a great POC with LangGraph. Your RAG demo works perfectly. But now you need to:
 
-ZenML is an open-source framework that handles MLOps and LLMOps for engineers scaling AI beyond prototypes. Automate evaluation loops, track performance, and deploy updates across 100s of pipelines—all while your RAG apps run like clockwork.
+- **Run evaluation pipelines** on every update
+- **Process documents in batch** workflows
+- **Track costs** across 5 different LLM providers
+- **Prove compliance** for EU AI Act requirements
+- **Unify observability** across LangFuse, LiteLLM, and other custom tools
 
-```python
-from zenml import pipeline, step
+**ZenML is the orchestration layer that connects it all** - without replacing
+any of your existing tools.
 
-@step
-def load_rag_documents() -> dict:
-    # Load and chunk documents for RAG pipeline
-    documents = extract_web_content(url="https://www.zenml.io/")
-    return {"chunks": chunk_documents(documents)}
+## 👥 Who Should Use ZenML?
 
-@step
-def generate_embeddings(data: dict) -> None:
-    # Generate embeddings for RAG pipeline
-    embeddings = embed_documents(data['chunks'])
-    return {"embeddings": embeddings}
+**Perfect for:**
+- Platform teams drowning in LLM tool sprawl
+- Enterprises running batch agent workflows (document processing, evals)
+- Teams facing regulatory requirements (EU AI Act, healthcare, finance),
+  especially those in high-risk categories (e.g. healthcare, finance)
+- Organizations that need self-hosted/hybrid solutions with vendor support
 
-@step
-def index_generator(
-    embeddings: dict,
-) -> str:
-    # Generate index for RAG pipeline
-    index = create_index(embeddings)
-    return index.id
-    
+**Not for:**
+- Real-time agent serving (we currently work best with batch/scheduled workflows)
+- Replacing your agent framework (we orchestrate, not execute)
+- Generic CI/CD (we're purpose-built for AI/ML)
 
-@pipeline
-def rag_pipeline() -> str:
-    documents = load_rag_documents()
-    embeddings = generate_embeddings(documents)
-    index = index_generator(embeddings)
-    return index
-```
-![Running a ZenML pipeline](docs/book/.gitbook/assets/readme_simple_pipeline.gif)
+## What does ZenML add to your stack?
 
-### Easily provision an MLOps stack or reuse your existing infrastructure
+### Stack-agnostic: keep your code the same
 
-The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals. 
+### Built for platform teams
 
-ZenML provides different features to aid people to get started quickly on a remote setting as well. If you want to deploy a remote stack from scratch on your selected cloud provider, you can use the 1-click deployment feature either through the dashboard:
+don’t build your own platform, just use zenml
 
-![Running a ZenML pipeline](docs/book/.gitbook/assets/one-click-deployment.gif)
+### We track and version everything
 
-Or, through our CLI command:
+### Supports MLOps as well as LLMOps
 
-```bash
-zenml stack deploy --provider aws
-```
+## Features
 
-Alternatively, if the necessary pieces of infrastructure are already deployed, you can register a cloud stack seamlessly through the stack wizard:
+### Manage tool sprawl: Don't Replace - Supercharge
 
-```bash
-zenml stack register <STACK_NAME> --provider aws
-```
+One dashboard to rule them all.
 
-Read more about [ZenML stacks](https://docs.zenml.io/user-guide/production-guide/understand-stacks).
+### Supports common use cases and workflows
 
-### Run workloads easily on your production infrastructure
+- Traditional ML pipelines
+- RAG pipelines
+- Batch agentic workflows
+- Agent deployment
+- Evaluation pipelines
+- EU AI Act compliance
 
-Once you have your MLOps stack configured, you can easily run workloads on it:
+### 🏗️ A Bridge Between Data Science and Platform Teams
 
-```bash
-zenml stack set <STACK_NAME>
-python run.py
-```
+**For Data Scientists**: Visual dashboards, one-click deployments, no YAML files
+**For Platform Teams**: RBAC / access controls, audit logs, self-hosted, custom integrations
 
-```python
-from zenml.config import ResourceSettings, DockerSettings
-
-@step(
-  settings={
-    "resources": ResourceSettings(memory="16GB", gpu_count="1", cpu_count="8"),
-    "docker": DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")
-  }
-)
-def training(...):
-	...
-```
-
-![Workloads with ZenML](docs/book/.gitbook/assets/readme_compute.gif)
-
-### Track models, pipeline, and artifacts
-
-Create a complete lineage of who, where, and what data and models are produced.
-
-You'll be able to find out who produced which model, at what time, with which data, and on which version of the code. This guarantees full reproducibility and auditability.
-
-```python
-from zenml import Model
-
-@step(model=Model(name="rag_llm", tags=["staging"]))
-def deploy_rag(index_id: str) -> str:
-    deployment_id = deploy_to_endpoint(index_id)
-    return deployment_id
-```
-
-![Exploring ZenML Models](docs/book/.gitbook/assets/readme_mcp.gif)
-
-## 🚀 Key LLMOps Capabilities
-
-### Continual RAG Improvement
-**Build production-ready retrieval systems**  
-
-<div align="center">
-  <img src="docs/book/.gitbook/assets/rag_zenml_home.png" width="800" alt="RAG Pipeline">
-</div>
-
-ZenML tracks document ingestion, embedding versions, and query patterns. Implement feedback loops and:
-- Fix your RAG logic based on production logs
-- Automatically re-ingest updated documents
-- A/B test different embedding models
-- Monitor retrieval quality metrics
-
-### Reproducible Model Fine-Tuning
-**Confidence in model updates**
-
-<div align="center">
-  <img src="docs/book/.gitbook/assets/finetune_zenml_home.png" width="800" alt="Finetuning Pipeline">
-</div>
-
-Maintain full lineage of SLM/LLM training runs:
-- Version training data and hyperparameters
-- Track performance across iterations
-- Automatically promote validated models
-- Roll back to previous versions if needed
-
-### Purpose built for machine learning with integrations to your favorite tools
-
-While ZenML brings a lot of value out of the box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
-
-```python
-from bentoml._internal.bento import bento
-
-@step(on_failure=alert_slack, experiment_tracker="mlflow")
-def train_and_deploy(training_df: pd.DataFrame) -> bento.Bento
-	mlflow.autolog()
-	...
-	return bento
-```
-
-![Exploring ZenML Integrations](docs/book/.gitbook/assets/readme_integrations.gif)
-
-## 🔄 Your LLM Framework Isn't Enough for Production
-
-While tools like LangChain and LlamaIndex help you **build** LLM workflows, ZenML helps you **productionize** them by adding:
-
-✅ **Artifact Tracking** - Every vector store index, fine-tuned model, and evaluation result versioned automatically  
-✅ **Pipeline History** - See exactly what code/data produced each version of your RAG system  
-✅ **Stage Promotion** - Move validated pipelines from staging → production with one click  
 
 ## 🖼️ Learning
 
@@ -270,6 +176,11 @@ And finally, here are some other examples and use cases for inspiration:
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
 5. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
 
+## 📚 LLM-focused Learning Resources
+
+1. [LL Complete Guide - Full RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) - Document ingestion, embedding management, and query serving
+2. [LLM Fine-Tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/zencoder) - From data prep to deployed model
+3. [LLM Agents Example](https://github.com/zenml-io/zenml-projects/tree/main/zenml-support-agent) - Track conversation quality and tool usage
 
 ## 📚 Learn from Books
 
@@ -337,12 +248,6 @@ the [core team](https://zenml.io/company) will respond.
 Or, if you
 prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
 our GitHub repo.
-
-## 📚 LLM-focused Learning Resources
-
-1. [LL Complete Guide - Full RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) - Document ingestion, embedding management, and query serving
-2. [LLM Fine-Tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/zencoder) - From data prep to deployed model
-3. [LLM Agents Example](https://github.com/zenml-io/zenml-projects/tree/main/zenml-support-agent) - Track conversation quality and tool usage
 
 ## 🤖 AI-Friendly Documentation with llms.txt
 
