@@ -129,61 +129,173 @@ any of your existing tools.
 
 ## What does ZenML add to your stack?
 
-### Stack-agnostic: keep your code the same
+### Write Code Once, Run Anywhere
 
-- write your code once, run it anywhere
-- build around your application logic, not around your infrastructure
+Your workflow logic shouldn't be tied to your infrastructure. ZenML lets you write portable pipelines that can be executed on your laptop for rapid iteration and then seamlessly run on any cloud stack for production workloads—without changing a single line of code.
 
-### Built for platform teams
+```python
+# Your standard pipeline code remains unchanged
+from zenml import pipeline
 
-- don’t build your own platform, just use zenml
-- we handle all the boring stuff, you just focus on what adds value
-- we've built zenml based on the needs of our customers, so you can benefit from
-  the collective experience of the community
+@pipeline
+def my_training_pipeline():
+    # ... steps to train a model
+    pass
 
-### We track and version everything
+if __name__ == "__main__":
+    my_training_pipeline()
+```
 
-- prompts, artifacts (input and output of any steps in a zenml pipeline),
-  models, metadata, config and parameters used to invoke or trigger a pipeline,
-  github SHA, logs, visualizations and any extra custom metadata you want to
-  track like cost, latency etc.
-- this all happens automatically
-- (you'll need this for EU AI Act compliance)
-- access everything programmatically via the ZenML SDK (or chat with your data using the ZenML MCP server)
+```bash
+# Run locally for quick iteration
+$ zenml stack set local_stack
+$ python run.py
 
-### Supports MLOps as well as LLMOps
+# Switch to the production cloud stack and run the exact same code
+$ zenml stack set aws_production
+$ python run.py
+```
 
-- ZenML has been around for a while so we're battle-tested in the MLOps space
-- we've grown and built features around the LLMOps space too as this has slowly
-  become more of a thing.
-- super solid for MLOps, and this is a great foundation for LLMOps
-- strong overlap between the needs of the two and many of our customers started
-  out with MLOps and have now added or incorporated LLMOps into their workflows.
+_**Visual idea:** A short GIF showing `zenml stack list`, `zenml stack set local_stack`, `python run.py`, then `zenml stack set aws_production`, `python run.py` again._
 
-## Features
+### Automatic Versioning for MLOps and LLMOps
 
-### Manage tool sprawl: Don't Replace - Supercharge
+ZenML automatically tracks every component of your AI workflow, from datasets and models to prompts and pipeline configurations. Whether you're training a classic scikit-learn classifier or evaluating a RAG pipeline, you get complete lineage and reproducibility, which is crucial for debugging, compliance (like the EU AI Act), and building trust in your systems.
 
-- One dashboard to rule them all.
-- Keep using the same tools you know and love, but let ZenML give you more control and observability.
-- Integrate with your favourite frameworks and libraries—ZenML sits on top, providing a unified view across your stack.
-- Centralise experiment tracking, model registry, and pipeline orchestration without forcing you to migrate or refactor your existing workflows.
-- Gain visibility into every step, from data ingestion to deployment, with detailed lineage and audit trails.
-- Reduce context switching and manual handoffs by connecting disparate tools and teams through a single platform.
+```python
+from zenml import step, pipeline, Model
+from typing_extensions import Annotated
+import pandas as pd
 
-### Supports common use cases and workflows
+# A classifier placeholder for the example
+from sklearn.base import BaseEstimator, ClassifierMixin
+class Classifier(BaseEstimator, ClassifierMixin):
+    def fit(self, X, y=None):
+        return self
+    def predict(self, X):
+        return [1] * len(X)
 
-- Traditional ML pipelines
-- RAG pipelines
-- Batch agentic workflows
-- Agent deployment
-- Evaluation pipelines
-- EU AI Act compliance
+# MLOps: A classic model training step with automatic versioning
+@step(model=Model(name="sentiment_classifier", tags=["staging"]))
+def model_trainer(data: pd.DataFrame) -> Annotated[Classifier, "sklearn_model"]:
+    # ... training logic ...
+    model = Classifier()
+    return model
 
-### 🏗️ A Bridge Between Data Science and Platform Teams
+# LLMOps: An evaluation step logging custom metadata like cost
+@step
+def llm_evaluator(results: list) -> Annotated[float, "hallucination_score"]:
+    # ... evaluation logic ...
+    cost = len(results) * 0.001
+    
+    # Log custom metadata back to ZenML
+    from zenml.client import Client
+    Client().active_step_run.log_metadata({"total_cost_usd": cost})
+    
+    hallucination_score = 0.1
+    return hallucination_score
+```
 
-**For Data Scientists**: Visual dashboards, one-click deployments, no YAML files
-**For Platform Teams**: RBAC / access controls, audit logs, self-hosted, custom integrations
+_**Visual idea:** A screenshot of the ZenML dashboard showing a model's version history or a pipeline run with artifacts and metadata like `total_cost_usd` visible._
+
+## Build Production-Grade AI Workflows
+
+### Unify Your Toolchain
+
+ZenML integrates with the tools you already use, creating a seamless workflow from experimentation to production. Connect your favorite experiment tracker, alerter, or deployment tool with a single line of configuration.
+
+```python
+from zenml import pipeline, step
+from zenml.integrations.slack.alerters.slack_alerter import SlackAlerter
+
+# Configure your pipeline with an experiment tracker and an alerter
+@pipeline(
+    experiment_tracker="my_mlflow_tracker",
+    alerter=SlackAlerter(pipeline_run_name="my_training_pipeline_{{date}}")
+)
+def training_pipeline_with_integrations():
+    # ... call your steps here
+    pass
+    
+# Use integrations at the step level
+@step
+def model_trainer():
+    # Your training code here. MLflow autologging is enabled by the
+    # pipeline-level experiment_tracker.
+    ...
+    
+# The pipeline will automatically post to Slack if it fails
+```
+_**Visual idea:** A gallery of integration logos (MLflow, Slack, Kubeflow, etc.) or a diagram showing ZenML connecting various tools._
+
+### Production-Grade MLOps: The Classic Way
+
+Build robust, traditional machine learning pipelines for tasks like classification or regression. ZenML helps you automate model promotion based on performance, ensuring that only high-quality models make it to production.
+
+```python
+from zenml import pipeline, step, Model
+from sklearn.ensemble import RandomForestClassifier
+
+@step
+def trainer() -> RandomForestClassifier:
+    # X_train, y_train = load_some_data()
+    model = RandomForestClassifier()
+    # model.fit(X_train, y_train)
+    return model
+
+@step
+def evaluator(model: RandomForestClassifier) -> float:
+    # X_test, y_test = load_test_data()
+    # accuracy = model.score(X_test, y_test)
+    accuracy = 0.92
+    return accuracy
+
+@step(model=Model(name="credit_fraud_detector", license="Apache 2.0"))
+def model_promoter(model: RandomForestClassifier, accuracy: float):
+    if accuracy > 0.9:
+        # The 'model' is automatically versioned and promoted
+        print("Model promoted to staging!")
+    else:
+        print("Model performance too low. Not promoting.")
+
+@pipeline
+def fraud_detection_pipeline():
+    model = trainer()
+    accuracy = evaluator(model)
+    model_promoter(model=model, accuracy=accuracy)
+```
+_**Visual idea:** A screenshot from the ZenML dashboard showing a model being promoted to a 'staging' or 'production' tag, highlighting the model versioning view._
+
+### Scalable LLMOps: RAG Document Ingestion
+
+Orchestrate complex LLM workflows like Retrieval-Augmented Generation (RAG). ZenML makes it easy to build and manage batch document processing pipelines that create and version vector store indexes for your AI applications.
+
+```python
+from zenml import pipeline, step
+from typing_extensions import Annotated
+
+@step
+def load_and_chunk_docs() -> list:
+    # Load documents from a source and chunk them
+    return ["chunk1", "chunk2"]
+
+@step
+def generate_embeddings(chunks: list) -> list:
+    # Generate embeddings using your chosen model
+    return [[0.1, 0.2], [0.3, 0.4]]
+    
+@step
+def build_vector_index(embeddings: list) -> Annotated[str, "vector_store_uri"]:
+    # Create and save a FAISS or Chroma index
+    return "path/to/vector_store"
+
+@pipeline
+def rag_ingestion_pipeline():
+    chunks = load_and_chunk_docs()
+    embeddings = generate_embeddings(chunks)
+    build_vector_index(embeddings)
+```
+_**Visual idea:** A DAG visualization of the RAG pipeline from the ZenML dashboard, showing the flow from documents to a vector store artifact._
 
 
 ## 🖼️ Learning
