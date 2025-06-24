@@ -4483,62 +4483,62 @@ class RestZenStore(BaseZenStore):
                         # Retry the request.
                         continue
 
-                if self._api_token is None:
-                    # The last request was not authenticated with an API
-                    # token at all. We authenticate here and then try the
-                    # request again, this time with a valid API token in the
-                    # header.
-                    logger.debug(
-                        f"[{request_id}] The last request was not "
-                        f"authenticated: {e}\n"
-                        "Re-authenticating and retrying..."
-                    )
-                    self.authenticate()
-                elif not credentials_store.can_login(self.url):
-                    # The request failed either because we're not
-                    # authenticated or our current credentials are not valid
-                    # anymore.
-                    logger.error(
-                        "The current token is no longer valid, and "
-                        "it is not possible to generate a new token using the "
-                        "configured credentials. Please run "
-                        f"`zenml login {self.url}` to "
-                        "re-authenticate to the server or authenticate using "
-                        "an API key. See "
-                        "https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account "
-                        "for more information."
-                    )
-                    # Clear the current token from the credentials store to
-                    # force a new authentication flow next time.
-                    get_credentials_store().clear_token(self.url)
-                    raise e
-                elif not re_authenticated:
-                    # The last request was authenticated with an API token
-                    # that was rejected by the server. We attempt a
-                    # re-authentication here and then retry the request.
-                    logger.debug(
-                        f"[{request_id}] The last request was authenticated "
-                        "with an API token that was rejected by the server: "
-                        f"{e}\n"
-                        "Re-authenticating and retrying..."
-                    )
-                    re_authenticated = True
-                    self.authenticate(
-                        # Ignore the current token and force a re-authentication
-                        force=True
-                    )
-                else:
-                    # The last request was made after re-authenticating but
-                    # still failed. Bailing out.
-                    logger.debug(
-                        f"[{request_id}] The last request failed after "
-                        "re-authenticating: {e}\n"
-                        "Bailing out..."
-                    )
-                    raise CredentialsNotValid(
-                        "The current credentials are no longer valid. Please "
-                        "log in again using 'zenml login'."
-                    ) from e
+                    if self._api_token is None:
+                        # The last request was not authenticated with an API
+                        # token at all. We authenticate here and then try the
+                        # request again, this time with a valid API token in the
+                        # header.
+                        logger.debug(
+                            f"[{request_id}] The last request was not "
+                            f"authenticated: {e}\n"
+                            "Re-authenticating and retrying..."
+                        )
+                        self.authenticate()
+                    elif not credentials_store.can_login(self.url):
+                        # The request failed either because we're not
+                        # authenticated or our current credentials are not valid
+                        # anymore.
+                        logger.error(
+                            "The current token is no longer valid, and "
+                            "it is not possible to generate a new token using the "
+                            "configured credentials. Please run "
+                            f"`zenml login {self.url}` to "
+                            "re-authenticate to the server or authenticate using "
+                            "an API key. See "
+                            "https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account "
+                            "for more information."
+                        )
+                        # Clear the current token from the credentials store to
+                        # force a new authentication flow next time.
+                        get_credentials_store().clear_token(self.url)
+                        raise e
+                    elif not re_authenticated:
+                        # The last request was authenticated with an API token
+                        # that was rejected by the server. We attempt a
+                        # re-authentication here and then retry the request.
+                        logger.debug(
+                            f"[{request_id}] The last request was authenticated "
+                            "with an API token that was rejected by the server: "
+                            f"{e}\n"
+                            "Re-authenticating and retrying..."
+                        )
+                        re_authenticated = True
+                        self.authenticate(
+                            # Ignore the current token and force a re-authentication
+                            force=True
+                        )
+                    else:
+                        # The last request was made after re-authenticating but
+                        # still failed. Bailing out.
+                        logger.debug(
+                            f"[{request_id}] The last request failed after "
+                            "re-authenticating: {e}\n"
+                            "Bailing out..."
+                        )
+                        raise CredentialsNotValid(
+                            "The current credentials are no longer valid. Please "
+                            "log in again using 'zenml login'."
+                        ) from e
             finally:
                 end_time = time.time()
                 duration = (end_time - start_time) * 1000
