@@ -581,7 +581,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 startup_timeout=settings.pod_startup_timeout,
             )
 
-            metadata = {
+            metadata: Dict[str, MetadataType] = {
                 METADATA_ORCHESTRATOR_RUN_ID: pod_name,
             }
 
