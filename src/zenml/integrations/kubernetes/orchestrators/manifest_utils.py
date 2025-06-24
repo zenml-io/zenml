@@ -14,9 +14,10 @@
 """Utility functions for building manifests for k8s pods."""
 
 import base64
+import json
 import os
 import sys
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from kubernetes import client as k8s_client
 
@@ -31,6 +32,156 @@ from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def _create_image_pull_secret_data(
+    registry_uri: str, username: str, password: str
+) -> Dict[str, str]:
+    """Create Docker registry authentication data for imagePullSecrets.
+
+    Args:
+        registry_uri: The registry URI (e.g., 'docker.io', 'gcr.io/project').
+        username: The registry username.
+        password: The registry password or token.
+
+    Returns:
+        Dictionary containing the base64-encoded .dockerconfigjson data.
+    """
+    # Normalize registry URI for Docker config - use the base registry domain
+    # without path components for broader compatibility
+    registry_server = registry_uri
+    if registry_uri in ("docker.io", "index.docker.io"):
+        registry_server = "https://index.docker.io/v1/"
+    else:
+        # Extract just the domain part for better image matching
+        if registry_uri.startswith(("http://", "https://")):
+            registry_server = registry_uri
+        else:
+            # For URIs like 'registry.onstackit.cloud/zenml', use just the domain
+            domain = registry_uri.split("/")[0]
+            registry_server = f"https://{domain}"
+
+    # Create Docker config JSON - credentials are safely encoded in base64
+    # This handles special characters that might cause issues in CLI usage
+    docker_config = {
+        "auths": {
+            registry_server: {
+                "username": username,
+                "password": password,
+                "auth": base64.b64encode(
+                    f"{username}:{password}".encode()
+                ).decode(),
+            }
+        }
+    }
+
+    return {
+        ".dockerconfigjson": base64.b64encode(
+            json.dumps(docker_config).encode()
+        ).decode()
+    }
+
+
+def _get_container_registry_credentials() -> List[Tuple[str, str, str]]:
+    """Extract container registry credentials from the active stack.
+
+    Returns:
+        List of tuples containing (registry_uri, username, password) for each
+        container registry that has credentials available.
+    """
+    credentials = []
+    client = Client()
+    stack = client.active_stack
+
+    # Get container registry from stack
+    container_registry = stack.container_registry
+    if not container_registry:
+        return credentials
+
+    # Try to get credentials from the container registry
+    registry_credentials = container_registry.credentials
+    if registry_credentials:
+        username, password = registry_credentials
+
+        # Use the service connector's registry if available, otherwise fall back to container registry URI
+        registry_uri = container_registry.config.uri
+
+        # Check if there's a service connector with a different registry setting
+        connector = container_registry.get_connector()
+        if connector:
+            from zenml.service_connectors.docker_service_connector import (
+                DockerServiceConnector,
+            )
+
+            if (
+                isinstance(connector, DockerServiceConnector)
+                and connector.config.registry
+            ):
+                # Use the service connector's registry setting
+                registry_uri = connector.config.registry
+
+        # Normalize registry URI for consistency
+        if registry_uri.startswith("https://"):
+            registry_uri = registry_uri[8:]
+        elif registry_uri.startswith("http://"):
+            registry_uri = registry_uri[7:]
+
+        credentials.append((registry_uri, username, password))
+
+    return credentials
+
+
+def _generate_image_pull_secrets(
+    namespace: str = "default",
+) -> Tuple[List[Dict[str, Any]], List[k8s_client.V1LocalObjectReference]]:
+    """Generate Kubernetes secrets and references for container registry credentials.
+
+    Args:
+        namespace: The Kubernetes namespace to create secrets in.
+
+    Returns:
+        Tuple of (secret_manifests, local_object_references) where:
+        - secret_manifests: List of Kubernetes secret manifests to create
+        - local_object_references: List of V1LocalObjectReference objects for imagePullSecrets
+    """
+    credentials = _get_container_registry_credentials()
+    if not credentials:
+        return [], []
+
+    secret_manifests = []
+    local_object_references = []
+
+    for i, (registry_uri, username, password) in enumerate(credentials):
+        # Create a unique secret name for this registry
+        # Use registry URI to make it more descriptive and avoid conflicts
+        safe_registry_name = registry_uri.replace(".", "-").replace("/", "-")
+        secret_name = f"zenml-registry-{safe_registry_name}-{i}"[
+            :63
+        ]  # K8s name limit
+
+        # Create the secret data
+        secret_data = _create_image_pull_secret_data(
+            registry_uri, username, password
+        )
+
+        # Create the secret manifest
+        secret_manifest = {
+            "apiVersion": "v1",
+            "kind": "Secret",
+            "metadata": {
+                "name": secret_name,
+                "namespace": namespace,
+            },
+            "type": "kubernetes.io/dockerconfigjson",
+            "data": secret_data,
+        }
+
+        secret_manifests.append(secret_manifest)
+        local_object_references.append(
+            k8s_client.V1LocalObjectReference(name=secret_name)
+        )
+
+    return secret_manifests, local_object_references
 
 
 def add_local_stores_mount(
@@ -108,7 +259,9 @@ def build_pod_manifest(
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
-) -> k8s_client.V1Pod:
+    auto_generate_image_pull_secrets: bool = True,
+    namespace: str = "default",
+) -> Tuple[k8s_client.V1Pod, List[Dict[str, Any]]]:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
     Args:
@@ -127,9 +280,14 @@ def build_pod_manifest(
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
         owner_references: List of owner references for the pod.
+        auto_generate_image_pull_secrets: Whether to automatically generate
+            imagePullSecrets from container registry credentials in the stack.
+        namespace: The Kubernetes namespace to create secrets in.
 
     Returns:
-        Pod manifest.
+        Tuple of (pod_manifest, secret_manifests) where:
+        - pod_manifest: The Kubernetes pod manifest
+        - secret_manifests: List of secret manifests for imagePullSecrets
     """
     env = env.copy() if env else {}
     env.setdefault(ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, "False")
@@ -146,12 +304,32 @@ def build_pod_manifest(
         ],
         security_context=security_context,
     )
+    # Handle imagePullSecrets - combine manual and auto-generated
     image_pull_secrets = []
-    if pod_settings:
-        image_pull_secrets = [
-            k8s_client.V1LocalObjectReference(name=name)
-            for name in pod_settings.image_pull_secrets
-        ]
+    secret_manifests = []
+
+    # Add manually configured imagePullSecrets from pod_settings
+    if pod_settings and pod_settings.image_pull_secrets:
+        image_pull_secrets.extend(
+            [
+                k8s_client.V1LocalObjectReference(name=name)
+                for name in pod_settings.image_pull_secrets
+            ]
+        )
+
+    # Auto-generate imagePullSecrets from container registry credentials
+    if auto_generate_image_pull_secrets:
+        try:
+            generated_secrets, generated_refs = _generate_image_pull_secrets(
+                namespace=namespace
+            )
+            secret_manifests.extend(generated_secrets)
+            image_pull_secrets.extend(generated_refs)
+        except Exception as e:
+            logger.warning(
+                f"Failed to auto-generate imagePullSecrets from container "
+                f"registry credentials: {e}. Falling back to manual configuration."
+            )
 
     pod_spec = k8s_client.V1PodSpec(
         containers=[container_spec],
@@ -198,7 +376,7 @@ def build_pod_manifest(
     if mount_local_stores:
         add_local_stores_mount(pod_spec)
 
-    return pod_manifest
+    return pod_manifest, secret_manifests
 
 
 def add_pod_settings(
@@ -285,7 +463,9 @@ def build_cron_job_manifest(
     successful_jobs_history_limit: Optional[int] = None,
     failed_jobs_history_limit: Optional[int] = None,
     ttl_seconds_after_finished: Optional[int] = None,
-) -> k8s_client.V1CronJob:
+    auto_generate_image_pull_secrets: bool = True,
+    namespace: str = "default",
+) -> Tuple[k8s_client.V1CronJob, List[Dict[str, Any]]]:
     """Create a manifest for launching a pod as scheduled CRON job.
 
     Args:
@@ -308,11 +488,16 @@ def build_cron_job_manifest(
         failed_jobs_history_limit: The number of failed jobs to retain.
         ttl_seconds_after_finished: The amount of seconds to keep finished jobs
             before deleting them.
+        auto_generate_image_pull_secrets: Whether to automatically generate
+            imagePullSecrets from container registry credentials in the stack.
+        namespace: The Kubernetes namespace to create secrets in.
 
     Returns:
-        CRON job manifest.
+        Tuple of (cron_job_manifest, secret_manifests) where:
+        - cron_job_manifest: The Kubernetes CronJob manifest
+        - secret_manifests: List of secret manifests for imagePullSecrets
     """
-    pod_manifest = build_pod_manifest(
+    pod_manifest, secret_manifests = build_pod_manifest(
         pod_name=pod_name,
         run_name=run_name,
         pipeline_name=pipeline_name,
@@ -324,6 +509,8 @@ def build_cron_job_manifest(
         service_account_name=service_account_name,
         env=env,
         mount_local_stores=mount_local_stores,
+        auto_generate_image_pull_secrets=auto_generate_image_pull_secrets,
+        namespace=namespace,
     )
 
     job_spec = k8s_client.V1CronJobSpec(
@@ -349,7 +536,7 @@ def build_cron_job_manifest(
         spec=job_spec,
     )
 
-    return job_manifest
+    return job_manifest, secret_manifests
 
 
 def build_role_binding_manifest_for_service_account(
