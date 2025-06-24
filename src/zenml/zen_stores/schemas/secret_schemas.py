@@ -67,7 +67,7 @@ class SecretSchema(NamedSchema, table=True):
 
     private: bool
 
-    hidden: bool = Field(default=False)
+    internal: bool = Field(default=False)
 
     values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
 
@@ -193,13 +193,13 @@ class SecretSchema(NamedSchema, table=True):
     def from_request(
         cls,
         secret: SecretRequest,
-        hidden: bool = False,
+        internal: bool = False,
     ) -> "SecretSchema":
         """Create a `SecretSchema` from a `SecretRequest`.
 
         Args:
             secret: The `SecretRequest` from which to create the schema.
-            hidden: Whether the secret is hidden.
+            internal: Whether the secret is internal.
 
         Returns:
             The created `SecretSchema`.
@@ -213,7 +213,7 @@ class SecretSchema(NamedSchema, table=True):
             # SQL secret store will call `store_secret_values` to store the
             # values separately if SQL is used as the secrets store.
             values=None,
-            hidden=hidden,
+            internal=internal,
         )
 
     def update(

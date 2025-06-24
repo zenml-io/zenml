@@ -6744,17 +6744,18 @@ class SqlZenStore(BaseZenStore):
             self.backup_secrets_store.delete_secret_values(secret_id=secret_id)
 
     def _create_secret_schema(
-        self, secret: SecretRequest, session: Session, hidden: bool = False
+        self, secret: SecretRequest, session: Session, internal: bool = False
     ) -> SecretSchema:
         """Creates a new secret schema.
 
         Args:
             secret: The secret to create.
             session: The session to use.
-            hidden: Whether the secret is hidden.
+            internal: Whether the secret is internal.
         """
         new_secret = SecretSchema.from_request(
             secret,
+            internal=internal,
         )
         session.add(new_secret)
         session.commit()
@@ -6840,8 +6841,8 @@ class SqlZenStore(BaseZenStore):
             secret_in_db = session.exec(
                 select(SecretSchema).where(
                     SecretSchema.id == secret_id,
-                    # Don't return hidden secrets
-                    col(SecretSchema.hidden).is_(False),
+                    # Don't return internal secrets
+                    col(SecretSchema.internal).is_(False),
                 )
             ).first()
             if (
@@ -6891,9 +6892,9 @@ class SqlZenStore(BaseZenStore):
                 self._get_active_user(session).id
             )
             query = select(SecretSchema)
-            # Don't return hidden secrets
+            # Don't return internal secrets
             query = query.where(
-                col(SecretSchema.hidden).is_(False),
+                col(SecretSchema.internal).is_(False),
             )
             return self.filter_and_paginate(
                 session=session,
@@ -6937,8 +6938,8 @@ class SqlZenStore(BaseZenStore):
             existing_secret = session.exec(
                 select(SecretSchema).where(
                     SecretSchema.id == secret_id,
-                    # Don't update hidden secrets
-                    col(SecretSchema.hidden).is_(False),
+                    # Don't update internal secrets
+                    col(SecretSchema.internal).is_(False),
                 )
             ).first()
 
@@ -7041,8 +7042,8 @@ class SqlZenStore(BaseZenStore):
             existing_secret = session.exec(
                 select(SecretSchema).where(
                     SecretSchema.id == secret_id,
-                    # Don't delete hidden secrets
-                    col(SecretSchema.hidden).is_(False),
+                    # Don't delete internal secrets
+                    col(SecretSchema.internal).is_(False),
                 )
             ).first()
 
@@ -7829,7 +7830,7 @@ class SqlZenStore(BaseZenStore):
                         ),
                         session=session,
                         # Hide service connector secrets from the user
-                        hidden=True,
+                        internal=True,
                     ).id
                 except KeyError:
                     # The secret already exists, try again
