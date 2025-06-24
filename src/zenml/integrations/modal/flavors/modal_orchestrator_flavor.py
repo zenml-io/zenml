@@ -82,7 +82,7 @@ class ModalOrchestratorConfig(
 
     Note: If token_id and token_secret are not provided, falls back to
     Modal's default authentication (~/.modal.toml).
-    All other configuration options (modal_environment, gpu, region, etc.) 
+    All other configuration options (modal_environment, gpu, region, etc.)
     are inherited from ModalOrchestratorSettings.
     """
 
