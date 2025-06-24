@@ -274,6 +274,7 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.exceptions import exception_from_response
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -443,6 +444,7 @@ class RestZenStore(BaseZenStore):
     _session: Optional[requests.Session] = None
     _server_info: Optional[ServerModel] = None
     _session_lock: RLock = PrivateAttr(default_factory=RLock)
+    _last_authenticated: Optional[datetime] = None
 
     # ====================================
     # ZenML Store interface implementation
@@ -4333,6 +4335,7 @@ class RestZenStore(BaseZenStore):
             {"Authorization": "Bearer " + new_api_token}
         )
         logger.debug(f"Authenticated to {self.url}")
+        self._last_authenticated = utc_now()
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:
@@ -4430,6 +4433,7 @@ class RestZenStore(BaseZenStore):
             start_time = time.time()
             logger.debug(f"[{request_id}] {method} {path} started...")
             status_code = "failed"
+            last_authenticated = self._last_authenticated
 
             try:
                 response = self.session.request(
@@ -4451,36 +4455,10 @@ class RestZenStore(BaseZenStore):
                 # authenticated at all.
                 credentials_store = get_credentials_store()
 
-                previous_token = (
-                    self._api_token.access_token if self._api_token else None
-                )
-                api_token_from_credentials = credentials_store.get_token(
-                    self.url
-                )
-                old_credential_token = (
-                    api_token_from_credentials.access_token
-                    if api_token_from_credentials
-                    else None
-                )
-
-                # We now wait for the session lock to be acquired. In the meantime,
-                # other threads might have already re-authenticated.
                 with self._session_lock:
-                    current_token = (
-                        self._api_token.access_token
-                        if self._api_token
-                        else None
-                    )
-
-                    if current_token and current_token != previous_token:
-                        if current_token != old_credential_token:
-                            # The token from the credentials store has been
-                            # refreshed by another thread, which means that
-                            # we don't need to try to re-authenticate.
-                            re_authenticated = True
-
-                        # The token has been refreshed by another thread.
-                        # Retry the request.
+                    if self._last_authenticated != last_authenticated:
+                        # Another thread has re-authenticated since the last
+                        # request. We simply retry the request.
                         continue
 
                     if self._api_token is None:
