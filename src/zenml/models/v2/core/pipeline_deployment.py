@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -129,6 +129,13 @@ class PipelineDeploymentResponseBody(ProjectScopedResponseBody):
 
 class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline deployments."""
+
+    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+        "pipeline_configuration",
+        "step_configurations",
+        "client_environment",
+        "pipeline_spec",
+    ]
 
     run_name_template: str = Field(
         title="The run name template for runs created using this deployment.",

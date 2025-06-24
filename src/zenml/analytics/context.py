@@ -105,8 +105,10 @@ class AnalyticsContext:
 
             # Fetch the `user_id`
             if self.in_server:
-                from zenml.zen_server.auth import get_auth_context
-                from zenml.zen_server.utils import server_config
+                from zenml.zen_server.utils import (
+                    get_auth_context,
+                    server_config,
+                )
 
                 # If the code is running on the server, use the auth context.
                 auth_context = get_auth_context()

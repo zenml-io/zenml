@@ -65,7 +65,7 @@ router = APIRouter(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_run_steps(
     step_run_filter_model: StepRunFilter = Depends(
         make_dependable(StepRunFilter)
@@ -136,7 +136,7 @@ def create_run_step(
     "/{step_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_step(
     step_id: UUID,
     hydrate: bool = True,
@@ -169,7 +169,7 @@ def get_step(
     "/{step_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def update_step(
     step_id: UUID,
     step_model: StepRunUpdate,

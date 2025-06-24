@@ -90,7 +90,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         )
 
         stack = Client().active_stack
-        input_artifacts, _ = input_utils.resolve_step_inputs(
+        input_artifacts = input_utils.resolve_step_inputs(
             step=step, pipeline_run=pipeline_run
         )
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
