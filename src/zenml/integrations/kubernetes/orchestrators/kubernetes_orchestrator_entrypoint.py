@@ -192,8 +192,8 @@ def main() -> None:
                 }
             )
 
-        # Define Kubernetes pod manifest.
-        pod_manifest = build_pod_manifest(
+        # Define Kubernetes pod manifest and any required secrets.
+        pod_manifest, secret_manifests = build_pod_manifest(
             pod_name=pod_name,
             run_name=args.run_name,
             pipeline_name=deployment.pipeline_configuration.name,
@@ -207,7 +207,35 @@ def main() -> None:
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
             owner_references=owner_references,
+            namespace=args.kubernetes_namespace,
         )
+
+        # Step pods should reuse secrets created by the orchestrator pod
+        # Only create secrets if they don't already exist
+        for secret_manifest in secret_manifests:
+            secret_name = secret_manifest['metadata']['name']
+            try:
+                # Check if secret already exists
+                core_api.read_namespaced_secret(
+                    name=secret_name,
+                    namespace=args.kubernetes_namespace
+                )
+                logger.debug(f"imagePullSecret {secret_name} already exists, reusing it")
+            except k8s_client.rest.ApiException as e:
+                if e.status == 404:
+                    # Secret doesn't exist, create it
+                    try:
+                        kube_utils.create_or_update_secret_from_manifest(
+                            core_api=core_api,
+                            secret_manifest=secret_manifest,
+                        )
+                        logger.debug(f"Created imagePullSecret {secret_name}")
+                    except Exception as create_e:
+                        logger.warning(
+                            f"Failed to create imagePullSecret {secret_name}: {create_e}"
+                        )
+                else:
+                    logger.warning(f"Failed to check for existing secret {secret_name}: {e}")
 
         kube_utils.create_and_wait_for_pod_to_start(
             core_api=core_api,
