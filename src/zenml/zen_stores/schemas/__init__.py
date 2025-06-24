@@ -35,6 +35,7 @@ from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
+    StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -74,6 +75,7 @@ from zenml.zen_stores.schemas.model_schemas import (
 )
 from zenml.zen_stores.schemas.run_template_schemas import RunTemplateSchema
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
+from zenml.zen_stores.schemas.api_transaction_schemas import ApiTransactionSchema
 
 __all__ = [
     "ActionSchema",
@@ -91,6 +93,7 @@ __all__ = [
     "OAuthDeviceSchema",
     "PipelineBuildSchema",
     "PipelineDeploymentSchema",
+    "StepConfigurationSchema",
     "PipelineRunSchema",
     "PipelineSchema",
     "RunMetadataResourceSchema",
@@ -119,4 +122,5 @@ __all__ = [
     "ModelVersionArtifactSchema",
     "ModelVersionPipelineRunSchema",
     "ProjectSchema",
+    "ApiTransactionSchema",
 ]

@@ -199,6 +199,13 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
 class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline runs."""
 
+    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+        "run_metadata",
+        "config",
+        "client_environment",
+        "orchestrator_environment",
+    ]
+
     run_metadata: Dict[str, MetadataType] = Field(
         default={},
         title="Metadata associated with this pipeline run.",

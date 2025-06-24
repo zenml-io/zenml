@@ -16,9 +16,11 @@
 import os
 import sys
 from typing import TYPE_CHECKING, Any, List, Set
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
+    DEPLOYMENT_ID_OPTION,
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
@@ -146,6 +148,18 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             f"--{STEP_NAME_OPTION}",
             kwargs[STEP_NAME_OPTION],
         ]
+
+    def load_deployment(self) -> "PipelineDeploymentResponse":
+        """Loads the deployment.
+
+        Returns:
+            The deployment.
+        """
+        deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
+        step_name = self.entrypoint_args[STEP_NAME_OPTION]
+        return Client().zen_store.get_deployment(
+            deployment_id=deployment_id, step_configuration_filter=[step_name]
+        )
 
     def run(self) -> None:
         """Prepares the environment and runs the configured step."""
