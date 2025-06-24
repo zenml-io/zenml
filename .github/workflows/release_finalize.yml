@@ -104,7 +104,7 @@ jobs:
       - name: Add version to legacy docs
         run: |
           git checkout -b legacy_docs_update_${{ github.event.inputs.latest_version }}
-          python zenml/scripts/add_version_to_legacy_docs.py ${{ github.event.inputs.latest_version }}
+          python scripts/add_version_to_legacy_docs.py ${{ github.event.inputs.latest_version }}
       # Commit and push changes
       - name: Commit and push changes
         run: |

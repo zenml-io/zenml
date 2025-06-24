@@ -686,7 +686,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     f"Stack {stack.name} does not support scheduling. "
                     "Not all orchestrator types support scheduling, "
                     "kindly consult with "
-                    "https://docs.zenml.io/how-to/build-pipelines/schedule-a-pipeline "
+                    "https://docs.zenml.io/concepts/steps_and_pipelines/scheduling "
                     "for details."
                 )
             if schedule.name:
@@ -1065,16 +1065,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     if not source.is_internal:
                         custom_materializer = True
 
-        stack_creator = Client().get_stack(stack.id).user
+        stack_creator = Client().get_stack(stack.id).user_id
         active_user = Client().active_user
-        own_stack = stack_creator and stack_creator.id == active_user.id
+        own_stack = stack_creator and stack_creator == active_user.id
 
         stack_metadata = {
             component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
         return {
-            "project_id": deployment.project.id,
+            "project_id": deployment.project_id,
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "total_steps": len(self.invocations),

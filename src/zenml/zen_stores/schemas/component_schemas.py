@@ -15,10 +15,12 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
@@ -38,6 +40,7 @@ from zenml.zen_stores.schemas.service_connector_schemas import (
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
@@ -110,6 +113,43 @@ class StackComponentSchema(NamedSchema, table=True):
     )
 
     connector_resource_id: Optional[str]
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = [
+            joinedload(jl_arg(StackComponentSchema.flavor_schema)),
+        ]
+
+        if include_metadata:
+            options.extend(
+                [joinedload(jl_arg(StackComponentSchema.connector))]
+            )
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(StackComponentSchema.user)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(
@@ -190,9 +230,9 @@ class StackComponentSchema(NamedSchema, table=True):
             A `ComponentModel`
         """
         body = ComponentResponseBody(
+            user_id=self.user_id,
             type=StackComponentType(self.type),
             flavor_name=self.flavor,
-            user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
             logo_url=self.flavor_schema.logo_url
@@ -224,7 +264,8 @@ class StackComponentSchema(NamedSchema, table=True):
                 )
 
             resources = ComponentResponseResources(
-                flavor=self.flavor_schema.to_model()
+                user=self.user.to_model() if self.user else None,
+                flavor=self.flavor_schema.to_model(),
             )
         return ComponentResponse(
             id=self.id,

@@ -117,7 +117,7 @@ def create_run_template(
     deprecated=True,
     tags=["run_templates"],
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_run_templates(
     filter_model: RunTemplateFilter = Depends(
         make_dependable(RunTemplateFilter)
@@ -153,7 +153,7 @@ def list_run_templates(
     "/{template_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_run_template(
     template_id: UUID,
     hydrate: bool = True,
@@ -180,7 +180,7 @@ def get_run_template(
     "/{template_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def update_run_template(
     template_id: UUID,
     update: RunTemplateUpdate,
@@ -264,18 +264,18 @@ if server_config().workload_manager_enabled:
                 hydrate=True,
             )
             analytics_handler.metadata = {
-                "project_id": template.project.id,
+                "project_id": template.project_id,
             }
 
             verify_permission(
                 resource_type=ResourceType.PIPELINE_DEPLOYMENT,
                 action=Action.CREATE,
-                project_id=template.project.id,
+                project_id=template.project_id,
             )
             verify_permission(
                 resource_type=ResourceType.PIPELINE_RUN,
                 action=Action.CREATE,
-                project_id=template.project.id,
+                project_id=template.project_id,
             )
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 

@@ -14,9 +14,10 @@
 """Base classes for SQLModel schemas."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Sequence, TypeVar
 from uuid import UUID, uuid4
 
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, SQLModel
 
 from zenml.utils.time_utils import utc_now
@@ -33,6 +34,30 @@ class BaseSchema(SQLModel):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        This method should return query options that improve the performance
+        when trying to later on converting that schema to a model.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        return []
 
     def to_model(
         self,

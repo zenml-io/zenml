@@ -28,6 +28,7 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRunResponse,
     StepRunRequest,
+    StepRunResponse,
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
@@ -79,25 +80,34 @@ class StepRunRequestFactory:
             project=Client().active_project.id,
         )
 
-    def populate_request(self, request: StepRunRequest) -> None:
+    def populate_request(
+        self,
+        request: StepRunRequest,
+        step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
+    ) -> None:
         """Populate a step run request with additional information.
 
         Args:
             request: The request to populate.
+            step_runs: A dictionary of already fetched step runs to use for
+                input resolution. This will be updated in-place with newly
+                fetched step runs.
         """
         step = self.deployment.step_configurations[request.name]
 
-        input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
+        input_artifacts = input_utils.resolve_step_inputs(
             step=step,
             pipeline_run=self.pipeline_run,
+            step_runs=step_runs,
         )
         input_artifact_ids = {
             input_name: artifact.id
             for input_name, artifact in input_artifacts.items()
         }
 
-        request.inputs = input_artifact_ids
-        request.parent_step_ids = parent_step_ids
+        request.inputs = {
+            name: [artifact.id] for name, artifact in input_artifacts.items()
+        }
 
         cache_key = cache_utils.generate_cache_key(
             step=step,
@@ -128,8 +138,8 @@ class StepRunRequestFactory:
                 cache_key=cache_key
             ):
                 request.inputs = {
-                    input_name: artifact.id
-                    for input_name, artifact in cached_step_run.inputs.items()
+                    input_name: [artifact.id for artifact in artifacts]
+                    for input_name, artifacts in cached_step_run.inputs.items()
                 }
 
                 request.original_step_run_id = cached_step_run.id
@@ -283,6 +293,9 @@ def create_cached_step_runs(
     request_factory = StepRunRequestFactory(
         deployment=deployment, pipeline_run=pipeline_run, stack=stack
     )
+    # This is used to cache the step runs that we created to avoid unnecessary
+    # server requests.
+    step_runs: Dict[str, "StepRunResponse"] = {}
 
     while (
         cache_candidates := find_cacheable_invocation_candidates(
@@ -296,16 +309,13 @@ def create_cached_step_runs(
         for invocation_id in cache_candidates:
             visited_invocations.add(invocation_id)
 
-            # Make sure the request factory has the most up to date pipeline
-            # run to avoid hydration calls
-            request_factory.pipeline_run = Client().get_pipeline_run(
-                pipeline_run.id
-            )
             try:
                 step_run_request = request_factory.create_request(
                     invocation_id
                 )
-                request_factory.populate_request(step_run_request)
+                request_factory.populate_request(
+                    step_run_request, step_runs=step_runs
+                )
             except Exception as e:
                 # We failed to create/populate the step run. This might be due
                 # to some input resolution error, or an error importing the step
@@ -324,6 +334,11 @@ def create_cached_step_runs(
                 continue
 
             step_run = Client().zen_store.create_run_step(step_run_request)
+
+            # Include the newly created step run in the step runs dictionary to
+            # avoid fetching it again later when downstream steps need it for
+            # input resolution.
+            step_runs[invocation_id] = step_run
 
             if (
                 model_version := step_run.model_version

@@ -312,17 +312,13 @@ ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a reg
 ZenML is managed by a [core team](https://zenml.io/company) of developers that are responsible for making key decisions and incorporating feedback from the community. The team oversees feedback via various channels,
 and you can directly influence the roadmap as follows:
 
-- Vote on your most wanted feature on our [Discussion
-board](https://zenml.io/discussion).
+- Ask questions and share your thoughts on the [Discussions board](https://zenml.io/discussion).
 - Start a thread in our [Slack channel](https://zenml.io/slack).
 - [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our GitHub repo.
 
 ## 🙌 Contributing and Community
 
-We would love to develop ZenML together with our community! The best way to get
-started is to select any issue from the `[good-first-issue`
-label](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22)
-and open up a Pull Request! 
+We would love to develop ZenML together with our community! The best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22) and open up a Pull Request! 
 
 If you
 would like to contribute, please review our [Contributing
@@ -331,7 +327,7 @@ Guide](CONTRIBUTING.md) for all relevant details.
 ## 🆘 Getting Help
 
 The first point of call should
-be [our Slack group](https://zenml.io/slack-invite/).
+be [our Slack group](https://zenml.io/slack/).
 Ask your questions about bugs or specific use cases, and someone from
 the [core team](https://zenml.io/company) will respond.
 Or, if you
@@ -386,7 +382,7 @@ the Apache License Version 2.0.
     <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
-    🎉 Version 0.82.1 is out. Check out the release notes
+    🎉 Version 0.83.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.

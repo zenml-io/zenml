@@ -583,7 +583,7 @@ def api_token(
                 f"Schedule {schedule_id} does not exist and API tokens cannot "
                 "be generated for non-existent schedules for security reasons."
             )
-        project_id = schedule.project.id
+        project_id = schedule.project_id
 
         if not schedule.active:
             raise ValueError(
@@ -594,6 +594,7 @@ def api_token(
     if pipeline_run_id:
         # The pipeline run must exist and the run must not be concluded
         try:
+            # TODO: this is expensive, we should only fetch the minimum data here
             pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=True)
         except KeyError:
             raise ValueError(
@@ -604,7 +605,7 @@ def api_token(
 
         verify_permission_for_model(model=pipeline_run, action=Action.READ)
 
-        project_id = pipeline_run.project.id
+        project_id = pipeline_run.project_id
 
         if pipeline_run.status.is_finished:
             raise ValueError(

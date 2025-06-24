@@ -63,6 +63,7 @@ def service_response(
     sample_project_model,
 ):
     body = ServiceResponseBody(
+        project_id=sample_project_model.id,
         service_type=service_type,
         labels=labels,
         created=created_time,
@@ -77,11 +78,9 @@ def service_response(
         endpoint=endpoint,
         prediction_url=prediction_url,
         health_check_url=health_check_url,
-        project=sample_project_model,
     )
     return ServiceResponse(
         id=service_id,
-        project_id=sample_project_model.id,
         name=service_name,
         body=body,
         metadata=metadata,

@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column, UniqueConstraint
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import joinedload, noload, object_session
+from sqlalchemy.sql.base import ExecutableOption
+from sqlmodel import Field, Relationship, col, func, select
 
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models import (
@@ -28,6 +30,7 @@ from zenml.models import (
     TagResponse,
     TagResponseBody,
     TagResponseMetadata,
+    TagResponseResources,
     TagUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -37,6 +40,7 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 
 class TagSchema(NamedSchema, table=True):
@@ -67,6 +71,57 @@ class TagSchema(NamedSchema, table=True):
         back_populates="tag",
         sa_relationship_kwargs={"overlaps": "tags", "cascade": "delete"},
     )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(TagSchema.user))])
+
+        return options
+
+    @property
+    def tagged_count(self) -> int:
+        """Fetch the number of resources tagged with this tag.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The number of resources tagged with this tag.
+        """
+        from zenml.zen_stores.schemas import TagResourceSchema
+
+        if session := object_session(self):
+            count = session.scalar(
+                select(func.count(col(TagResourceSchema.id)))
+                .where(TagResourceSchema.tag_id == self.id)
+                .options(noload("*"))
+            )
+
+            return int(count) if count else 0
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch tagged count for tag."
+            )
 
     @classmethod
     def from_request(cls, request: TagRequest) -> "TagSchema":
@@ -104,19 +159,28 @@ class TagSchema(NamedSchema, table=True):
         """
         metadata = None
         if include_metadata:
-            metadata = TagResponseMetadata()
+            metadata = TagResponseMetadata(
+                tagged_count=self.tagged_count,
+            )
+
+        resources = None
+        if include_resources:
+            resources = TagResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return TagResponse(
             id=self.id,
             name=self.name,
             body=TagResponseBody(
-                user=self.user.to_model() if self.user else None,
+                user_id=self.user_id,
                 created=self.created,
                 updated=self.updated,
                 color=ColorVariants(self.color),
                 exclusive=self.exclusive,
-                tagged_count=len(self.links),
             ),
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, update: TagUpdate) -> "TagSchema":

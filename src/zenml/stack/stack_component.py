@@ -106,7 +106,7 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/getting-started/deploying-zenml/secret-management"
+                        "https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"
                     )
                 continue
 
@@ -406,10 +406,7 @@ class StackComponent:
 
         configuration = flavor.config_class(**component_model.configuration)
 
-        if component_model.user is not None:
-            user_id = component_model.user.id
-        else:
-            user_id = None
+        user_id = component_model.user_id
 
         try:
             return flavor.implementation_class(

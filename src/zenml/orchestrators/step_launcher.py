@@ -381,7 +381,7 @@ class StepLauncher:
                     pipeline_run=pipeline_run,
                     step_run=step_run,
                     step_run_info=step_run_info,
-                    input_artifacts=step_run.inputs,
+                    input_artifacts=step_run.regular_inputs,
                     output_artifact_uris=output_artifact_uris,
                     last_retry=last_retry,
                 )

@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """Authentication module for ZenML server."""
 
-from contextvars import ContextVar
+import functools
 from datetime import datetime, timedelta
-from typing import Callable, Optional, Tuple, Union
+from functools import wraps
+from typing import Any, Awaitable, Callable, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
+import anyio.to_thread
 import requests
+from anyio import CapacityLimiter
 from fastapi import Depends, Response
 from fastapi.security import (
     HTTPBasic,
@@ -73,39 +76,12 @@ from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import (
     get_zenml_headers,
     is_same_or_subdomain,
+    request_manager,
     server_config,
     zen_store,
 )
 
 logger = get_logger(__name__)
-
-# create a context variable to store the authentication context
-_auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
-    "auth_context", default=None
-)
-
-
-def get_auth_context() -> Optional["AuthContext"]:
-    """Returns the current authentication context.
-
-    Returns:
-        The authentication context.
-    """
-    auth_context = _auth_context.get()
-    return auth_context
-
-
-def set_auth_context(auth_context: "AuthContext") -> "AuthContext":
-    """Sets the current authentication context.
-
-    Args:
-        auth_context: The authentication context.
-
-    Returns:
-        The authentication context.
-    """
-    _auth_context.set(auth_context)
-    return auth_context
 
 
 class AuthContext(BaseModel):
@@ -334,8 +310,8 @@ def authenticate_credentials(
                 raise CredentialsNotValid(error)
 
             if (
-                device_model.user is None
-                or device_model.user.id != user_model.id
+                device_model.user_id is None
+                or device_model.user_id != user_model.id
             ):
                 error = (
                     f"Authentication error: device {decoded_token.device_id} "
@@ -788,7 +764,10 @@ def authenticate_external_user(
     user_agent = request.headers.get("User-Agent", "").lower()
     if "zenml/" in user_agent:
         store.update_onboarding_state(
-            completed_steps={OnboardingStep.DEVICE_VERIFIED}
+            completed_steps={
+                OnboardingStep.DEVICE_VERIFIED,
+                OnboardingStep.PRO_ONBOARDING_COMPLETED,
+            }
         )
 
     return AuthContext(user=user)
@@ -1125,4 +1104,50 @@ def authentication_provider() -> Callable[..., AuthContext]:
         raise ValueError(f"Unknown authentication scheme: {auth_scheme}")
 
 
-authorize = authentication_provider()
+def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
+    """Fetches the async authorization provider.
+
+    Returns:
+        The async authorization provider.
+    """
+    provider = authentication_provider()
+    # Create a custom thread pool limiter with a limit of 1 thread for all
+    # auth calls
+    thread_limiter = CapacityLimiter(server_config().auth_thread_pool_size)
+
+    @wraps(provider)
+    async def async_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
+        from zenml.zen_server.utils import get_system_metrics_log_str
+
+        request_context = request_manager().current_request
+
+        @wraps(provider)
+        def sync_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
+            assert request_context is not None
+
+            logger.debug(
+                f"[{request_context.log_request_id}] API STATS - "
+                f"{request_context.log_request} "
+                f"AUTHORIZING "
+                f"{get_system_metrics_log_str(request_context.request)}"
+            )
+
+            try:
+                auth_context = provider(*args, **kwargs)
+                request_context.auth_context = auth_context
+                return auth_context
+            finally:
+                logger.debug(
+                    f"[{request_context.log_request_id}] API STATS - "
+                    f"{request_context.log_request} "
+                    f"AUTHORIZED "
+                    f"{get_system_metrics_log_str(request_context.request)}"
+                )
+
+        func = functools.partial(sync_authorize_fn, *args, **kwargs)
+        return await anyio.to_thread.run_sync(func, limiter=thread_limiter)
+
+    return async_authorize_fn
+
+
+authorize = get_authorization_provider()

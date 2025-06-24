@@ -15,10 +15,12 @@
 
 import base64
 import json
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional, Sequence, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.config.schedule import Schedule
@@ -44,7 +46,10 @@ from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import get_page_from_list
+from zenml.zen_stores.schemas.utils import (
+    get_page_from_list,
+    jl_arg,
+)
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -117,6 +122,40 @@ class TriggerSchema(NamedSchema, table=True):
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     is_active: bool = Field(nullable=False)
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = [
+            joinedload(jl_arg(TriggerSchema.action), innerjoin=True),
+            joinedload(jl_arg(TriggerSchema.event_source), innerjoin=True),
+        ]
+
+        if include_resources:
+            options.extend(
+                [
+                    joinedload(jl_arg(TriggerSchema.user)),
+                    # joinedload(jl_arg(TriggerSchema.executions)),
+                ]
+            )
+
+        return options
 
     def update(self, trigger_update: "TriggerUpdate") -> "TriggerSchema":
         """Updates a trigger schema with a trigger update model.
@@ -192,7 +231,8 @@ class TriggerSchema(NamedSchema, table=True):
         from zenml.models import TriggerExecutionResponse
 
         body = TriggerResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             action_flavor=self.action.flavor,
@@ -208,7 +248,6 @@ class TriggerSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = TriggerResponseMetadata(
-                project=self.project.to_model(),
                 event_filter=json.loads(
                     base64.b64decode(self.event_filter).decode()
                 ),
@@ -231,6 +270,7 @@ class TriggerSchema(NamedSchema, table=True):
                 ),
             )
             resources = TriggerResponseResources(
+                user=self.user.to_model() if self.user else None,
                 action=self.action.to_model(),
                 event_source=self.event_source.to_model()
                 if self.event_source
@@ -239,7 +279,6 @@ class TriggerSchema(NamedSchema, table=True):
             )
         return TriggerResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,

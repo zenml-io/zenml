@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for deployments."""
 
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, Security
+from fastapi import APIRouter, Depends, Query, Request, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
 from zenml.logging.step_logging import fetch_logs
@@ -142,7 +142,7 @@ def create_deployment(
     deprecated=True,
     tags=["deployments"],
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_deployments(
     request: Request,
     deployment_filter_model: PipelineDeploymentFilter = Depends(
@@ -196,11 +196,12 @@ def list_deployments(
     "/{deployment_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_deployment(
     request: Request,
     deployment_id: UUID,
     hydrate: bool = True,
+    step_configuration_filter: Optional[List[str]] = Query(None),
     _: AuthContext = Security(authorize),
 ) -> Any:
     """Gets a specific deployment using its unique id.
@@ -210,6 +211,9 @@ def get_deployment(
         deployment_id: ID of the deployment to get.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        step_configuration_filter: List of step configurations to include in
+            the response. If not given, all step configurations will be
+            included.
 
     Returns:
         A specific deployment object.
@@ -218,6 +222,7 @@ def get_deployment(
         id=deployment_id,
         get_method=zen_store().get_deployment,
         hydrate=hydrate,
+        step_configuration_filter=step_configuration_filter,
     )
 
     exclude = None
@@ -294,7 +299,7 @@ def deployment_logs(
     # Get the last pipeline run for this deployment
     pipeline_runs = store.list_runs(
         runs_filter_model=PipelineRunFilter(
-            project=deployment.project.id,
+            project=deployment.project_id,
             sort_by="asc:created",
             size=1,
             deployment_id=deployment.id,

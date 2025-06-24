@@ -14,10 +14,12 @@
 """SQL Model Implementations for Pipeline Schedules."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.enums import MetadataResourceTypes
@@ -26,6 +28,7 @@ from zenml.models import (
     ScheduleResponse,
     ScheduleResponseBody,
     ScheduleResponseMetadata,
+    ScheduleResponseResources,
     ScheduleUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -35,7 +38,10 @@ from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.utils import RunMetadataInterface
+from zenml.zen_stores.schemas.utils import (
+    RunMetadataInterface,
+    jl_arg,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -121,6 +127,39 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     run_once_start_time: Optional[datetime] = Field(nullable=True)
 
     @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        # if include_metadata:
+        #     options.extend(
+        #         [
+        #             joinedload(jl_arg(ScheduleSchema.run_metadata)),
+        #         ]
+        #     )
+
+        if include_resources:
+            options.extend([joinedload(jl_arg(ScheduleSchema.user))])
+
+        return options
+
+    @classmethod
     def from_request(
         cls, schedule_request: ScheduleRequest
     ) -> "ScheduleSchema":
@@ -189,7 +228,8 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
             interval_second = None
 
         body = ScheduleResponseBody(
-            user=self.user.to_model() if self.user else None,
+            user_id=self.user_id,
+            project_id=self.project_id,
             active=self.active,
             cron_expression=self.cron_expression,
             start_time=self.start_time,
@@ -203,16 +243,21 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ScheduleResponseMetadata(
-                project=self.project.to_model(),
                 pipeline_id=self.pipeline_id,
                 orchestrator_id=self.orchestrator_id,
                 run_metadata=self.fetch_metadata(),
             )
 
+        resources = None
+        if include_resources:
+            resources = ScheduleResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return ScheduleResponse(
             id=self.id,
-            project_id=self.project_id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

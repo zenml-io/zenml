@@ -12,6 +12,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import RunMonitoringError
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
@@ -64,10 +65,9 @@ def create_placeholder_run(
     Returns:
         The placeholder run or `None` if no run was created.
     """
-    assert deployment.user
-
     if deployment.schedule:
         return None
+
     start_time = utc_now()
     run_request = PipelineRunRequest(
         name=string_utils.format_name_template(
@@ -84,7 +84,7 @@ def create_placeholder_run(
         # running.
         start_time=start_time,
         orchestrator_run_id=None,
-        project=deployment.project.id,
+        project=deployment.project_id,
         deployment=deployment.id,
         pipeline=deployment.pipeline.id if deployment.pipeline else None,
         status=ExecutionStatus.INITIALIZING,
@@ -138,8 +138,9 @@ def deploy_pipeline(
         stack: The stack on which to run the deployment.
         placeholder_run: An optional placeholder run for the deployment.
 
+    # noqa: DAR401
     Raises:
-        Exception: Any exception that happened while deploying or running
+        BaseException: Any exception that happened while deploying or running
             (in case it happens synchronously) the pipeline.
     """
     # Prevent execution of nested pipelines which might lead to
@@ -152,16 +153,19 @@ def deploy_pipeline(
             deployment=deployment,
             placeholder_run=placeholder_run,
         )
-    except Exception as e:
+    except RunMonitoringError as e:
+        # Don't mark the run as failed if the error happened during monitoring
+        # of the run.
+        raise e.original_exception from None
+    except BaseException as e:
         if (
             placeholder_run
-            and Client()
+            and not Client()
             .get_pipeline_run(placeholder_run.id, hydrate=False)
-            .status
-            == ExecutionStatus.INITIALIZING
+            .status.is_finished
         ):
-            # The run failed during the initialization phase -> We change it's
-            # status to `Failed`
+            # We failed during/before the submission of the run, so we mark the
+            # run as failed if it is still in an initializing/running state.
             publish_failed_pipeline_run(placeholder_run.id)
 
         raise e
