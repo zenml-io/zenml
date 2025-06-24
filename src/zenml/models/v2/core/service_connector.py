@@ -109,6 +109,14 @@ class ServiceConnectorConfiguration(Dict[str, Any]):
             return result.get_secret_value()
         return result
 
+    def add_secrets(self, secrets: Dict[str, str]) -> None:
+        """Add the secrets to the configuration.
+
+        Args:
+            secrets: The secrets to add to the configuration.
+        """
+        self.update({k: SecretStr(v) for k, v in secrets.items()})
+
     @classmethod
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
@@ -787,6 +795,21 @@ class ServiceConnectorResponse(
             the value of the property.
         """
         return self.get_metadata().configuration
+
+    def remove_secrets(self) -> None:
+        """Remove the secrets from the configuration."""
+        metadata = self.get_metadata()
+        metadata.configuration = ServiceConnectorConfiguration(
+            **metadata.configuration.non_secrets
+        )
+
+    def add_secrets(self, secrets: Dict[str, str]) -> None:
+        """Add the secrets to the configuration.
+
+        Args:
+            secrets: The secrets to add to the configuration.
+        """
+        self.get_metadata().configuration.add_secrets(secrets)
 
     @property
     def expiration_seconds(self) -> Optional[int]:

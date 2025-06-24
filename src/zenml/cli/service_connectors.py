@@ -899,14 +899,7 @@ def register_service_connector(
 
         # Prepare the rest of the variables to fall through to the
         # non-interactive configuration case
-        parsed_args = connector_model.configuration
-        parsed_args.update(
-            {
-                k: s.get_secret_value()
-                for k, s in connector_model.secrets.items()
-                if s is not None
-            }
-        )
+        parsed_args = connector_model.configuration.plain
         auto_configure = False
         no_verify = False
         expiration_seconds = connector_model.expiration_seconds
@@ -1137,7 +1130,7 @@ def describe_service_connector(
         try:
             connector = client.get_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
-                load_secrets=True,
+                expand_secrets=True,
             )
         except KeyError as err:
             cli_utils.error(str(err))
@@ -1385,7 +1378,7 @@ def update_service_connector(
         connector = client.get_service_connector(
             name_id_or_prefix,
             allow_name_prefix_match=False,
-            load_secrets=True,
+            expand_secrets=True,
         )
     except KeyError as e:
         cli_utils.error(str(e))

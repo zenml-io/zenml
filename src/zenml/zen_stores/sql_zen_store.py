@@ -263,6 +263,7 @@ from zenml.models import (
     ServiceAccountRequest,
     ServiceAccountResponse,
     ServiceAccountUpdate,
+    ServiceConnectorConfiguration,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
@@ -7466,12 +7467,20 @@ class SqlZenStore(BaseZenStore):
             connector = new_service_connector.to_model(
                 include_metadata=True, include_resources=True
             )
+            if new_service_connector.secret_id:
+                secrets = self._get_secret_values(
+                    secret_id=new_service_connector.secret_id
+                )
+                connector.add_secrets(secrets)
             self._populate_connector_type(connector)
 
             return connector
 
     def get_service_connector(
-        self, service_connector_id: UUID, hydrate: bool = True
+        self,
+        service_connector_id: UUID,
+        hydrate: bool = True,
+        expand_secrets: bool = False,
     ) -> ServiceConnectorResponse:
         """Gets a specific service connector.
 
@@ -7479,6 +7488,8 @@ class SqlZenStore(BaseZenStore):
             service_connector_id: The ID of the service connector to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: Flag deciding whether to include the secrets in the
+                output model.
 
         Returns:
             The requested service connector, if it was found.
@@ -7494,12 +7505,20 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate, include_resources=True
             )
             self._populate_connector_type(connector)
+
+            if expand_secrets and service_connector.secret_id:
+                secrets = self._get_secret_values(
+                    secret_id=service_connector.secret_id
+                )
+                connector.add_secrets(secrets)
+
             return connector
 
     def list_service_connectors(
         self,
         filter_model: ServiceConnectorFilter,
         hydrate: bool = False,
+        expand_secrets: bool = False,
     ) -> Page[ServiceConnectorResponse]:
         """List all service connectors.
 
@@ -7508,6 +7527,8 @@ class SqlZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: Flag deciding whether to include the secrets in the
+                output models.
 
         Returns:
             A page of all service connectors.
@@ -7540,6 +7561,20 @@ class SqlZenStore(BaseZenStore):
 
             return items
 
+        def to_model_and_expand_secrets(
+            schema: ServiceConnectorSchema,
+        ) -> ServiceConnectorResponse:
+            """Convert a service connector schema to a model and expand the secrets."""
+            model = schema.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+            if expand_secrets and schema.secret_id:
+                secrets = self._get_secret_values(secret_id=schema.secret_id)
+                model.add_secrets(secrets)
+
+            return model
+
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
             paged_connectors: Page[ServiceConnectorResponse] = (
@@ -7549,11 +7584,13 @@ class SqlZenStore(BaseZenStore):
                     table=ServiceConnectorSchema,
                     filter_model=filter_model,
                     custom_fetch=fetch_connectors,
+                    custom_schema_to_model_conversion=to_model_and_expand_secrets,
                     hydrate=hydrate,
                 )
             )
 
             self._populate_connector_type(*paged_connectors.items)
+
             return paged_connectors
 
     def update_service_connector(
@@ -7679,6 +7716,7 @@ class SqlZenStore(BaseZenStore):
                     configuration=update.configuration,
                 )
 
+            secret_id = existing_connector.secret_id
             if update.configuration is not None:
                 # Update secret
                 secret_id = self._update_connector_secret(
@@ -7697,6 +7735,10 @@ class SqlZenStore(BaseZenStore):
             connector = existing_connector.to_model(
                 include_metadata=True, include_resources=True
             )
+            if secret_id:
+                secrets = self._get_secret_values(secret_id=secret_id)
+                connector.add_secrets(secrets)
+
             self._populate_connector_type(connector)
             return connector
 
@@ -7783,7 +7825,7 @@ class SqlZenStore(BaseZenStore):
                         SecretRequest(
                             name=secret_name,
                             private=False,
-                            values=secrets,  # type: ignore[arg-type]
+                            values=secrets,
                         ),
                         session=session,
                         # Hide service connector secrets from the user
@@ -7945,7 +7987,9 @@ class SqlZenStore(BaseZenStore):
             The list of resources that the service connector has access to,
             scoped to the supplied resource type and ID, if provided.
         """
-        connector = self.get_service_connector(service_connector_id)
+        connector = self.get_service_connector(
+            service_connector_id, expand_secrets=True
+        )
 
         connector_instance = service_connector_registry.instantiate_connector(
             model=connector
@@ -7974,7 +8018,9 @@ class SqlZenStore(BaseZenStore):
             A service connector client that can be used to access the given
             resource.
         """
-        connector = self.get_service_connector(service_connector_id)
+        connector = self.get_service_connector(
+            service_connector_id, expand_secrets=True
+        )
 
         connector_instance = service_connector_registry.instantiate_connector(
             model=connector
@@ -8180,7 +8226,9 @@ class SqlZenStore(BaseZenStore):
                     # Fetch an existing service connector
                     if isinstance(connector_id_or_info, UUID):
                         existing_service_connector = (
-                            self.get_service_connector(connector_id_or_info)
+                            self.get_service_connector(
+                                connector_id_or_info, expand_secrets=True
+                            )
                         )
                         if need_to_generate_permanent_tokens:
                             if (
@@ -8189,20 +8237,22 @@ class SqlZenStore(BaseZenStore):
                                 )
                                 is not False
                             ):
-                                connector_config = (
-                                    existing_service_connector.configuration
-                                )
+                                connector_config = existing_service_connector.configuration.plain
                                 connector_config[
                                     "generate_temporary_tokens"
                                 ] = False
                                 self.update_service_connector(
                                     existing_service_connector.id,
                                     ServiceConnectorUpdate(
-                                        configuration=connector_config
+                                        configuration=ServiceConnectorConfiguration(
+                                            **connector_config
+                                        )
                                     ),
                                 )
                         service_connectors.append(
-                            self.get_service_connector(connector_id_or_info)
+                            self.get_service_connector(
+                                connector_id_or_info, expand_secrets=True
+                            )
                         )
                     # Create a new service connector
                     else:
@@ -8218,7 +8268,9 @@ class SqlZenStore(BaseZenStore):
                                     name=connector_name,
                                     connector_type=connector_id_or_info.type,
                                     auth_method=connector_id_or_info.auth_method,
-                                    configuration=connector_config,
+                                    configuration=ServiceConnectorConfiguration(
+                                        **connector_config
+                                    ),
                                     labels={
                                         k: str(v)
                                         for k, v in stack.labels.items()

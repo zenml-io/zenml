@@ -2411,7 +2411,10 @@ class RestZenStore(BaseZenStore):
         return connector_model
 
     def get_service_connector(
-        self, service_connector_id: UUID, hydrate: bool = True
+        self,
+        service_connector_id: UUID,
+        hydrate: bool = True,
+        expand_secrets: bool = False,
     ) -> ServiceConnectorResponse:
         """Gets a specific service connector.
 
@@ -2419,6 +2422,8 @@ class RestZenStore(BaseZenStore):
             service_connector_id: The ID of the service connector to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: Flag deciding whether to include the secrets
+                associated with the service connector.
 
         Returns:
             The requested service connector, if it was found.
@@ -2427,7 +2432,7 @@ class RestZenStore(BaseZenStore):
             resource_id=service_connector_id,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponse,
-            params={"expand_secrets": False, "hydrate": hydrate},
+            params={"hydrate": hydrate, "expand_secrets": expand_secrets},
         )
         self._populate_connector_type(connector_model)
         return connector_model
@@ -2436,6 +2441,7 @@ class RestZenStore(BaseZenStore):
         self,
         filter_model: ServiceConnectorFilter,
         hydrate: bool = False,
+        expand_secrets: bool = False,
     ) -> Page[ServiceConnectorResponse]:
         """List all service connectors.
 
@@ -2444,6 +2450,8 @@ class RestZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: Flag deciding whether to include the secrets
+                associated with the service connector.
 
         Returns:
             A page of all service connectors.
@@ -2452,7 +2460,7 @@ class RestZenStore(BaseZenStore):
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponse,
             filter_model=filter_model,
-            params={"expand_secrets": False, "hydrate": hydrate},
+            params={"hydrate": hydrate, "expand_secrets": expand_secrets},
         )
         self._populate_connector_type(*connector_models.items)
         return connector_models
@@ -2706,7 +2714,9 @@ class RestZenStore(BaseZenStore):
 
             # Retrieve the resource list locally
             assert resources.id is not None
-            connector = self.get_service_connector(resources.id)
+            connector = self.get_service_connector(
+                resources.id, expand_secrets=True
+            )
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=connector
