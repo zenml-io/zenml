@@ -3218,6 +3218,7 @@ class SqlZenStore(BaseZenStore):
                         artifact_version_id=artifact_version_schema.id,
                     )
                     session.add(vis_schema)
+                session.commit()
 
             # Save tags of the artifact
             self._attach_tags_to_resources(
