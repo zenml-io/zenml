@@ -100,32 +100,17 @@ Take a tour with the guided quickstart by running:
 zenml go
 ```
 
-## 🎯 The Hidden Complexity of Production AI
+## Beyond the Demo: The Reality of Production AI
 
-You've built a great POC with LangGraph. Your RAG demo works perfectly. But now you need to:
+You've built an impressive POC with LangGraph, and your RAG demo is working flawlessly. But taking that next step into a production environment reveals a host of new challenges: running evaluation pipelines on every update, processing documents in batch, tracking costs across multiple LLM providers, and ensuring compliance with regulations like the EU AI Act.
 
-- **Run evaluation pipelines** on every update
-- **Process documents in batch** workflows
-- **Track costs** across 5 different LLM providers
-- **Prove compliance** for EU AI Act requirements
-- **Unify observability** across LangFuse, LiteLLM, and other custom tools
+This is where many AI projects stall. The transition from a prototype to a reliable, scalable system is complex, and it's a journey ZenML is built for. If you are one of the following, ZenML can help:
 
-**ZenML is the orchestration layer that connects it all** - without replacing
-any of your existing tools.
+- **A platform team** trying to tame tool sprawl and provide a stable foundation for data scientists.
+- **An enterprise** needing to run robust batch workflows for document processing or large-scale evaluations.
+- **An organization in a regulated industry** (like finance or healthcare) that requires full data and model lineage for compliance.
 
-## 👥 Who Should Use ZenML?
-
-**Perfect for:**
-- Platform teams drowning in LLM tool sprawl
-- Enterprises running batch agent workflows (document processing, evals)
-- Teams facing regulatory requirements (EU AI Act, healthcare, finance),
-  especially those in high-risk categories (e.g. healthcare, finance)
-- Organizations that need self-hosted/hybrid solutions with vendor support
-
-**Not for:**
-- Real-time agent serving (we currently work best with batch/scheduled workflows)
-- Replacing your agent framework (we orchestrate, not execute)
-- Generic CI/CD (we're purpose-built for AI/ML)
+ZenML provides the production-grade orchestration layer to connect your existing tools and solve these challenges, putting you back in control of your AI stack.
 
 ## What does ZenML add to your stack?
 
