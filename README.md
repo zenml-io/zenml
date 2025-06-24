@@ -131,19 +131,45 @@ any of your existing tools.
 
 ### Stack-agnostic: keep your code the same
 
+- write your code once, run it anywhere
+- build around your application logic, not around your infrastructure
+
 ### Built for platform teams
 
-don’t build your own platform, just use zenml
+- don’t build your own platform, just use zenml
+- we handle all the boring stuff, you just focus on what adds value
+- we've built zenml based on the needs of our customers, so you can benefit from
+  the collective experience of the community
 
 ### We track and version everything
 
+- prompts, artifacts (input and output of any steps in a zenml pipeline),
+  models, metadata, config and parameters used to invoke or trigger a pipeline,
+  github SHA, logs, visualizations and any extra custom metadata you want to
+  track like cost, latency etc.
+- this all happens automatically
+- (you'll need this for EU AI Act compliance)
+- access everything programmatically via the ZenML SDK (or chat with your data using the ZenML MCP server)
+
 ### Supports MLOps as well as LLMOps
+
+- ZenML has been around for a while so we're battle-tested in the MLOps space
+- we've grown and built features around the LLMOps space too as this has slowly
+  become more of a thing.
+- super solid for MLOps, and this is a great foundation for LLMOps
+- strong overlap between the needs of the two and many of our customers started
+  out with MLOps and have now added or incorporated LLMOps into their workflows.
 
 ## Features
 
 ### Manage tool sprawl: Don't Replace - Supercharge
 
-One dashboard to rule them all.
+- One dashboard to rule them all.
+- Keep using the same tools you know and love, but let ZenML give you more control and observability.
+- Integrate with your favourite frameworks and libraries—ZenML sits on top, providing a unified view across your stack.
+- Centralise experiment tracking, model registry, and pipeline orchestration without forcing you to migrate or refactor your existing workflows.
+- Gain visibility into every step, from data ingestion to deployment, with detailed lineage and audit trails.
+- Reduce context switching and manual handoffs by connecting disparate tools and teams through a single platform.
 
 ### Supports common use cases and workflows
 
