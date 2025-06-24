@@ -31,6 +31,9 @@ import modal
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
+from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
+    ModalExecutionMode,
+)
 from zenml.integrations.modal.orchestrators.modal_orchestrator_entrypoint_configuration import (
     ModalOrchestratorEntrypointConfiguration,
 )
@@ -194,6 +197,12 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             "ModalOrchestratorSettings", self.get_settings(deployment)
         )
 
+        # Check execution mode
+        execution_mode = getattr(
+            settings, "execution_mode", ModalExecutionMode.PIPELINE
+        )
+        logger.info(f"Using execution mode: {execution_mode}")
+
         # Get resource settings from pipeline configuration
         resource_settings = get_resource_settings_from_deployment(
             deployment, RESOURCE_SETTINGS_KEY
@@ -228,26 +237,49 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
         entrypoint_command = command + args
 
-        # Execute using sandbox
+        # Execute using sandbox based on execution mode
         try:
-            asyncio.run(
-                self._execute_pipeline_sandbox(
-                    app_name=app_name,
-                    zenml_image=zenml_image,
-                    entrypoint_command=entrypoint_command,
-                    gpu_values=gpu_values,
-                    cpu_count=cpu_count,
-                    memory_mb=memory_mb,
-                    cloud=settings.cloud or self.config.cloud,
-                    region=settings.region or self.config.region,
-                    timeout=settings.timeout or self.config.timeout,
-                    environment_name=settings.modal_environment
-                    or self.config.modal_environment,
-                    synchronous=settings.synchronous
-                    if hasattr(settings, "synchronous")
-                    else self.config.synchronous,
+            if execution_mode == ModalExecutionMode.PIPELINE:
+                # Execute entire pipeline in one sandbox (fastest)
+                asyncio.run(
+                    self._execute_pipeline_sandbox(
+                        app_name=app_name,
+                        zenml_image=zenml_image,
+                        entrypoint_command=entrypoint_command,
+                        gpu_values=gpu_values,
+                        cpu_count=cpu_count,
+                        memory_mb=memory_mb,
+                        cloud=settings.cloud or self.config.cloud,
+                        region=settings.region or self.config.region,
+                        timeout=settings.timeout or self.config.timeout,
+                        environment_name=settings.modal_environment
+                        or self.config.modal_environment,
+                        synchronous=settings.synchronous
+                        if hasattr(settings, "synchronous")
+                        else self.config.synchronous,
+                    )
                 )
-            )
+            else:
+                # PER_STEP mode: Execute each step in separate sandbox
+                # This is handled by the entrypoint using ThreadedDagRunner
+                asyncio.run(
+                    self._execute_pipeline_sandbox(
+                        app_name=app_name,
+                        zenml_image=zenml_image,
+                        entrypoint_command=entrypoint_command,
+                        gpu_values=gpu_values,
+                        cpu_count=cpu_count,
+                        memory_mb=memory_mb,
+                        cloud=settings.cloud or self.config.cloud,
+                        region=settings.region or self.config.region,
+                        timeout=settings.timeout or self.config.timeout,
+                        environment_name=settings.modal_environment
+                        or self.config.modal_environment,
+                        synchronous=settings.synchronous
+                        if hasattr(settings, "synchronous")
+                        else self.config.synchronous,
+                    )
+                )
         except Exception as e:
             logger.error(f"Pipeline execution failed: {e}")
             logger.info("Check Modal dashboard for detailed logs")
@@ -312,7 +344,13 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             logger.info("Sandbox created, executing pipeline...")
 
             if synchronous:
-                # Wait for completion and stream output
+                # Stream output while waiting for completion
+                logger.info("Streaming pipeline execution logs...")
+                async for line in sb.stdout.aio():
+                    # Stream logs to stdout with proper formatting
+                    print(line, end="")
+
+                # Ensure completion
                 await sb.wait.aio()
                 logger.info("Pipeline execution completed")
             else:

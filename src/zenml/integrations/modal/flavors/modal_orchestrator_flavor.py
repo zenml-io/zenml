@@ -30,9 +30,9 @@ class ModalExecutionMode(str, Enum):
     """Execution modes for the Modal orchestrator.
 
     Attributes:
-        PIPELINE: Execute entire pipeline in one Modal function (fastest, default).
-        PER_STEP: Execute each step in a separate Modal function (granular
-            control).
+        PIPELINE: Execute entire pipeline in one Modal sandbox (fastest, default).
+        PER_STEP: Execute each step in a separate Modal sandbox (granular control,
+            better for debugging, allows step-specific resources).
     """
 
     PIPELINE = "pipeline"
@@ -44,18 +44,14 @@ class ModalOrchestratorSettings(BaseSettings):
 
     Attributes:
         gpu: The type of GPU to use for the pipeline execution (e.g., "T4",
-            "A100").
-            Use ResourceSettings.gpu_count to specify the number of GPUs.
+            "A100"). Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the pipeline execution.
         cloud: The cloud provider to use for the pipeline execution.
         modal_environment: The Modal environment to use for the pipeline execution.
         timeout: Maximum execution time in seconds (default 24h).
-        min_containers: Minimum containers to keep warm (replaces keep_warm).
-        max_containers: Maximum concurrent containers (replaces concurrency_limit).
-        execution_mode: Execution mode - PIPELINE (default, fastest) or PER_STEP (granular control).
+        execution_mode: Execution mode - PIPELINE (fastest) or PER_STEP (granular).
+        max_parallelism: Maximum number of parallel sandboxes (for PER_STEP mode).
         synchronous: Wait for completion (True) or fire-and-forget (False).
-        app_warming_window_hours: Hours for app name window to enable container reuse.
-            Apps are reused within this time window for efficiency. Default 2 hours.
     """
 
     gpu: Optional[str] = None
@@ -63,18 +59,14 @@ class ModalOrchestratorSettings(BaseSettings):
     cloud: Optional[str] = None
     modal_environment: Optional[str] = None
     timeout: int = 86400  # 24 hours (Modal's maximum)
-    min_containers: Optional[int] = (
-        1  # Keep 1 container warm for sequential execution
-    )
-    max_containers: Optional[int] = 10  # Allow up to 10 concurrent containers
     execution_mode: ModalExecutionMode = (
         ModalExecutionMode.PIPELINE
     )  # Default to fastest mode
+    max_parallelism: Optional[int] = (
+        None  # Maximum number of parallel sandboxes (for PER_STEP mode)
+    )
     synchronous: bool = (
         True  # Wait for completion (True) or fire-and-forget (False)
-    )
-    app_warming_window_hours: float = (
-        2.0  # Default 2-hour window for app reuse
     )
 
 
