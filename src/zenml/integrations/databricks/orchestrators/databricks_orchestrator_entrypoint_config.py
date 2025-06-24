@@ -15,7 +15,6 @@
 
 import os
 import sys
-from importlib.metadata import distribution
 from typing import Any, List, Set
 
 if sys.version_info < (3, 10):
