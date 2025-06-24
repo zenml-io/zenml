@@ -39,6 +39,7 @@ from zenml.utils.io_utils import (
     create_dir_recursive_if_not_exists,
     get_global_config_directory,
 )
+from zenml.utils.docker_utils import check_docker
 
 logger = get_logger(__name__)
 
@@ -217,6 +218,13 @@ class ContainerService(BaseService):
             providing additional information about that state (e.g. a
             description of the error, if one is encountered).
         """
+        # Check if Docker is available first
+        if not check_docker():
+            return (
+                ServiceState.INACTIVE, 
+                "Docker daemon is not running"
+            )
+        
         container: Optional[Container] = None
         try:
             container = self.docker_client.containers.get(self.container_id)

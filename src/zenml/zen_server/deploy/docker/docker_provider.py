@@ -14,6 +14,7 @@
 """Zen Server docker deployer implementation."""
 
 import shutil
+import os
 from typing import ClassVar, Optional, Tuple, Type, cast
 from uuid import uuid4
 
@@ -39,6 +40,7 @@ from zenml.zen_server.deploy.docker.docker_zen_server import (
     DockerZenServer,
     DockerZenServerConfig,
 )
+from zenml.utils.docker_utils import check_docker
 
 logger = get_logger(__name__)
 
@@ -253,6 +255,22 @@ class DockerServerProvider(BaseServerProvider):
         Raises:
             KeyError: If the server deployment is not found.
         """
+        # Check if Docker is available first
+        if not check_docker():
+            # Docker is not available, so we can't have a running Docker service
+            # Clean up the stale service configuration
+            service_config_path = DockerZenServer.config_path()
+            if os.path.exists(service_config_path):
+                logger.warning(
+                    "Docker daemon is not running. Cleaning up stale Docker "
+                    "ZenML server configuration at %s", service_config_path
+                )
+                try:
+                    shutil.rmtree(service_config_path)
+                except Exception as e:
+                    logger.debug("Failed to clean up stale Docker config: %s", e)
+            raise KeyError("The docker ZenML server is not deployed (Docker daemon not running).")
+        
         service = DockerZenServer.get_service()
         if service is None:
             raise KeyError("The docker ZenML server is not deployed.")
