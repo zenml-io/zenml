@@ -213,14 +213,15 @@ def main() -> None:
         # Step pods should reuse secrets created by the orchestrator pod
         # Only create secrets if they don't already exist
         for secret_manifest in secret_manifests:
-            secret_name = secret_manifest['metadata']['name']
+            secret_name = secret_manifest["metadata"]["name"]
             try:
                 # Check if secret already exists
                 core_api.read_namespaced_secret(
-                    name=secret_name,
-                    namespace=args.kubernetes_namespace
+                    name=secret_name, namespace=args.kubernetes_namespace
                 )
-                logger.debug(f"imagePullSecret {secret_name} already exists, reusing it")
+                logger.debug(
+                    f"imagePullSecret {secret_name} already exists, reusing it"
+                )
             except k8s_client.rest.ApiException as e:
                 if e.status == 404:
                     # Secret doesn't exist, create it
@@ -235,7 +236,9 @@ def main() -> None:
                             f"Failed to create imagePullSecret {secret_name}: {create_e}"
                         )
                 else:
-                    logger.warning(f"Failed to check for existing secret {secret_name}: {e}")
+                    logger.warning(
+                        f"Failed to check for existing secret {secret_name}: {e}"
+                    )
 
         kube_utils.create_and_wait_for_pod_to_start(
             core_api=core_api,
