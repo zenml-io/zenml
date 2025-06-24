@@ -3037,18 +3037,17 @@ class SqlZenStore(BaseZenStore):
 
         if artifact is None:
             try:
-                with session.begin_nested():
-                    artifact_request = ArtifactRequest(
-                        name=name,
-                        project=project_id,
-                        has_custom_name=has_custom_name,
-                    )
-                    self._set_request_user_id(
-                        request_model=artifact_request, session=session
-                    )
-                    artifact = ArtifactSchema.from_request(artifact_request)
-                    session.add(artifact)
-                    session.commit()
+                artifact_request = ArtifactRequest(
+                    name=name,
+                    project=project_id,
+                    has_custom_name=has_custom_name,
+                )
+                self._set_request_user_id(
+                    request_model=artifact_request, session=session
+                )
+                artifact = ArtifactSchema.from_request(artifact_request)
+                session.add(artifact)
+                session.commit()
                 session.refresh(artifact)
             except IntegrityError:
                 # We have to rollback the failed session first in order to
