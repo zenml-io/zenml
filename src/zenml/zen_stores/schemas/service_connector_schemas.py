@@ -228,16 +228,16 @@ class ServiceConnectorSchema(NamedSchema, table=True):
                     self.expiration_seconds = None
                 continue
             if field == "configuration":
-                configuration = (
-                    connector_update.configuration.non_secrets
-                    if connector_update.configuration
-                    else None
-                )
-                self.configuration = (
-                    base64.b64encode(json.dumps(configuration).encode("utf-8"))
-                    if configuration
-                    else None
-                )
+                if connector_update.configuration is not None:
+                    configuration = connector_update.configuration.non_secrets
+                    if configuration is not None:
+                        self.configuration = (
+                            base64.b64encode(
+                                json.dumps(configuration).encode("utf-8")
+                            )
+                            if configuration
+                            else None
+                        )
             elif field == "resource_types":
                 self.resource_types = base64.b64encode(
                     json.dumps(connector_update.resource_types).encode("utf-8")

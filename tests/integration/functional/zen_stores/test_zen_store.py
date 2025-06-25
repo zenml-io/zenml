@@ -3233,7 +3233,7 @@ def test_connector_with_no_secrets():
         assert connector.auth_method == "paw-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "aria"
-        assert connector.configuration.plain == config
+        assert connector.configuration.non_secrets == config
         assert len(connector.configuration.secrets) == 0
 
         registered_connector = store.get_service_connector(
@@ -3245,7 +3245,7 @@ def test_connector_with_no_secrets():
         assert registered_connector.type == connector.type
         assert registered_connector.auth_method == connector.auth_method
         assert registered_connector.resource_types == connector.resource_types
-        assert registered_connector.configuration.plain == config
+        assert registered_connector.configuration.non_secrets == config
         assert len(registered_connector.configuration.secrets) == 0
 
 
@@ -3275,7 +3275,7 @@ def test_connector_with_secrets():
         assert connector.auth_method == "paw-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "blupus"
-        assert connector.configuration.plain == config
+        assert connector.configuration.non_secrets == config
         assert connector.configuration.plain_secrets == secrets
 
         registered_connector = store.get_service_connector(
@@ -3287,7 +3287,7 @@ def test_connector_with_secrets():
         assert registered_connector.type == connector.type
         assert registered_connector.auth_method == connector.auth_method
         assert registered_connector.resource_types == connector.resource_types
-        assert registered_connector.configuration.plain == config
+        assert registered_connector.configuration.non_secrets == config
         assert registered_connector.configuration.plain_secrets == secrets
 
 
@@ -3308,7 +3308,7 @@ def test_connector_with_no_config_no_secrets():
         assert connector.resource_types == ["spacecat"]
         assert connector.resource_id == "axl"
         assert len(connector.configuration) == 0
-        assert len(connector.configuration.plain) == 0
+        assert len(connector.configuration.non_secrets) == 0
         assert len(connector.configuration.secrets) == 0
 
         registered_connector = store.get_service_connector(
@@ -3321,7 +3321,7 @@ def test_connector_with_no_config_no_secrets():
         assert registered_connector.auth_method == connector.auth_method
         assert registered_connector.resource_types == connector.resource_types
         assert len(registered_connector.configuration) == 0
-        assert len(registered_connector.configuration.plain) == 0
+        assert len(registered_connector.configuration.non_secrets) == 0
         assert len(registered_connector.configuration.secrets) == 0
 
 
@@ -3356,7 +3356,7 @@ def test_connector_with_labels():
         assert connector.auth_method == "tail-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "aria"
-        assert connector.configuration.plain == config
+        assert connector.configuration.non_secrets == config
         assert connector.configuration.plain_secrets == secrets
         assert connector.labels == labels
 
@@ -3369,7 +3369,7 @@ def test_connector_with_labels():
         assert registered_connector.type == connector.type
         assert registered_connector.auth_method == connector.auth_method
         assert registered_connector.resource_types == connector.resource_types
-        assert registered_connector.configuration.plain == config
+        assert registered_connector.configuration.non_secrets == config
         assert registered_connector.configuration.plain_secrets == secrets
         assert registered_connector.labels == labels
 
@@ -3400,7 +3400,7 @@ def test_connector_secret_share_lifespan():
         assert connector.auth_method == "paw-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "blupus"
-        assert connector.configuration.plain == config
+        assert connector.configuration.non_secrets == config
         assert connector.configuration.plain_secrets == secrets
 
         store.delete_service_connector(connector.id)
@@ -3700,7 +3700,7 @@ def _update_connector_and_test(
         assert connector.auth_method == "paw-print"
         assert connector.resource_types == ["cat"]
         assert connector.resource_id == "blupus"
-        assert connector.configuration.plain == config
+        assert connector.configuration.non_secrets == config
         assert connector.configuration.plain_secrets == secrets
         assert connector.labels == labels
 
@@ -3718,10 +3718,14 @@ def _update_connector_and_test(
             if new_expiration_seconds_or_not
             else connector.expiration_seconds
         )
-        new_sc_config = ServiceConnectorConfiguration(**new_config or {})
-        if new_secrets:
-            new_sc_config.add_secrets(new_secrets)
-        store.update_service_connector(
+        if new_config is not None or new_secrets is not None:
+            new_sc_config = ServiceConnectorConfiguration(**new_config or {})
+            if new_secrets:
+                new_sc_config.add_secrets(new_secrets)
+        else:
+            new_sc_config = None
+
+        updated_service_connector = store.update_service_connector(
             connector.id,
             update=ServiceConnectorUpdate(
                 name=new_name,
@@ -3736,8 +3740,48 @@ def _update_connector_and_test(
             ),
         )
 
+        assert updated_service_connector.id == connector.id
+        assert updated_service_connector.name == new_name or connector.name
+        assert (
+            updated_service_connector.type == new_connector_type
+            or connector.type
+        )
+        assert (
+            updated_service_connector.auth_method == new_auth_method
+            or connector.auth_method
+        )
+        assert (
+            updated_service_connector.resource_types == new_resource_types
+            or connector.resource_types
+        )
+        assert updated_service_connector.resource_id == new_resource_id
+
+        # the `configuration` field represents a full
+        # valid configuration update, not just a partial update. If it is
+        # set (i.e. not None) in the update, its values will replace the
+        # existing configuration values.
+
+        if new_config is not None or new_secrets is not None:
+            assert updated_service_connector.configuration.non_secrets == (
+                new_config or {}
+            )
+            assert updated_service_connector.configuration.plain_secrets == (
+                new_secrets or {}
+            )
+        else:
+            assert (
+                updated_service_connector.configuration.non_secrets
+                == connector.configuration.non_secrets
+            )
+            assert (
+                updated_service_connector.configuration.plain_secrets
+                == connector.configuration.plain_secrets
+            )
+
         # Check that the connector has been updated
-        registered_connector = store.get_service_connector(connector.id)
+        registered_connector = store.get_service_connector(
+            connector.id, expand_secrets=True
+        )
 
         assert registered_connector.id == connector.id
         assert registered_connector.name == new_name or connector.name
@@ -3759,19 +3803,18 @@ def _update_connector_and_test(
         # set (i.e. not None) in the update, its values will replace the
         # existing configuration values.
 
-        if new_config is not None:
-            assert registered_connector.configuration.plain == new_config
-        else:
-            assert (
-                registered_connector.configuration.plain
-                == connector.configuration.plain
+        if new_config is not None or new_secrets is not None:
+            assert registered_connector.configuration.non_secrets == (
+                new_config or {}
             )
-
-        if new_secrets is not None:
-            assert (
-                registered_connector.configuration.plain_secrets == new_secrets
+            assert registered_connector.configuration.plain_secrets == (
+                new_secrets or {}
             )
         else:
+            assert (
+                registered_connector.configuration.non_secrets
+                == connector.configuration.non_secrets
+            )
             assert (
                 registered_connector.configuration.plain_secrets
                 == connector.configuration.plain_secrets
@@ -3964,7 +4007,7 @@ def test_connector_validation():
             configuration=config,
             secrets=secrets,
         ) as connector:
-            assert connector.configuration.plain == config
+            assert connector.configuration.non_secrets == config
             assert connector.configuration.plain_secrets == secrets
 
         # Only required attributes
@@ -3981,7 +4024,7 @@ def test_connector_validation():
             configuration=config,
             secrets=secrets,
         ) as connector:
-            assert connector.configuration.plain == config
+            assert connector.configuration.non_secrets == config
             assert connector.configuration.plain_secrets == secrets
 
         # Missing required configuration attribute
@@ -4031,7 +4074,7 @@ def test_connector_validation():
             resource_types=[resource_type_one, resource_type_two],
             configuration=full_config,
         ) as connector:
-            assert connector.configuration.plain == config
+            assert connector.configuration.non_secrets == config
             assert connector.configuration.plain_secrets == secrets
 
         # Different auth method
