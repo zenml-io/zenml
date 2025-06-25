@@ -518,6 +518,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             orchestrator_pod_labels["run_id"] = kube_utils.sanitize_label(
                 str(placeholder_run.id)
             )
+            orchestrator_pod_labels["run_name"] = kube_utils.sanitize_label(
+                str(placeholder_run.name)
+            )
 
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:

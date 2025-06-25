@@ -164,6 +164,7 @@ def main() -> None:
 
     step_pod_labels = {
         "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
+        "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
         "pipeline": kube_utils.sanitize_label(
             deployment.pipeline_configuration.name
         ),
