@@ -136,8 +136,12 @@ def test_duplicate_pipeline_run_name_raises_improved_error(clean_client):
     error_message = str(exc_info.value)
 
     # Verify it's a duplicate name error (either improved or raw database error)
+    # The message should now come from _verify_name_uniqueness after our session.no_autoflush fix
     assert (
         "already exists" in error_message.lower()
-        or "unique constraint failed" in error_message.lower()
+        or "existing pipeline run with the same name" in error_message.lower()
         or f"Pipeline run name '{run_name}' already exists" in error_message
     )
+
+    # Verify it's an EntityExistsError, not a raw IntegrityError
+    assert isinstance(exc_info.value, EntityExistsError)
