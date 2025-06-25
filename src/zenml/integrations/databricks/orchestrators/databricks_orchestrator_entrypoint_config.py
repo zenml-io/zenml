@@ -17,7 +17,10 @@ import os
 import sys
 from typing import Any, List, Set
 
-import pkg_resources
+if sys.version_info < (3, 10):
+    from importlib_metadata import distribution
+else:
+    from importlib.metadata import distribution
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -81,8 +84,10 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
         """Runs the step."""
         # Get the wheel package and add it to the sys path
         wheel_package = self.entrypoint_args[WHEEL_PACKAGE_OPTION]
-        distribution = pkg_resources.get_distribution(wheel_package)
-        project_root = os.path.join(distribution.location, wheel_package)
+
+        dist = distribution(wheel_package)
+        project_root = os.path.join(dist.locate_file("."), wheel_package)
+
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
             sys.path.insert(-1, project_root)
