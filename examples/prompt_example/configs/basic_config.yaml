@@ -1,0 +1,37 @@
+# Basic Prompt Pipeline Configuration
+
+settings:
+  docker:
+    required_integrations:
+      - sklearn
+
+# Pipeline settings
+enable_cache: true
+enable_artifact_metadata: true
+enable_artifact_visualization: true
+
+# Steps configuration
+steps:
+  create_basic_prompt:
+    settings:
+      resources:
+        cpu_count: 1
+        memory: "1GB"
+    
+  simulate_llm_response:
+    settings:
+      resources:
+        cpu_count: 1
+        memory: "1GB"
+    
+  evaluate_prompt_response:
+    settings:
+      resources:
+        cpu_count: 1
+        memory: "1GB"
+
+# Model configuration
+model:
+  name: "prompt_example_model"
+  version: "1.0.0"
+  description: "Model for prompt experimentation and evaluation" 

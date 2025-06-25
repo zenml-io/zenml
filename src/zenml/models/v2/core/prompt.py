@@ -17,14 +17,10 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
     List,
     Optional,
-    Type,
     TypeVar,
-    Union,
 )
-from uuid import UUID
 
 from pydantic import Field
 
@@ -214,7 +210,9 @@ class PromptResponse(
 # ------------------ Filter Model ------------------
 
 
-class PromptFilter(ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin):
+class PromptFilter(
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
+):
     """Model to enable advanced filtering of prompts."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
@@ -231,4 +229,4 @@ class PromptFilter(ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin):
     name: Optional[str] = None
     task: Optional[str] = None
     domain: Optional[str] = None
-    prompt_type: Optional[str] = None 
+    prompt_type: Optional[str] = None

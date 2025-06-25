@@ -1,0 +1,57 @@
+# Prompt Comparison Pipeline Configuration
+
+settings:
+  docker:
+    required_integrations:
+      - sklearn
+
+# Pipeline settings
+enable_cache: true
+enable_artifact_metadata: true
+enable_artifact_visualization: true
+
+# Experiment tracking
+experiment_tracker:  
+  tags:
+    - "prompt_comparison"
+    - "a_b_testing"
+  
+# Steps configuration
+steps:
+  create_prompt_variants:
+    settings:
+      resources:
+        cpu_count: 1
+        memory: "2GB"
+    parameters:
+      num_variants: 3
+    
+  simulate_multiple_responses:
+    settings:
+      resources:
+        cpu_count: 2
+        memory: "2GB"
+    
+  evaluate_multiple_responses:
+    settings:
+      resources:
+        cpu_count: 2
+        memory: "2GB" 
+        
+  compare_prompt_variants:
+    settings:
+      resources:
+        cpu_count: 1
+        memory: "2GB"
+        
+  analyze_best_prompt:
+    settings:
+      resources:
+        cpu_count: 1
+        memory: "1GB"
+
+# Model configuration
+model:
+  name: "prompt_comparison_model"
+  version: "1.0.0" 
+  description: "Model for prompt A/B testing and comparison" 
