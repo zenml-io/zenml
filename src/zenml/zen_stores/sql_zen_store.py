@@ -5970,7 +5970,7 @@ class SqlZenStore(BaseZenStore):
                     pass
 
             if not pipeline_run.is_placeholder_request:
-                # Only run this is the request is not a placeholder run itself,
+                # Only run this if the request is not a placeholder run itself,
                 # as we don't want to replace a placeholder run with another
                 # placeholder run.
                 try:

@@ -564,7 +564,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "placeholder run."
             )
 
-        if request.status == ExecutionStatus.INITIALIZING:
+        if request.is_placeholder_request:
             raise ValueError(
                 "Cannot replace a placeholder run with another placeholder run."
             )
