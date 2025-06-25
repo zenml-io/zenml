@@ -97,7 +97,7 @@ class StepRunRequestFactory:
         """
         step = self.deployment.step_configurations[request.name]
 
-        input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
+        input_artifacts = input_utils.resolve_step_inputs(
             step=step,
             pipeline_run=self.pipeline_run,
             step_runs=step_runs,
@@ -110,7 +110,6 @@ class StepRunRequestFactory:
         request.inputs = {
             name: [artifact.id] for name, artifact in input_artifacts.items()
         }
-        request.parent_step_ids = parent_step_ids
 
         cache_key = cache_utils.generate_cache_key(
             step=step,

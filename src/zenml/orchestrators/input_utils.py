@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
-from uuid import UUID
+from typing import TYPE_CHECKING, Dict, Optional
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -31,7 +30,7 @@ def resolve_step_inputs(
     step: "Step",
     pipeline_run: "PipelineRunResponse",
     step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
-) -> Tuple[Dict[str, "StepRunInputResponse"], List[UUID]]:
+) -> Dict[str, "StepRunInputResponse"]:
     """Resolves inputs for the current step.
 
     Args:
@@ -48,8 +47,7 @@ def resolve_step_inputs(
             resolved in runtime due to missing object.
 
     Returns:
-        The IDs of the input artifact versions and the IDs of parent steps of
-            the current step.
+        The input artifact versions.
     """
     from zenml.models import ArtifactVersionResponse
     from zenml.models.v2.core.step_run import StepRunInputResponse
@@ -57,8 +55,7 @@ def resolve_step_inputs(
 
     step_runs = step_runs or {}
 
-    steps_to_fetch = set(step.spec.upstream_steps)
-    steps_to_fetch.update(
+    steps_to_fetch = set(
         input_.step_name for input_ in step.spec.inputs.values()
     )
     # Remove all the step runs that we've already fetched.
@@ -176,9 +173,4 @@ def resolve_step_inputs(
         else:
             step.config.parameters[name] = value_
 
-    parent_step_ids = [
-        step_runs[upstream_step].id
-        for upstream_step in step.spec.upstream_steps
-    ]
-
-    return input_artifacts, parent_step_ids
+    return input_artifacts

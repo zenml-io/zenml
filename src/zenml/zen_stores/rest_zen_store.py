@@ -4162,7 +4162,7 @@ class RestZenStore(BaseZenStore):
                 elif token.expired:
                     raise CredentialsNotValid(
                         "Your authentication to the current server has expired. "
-                        "Please log in again using 'zenml login --url "
+                        "Please log in again using 'zenml login "
                         f"{self.url}'."
                     )
 
