@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for creating step runs."""
 
+import json
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 from zenml import Tag, add_tags
@@ -32,6 +33,7 @@ from zenml.models import (
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
+from zenml.utils import pagination_utils
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
@@ -452,3 +454,50 @@ def publish_cached_step_run(
     )
 
     return step_run
+
+
+def fetch_step_runs_by_names(
+    step_run_names: List[str], pipeline_run: "PipelineRunResponse"
+) -> Dict[str, "StepRunResponse"]:
+    """Fetch step runs by names.
+
+    Args:
+        step_run_names: The names of the step runs to fetch.
+        pipeline_run: The pipeline run of the step runs.
+
+    Returns:
+        A dictionary of step runs by name.
+    """
+    step_runs = {}
+
+    chunks = []
+    current_chunk = []
+    current_length = 0
+    # stay under 6KB for good measure.
+    max_chunk_length = 6000
+
+    for step_name in step_run_names:
+        current_chunk.append(step_name)
+        current_length += len(step_name) + 5  # 5 is for the JSON encoding
+
+        if current_length > max_chunk_length:
+            chunks.append(current_chunk)
+            current_chunk = []
+            current_length = 0
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    for chunk in chunks:
+        step_runs.update(
+            {
+                run_step.name: run_step
+                for run_step in pagination_utils.depaginate(
+                    Client().list_run_steps,
+                    pipeline_run_id=pipeline_run.id,
+                    project=pipeline_run.project_id,
+                    name="oneof:" + json.dumps(chunk),
+                )
+            }
+        )
+    return step_runs

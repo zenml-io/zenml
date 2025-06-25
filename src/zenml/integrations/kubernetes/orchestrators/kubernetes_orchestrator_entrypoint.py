@@ -42,6 +42,7 @@ from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
+    fetch_step_runs_by_names,
     publish_cached_step_run,
 )
 from zenml.orchestrators.utils import (
@@ -291,6 +292,14 @@ def main() -> None:
             # Some steps may have failed because the pods could not be created.
             # We need to check for this and mark the step run as failed if so.
             pipeline_failed = False
+            failed_step_names = [
+                step_name
+                for step_name, node_state in node_states.items()
+                if node_state == NodeStatus.FAILED
+            ]
+            step_runs = fetch_step_runs_by_names(
+                step_run_names=failed_step_names, pipeline_run=pipeline_run
+            )
 
             for step_name, node_state in node_states.items():
                 if node_state != NodeStatus.FAILED:
@@ -298,16 +307,7 @@ def main() -> None:
 
                 pipeline_failed = True
 
-                # If steps failed for any reason, we need to mark the step run as
-                # failed, if it exists and it wasn't already in a final state.
-                step_runs = Client().list_run_steps(
-                    size=1,
-                    pipeline_run_id=pipeline_run.id,
-                    name=step_name,
-                )
-
-                if step_runs:
-                    step_run = step_runs[0]
+                if step_run := step_runs.get(step_name, None):
                     # Try to update the step run status, if it exists and is in
                     # a transient state.
                     if step_run and step_run.status in {
