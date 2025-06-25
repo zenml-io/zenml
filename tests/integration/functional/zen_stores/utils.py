@@ -883,6 +883,7 @@ class CatTailPrint(AuthenticationConfig):
         title="Cat foods.",
     )
 
+
 class ServiceConnectorTypeContext:
     def __init__(
         self,
@@ -927,14 +928,24 @@ class ServiceConnectorTypeContext:
                     name="Cat scratches",
                     resource_type=self.resource_type_one
                     or sample_name("scratch"),
-                    auth_methods=["claw-marks", "voice-print", "paw-print", "tail-print"],
+                    auth_methods=[
+                        "claw-marks",
+                        "voice-print",
+                        "paw-print",
+                        "tail-print",
+                    ],
                     supports_instances=True,
                 ),
                 ResourceTypeModel(
                     name="Cat purrs",
                     resource_type=self.resource_type_two
                     or sample_name("purr"),
-                    auth_methods=["claw-marks", "voice-print", "paw-print", "tail-print"],
+                    auth_methods=[
+                        "claw-marks",
+                        "voice-print",
+                        "paw-print",
+                        "tail-print",
+                    ],
                     supports_instances=False,
                 ),
             ],
