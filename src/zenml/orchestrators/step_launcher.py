@@ -17,7 +17,7 @@ import os
 import time
 from contextlib import nullcontext
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -53,7 +53,7 @@ logger = get_logger(__name__)
 
 
 def _get_step_operator(
-    stack: "Stack", step_operator_name: str
+    stack: "Stack", step_operator_name: Optional[str]
 ) -> "BaseStepOperator":
     """Fetches the step operator from the stack.
 
@@ -76,7 +76,7 @@ def _get_step_operator(
             f"No step operator specified for active stack '{stack.name}'."
         )
 
-    if step_operator_name != step_operator.name:
+    if step_operator_name and step_operator_name != step_operator.name:
         raise RuntimeError(
             f"No step operator named '{step_operator_name}' in active "
             f"stack '{stack.name}'."
@@ -371,10 +371,8 @@ class StepLauncher:
         start_time = time.time()
         try:
             if self._step.config.step_operator:
-                if isinstance(self._step.config.step_operator, bool):
-                    assert self._stack.step_operator is not None
-                    step_operator_name = self._stack.step_operator.name
-                else:
+                step_operator_name = None
+                if isinstance(self._step.config.step_operator, str):
                     step_operator_name = self._step.config.step_operator
 
                 self._run_step_with_step_operator(
@@ -405,7 +403,7 @@ class StepLauncher:
 
     def _run_step_with_step_operator(
         self,
-        step_operator_name: str,
+        step_operator_name: Optional[str],
         step_run_info: StepRunInfo,
         last_retry: bool,
     ) -> None:
