@@ -1,7 +1,6 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
 import logging
-import threading
 import time
 from datetime import datetime, timedelta
 from threading import RLock
@@ -17,7 +16,11 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
-from zenml.zen_server.utils import get_zenml_headers, server_config
+from zenml.zen_server.utils import (
+    get_system_metrics_log_str,
+    get_zenml_headers,
+    server_config,
+)
 
 logger = get_logger(__name__)
 
@@ -60,13 +63,21 @@ class ZenMLCloudConnection:
         Returns:
             The response.
         """
+        from zenml.zen_server.utils import get_current_request_context
+
         url = self._config.api_url + endpoint
 
+        log_request_id = "N/A"
+        try:
+            request_context = get_current_request_context()
+            log_request_id = request_context.log_request_id
+        except RuntimeError:
+            pass
+
         if logger.isEnabledFor(logging.DEBUG):
-            # Get the request ID from the current thread object
-            request_id = threading.current_thread().name
             logger.debug(
-                f"[{request_id}] RBAC STATS - {method} {endpoint} started"
+                f"[{log_request_id}] RBAC STATS - {method} "
+                f"{endpoint} started {get_system_metrics_log_str()}"
             )
             start_time = time.time()
 
@@ -107,8 +118,9 @@ class ZenMLCloudConnection:
             if logger.isEnabledFor(logging.DEBUG):
                 duration = (time.time() - start_time) * 1000
                 logger.debug(
-                    f"[{request_id}] RBAC STATS - {status_code} {method} "
-                    f"{endpoint} completed in {duration:.2f}ms"
+                    f"[{log_request_id}] RBAC STATS - "
+                    f"{status_code} {method} {endpoint} completed in "
+                    f"{duration:.2f}ms {get_system_metrics_log_str()}"
                 )
 
         return response

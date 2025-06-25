@@ -49,6 +49,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
+from zenml.utils.package_utils import get_package_information
 from zenml.utils.server_utils import get_local_server
 from zenml.utils.yaml_utils import write_yaml
 
@@ -264,7 +265,7 @@ def init(
         f"will only take effect when you're running ZenML from the initialized "
         f"repository root, or from a subdirectory. For more information on "
         f"repositories and configurations, please visit "
-        f"https://docs.zenml.io/user-guides/production-guide/understand-stacks."
+        f"https://docs.zenml.io/user-guides/production-guide/understand-stacks"
     )
 
 
@@ -640,7 +641,7 @@ def info(
     }
 
     if all:
-        user_info["packages"] = cli_utils.get_package_information()
+        user_info["packages"] = get_package_information()
     if packages:
         if user_info.get("packages"):
             if isinstance(user_info["packages"], dict):
@@ -650,7 +651,7 @@ def info(
                     if p in packages
                 }
         else:
-            user_info["query_packages"] = cli_utils.get_package_information(
+            user_info["query_packages"] = get_package_information(
                 list(packages)
             )
     if file:

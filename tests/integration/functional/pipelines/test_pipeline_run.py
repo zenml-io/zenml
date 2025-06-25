@@ -45,13 +45,13 @@ def test_pipeline_run_computes_clientside_cache(clean_client, mocker):
 
     partial_cached_pipeline()
 
-    mock_prepare_or_run_pipeline = mocker.patch.object(
-        clean_client.active_stack.orchestrator, "prepare_or_run_pipeline"
+    mock_submit_pipeline = mocker.patch.object(
+        clean_client.active_stack.orchestrator, "submit_pipeline"
     )
     partial_cached_pipeline()
-    assert mock_prepare_or_run_pipeline.call_count == 1
+    assert mock_submit_pipeline.call_count == 1
 
-    _, call_kwargs = mock_prepare_or_run_pipeline.call_args
+    _, call_kwargs = mock_submit_pipeline.call_args
     assert set(call_kwargs["deployment"].step_configurations.keys()) == {
         "step_3",
         "step_4",
@@ -94,8 +94,8 @@ def test_environment_variable_can_be_used_to_disable_clientside_caching(
 
     full_cached_pipeline()
 
-    mock_prepare_or_run_pipeline = mocker.patch.object(
-        clean_client.active_stack.orchestrator, "prepare_or_run_pipeline"
+    mock_submit_pipeline = mocker.patch.object(
+        clean_client.active_stack.orchestrator, "submit_pipeline"
     )
 
     with patch.dict(
@@ -103,4 +103,4 @@ def test_environment_variable_can_be_used_to_disable_clientside_caching(
     ):
         full_cached_pipeline()
 
-    mock_prepare_or_run_pipeline.assert_called()
+    mock_submit_pipeline.assert_called()

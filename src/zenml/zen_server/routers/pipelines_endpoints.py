@@ -119,7 +119,7 @@ def create_pipeline(
     deprecated=True,
     tags=["pipelines"],
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_pipelines(
     pipeline_filter_model: PipelineFilter = Depends(
         make_dependable(PipelineFilter)
@@ -155,7 +155,7 @@ def list_pipelines(
     "/{pipeline_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_pipeline(
     pipeline_id: UUID,
     hydrate: bool = True,
@@ -180,7 +180,7 @@ def get_pipeline(
     "/{pipeline_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: PipelineUpdate,
@@ -238,7 +238,7 @@ def delete_pipeline(
     "/{pipeline_id}" + RUNS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_pipeline_runs(
     pipeline_run_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)

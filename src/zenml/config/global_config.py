@@ -751,13 +751,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The model of the active project.
         """
-        project_id = self.get_active_project_id()
+        # Initialize the store first. This might create a local database if it
+        # doesn't exist yet, which will then refresh our active project ID.
+        _ = self.zen_store
 
         if self._active_project is not None:
             return self._active_project
 
         project = self.zen_store.get_project(
-            project_name_or_id=project_id,
+            project_name_or_id=self.get_active_project_id(),
         )
         return self.set_active_project(project)
 

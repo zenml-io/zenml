@@ -55,8 +55,15 @@ There are multiple ways to supply these settings:
 Configuring settings on a pipeline applies them to all steps of that pipeline:
 
 ```python
+from zenml import pipeline, step
 from zenml.config import DockerSettings
+
 docker_settings = DockerSettings()
+
+@step
+def my_step() -> None:
+    """Example step."""
+    pass
 
 # Either add it to the decorator
 @pipeline(settings={"docker": docker_settings})
@@ -74,6 +81,9 @@ my_pipeline = my_pipeline.with_options(
 For more fine-grained control, configure settings on individual steps. This is particularly useful when different steps have conflicting requirements or when some steps need specialized environments:
 
 ```python
+from zenml import step
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings()
 
 # Either add it to the decorator
@@ -119,6 +129,9 @@ Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines/configu
 You can customize the build process by specifying build options that get passed to the build method of the image builder:
 
 ```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings(
     build_config={"build_options": {"buildargs": {"MY_ARG": "value"}}}
 )
@@ -134,6 +147,9 @@ For the default local image builder, these options are passed to the [`docker bu
 If you're running your pipelines on MacOS with ARM architecture, the local Docker caching does not work unless you specify the target platform of the image:
 
 ```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings(
     build_config={"build_options": {"platform": "linux/amd64"}}
 )
@@ -151,6 +167,9 @@ def my_pipeline(...):
 To use a static parent image (e.g., with internal dependencies pre-installed):
 
 ```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings(parent_image="my_registry.io/image_name:tag")
 
 @pipeline(settings={"docker": docker_settings})
@@ -254,6 +273,9 @@ you already want this automatic detection in current versions of ZenML, set `dis
 
 1.  **Replicate Local Environment**:
     ```python
+    from zenml import pipeline
+    from zenml.config import DockerSettings
+    
     docker_settings = DockerSettings(replicate_local_python_environment=True)
 
 
@@ -270,6 +292,9 @@ you already want this automatic detection in current versions of ZenML, set `dis
 2.  **Specify a `pyproject.toml` file**:
 
     ```python
+    from zenml import pipeline
+    from zenml.config import DockerSettings
+    
     docker_settings = DockerSettings(pyproject_path="/path/to/pyproject.toml")
 
     @pipeline(settings={"docker": docker_settings})
@@ -282,6 +307,7 @@ you already want this automatic detection in current versions of ZenML, set `dis
     extras), you can specify a custom command using the `pyproject_export_command` attribute. This command must output a list of requirements following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/). The command can contain a `{directory}` placeholder which will be replaced with the directory in which the `pyproject.toml` file is stored.
 
     ```python
+    from zenml import pipeline
     from zenml.config import DockerSettings
 
     docker_settings = DockerSettings(pyproject_export_command=[
@@ -300,17 +326,22 @@ you already want this automatic detection in current versions of ZenML, set `dis
 3.  **Specify Requirements Directly**:
 
     ```python
+    from zenml.config import DockerSettings
+    
     docker_settings = DockerSettings(requirements=["torch==1.12.0", "torchvision"])
     ```
 4.  **Use Requirements File**:
 
     ```python
+    from zenml.config import DockerSettings
+    
     docker_settings = DockerSettings(requirements="/path/to/requirements.txt")
     ```
 5.  **Specify ZenML Integrations**:
 
     ```python
     from zenml.integrations.constants import PYTORCH, EVIDENTLY
+    from zenml.config import DockerSettings
 
     docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
     ```
@@ -318,6 +349,8 @@ you already want this automatic detection in current versions of ZenML, set `dis
     By default, ZenML installs the requirements needed by your active stack. You can disable this behavior if needed:
 
     ```python
+    from zenml.config import DockerSettings
+    
     docker_settings = DockerSettings(install_stack_requirements=False)
     ```
 
@@ -325,6 +358,8 @@ you already want this automatic detection in current versions of ZenML, set `dis
     If your code requires the installation of some local code files as a python package, you can specify a command
     that installs it as follows:
     ```python
+    from zenml.config import DockerSettings
+    
     docker_settings = DockerSettings(local_project_install_command="pip install . --no-deps")
     ```
 
@@ -347,6 +382,8 @@ Depending on the options specified in your Docker settings, ZenML installs the r
 Specify apt packages to be installed in the Docker image:
 
 ```python
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings(apt_packages=["git", "curl", "libsm6", "libxext6"])
 ```
 
@@ -502,6 +539,8 @@ Specifying a custom build when running a pipeline will **not run the code on you
 You can control where your Docker image is pushed by specifying a target repository name:
 
 ```python
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings(target_repository="my-custom-repo-name")
 ```
 

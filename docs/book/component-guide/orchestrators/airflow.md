@@ -137,8 +137,7 @@ You can [schedule pipeline runs](https://docs.zenml.io/user-guides/tutorial/mana
 
 ```python
 from datetime import datetime, timedelta
-
-from zenml.pipelines import Schedule
+from zenml.config.schedule import Schedule
 
 scheduled_pipeline = fashion_mnist_pipeline.with_options(
     schedule=Schedule(
