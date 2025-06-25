@@ -224,10 +224,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         options = [
             selectinload(jl_arg(StepRunSchema.deployment)).load_only(
-                PipelineDeploymentSchema.pipeline_configuration
+                jl_arg(PipelineDeploymentSchema.pipeline_configuration)
             ),
             selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
-                PipelineRunSchema.start_time
+                jl_arg(PipelineRunSchema.start_time)
             ),
             joinedload(jl_arg(StepRunSchema.step_configuration_schema)),
         ]
@@ -321,7 +321,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ValueError: In case the step run configuration is missing.
         """
         step = None
-        if self.deployment_id is not None:
+        if self.deployment is not None:
             if self.step_configuration_schema:
                 pipeline_configuration = (
                     PipelineConfiguration.model_validate_json(
