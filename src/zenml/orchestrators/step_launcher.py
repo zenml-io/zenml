@@ -138,7 +138,10 @@ class StepLauncher:
         self._setup_signal_handlers()
 
     def _setup_signal_handlers(self) -> None:
-        """Set up signal handlers for graceful shutdown."""
+        """Set up signal handlers for graceful shutdown, chaining previous handlers."""
+        # Save previous handlers
+        self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
+        self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
 
         def signal_handler(signum: int, frame: Any) -> None:
             """Handle shutdown signals gracefully.
@@ -193,6 +196,16 @@ class StepLauncher:
                 raise
             except Exception as e:
                 raise RunInterruptedException(str(e))
+            finally:
+                # Chain to previous handler if it exists and is not default/ignore
+                if signum == signal.SIGTERM and callable(
+                    self._prev_sigterm_handler
+                ):
+                    self._prev_sigterm_handler(signum, frame)
+                elif signum == signal.SIGINT and callable(
+                    self._prev_sigint_handler
+                ):
+                    self._prev_sigint_handler(signum, frame)
 
         # Register handlers for common termination signals
         signal.signal(signal.SIGTERM, signal_handler)
