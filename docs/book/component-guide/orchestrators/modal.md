@@ -168,7 +168,7 @@ The Modal orchestrator uses two types of settings following ZenML's standard pat
 **GPU Configuration**: Use `ResourceSettings.gpu_count` to specify how many GPUs you need, and `ModalOrchestratorSettings.gpu` to specify what type of GPU. Modal will combine these automatically (e.g., `gpu_count=2` + `gpu="A100"` becomes `"A100:2"`).
 {% endhint %}
 
-### Configuration Overview
+### Configuration Examples
 
 **Simple Configuration (Recommended):**
 
