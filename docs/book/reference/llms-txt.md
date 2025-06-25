@@ -31,10 +31,6 @@ When working with LLMs (like ChatGPT, Claude, or others), you can use this file 
 To use the llms.txt file in partnership with an MCP client, you can use the
 following tools:
 
-- [GitMCP](https://gitmcp.io/) - A way to quickly create an MCP server for a
-  github repository (e.g. for `zenml-io/zenml`)
-- [mcp-llms](https://github.com/parlance-labs/mcp-llms.txt/) - This shows how to
-  use an MCP server to iteratively explore the llms.txt file with your MCP
-  client
-- [mcp-llms-txt-explorer](https://github.com/thedaviddias/mcp-llms-txt-explorer) -
-  A tool to help you explore and discover websites that have llms.txt files
+- [GitMCP](https://gitmcp.io/) - A way to quickly create an MCP server for a github repository (e.g. for `zenml-io/zenml`)
+- [mcp-llms](https://github.com/parlance-labs/mcp-llms.txt/) - This shows how to use an MCP server to iteratively explore the llms.txt file with your MCP client
+- [mcp-llms-txt-explorer](https://github.com/thedaviddias/mcp-llms-txt-explorer) -  A tool to help you explore and discover websites that have llms.txt files
