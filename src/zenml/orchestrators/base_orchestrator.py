@@ -14,7 +14,16 @@
 """Base orchestrator class."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    Optional,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import model_validator
@@ -24,11 +33,13 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import RunMonitoringError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
     publish_pipeline_run_status_update,
+    publish_schedule_metadata,
 )
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
@@ -40,6 +51,26 @@ if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
 
 logger = get_logger(__name__)
+
+
+class SubmissionResult:
+    """Result of submitting a pipeline run."""
+
+    def __init__(
+        self,
+        wait_for_completion: Optional[Callable[[], None]] = None,
+        metadata: Optional[Dict[str, MetadataType]] = None,
+    ):
+        """Initialize a submission result.
+
+        Args:
+            wait_for_completion: A function that waits for the pipeline run to
+                complete. If provided, this will be called after the pipeline
+                run was submitted successfully.
+            metadata: Metadata for the pipeline run or schedule.
+        """
+        self.wait_for_completion = wait_for_completion
+        self.metadata = metadata
 
 
 class BaseOrchestratorConfig(StackComponentConfig):
@@ -98,22 +129,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
 
 
 class BaseOrchestrator(StackComponent, ABC):
-    """Base class for all orchestrators.
-
-    In order to implement an orchestrator you will need to subclass from this
-    class.
-
-    How it works:
-    -------------
-    The `run(...)` method is the entrypoint that is executed when the
-    pipeline's run method is called within the user code
-    (`pipeline_instance.run(...)`).
-
-    This method will do some internal preparation and then call the
-    `prepare_or_run_pipeline(...)` method. BaseOrchestrator subclasses must
-    implement this method and either run the pipeline steps directly or deploy
-    the pipeline to some remote infrastructure.
-    """
+    """Base class for all orchestrators."""
 
     _active_deployment: Optional["PipelineDeploymentResponse"] = None
 
@@ -146,7 +162,32 @@ class BaseOrchestrator(StackComponent, ABC):
             The orchestrator run id.
         """
 
-    @abstractmethod
+    def submit_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
+
+        Args:
+            deployment: The pipeline deployment to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment. These don't need to be set if running locally.
+            placeholder_run: An optional placeholder run for the deployment.
+
+        Returns:
+            Optional submission result.
+        """
+        return None
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -154,34 +195,7 @@ class BaseOrchestrator(StackComponent, ABC):
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[Iterator[Dict[str, MetadataType]]]:
-        """The method needs to be implemented by the respective orchestrator.
-
-        Depending on the type of orchestrator you'll have to perform slightly
-        different operations.
-
-        Simple Case:
-        ------------
-        The Steps are run directly from within the same environment in which
-        the orchestrator code is executed. In this case you will need to
-        deal with implementation-specific runtime configurations (like the
-        schedule) and then iterate through the steps and finally call
-        `self.run_step(...)` to execute each step.
-
-        Advanced Case:
-        --------------
-        Most orchestrators will not run the steps directly. Instead, they
-        build some intermediate representation of the pipeline that is then
-        used to create and run the pipeline and its steps on the target
-        environment. For such orchestrators this method will have to build
-        this representation and deploy it.
-
-        Regardless of the implementation details, the orchestrator will need
-        to run each step in the target environment. For this the
-        `self.run_step(...)` method should be used.
-
-        The easiest way to make this work is by using an entrypoint
-        configuration to run single steps (`zenml.entrypoints.step_entrypoint_configuration.StepEntrypointConfiguration`)
-        or entire pipelines (`zenml.entrypoints.pipeline_entrypoint_configuration.PipelineEntrypointConfiguration`).
+        """DEPRECATED: Prepare or run a pipeline.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
@@ -189,9 +203,6 @@ class BaseOrchestrator(StackComponent, ABC):
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
-
-        Yields:
-            Metadata for the pipeline run.
         """
 
     def run(
@@ -211,6 +222,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             KeyboardInterrupt: If the orchestrator is synchronous and the
                 pipeline run is keyboard interrupted.
+            RunMonitoringError: If a failure happened while monitoring the
+                pipeline run.
         """
         self._prepare_run(deployment=deployment)
 
@@ -253,41 +266,80 @@ class BaseOrchestrator(StackComponent, ABC):
             logger.debug("Skipping client-side caching.")
 
         try:
-            if metadata_iterator := self.prepare_or_run_pipeline(
-                deployment=deployment,
-                stack=stack,
-                environment=environment,
-                placeholder_run=placeholder_run,
+            if (
+                getattr(self.submit_pipeline, "__func__", None)
+                is BaseOrchestrator.submit_pipeline
             ):
-                for metadata_dict in metadata_iterator:
-                    try:
-                        if placeholder_run:
-                            publish_pipeline_run_metadata(
-                                pipeline_run_id=placeholder_run.id,
-                                pipeline_run_metadata={self.id: metadata_dict},
-                            )
-                    except Exception as e:
-                        logger.debug(
-                            "Something went went wrong trying to publish the"
-                            f"run metadata: {e}"
-                        )
-        except KeyboardInterrupt:
-            # Handle Ctrl+C for synchronous orchestrators
-            if self.config.is_synchronous and placeholder_run:
-                logger.info(
-                    "Received keyboard interrupt. Attempting to stop the pipeline run..."
+                logger.warning(
+                    "The orchestrator '%s' is still using the deprecated "
+                    "`prepare_or_run_pipeline(...)` method which will be "
+                    "removed in the future. Please implement the replacement "
+                    "`submit_pipeline(...)` method for your custom "
+                    "orchestrator.",
+                    self.name,
                 )
-                try:
-                    self.stop_run(placeholder_run)
-                    logger.info("Pipeline run stopped successfully.")
-                except NotImplementedError:
-                    logger.warning(
-                        "Stop functionality not implemented for this orchestrator. "
-                        "The pipeline may continue running in the background."
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to stop pipeline run: {e}")
-            raise
+                if metadata_iterator := self.prepare_or_run_pipeline(
+                    deployment=deployment,
+                    stack=stack,
+                    environment=environment,
+                    placeholder_run=placeholder_run,
+                ):
+                    for metadata_dict in metadata_iterator:
+                        try:
+                            if placeholder_run:
+                                publish_pipeline_run_metadata(
+                                    pipeline_run_id=placeholder_run.id,
+                                    pipeline_run_metadata={
+                                        self.id: metadata_dict
+                                    },
+                                )
+                        except Exception as e:
+                            logger.debug(
+                                "Something went went wrong trying to publish the"
+                                f"run metadata: {e}"
+                            )
+            else:
+                submission_result = self.submit_pipeline(
+                    deployment=deployment,
+                    stack=stack,
+                    environment=environment,
+                    placeholder_run=placeholder_run,
+                )
+
+                if submission_result:
+                    if submission_result.metadata:
+                        if placeholder_run:
+                            try:
+                                publish_pipeline_run_metadata(
+                                    pipeline_run_id=placeholder_run.id,
+                                    pipeline_run_metadata={
+                                        self.id: submission_result.metadata
+                                    },
+                                )
+                            except Exception as e:
+                                logger.debug(
+                                    "Error publishing run metadata: %s", e
+                                )
+                        elif deployment.schedule:
+                            try:
+                                publish_schedule_metadata(
+                                    schedule_id=deployment.schedule.id,
+                                    schedule_metadata={
+                                        self.id: submission_result.metadata
+                                    },
+                                )
+                            except Exception as e:
+                                logger.debug(
+                                    "Error publishing schedule metadata: %s", e
+                                )
+
+                    if submission_result.wait_for_completion:
+                        try:
+                            submission_result.wait_for_completion()
+                        except BaseException as e:
+                            raise RunMonitoringError(original_exception=e)
+
+        # TODO: Need to add the KeyboardInterrupt handling here.
         finally:
             self._cleanup_run()
 

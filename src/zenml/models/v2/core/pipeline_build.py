@@ -200,6 +200,10 @@ class PipelineBuildResponseBody(ProjectScopedResponseBody):
 class PipelineBuildResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline builds."""
 
+    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+        "images",
+    ]
+
     pipeline: Optional["PipelineResponse"] = Field(
         default=None, title="The pipeline that was used for this build."
     )

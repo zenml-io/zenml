@@ -228,3 +228,19 @@ class CustomFlavorImportError(ImportError):
 
 class MaxConcurrentTasksError(ZenMLBaseException):
     """Raised when the maximum number of concurrent tasks is reached."""
+
+
+class RunMonitoringError(ZenMLBaseException):
+    """Raised when an error occurs while monitoring a pipeline run."""
+
+    def __init__(
+        self,
+        original_exception: BaseException,
+    ) -> None:
+        """Initializes the error.
+
+        Args:
+            original_exception: The original exception that occurred while
+                monitoring the pipeline run.
+        """
+        self.original_exception = original_exception

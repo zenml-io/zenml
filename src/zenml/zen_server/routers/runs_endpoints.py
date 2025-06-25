@@ -124,7 +124,7 @@ def get_or_create_pipeline_run(
     deprecated=True,
     tags=["runs"],
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_runs(
     runs_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)
@@ -163,7 +163,7 @@ def list_runs(
     "/{run_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_run(
     run_id: UUID,
     hydrate: bool = True,
@@ -233,7 +233,7 @@ def get_run(
     "/{run_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def update_run(
     run_id: UUID,
     run_model: PipelineRunUpdate,
@@ -281,7 +281,7 @@ def delete_run(
     "/{run_id}" + STEPS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_run_steps(
     run_id: UUID,
     step_run_filter_model: StepRunFilter = Depends(

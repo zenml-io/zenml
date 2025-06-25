@@ -34,6 +34,7 @@ from zenml.orchestrators import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
     ContainerizedOrchestrator,
+    SubmissionResult,
 )
 from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils, string_utils
@@ -100,24 +101,32 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID}."
             )
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Any:
-        """Sequentially runs all pipeline steps in local Docker containers.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
-                environment.
+                environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If a step fails.
+
+        Returns:
+            Optional submission result.
         """
         if deployment.schedule:
             logger.warning(
@@ -203,6 +212,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
         )
+        return None
 
 
 class LocalDockerOrchestratorSettings(BaseSettings):
