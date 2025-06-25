@@ -2409,7 +2409,13 @@ class RestZenStore(BaseZenStore):
         )
         self._populate_connector_type(connector_model)
         # Call this to properly split the secrets from the configuration
-        connector_model.validate_configuration()
+        try:
+            connector_model.validate_configuration()
+        except ValueError as e:
+            logger.error(
+                f"Error validating connector configuration for "
+                f"{connector_model.name}: {e}"
+            )
         return connector_model
 
     def get_service_connector(
@@ -2438,8 +2444,14 @@ class RestZenStore(BaseZenStore):
         )
         self._populate_connector_type(connector_model)
         if expand_secrets:
-            # Call this to properly split the secrets from the configuration
-            connector_model.validate_configuration()
+            try:
+                # Call this to properly split the secrets from the configuration
+                connector_model.validate_configuration()
+            except ValueError as e:
+                logger.error(
+                    f"Error validating connector configuration for "
+                    f"{connector_model.name}: {e}"
+                )
         return connector_model
 
     def list_service_connectors(
@@ -2471,7 +2483,13 @@ class RestZenStore(BaseZenStore):
         if expand_secrets:
             # Call this to properly split the secrets from the configuration
             for connector_model in connector_models.items:
-                connector_model.validate_configuration()
+                try:
+                    connector_model.validate_configuration()
+                except ValueError as e:
+                    logger.error(
+                        f"Error validating connector configuration for "
+                        f"{connector_model.name}: {e}"
+                    )
         return connector_models
 
     def update_service_connector(
@@ -2512,7 +2530,13 @@ class RestZenStore(BaseZenStore):
         )
         self._populate_connector_type(connector_model)
         # Call this to properly split the secrets from the configuration
-        connector_model.validate_configuration()
+        try:
+            connector_model.validate_configuration()
+        except ValueError as e:
+            logger.error(
+                f"Error validating connector configuration for "
+                f"{connector_model.name}: {e}"
+            )
         return connector_model
 
     def delete_service_connector(self, service_connector_id: UUID) -> None:
@@ -2680,7 +2704,13 @@ class RestZenStore(BaseZenStore):
         connector = ServiceConnectorResponse.model_validate(response_body)
         self._populate_connector_type(connector)
         # Call this to properly split the secrets from the configuration
-        connector.validate_configuration()
+        try:
+            connector.validate_configuration()
+        except ValueError as e:
+            logger.error(
+                f"Error validating connector configuration for connector client "
+                f"{connector.name}: {e}"
+            )
         return connector
 
     def list_service_connector_resources(

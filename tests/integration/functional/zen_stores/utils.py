@@ -830,6 +830,59 @@ class CatVoicePrint(AuthenticationConfig):
     )
 
 
+class CatPawPrint(AuthenticationConfig):
+    """Cat paw print authentication credentials."""
+
+    color: Optional[str] = Field(
+        default=None,
+        title="Cat color.",
+    )
+    dreams: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
+        title="Cat dreams.",
+    )
+    hiding_place: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
+        title="Hiding place",
+    )
+    language: Optional[str] = Field(
+        default=None,
+        title="Cat language.",
+    )
+    foods: Optional[str] = Field(
+        default=None,
+        title="Cat foods.",
+    )
+    chase: Optional[str] = Field(
+        default=None,
+        title="Cat chase.",
+    )
+
+
+class CatTailPrint(AuthenticationConfig):
+    """Cat tail print authentication credentials."""
+
+    color: Optional[str] = Field(
+        default=None,
+        title="Cat color.",
+    )
+    dreams: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
+        title="Cat dreams.",
+    )
+    hiding_place: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
+        title="Hiding place",
+    )
+    language: Optional[str] = Field(
+        default=None,
+        title="Cat language.",
+    )
+    foods: Optional[str] = Field(
+        default=None,
+        title="Cat foods.",
+    )
+
 class ServiceConnectorTypeContext:
     def __init__(
         self,
@@ -858,20 +911,30 @@ class ServiceConnectorTypeContext:
                     auth_method="voice-print",
                     config_class=CatVoicePrint,
                 ),
+                AuthenticationMethodModel(
+                    name="Paw print authentication",
+                    auth_method="paw-print",
+                    config_class=CatPawPrint,
+                ),
+                AuthenticationMethodModel(
+                    name="Tail print authentication",
+                    auth_method="tail-print",
+                    config_class=CatTailPrint,
+                ),
             ],
             resource_types=[
                 ResourceTypeModel(
                     name="Cat scratches",
                     resource_type=self.resource_type_one
                     or sample_name("scratch"),
-                    auth_methods=["claw-marks", "voice-print"],
+                    auth_methods=["claw-marks", "voice-print", "paw-print", "tail-print"],
                     supports_instances=True,
                 ),
                 ResourceTypeModel(
                     name="Cat purrs",
                     resource_type=self.resource_type_two
                     or sample_name("purr"),
-                    auth_methods=["claw-marks", "voice-print"],
+                    auth_methods=["claw-marks", "voice-print", "paw-print", "tail-print"],
                     supports_instances=False,
                 ),
             ],
