@@ -54,6 +54,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
+    dehydrate_response_model,
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
@@ -417,11 +418,10 @@ def stop_run(
         graceful: If True, allows for graceful shutdown where possible.
             If False, forces immediate termination. Default is False.
     """
-    run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=zen_store().get_run,
-        hydrate=True,
-    )
+    run = zen_store().get_run(run_id, hydrate=True)
+    verify_permission_for_model(run, action=Action.READ)
+    verify_permission_for_model(run, action=Action.UPDATE)
+    dehydrate_response_model(run)
     run_utils.stop_run(run=run, graceful=graceful)
 
 
