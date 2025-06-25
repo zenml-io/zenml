@@ -371,8 +371,14 @@ class StepLauncher:
         start_time = time.time()
         try:
             if self._step.config.step_operator:
+                if isinstance(self._step.config.step_operator, bool):
+                    assert self._stack.step_operator is not None
+                    step_operator_name = self._stack.step_operator.name
+                else:
+                    step_operator_name = self._step.config.step_operator
+
                 self._run_step_with_step_operator(
-                    step_operator_name=self._step.config.step_operator,
+                    step_operator_name=step_operator_name,
                     step_run_info=step_run_info,
                     last_retry=last_retry,
                 )
