@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Shared utilities for Modal integration components."""
 
-import hashlib
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -193,23 +192,6 @@ def get_resource_values(
     return cpu_count, memory_mb
 
 
-def _generate_image_cache_key(
-    image_name: str, environment: Dict[str, str]
-) -> str:
-    """Generate a cache key for Modal image based on inputs.
-
-    Args:
-        image_name: Base Docker image name
-        environment: Environment variables
-
-    Returns:
-        Hash string to use as cache key
-    """
-    # Create deterministic string from inputs
-    cache_input = f"{image_name}|{sorted(environment.items())}"
-    return hashlib.sha256(cache_input.encode()).hexdigest()[:12]
-
-
 def build_modal_image(
     image_name: str,
     stack: "Stack",
@@ -236,10 +218,7 @@ def build_modal_image(
             "it is correctly configured."
         )
 
-    # Generate cache key for this image configuration
-    cache_key = _generate_image_cache_key(image_name, environment)
-
-    logger.info(f"Building Modal image (cache key: {cache_key})")
+    logger.info("Building Modal image")
     logger.info(f"Base image: {image_name}")
 
     if docker_creds := stack.container_registry.credentials:

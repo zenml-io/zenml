@@ -16,6 +16,7 @@
 import argparse
 import asyncio
 import os
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -86,6 +87,9 @@ def run_step_on_modal(
     """
     logger.info(f"Running step '{step_name}' in Modal sandbox")
 
+    # Create a deep copy of pipeline-level settings to avoid modifying the original
+    step_settings_copy = deepcopy(settings)
+
     # Get step-specific settings if any
     step_config = deployment.step_configurations[step_name].config
     step_settings = step_config.settings.get("orchestrator.modal", None)
@@ -93,12 +97,12 @@ def run_step_on_modal(
         step_modal_settings = ModalOrchestratorSettings.model_validate(
             step_settings.model_dump() if step_settings else {}
         )
-        # Merge with pipeline-level settings
+        # Merge with pipeline-level settings copy
         for key, value in step_modal_settings.model_dump(
             exclude_unset=True
         ).items():
             if value is not None:
-                setattr(settings, key, value)
+                setattr(step_settings_copy, key, value)
 
     # Get resource settings for this step
     resource_settings = step_config.settings.get(RESOURCE_SETTINGS_KEY)
@@ -112,7 +116,7 @@ def run_step_on_modal(
     zenml_image = build_modal_image(image_name, active_stack, environment)
 
     # Configure resources
-    gpu_values = get_gpu_values(settings.gpu, resource_settings)
+    gpu_values = get_gpu_values(step_settings_copy.gpu, resource_settings)
     cpu_count, memory_mb = get_resource_values(resource_settings)
 
     # Create step entrypoint command
@@ -138,10 +142,10 @@ def run_step_on_modal(
                 gpu_values=gpu_values,
                 cpu_count=cpu_count,
                 memory_mb=memory_mb,
-                cloud=settings.cloud,
-                region=settings.region,
-                timeout=settings.timeout,
-                environment_name=settings.modal_environment,
+                cloud=step_settings_copy.cloud,
+                region=step_settings_copy.region,
+                timeout=step_settings_copy.timeout,
+                environment_name=step_settings_copy.modal_environment,
             )
         )
         logger.info(f"Step {step_name} completed successfully")
