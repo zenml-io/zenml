@@ -164,6 +164,7 @@ class StepLauncher:
 
             logs_model = LogsRequest(
                 uri=logs_uri,
+                descriptor="step",
                 artifact_store_id=self._stack.artifact_store.id,
             )
 

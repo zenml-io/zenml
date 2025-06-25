@@ -144,6 +144,9 @@ class PipelineRunUpdate(BaseUpdate):
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the pipeline run."
     )
+    add_logs: Optional[List[LogsRequest]] = Field(
+        default=None, title="New logs to add to the pipeline run."
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -252,7 +255,7 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
     )
-    logs: Optional["LogsResponse"] = Field(
+    logs: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this pipeline run.",
         default=None,
     )
@@ -583,7 +586,7 @@ class PipelineRunResponse(
         return self.get_resources().tags
 
     @property
-    def logs(self) -> Optional["LogsResponse"]:
+    def logs(self) -> Optional[List["LogsResponse"]]:
         """The `logs` property.
 
         Returns:
