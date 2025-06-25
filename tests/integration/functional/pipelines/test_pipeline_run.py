@@ -2,7 +2,6 @@ import os
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 
 from zenml import pipeline, step
 from zenml.constants import ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING
@@ -127,21 +126,15 @@ def test_duplicate_pipeline_run_name_raises_improved_error(clean_client):
     first_run = test_pipeline.with_options(run_name=run_name)()
     assert first_run.name == run_name
 
-    # Second run with same name should raise an error
-    # This tests the actual behavior - currently raises IntegrityError at DB level
-    # When improved error handling is implemented, this can be updated to expect EntityExistsError
-    with pytest.raises((EntityExistsError, IntegrityError)) as exc_info:
+    # Second run with same name should raise EntityExistsError with clear message
+    with pytest.raises(EntityExistsError) as exc_info:
         test_pipeline.with_options(run_name=run_name)()
 
     error_message = str(exc_info.value)
 
-    # Verify it's a duplicate name error (either improved or raw database error)
-    # The message should now come from _verify_name_uniqueness after our session.no_autoflush fix
+    # Verify it contains a clear duplicate name error message
     assert (
         "already exists" in error_message.lower()
         or "existing pipeline run with the same name" in error_message.lower()
         or f"Pipeline run name '{run_name}' already exists" in error_message
     )
-
-    # Verify it's an EntityExistsError, not a raw IntegrityError
-    assert isinstance(exc_info.value, EntityExistsError)
