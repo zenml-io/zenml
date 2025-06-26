@@ -5500,17 +5500,18 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
-        load_secrets: bool = False,
         hydrate: bool = True,
+        expand_secrets: bool = False,
     ) -> ServiceConnectorResponse:
         """Fetches a registered service connector.
 
         Args:
             name_id_or_prefix: The id of the service connector to fetch.
             allow_name_prefix_match: If True, allow matching by name prefix.
-            load_secrets: If True, load the secrets for the service connector.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: If True, expand the secrets for the service
+                connector.
 
         Returns:
             The registered service connector.
@@ -5521,24 +5522,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             hydrate=hydrate,
+            expand_secrets=expand_secrets,
         )
-
-        if load_secrets and connector.secret_id:
-            client = Client()
-            try:
-                secret = client.get_secret(
-                    name_id_or_prefix=connector.secret_id,
-                    allow_partial_id_match=False,
-                    allow_partial_name_match=False,
-                )
-            except KeyError as err:
-                logger.error(
-                    "Unable to retrieve secret values associated with "
-                    f"service connector '{connector.name}': {err}"
-                )
-            else:
-                # Add secret values to connector configuration
-                connector.secrets.update(secret.values)
 
         return connector
 
@@ -5558,8 +5543,8 @@ class Client(metaclass=ClientMetaClass):
         resource_id: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
-        secret_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
+        expand_secrets: bool = False,
     ) -> Page[ServiceConnectorResponse]:
         """Lists all registered service connectors.
 
@@ -5580,10 +5565,10 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name/ID.
             name: The name of the service connector to filter by.
             labels: The labels of the service connector to filter by.
-            secret_id: Filter by the id of the secret that is referenced by the
-                service connector.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: If True, expand the secrets for the service
+                connectors.
 
         Returns:
             A page of service connectors.
@@ -5603,11 +5588,11 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             labels=labels,
-            secret_id=secret_id,
         )
         return self.zen_store.list_service_connectors(
             filter_model=connector_filter_model,
             hydrate=hydrate,
+            expand_secrets=expand_secrets,
         )
 
     def update_service_connector(
@@ -5691,7 +5676,9 @@ class Client(metaclass=ClientMetaClass):
         connector_model = self.get_service_connector(
             name_id_or_prefix,
             allow_name_prefix_match=False,
-            load_secrets=True,
+            # We need the existing secrets only if a new configuration is not
+            # provided.
+            expand_secrets=configuration is None,
         )
 
         connector_instance: Optional[ServiceConnector] = None
@@ -5736,23 +5723,16 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Validate and configure the resources
-        if configuration is not None:
+        connector_update.validate_and_configure_resources(
+            connector_type=connector,
+            resource_types=resource_types,
+            resource_id=resource_id,
             # The supplied configuration is a drop-in replacement for the
-            # existing configuration and secrets
-            connector_update.validate_and_configure_resources(
-                connector_type=connector,
-                resource_types=resource_types,
-                resource_id=resource_id,
-                configuration=configuration,
-            )
-        else:
-            connector_update.validate_and_configure_resources(
-                connector_type=connector,
-                resource_types=resource_types,
-                resource_id=resource_id,
-                configuration=connector_model.configuration,
-                secrets=connector_model.secrets,
-            )
+            # existing configuration
+            configuration=configuration
+            if configuration is not None
+            else connector_model.configuration,
+        )
 
         # Add the labels
         if labels is not None:
@@ -5912,6 +5892,12 @@ class Client(metaclass=ClientMetaClass):
                 list_resources=list_resources,
             )
         else:
+            # Get the service connector model, with full secrets
+            service_connector = self.get_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                expand_secrets=True,
+            )
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=service_connector
@@ -6034,6 +6020,12 @@ class Client(metaclass=ClientMetaClass):
                 # server-side implementation may not be able to do so
                 connector_client.verify()
         else:
+            # Get the service connector model, with full secrets
+            service_connector = self.get_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                expand_secrets=True,
+            )
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=service_connector
