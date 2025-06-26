@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field
 from zenml.integrations.vllm import VLLM_MODEL_DEPLOYER
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
@@ -28,7 +29,11 @@ if TYPE_CHECKING:
 class VLLMModelDeployerConfig(BaseModelDeployerConfig):
     """Configuration for vLLM Inference model deployer."""
 
-    service_path: str = ""
+    service_path: str = Field(
+        "",
+        description="The path where the local vLLM deployment service "
+        "configuration, PID and log files are stored."
+    )
 
 
 class VLLMModelDeployerFlavor(BaseModelDeployerFlavor):

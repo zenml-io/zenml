@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -56,14 +56,40 @@ class KubeflowOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply.
     """
 
-    synchronous: bool = True
-    timeout: int = 1200
+    synchronous: bool = Field(
+        True,
+        description="If `True`, the client running a pipeline using this "
+        "orchestrator waits until all steps finish running. If `False`, "
+        "the client returns immediately and the pipeline is executed "
+        "asynchronously."
+    )
+    timeout: int = Field(
+        1200,
+        description="How many seconds to wait for synchronous runs."
+    )
 
-    client_args: Dict[str, Any] = {}
-    client_username: Optional[str] = SecretField(default=None)
-    client_password: Optional[str] = SecretField(default=None)
-    user_namespace: Optional[str] = None
-    pod_settings: Optional[KubernetesPodSettings] = None
+    client_args: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Arguments to pass when initializing the KFP client."
+    )
+    client_username: Optional[str] = SecretField(
+        default=None,
+        description="Username to generate a session cookie for the kubeflow client. "
+        "Both `client_username` and `client_password` need to be set together."
+    )
+    client_password: Optional[str] = SecretField(
+        default=None,
+        description="Password to generate a session cookie for the kubeflow client. "
+        "Both `client_username` and `client_password` need to be set together."
+    )
+    user_namespace: Optional[str] = Field(
+        None,
+        description="The user namespace to use when creating experiments and runs."
+    )
+    pod_settings: Optional[KubernetesPodSettings] = Field(
+        None,
+        description="Pod settings to apply to the orchestrator and step pods."
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -147,9 +173,23 @@ class KubeflowOrchestratorConfig(
             connector.
     """
 
-    kubeflow_hostname: Optional[str] = None
-    kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: Optional[str] = None  # TODO: Potential setting
+    kubeflow_hostname: Optional[str] = Field(
+        None,
+        description="The hostname to use to talk to the Kubeflow Pipelines API. "
+        "If not set, the hostname will be derived from the Kubernetes API proxy. "
+        "Mandatory when connecting to a multi-tenant Kubeflow Pipelines deployment."
+    )
+    kubeflow_namespace: str = Field(
+        "kubeflow",
+        description="The Kubernetes namespace in which Kubeflow Pipelines is deployed."
+    )
+    kubernetes_context: Optional[str] = Field(
+        None,
+        description="Name of a kubernetes context to run pipelines in. "
+        "Not applicable when connecting to a multi-tenant Kubeflow Pipelines "
+        "deployment (i.e. when `kubeflow_hostname` is set) or if the stack "
+        "component is linked to a Kubernetes service connector."
+    )
 
     @model_validator(mode="before")
     @classmethod

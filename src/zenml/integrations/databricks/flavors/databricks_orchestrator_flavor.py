@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
+from pydantic import Field
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
@@ -41,32 +42,62 @@ class DatabricksAvailabilityType(StrEnum):
 
 class DatabricksOrchestratorSettings(BaseSettings):
     """Databricks orchestrator base settings.
-
-    Attributes:
-        spark_version: Spark version.
-        num_workers: Number of workers.
-        node_type_id: Node type id.
-        policy_id: Policy id.
-        autotermination_minutes: Autotermination minutes.
-        autoscale: Autoscale.
-        single_user_name: Single user name.
-        spark_conf: Spark configuration.
-        spark_env_vars: Spark environment variables.
-        schedule_timezone: Schedule timezone.
+    
+    Configuration for Databricks cluster and Spark execution settings.
+    Field descriptions are defined inline using Field() descriptors.
     """
 
-    # Resources
-    spark_version: Optional[str] = None
-    num_workers: Optional[int] = None
-    node_type_id: Optional[str] = None
-    policy_id: Optional[str] = None
-    autotermination_minutes: Optional[int] = None
-    autoscale: Tuple[int, int] = (0, 1)
-    single_user_name: Optional[str] = None
-    spark_conf: Optional[Dict[str, str]] = None
-    spark_env_vars: Optional[Dict[str, str]] = None
-    schedule_timezone: Optional[str] = None
-    availability_type: Optional[DatabricksAvailabilityType] = None
+    # Cluster Configuration
+    spark_version: Optional[str] = Field(
+        default=None,
+        description="Apache Spark version for the Databricks cluster. "
+        "Uses workspace default if not specified."
+    )
+    num_workers: Optional[int] = Field(
+        default=None,
+        description="Fixed number of worker nodes. Cannot be used with autoscaling."
+    )
+    node_type_id: Optional[str] = Field(
+        default=None,
+        description="Databricks node type identifier. "
+        "Refer to Databricks documentation for available instance types."
+    )
+    policy_id: Optional[str] = Field(
+        default=None,
+        description="Databricks cluster policy ID for governance and cost control."
+    )
+    autotermination_minutes: Optional[int] = Field(
+        default=None,
+        description="Minutes of inactivity before automatic cluster termination. "
+        "Helps control costs by shutting down idle clusters."
+    )
+    autoscale: Tuple[int, int] = Field(
+        default=(0, 1),
+        description="Cluster autoscaling bounds as (min_workers, max_workers). "
+        "Automatically adjusts cluster size based on workload."
+    )
+    single_user_name: Optional[str] = Field(
+        default=None,
+        description="Databricks username for single-user cluster access mode."
+    )
+    spark_conf: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Custom Spark configuration properties as key-value pairs."
+    )
+    spark_env_vars: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Environment variables for the Spark driver and executors."
+    )
+    schedule_timezone: Optional[str] = Field(
+        default=None,
+        description="Timezone for scheduled pipeline execution. "
+        "Uses IANA timezone format (e.g., 'America/New_York')."
+    )
+    availability_type: Optional[DatabricksAvailabilityType] = Field(
+        default=None,
+        description="Instance availability type: ON_DEMAND (guaranteed), SPOT (cost-optimized), "
+        "or SPOT_WITH_FALLBACK (spot with on-demand backup)."
+    )
 
 
 class DatabricksOrchestratorConfig(

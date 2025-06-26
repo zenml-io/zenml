@@ -16,7 +16,7 @@
 import re
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -47,8 +47,14 @@ class VertexExperimentTrackerSettings(BaseSettings):
         experiment_tensorboard: The VertexAI experiment tensorboard.
     """
 
-    experiment: Optional[str] = None
-    experiment_tensorboard: Optional[Union[str, bool]] = None
+    experiment: Optional[str] = Field(
+        None,
+        description="The VertexAI experiment name."
+    )
+    experiment_tensorboard: Optional[Union[str, bool]] = Field(
+        None,
+        description="The VertexAI experiment tensorboard instance to use."
+    )
 
     @field_validator("experiment", mode="before")
     def _validate_experiment(cls, value: str) -> str:

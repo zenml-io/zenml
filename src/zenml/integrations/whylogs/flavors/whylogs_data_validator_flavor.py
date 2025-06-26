@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field
 from zenml.config.base_settings import BaseSettings
 from zenml.data_validators.base_data_validator import (
     BaseDataValidatorConfig,
@@ -37,8 +38,16 @@ class WhylogsDataValidatorSettings(BaseSettings):
         dataset_id: Dataset ID to use when uploading profiles to Whylabs.
     """
 
-    enable_whylabs: bool = False
-    dataset_id: Optional[str] = None
+    enable_whylabs: bool = Field(
+        False,
+        description="If set to `True` for a step, all the whylogs data "
+        "profile views returned by the step will automatically be uploaded "
+        "to the Whylabs platform if Whylabs credentials are configured."
+    )
+    dataset_id: Optional[str] = Field(
+        None,
+        description="Dataset ID to use when uploading profiles to Whylabs."
+    )
 
 
 class WhylogsDataValidatorConfig(

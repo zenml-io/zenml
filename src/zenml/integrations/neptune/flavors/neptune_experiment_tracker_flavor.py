@@ -21,6 +21,7 @@ __all__ = [
 
 from typing import TYPE_CHECKING, Optional, Set, Type
 
+from pydantic import Field
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTrackerConfig,
@@ -46,8 +47,14 @@ class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
         api_token: your Neptune API token
     """
 
-    project: Optional[str] = None
-    api_token: Optional[str] = SecretField(default=None)
+    project: Optional[str] = Field(
+        None,
+        description="Name of the Neptune project you want to log the metadata to."
+    )
+    api_token: Optional[str] = SecretField(
+        default=None,
+        description="Your Neptune API token for authentication."
+    )
 
 
 class NeptuneExperimentTrackerSettings(BaseSettings):
@@ -57,7 +64,10 @@ class NeptuneExperimentTrackerSettings(BaseSettings):
         tags: Tags for the Neptune run.
     """
 
-    tags: Set[str] = set()
+    tags: Set[str] = Field(
+        default_factory=set,
+        description="Tags for the Neptune run."
+    )
 
 
 class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):

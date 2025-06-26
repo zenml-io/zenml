@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -67,9 +67,18 @@ class MLFlowExperimentTrackerSettings(BaseSettings):
         tags: Tags for the Mlflow run.
     """
 
-    experiment_name: Optional[str] = None
-    nested: bool = False
-    tags: Dict[str, Any] = {}
+    experiment_name: Optional[str] = Field(
+        None,
+        description="The MLflow experiment name to use for tracking runs."
+    )
+    nested: bool = Field(
+        False,
+        description="If `True`, will create a nested sub-run for the step."
+    )
+    tags: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Tags to attach to the MLflow run for categorization and filtering."
+    )
 
 
 class MLFlowExperimentTrackerConfig(
@@ -102,13 +111,42 @@ class MLFlowExperimentTrackerConfig(
             logging and registering models.
     """
 
-    tracking_uri: Optional[str] = None
-    tracking_username: Optional[str] = SecretField(default=None)
-    tracking_password: Optional[str] = SecretField(default=None)
-    tracking_token: Optional[str] = SecretField(default=None)
-    tracking_insecure_tls: bool = False
-    databricks_host: Optional[str] = None
-    enable_unity_catalog: bool = False
+    tracking_uri: Optional[str] = Field(
+        None,
+        description="The URI of the MLflow tracking server. If no URI is set, "
+        "your stack must contain a LocalArtifactStore and ZenML will point "
+        "MLflow to a subdirectory of your artifact store instead."
+    )
+    tracking_username: Optional[str] = SecretField(
+        default=None,
+        description="Username for authenticating with the MLflow tracking server. "
+        "Required when using a remote tracking URI along with tracking_password."
+    )
+    tracking_password: Optional[str] = SecretField(
+        default=None,
+        description="Password for authenticating with the MLflow tracking server. "
+        "Required when using a remote tracking URI along with tracking_username."
+    )
+    tracking_token: Optional[str] = SecretField(
+        default=None,
+        description="Token for authenticating with the MLflow tracking server. "
+        "Alternative to username/password authentication for remote tracking URIs."
+    )
+    tracking_insecure_tls: bool = Field(
+        False,
+        description="Skips verification of TLS connection to the MLflow tracking "
+        "server if set to `True`. Use with caution in production environments."
+    )
+    databricks_host: Optional[str] = Field(
+        None,
+        description="The host of the Databricks workspace with the MLflow managed "
+        "server to connect to. Required when tracking_uri is set to 'databricks'."
+    )
+    enable_unity_catalog: bool = Field(
+        False,
+        description="If `True`, will enable the Databricks Unity Catalog for "
+        "logging and registering models."
+    )
 
     @model_validator(mode="after")
     def _ensure_authentication_if_necessary(
