@@ -20,6 +20,7 @@ from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.models import (
     ResourcesInfo,
+    ServiceConnectorConfiguration,
     ServiceConnectorInfo,
     ServiceConnectorRequest,
     ServiceConnectorResourcesInfo,
@@ -187,8 +188,9 @@ def get_resources_options_from_resource_model_for_full_stack(
                 name="fake",
                 connector_type=connector_details.type,
                 auth_method=connector_details.auth_method,
-                configuration=connector_details.configuration,
-                secrets={},
+                configuration=ServiceConnectorConfiguration(
+                    **connector_details.configuration
+                ),
                 labels={},
             ),
             list_resources=True,

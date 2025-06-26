@@ -36,6 +36,7 @@ arange = "arange"
 cachable = "cachable"
 OT = "OT"
 cll = "cll"
+ser = "ser"
 
 [default]
 locale = "en-us"
