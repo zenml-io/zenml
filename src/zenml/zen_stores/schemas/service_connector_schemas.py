@@ -25,6 +25,7 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
+    ServiceConnectorConfiguration,
     ServiceConnectorRequest,
     ServiceConnectorResponse,
     ServiceConnectorResponseBody,
@@ -168,6 +169,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             The created `ServiceConnectorSchema`.
         """
         assert connector_request.user is not None, "User must be set."
+        configuration = connector_request.configuration.non_secrets
         return cls(
             user_id=connector_request.user,
             name=connector_request.name,
@@ -180,9 +182,9 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             resource_id=connector_request.resource_id,
             supports_instances=connector_request.supports_instances,
             configuration=base64.b64encode(
-                json.dumps(connector_request.configuration).encode("utf-8")
+                json.dumps(configuration).encode("utf-8")
             )
-            if connector_request.configuration
+            if configuration
             else None,
             secret_id=secret_id,
             expires_at=connector_request.expires_at,
@@ -226,15 +228,16 @@ class ServiceConnectorSchema(NamedSchema, table=True):
                     self.expiration_seconds = None
                 continue
             if field == "configuration":
-                self.configuration = (
-                    base64.b64encode(
-                        json.dumps(connector_update.configuration).encode(
-                            "utf-8"
+                if connector_update.configuration is not None:
+                    configuration = connector_update.configuration.non_secrets
+                    if configuration is not None:
+                        self.configuration = (
+                            base64.b64encode(
+                                json.dumps(configuration).encode("utf-8")
+                            )
+                            if configuration
+                            else None
                         )
-                    )
-                    if connector_update.configuration
-                    else None
-                )
             elif field == "resource_types":
                 self.resource_types = base64.b64encode(
                     json.dumps(connector_update.resource_types).encode("utf-8")
@@ -286,12 +289,11 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ServiceConnectorResponseMetadata(
-                configuration=json.loads(
-                    base64.b64decode(self.configuration).decode()
+                configuration=ServiceConnectorConfiguration(
+                    **json.loads(base64.b64decode(self.configuration).decode())
                 )
                 if self.configuration
-                else {},
-                secret_id=self.secret_id,
+                else ServiceConnectorConfiguration(),
                 expiration_seconds=self.expiration_seconds,
                 labels=self.labels_dict,
             )
