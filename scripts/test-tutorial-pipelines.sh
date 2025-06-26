@@ -39,19 +39,8 @@ echo "📋 Discovering pipeline files..."
 # Configuration
 readonly PIPELINE_TIMEOUT=300
 
-# Define all pipeline files to test
-PIPELINE_FILES=(
-    "pipelines/caching/cache_pipeline.py"
-    "pipelines/fanOut/fan_pipeline.py"
-    "pipelines/helloWorld/hello_pipeline.py"
-    "pipelines/metadata/meta_pipeline.py"
-    "pipelines/parameters/param_pipeline.py"
-    "pipelines/retries/robust_pipeline.py"
-    "pipelines/stepIO/io_pipeline.py"
-    "pipelines/tagging/tagged_pipeline.py"
-    "pipelines/visualizations/viz_pipeline.py"
-    "pipelines/yamlConfig/yaml_pipeline.py"
-)
+# Dynamically discover all pipeline files to test
+mapfile -t PIPELINE_FILES < <(find pipelines -name "*_pipeline.py" -type f | sort)
 
 echo "📊 Found ${#PIPELINE_FILES[@]} pipeline files to test"
 
