@@ -161,7 +161,7 @@ class ThreadedDagRunner:
                         break
 
                 logger.debug(f"Waiting for {running_nodes} nodes to finish.")
-                time.sleep(10)
+                time.sleep(1)
 
     def _run_node(self, node: str) -> None:
         """Run a single node.
@@ -171,13 +171,13 @@ class ThreadedDagRunner:
         Args:
             node: The node.
         """
+        self._prepare_node_run(node)
+
         if self.preparation_fn:
             run_required = self.preparation_fn(node)
             if not run_required:
                 self._finish_node(node)
                 return
-
-        self._prepare_node_run(node)
 
         try:
             self.run_fn(node)
