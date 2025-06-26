@@ -65,7 +65,7 @@ from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
 )
-from sqlalchemy.orm import Mapped, joinedload, noload, selectinload
+from sqlalchemy.orm import Mapped, noload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
 from sqlmodel import Session as SqlModelSession
@@ -5332,15 +5332,17 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=[
-                    selectinload(jl_arg(PipelineRunSchema.deployment)).load_only(
+                    selectinload(
+                        jl_arg(PipelineRunSchema.deployment)
+                    ).load_only(
                         jl_arg(PipelineDeploymentSchema.pipeline_configuration)
                     ),
-                    selectinload(jl_arg(PipelineRunSchema.step_runs)).selectinload(
-                        jl_arg(StepRunSchema.input_artifacts)
-                    ),
-                    selectinload(jl_arg(PipelineRunSchema.step_runs)).selectinload(
-                        jl_arg(StepRunSchema.output_artifacts)
-                    ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.step_runs)
+                    ).selectinload(jl_arg(StepRunSchema.input_artifacts)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.step_runs)
+                    ).selectinload(jl_arg(StepRunSchema.output_artifacts)),
                 ],
             )
             assert run.deployment is not None
