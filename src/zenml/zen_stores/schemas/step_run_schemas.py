@@ -191,6 +191,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     step_configuration_schema: Optional["StepConfigurationSchema"] = (
         Relationship(
             sa_relationship_kwargs=dict(
+                viewonly=True,
                 primaryjoin="and_(foreign(StepConfigurationSchema.name) == StepRunSchema.name, foreign(StepConfigurationSchema.deployment_id) == StepRunSchema.deployment_id)",
             ),
         )
