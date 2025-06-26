@@ -36,6 +36,9 @@ fi
 
 echo "📋 Discovering pipeline files..."
 
+# Configuration
+readonly PIPELINE_TIMEOUT=300
+
 # Define all pipeline files to test
 PIPELINE_FILES=(
     "pipelines/caching/cache_pipeline.py"
@@ -64,7 +67,7 @@ for pipeline in "${PIPELINE_FILES[@]}"; do
         echo "🔍 Testing pipeline: $pipeline"
         echo "----------------------------------------"
         
-        if timeout 300 env PYTHONPATH="$(pwd):${PYTHONPATH:-}" python "$pipeline"; then
+        if timeout "$PIPELINE_TIMEOUT" env PYTHONPATH="$(pwd):${PYTHONPATH:-}" python "$pipeline"; then
             echo "✅ PASSED: $pipeline"
             ((PASSED++))
         else
