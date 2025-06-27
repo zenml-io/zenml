@@ -6420,9 +6420,15 @@ class Client(metaclass=ClientMetaClass):
         if model_version_name_or_number_or_id is None:
             model_version_name_or_number_or_id = ModelStages.LATEST
 
-        if isinstance(model_version_name_or_number_or_id, UUID):
+        if is_valid_uuid(model_version_name_or_number_or_id):
+            assert not isinstance(model_version_name_or_number_or_id, int)
+            model_version_id = (
+                UUID(model_version_name_or_number_or_id)
+                if isinstance(model_version_name_or_number_or_id, str)
+                else model_version_name_or_number_or_id
+            )
             return self.zen_store.get_model_version(
-                model_version_id=model_version_name_or_number_or_id,
+                model_version_id=model_version_id,
                 hydrate=hydrate,
             )
         elif isinstance(model_version_name_or_number_or_id, int):
