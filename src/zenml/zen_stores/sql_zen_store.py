@@ -8811,7 +8811,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: if the step run already exists.
-            RunStoppedException: if the pipeline run is stopped or stopping.
+            IllegalOperationError: if the pipeline run is stopped or stopping.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
@@ -8829,7 +8829,7 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.STOPPING,
                 ExecutionStatus.STOPPED,
             ]:
-                raise RunStoppedException(
+                raise IllegalOperationError(
                     f"Cannot create step '{step_run.name}' for pipeline in "
                     f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
                 )
