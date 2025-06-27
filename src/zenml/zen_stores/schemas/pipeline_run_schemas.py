@@ -333,7 +333,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
         )
-    
+
     def get_pipeline_configuration(self) -> PipelineConfiguration:
         """Get the pipeline configuration for the pipeline run.
 

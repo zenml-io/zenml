@@ -293,7 +293,6 @@ class StepLauncher:
                             model_version=model_version,
                         )
 
-
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)

@@ -8921,7 +8921,7 @@ class SqlZenStore(BaseZenStore):
 
                 cascading_tags = [
                     tag
-                    for tag in run.get_pipeline_configuration().tags
+                    for tag in run.get_pipeline_configuration().tags or []
                     if isinstance(tag, Tag) and tag.cascade
                 ]
 
@@ -9002,7 +9002,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.commit()
-            session.refresh(step_schema, ["input_artifacts", "output_artifacts"])
+            session.refresh(
+                step_schema, ["input_artifacts", "output_artifacts"]
+            )
 
             if model_version_id := self._get_or_create_model_version_for_run(
                 step_schema

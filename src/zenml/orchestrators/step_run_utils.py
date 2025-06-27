@@ -14,9 +14,8 @@
 """Utilities for creating step runs."""
 
 import json
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple
 
-from zenml import Tag, add_tags
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
