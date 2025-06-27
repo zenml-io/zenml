@@ -51,7 +51,9 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+)
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -550,8 +552,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Raises:
             RuntimeError: If the DB entry does not represent a placeholder run.
-            ValueError: If the run request does not match the deployment or
-                pipeline ID of the placeholder run.
+            ValueError: If the run request is not a valid request to replace the
+                placeholder run.
 
         Returns:
             The updated `PipelineRunSchema`.
@@ -562,13 +564,33 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "placeholder run."
             )
 
+        if request.is_placeholder_request:
+            raise ValueError(
+                "Cannot replace a placeholder run with another placeholder run."
+            )
+
         if (
             self.deployment_id != request.deployment
             or self.pipeline_id != request.pipeline
+            or self.project_id != request.project
         ):
             raise ValueError(
-                "Deployment or orchestrator run ID of placeholder run do not "
-                "match the IDs of the run request."
+                "Deployment, project or pipeline ID of placeholder run "
+                "do not match the IDs of the run request."
+            )
+
+        if not request.orchestrator_run_id:
+            raise ValueError(
+                "Orchestrator run ID is required to replace a placeholder run."
+            )
+
+        if (
+            self.orchestrator_run_id
+            and self.orchestrator_run_id != request.orchestrator_run_id
+        ):
+            raise ValueError(
+                "Orchestrator run ID of placeholder run does not match the "
+                "ID of the run request."
             )
 
         orchestrator_environment = json.dumps(request.orchestrator_environment)
@@ -587,7 +609,4 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             Whether the pipeline run is a placeholder run.
         """
-        return (
-            self.orchestrator_run_id is None
-            and self.status == ExecutionStatus.INITIALIZING
-        )
+        return self.status == ExecutionStatus.INITIALIZING.value

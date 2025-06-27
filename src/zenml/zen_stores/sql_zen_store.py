@@ -5845,18 +5845,33 @@ class SqlZenStore(BaseZenStore):
             # transaction to do so finishes. After the first transaction
             # finishes, the subsequent queries will not be able to find a
             # placeholder run anymore, as we already updated the
-            # orchestrator_run_id.
-            # Note: This only locks a single row if the where clause of
-            # the query is indexed (we have a unique index due to the
-            # unique constraint on those columns). Otherwise, this will lock
-            # multiple rows or even the complete table which we want to
-            # avoid.
+            # status.
+            # Note: Due to our unique index on deployment_id and
+            # orchestrator_run_id, this only locks a single row. If you're
+            # modifying this WHERE clause, make sure to test/adjust so this
+            # does not lock multiple rows or even the complete table.
             .with_for_update()
             .where(PipelineRunSchema.deployment_id == pipeline_run.deployment)
             .where(
-                PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
+                or_(
+                    PipelineRunSchema.orchestrator_run_id
+                    == pipeline_run.orchestrator_run_id,
+                    col(PipelineRunSchema.orchestrator_run_id).is_(None),
+                )
             )
-            .where(PipelineRunSchema.project_id == pipeline_run.project)
+            .where(
+                PipelineRunSchema.status == ExecutionStatus.INITIALIZING.value
+            )
+            # In very rare cases, there can be multiple placeholder runs for
+            # the same deployment. By ordering by the orchestrator_run_id, we
+            # make sure that we use the placeholder run with the matching
+            # orchestrator_run_id if it exists, before falling back to the
+            # placeholder run without any orchestrator_run_id provided.
+            # Note: This works because both SQLite and MySQL consider NULLs
+            # to be lower than any other value. If we add support for other
+            # databases (e.g. PostgreSQL, which considers NULLs to be greater
+            # than any other value), we need to potentially adjust this.
+            .order_by(desc(PipelineRunSchema.orchestrator_run_id))
         ).first()
 
         if not run_schema:
@@ -5903,6 +5918,9 @@ class SqlZenStore(BaseZenStore):
             .where(PipelineRunSchema.deployment_id == deployment_id)
             .where(
                 PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
+            )
+            .where(
+                PipelineRunSchema.status != ExecutionStatus.INITIALIZING.value
             )
         ).first()
 
@@ -5956,27 +5974,31 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            try:
-                return (
-                    self._replace_placeholder_run(
-                        pipeline_run=pipeline_run,
-                        pre_replacement_hook=pre_creation_hook,
-                        session=session,
-                    ),
-                    True,
-                )
-            except KeyError:
-                # We were not able to find/replace a placeholder run. This could
-                # be due to one of the following three reasons:
-                # (1) There never was a placeholder run for the deployment. This
-                #     is the case if the user ran the pipeline on a schedule.
-                # (2) There was a placeholder run, but a previous pipeline run
-                #     already used it. This is the case if users rerun a
-                #     pipeline run e.g. from the orchestrator UI, as they will
-                #     use the same deployment_id with a new orchestrator_run_id.
-                # (3) A step of the same pipeline run already replaced the
-                #     placeholder run.
-                pass
+            if not pipeline_run.is_placeholder_request:
+                # Only run this if the request is not a placeholder run itself,
+                # as we don't want to replace a placeholder run with another
+                # placeholder run.
+                try:
+                    return (
+                        self._replace_placeholder_run(
+                            pipeline_run=pipeline_run,
+                            pre_replacement_hook=pre_creation_hook,
+                            session=session,
+                        ),
+                        True,
+                    )
+                except KeyError:
+                    # We were not able to find/replace a placeholder run. This could
+                    # be due to one of the following three reasons:
+                    # (1) There never was a placeholder run for the deployment. This
+                    #     is the case if the user ran the pipeline on a schedule.
+                    # (2) There was a placeholder run, but a previous pipeline run
+                    #     already used it. This is the case if users rerun a
+                    #     pipeline run e.g. from the orchestrator UI, as they will
+                    #     use the same deployment_id with a new orchestrator_run_id.
+                    # (3) A step of the same pipeline run already replaced the
+                    #     placeholder run.
+                    pass
 
             try:
                 # We now try to create a new run. The following will happen in
