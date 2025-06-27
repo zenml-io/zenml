@@ -78,6 +78,8 @@ ZenML transforms how you build and deploy AI systems by providing a comprehensiv
 
 Your workflow logic shouldn't be tied to your infrastructure. ZenML lets you write portable pipelines that run on your laptop for rapid iteration and seamlessly scale to any cloud stack for production – without changing a single line of code.
 
+![ZenML Stack Switching](docs/book/.gitbook/assets/stack_switching.gif)
+
 ```python
 from zenml import pipeline, step
 
@@ -102,8 +104,6 @@ zenml stack set aws_production
 python run.py
 ```
 
-_[Placeholder: GIF showing stack switching and pipeline execution]_
-
 ### Automatic Versioning & Lineage
 
 Every artifact, model, and pipeline run is automatically versioned and tracked. Whether you're debugging a model from six months ago or proving compliance for the EU AI Act, you have complete lineage of your AI systems.
@@ -127,7 +127,10 @@ def evaluate_llm(responses: list) -> float:
 
 ### Infrastructure Made Simple
 
-Deploy a complete MLOps stack with one command, or connect to your existing infrastructure. ZenML handles the complexity so you can focus on your AI logic.
+Deploy a complete MLOps stack with one command, or connect to your existing
+infrastructure. ZenML handles the complexity so you can focus on your AI logic.
+
+![ZenML Stack Deployment](docs/book/.gitbook/assets/register_orchestrator.png)
 
 ```bash
 # Deploy a new stack on AWS
@@ -137,8 +140,6 @@ zenml stack deploy --provider aws
 zenml stack register production --provider gcp
 ```
 
-_[Placeholder: Screenshot of ZenML dashboard showing stack components]_
-
 ### Seamless Tool Integration
 
 ZenML connects with the tools you already use, creating a unified workflow from experimentation to production. No vendor lock-in, just seamless integration.
@@ -147,7 +148,7 @@ ZenML connects with the tools you already use, creating a unified workflow from 
 |--------------|------------------|-------------|
 | **Portability** | Write once, run on any infrastructure | No code changes between dev and prod |
 | **Versioning** | Automatic tracking of all artifacts and models | Full reproducibility and compliance |
-| **Integration** | 40+ integrations with popular ML/LLM tools | Use your existing toolchain |
+| **Integration** | 60+ integrations with popular ML/LLM tools | Use your existing toolchain |
 | **Scalability** | From local runs to distributed cloud workloads | Grow without rewriting |
 | **Observability** | Built-in monitoring and alerting | Catch issues before they impact users |
 | **Collaboration** | Centralized dashboard and artifact store | Teams work together effectively |
@@ -195,11 +196,11 @@ def training_pipeline():
     promoted_model = promote_model(model, accuracy)
 ```
 
-_[Placeholder: DAG visualization from ZenML dashboard]_
-
 ### LLMOps: Scalable RAG Pipeline
 
 Orchestrate document processing, embedding generation, and vector store management for your RAG applications with automatic versioning and cost tracking.
+
+![ZenML RAG Pipeline](docs/book/.gitbook/assets/rag_pipeline.png)
 
 ```python
 from zenml import pipeline, step
@@ -247,7 +248,10 @@ def rag_ingestion_pipeline():
 
 ### Continuous LLM Evaluation
 
-Set up automated evaluation pipelines that monitor your LLM applications for quality, cost, and compliance.
+Set up automated evaluation pipelines that monitor your LLM applications for
+quality, cost, and compliance.
+
+![ZenML Monitoring Pipeline](docs/book/.gitbook/assets/compliance_dashboard.png)
 
 ```python
 from zenml import pipeline, step
