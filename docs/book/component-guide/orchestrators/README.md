@@ -34,6 +34,7 @@ Out of the box, ZenML comes with a `local` orchestrator already part of the defa
 | [SkypilotGCPOrchestrator](skypilot-vm.md)   | `vm_gcp`       | `skypilot[gcp]`   | Runs your pipelines in GCP VMs using SkyPilot                           |
 | [SkypilotAzureOrchestrator](skypilot-vm.md) | `vm_azure`     | `skypilot[azure]` | Runs your pipelines in Azure VMs using SkyPilot                         |
 | [HyperAIOrchestrator](hyperai.md)           | `hyperai`      | `hyperai`         | Runs your pipeline in HyperAI.ai instances.                             |
+| [ModalOrchestrator](modal.md)               | `modal`        | `modal`           | Runs your pipelines on Modal's serverless cloud platform.               |
 | [Custom Implementation](custom.md)          | _custom_       |                   | Extend the orchestrator abstraction and provide your own implementation |
 
 If you would like to see the available flavors of orchestrators, you can use the command:

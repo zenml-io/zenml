@@ -42,5 +42,5 @@ from zenml.integrations.modal.step_operators.modal_step_operator import (
 def test_get_gpu_values(gpu, gpu_count, expected_result):
     settings = ModalStepOperatorSettings(gpu=gpu)
     resource_settings = ResourceSettings(gpu_count=gpu_count)
-    result = get_gpu_values(settings, resource_settings)
+    result = get_gpu_values(settings.gpu, resource_settings)
     assert result == expected_result
