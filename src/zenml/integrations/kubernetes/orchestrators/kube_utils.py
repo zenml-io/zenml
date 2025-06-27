@@ -450,6 +450,39 @@ def create_or_update_secret(
         update_secret(core_api, namespace, secret_name, data)
 
 
+def create_or_update_secret_from_manifest(
+    core_api: k8s_client.CoreV1Api,
+    secret_manifest: Dict[str, Any],
+) -> None:
+    """Create or update a Kubernetes secret from a complete manifest.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        secret_manifest: Complete Kubernetes secret manifest dict.
+
+    Raises:
+        ApiException: If the secret creation failed for any reason other than
+            the secret already existing.
+    """
+    namespace = secret_manifest["metadata"]["namespace"]
+    secret_name = secret_manifest["metadata"]["name"]
+
+    try:
+        core_api.create_namespaced_secret(
+            namespace=namespace,
+            body=secret_manifest,
+        )
+    except ApiException as e:
+        if e.status == 409:  # Already exists, update it
+            core_api.patch_namespaced_secret(
+                name=secret_name,
+                namespace=namespace,
+                body=secret_manifest,
+            )
+        else:
+            raise
+
+
 def delete_secret(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
