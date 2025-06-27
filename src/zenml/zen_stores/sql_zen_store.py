@@ -8932,7 +8932,7 @@ class SqlZenStore(BaseZenStore):
                     output_artifacts = list(
                         session.exec(
                             select(ArtifactVersionSchema).where(
-                                ArtifactVersionSchema.id.in_(
+                                col(ArtifactVersionSchema.id).in_(
                                     output_artifact_ids
                                 )
                             )
@@ -12283,7 +12283,7 @@ class SqlZenStore(BaseZenStore):
     def _attach_tags_to_resources(
         self,
         tags: Optional[Sequence[Union[str, tag_utils.Tag]]],
-        resources: Union[BaseSchema, List[BaseSchema]],
+        resources: Union[BaseSchema, Sequence[BaseSchema]],
         session: Session,
     ) -> None:
         """Attaches multiple tags to multiple resources.
