@@ -20,7 +20,7 @@ from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship
 
@@ -259,19 +259,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         from zenml.zen_stores.schemas import ModelVersionSchema
 
         options = [
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.pipeline)
             ),
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.stack)
             ),
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.build)
             ),
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.schedule)
             ),
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.code_reference)
             ),
         ]
@@ -286,14 +286,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_resources:
             options.extend(
                 [
-                    joinedload(
+                    selectinload(
                         jl_arg(PipelineRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    joinedload(jl_arg(PipelineRunSchema.logs)),
-                    joinedload(jl_arg(PipelineRunSchema.user)),
-                    # joinedload(jl_arg(PipelineRunSchema.tags)),
+                    selectinload(jl_arg(PipelineRunSchema.logs)),
+                    selectinload(jl_arg(PipelineRunSchema.user)),
+                    selectinload(jl_arg(PipelineRunSchema.tags)),
                 ]
             )
 

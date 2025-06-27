@@ -29,6 +29,7 @@ from pydantic import Field, model_validator
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.logger import get_logger
 from zenml.models import (
+    ServiceConnectorConfiguration,
     ServiceConnectorRequest,
 )
 from zenml.service_connectors.service_connector import ServiceConnector
@@ -133,7 +134,9 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
                 connector_type=self.SERVICE_CONNECTOR_TYPE,
                 resource_types=[self.SERVICE_CONNECTOR_RESOURCE_TYPE],
                 auth_method=self.config.auth_method,
-                configuration=self.config.auth_config,
+                configuration=ServiceConnectorConfiguration(
+                    **self.config.auth_config
+                ),
             )
             base_connector = service_connector_registry.instantiate_connector(
                 model=request
