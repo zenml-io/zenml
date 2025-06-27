@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -432,14 +432,16 @@ def refresh_run_status(
 @async_fastapi_endpoint_wrapper
 def run_logs(
     run_id: UUID,
+    descriptor: Optional[str] = None,
     offset: int = 0,
     length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
-) -> str:
+) -> List[Tuple[str, str]]:
     """Get pipeline run logs.
 
     Args:
         run_id: ID of the pipeline run.
+        descriptor: Optional descriptor to filter logs.
         offset: The offset from which to start reading.
         length: The amount of bytes that should be read.
 
@@ -457,19 +459,30 @@ def run_logs(
         hydrate=True,
     )
 
+    logs = []
     if run.deployment_id:
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
-            return workload_manager().get_logs(workload_id=deployment.id)
+            if descriptor is None or descriptor == "workload":
+                workload_logs = workload_manager().get_logs(
+                    workload_id=deployment.id
+                )
+                logs.append(("workload", workload_logs))
 
-    logs = run.logs
-    if logs is None:
-        raise KeyError("No logs available for this pipeline run")
+    if run.logs:
+        for log_entry in run.logs:
+            if descriptor is None or log_entry.descriptor == descriptor:
+                logs.append(
+                    (
+                        log_entry.descriptor,
+                        fetch_logs(
+                            zen_store=store,
+                            artifact_store_id=log_entry.artifact_store_id,
+                            logs_uri=log_entry.uri,
+                            offset=offset,
+                            length=length,
+                        ),
+                    )
+                )
 
-    return fetch_logs(
-        zen_store=store,
-        artifact_store_id=logs.artifact_store_id,
-        logs_uri=logs.uri,
-        offset=offset,
-        length=length,
-    )
+    return logs

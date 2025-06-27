@@ -35,6 +35,10 @@ class LogsRequest(BaseRequest):
 
     uri: str = Field(title="The uri of the logs file")
 
+    descriptor: Optional[str] = Field(
+        title="The descriptor of the logs file",
+    )
+
     artifact_store_id: UUID = Field(
         title="The artifact store ID to associate the logs with.",
     )
@@ -73,6 +77,10 @@ class LogsResponseBody(BaseDatedResponseBody):
 
     uri: str = Field(
         title="The uri of the logs file",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    descriptor: Optional[str] = Field(
+        title="The descriptor of the logs file",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
@@ -125,6 +133,15 @@ class LogsResponse(
             the value of the property.
         """
         return self.get_body().uri
+
+    @property
+    def descriptor(self) -> Optional[str]:
+        """The `descriptor` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().descriptor
 
     @property
     def step_run_id(self) -> Optional[UUID]:

@@ -156,9 +156,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             overlaps="run_metadata",
         ),
     )
-    logs: Optional["LogsSchema"] = Relationship(
+    logs: List["LogsSchema"] = Relationship(
         back_populates="pipeline_run",
-        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
@@ -512,7 +512,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.model_version
                 else None,
                 tags=[tag.to_model() for tag in self.tags],
-                logs=self.logs.to_model() if self.logs else None,
+                logs=[log.to_model() for log in self.logs],
             )
 
         return PipelineRunResponse(
