@@ -15,7 +15,7 @@
 #  permissions and limitations under the License.
 
 import time
-from typing import Dict, List, Optional, Type, cast
+from typing import Dict, List, Optional, Type, Union, cast
 
 from pydantic import BaseModel
 from slack_sdk import WebClient
@@ -28,6 +28,7 @@ from zenml.integrations.slack.flavors.slack_alerter_flavor import (
     SlackAlerterSettings,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 logger = get_logger(__name__)
 
@@ -261,24 +262,40 @@ class SlackAlerter(BaseAlerter):
 
     def post(
         self,
-        message: Optional[str] = None,
+        message: Union[str, AlerterMessage, None] = None,
         params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a Slack channel.
 
+        This now accepts either a plain string or an AlerterMessage. If
+        it's an AlerterMessage, we parse title/body/metadata to build the final
+        text or blocks for Slack.
+
         Args:
-            message: Message to be posted.
+            message: A string or AlerterMessage to be posted.
             params: Optional parameters.
 
         Returns:
             True if operation succeeded, else False
         """
         slack_channel_id = self._get_channel_id(params=params)
+
+        if isinstance(message, AlerterMessage):
+            # Build a simple combined text from title + body.
+            combined_text = ""
+            if message.title:
+                combined_text += f"*{message.title}*\n"
+            if message.body:
+                combined_text += message.body
+            # Possibly use metadata or images to enrich Slack blocks in future
+            message_for_slack = combined_text.strip() or "(no content)"
+        else:
+            message_for_slack = message or "(no content)"
         client = WebClient(token=self.config.slack_token)
-        blocks = self._create_blocks(message, params)
+        blocks = self._create_blocks(message_for_slack, params)
         try:
             response = client.chat_postMessage(
-                channel=slack_channel_id, text=message, blocks=blocks
+                channel=slack_channel_id, text=message_for_slack, blocks=blocks
             )
             if not response.get("ok", False):
                 error_details = response.get("error", "Unknown error")
@@ -300,18 +317,32 @@ class SlackAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, question: str, params: Optional[BaseAlerterStepParameters] = None
+        self,
+        question: Union[str, AlerterMessage],
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 
         Args:
-            question: Initial message to be posted.
+            question: Initial message to be posted (string or AlerterMessage).
             params: Optional parameters.
 
         Returns:
             True if a user approved the operation, else False
         """
         slack_channel_id = self._get_channel_id(params=params)
+
+        # Convert AlerterMessage to string if needed
+        if isinstance(question, AlerterMessage):
+            # Build a simple combined text from title + body
+            question_text = ""
+            if question.title:
+                question_text += f"*{question.title}*\n"
+            if question.body:
+                question_text += question.body
+            question_text = question_text.strip() or "Approval required"
+        else:
+            question_text = question or "Approval required"
 
         client = WebClient(token=self.config.slack_token)
         approve_options = self._get_approve_msg_options(params)
@@ -321,8 +352,8 @@ class SlackAlerter(BaseAlerter):
             # Send message to the Slack channel
             response = client.chat_postMessage(
                 channel=slack_channel_id,
-                text=question,
-                blocks=self._create_blocks(question, params),
+                text=question_text,
+                blocks=self._create_blocks(question_text, params),
             )
 
             if not response.get("ok", False):
