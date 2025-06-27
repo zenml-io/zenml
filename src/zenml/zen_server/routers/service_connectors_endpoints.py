@@ -152,6 +152,7 @@ def list_service_connectors(
         resource_type=ResourceType.SERVICE_CONNECTOR,
         list_method=zen_store().list_service_connectors,
         hydrate=hydrate,
+        expand_secrets=expand_secrets,
     )
 
     if expand_secrets:
@@ -163,9 +164,6 @@ def list_service_connectors(
         )
 
         for connector in connectors.items:
-            if not connector.secret_id:
-                continue
-
             if allowed_ids is None or is_owned_by_authenticated_user(
                 connector
             ):
@@ -174,14 +172,8 @@ def list_service_connectors(
                 pass
             elif connector.id not in allowed_ids:
                 # The user is not allowed to read secret values for this
-                # connector. We don't raise an exception here but don't include
-                # the secret values
-                continue
-
-            secret = zen_store().get_secret(secret_id=connector.secret_id)
-
-            # Update the connector configuration with the secret.
-            connector.configuration.update(secret.secret_values)
+                # connector. We remove the secrets from the connector.
+                connector.remove_secrets()
 
     return connectors
 
@@ -253,21 +245,14 @@ def get_service_connector(
         The requested service connector.
     """
     connector = zen_store().get_service_connector(
-        connector_id, hydrate=hydrate
+        connector_id, hydrate=hydrate, expand_secrets=expand_secrets
     )
     verify_permission_for_model(connector, action=Action.READ)
 
-    if (
-        expand_secrets
-        and connector.secret_id
-        and has_permissions_for_model(
-            connector, action=Action.READ_SECRET_VALUE
-        )
+    if expand_secrets and not has_permissions_for_model(
+        connector, action=Action.READ_SECRET_VALUE
     ):
-        secret = zen_store().get_secret(secret_id=connector.secret_id)
-
-        # Update the connector configuration with the secret.
-        connector.configuration.update(secret.secret_values)
+        connector.remove_secrets()
 
     return dehydrate_response_model(connector)
 

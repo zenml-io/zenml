@@ -16,9 +16,15 @@
 import json
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from uuid import UUID
 
-from pydantic import Field, SecretStr, ValidationError, model_validator
+from pydantic import (
+    Field,
+    GetCoreSchemaHandler,
+    SecretStr,
+    ValidationError,
+    model_validator,
+)
+from pydantic_core import CoreSchema, core_schema
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
@@ -37,6 +43,120 @@ from zenml.models.v2.misc.service_connector_type import (
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 logger = get_logger(__name__)
+
+# ------------------ Configuration Model ------------------
+
+
+class ServiceConnectorConfiguration(Dict[str, Any]):
+    """Model for service connector configuration."""
+
+    @classmethod
+    def from_dict(
+        cls, data: Dict[str, Any]
+    ) -> "ServiceConnectorConfiguration":
+        """Create a configuration model from a dictionary.
+
+        Args:
+            data: The dictionary to create the configuration model from.
+
+        Returns:
+            A configuration model.
+        """
+        return cls(**data)
+
+    @property
+    def secrets(self) -> Dict[str, PlainSerializedSecretStr]:
+        """Get the secrets from the configuration.
+
+        Returns:
+            A dictionary of secrets.
+        """
+        return {k: v for k, v in self.items() if isinstance(v, SecretStr)}
+
+    @property
+    def plain_secrets(self) -> Dict[str, str]:
+        """Get the plain secrets from the configuration.
+
+        Returns:
+            A dictionary of secrets.
+        """
+        return {
+            k: v.get_secret_value()
+            for k, v in self.items()
+            if isinstance(v, SecretStr)
+        }
+
+    @property
+    def non_secrets(self) -> Dict[str, Any]:
+        """Get the non-secrets from the configuration.
+
+        Returns:
+            A dictionary of non-secrets.
+        """
+        return {k: v for k, v in self.items() if not isinstance(v, SecretStr)}
+
+    @property
+    def plain(self) -> Dict[str, Any]:
+        """Get the configuration with secrets unpacked.
+
+        Returns:
+            A dictionary of configuration with secrets unpacked.
+        """
+        return {
+            k: v.get_secret_value() if isinstance(v, SecretStr) else v
+            for k, v in self.items()
+        }
+
+    def get_plain(self, key: str, default: Any = None) -> Any:
+        """Get the plain value for the given key.
+
+        Args:
+            key: The key to get the value for.
+            default: The default value to return if the key is not found.
+
+        Returns:
+            The plain value for the given key.
+        """
+        result = self.get(key, default)
+        if isinstance(result, SecretStr):
+            return result.get_secret_value()
+        return result
+
+    def add_secrets(self, secrets: Dict[str, str]) -> None:
+        """Add the secrets to the configuration.
+
+        Args:
+            secrets: The secrets to add to the configuration.
+        """
+        self.update({k: SecretStr(v) for k, v in secrets.items()})
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        """Additional method for pydantic to recognize it as a valid type.
+
+        Args:
+            source_type: the source type
+            handler: the handler
+
+        Returns:
+            the schema for the custom type.
+        """
+        return core_schema.no_info_after_validator_function(
+            cls,
+            handler(
+                core_schema.dict_schema(
+                    keys_schema=core_schema.str_schema(),
+                    values_schema=core_schema.any_schema(),
+                )
+            ),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda v: v.plain,
+                when_used="json",
+            ),
+        )
+
 
 # ------------------ Request Model ------------------
 
@@ -97,13 +217,9 @@ class ServiceConnectorRequest(UserScopedRequest):
         "connectors and authentication methods that involve generating "
         "temporary credentials from the ones configured in the connector.",
     )
-    configuration: Dict[str, Any] = Field(
-        default_factory=dict,
-        title="The service connector configuration, not including secrets.",
-    )
-    secrets: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
-        default_factory=dict,
-        title="The service connector secrets.",
+    configuration: ServiceConnectorConfiguration = Field(
+        default_factory=ServiceConnectorConfiguration,
+        title="The service connector configuration.",
     )
     labels: Dict[str, str] = Field(
         default_factory=dict,
@@ -178,7 +294,6 @@ class ServiceConnectorRequest(UserScopedRequest):
         resource_types: Optional[Union[str, List[str]]] = None,
         resource_id: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
-        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
     ) -> None:
         """Validate and configure the resources that the connector can be used to access.
 
@@ -191,7 +306,6 @@ class ServiceConnectorRequest(UserScopedRequest):
             resource_id: Uniquely identifies a specific resource instance that
                 the connector instance can be used to access.
             configuration: The connector configuration.
-            secrets: The connector secrets.
         """
         _validate_and_configure_resources(
             connector=self,
@@ -199,7 +313,6 @@ class ServiceConnectorRequest(UserScopedRequest):
             resource_types=resource_types,
             resource_id=resource_id,
             configuration=configuration,
-            secrets=secrets,
         )
 
 
@@ -219,10 +332,9 @@ class ServiceConnectorUpdate(BaseUpdate):
 
     In addition to the above exceptions, the following rules apply:
 
-    * the `configuration` and `secrets` fields together represent a full
-    valid configuration update, not just a partial update. If either is
-    set (i.e. not None) in the update, their values are merged together and
-    will replace the existing configuration and secrets values.
+    * the `configuration` field represents a full valid configuration update,
+    not just a partial update. If it is set (i.e. not None) in the update,
+    its values will replace the existing configuration values.
     * the `labels` field is also a full labels update: if set (i.e. not
     `None`), all existing labels are removed and replaced by the new labels
     in the update.
@@ -289,12 +401,8 @@ class ServiceConnectorUpdate(BaseUpdate):
         "configured in the connector.",
         default=None,
     )
-    configuration: Optional[Dict[str, Any]] = Field(
-        title="The service connector configuration, not including secrets.",
-        default=None,
-    )
-    secrets: Optional[Dict[str, Optional[PlainSerializedSecretStr]]] = Field(
-        title="The service connector secrets.",
+    configuration: Optional[ServiceConnectorConfiguration] = Field(
+        title="The service connector full configuration replacement.",
         default=None,
     )
     labels: Optional[Dict[str, str]] = Field(
@@ -348,7 +456,6 @@ class ServiceConnectorUpdate(BaseUpdate):
         resource_types: Optional[Union[str, List[str]]] = None,
         resource_id: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
-        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
     ) -> None:
         """Validate and configure the resources that the connector can be used to access.
 
@@ -361,7 +468,6 @@ class ServiceConnectorUpdate(BaseUpdate):
             resource_id: Uniquely identifies a specific resource instance that
                 the connector instance can be used to access.
             configuration: The connector configuration.
-            secrets: The connector secrets.
         """
         _validate_and_configure_resources(
             connector=self,
@@ -369,7 +475,6 @@ class ServiceConnectorUpdate(BaseUpdate):
             resource_types=resource_types,
             resource_id=resource_id,
             configuration=configuration,
-            secrets=secrets,
         )
 
     def convert_to_request(self) -> "ServiceConnectorRequest":
@@ -447,14 +552,9 @@ class ServiceConnectorResponseBody(UserScopedResponseBody):
 class ServiceConnectorResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for service connectors."""
 
-    configuration: Dict[str, Any] = Field(
-        default_factory=dict,
-        title="The service connector configuration, not including secrets.",
-    )
-    secret_id: Optional[UUID] = Field(
-        default=None,
-        title="The ID of the secret that contains the service connector "
-        "secret configuration values.",
+    configuration: ServiceConnectorConfiguration = Field(
+        default_factory=ServiceConnectorConfiguration,
+        title="The service connector configuration.",
     )
     expiration_seconds: Optional[int] = Field(
         default=None,
@@ -462,10 +562,6 @@ class ServiceConnectorResponseMetadata(UserScopedResponseMetadata):
         "generated by this connector should remain valid. Only applicable for "
         "connectors and authentication methods that involve generating "
         "temporary credentials from the ones configured in the connector.",
-    )
-    secrets: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
-        default_factory=dict,
-        title="The service connector secrets.",
     )
     labels: Dict[str, str] = Field(
         default_factory=dict,
@@ -604,19 +700,6 @@ class ServiceConnectorResponse(
         """
         return not self.is_multi_type and not self.is_multi_instance
 
-    @property
-    def full_configuration(self) -> Dict[str, str]:
-        """Get the full connector configuration, including secrets.
-
-        Returns:
-            The full connector configuration, including secrets.
-        """
-        config = self.configuration.copy()
-        config.update(
-            {k: v.get_secret_value() for k, v in self.secrets.items() if v}
-        )
-        return config
-
     def set_connector_type(
         self, value: Union[str, "ServiceConnectorTypeModel"]
     ) -> None:
@@ -627,13 +710,22 @@ class ServiceConnectorResponse(
         """
         self.get_body().connector_type = value
 
+    def validate_configuration(self) -> None:
+        """Validate the configuration of the connector."""
+        if isinstance(self.connector_type, ServiceConnectorTypeModel):
+            self.validate_and_configure_resources(
+                connector_type=self.connector_type,
+                resource_types=self.resource_types,
+                resource_id=self.resource_id,
+                configuration=self.configuration,
+            )
+
     def validate_and_configure_resources(
         self,
         connector_type: "ServiceConnectorTypeModel",
         resource_types: Optional[Union[str, List[str]]] = None,
         resource_id: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
-        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
     ) -> None:
         """Validate and configure the resources that the connector can be used to access.
 
@@ -646,7 +738,6 @@ class ServiceConnectorResponse(
             resource_id: Uniquely identifies a specific resource instance that
                 the connector instance can be used to access.
             configuration: The connector configuration.
-            secrets: The connector secrets.
         """
         _validate_and_configure_resources(
             connector=self,
@@ -654,7 +745,6 @@ class ServiceConnectorResponse(
             resource_types=resource_types,
             resource_id=resource_id,
             configuration=configuration,
-            secrets=secrets,
         )
 
     # Body and metadata properties
@@ -731,7 +821,7 @@ class ServiceConnectorResponse(
         return self.get_body().expires_skew_tolerance
 
     @property
-    def configuration(self) -> Dict[str, Any]:
+    def configuration(self) -> ServiceConnectorConfiguration:
         """The `configuration` property.
 
         Returns:
@@ -739,14 +829,20 @@ class ServiceConnectorResponse(
         """
         return self.get_metadata().configuration
 
-    @property
-    def secret_id(self) -> Optional[UUID]:
-        """The `secret_id` property.
+    def remove_secrets(self) -> None:
+        """Remove the secrets from the configuration."""
+        metadata = self.get_metadata()
+        metadata.configuration = ServiceConnectorConfiguration(
+            **metadata.configuration.non_secrets
+        )
 
-        Returns:
-            the value of the property.
+    def add_secrets(self, secrets: Dict[str, str]) -> None:
+        """Add the secrets to the configuration.
+
+        Args:
+            secrets: The secrets to add to the configuration.
         """
-        return self.get_metadata().secret_id
+        self.get_metadata().configuration.add_secrets(secrets)
 
     @property
     def expiration_seconds(self) -> Optional[int]:
@@ -756,15 +852,6 @@ class ServiceConnectorResponse(
             the value of the property.
         """
         return self.get_metadata().expiration_seconds
-
-    @property
-    def secrets(self) -> Dict[str, Optional[SecretStr]]:
-        """The `secrets` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().secrets
 
     @property
     def labels(self) -> Dict[str, str]:
@@ -826,12 +913,6 @@ class ServiceConnectorFilter(UserScopedFilter):
         "value, the filter will match all service connectors that have that "
         "label present, regardless of value.",
     )
-    secret_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        title="Filter by the ID of the secret that contains the service "
-        "connector's credentials",
-        union_mode="left_to_right",
-    )
 
     # Use this internally to configure and access the labels as a dictionary
     labels: Optional[Dict[str, Optional[str]]] = Field(
@@ -877,7 +958,6 @@ def _validate_and_configure_resources(
     resource_types: Optional[Union[str, List[str]]] = None,
     resource_id: Optional[str] = None,
     configuration: Optional[Dict[str, Any]] = None,
-    secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
 ) -> None:
     """Validate and configure the resources that a connector can be used to access.
 
@@ -891,7 +971,6 @@ def _validate_and_configure_resources(
         resource_id: Uniquely identifies a specific resource instance that
             the connector instance can be used to access.
         configuration: The connector configuration.
-        secrets: The connector secrets.
 
     Raises:
         ValueError: If the connector configuration is not valid.
@@ -970,16 +1049,14 @@ def _validate_and_configure_resources(
         )
         update_connector_body.supports_instances = False
 
-    if configuration is None and secrets is None:
-        # No configuration or secrets provided
+    if configuration is None:
+        # No configuration provided
         return
 
-    update_connector_metadata.configuration = {}
-    update_connector_metadata.secrets = {}
+    update_connector_metadata.configuration = ServiceConnectorConfiguration()
 
-    # Validate and configure the connector configuration and secrets
+    # Validate and configure the connector configuration
     configuration = configuration or {}
-    secrets = secrets or {}
     supported_attrs = []
     for attr_name, attr_schema in auth_method_spec.config_schema.get(
         "properties", {}
@@ -1009,7 +1086,10 @@ def _validate_and_configure_resources(
             secret = attr_schema.get("format", "") == "password"
             attr_type = attr_schema.get("type", "string")
 
-        value = configuration.get(attr_name, secrets.get(attr_name))
+        value = configuration.get(attr_name)
+        if isinstance(value, SecretStr):
+            value = value.get_secret_value()
+
         if required:
             if value is None:
                 raise ValueError(
@@ -1019,34 +1099,24 @@ def _validate_and_configure_resources(
         elif value is None:
             continue
 
-        # Split the configuration into secrets and non-secrets
         if secret:
-            if isinstance(value, SecretStr):
-                update_connector_metadata.secrets[attr_name] = value
-            else:
-                update_connector_metadata.secrets[attr_name] = SecretStr(value)
-        else:
-            if attr_type == "array" and isinstance(value, str):
-                try:
-                    value = json.loads(value)
-                except json.decoder.JSONDecodeError:
-                    value = value.split(",")
-            update_connector_metadata.configuration[attr_name] = value
+            if not isinstance(value, str):
+                raise ValueError(
+                    f"connector configuration is not valid: attribute '{attr_name}' "
+                    "is a secret but is not a string"
+                )
+            value = SecretStr(value)
+
+        elif attr_type == "array" and isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.decoder.JSONDecodeError:
+                value = value.split(",")
+
+        update_connector_metadata.configuration[attr_name] = value
 
     # Warn about attributes that are not part of the configuration schema
     for attr_name in set(list(configuration.keys())) - set(supported_attrs):
-        logger.warning(
-            f"Ignoring unknown attribute in connector '{connector.name}' "
-            f"configuration {attr_name}. Supported attributes are: "
-            f"{supported_attrs}",
-        )
-    # Warn about secrets that are not part of the configuration schema
-    connector_secrets = (
-        set(connector.secrets.keys())
-        if connector.secrets is not None
-        else set()
-    )
-    for attr_name in set(secrets.keys()) - connector_secrets:
         logger.warning(
             f"Ignoring unknown attribute in connector '{connector.name}' "
             f"configuration {attr_name}. Supported attributes are: "

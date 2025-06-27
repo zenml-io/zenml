@@ -212,8 +212,13 @@ def test_is_remote_when_using_remote_prefix(filesystem):
 def test_is_remote_when_using_non_remote_prefix(filesystem):
     """is_remote returns False when path doesn't start with
     a remote prefix"""
+    expected_result = False
+
+    if filesystem in REMOTE_FS_PREFIX:
+        expected_result = True
+
     some_random_path = os.path.join(f"{filesystem}some_directory")
-    assert io_utils.is_remote(some_random_path) is False
+    assert io_utils.is_remote(some_random_path) is expected_result
 
 
 def test_create_file_if_not_exists(tmp_path) -> None:
