@@ -686,9 +686,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         errors = []
 
         # Configure graceful termination settings
-        grace_period_seconds = (
-            30  # Give pods 30 seconds to gracefully shutdown
-        )
+        settings = cast(KubernetesOrchestratorSettings, self.get_settings(run))
+        grace_period_seconds = settings.pod_stop_grace_period
 
         # Find all pods with the orchestrator run ID label
         label_selector = f"zenml-orchestrator-run-id={orchestrator_run_id}"
