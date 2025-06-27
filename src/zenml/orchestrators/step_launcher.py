@@ -344,13 +344,9 @@ class StepLauncher:
                                 force_write_logs=force_write_logs,
                             )
                             break
-                        except (
-                            RunStoppedException,
-                            RunInterruptedException,
-                            KeyboardInterrupt,
-                        ) as e:
+                        except RunStoppedException as e:
                             raise e
-                        except BaseException as e:  # noqa: E722
+                        except Exception as e:  # noqa: E722
                             retries += 1
                             if retries < max_retries:
                                 logger.error(
