@@ -83,38 +83,6 @@ def _create_image_pull_secret_data(
     }
 
 
-def _get_container_registry_credentials(
-    container_registry=None,
-) -> List[Tuple[str, str, str]]:
-    """Extract container registry credentials from the active stack.
-
-    Args:
-        container_registry: Optional container registry instance to use.
-            If None, uses the container registry from the active stack.
-
-    Returns:
-        List of tuples containing (registry_uri, username, password) for each
-        container registry that has credentials available.
-    """
-    credentials = []
-
-    # If no container registry provided, get from active stack
-    if container_registry is None:
-        client = Client()
-        stack = client.active_stack
-        container_registry = stack.container_registry
-
-    if not container_registry:
-        return credentials
-
-    # Use the new method from base container registry
-    registry_data = container_registry.get_kubernetes_image_pull_secret_data()
-    if registry_data:
-        credentials.append(registry_data)
-
-    return credentials
-
-
 def _should_refresh_image_pull_secret(
     secret_name: str, namespace: str, core_api
 ) -> bool:
@@ -154,7 +122,7 @@ def _should_refresh_image_pull_secret(
 
 def _generate_image_pull_secrets(
     namespace: str = "default",
-    container_registry=None,
+    registry_credentials: Optional[Tuple[str, str, str]] = None,
     force_refresh: bool = False,
     core_api=None,
 ) -> Tuple[List[Dict[str, Any]], List[k8s_client.V1LocalObjectReference]]:
@@ -162,8 +130,7 @@ def _generate_image_pull_secrets(
 
     Args:
         namespace: The Kubernetes namespace to create secrets in.
-        container_registry: Optional container registry instance to use.
-            If None, uses the container registry from the active stack.
+        registry_credentials: Tuple of (registry_uri, username, password).
         force_refresh: If True, forces regeneration of secrets even if they exist.
         core_api: Optional Kubernetes Core API client for checking existing secrets.
 
@@ -172,21 +139,16 @@ def _generate_image_pull_secrets(
         - secret_manifests: List of Kubernetes secret manifests to create
         - local_object_references: List of V1LocalObjectReference objects for imagePullSecrets
     """
-    credentials = _get_container_registry_credentials(container_registry)
-    if not credentials:
+    if not registry_credentials:
         return [], []
+
+    credentials = [registry_credentials]
 
     secret_manifests = []
     local_object_references = []
 
     # Check if credentials need refresh (for service connectors)
     needs_refresh = force_refresh
-    if container_registry and hasattr(
-        container_registry, "connector_has_expired"
-    ):
-        needs_refresh = (
-            needs_refresh or container_registry.connector_has_expired()
-        )
 
     for i, (registry_uri, username, password) in enumerate(credentials):
         # Create a unique secret name for this registry
@@ -503,15 +465,22 @@ def build_pod_manifest(
         )
 
     # Auto-generate imagePullSecrets from container registry credentials
-    if auto_generate_image_pull_secrets:
+    if auto_generate_image_pull_secrets and container_registry:
         try:
-            generated_secrets, generated_refs = _generate_image_pull_secrets(
-                namespace=namespace,
-                container_registry=container_registry,
-                core_api=core_api,
+            # Extract credentials using dependency injection approach
+            registry_data = (
+                container_registry.get_kubernetes_image_pull_secret_data()
             )
-            secret_manifests.extend(generated_secrets)
-            image_pull_secrets.extend(generated_refs)
+            if registry_data:
+                generated_secrets, generated_refs = (
+                    _generate_image_pull_secrets(
+                        namespace=namespace,
+                        registry_credentials=registry_data,
+                        core_api=core_api,
+                    )
+                )
+                secret_manifests.extend(generated_secrets)
+                image_pull_secrets.extend(generated_refs)
         except Exception as e:
             logger.warning(
                 f"Failed to auto-generate imagePullSecrets from container "
