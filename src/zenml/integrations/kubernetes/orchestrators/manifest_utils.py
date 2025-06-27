@@ -109,6 +109,7 @@ def build_pod_manifest(
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
     extra_labels: Optional[Dict[str, str]] = None,
+    termination_grace_period_seconds: Optional[int] = 30,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -129,6 +130,8 @@ def build_pod_manifest(
             pod.
         owner_references: List of owner references for the pod.
         extra_labels: Optional additional labels to add to the pod.
+        termination_grace_period_seconds: The amount of seconds to wait for a
+            pod to shutdown gracefully.
 
     Returns:
         Pod manifest.
@@ -159,7 +162,7 @@ def build_pod_manifest(
         containers=[container_spec],
         restart_policy="Never",
         image_pull_secrets=image_pull_secrets,
-        termination_grace_period_seconds=30,
+        termination_grace_period_seconds=termination_grace_period_seconds,
     )
 
     if service_account_name is not None:
@@ -290,6 +293,7 @@ def build_cron_job_manifest(
     successful_jobs_history_limit: Optional[int] = None,
     failed_jobs_history_limit: Optional[int] = None,
     ttl_seconds_after_finished: Optional[int] = None,
+    termination_grace_period_seconds: Optional[int] = 30,
 ) -> k8s_client.V1CronJob:
     """Create a manifest for launching a pod as scheduled CRON job.
 
@@ -313,6 +317,8 @@ def build_cron_job_manifest(
         failed_jobs_history_limit: The number of failed jobs to retain.
         ttl_seconds_after_finished: The amount of seconds to keep finished jobs
             before deleting them.
+        termination_grace_period_seconds: The amount of seconds to wait for a
+            pod to shutdown gracefully.
 
     Returns:
         CRON job manifest.
@@ -329,6 +335,7 @@ def build_cron_job_manifest(
         service_account_name=service_account_name,
         env=env,
         mount_local_stores=mount_local_stores,
+        termination_grace_period_seconds=termination_grace_period_seconds,
     )
 
     job_spec = k8s_client.V1CronJobSpec(

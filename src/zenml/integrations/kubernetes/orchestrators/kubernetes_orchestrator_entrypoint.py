@@ -209,6 +209,7 @@ def main() -> None:
             mount_local_stores=mount_local_stores,
             owner_references=owner_references,
             extra_labels={"zenml-orchestrator-run-id": orchestrator_pod_name},
+            termination_grace_period_seconds=settings.pod_stop_grace_period,
         )
 
         kube_utils.create_and_wait_for_pod_to_start(

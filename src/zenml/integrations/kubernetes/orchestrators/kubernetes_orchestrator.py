@@ -542,6 +542,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 successful_jobs_history_limit=settings.successful_jobs_history_limit,
                 failed_jobs_history_limit=settings.failed_jobs_history_limit,
                 ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+                termination_grace_period_seconds=settings.pod_stop_grace_period,
             )
 
             self._k8s_batch_api.create_namespaced_cron_job(
@@ -567,6 +568,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 service_account_name=service_account_name,
                 env=environment,
                 mount_local_stores=self.config.is_local,
+                termination_grace_period_seconds=settings.pod_stop_grace_period,
             )
 
             kube_utils.create_and_wait_for_pod_to_start(
@@ -685,10 +687,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         pods_stopped = []
         errors = []
 
-        # Configure graceful termination settings
-        settings = cast(KubernetesOrchestratorSettings, self.get_settings(run))
-        grace_period_seconds = settings.pod_stop_grace_period
-
         # Find all pods with the orchestrator run ID label
         label_selector = f"zenml-orchestrator-run-id={orchestrator_run_id}"
         try:
@@ -714,7 +712,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 self._k8s_core_api.delete_namespaced_pod(
                     name=pod.metadata.name,
                     namespace=self.config.kubernetes_namespace,
-                    grace_period_seconds=grace_period_seconds,
                 )
                 pods_stopped.append(f"step pod: {pod.metadata.name}")
                 logger.debug(
