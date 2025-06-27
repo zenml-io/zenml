@@ -57,7 +57,7 @@ def publish_successful_step_run(
 
 def publish_step_run_status_update(
     step_run_id: "UUID",
-    status: Optional["ExecutionStatus"] = None,
+    status: "ExecutionStatus",
     end_time: Optional[datetime] = None,
 ) -> "StepRunResponse":
     """Publishes a step run update.
@@ -71,6 +71,9 @@ def publish_step_run_status_update(
         The updated step run.
     """
     from zenml.client import Client
+
+    if end_time is not None and not status.is_finished:
+        raise ValueError("End time cannot be set for a non-finished step run.")
 
     step_run = Client().zen_store.update_run_step(
         step_run_id=step_run_id,
