@@ -120,6 +120,8 @@ class ThreadedDagRunner:
         }
         self._lock = threading.Lock()
 
+        self._stop_requested = False
+
     def _can_run(self, node: str) -> bool:
         """Determine whether a node is ready to be run.
 
@@ -180,12 +182,15 @@ class ThreadedDagRunner:
         self._prepare_node_run(node)
 
         # Check if execution should continue (e.g., check for cancellation)
-        if self.check_fn and not self.check_fn():
-            logger.info(
-                f"Node `{node}` cancelled due to pipeline cancellation"
-            )
-            self._finish_node(node, cancelled=True)
-            return
+        if self.check_fn:
+            if self._stop_requested:
+                self._finish_node(node, cancelled=True)
+                return
+
+            if not self.check_fn():
+                self._stop_requested = True
+                self._finish_node(node, cancelled=True)
+                return
 
         if self.preparation_fn:
             run_required = self.preparation_fn(node)

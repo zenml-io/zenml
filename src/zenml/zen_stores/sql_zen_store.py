@@ -141,7 +141,6 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
-    RunStoppedException,
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
