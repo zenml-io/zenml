@@ -64,6 +64,15 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         return LocalDockerOrchestratorSettings
 
     @property
+    def config(self) -> "LocalDockerOrchestratorConfig":
+        """Returns the `LocalDockerOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(LocalDockerOrchestratorConfig, self._config)
+
+    @property
     def validator(self) -> Optional[StackValidator]:
         """Ensures there is an image builder in the stack.
 

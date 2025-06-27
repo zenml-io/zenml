@@ -34,7 +34,7 @@ from zenml.models import (
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
-from zenml.utils import source_utils, uuid_utils
+from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -509,6 +509,59 @@ def list_pipeline_runs(**kwargs: Any) -> None:
 
         cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs.items)
         cli_utils.print_page_info(pipeline_runs)
+
+
+@runs.command("stop")
+@click.argument("run_name_or_id", type=str, required=True)
+@click.option(
+    "--graceful",
+    "-g",
+    is_flag=True,
+    default=False,
+    help="Use graceful shutdown (default is False).",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation.",
+)
+def stop_pipeline_run(
+    run_name_or_id: str,
+    graceful: bool = False,
+    yes: bool = False,
+) -> None:
+    """Stop a running pipeline.
+
+    Args:
+        run_name_or_id: The name or ID of the pipeline run to stop.
+        graceful: If True, uses graceful shutdown. If False, forces immediate termination.
+        yes: If set, don't ask for confirmation.
+    """
+    # Ask for confirmation to stop run.
+    if not yes:
+        action = "gracefully stop" if graceful else "force stop"
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to {action} pipeline run `{run_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Not stopping the pipeline run.")
+            return
+
+    # Stop run.
+    try:
+        run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
+        run_utils.stop_run(run=run, graceful=graceful)
+        action = "Gracefully stopped" if graceful else "Force stopped"
+        cli_utils.declare(f"{action} pipeline run '{run.name}'.")
+    except NotImplementedError:
+        cli_utils.error(
+            "The orchestrator used for this pipeline run does not support "
+            f"{'gracefully' if graceful else 'forcefully'} stopping runs."
+        )
+    except Exception as e:
+        cli_utils.error(f"Failed to stop pipeline run: {e}")
 
 
 @runs.command("delete")

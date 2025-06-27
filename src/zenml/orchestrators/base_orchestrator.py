@@ -38,6 +38,7 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
+    publish_pipeline_run_status_update,
     publish_schedule_metadata,
 )
 from zenml.orchestrators.step_launcher import StepLauncher
@@ -141,6 +142,15 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         return cast(BaseOrchestratorConfig, self._config)
 
+    @property
+    def supports_cancellation(self) -> bool:
+        """Whether this orchestrator supports stopping pipeline runs.
+
+        Returns:
+            True if the orchestrator supports stop_run functionality, False otherwise.
+        """
+        return False
+
     @abstractmethod
     def get_orchestrator_run_id(self) -> str:
         """Returns the run id of the active orchestrator run.
@@ -210,6 +220,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 This will be deleted in case the pipeline deployment failed.
 
         Raises:
+            KeyboardInterrupt: If the orchestrator is synchronous and the
+                pipeline run is keyboard interrupted.
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
         """
@@ -326,6 +338,8 @@ class BaseOrchestrator(StackComponent, ABC):
                             submission_result.wait_for_completion()
                         except BaseException as e:
                             raise RunMonitoringError(original_exception=e)
+
+        # TODO: Need to add the KeyboardInterrupt handling here.
         finally:
             self._cleanup_run()
 
@@ -388,6 +402,61 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         raise NotImplementedError(
             "The fetch status functionality is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
+
+    def stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = False
+    ) -> None:
+        """Stops a specific pipeline run.
+
+        This method should only be called if the orchestrator's
+        supports_cancellation property is True.
+
+        Args:
+            run: A pipeline run response to stop.
+            graceful: If True, allows for graceful shutdown where possible.
+                If False, forces immediate termination. Default is False.
+
+        Raises:
+            NotImplementedError: If any orchestrator inheriting from the base
+                class does not implement this logic.
+        """
+        # Check if the orchestrator supports cancellation
+        if not self.supports_cancellation:
+            raise NotImplementedError(
+                f"The '{self.__class__.__name__}' orchestrator does not "
+                "support stopping pipeline runs."
+            )
+
+        # Update pipeline status to STOPPING before calling concrete implementation
+        publish_pipeline_run_status_update(
+            pipeline_run_id=run.id,
+            status=ExecutionStatus.STOPPING,
+        )
+
+        # Now call the concrete implementation
+        self._stop_run(run=run, graceful=graceful)
+
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = False
+    ) -> None:
+        """Concrete implementation of pipeline stopping logic.
+
+        This method should be implemented by concrete orchestrator classes
+        instead of stop_run to ensure proper status management.
+
+        Args:
+            run: A pipeline run response to stop (already updated to STOPPING status).
+            graceful: If True, allows for graceful shutdown where possible.
+                If False, forces immediate termination. Default is True.
+
+        Raises:
+            NotImplementedError: If any orchestrator inheriting from the base
+                class does not implement this logic.
+        """
+        raise NotImplementedError(
+            "The stop run functionality is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."
         )
 

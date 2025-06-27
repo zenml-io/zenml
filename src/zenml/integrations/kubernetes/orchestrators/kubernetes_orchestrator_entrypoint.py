@@ -18,6 +18,7 @@ import socket
 from typing import Callable, Dict, Optional, cast
 
 from kubernetes import client as k8s_client
+from kubernetes.client.rest import ApiException
 
 from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
@@ -169,6 +170,7 @@ def main() -> None:
         "pipeline": kube_utils.sanitize_label(
             deployment.pipeline_configuration.name
         ),
+        "zenml-orchestrator-run-id": orchestrator_pod_name,
     }
 
     def run_step_on_kubernetes(step_name: str) -> None:
@@ -248,6 +250,7 @@ def main() -> None:
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
             owner_references=owner_references,
+            termination_grace_period_seconds=settings.pod_stop_grace_period,
             labels=step_pod_labels,
         )
 
@@ -330,6 +333,51 @@ def main() -> None:
             # as the pipeline run status will already have been published.
             pass
 
+    def check_pipeline_cancellation() -> bool:
+        """Check if the pipeline should continue execution.
+
+        Returns:
+            True if execution should continue, False if it should stop.
+        """
+        try:
+            # Fetch the current pipeline run status
+            list_args: Dict[str, Any] = {}
+            if args.run_id:
+                list_args = dict(id=UUID(args.run_id))
+            else:
+                list_args = dict(orchestrator_run_id=orchestrator_pod_name)
+
+            pipeline_runs = client.list_pipeline_runs(
+                hydrate=False,  # We only need status, not full hydration
+                project=deployment.project_id,
+                deployment_id=deployment.id,
+                **list_args,
+            )
+            if not len(pipeline_runs):
+                # No pipeline run found, assume we should continue
+                return True
+
+            pipeline_run = pipeline_runs[0]
+
+            # If pipeline is STOPPING or STOPPED, we should stop
+            if pipeline_run.status in [
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+            ]:
+                logger.info(
+                    f"Pipeline run is in {pipeline_run.status} state, stopping execution"
+                )
+                return False
+
+            return True
+
+        except Exception as e:
+            # If we can't check the status, assume we should continue
+            logger.warning(
+                f"Failed to check pipeline cancellation status: {e}"
+            )
+            return True
+
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
     )
@@ -344,6 +392,7 @@ def main() -> None:
             run_fn=run_step_on_kubernetes,
             preparation_fn=pre_step_run,
             finalize_fn=finalize_run,
+            check_fn=check_pipeline_cancellation,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
             max_parallelism=pipeline_settings.max_parallelism,
         ).run()
@@ -360,7 +409,7 @@ def main() -> None:
                     namespace=namespace,
                     secret_name=secret_name,
                 )
-            except k8s_client.rest.ApiException as e:
+            except ApiException as e:
                 logger.error(f"Error cleaning up secret {secret_name}: {e}")
 
 
