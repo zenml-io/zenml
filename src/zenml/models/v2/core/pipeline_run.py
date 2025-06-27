@@ -480,6 +480,7 @@ class PipelineRunResponse(
             for step in pagination_utils.depaginate(
                 Client().list_run_steps,
                 pipeline_run_id=self.id,
+                project=self.project_id,
             )
         }
 

@@ -1814,7 +1814,7 @@ def print_service_connector_configuration(
 
     console.print(rich_table)
 
-    if len(connector.configuration) == 0 and len(connector.secrets) == 0:
+    if len(connector.configuration) == 0:
         declare("No configuration options are set for this connector.")
 
     else:
@@ -1826,8 +1826,8 @@ def print_service_connector_configuration(
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
 
-        config = connector.configuration.copy()
-        secrets = connector.secrets.copy()
+        config = connector.configuration.non_secrets
+        secrets = connector.configuration.secrets
         for key, value in secrets.items():
             if not show_secrets:
                 config[key] = "[HIDDEN]"

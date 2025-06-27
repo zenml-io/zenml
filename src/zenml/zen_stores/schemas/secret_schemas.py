@@ -67,6 +67,8 @@ class SecretSchema(NamedSchema, table=True):
 
     private: bool
 
+    internal: bool = Field(default=False)
+
     values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
 
     user_id: UUID = build_foreign_key_field(
@@ -191,11 +193,13 @@ class SecretSchema(NamedSchema, table=True):
     def from_request(
         cls,
         secret: SecretRequest,
+        internal: bool = False,
     ) -> "SecretSchema":
         """Create a `SecretSchema` from a `SecretRequest`.
 
         Args:
             secret: The `SecretRequest` from which to create the schema.
+            internal: Whether the secret is internal.
 
         Returns:
             The created `SecretSchema`.
@@ -209,6 +213,7 @@ class SecretSchema(NamedSchema, table=True):
             # SQL secret store will call `store_secret_values` to store the
             # values separately if SQL is used as the secrets store.
             values=None,
+            internal=internal,
         )
 
     def update(
