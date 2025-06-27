@@ -171,7 +171,7 @@ for COMMAND in "${COMMANDS[@]}"; do
     if [ -n "$TIMEOUT_CMD" ]; then
       # Use set +e to prevent script from exiting if the command times out or fails
       set +e
-      $TIMEOUT_CMD $TIMEOUT_SECONDS bash -c "$COMMAND" > /dev/null 2>&1
+      COMMAND_OUTPUT=$($TIMEOUT_CMD $TIMEOUT_SECONDS bash -c "$COMMAND" 2>&1)
       EXIT_CODE=$?
       # Restore error handling
       set -e
@@ -186,13 +186,14 @@ for COMMAND in "${COMMANDS[@]}"; do
         COMMAND_FAILED=true
         ERROR_MESSAGE="Command failed on run $i (exit code: $EXIT_CODE)"
         echo "❌ $ERROR_MESSAGE"
+        echo "$COMMAND_OUTPUT"
         break
       fi
     else
       # No timeout command available, just run normally
       # Use set +e to prevent script from exiting if the command fails
       set +e
-      eval $COMMAND > /dev/null 2>&1
+      COMMAND_OUTPUT=$(eval $COMMAND 2>&1)
       EXIT_CODE=$?
       # Restore error handling
       set -e
@@ -201,6 +202,7 @@ for COMMAND in "${COMMANDS[@]}"; do
         COMMAND_FAILED=true
         ERROR_MESSAGE="Command failed on run $i (exit code: $EXIT_CODE)"
         echo "❌ $ERROR_MESSAGE"
+        echo "$COMMAND_OUTPUT"
         break
       fi
     fi
