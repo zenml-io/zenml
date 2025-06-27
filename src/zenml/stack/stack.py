@@ -849,10 +849,10 @@ class Stack:
                 If the component is used in this step.
             """
             if component.type == StackComponentType.STEP_OPERATOR:
-                return component.name == step_config.step_operator
+                return step_config.uses_step_operator(component.name)
 
             if component.type == StackComponentType.EXPERIMENT_TRACKER:
-                return component.name == step_config.experiment_tracker
+                return step_config.uses_experiment_tracker(component.name)
 
             return True
 

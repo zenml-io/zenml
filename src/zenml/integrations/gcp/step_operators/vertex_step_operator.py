@@ -161,7 +161,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         """
         builds = []
         for step_name, step in deployment.step_configurations.items():
-            if step.config.step_operator == self.name:
+            if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
                     key=VERTEX_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,

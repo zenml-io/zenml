@@ -316,27 +316,13 @@ Once you added the step operator to your active stack, you can use it to execute
 from zenml import step
 
 
-@step(step_operator=<STEP_OPERATOR_NAME>)
+@step(step_operator=True)
 def step_on_spark(...) -> ...:
     """Some step that should run with Spark on Kubernetes."""
     ...
 ```
 
 After successfully running any step with a `KubernetesSparkStepOperator`, you should be able to see that a Spark driver pod was created in your cluster for each pipeline step when running `kubectl get pods -n $KUBERNETES_NAMESPACE`.
-
-{% hint style="info" %}
-Instead of hardcoding a step operator name, you can also use the [Client](https://docs.zenml.io/reference/python-client) to dynamically use the step operator of your active stack:
-
-```python
-from zenml.client import Client
-
-step_operator = Client().active_stack.step_operator
-
-@step(step_operator=step_operator.name)
-def step_on_spark(...) -> ...:
-    ...
-```
-{% endhint %}
 
 ### Additional configuration
 

@@ -43,7 +43,7 @@ You don't need to directly interact with any ZenML step operator in your code. A
 from zenml import step
 
 
-@step(step_operator= <STEP_OPERATOR_NAME>)
+@step(step_operator=True)
 def my_step(...) -> ...:
     ...
 ```

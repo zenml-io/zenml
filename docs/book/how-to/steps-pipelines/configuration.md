@@ -92,7 +92,18 @@ def train_model() -> tf.keras.Model:
 
 ### Direct Component Assignment
 
-You can directly specify which stack components a step should use. This feature is only available for experiment trackers and stack components:
+If you have an experiment tracker or step operator in your active stack, you can enable them for specific steps like this:
+```python
+from zenml import step
+
+@step(experiment_tracker=True, step_operator=True)
+def train_model():
+    # This step will use the experiment tracker and step operator of the active stack
+    ...
+```
+
+If you want to make sure a step can only run with a specific experiment tracker/step operator, you can also specify the
+component names like this:
 
 ```python
 from zenml import step
@@ -101,24 +112,19 @@ from zenml import step
 def train_model():
     # This step will use MLflow for tracking and run on Vertex AI
     ...
-
-@step(experiment_tracker="wandb", step_operator="kubernetes")
-def evaluate_model():
-    # This step will use Weights & Biases for tracking and run on Kubernetes
-    ...
 ```
 
-This direct specification is a concise way to assign different stack components to different steps. You can combine this with settings to configure the specific behavior of those components:
+You can combine both approaches with settings to configure the specific behavior of those components:
 
 ```python
 from zenml import step
 
-@step(step_operator="nameofstepoperator", settings={"step_operator": {"estimator_args": {"instance_type": "m7g.medium"}}})
+@step(step_operator=True, settings={"step_operator": {"estimator_args": {"instance_type": "m7g.medium"}}})
 def my_step():
-    # This step will use the specified step operator with custom instance type
+    # This step will use the step operator of the active stack with custom instance type
     ...
 
-# Alternatively, using the appropriate settings class:
+# Alternatively, using the step operator name and appropriate settings class:
 @step(step_operator="nameofstepoperator", settings={"step_operator": SagemakerStepOperatorSettings(instance_type="m7g.medium")})
 def my_step():
     # Same configuration using the settings class
