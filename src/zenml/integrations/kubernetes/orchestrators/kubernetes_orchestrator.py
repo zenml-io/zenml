@@ -690,45 +690,41 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             30  # Give pods 30 seconds to gracefully shutdown
         )
 
+        # Find all pods with the orchestrator run ID label
+        label_selector = f"zenml-orchestrator-run-id={orchestrator_run_id}"
         try:
-            # Find all pods with the orchestrator run ID label
-            label_selector = f"zenml-orchestrator-run-id={orchestrator_run_id}"
             pods = self._k8s_core_api.list_namespaced_pod(
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
             )
-
-            # Filter to only include running or pending pods
-            for pod in pods.items:
-                if pod.status.phase not in ["Running", "Pending"]:
-                    logger.debug(
-                        f"Skipping pod {pod.metadata.name} with status {pod.status.phase}"
-                    )
-                    continue
-
-                try:
-                    self._k8s_core_api.delete_namespaced_pod(
-                        name=pod.metadata.name,
-                        namespace=self.config.kubernetes_namespace,
-                        grace_period_seconds=grace_period_seconds,
-                    )
-                    pods_stopped.append(f"step pod: {pod.metadata.name}")
-                    logger.debug(
-                        f"Successfully initiated graceful stop of step pod: {pod.metadata.name}"
-                    )
-                except Exception as e:
-                    error_msg = (
-                        f"Failed to stop step pod {pod.metadata.name}: {e}"
-                    )
-                    logger.warning(error_msg)
-                    errors.append(error_msg)
-
         except Exception as e:
-            error_msg = (
+            logger.warning(
                 f"Failed to list step pods for run {orchestrator_run_id}: {e}"
             )
-            logger.warning(error_msg)
-            errors.append(error_msg)
+            raise e
+
+        # Filter to only include running or pending pods
+        for pod in pods.items:
+            if pod.status.phase not in ["Running", "Pending"]:
+                logger.debug(
+                    f"Skipping pod {pod.metadata.name} with status {pod.status.phase}"
+                )
+                continue
+
+            try:
+                self._k8s_core_api.delete_namespaced_pod(
+                    name=pod.metadata.name,
+                    namespace=self.config.kubernetes_namespace,
+                    grace_period_seconds=grace_period_seconds,
+                )
+                pods_stopped.append(f"step pod: {pod.metadata.name}")
+                logger.debug(
+                    f"Successfully initiated graceful stop of step pod: {pod.metadata.name}"
+                )
+            except Exception as e:
+                error_msg = f"Failed to stop step pod {pod.metadata.name}: {e}"
+                logger.warning(error_msg)
+                errors.append(error_msg)
 
         # Summary logging
         if pods_stopped:
