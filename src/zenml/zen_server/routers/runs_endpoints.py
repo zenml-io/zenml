@@ -53,8 +53,8 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
-    verify_permission_for_model,
     dehydrate_response_model,
+    verify_permission_for_model,
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
