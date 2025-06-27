@@ -132,12 +132,42 @@ infrastructure. ZenML handles the complexity so you can focus on your AI logic.
 
 ![ZenML Stack Deployment](docs/book/.gitbook/assets/register_orchestrator.png)
 
+```hcl
+terraform {
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+        }
+        zenml = {
+            source = "zenml-io/zenml"
+        }
+    }
+}
+
+provider "zenml" {
+    # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # For ZenML Pro users, this should be your Workspace URL from the dashboard
+    # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
+}
+
+module "zenml_stack" {
+  source = "zenml-io/zenml-stack/<cloud-provider>"
+  version = "x.y.z"
+
+  # Optional inputs
+  zenml_stack_name = "<your-stack-name>"
+  orchestrator = "<your-orchestrator-type>" # e.g., "local", "sagemaker", "vertex", "azureml", "skypilot"
+}
+```
+
 ```bash
 # Deploy a new stack on AWS
-zenml stack deploy --provider aws
+terraform init
+terraform apply
 
 # Or register existing infrastructure
-zenml stack register production --provider gcp
+zenml artifact-store register s3-store --flavor=s3 --path=s3://my-bucket
+zenml container-registry register ecr --flavor=aws --uri=123456789.dkr.ecr.us-east-1.amazonaws.com
 ```
 
 ### Seamless Tool Integration

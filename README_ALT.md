@@ -118,7 +118,7 @@ def generate_response(prompt_template: str, context: str) -> dict:
     return response
 ```
 
-**Framework Agnostic** - Use TensorFlow, PyTorch, Hugging Face, LangChain, LangGraph – or all of them together. 40+ integrations available.
+**Framework Agnostic** - Use TensorFlow, PyTorch, Hugging Face, LangChain, LangGraph – or all of them together. 60+ integrations available.
 
 _[Placeholder: Grid of framework logos showing compatibility]_
 
@@ -130,9 +130,45 @@ _[Placeholder: Grid of framework logos showing compatibility]_
 # Register your existing infrastructure
 zenml artifact-store register s3-store --flavor=s3 --path=s3://my-bucket
 zenml container-registry register ecr --flavor=aws --uri=123456789.dkr.ecr.us-east-1.amazonaws.com
+```
 
-# Or deploy fresh with Terraform/Helm
-zenml stack deploy --provider=aws --terraform
+
+```hcl
+terraform {
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+        }
+        zenml = {
+            source = "zenml-io/zenml"
+        }
+    }
+}
+
+provider "zenml" {
+    # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # For ZenML Pro users, this should be your Workspace URL from the dashboard
+    # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
+}
+
+module "zenml_stack" {
+  source = "zenml-io/zenml-stack/<cloud-provider>"
+  version = "x.y.z"
+
+  # Optional inputs
+  zenml_stack_name = "<your-stack-name>"
+  orchestrator = "<your-orchestrator-type>" # e.g., "local", "sagemaker", "vertex", "azureml", "skypilot"
+}
+```
+
+```bash
+# Or deploy a new stack on AWS
+terraform init
+terraform apply
+
+# Or install with Helm
+helm pull oci://public.ecr.aws/zenml/zenml --version <VERSION> --untar
+helm -n <namespace> install zenml-server . --create-namespace --values custom-values.yaml
 ```
 
 **Security First** - Secrets management, RBAC, audit logs, air-gapped deployments. Everything your security team demands.
@@ -169,8 +205,10 @@ def train_secure(data):
 
 ### Traditional MLOps: Fraud Detection Pipeline
 
-End-to-end pipeline with automatic model promotion based on performance. From notebook to production in hours.
+End-to-end pipeline with automatic model promotion based on performance. From
+notebook to production in hours.
 
+![Pipelines and Models](docs/book/.gitbook/assets/readme_pipelines_and_models.png)
 ```python
 from zenml import pipeline, step, Model
 from sklearn.ensemble import RandomForestClassifier
@@ -209,8 +247,6 @@ def fraud_detection_pipeline():
     accuracy = evaluate_model(model, data)
     status = promote_if_better(model, accuracy)
 ```
-
-_[Placeholder: Screenshot of ZenML dashboard showing pipeline runs and model versions]_
 
 ### LLMOps: Production RAG with Continuous Improvement
 
