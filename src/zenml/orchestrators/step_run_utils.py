@@ -14,9 +14,8 @@
 """Utilities for creating step runs."""
 
 import json
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple
 
-from zenml import Tag, add_tags
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
@@ -404,29 +403,6 @@ def link_output_artifacts_to_model_version(
             )
 
 
-def cascade_tags_for_output_artifacts(
-    artifacts: Dict[str, List[ArtifactVersionResponse]],
-    tags: Optional[List[Union[str, Tag]]] = None,
-) -> None:
-    """Tag the outputs of a step run.
-
-    Args:
-        artifacts: The step output artifacts.
-        tags: The tags to add to the artifacts.
-    """
-    if tags is None:
-        return
-
-    cascade_tags = [t for t in tags if isinstance(t, Tag) and t.cascade]
-
-    for output_artifacts in artifacts.values():
-        for output_artifact in output_artifacts:
-            add_tags(
-                tags=[t.name for t in cascade_tags],
-                artifact_version_id=output_artifact.id,
-            )
-
-
 def publish_cached_step_run(
     request: "StepRunRequest", pipeline_run: "PipelineRunResponse"
 ) -> "StepRunResponse":
@@ -446,11 +422,6 @@ def publish_cached_step_run(
             artifacts=step_run.outputs,
             model_version=model_version,
         )
-
-    cascade_tags_for_output_artifacts(
-        artifacts=step_run.outputs,
-        tags=pipeline_run.config.tags,
-    )
 
     return step_run
 
