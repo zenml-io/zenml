@@ -58,6 +58,7 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypo
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_cron_job_manifest,
     build_pod_manifest,
+    create_image_pull_secrets_from_manifests,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
@@ -534,14 +535,18 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 failed_jobs_history_limit=settings.failed_jobs_history_limit,
                 ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
                 namespace=self.config.kubernetes_namespace,
+                container_registry=stack.container_registry,
+                auto_generate_image_pull_secrets=settings.auto_generate_image_pull_secrets,
+                core_api=self._k8s_core_api,
             )
 
             # Create imagePullSecrets first
-            for secret_manifest in secret_manifests:
-                kube_utils.create_or_update_secret_from_manifest(
-                    core_api=self._k8s_core_api,
-                    secret_manifest=secret_manifest,
-                )
+            create_image_pull_secrets_from_manifests(
+                secret_manifests=secret_manifests,
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                reuse_existing=False,  # Orchestrator creates/updates all secrets
+            )
 
             self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
@@ -567,14 +572,18 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 env=environment,
                 mount_local_stores=self.config.is_local,
                 namespace=self.config.kubernetes_namespace,
+                container_registry=stack.container_registry,
+                auto_generate_image_pull_secrets=settings.auto_generate_image_pull_secrets,
+                core_api=self._k8s_core_api,
             )
 
             # Create imagePullSecrets first
-            for secret_manifest in secret_manifests:
-                kube_utils.create_or_update_secret_from_manifest(
-                    core_api=self._k8s_core_api,
-                    secret_manifest=secret_manifest,
-                )
+            create_image_pull_secrets_from_manifests(
+                secret_manifests=secret_manifests,
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                reuse_existing=False,  # Orchestrator creates/updates all secrets
+            )
 
             kube_utils.create_and_wait_for_pod_to_start(
                 core_api=self._k8s_core_api,

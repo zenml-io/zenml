@@ -126,6 +126,7 @@ The following configuration options can be set either through the step operator 
 - **`pod_failure_max_retries`** (default: 3): The maximum number of times to retry a step pod if it fails to start.
 - **`pod_failure_retry_delay`** (default: 10): The delay (in seconds) between pod failure retries and pod startup retries.
 - **`pod_failure_backoff`** (default: 1.0): The backoff factor for pod failure retries and pod startup retries.
+- **`auto_generate_image_pull_secrets`** (default: True): If `True`, automatically generates imagePullSecrets from container registry credentials in the stack. If `False`, relies on manually configured imagePullSecrets. When enabled, the service account used for running steps must have permissions to create and list secrets in the target namespace.
 
 ```python
 from zenml.integrations.kubernetes.flavors import KubernetesStepOperatorSettings

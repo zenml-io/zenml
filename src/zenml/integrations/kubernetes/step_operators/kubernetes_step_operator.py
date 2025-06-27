@@ -27,6 +27,7 @@ from zenml.integrations.kubernetes.flavors import (
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
+    create_image_pull_secrets_from_manifests,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -217,37 +218,17 @@ class KubernetesStepOperator(BaseStepOperator):
             env=environment,
             mount_local_stores=False,
             namespace=self.config.kubernetes_namespace,
+            auto_generate_image_pull_secrets=settings.auto_generate_image_pull_secrets,
+            core_api=self._k8s_core_api,
         )
 
-        # Check if secrets already exist before creating them
-        for secret_manifest in secret_manifests:
-            secret_name = secret_manifest["metadata"]["name"]
-            try:
-                # Check if secret already exists
-                self._k8s_core_api.read_namespaced_secret(
-                    name=secret_name,
-                    namespace=self.config.kubernetes_namespace,
-                )
-                logger.debug(
-                    f"imagePullSecret {secret_name} already exists, reusing it"
-                )
-            except k8s_client.rest.ApiException as e:
-                if e.status == 404:
-                    # Secret doesn't exist, create it
-                    try:
-                        kube_utils.create_or_update_secret_from_manifest(
-                            core_api=self._k8s_core_api,
-                            secret_manifest=secret_manifest,
-                        )
-                        logger.debug(f"Created imagePullSecret {secret_name}")
-                    except Exception as create_e:
-                        logger.warning(
-                            f"Failed to create imagePullSecret {secret_name}: {create_e}"
-                        )
-                else:
-                    logger.warning(
-                        f"Failed to check for existing secret {secret_name}: {e}"
-                    )
+        # Create imagePullSecrets, reusing existing ones
+        create_image_pull_secrets_from_manifests(
+            secret_manifests=secret_manifests,
+            core_api=self._k8s_core_api,
+            namespace=self.config.kubernetes_namespace,
+            reuse_existing=True,  # Step operator reuses orchestrator-created secrets
+        )
 
         kube_utils.create_and_wait_for_pod_to_start(
             core_api=self._k8s_core_api,

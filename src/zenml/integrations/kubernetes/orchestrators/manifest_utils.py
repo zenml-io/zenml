@@ -17,6 +17,7 @@ import base64
 import json
 import os
 import sys
+import time
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from kubernetes import client as k8s_client
@@ -82,74 +83,110 @@ def _create_image_pull_secret_data(
     }
 
 
-def _get_container_registry_credentials() -> List[Tuple[str, str, str]]:
+def _get_container_registry_credentials(
+    container_registry=None,
+) -> List[Tuple[str, str, str]]:
     """Extract container registry credentials from the active stack.
+
+    Args:
+        container_registry: Optional container registry instance to use.
+            If None, uses the container registry from the active stack.
 
     Returns:
         List of tuples containing (registry_uri, username, password) for each
         container registry that has credentials available.
     """
     credentials = []
-    client = Client()
-    stack = client.active_stack
 
-    # Get container registry from stack
-    container_registry = stack.container_registry
+    # If no container registry provided, get from active stack
+    if container_registry is None:
+        client = Client()
+        stack = client.active_stack
+        container_registry = stack.container_registry
+
     if not container_registry:
         return credentials
 
-    # Try to get credentials from the container registry
-    registry_credentials = container_registry.credentials
-    if registry_credentials:
-        username, password = registry_credentials
-
-        # Use the service connector's registry if available, otherwise fall back to container registry URI
-        registry_uri = container_registry.config.uri
-
-        # Check if there's a service connector with a different registry setting
-        connector = container_registry.get_connector()
-        if connector:
-            from zenml.service_connectors.docker_service_connector import (
-                DockerServiceConnector,
-            )
-
-            if (
-                isinstance(connector, DockerServiceConnector)
-                and connector.config.registry
-            ):
-                # Use the service connector's registry setting
-                registry_uri = connector.config.registry
-
-        # Normalize registry URI for consistency
-        if registry_uri.startswith("https://"):
-            registry_uri = registry_uri[8:]
-        elif registry_uri.startswith("http://"):
-            registry_uri = registry_uri[7:]
-
-        credentials.append((registry_uri, username, password))
+    # Use the new method from base container registry
+    registry_data = container_registry.get_kubernetes_image_pull_secret_data()
+    if registry_data:
+        credentials.append(registry_data)
 
     return credentials
 
 
+def _should_refresh_image_pull_secret(
+    secret_name: str, namespace: str, core_api
+) -> bool:
+    """Check if an existing imagePullSecret needs to be refreshed.
+
+    Args:
+        secret_name: Name of the secret to check.
+        namespace: Kubernetes namespace.
+        core_api: Kubernetes Core API client.
+
+    Returns:
+        True if the secret should be refreshed, False otherwise.
+    """
+    try:
+        secret = core_api.read_namespaced_secret(
+            name=secret_name, namespace=namespace
+        )
+
+        # Check if secret has refresh annotations
+        annotations = secret.metadata.annotations or {}
+        refresh_after_str = annotations.get("zenml.io/refresh-after")
+
+        if not refresh_after_str:
+            # No refresh annotation, assume it needs refresh
+            return True
+
+        refresh_after = int(refresh_after_str)
+        current_time = int(time.time())
+
+        # Refresh if current time is past the refresh time
+        return current_time >= refresh_after
+
+    except Exception:
+        # Secret doesn't exist or can't be read, needs creation
+        return True
+
+
 def _generate_image_pull_secrets(
     namespace: str = "default",
+    container_registry=None,
+    force_refresh: bool = False,
+    core_api=None,
 ) -> Tuple[List[Dict[str, Any]], List[k8s_client.V1LocalObjectReference]]:
     """Generate Kubernetes secrets and references for container registry credentials.
 
     Args:
         namespace: The Kubernetes namespace to create secrets in.
+        container_registry: Optional container registry instance to use.
+            If None, uses the container registry from the active stack.
+        force_refresh: If True, forces regeneration of secrets even if they exist.
+        core_api: Optional Kubernetes Core API client for checking existing secrets.
 
     Returns:
         Tuple of (secret_manifests, local_object_references) where:
         - secret_manifests: List of Kubernetes secret manifests to create
         - local_object_references: List of V1LocalObjectReference objects for imagePullSecrets
     """
-    credentials = _get_container_registry_credentials()
+    credentials = _get_container_registry_credentials(container_registry)
     if not credentials:
         return [], []
 
     secret_manifests = []
     local_object_references = []
+
+    # Check if credentials need refresh (for service connectors)
+    needs_refresh = force_refresh
+    if container_registry and hasattr(
+        container_registry, "connector_has_expired"
+    ):
+        needs_refresh = (
+            needs_refresh or container_registry.connector_has_expired()
+        )
 
     for i, (registry_uri, username, password) in enumerate(credentials):
         # Create a unique secret name for this registry
@@ -159,10 +196,33 @@ def _generate_image_pull_secrets(
             :63
         ]  # K8s name limit
 
+        # Check if secret needs refresh
+        should_refresh = needs_refresh or (
+            core_api
+            and _should_refresh_image_pull_secret(
+                secret_name, namespace, core_api
+            )
+        )
+
+        # Always add to local object references for pod spec
+        local_object_references.append(
+            k8s_client.V1LocalObjectReference(name=secret_name)
+        )
+
+        # Only include in manifests if it needs to be created/updated
+        if not should_refresh:
+            continue
+
         # Create the secret data
         secret_data = _create_image_pull_secret_data(
             registry_uri, username, password
         )
+
+        # Add metadata for credential refresh tracking
+        current_time = int(time.time())
+        # Default refresh interval: 1 hour (3600 seconds)
+        # This is conservative for most cloud providers that have longer-lived tokens
+        refresh_interval = 3600
 
         # Create the secret manifest
         secret_manifest = {
@@ -171,17 +231,134 @@ def _generate_image_pull_secrets(
             "metadata": {
                 "name": secret_name,
                 "namespace": namespace,
+                "labels": {
+                    "app.kubernetes.io/name": "zenml",
+                    "app.kubernetes.io/component": "image-pull-secret",
+                    "app.kubernetes.io/managed-by": "zenml",
+                },
+                "annotations": {
+                    "zenml.io/created-at": str(current_time),
+                    "zenml.io/refresh-after": str(
+                        current_time + refresh_interval
+                    ),
+                    "zenml.io/registry-uri": registry_uri,
+                },
             },
             "type": "kubernetes.io/dockerconfigjson",
             "data": secret_data,
         }
 
         secret_manifests.append(secret_manifest)
-        local_object_references.append(
-            k8s_client.V1LocalObjectReference(name=secret_name)
-        )
 
     return secret_manifests, local_object_references
+
+
+def create_image_pull_secrets_from_manifests(
+    secret_manifests: List[Dict[str, Any]],
+    core_api,
+    namespace: str,
+    reuse_existing: bool = True,
+) -> None:
+    """Create imagePullSecrets from manifests with optional reuse logic.
+
+    Args:
+        secret_manifests: List of secret manifests to create.
+        core_api: Kubernetes Core API client.
+        namespace: Kubernetes namespace.
+        reuse_existing: If True, reuses existing secrets and only creates new ones.
+            If False, creates/updates all secrets.
+    """
+    for secret_manifest in secret_manifests:
+        secret_name = secret_manifest["metadata"]["name"]
+
+        if reuse_existing:
+            # Check if secret already exists
+            try:
+                core_api.read_namespaced_secret(
+                    name=secret_name, namespace=namespace
+                )
+                logger.debug(
+                    f"imagePullSecret {secret_name} already exists, reusing it"
+                )
+                continue  # Skip creation, secret already exists
+            except k8s_client.rest.ApiException as e:
+                if e.status != 404:
+                    # Some other error, re-raise
+                    logger.warning(
+                        f"Error checking existence of secret {secret_name}: {e}"
+                    )
+                    raise
+                # Secret doesn't exist (404), proceed to create it
+
+        # Create or update the secret
+        try:
+            kube_utils.create_or_update_secret_from_manifest(
+                core_api=core_api,
+                secret_manifest=secret_manifest,
+            )
+            logger.debug(
+                f"Successfully created/updated imagePullSecret {secret_name}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to create imagePullSecret {secret_name}: {e}"
+            )
+            raise
+
+
+def cleanup_old_image_pull_secrets(
+    core_api,
+    namespace: str = "default",
+    max_age_hours: int = 24,
+) -> None:
+    """Clean up old ZenML-managed imagePullSecrets.
+
+    Args:
+        core_api: Kubernetes Core API client.
+        namespace: The Kubernetes namespace to clean up secrets in.
+        max_age_hours: Maximum age in hours for secrets to be kept.
+            Secrets older than this will be deleted.
+    """
+    try:
+        # List all secrets in the namespace with ZenML labels
+        secret_list = core_api.list_namespaced_secret(
+            namespace=namespace,
+            label_selector="app.kubernetes.io/managed-by=zenml,app.kubernetes.io/component=image-pull-secret",
+        )
+
+        current_time = int(time.time())
+        max_age_seconds = max_age_hours * 3600
+
+        for secret in secret_list.items:
+            try:
+                # Check if secret has creation time annotation
+                annotations = secret.metadata.annotations or {}
+                created_at_str = annotations.get("zenml.io/created-at")
+
+                if not created_at_str:
+                    # No creation time annotation, skip
+                    continue
+
+                created_at = int(created_at_str)
+                age_seconds = current_time - created_at
+
+                # Delete if older than max age
+                if age_seconds > max_age_seconds:
+                    logger.info(
+                        f"Cleaning up old imagePullSecret {secret.metadata.name} "
+                        f"(age: {age_seconds // 3600}h)"
+                    )
+                    core_api.delete_namespaced_secret(
+                        name=secret.metadata.name,
+                        namespace=namespace,
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to process secret {secret.metadata.name} for cleanup: {e}"
+                )
+
+    except Exception as e:
+        logger.warning(f"Failed to cleanup old imagePullSecrets: {e}")
 
 
 def add_local_stores_mount(
@@ -261,6 +438,8 @@ def build_pod_manifest(
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
     auto_generate_image_pull_secrets: bool = True,
     namespace: str = "default",
+    container_registry=None,
+    core_api=None,
 ) -> Tuple[k8s_client.V1Pod, List[Dict[str, Any]]]:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -283,6 +462,9 @@ def build_pod_manifest(
         auto_generate_image_pull_secrets: Whether to automatically generate
             imagePullSecrets from container registry credentials in the stack.
         namespace: The Kubernetes namespace to create secrets in.
+        container_registry: Optional container registry instance to use.
+            If None, uses the container registry from the active stack.
+        core_api: Optional Kubernetes Core API client for checking existing secrets.
 
     Returns:
         Tuple of (pod_manifest, secret_manifests) where:
@@ -305,10 +487,13 @@ def build_pod_manifest(
         security_context=security_context,
     )
     # Handle imagePullSecrets - combine manual and auto-generated
+    # This maintains backward compatibility by preserving existing manual configurations
+    # while adding automatic registry authentication when available.
     image_pull_secrets = []
     secret_manifests = []
 
-    # Add manually configured imagePullSecrets from pod_settings
+    # Add manually configured imagePullSecrets from pod_settings first
+    # This ensures existing configurations continue to work unchanged
     if pod_settings and pod_settings.image_pull_secrets:
         image_pull_secrets.extend(
             [
@@ -321,7 +506,9 @@ def build_pod_manifest(
     if auto_generate_image_pull_secrets:
         try:
             generated_secrets, generated_refs = _generate_image_pull_secrets(
-                namespace=namespace
+                namespace=namespace,
+                container_registry=container_registry,
+                core_api=core_api,
             )
             secret_manifests.extend(generated_secrets)
             image_pull_secrets.extend(generated_refs)
@@ -465,6 +652,8 @@ def build_cron_job_manifest(
     ttl_seconds_after_finished: Optional[int] = None,
     auto_generate_image_pull_secrets: bool = True,
     namespace: str = "default",
+    container_registry=None,
+    core_api=None,
 ) -> Tuple[k8s_client.V1CronJob, List[Dict[str, Any]]]:
     """Create a manifest for launching a pod as scheduled CRON job.
 
@@ -491,6 +680,9 @@ def build_cron_job_manifest(
         auto_generate_image_pull_secrets: Whether to automatically generate
             imagePullSecrets from container registry credentials in the stack.
         namespace: The Kubernetes namespace to create secrets in.
+        container_registry: Optional container registry instance to use.
+            If None, uses the container registry from the active stack.
+        core_api: Optional Kubernetes Core API client for checking existing secrets.
 
     Returns:
         Tuple of (cron_job_manifest, secret_manifests) where:
@@ -511,6 +703,8 @@ def build_cron_job_manifest(
         mount_local_stores=mount_local_stores,
         auto_generate_image_pull_secrets=auto_generate_image_pull_secrets,
         namespace=namespace,
+        container_registry=container_registry,
+        core_api=core_api,
     )
 
     job_spec = k8s_client.V1CronJobSpec(
