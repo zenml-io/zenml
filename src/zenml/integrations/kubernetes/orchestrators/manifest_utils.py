@@ -231,41 +231,16 @@ def _generate_image_pull_secrets(
 def create_image_pull_secrets_from_manifests(
     secret_manifests: List[Dict[str, Any]],
     core_api,
-    namespace: str,
-    reuse_existing: bool = True,
 ) -> None:
-    """Create imagePullSecrets from manifests with optional reuse logic.
+    """Create imagePullSecrets from manifests.
 
     Args:
         secret_manifests: List of secret manifests to create.
         core_api: Kubernetes Core API client.
-        namespace: Kubernetes namespace.
-        reuse_existing: If True, reuses existing secrets and only creates new ones.
-            If False, creates/updates all secrets.
     """
     for secret_manifest in secret_manifests:
         secret_name = secret_manifest["metadata"]["name"]
-
-        if reuse_existing:
-            # Check if secret already exists
-            try:
-                core_api.read_namespaced_secret(
-                    name=secret_name, namespace=namespace
-                )
-                logger.debug(
-                    f"imagePullSecret {secret_name} already exists, reusing it"
-                )
-                continue  # Skip creation, secret already exists
-            except k8s_client.rest.ApiException as e:
-                if e.status != 404:
-                    # Some other error, re-raise
-                    logger.warning(
-                        f"Error checking existence of secret {secret_name}: {e}"
-                    )
-                    raise
-                # Secret doesn't exist (404), proceed to create it
-
-        # Create or update the secret
+        
         try:
             kube_utils.create_or_update_secret_from_manifest(
                 core_api=core_api,

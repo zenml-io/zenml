@@ -693,12 +693,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Args:
             secret_manifests: List of secret manifests for imagePullSecrets.
         """
-        # Create imagePullSecrets first
         create_image_pull_secrets_from_manifests(
             secret_manifests=secret_manifests,
             core_api=self._k8s_core_api,
-            namespace=self.config.kubernetes_namespace,
-            reuse_existing=False,  # Orchestrator creates/updates all secrets
         )
 
     def get_orchestrator_run_id(self) -> str:
