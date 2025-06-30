@@ -210,7 +210,7 @@ def train_secure(data):
 
 **Zero Maintenance** - Managed metadata store, automatic garbage collection, built-in monitoring. Set it and forget it.
 
-### For Decision Makers: Measurable ROI, Minimal Risk
+### For Production Teams: Enterprise-Ready at Scale
 
 **10x Faster Time-to-Production** - Teams ship production pipelines in days, not months. Concrete example: Rivian reduced model deployment time by 75%.
 
