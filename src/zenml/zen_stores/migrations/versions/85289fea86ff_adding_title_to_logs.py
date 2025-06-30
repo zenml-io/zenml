@@ -29,4 +29,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-    pass
+    with op.batch_alter_table("logs", schema=None) as batch_op:
+        batch_op.drop_column("title")
