@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import time
+from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
 from typing import Any, Callable, List, Optional, Type, Union
@@ -604,32 +605,42 @@ def setup_orchestrator_logging(
     Returns:
         The logs context (PipelineLogsStorageContext)
     """
-    # Fetch the active stack
-    client = Client()
-    active_stack = client.active_stack
-
-    # Configure the logs
-    logs_uri = prepare_logs_uri(
-        artifact_store=active_stack.artifact_store,
-    )
-
-    logs_context = PipelineLogsStorageContext(
-        logs_uri=logs_uri,
-        artifact_store=active_stack.artifact_store,
-        prepend_step_name=False,
-    )
-
-    logs_model = LogsRequest(
-        uri=logs_uri,
-        title=title,
-        artifact_store_id=active_stack.artifact_store.id,
-    )
-
-    # Add orchestrator logs to the pipeline run
     try:
-        run_update = PipelineRunUpdate(add_logs=[logs_model])
-        client.zen_store.update_run(run_id=UUID(run_id), run_update=run_update)
-    except Exception as e:
-        logger.warning(f"Failed to add {title} logs: {e}")
+        # Fetch the active stack
+        client = Client()
+        active_stack = client.active_stack
 
-    return logs_context
+        # Configure the logs
+        logs_uri = prepare_logs_uri(
+            artifact_store=active_stack.artifact_store,
+        )
+
+        logs_context = PipelineLogsStorageContext(
+            logs_uri=logs_uri,
+            artifact_store=active_stack.artifact_store,
+            prepend_step_name=False,
+        )
+
+        logs_model = LogsRequest(
+            uri=logs_uri,
+            title=title,
+            artifact_store_id=active_stack.artifact_store.id,
+        )
+
+        # Add orchestrator logs to the pipeline run
+        try:
+            run_update = PipelineRunUpdate(add_logs=[logs_model])
+            client.zen_store.update_run(
+                run_id=UUID(run_id), run_update=run_update
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to add {title} logs to the run {run_id}: {e}"
+            )
+            raise e
+        return logs_context
+    except Exception as e:
+        logger.error(
+            f"Failed to setup orchestrator logging for run {run_id}: {e}"
+        )
+        return nullcontext()
