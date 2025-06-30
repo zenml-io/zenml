@@ -26,7 +26,6 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
-from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 
@@ -370,8 +369,6 @@ def add_local_stores_mount(
 
 def build_pod_manifest(
     pod_name: str,
-    run_name: str,
-    pipeline_name: str,
     image_name: str,
     command: List[str],
     args: List[str],
@@ -379,6 +376,7 @@ def build_pod_manifest(
     pod_settings: Optional[KubernetesPodSettings] = None,
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
+    labels: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
     auto_generate_image_pull_secrets: bool = True,
@@ -391,8 +389,6 @@ def build_pod_manifest(
 
     Args:
         pod_name: Name of the pod.
-        run_name: Name of the ZenML run.
-        pipeline_name: Name of the ZenML pipeline.
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
@@ -402,6 +398,7 @@ def build_pod_manifest(
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
         env: Environment variables to set.
+        labels: Labels to add to the pod.
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
         owner_references: List of owner references for the pod.
@@ -476,7 +473,7 @@ def build_pod_manifest(
     if service_account_name is not None:
         pod_spec.service_account_name = service_account_name
 
-    labels = {}
+    labels = labels or {}
 
     if pod_settings:
         add_pod_settings(pod_spec, pod_settings)
@@ -484,14 +481,6 @@ def build_pod_manifest(
         # Add pod_settings.labels to the labels
         if pod_settings.labels:
             labels.update(pod_settings.labels)
-
-    # Add run_name and pipeline_name to the labels
-    labels.update(
-        {
-            "run": kube_utils.sanitize_label(run_name),
-            "pipeline": kube_utils.sanitize_label(pipeline_name),
-        }
-    )
 
     pod_metadata = k8s_client.V1ObjectMeta(
         name=pod_name,
@@ -586,8 +575,6 @@ def add_pod_settings(
 def build_cron_job_manifest(
     cron_expression: str,
     pod_name: str,
-    run_name: str,
-    pipeline_name: str,
     image_name: str,
     command: List[str],
     args: List[str],
@@ -595,6 +582,7 @@ def build_cron_job_manifest(
     pod_settings: Optional[KubernetesPodSettings] = None,
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
+    labels: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
     successful_jobs_history_limit: Optional[int] = None,
     failed_jobs_history_limit: Optional[int] = None,
@@ -610,8 +598,6 @@ def build_cron_job_manifest(
     Args:
         cron_expression: CRON job schedule expression, e.g. "* * * * *".
         pod_name: Name of the pod.
-        run_name: Name of the ZenML run.
-        pipeline_name: Name of the ZenML pipeline.
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
@@ -621,6 +607,7 @@ def build_cron_job_manifest(
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
         env: Environment variables to set.
+        labels: Labels to add to the pod.
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
         successful_jobs_history_limit: The number of successful jobs to retain.
@@ -642,8 +629,6 @@ def build_cron_job_manifest(
     """
     pod_manifest, secret_manifests = build_pod_manifest(
         pod_name=pod_name,
-        run_name=run_name,
-        pipeline_name=pipeline_name,
         image_name=image_name,
         command=command,
         args=args,
@@ -651,6 +636,7 @@ def build_cron_job_manifest(
         pod_settings=pod_settings,
         service_account_name=service_account_name,
         env=env,
+        labels=labels,
         mount_local_stores=mount_local_stores,
         auto_generate_image_pull_secrets=auto_generate_image_pull_secrets,
         namespace=namespace,

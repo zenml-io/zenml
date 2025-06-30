@@ -208,7 +208,6 @@ class KubernetesStepOperator(BaseStepOperator):
         pod_manifest, secret_manifests = build_pod_manifest(
             run_name=info.run_name,
             pod_name=pod_name,
-            pipeline_name=info.pipeline.name,
             image_name=image_name,
             command=command,
             args=args,
@@ -228,6 +227,10 @@ class KubernetesStepOperator(BaseStepOperator):
             core_api=self._k8s_core_api,
             namespace=self.config.kubernetes_namespace,
             reuse_existing=True,  # Step operator reuses orchestrator-created secrets
+            labels={
+                "run_id": kube_utils.sanitize_label(str(info.run_id)),
+                "pipeline": kube_utils.sanitize_label(info.pipeline.name),
+            },
         )
 
         kube_utils.create_and_wait_for_pod_to_start(
