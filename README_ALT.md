@@ -62,6 +62,8 @@ ZenML provides the orchestration and observability layer that makes your AI syst
 
 **From POC to production in hours, not months.** Deploy your first production pipeline today, not next quarter.
 
+Instead of stitching together different solutions for traditional ML and LLM workloads, ZenML provides a unified approach. Your `scikit-learn` training pipeline and your RAG ingestion pipeline can share the same infrastructure, monitoring, and deployment practices. Write portable code that works locally for quick iteration and scales seamlessly to production without changes.
+
 ## 🚀 Quickstart (2 minutes to your first pipeline)
 
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via [PyPI](https://pypi.org/project/zenml/). Python 3.9 - 3.12 is required:
