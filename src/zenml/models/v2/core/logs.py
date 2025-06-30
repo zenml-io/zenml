@@ -37,6 +37,7 @@ class LogsRequest(BaseRequest):
 
     title: Optional[str] = Field(
         title="The title of the logs file",
+        default=None,
     )
 
     artifact_store_id: UUID = Field(
