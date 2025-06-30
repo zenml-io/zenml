@@ -478,7 +478,7 @@ def run_logs(
             if title is None or log_entry.title == title:
                 logs.append(
                     (
-                        log_entry.title,
+                        log_entry.title if log_entry.title else "",
                         fetch_logs(
                             zen_store=store,
                             artifact_store_id=log_entry.artifact_store_id,
