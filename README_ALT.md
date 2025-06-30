@@ -231,23 +231,6 @@ def load_and_evaluate(dataset_id: str) -> dict:
     return metrics  # ZenML handles artifact storage automatically
 ```
 
-### For Production Teams: Enterprise-Ready at Scale
-
-**10x Faster Time-to-Production** - Teams ship production pipelines in days, not months. Concrete example: Rivian reduced model deployment time by 75%.
-
-**No Vendor Lock-in** - Open source, cloud-agnostic, tool-agnostic. Switch providers anytime. Your code stays the same.
-
-**Enterprise Support Available** - SLAs, dedicated support, and professional services when you need them. Trusted by Rivian, Playtika, and Leroy Merlin.
-
-| **Capability** | **Value Delivered** | **Without ZenML** |
-|----------------|---------------------|-------------------|
-| **Experiment Tracking** | Automatic versioning of all experiments | Manual tracking in spreadsheets |
-| **Model Registry** | Central model management with lineage | Models scattered across S3 buckets |
-| **Pipeline Orchestration** | Run anywhere without code changes | Rewrite for each environment |
-| **Compliance & Audit** | Full lineage for every prediction | Scramble during audits |
-| **Team Collaboration** | Shared pipelines and artifacts | "Works on my machine" chaos |
-| **Resource Optimization** | Automatic cleanup and right-sizing | Orphaned resources burning money |
-
 ## 💻 Use Cases: From Classic ML to Cutting-Edge LLMs
 
 ### Traditional MLOps: Fraud Detection Pipeline
