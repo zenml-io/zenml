@@ -69,6 +69,9 @@ def publish_step_run_status_update(
 
     Returns:
         The updated step run.
+
+    Raises:
+        ValueError: If the end time is set for a non-finished step run.
     """
     from zenml.client import Client
 

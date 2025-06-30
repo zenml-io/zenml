@@ -212,10 +212,7 @@ class StepLauncher:
         """Launches the step.
 
         Raises:
-            KeyboardInterrupt: If the execution is keyboard interrupted.
             RunStoppedException: If the pipeline run is stopped by the user.
-            RunInterruptedException: If the execution is interrupted for any
-                other reason.
         """
         pipeline_run, run_was_created = self._create_or_reuse_run()
 

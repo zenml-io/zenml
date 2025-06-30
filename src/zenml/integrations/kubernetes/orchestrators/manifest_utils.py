@@ -125,7 +125,6 @@ def build_pod_manifest(
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
         owner_references: List of owner references for the pod.
-        extra_labels: Optional additional labels to add to the pod.
         termination_grace_period_seconds: The amount of seconds to wait for a
             pod to shutdown gracefully.
 

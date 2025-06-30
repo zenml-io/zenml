@@ -676,7 +676,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 If False, stops all running step pods.
 
         Raises:
-            ValueError: If the orchestrator run ID cannot be found.
             RuntimeError: If we fail to stop the run.
         """
         # If graceful, do nothing and let the orchestrator handle the stop naturally
@@ -698,10 +697,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 label_selector=label_selector,
             )
         except Exception as e:
-            logger.warning(
+            raise RuntimeError(
                 f"Failed to list step pods with run ID {run.id}: {e}"
             )
-            raise e
 
         # Filter to only include running or pending pods
         for pod in pods.items:
