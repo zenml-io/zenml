@@ -864,8 +864,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 deployment = self._create_deployment(**self._run_args)
 
                 self.log_pipeline_deployment_metadata(deployment)
-                run = create_placeholder_run(
-                    deployment=deployment, logs=logs_model
+                run = (
+                    create_placeholder_run(
+                        deployment=deployment, logs=logs_model
+                    )
+                    if not deployment.schedule
+                    else None
                 )
 
                 analytics_handler.metadata = (

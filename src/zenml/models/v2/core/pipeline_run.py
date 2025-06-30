@@ -125,6 +125,15 @@ class PipelineRunRequest(ProjectScopedRequest):
         title="Logs of the pipeline run.",
     )
 
+    @property
+    def is_placeholder_request(self) -> bool:
+        """Whether the request is a placeholder request.
+
+        Returns:
+            Whether the request is a placeholder request.
+        """
+        return self.status == ExecutionStatus.INITIALIZING
+
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -487,6 +496,7 @@ class PipelineRunResponse(
             for step in pagination_utils.depaginate(
                 Client().list_run_steps,
                 pipeline_run_id=self.id,
+                project=self.project_id,
             )
         }
 

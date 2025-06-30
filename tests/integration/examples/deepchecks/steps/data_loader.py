@@ -14,7 +14,7 @@
 from typing import Tuple
 
 import pandas as pd
-from deepchecks.tabular.datasets.classification import iris
+from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from typing_extensions import Annotated
 
@@ -27,9 +27,8 @@ def data_loader() -> Tuple[
     Annotated[pd.DataFrame, "comparison_dataset"],
 ]:
     """Load the iris dataset."""
-    iris_df = iris.load_data(data_format="Dataframe", as_train_test=False)
-    label_col = "target"
+    iris = load_iris(as_frame=True)
     df_train, df_test = train_test_split(
-        iris_df, stratify=iris_df[label_col], random_state=0
+        iris["frame"], stratify=iris["target"], random_state=0
     )
     return df_train, df_test
