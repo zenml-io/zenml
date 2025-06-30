@@ -169,13 +169,10 @@ class StepLauncher:
                         self._step_run.pipeline_run_id
                     )
                 else:
-                    pipeline_run_list = client.list_pipeline_runs(
-                        deployment_id=self._deployment.id,
-                        orchestrator_run_id=self._orchestrator_run_id,
-                        hydrate=False,
+                    raise RunInterruptedException(
+                        "The execution was interrupted and the step does not "
+                        "exist yet."
                     )
-                    if pipeline_run_list.items:
-                        pipeline_run = pipeline_run_list.items[0]
 
                 if pipeline_run and pipeline_run.status in [
                     ExecutionStatus.STOPPING,
