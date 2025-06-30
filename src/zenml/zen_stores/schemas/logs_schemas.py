@@ -38,7 +38,7 @@ class LogsSchema(BaseSchema, table=True):
 
     # Fields
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
-    descriptor: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    title: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     # Foreign Keys
     pipeline_run_id: Optional[UUID] = build_foreign_key_field(
@@ -94,7 +94,7 @@ class LogsSchema(BaseSchema, table=True):
         """
         body = LogsResponseBody(
             uri=self.uri,
-            descriptor=self.descriptor,
+            title=self.title,
             created=self.created,
             updated=self.updated,
         )

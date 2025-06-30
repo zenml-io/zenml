@@ -512,7 +512,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.model_version
                 else None,
                 tags=[tag.to_model() for tag in self.tags],
-                logs=[log.to_model() for log in self.logs],
+                log_collection=[log.to_model() for log in self.logs],
             )
 
         return PipelineRunResponse(

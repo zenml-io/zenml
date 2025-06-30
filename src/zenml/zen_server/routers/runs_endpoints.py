@@ -432,7 +432,7 @@ def refresh_run_status(
 @async_fastapi_endpoint_wrapper
 def run_logs(
     run_id: UUID,
-    descriptor: Optional[str] = None,
+    title: Optional[str] = None,
     offset: int = 0,
     length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
@@ -441,7 +441,7 @@ def run_logs(
 
     Args:
         run_id: ID of the pipeline run.
-        descriptor: Optional descriptor to filter logs.
+        title: Optional title to filter logs.
         offset: The offset from which to start reading.
         length: The amount of bytes that should be read.
 
@@ -463,18 +463,18 @@ def run_logs(
     if run.deployment_id:
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
-            if descriptor is None or descriptor == "workload":
+            if title is None or title == "workload":
                 workload_logs = workload_manager().get_logs(
                     workload_id=deployment.id
                 )
                 logs.append(("workload", workload_logs))
 
-    if run.logs:
-        for log_entry in run.logs:
-            if descriptor is None or log_entry.descriptor == descriptor:
+    if run.log_collection:
+        for log_entry in run.log_collection:
+            if title is None or log_entry.title == title:
                 logs.append(
                     (
-                        log_entry.descriptor,
+                        log_entry.title,
                         fetch_logs(
                             zen_store=store,
                             artifact_store_id=log_entry.artifact_store_id,

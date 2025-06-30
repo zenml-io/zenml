@@ -5706,7 +5706,7 @@ class SqlZenStore(BaseZenStore):
 
             log_entry = LogsSchema(
                 uri=pipeline_run.logs.uri,
-                descriptor=pipeline_run.logs.descriptor,
+                title=pipeline_run.logs.title,
                 pipeline_run_id=new_run.id,
                 artifact_store_id=pipeline_run.logs.artifact_store_id,
             )
@@ -6099,9 +6099,7 @@ class SqlZenStore(BaseZenStore):
                     # Create the log entry
                     log_entry = LogsSchema(
                         uri=log_request.uri,
-                        descriptor=getattr(
-                            log_request, "descriptor", "client"
-                        ),
+                        title=log_request.title,
                         pipeline_run_id=existing_run.id,
                         artifact_store_id=log_request.artifact_store_id,
                     )

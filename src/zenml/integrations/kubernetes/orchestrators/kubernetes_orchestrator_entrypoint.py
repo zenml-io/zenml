@@ -15,7 +15,8 @@
 
 import argparse
 import socket
-from typing import TYPE_CHECKING, Any, Dict, cast
+from contextlib import nullcontext
+from typing import Any, Dict, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -46,9 +47,6 @@ from zenml.orchestrators.utils import (
     get_config_environment_vars,
     get_orchestrator_run_name,
 )
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
@@ -88,11 +86,9 @@ def main() -> None:
             run_id=args.run_id,
             active_stack=active_stack,
             client=client,
-            descriptor="orchestrator",
+            title="orchestrator",
         )
     else:
-        from contextlib import nullcontext
-
         logs_context = nullcontext()
 
     with logs_context:

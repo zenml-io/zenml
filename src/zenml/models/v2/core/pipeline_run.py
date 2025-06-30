@@ -255,7 +255,11 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
     )
-    logs: Optional[List["LogsResponse"]] = Field(
+    logs: Optional["LogsResponse"] = Field(
+        title="Logs associated with this pipeline run.",
+        default=None,
+    )
+    log_collection: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this pipeline run.",
         default=None,
     )
@@ -586,13 +590,22 @@ class PipelineRunResponse(
         return self.get_resources().tags
 
     @property
-    def logs(self) -> Optional[List["LogsResponse"]]:
+    def logs(self) -> Optional["LogsResponse"]:
         """The `logs` property.
 
         Returns:
             the value of the property.
         """
         return self.get_resources().logs
+
+    @property
+    def log_collection(self) -> Optional[List["LogsResponse"]]:
+        """The `log_collection` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().log_collection
 
 
 # ------------------ Filter Model ------------------

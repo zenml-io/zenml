@@ -593,9 +593,9 @@ def setup_orchestrator_logging(
     run_id: str,
     active_stack: "Stack",
     client: "Client",
-    descriptor: str = "orchestrator",
+    title: str = "orchestrator",
 ) -> Any:
-    """Set up logging for an orchestrator pod.
+    """Set up logging for an orchestrator environment.
 
     This function can be reused by different orchestrators to set up
     consistent logging behavior.
@@ -604,7 +604,7 @@ def setup_orchestrator_logging(
         run_id: The pipeline run ID.
         active_stack: The active stack containing the artifact store.
         client: The ZenML client for updating the pipeline run.
-        descriptor: Name/descriptor for the orchestrator logs.
+        title: Title for the orchestrator logs.
 
     Returns:
         The logs context (PipelineLogsStorageContext)
@@ -612,7 +612,6 @@ def setup_orchestrator_logging(
     # Configure the logs
     logs_uri = prepare_logs_uri(
         artifact_store=active_stack.artifact_store,
-        step_name=descriptor,
     )
 
     logs_context = PipelineLogsStorageContext(
@@ -623,7 +622,7 @@ def setup_orchestrator_logging(
 
     logs_model = LogsRequest(
         uri=logs_uri,
-        descriptor=descriptor,
+        title=title,
         artifact_store_id=active_stack.artifact_store.id,
     )
 
@@ -632,6 +631,6 @@ def setup_orchestrator_logging(
         run_update = PipelineRunUpdate(add_logs=[logs_model])
         client.zen_store.update_run(run_id=UUID(run_id), run_update=run_update)
     except Exception as e:
-        logger.warning(f"Failed to add {descriptor} logs: {e}")
+        logger.warning(f"Failed to add {title} logs: {e}")
 
     return logs_context
