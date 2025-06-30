@@ -124,13 +124,24 @@ def generate_response(prompt_template: str, context: str) -> dict:
     # Prompts are automatically versioned
     response = llm.complete(prompt_template.format(context=context))
     
-    # Track costs and metrics
+    # Generate embeddings for the response
+    embedding = embedding_model.encode(response.content)
+    
+    # Track costs and metrics including embeddings
     log_metadata({
         "prompt_version": prompt_template.version,
         "token_count": response.usage.total_tokens,
-        "cost_usd": response.usage.total_tokens * 0.0001
+        "cost_usd": response.usage.total_tokens * 0.0001,
+        "embedding_model": "text-embedding-3-small",
+        "embedding_dimension": len(embedding),
+        "embedding_cost_usd": len(response.content) * 0.00001
     })
-    return response
+    
+    return {
+        "response": response.content,
+        "embedding": embedding,
+        "metadata": response.usage
+    }
 ```
 
 **Framework Agnostic** - Use TensorFlow, PyTorch, Hugging Face, LangChain, LangGraph – or all of them together. 60+ integrations available.
