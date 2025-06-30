@@ -36,7 +36,6 @@ import re
 import time
 from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
-from kfp.dsl import container_component
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
@@ -232,7 +231,6 @@ def wait_pod(
     timeout_sec: int = 0,
     exponential_backoff: bool = False,
     stream_logs: bool = False,
-    main_container_name: str = "main",
 ) -> k8s_client.V1Pod:
     """Wait for a pod to meet an exit condition.
 
@@ -254,7 +252,6 @@ def wait_pod(
             Defaults to False.
         stream_logs: Whether to stream the pod logs to
             `zenml.logger.info()`. Defaults to False.
-        main_container_name: The name of the main ZenML container.
 
     Raises:
         RuntimeError: when the function times out.
