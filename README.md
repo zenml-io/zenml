@@ -231,192 +231,206 @@ def load_and_evaluate(dataset_id: str) -> dict:
     return metrics  # ZenML handles artifact storage automatically
 ```
 
-## 💻 Use Cases: From Classic ML to Cutting-Edge LLMs
+## 💻 ZenML In Action: Building a Smart Customer Service Platform
 
-### Traditional MLOps: Fraud Detection Pipeline
+See how ZenML orchestrates traditional ML and LLMs to create a comprehensive AI system that's production-ready and compliant.
 
-End-to-end pipeline with automatic model promotion based on performance. From
-notebook to production in hours.
+### Traditional MLOps: Intelligent Ticket Routing
+
+Lightning-fast classification and prioritization using classical ML, feeding insights to our LLM-powered response system.
 
 ![Pipelines and Models](docs/book/.gitbook/assets/readme_pipelines_and_models.png)
+
 ```python
 from zenml import pipeline, step, Model
 from sklearn.ensemble import RandomForestClassifier
-import pandas as pd
 
 @step
-def load_and_validate_data() -> pd.DataFrame:
-    df = pd.read_parquet("s3://data/transactions.parquet")
-    assert df.shape[0] > 10000, "Insufficient data"
-    return df
+def analyze_ticket_stream() -> pd.DataFrame:
+    tickets = fetch_from_zendesk(last_hours=24)
+    tickets["sentiment"] = quick_sentiment_analysis(tickets["message"])
+    tickets["customer_tier"] = lookup_customer_value(tickets["customer_id"])
+    return tickets
 
 @step
-def train_classifier(data: pd.DataFrame) -> RandomForestClassifier:
-    X, y = data.drop("is_fraud", axis=1), data["is_fraud"]
-    model = RandomForestClassifier(n_estimators=100)
-    model.fit(X, y)
+def train_routing_model(tickets: pd.DataFrame) -> RandomForestClassifier:
+    # Multi-class: billing, technical, feature_request, urgent
+    X = engineer_features(tickets)  # TF-IDF + metadata
+    model = RandomForestClassifier().fit(X, tickets["category"])
+    log_metadata({"accuracy": 0.94, "daily_volume": len(tickets)})
     return model
 
 @step
-def evaluate_model(model: RandomForestClassifier, data: pd.DataFrame) -> float:
-    X_test, y_test = data.drop("is_fraud", axis=1), data["is_fraud"]
-    return model.score(X_test, y_test)
+def predict_churn_risk(tickets: pd.DataFrame) -> pd.DataFrame:
+    # Deep learning model identifies at-risk customers
+    tickets["churn_risk"] = churn_model.predict(tickets)
+    tickets["priority"] = calculate_priority(tickets)
+    return tickets
 
-@step(model=Model(name="fraud_detector", tags=["production"]))
-def promote_if_better(model: RandomForestClassifier, accuracy: float) -> str:
-    if accuracy > 0.95:
-        # Auto-promotion to production
-        deploy_to_sagemaker(model)
-        return "promoted"
-    return "held_back"
+@step(model=Model(name="ticket_intelligence"))
+def deploy_insights(model: RandomForestClassifier, tickets: pd.DataFrame):
+    # Export insights for LLM pipeline
+    insights = {
+        "high_churn_topics": extract_topics(tickets[tickets.churn_risk > 0.8]),
+        "resolution_patterns": analyze_successful_resolutions(tickets)
+    }
+    save_to_feature_store(insights, "customer_intelligence")
+    deploy_to_sagemaker(model)
 
-@pipeline(schedule="0 2 * * *")  # Run nightly
-def fraud_detection_pipeline():
-    data = load_and_validate_data()
-    model = train_classifier(data)
-    accuracy = evaluate_model(model, data)
-    status = promote_if_better(model, accuracy)
+@pipeline(schedule="0 */2 * * *")
+def customer_intelligence_pipeline():
+    tickets = analyze_ticket_stream()
+    model = train_routing_model(tickets)
+    enriched = predict_churn_risk(tickets)
+    deploy_insights(model, enriched)
 ```
 
-### LLMOps: Production RAG with Continuous Improvement
+### LLMOps: RAG-Powered Response Generation
 
-Build a RAG system that automatically reindexes documents and tracks quality
-metrics.
+Combines ML insights with company knowledge for context-aware responses.
 
 ![ZenML RAG Pipeline](docs/book/.gitbook/assets/readme_simple_pipeline.gif)
 
 ```python
-from zenml import pipeline, step
-from typing_extensions import Annotated
-import numpy as np
-
 @step
-def ingest_documents() -> list[dict]:
-    # Connect to your document sources
-    docs = []
-    for source in ["confluence", "notion", "drive"]:
-        docs.extend(fetch_from_source(source))
-    log_metadata({"total_documents": len(docs)})
-    return docs
+def sync_knowledge_sources() -> list[dict]:
+    sources = []
+    # Company knowledge
+    sources.extend(fetch_from_confluence("support_docs"))
+    sources.extend(parse_product_manuals())
+    
+    # Fresh ML insights
+    ml_insights = load_from_feature_store("customer_intelligence")
+    sources.append({
+        "content": f"High-risk topics: {ml_insights['high_churn_topics']}"
+    })
+    return sources
 
 @step  
-def smart_chunking(documents: list[dict]) -> list[dict]:
+def intelligent_chunking(documents: list[dict]) -> list[dict]:
+    # Context-aware chunking
     chunks = []
     for doc in documents:
-        # Semantic chunking with overlap
-        doc_chunks = semantic_chunker(
-            doc["content"], 
-            max_chunk_size=512,
-            overlap=50
-        )
-        chunks.extend(doc_chunks)
+        if "support_article" in doc["type"]:
+            chunks.extend(semantic_chunker(doc, preserve_qa_pairs=True))
+        else:
+            chunks.extend(standard_chunker(doc))
     return chunks
 
 @step
-def generate_embeddings(chunks: list[dict]) -> Annotated[np.ndarray, "embeddings"]:
-    # Generate embeddings with fallback providers
-    try:
-        embeddings = openai_embed(chunks)
-    except RateLimitError:
-        embeddings = cohere_embed(chunks)  # Automatic fallback
-    
-    log_metadata({
-        "embedding_model": "text-embedding-3-small",
-        "total_cost_usd": len(chunks) * 0.00002
-    })
-    return embeddings
+def generate_embeddings(chunks: list[dict]) -> np.ndarray:
+    # Multi-model strategy: CodeBERT for code, OpenAI for text
+    embeddings = []
+    for chunk in chunks:
+        emb = code_embedder(chunk) if "code" in chunk else openai_embed(chunk)
+        embeddings.append(emb)
+    return np.array(embeddings)
 
-@step
-def build_index(embeddings: np.ndarray, chunks: list[dict]) -> str:
-    # Create versioned vector index
-    index = ChromaDB(dimension=embeddings.shape[1])
-    index.add(embeddings, metadatas=chunks)
+@step(model=Model(name="smart_responder"))
+def deploy_rag_system(embeddings: np.ndarray, chunks: list[dict]) -> str:
+    # Build specialized indexes
+    indexes = {
+        "main": build_vector_db(embeddings, chunks),
+        "urgent": build_filtered_index(chunks, filter="urgent")
+    }
     
-    # Version your index
-    index_version = f"v{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    index.persist(f"indexes/rag_{index_version}")
-    return index_version
+    if evaluate_quality(indexes["main"]) > 0.85:
+        deploy_to_production({
+            "indexes": indexes,
+            "model": "claude-3-opus",
+            "guardrails": ["no_pii", "professional_tone"]
+        })
+        return "deployed"
 
-@pipeline(enable_cache=False)  # Always fresh embeddings
-def rag_indexing_pipeline():
-    docs = ingest_documents()
-    chunks = smart_chunking(docs)
+@pipeline(enable_cache=False)
+def smart_response_pipeline():
+    knowledge = sync_knowledge_sources()
+    chunks = intelligent_chunking(knowledge)
     embeddings = generate_embeddings(chunks)
-    index_version = build_index(embeddings, chunks)
-    
-    # Auto-deploy if quality improves
-    if evaluate_retrieval_quality(index_version) > 0.85:
-        deploy_index_to_production(index_version)
+    deploy_rag_system(embeddings, chunks)
 ```
 
-### EU AI Act Compliance & Audit Trail
+### Compliance & Monitoring: EU AI Act Compliance
 
-Automate compliance documentation and risk monitoring for EU AI Act requirements. Generate audit trails, track model decisions, and maintain regulatory documentation.
+Unified monitoring across ML and LLM systems for regulatory compliance.
 
 ![ZenML Compliance Pipeline](docs/book/.gitbook/assets/compliance_dashboard.png)
 
 ```python
 from zenml import pipeline, step, Model
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
+from zenml.config.schedule import Schedule
 
 @step
-def collect_ai_system_metrics() -> dict:
-    # Monitor high-risk AI system requirements
+def collect_unified_metrics() -> dict:
     return {
-        "prediction_logs": fetch_prediction_traces(),
-        "user_interactions": get_user_feedback_data(),
-        "system_performance": get_technical_metrics(),
-        "decision_explanations": get_model_explanations()
+        "ml_metrics": {
+            "routing_accuracy": fetch_model_performance("ticket-router"),
+            "prediction_fairness": calculate_demographic_parity()
+        },
+        "llm_metrics": {
+            "hallucination_rate": analyze_fact_checking_results(),
+            "response_relevance": fetch_rag_quality_scores()
+        },
+        "system_metrics": {
+            "human_escalation_rate": track_human_handoffs(),
+            "resolution_success": measure_satisfaction()
+        }
     }
 
 @step
-def assess_compliance_risks(metrics: dict) -> dict:
-    """EU AI Act Article 9 - Risk management system"""
-    risk_assessment = {
-        "bias_detection": run_bias_analysis(metrics["prediction_logs"]),
-        "accuracy_monitoring": calculate_performance_drift(metrics),
-        "human_oversight_events": count_human_interventions(metrics),
-        "data_governance_score": assess_data_quality(metrics),
-        "transparency_compliance": check_explainability_requirements(metrics)
+def detect_bias_and_fairness(metrics: dict) -> dict:
+    # Check both ML and LLM for bias
+    bias_report = {
+        "routing_bias": analyze_protected_attributes(metrics["ml_metrics"]),
+        "response_bias": analyze_llm_fairness(sample_n=1000)
     }
     
-    # Log for audit trail (Article 12 - Record-keeping)
-    logger.info(f"Risk assessment completed: {risk_assessment}")
-    return risk_assessment
+    if bias_report["routing_bias"]["disparity"] > 0.2:
+        alert_compliance_team("Bias threshold exceeded")
+    
+    return bias_report
 
 @step(model=Model(name="compliance_monitor", tags=["eu-ai-act"]))
-def generate_compliance_report(assessment: dict) -> dict:
-    """Generate documentation for regulatory submission"""
-    
-    compliance_report = {
-        "timestamp": datetime.now().isoformat(),
-        "risk_category": determine_risk_category(assessment),
-        "conformity_assessment": assessment,
-        "mitigation_actions": generate_mitigation_plan(assessment),
-        "ce_marking_status": check_ce_requirements(assessment)
+def generate_compliance_report(metrics: dict, bias_report: dict) -> dict:
+    compliance_package = {
+        "risk_level": "limited_risk",  # Customer service = limited risk
+        "technical_documentation": {
+            "performance": metrics,
+            "bias_mitigation": bias_report,
+            "human_oversight": verify_human_in_loop()
+        },
+        "transparency": {
+            "ai_disclosure": "AI-assisted responses",
+            "opt_out_available": True
+        }
     }
     
-    # Store compliance artifacts (Article 11 - Documentation)
-    log_metadata({
-        "compliance_score": assessment["data_governance_score"],
-        "risk_level": compliance_report["risk_category"],
-        "audit_trail_id": generate_audit_id(),
-        "regulation_version": "EU_AI_ACT_2024"
-    })
+    # Immutable audit trail
+    store_audit_record(compliance_package, retention_years=5)
+    create_compliance_dashboard(compliance_package)
+    
+    return compliance_package
 
-    return compliance_report
+@pipeline
+def ai_compliance_pipeline():
+    metrics = collect_unified_metrics()
+    bias_report = detect_bias_and_fairness(metrics)
+    compliance = generate_compliance_report(metrics, bias_report)
+    
+    if requires_immediate_action(compliance):
+        notify_compliance_team(compliance)
 
-@pipeline(schedule="0 */6 * * *")  # Every 6 hours for high-risk systems
-def eu_ai_act_compliance_pipeline():
-    """Automated compliance monitoring pipeline"""
-    system_metrics = collect_ai_system_metrics()
-    risk_assessment = assess_compliance_risks(system_metrics)
-    compliance_report = generate_compliance_report(risk_assessment)
+# Create a schedule for daily compliance monitoring
+compliance_schedule = Schedule(
+    name="daily-compliance-monitoring",
+    cron_expression="0 0 * * *"  # Run daily at midnight
+)
 
-    # Alert on high-risk findings
-    conditionally_notify_compliance_team(compliance_report)
+# Apply the schedule to the pipeline and execute
+scheduled_compliance_pipeline = ai_compliance_pipeline.with_options(
+    schedule=compliance_schedule
+)
+scheduled_compliance_pipeline()
 ```
 
 ## 📚 Learn More
