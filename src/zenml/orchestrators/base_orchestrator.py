@@ -328,16 +328,13 @@ class BaseOrchestrator(StackComponent, ABC):
                         try:
                             submission_result.wait_for_completion()
                         except KeyboardInterrupt:
-                            logger.warning(
-                                "Received KeyboardInterrupt. However, the run is "
-                                "still executing."
-                            )
+                            error_message = "Received KeyboardInterrupt. Note that the run is still executing. "
                             if placeholder_run:
-                                logger.warning(
+                                error_message += (
                                     "If you want to stop the pipeline run, please use: "
                                     f"`zenml pipeline runs stop {placeholder_run.id}`"
                                 )
-                            raise
+                            raise KeyboardInterrupt(error_message)
                         except BaseException as e:
                             raise RunMonitoringError(original_exception=e)
 
