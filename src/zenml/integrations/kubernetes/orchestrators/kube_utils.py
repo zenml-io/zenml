@@ -520,7 +520,7 @@ def create_and_wait_for_pod_to_start(
                 )
             except Exception:
                 # this is a hack - might be improved
-                raise SystemExit(f"Failed to create {pod_display_name}...")
+                raise SystemError(f"Failed to create {pod_display_name}...")
 
             # Wait for pod to start
             logger.info(f"Waiting for {pod_display_name} to start...")
@@ -537,7 +537,7 @@ def create_and_wait_for_pod_to_start(
                         namespace=namespace,
                     )
                 except Exception:
-                    raise SystemExit(f"Failed to get {pod_display_name}...")
+                    raise SystemError(f"Failed to get {pod_display_name}...")
                 if not pod or pod_is_running(pod):
                     break
                 if pod_is_not_pending(pod):
