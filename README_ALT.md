@@ -155,6 +155,15 @@ _[Placeholder: Grid of framework logos showing compatibility]_
 **Use Your Existing Infrastructure** - BYO cloud. BYO Kubernetes. BYO everything. ZenML adapts to your setup, not the other way around.
 
 ```bash
+# Install and Deploy ZenML with Helm
+helm pull oci://public.ecr.aws/zenml/zenml --version <VERSION> --untar
+helm -n <namespace> install zenml-server . --create-namespace --values custom-values.yaml
+```
+
+Use our Terraform provider to reproducibly provision your infrastructure
+cross-cloud and manage your ZenML stacks.
+
+```bash
 # Register your existing infrastructure
 zenml artifact-store register s3-store --flavor=s3 --path=s3://my-bucket
 zenml container-registry register ecr --flavor=aws --uri=123456789.dkr.ecr.us-east-1.amazonaws.com
@@ -173,12 +182,6 @@ terraform {
     }
 }
 
-provider "zenml" {
-    # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
-    # For ZenML Pro users, this should be your Workspace URL from the dashboard
-    # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
-}
-
 module "zenml_stack" {
   source = "zenml-io/zenml-stack/<cloud-provider>"
   version = "x.y.z"
@@ -190,24 +193,42 @@ module "zenml_stack" {
 ```
 
 ```bash
-# Or deploy a new stack on AWS
 terraform init
 terraform apply
-
-# Or install with Helm
-helm pull oci://public.ecr.aws/zenml/zenml --version <VERSION> --untar
-helm -n <namespace> install zenml-server . --create-namespace --values custom-values.yaml
 ```
 
 **Security First** - Secrets management, RBAC, audit logs, air-gapped deployments. Everything your security team demands.
 
+```bash
+# Register secrets centrally
+zenml secret create hf-creds --token=...
+zenml secret create openai-api --api_key=...
+```
+
 ```python
-# Secrets managed automatically
-@step(secrets=["aws", "huggingface"])
-def train_secure(data):
-    # Credentials injected at runtime
-    model = download_from_hf()  # Uses HF secret
-    save_to_s3(model)  # Uses AWS secret
+import openai
+from transformers import AutoModel
+from zenml import step
+from zenml.client import Client
+
+@step
+def load_and_evaluate(dataset_id: str) -> dict:
+    # Fetch secrets securely at runtime
+    client = Client()
+    hf_secret = client.get_secret("hf-creds")
+    openai_secret = client.get_secret("openai-api")
+    
+    # Use HF token to access private models
+    model = AutoModel.from_pretrained(
+        "my-org/private-model",
+        api_key=hf_secret.secret_values["token"]
+    )
+    
+    # Use OpenAI API for evaluation
+    openai.api_key = openai_secret.secret_values["api_key"]
+    metrics = run_llm_evaluation(model, dataset_id)
+    
+    return metrics  # ZenML handles artifact storage automatically
 ```
 
 **Zero Maintenance** - Managed metadata store, automatic garbage collection, built-in monitoring. Set it and forget it.
