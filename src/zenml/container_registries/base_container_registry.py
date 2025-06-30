@@ -236,76 +236,18 @@ class BaseContainerRegistry(AuthenticationMixin):
 
         return cast(str, metadata.id.split(":")[-1])
 
-    def get_kubernetes_image_pull_secret_data(
-        self,
-    ) -> Optional[Tuple[str, str, str]]:
-        """Get container registry credentials for Kubernetes imagePullSecrets.
+    @property
+    def registry_server_uri(self) -> str:
+        """Get the normalized registry server URI.
 
-        This method only returns credentials when running with a Kubernetes-based
-        orchestrator (kubernetes, kubeflow, etc.). For local orchestrators, it
-        returns None since imagePullSecrets are not needed.
+        This property returns a normalized registry server URI suitable for
+        authentication and API access. Subclasses can override this property
+        to provide registry-specific normalization logic.
 
         Returns:
-            Tuple of (registry_uri, username, password) if credentials are available
-            and running with a Kubernetes orchestrator, None otherwise. The
-            registry_uri is normalized for use in Kubernetes imagePullSecrets.
+            The normalized registry server URI.
         """
-        from zenml.client import Client
-        from zenml.logger import get_logger
-
-        logger = get_logger(__name__)
-
-        # Check if we're using a Kubernetes-based orchestrator
-        try:
-            stack = Client().active_stack
-            orchestrator_flavor = stack.orchestrator.flavor
-
-            # List of orchestrator flavors that use Kubernetes and need imagePullSecrets
-            kubernetes_orchestrators = {
-                "kubernetes",
-                "kubeflow",
-                "vertex",
-                "sagemaker",
-                "tekton",
-                "airflow",  # when running on Kubernetes
-            }
-
-            if orchestrator_flavor not in kubernetes_orchestrators:
-                logger.debug(
-                    f"Skipping ImagePullSecret generation for non-Kubernetes orchestrator: {orchestrator_flavor}"
-                )
-                return None
-
-            # Additional check for Kubernetes orchestrator with local flag
-            if orchestrator_flavor == "kubernetes" and hasattr(
-                stack.orchestrator.config, "local"
-            ):
-                if stack.orchestrator.config.local:
-                    logger.debug(
-                        "Skipping ImagePullSecret generation for local Kubernetes orchestrator"
-                    )
-                    return None
-
-        except Exception as e:
-            logger.debug(
-                f"Could not determine orchestrator type: {e}. Proceeding with ImagePullSecret generation."
-            )
-
-        logger.debug(
-            f"Getting ImagePullSecret data for registry: {self.config.uri}"
-        )
-
-        credentials = self.credentials
-        if not credentials:
-            logger.debug("No credentials found for container registry")
-            return None
-
-        username, password = credentials
         registry_uri = self.config.uri
-
-        logger.debug(
-            f"Found credentials - username: {username[:3]}***, registry_uri: {registry_uri}"
-        )
 
         # Check if there's a service connector with a different registry setting
         connector = self.get_connector()
@@ -319,35 +261,21 @@ class BaseContainerRegistry(AuthenticationMixin):
                 and connector.config.registry
             ):
                 # Use the service connector's registry setting
-                original_registry_uri = registry_uri
                 registry_uri = connector.config.registry
-                logger.debug(
-                    f"Service connector override: {original_registry_uri} -> {registry_uri}"
-                )
 
         # Normalize registry URI for consistency
-        original_registry_uri = registry_uri
         if registry_uri.startswith("https://"):
             registry_uri = registry_uri[8:]
         elif registry_uri.startswith("http://"):
             registry_uri = registry_uri[7:]
 
-        if original_registry_uri != registry_uri:
-            logger.debug(
-                f"Normalized registry URI: {original_registry_uri} -> {registry_uri}"
-            )
+        # For generic registries, extract just the domain part for better image matching
+        if not registry_uri.startswith(("http://", "https://")):
+            domain = registry_uri.split("/")[0]
+            return f"https://{domain}"
+        
+        return registry_uri
 
-        # Validate the final result
-        if not registry_uri or not username or not password:
-            logger.warning(
-                f"Invalid ImagePullSecret data: registry_uri='{registry_uri}', username='{username}', password_length={len(password) if password else 0}"
-            )
-            return None
-
-        logger.debug(
-            f"Returning ImagePullSecret data: registry='{registry_uri}', username='{username[:3]}***'"
-        )
-        return registry_uri, username, password
 
 
 class BaseContainerRegistryFlavor(Flavor):

@@ -518,6 +518,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     "schedule. Use `Schedule(cron_expression=...)` instead."
                 )
             cron_expression = deployment.schedule.cron_expression
+            
+            # Prepare dependencies for pod creation
+            registry_credentials, local_stores_path = self._prepare_pod_dependencies(
+                settings, stack
+            )
+            
             cron_job_manifest, secret_manifests = build_cron_job_manifest(
                 cron_expression=cron_expression,
                 run_name=orchestrator_run_name,
@@ -535,18 +541,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 failed_jobs_history_limit=settings.failed_jobs_history_limit,
                 ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
                 namespace=self.config.kubernetes_namespace,
-                container_registry=stack.container_registry,
                 auto_generate_image_pull_secrets=settings.auto_generate_image_pull_secrets,
                 core_api=self._k8s_core_api,
+                registry_credentials=registry_credentials,
+                local_stores_path=local_stores_path,
             )
 
             # Create imagePullSecrets first
-            create_image_pull_secrets_from_manifests(
-                secret_manifests=secret_manifests,
-                core_api=self._k8s_core_api,
-                namespace=self.config.kubernetes_namespace,
-                reuse_existing=False,  # Orchestrator creates/updates all secrets
-            )
+            self._create_image_pull_secrets(secret_manifests)
 
             self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
@@ -558,6 +560,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return None
         else:
+            # Prepare dependencies for pod creation
+            registry_credentials, local_stores_path = self._prepare_pod_dependencies(
+                settings, stack
+            )
+            
             # Create and run the orchestrator pod.
             pod_manifest, secret_manifests = build_pod_manifest(
                 run_name=orchestrator_run_name,
@@ -572,18 +579,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 env=environment,
                 mount_local_stores=self.config.is_local,
                 namespace=self.config.kubernetes_namespace,
-                container_registry=stack.container_registry,
                 auto_generate_image_pull_secrets=settings.auto_generate_image_pull_secrets,
                 core_api=self._k8s_core_api,
+                registry_credentials=registry_credentials,
+                local_stores_path=local_stores_path,
             )
 
             # Create imagePullSecrets first
-            create_image_pull_secrets_from_manifests(
-                secret_manifests=secret_manifests,
-                core_api=self._k8s_core_api,
-                namespace=self.config.kubernetes_namespace,
-                reuse_existing=False,  # Orchestrator creates/updates all secrets
-            )
+            self._create_image_pull_secrets(secret_manifests)
 
             kube_utils.create_and_wait_for_pod_to_start(
                 core_api=self._k8s_core_api,
@@ -650,6 +653,54 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return service_account_name
 
+    def _prepare_pod_dependencies(
+        self, 
+        settings: KubernetesOrchestratorSettings,
+        stack: "Stack"
+    ) -> Tuple[Optional[Tuple[str, str, str]], Optional[str]]:
+        """Prepare dependencies needed for pod manifest creation.
+        
+        Args:
+            settings: The orchestrator settings.
+            stack: The stack the pipeline will run on.
+            
+        Returns:
+            Tuple of (registry_credentials, local_stores_path).
+        """
+        # Get registry credentials if auto-generation is enabled
+        registry_credentials = None
+        if settings.auto_generate_image_pull_secrets:
+            registry_credentials = self.get_kubernetes_image_pull_secret_data(
+                stack.container_registry
+            )
+        
+        # Get local stores path if mounting local stores
+        local_stores_path = None
+        if self.config.is_local:
+            from zenml.config.global_config import GlobalConfiguration
+            
+            stack.check_local_paths()
+            local_stores_path = GlobalConfiguration().local_stores_path
+            
+        return registry_credentials, local_stores_path
+
+    def _create_image_pull_secrets(
+        self,
+        secret_manifests: List[Dict[str, str]],
+    ) -> None:
+        """Create imagePullSecrets in the cluster.
+        
+        Args:
+            secret_manifests: List of secret manifests for imagePullSecrets.
+        """
+        # Create imagePullSecrets first
+        create_image_pull_secrets_from_manifests(
+            secret_manifests=secret_manifests,
+            core_api=self._k8s_core_api,
+            namespace=self.config.kubernetes_namespace,
+            reuse_existing=False,  # Orchestrator creates/updates all secrets
+        )
+
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
 
@@ -667,3 +718,59 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_KUBERNETES_RUN_ID}."
             )
+
+    def get_kubernetes_image_pull_secret_data(
+        self, container_registry
+    ) -> Optional[Tuple[str, str, str]]:
+        """Get container registry credentials for Kubernetes imagePullSecrets.
+
+        This method extracts credentials from the container registry for use
+        in Kubernetes imagePullSecrets. It only works with this Kubernetes
+        orchestrator since other orchestrators don't need imagePullSecrets.
+
+        Args:
+            container_registry: The container registry to get credentials from.
+
+        Returns:
+            Tuple of (registry_uri, username, password) if credentials are available,
+            None otherwise. The registry_uri is normalized for use in Kubernetes 
+            imagePullSecrets.
+        """
+        from zenml.logger import get_logger
+
+        logger = get_logger(__name__)
+
+        # Check if this is a local Kubernetes orchestrator
+        if self.config.is_local:
+            logger.debug(
+                "Skipping ImagePullSecret generation for local Kubernetes orchestrator"
+            )
+            return None
+
+        logger.debug(
+            f"Getting ImagePullSecret data for registry: {container_registry.config.uri}"
+        )
+
+        credentials = container_registry.credentials
+        if not credentials:
+            logger.debug("No credentials found for container registry")
+            return None
+
+        username, password = credentials
+        registry_uri = container_registry.registry_server_uri
+
+        logger.debug(
+            f"Found credentials - username: {username[:3]}***, registry_uri: {registry_uri}"
+        )
+
+        # Validate the final result
+        if not registry_uri or not username or not password:
+            logger.warning(
+                f"Invalid ImagePullSecret data: registry_uri='{registry_uri}', username='{username}', password_length={len(password) if password else 0}"
+            )
+            return None
+
+        logger.debug(
+            f"Returning ImagePullSecret data: registry='{registry_uri}', username='{username[:3]}***'"
+        )
+        return registry_uri, username, password

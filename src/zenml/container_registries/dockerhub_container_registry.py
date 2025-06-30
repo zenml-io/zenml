@@ -13,14 +13,32 @@
 #  permissions and limitations under the License.
 """Implementation of a DockerHub Container Registry class."""
 
-from typing import Optional
+from typing import Optional, Type
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
     BaseContainerRegistryFlavor,
 )
 from zenml.enums import ContainerRegistryFlavor
 from zenml.models import ServiceConnectorRequirements
+
+
+class DockerHubContainerRegistry(BaseContainerRegistry):
+    """Container registry implementation for DockerHub."""
+
+    @property
+    def registry_server_uri(self) -> str:
+        """Get the DockerHub registry server URI.
+
+        DockerHub requires authentication against the specific
+        'https://index.docker.io/v1/' endpoint regardless of how
+        the registry URI is configured.
+
+        Returns:
+            The DockerHub registry server URI.
+        """
+        return "https://index.docker.io/v1/"
 
 
 class DockerHubContainerRegistryFlavor(BaseContainerRegistryFlavor):
@@ -80,3 +98,12 @@ class DockerHubContainerRegistryFlavor(BaseContainerRegistryFlavor):
             The flavor logo.
         """
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png"
+
+    @property
+    def implementation_class(self) -> Type[DockerHubContainerRegistry]:
+        """Implementation class for DockerHub container registry.
+
+        Returns:
+            The DockerHub container registry implementation class.
+        """
+        return DockerHubContainerRegistry
