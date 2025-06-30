@@ -183,7 +183,10 @@ def get_pipeline_run_status(
             return ExecutionStatus.STOPPING
 
     # Otherwise, if there is a failed step, the run is failed
-    elif ExecutionStatus.FAILED in step_statuses:
+    elif (
+        ExecutionStatus.FAILED in step_statuses
+        or run_status == ExecutionStatus.FAILED
+    ):
         return ExecutionStatus.FAILED
 
     # If there is a running step, the run is running
