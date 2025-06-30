@@ -183,12 +183,8 @@ class ThreadedDagRunner:
 
         # Check if execution should continue (e.g., check for cancellation)
         if self.check_fn:
+            self._stop_requested = self._stop_requested or not self.check_fn()
             if self._stop_requested:
-                self._finish_node(node, cancelled=True)
-                return
-
-            if not self.check_fn():
-                self._stop_requested = True
                 self._finish_node(node, cancelled=True)
                 return
 
