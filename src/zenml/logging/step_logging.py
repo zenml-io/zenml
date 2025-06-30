@@ -43,7 +43,6 @@ from zenml.logging import (
     STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
 )
 from zenml.models import LogsRequest, PipelineRunUpdate
-from zenml.stack import Stack
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -591,8 +590,6 @@ class PipelineLogsStorageContext:
 
 def setup_orchestrator_logging(
     run_id: str,
-    active_stack: "Stack",
-    client: "Client",
     title: str = "orchestrator",
 ) -> Any:
     """Set up logging for an orchestrator environment.
@@ -602,13 +599,15 @@ def setup_orchestrator_logging(
 
     Args:
         run_id: The pipeline run ID.
-        active_stack: The active stack containing the artifact store.
-        client: The ZenML client for updating the pipeline run.
         title: Title for the orchestrator logs.
 
     Returns:
         The logs context (PipelineLogsStorageContext)
     """
+    # Fetch the active stack
+    client = Client()
+    active_stack = client.active_stack
+
     # Configure the logs
     logs_uri = prepare_logs_uri(
         artifact_store=active_stack.artifact_store,
@@ -618,7 +617,7 @@ def setup_orchestrator_logging(
         logs_uri=logs_uri,
         artifact_store=active_stack.artifact_store,
         prepend_step_name=False,
-    )  # type: ignore[assignment]
+    )
 
     logs_model = LogsRequest(
         uri=logs_uri,
