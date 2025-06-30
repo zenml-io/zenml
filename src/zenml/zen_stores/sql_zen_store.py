@@ -8854,6 +8854,13 @@ class SqlZenStore(BaseZenStore):
                     f"Cannot create step '{step_run.name}' for pipeline in "
                     f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
                 )
+            self._get_reference_schema_by_id(
+                resource=step_run,
+                reference_schema=StepRunSchema,
+                reference_id=step_run.original_step_run_id,
+                session=session,
+                reference_type="original step run",
+            )
 
             step_schema = StepRunSchema.from_request(
                 step_run, deployment_id=run.deployment_id
@@ -8922,15 +8929,41 @@ class SqlZenStore(BaseZenStore):
                     )
                     for link in original_metadata_links
                 ]
-                # Add all new links in a single operation
-                session.add_all(new_links)
-                # Commit the changes
-                session.commit()
-                session.refresh(step_schema)
+
+                if new_links:
+                    session.add_all(new_links)
+                    session.commit()
+                    session.refresh(step_schema, ["run_metadata"])
+
+            if step_run.status == ExecutionStatus.CACHED:
+                from zenml.utils.tag_utils import Tag
+
+                cascading_tags = [
+                    tag
+                    for tag in run.get_pipeline_configuration().tags or []
+                    if isinstance(tag, Tag) and tag.cascade
+                ]
+
+                if cascading_tags:
+                    output_artifact_ids = [
+                        id for ids in step_run.outputs.values() for id in ids
+                    ]
+                    output_artifacts = list(
+                        session.exec(
+                            select(ArtifactVersionSchema).where(
+                                col(ArtifactVersionSchema.id).in_(
+                                    output_artifact_ids
+                                )
+                            )
+                        ).all()
+                    )
+                    self._attach_tags_to_resources(
+                        cascading_tags,
+                        resources=output_artifacts,
+                        session=session,
+                    )
 
             session.commit()
-            session.refresh(step_schema)
-
             step_model = step_schema.to_model(include_metadata=True)
 
             for upstream_step in step_model.spec.upstream_steps:
@@ -8989,7 +9022,10 @@ class SqlZenStore(BaseZenStore):
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
 
-            session.refresh(step_schema)
+            session.commit()
+            session.refresh(
+                step_schema, ["input_artifacts", "output_artifacts"]
+            )
 
             if model_version_id := self._get_or_create_model_version_for_run(
                 step_schema
@@ -9341,6 +9377,9 @@ class SqlZenStore(BaseZenStore):
         """
         from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
+        # Make sure we start with a fresh transaction before locking the
+        # pipeline run
+        session.commit()
         pipeline_run = session.exec(
             select(PipelineRunSchema)
             .with_for_update()
@@ -12265,7 +12304,7 @@ class SqlZenStore(BaseZenStore):
     def _attach_tags_to_resources(
         self,
         tags: Optional[Sequence[Union[str, tag_utils.Tag]]],
-        resources: Union[BaseSchema, List[BaseSchema]],
+        resources: Union[BaseSchema, Sequence[BaseSchema]],
         session: Session,
     ) -> None:
         """Attaches multiple tags to multiple resources.

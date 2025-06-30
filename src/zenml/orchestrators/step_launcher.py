@@ -379,10 +379,6 @@ class StepLauncher:
                             artifacts=step_run.outputs,
                             model_version=model_version,
                         )
-                    step_run_utils.cascade_tags_for_output_artifacts(
-                        artifacts=step_run.outputs,
-                        tags=pipeline_run.config.tags,
-                    )
         except RunStoppedException:
             logger.info(f"Pipeline run `{pipeline_run.name}` stopped.")
             raise
