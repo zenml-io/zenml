@@ -94,9 +94,9 @@ class ThreadedDagRunner:
             parallel_node_startup_waiting_period: Delay in seconds to wait in
                 between starting parallel nodes.
             max_parallelism: Maximum number of nodes to run in parallel
-            check_fn: A function `check_fn()` that returns True if execution
-                should continue, False if it should stop (e.g., for cancellation).
-                If None, execution continues normally.
+            check_fn: A function that returns True if the run should continue
+                after each step execution, False if it should stop (e.g., due
+                to cancellation). If None, execution continues normally.
 
         Raises:
             ValueError: If max_parallelism is not greater than 0.
