@@ -69,6 +69,8 @@ class KubernetesOrchestratorSettings(BaseSettings):
             scheduling a pipeline.
         prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
             not try to compute cached steps before starting the step pods.
+        pod_stop_grace_period: When stopping a pipeline run, the amount of
+            seconds to wait for a step pod to shutdown gracefully.
     """
 
     synchronous: bool = True
@@ -88,6 +90,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     failed_jobs_history_limit: Optional[NonNegativeInt] = None
     ttl_seconds_after_finished: Optional[NonNegativeInt] = None
     prevent_orchestrator_pod_caching: bool = False
+    pod_stop_grace_period: PositiveInt = 30
 
 
 class KubernetesOrchestratorConfig(
