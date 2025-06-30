@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import re
 import time
 from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
+from kfp.dsl import container_component
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
@@ -64,7 +65,6 @@ class PodPhase(enum.Enum):
     SUCCEEDED = "Succeeded"
     FAILED = "Failed"
     UNKNOWN = "Unknown"
-
 
 def is_inside_kubernetes() -> bool:
     """Check whether we are inside a Kubernetes cluster or on a remote host.
@@ -164,6 +164,17 @@ def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
     """
     return pod.status.phase != PodPhase.PENDING.value  # type: ignore[no-any-return]
 
+def pod_is_running(pod: k8s_client.V1Pod) -> bool:
+    """Check if pod status is 'Running'.
+
+    Args:
+        pod: Kubernetes pod.
+
+    Returns:
+        True if the pod status is 'Running' else False.
+    """
+    return pod.status.phase == PodPhase.RUNNING.value  # type: ignore[no-any-return]
+
 
 def pod_failed(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is 'Failed'.
@@ -221,6 +232,7 @@ def wait_pod(
     timeout_sec: int = 0,
     exponential_backoff: bool = False,
     stream_logs: bool = False,
+    main_container_name: str = "main",
 ) -> k8s_client.V1Pod:
     """Wait for a pod to meet an exit condition.
 
@@ -242,6 +254,7 @@ def wait_pod(
             Defaults to False.
         stream_logs: Whether to stream the pod logs to
             `zenml.logger.info()`. Defaults to False.
+        main_container_name: The name of the main ZenML container.
 
     Raises:
         RuntimeError: when the function times out.
@@ -289,7 +302,7 @@ def wait_pod(
 
         # Raise an error if the pod failed.
         if pod_failed(resp):
-            raise RuntimeError(f"Pod `{namespace}:{pod_name}` failed.")
+            raise RuntimeError(f"Pod `{namespace}:{pod_name}` failed. {resp.status.reason}")
 
         # Check if pod is in desired state (e.g. finished / running / ...).
         if exit_condition_lambda(resp):
@@ -503,12 +516,68 @@ def create_and_wait_for_pod_to_start(
     while retries < startup_max_retries:
         try:
             # Create and run pod.
-            core_api.create_namespaced_pod(
-                namespace=namespace,
-                body=pod_manifest,
-            )
+            try:
+                core_api.create_namespaced_pod(
+                    namespace=namespace,
+                    body=pod_manifest,
+                )
+            except Exception:
+                # this is a hack - might be improved
+                raise SystemExit(f"Failed to create {pod_display_name}...")
+
+            # Wait for pod to start
+            logger.info(f"Waiting for {pod_display_name} to start...")
+            max_wait = startup_timeout
+            total_wait: float = 0
+            # Shall it be configurable? I don't think that `startup_failure_delay` is
+            # reasonable here though, it shall be quite small.
+            delay = 1
+            while True:
+                try:
+                    pod = get_pod(
+                        core_api=core_api,
+                        pod_name=pod_name,
+                        namespace=namespace,
+                    )
+                except Exception:
+                    raise SystemExit(f"Failed to get {pod_display_name}...")
+                if not pod or pod_is_running(pod):
+                    break
+                if pod_is_not_pending(pod):
+                    if pod.status.reason == "Evicted":
+                        logger.warning(f"The {pod_display_name} was evicted before started...")
+                        # Have to delete the evicted pod so it doesn't conflict later on
+                        try:
+                            core_api.delete_namespaced_pod(
+                                name=pod_name,
+                                namespace=namespace,
+                            )
+                        except Exception:
+                            pass
+                        # this is a hack - might be improved
+                        raise SystemError(f"The {pod_display_name} was evicted before started.")
+                    break
+                if total_wait >= max_wait:
+                    # Have to delete the pending pod so it doesn't start running
+                    # later on.
+                    try:
+                        core_api.delete_namespaced_pod(
+                            name=pod_name,
+                            namespace=namespace,
+                        )
+                    except Exception:
+                        pass
+                    raise TimeoutError(
+                        f"The {pod_display_name} is still in a pending state "
+                        f"after {total_wait} seconds. Exiting."
+                    )
+
+                if total_wait + delay > max_wait:
+                    delay = max_wait - total_wait
+                total_wait += delay
+                time.sleep(delay)
             break
-        except Exception as e:
+        except SystemError as e:
             retries += 1
             if retries < startup_max_retries:
                 logger.debug(f"The {pod_display_name} failed to start: {e}")
@@ -524,41 +593,6 @@ def create_and_wait_for_pod_to_start(
                     f"{startup_max_retries} retries. Exiting."
                 )
                 raise
-
-    # Wait for pod to start
-    logger.info(f"Waiting for {pod_display_name} to start...")
-    max_wait = startup_timeout
-    total_wait: float = 0
-    delay = startup_failure_delay
-    while True:
-        pod = get_pod(
-            core_api=core_api,
-            pod_name=pod_name,
-            namespace=namespace,
-        )
-        if not pod or pod_is_not_pending(pod):
-            break
-        if total_wait >= max_wait:
-            # Have to delete the pending pod so it doesn't start running
-            # later on.
-            try:
-                core_api.delete_namespaced_pod(
-                    name=pod_name,
-                    namespace=namespace,
-                )
-            except Exception:
-                pass
-            raise TimeoutError(
-                f"The {pod_display_name} is still in a pending state "
-                f"after {total_wait} seconds. Exiting."
-            )
-
-        if total_wait + delay > max_wait:
-            delay = max_wait - total_wait
-        total_wait += delay
-        time.sleep(delay)
-        delay *= startup_failure_backoff
-
 
 def get_pod_owner_references(
     core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
