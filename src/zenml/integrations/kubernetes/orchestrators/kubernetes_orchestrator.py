@@ -696,19 +696,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return
 
-        # Get the orchestrator run ID which corresponds to the orchestrator pod name
-        orchestrator_run_id = run.orchestrator_run_id
-        if not orchestrator_run_id:
-            raise ValueError(
-                "Cannot determine orchestrator run ID for the run. "
-                "Unable to stop the pipeline."
-            )
-
         pods_stopped = []
         errors = []
 
         # Find all pods with the orchestrator run ID label
-        label_selector = f"zenml-orchestrator-run-id={orchestrator_run_id}"
+        label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
         try:
             pods = self._k8s_core_api.list_namespaced_pod(
                 namespace=self.config.kubernetes_namespace,
@@ -716,7 +708,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
         except Exception as e:
             logger.warning(
-                f"Failed to list step pods for run {orchestrator_run_id}: {e}"
+                f"Failed to list step pods with run ID {run.id}: {e}"
             )
             raise e
 
@@ -743,6 +735,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 errors.append(error_msg)
 
         # Summary logging
+        settings = cast(KubernetesOrchestratorSettings, self.get_settings(run))
+        grace_period_seconds = settings.pod_stop_grace_period
         if pods_stopped:
             logger.debug(
                 f"Successfully initiated graceful termination of: {', '.join(pods_stopped)}. "
@@ -765,7 +759,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # If no step pods were found and no errors occurred
         if not pods_stopped and not errors:
             logger.info(
-                f"No running step pods found for pipeline run {orchestrator_run_id}"
+                f"No running step pods found for pipeline run with ID: {run.id}"
             )
 
     def get_pipeline_run_metadata(

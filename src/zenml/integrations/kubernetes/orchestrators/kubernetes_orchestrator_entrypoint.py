@@ -170,7 +170,6 @@ def main() -> None:
         "pipeline": kube_utils.sanitize_label(
             deployment.pipeline_configuration.name
         ),
-        "zenml-orchestrator-run-id": orchestrator_pod_name,
     }
 
     def run_step_on_kubernetes(step_name: str) -> None:
