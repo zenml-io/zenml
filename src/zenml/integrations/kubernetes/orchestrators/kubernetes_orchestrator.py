@@ -177,15 +177,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         """
         return KubernetesOrchestratorSettings
 
-    @property
-    def supports_cancellation(self) -> bool:
-        """Whether this orchestrator supports stopping pipeline runs.
-
-        Returns:
-            True since the Kubernetes orchestrator supports cancellation.
-        """
-        return True
-
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
 

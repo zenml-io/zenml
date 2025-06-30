@@ -142,15 +142,6 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         return cast(BaseOrchestratorConfig, self._config)
 
-    @property
-    def supports_cancellation(self) -> bool:
-        """Whether this orchestrator supports stopping pipeline runs.
-
-        Returns:
-            True if the orchestrator supports stop_run functionality, False otherwise.
-        """
-        return False
-
     @abstractmethod
     def get_orchestrator_run_id(self) -> str:
         """Returns the run id of the active orchestrator run.
@@ -433,7 +424,10 @@ class BaseOrchestrator(StackComponent, ABC):
                 class does not implement this logic.
         """
         # Check if the orchestrator supports cancellation
-        if not self.supports_cancellation:
+        if (
+            getattr(self._stop_run, "__func__", None)
+            is BaseOrchestrator._stop_run
+        ):
             raise NotImplementedError(
                 f"The '{self.__class__.__name__}' orchestrator does not "
                 "support stopping pipeline runs."
