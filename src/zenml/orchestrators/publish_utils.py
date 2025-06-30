@@ -168,10 +168,6 @@ def get_pipeline_run_status(
     Returns:
         The run status.
     """
-    # Any finished state
-    if run_status.is_finished:
-        return run_status
-
     # STOPPING state
     if run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):
@@ -179,26 +175,28 @@ def get_pipeline_run_status(
         else:
             return ExecutionStatus.STOPPING
 
-    # RUNNING and INITIALIZING states
-    if (
-        run_status == ExecutionStatus.RUNNING
-        or run_status == ExecutionStatus.INITIALIZING
-    ):
-        if ExecutionStatus.FAILED in step_statuses:
-            return ExecutionStatus.FAILED
-        elif ExecutionStatus.STOPPED in step_statuses:
-            if all(status.is_finished for status in step_statuses):
-                return ExecutionStatus.STOPPED
-            else:
-                return ExecutionStatus.STOPPING
-        elif ExecutionStatus.RUNNING in step_statuses:
-            return ExecutionStatus.RUNNING
-        elif len(step_statuses) < num_steps:
-            return ExecutionStatus.RUNNING
+    # If there is a stopped step, the run is stopped or stopping
+    if ExecutionStatus.STOPPED in step_statuses:
+        if all(status.is_finished for status in step_statuses):
+            return ExecutionStatus.STOPPED
         else:
-            return ExecutionStatus.COMPLETED
+            return ExecutionStatus.STOPPING
 
-    return ExecutionStatus.COMPLETED
+    # Otherwise, if there is a failed step, the run is failed
+    elif ExecutionStatus.FAILED in step_statuses:
+        return ExecutionStatus.FAILED
+
+    # If there is a running step, the run is running
+    elif ExecutionStatus.RUNNING in step_statuses:
+        return ExecutionStatus.RUNNING
+
+    # If there are less steps than the total number of steps, it is running
+    elif len(step_statuses) < num_steps:
+        return ExecutionStatus.RUNNING
+
+    # Any other state is completed
+    else:
+        return ExecutionStatus.COMPLETED
 
 
 def publish_pipeline_run_metadata(
