@@ -62,20 +62,35 @@ ZenML provides the orchestration and observability layer that makes your AI syst
 
 **From POC to production in hours, not months.** Deploy your first production pipeline today, not next quarter.
 
-## 🚀 Quickstart (5 minutes to your first pipeline)
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb)
+## 🚀 Quickstart (2 minutes to your first pipeline)
 
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via [PyPI](https://pypi.org/project/zenml/). Python 3.9 - 3.12 is required:
 
 ```bash
-pip install "zenml[server]" notebook
+pip install zenml
 ```
 
-Take a tour with the guided quickstart by running:
+Create a simple `run.py` file with a basic workflow:
+
+```python
+from zenml import step, pipeline
+
+@step
+def basic_step() -> str:
+    return "Hello World!"
+
+@pipeline
+def basic_pipeline():
+    basic_step()
+
+if __name__ == "__main__":
+    basic_pipeline()
+```
+
+And then run it with, seeing how ZenML automatically tracks the execution and stores artifacts:
 
 ```bash
-zenml go
+python run.py
 ```
 
 ## 🎯 Why ZenML?
