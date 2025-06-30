@@ -349,59 +349,74 @@ def rag_indexing_pipeline():
         deploy_index_to_production(index_version)
 ```
 
-### Continuous LLM Monitoring & Evaluation
+### EU AI Act Compliance & Audit Trail
 
-Monitor production LLM applications for quality, cost, and compliance.
+Automate compliance documentation and risk monitoring for EU AI Act requirements. Generate audit trails, track model decisions, and maintain regulatory documentation.
 
-![ZenML Monitoring Pipeline](docs/book/.gitbook/assets/compliance_dashboard.png)
+![ZenML Compliance Pipeline](docs/book/.gitbook/assets/compliance_dashboard.png)
 
 ```python
-from zenml import pipeline, step, alerter
+from zenml import pipeline, step, Model
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 @step
-def collect_production_traces() -> list[dict]:
-    # Fetch last 24h of production LLM calls
-    return fetch_from_langsmith(
-        project="production",
-        last_hours=24
-    )
-
-@step
-def evaluate_quality(traces: list[dict]) -> dict:
-    metrics = {
-        "hallucination_rate": run_hallucination_detector(traces),
-        "relevance_score": calculate_relevance(traces),
-        "refusal_rate": count_refusals(traces) / len(traces),
-        "avg_latency_ms": np.mean([t["latency"] for t in traces]),
-        "total_cost_usd": sum(t["cost"] for t in traces),
-        "pii_leaks": scan_for_pii(traces)
+def collect_ai_system_metrics() -> dict:
+    # Monitor high-risk AI system requirements
+    return {
+        "prediction_logs": fetch_prediction_traces(),
+        "user_interactions": get_user_feedback_data(),
+        "system_performance": get_technical_metrics(),
+        "decision_explanations": get_model_explanations()
     }
-    return metrics
 
 @step
-def check_sla_compliance(metrics: dict) -> Annotated[bool, "compliant"]:
-    violations = []
-    if metrics["hallucination_rate"] > 0.05:
-        violations.append("Hallucination rate exceeds 5%")
-    if metrics["avg_latency_ms"] > 2000:
-        violations.append("Latency exceeds 2s SLA")
-    if metrics["pii_leaks"] > 0:
-        violations.append("PII detected in responses!")
+def assess_compliance_risks(metrics: dict) -> dict:
+    """EU AI Act Article 9 - Risk management system"""
+    risk_assessment = {
+        "bias_detection": run_bias_analysis(metrics["prediction_logs"]),
+        "accuracy_monitoring": calculate_performance_drift(metrics),
+        "human_oversight_events": count_human_interventions(metrics),
+        "data_governance_score": assess_data_quality(metrics),
+        "transparency_compliance": check_explainability_requirements(metrics)
+    }
     
-    if violations:
-        alerter.send(f"SLA Violations: {violations}")
-        return False
-    return True
+    # Log for audit trail (Article 12 - Record-keeping)
+    logger.info(f"Risk assessment completed: {risk_assessment}")
+    return risk_assessment
 
-@pipeline(schedule="*/30 * * * *")  # Every 30 minutes
-def llm_monitoring_pipeline():
-    traces = collect_production_traces()
-    metrics = evaluate_quality(traces)
-    compliant = check_sla_compliance(metrics)
+@step(model=Model(name="compliance_monitor", tags=["eu-ai-act"]))
+def generate_compliance_report(assessment: dict) -> dict:
+    """Generate documentation for regulatory submission"""
     
-    # Auto-rollback if critical issues
-    if not compliant and metrics["pii_leaks"] > 0:
-        rollback_to_previous_version()
+    compliance_report = {
+        "timestamp": datetime.now().isoformat(),
+        "risk_category": determine_risk_category(assessment),
+        "conformity_assessment": assessment,
+        "mitigation_actions": generate_mitigation_plan(assessment),
+        "ce_marking_status": check_ce_requirements(assessment)
+    }
+    
+    # Store compliance artifacts (Article 11 - Documentation)
+    log_metadata({
+        "compliance_score": assessment["data_governance_score"],
+        "risk_level": compliance_report["risk_category"],
+        "audit_trail_id": generate_audit_id(),
+        "regulation_version": "EU_AI_ACT_2024"
+    })
+
+    return compliance_report
+
+@pipeline(schedule="0 */6 * * *")  # Every 6 hours for high-risk systems
+def eu_ai_act_compliance_pipeline():
+    """Automated compliance monitoring pipeline"""
+    system_metrics = collect_ai_system_metrics()
+    risk_assessment = assess_compliance_risks(system_metrics)
+    compliance_report = generate_compliance_report(risk_assessment)
+
+    # Alert on high-risk findings
+    conditionally_notify_compliance_team(compliance_report)
 ```
 
 ## 📚 Learn More
@@ -410,9 +425,8 @@ def llm_monitoring_pipeline():
 
 The best way to learn about ZenML is through our comprehensive documentation and tutorials:
 
-- **[Starter Guide](https://docs.zenml.io/user-guide/starter-guide)** - From zero to production in 30 minutes
-- **[Migration Guide](https://docs.zenml.io/how-to/migration-guide)** - Migrate from notebooks/scripts to ZenML
-- **[LLMOps Guide](https://docs.zenml.io/user-guide/llmops-guide)** - Specific patterns for LLM applications
+- **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
+- **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
 - **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete API documentation
 
 For visual learners, start with this 11-minute introduction:
@@ -423,8 +437,8 @@ For visual learners, start with this 11-minute introduction:
 
 1. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
 2. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
-3. **[LangGraph + ZenML](https://github.com/zenml-io/zenml-projects/tree/main/langgraph-agent)** - Orchestrate LangGraph agents
-4. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-lora-finetuning)** - Fine-tune and deploy LLMs
+3. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
+4. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
 
 ### 🏢 Deployment Options
 
