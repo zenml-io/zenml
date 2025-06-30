@@ -231,8 +231,6 @@ def load_and_evaluate(dataset_id: str) -> dict:
     return metrics  # ZenML handles artifact storage automatically
 ```
 
-**Zero Maintenance** - Managed metadata store, automatic garbage collection, built-in monitoring. Set it and forget it.
-
 ### For Production Teams: Enterprise-Ready at Scale
 
 **10x Faster Time-to-Production** - Teams ship production pipelines in days, not months. Concrete example: Rivian reduced model deployment time by 75%.
