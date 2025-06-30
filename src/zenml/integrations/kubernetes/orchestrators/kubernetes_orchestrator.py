@@ -722,8 +722,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         """Get container registry credentials for Kubernetes imagePullSecrets.
 
         This method extracts credentials from the container registry for use
-        in Kubernetes imagePullSecrets. It only works with this Kubernetes
-        orchestrator since other orchestrators don't need imagePullSecrets.
+        in Kubernetes imagePullSecrets.
 
         Args:
             container_registry: The container registry to get credentials from.
