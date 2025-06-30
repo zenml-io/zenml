@@ -466,21 +466,31 @@ def create_or_update_secret_from_manifest(
     """
     namespace = secret_manifest["metadata"]["namespace"]
     secret_name = secret_manifest["metadata"]["name"]
-
-    try:
-        core_api.create_namespaced_secret(
-            namespace=namespace,
-            body=secret_manifest,
-        )
-    except ApiException as e:
-        if e.status == 409:  # Already exists, update it
-            core_api.patch_namespaced_secret(
-                name=secret_name,
-                namespace=namespace,
-                body=secret_manifest,
-            )
-        else:
-            raise
+    
+    # Extract data from manifest - handle both 'data' and 'stringData' fields
+    secret_data = {}
+    
+    # Handle base64-encoded 'data' field
+    if "data" in secret_manifest:
+        import base64
+        for key, encoded_value in secret_manifest["data"].items():
+            if encoded_value is not None:
+                # Decode base64 data back to string
+                secret_data[key] = base64.b64decode(encoded_value).decode('utf-8')
+            else:
+                secret_data[key] = None
+    
+    # Handle plain text 'stringData' field
+    if "stringData" in secret_manifest:
+        secret_data.update(secret_manifest["stringData"])
+    
+    # Use the existing create_or_update_secret function
+    create_or_update_secret(
+        core_api=core_api,
+        namespace=namespace,
+        secret_name=secret_name,
+        data=secret_data,
+    )
 
 
 def delete_secret(
