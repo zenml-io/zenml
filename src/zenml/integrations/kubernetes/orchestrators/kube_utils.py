@@ -65,6 +65,7 @@ class PodPhase(enum.Enum):
     FAILED = "Failed"
     UNKNOWN = "Unknown"
 
+
 def is_inside_kubernetes() -> bool:
     """Check whether we are inside a Kubernetes cluster or on a remote host.
 
@@ -163,6 +164,7 @@ def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
     """
     return pod.status.phase != PodPhase.PENDING.value  # type: ignore[no-any-return]
 
+
 def pod_is_running(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is 'Running'.
 
@@ -215,12 +217,20 @@ def get_pod(
     Returns:
         The found pod object. None if it's not found.
     """
-    try:
-        return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
-    except k8s_client.rest.ApiException as e:
-        if e.status == 404:
-            return None
-        raise RuntimeError from e
+    max_retries = 3
+    delay = 2
+    retried = 0
+    while retried < max_retries:
+        try:
+            return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
+        except k8s_client.rest.ApiException as e:
+            if e.status == 404:
+                return None
+            retried += 1
+            if retried < max_retries:
+                raise RuntimeError from e
+            else:
+                time.sleep(delay)
 
 
 def wait_pod(
@@ -508,6 +518,28 @@ def create_and_wait_for_pod_to_start(
         Exception: If the pod fails to start after the maximum number of
             retries.
     """
+
+    def _try_delete_and_raise(
+        msg: str,
+        is_system_error: bool = False,
+        is_timeout_error: bool = False
+    ) -> None:
+        if not (is_system_error or is_timeout_error) or (is_system_error and is_timeout_error):
+            raise ValueError
+        try:
+            core_api.delete_namespaced_pod(
+                name=pod_name,
+                namespace=namespace,
+            )
+            logger.info(f"{pod_display_name} deleted by ZenML.")
+        except Exception:
+            pass
+        # this is a hack - might be improved
+        if is_system_error:
+            raise SystemError(msg)
+        else:
+            raise TimeoutError(msg)
+
     retries = 0
 
     while retries < startup_max_retries:
@@ -518,9 +550,32 @@ def create_and_wait_for_pod_to_start(
                     namespace=namespace,
                     body=pod_manifest,
                 )
-            except Exception:
+                logger.info(f"{pod_display_name} created.")
+            except Exception as e:
                 # this is a hack - might be improved
-                raise SystemError(f"Failed to create {pod_display_name}...")
+                raise SystemError(f"Failed to create {pod_display_name}...") from e
+            # wait until the pod is really visible on k8s
+            max_wait_for_pod_to_appear = 120
+            total_wait: float = 0
+            initial_delay = 1
+            while True:
+                pod = get_pod(
+                    core_api=core_api,
+                    pod_name=pod_name,
+                    namespace=namespace,
+                )
+                if pod is None:
+                    if total_wait >= max_wait_for_pod_to_appear:
+                        _try_delete_and_raise(
+                            msg=f"The {pod_display_name} didn't appear in "
+                                f"{max_wait_for_pod_to_appear} seconds after creation.",
+                            is_system_error=True,
+                        )
+                    total_wait += initial_delay
+                    time.sleep(initial_delay)
+                    continue
+                logger.debug(f"{pod_display_name} created on k8s.")
+                break
 
             # Wait for pod to start
             logger.info(f"Waiting for {pod_display_name} to start...")
@@ -530,45 +585,52 @@ def create_and_wait_for_pod_to_start(
             # reasonable here though, it shall be quite small.
             delay = 1
             while True:
-                try:
-                    pod = get_pod(
-                        core_api=core_api,
-                        pod_name=pod_name,
-                        namespace=namespace,
-                    )
-                except Exception:
+                pod = get_pod(
+                    core_api=core_api,
+                    pod_name=pod_name,
+                    namespace=namespace,
+                )
+                if not pod:
                     raise SystemError(f"Failed to get {pod_display_name}...")
-                if not pod or pod_is_running(pod):
+                if pod_is_running(pod):
+                    if pod.metadata.deletion_timestamp is not None:
+                        max_wait_for_pod_to_be_deleted = max(int(
+                            getattr(pod.metadata, "deletion_grace_period_seconds", 120)), 120)
+                        total_wait: float = 0
+                        initial_delay = 1
+                        while True:
+                            pod = get_pod(
+                                core_api=core_api,
+                                pod_name=pod_name,
+                                namespace=namespace,
+                            )
+                            if pod is not None:
+                                if total_wait >= max_wait_for_pod_to_be_deleted:
+                                    raise RuntimeError(
+                                        f"The {pod_display_name} was set to be deleted "
+                                        "by k8s, but was not deleted on time."
+                                    )
+                                total_wait += initial_delay
+                                time.sleep(initial_delay)
+                                continue
+                            raise SystemError(f"The {pod_display_name} was deleted by k8s.")
                     break
                 if pod_is_not_pending(pod):
                     if pod.status.reason == "Evicted":
                         logger.warning(f"The {pod_display_name} was evicted before started...")
                         # Have to delete the evicted pod so it doesn't conflict later on
-                        try:
-                            core_api.delete_namespaced_pod(
-                                name=pod_name,
-                                namespace=namespace,
-                            )
-                        except Exception:
-                            pass
-                        # this is a hack - might be improved
-                        raise SystemError(f"The {pod_display_name} was evicted before started.")
+                        _try_delete_and_raise(
+                            msg=f"The {pod_display_name} was evicted before started.",
+                            is_system_error=True,
+                        )
                     break
                 if total_wait >= max_wait:
                     # Have to delete the pending pod so it doesn't start running
                     # later on.
-                    try:
-                        core_api.delete_namespaced_pod(
-                            name=pod_name,
-                            namespace=namespace,
-                        )
-                    except Exception:
-                        pass
-                    raise TimeoutError(
-                        f"The {pod_display_name} is still in a pending state "
-                        f"after {total_wait} seconds. Exiting."
-                    )
-
+                    _try_delete_and_raise(
+                        msg=f"The {pod_display_name} is still in a pending state "
+                            f"after {total_wait} seconds. Exiting.",
+                        is_timeout_error=True)
                 if total_wait + delay > max_wait:
                     delay = max_wait - total_wait
                 total_wait += delay
@@ -590,6 +652,8 @@ def create_and_wait_for_pod_to_start(
                     f"{startup_max_retries} retries. Exiting."
                 )
                 raise
+    logger.info(f"{pod_display_name} created and detected as started.")
+
 
 def get_pod_owner_references(
     core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
