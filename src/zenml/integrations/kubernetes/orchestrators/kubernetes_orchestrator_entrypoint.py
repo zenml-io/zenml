@@ -256,13 +256,41 @@ def main() -> None:
         retry_config = step_config.retry
         backoff_limit = retry_config.max_retries if retry_config else 0
 
+        pod_failure_policy = settings.pod_failure_policy or {
+            "rules": [
+                # If the pod is interrupted while running, we count it towards
+                # the max retries.
+                {
+                    "action": "Count",
+                    "onPodConditions": [
+                        {
+                            "type": "DisruptionTarget",
+                        },
+                        {
+                            "type": "Ready",
+                            "status": "True",
+                        },
+                    ],
+                },
+                # If the pod is interrupted at any other time, we don't count
+                # it as a retry
+                {
+                    "action": "Ignore",
+                    "onPodConditions": [
+                        {
+                            "type": "DisruptionTarget",
+                        }
+                    ],
+                },
+            ]
+        }
         job_manifest = build_job_manifest(
             job_name=pod_name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
             backoff_limit=backoff_limit,
             ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
             active_deadline_seconds=settings.active_deadline_seconds,
-            pod_failure_policy=settings.pod_failure_policy,
+            pod_failure_policy=pod_failure_policy,
         )
 
         kube_utils.create_job(
