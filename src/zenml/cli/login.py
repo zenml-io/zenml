@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import time
+from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
@@ -49,11 +50,27 @@ from zenml.utils.server_utils import (
 logger = get_logger(__name__)
 
 
-def _display_login_menu() -> str:
+class LoginMethod(Enum):
+    """Enum for different login methods available in ZenML."""
+    
+    LOCAL = "local"
+    PRO = "pro" 
+    CLOUD = "cloud"
+
+
+class MenuChoice(Enum):
+    """Enum for menu choice options."""
+    
+    LOCAL_OPTION = "1"
+    PRO_OPTION = "2"
+    CLOUD_OPTION = "3"
+
+
+def _display_login_menu() -> LoginMethod:
     """Display an interactive login menu and return the user's choice.
     
     Returns:
-        The selected login method: "local", "pro", or "cloud".
+        The selected login method enum value.
     """
     # Create the login options panel with modern styling
     title_text = Text("ZenML Login", style="bold cyan")
@@ -88,16 +105,16 @@ def _display_login_menu() -> str:
     while True:
         choice = Prompt.ask(
             "[bold]Enter your choice[/bold]",
-            choices=["1", "2", "3"],
-            default="2"
+            choices=[MenuChoice.LOCAL_OPTION.value, MenuChoice.PRO_OPTION.value, MenuChoice.CLOUD_OPTION.value],
+            default=MenuChoice.PRO_OPTION.value
         )
         
-        if choice == "1":
-            return "local"
-        elif choice == "2":
-            return "pro" 
-        elif choice == "3":
-            return "cloud"
+        if choice == MenuChoice.LOCAL_OPTION.value:
+            return LoginMethod.LOCAL
+        elif choice == MenuChoice.PRO_OPTION.value:
+            return LoginMethod.PRO 
+        elif choice == MenuChoice.CLOUD_OPTION.value:
+            return LoginMethod.CLOUD
 
 
 def start_local_server(
@@ -954,7 +971,7 @@ def login(
         # connected to any non-local server, show the interactive login menu.
         login_method = _display_login_menu()
         
-        if login_method == "local":
+        if login_method == LoginMethod.LOCAL:
             # Start a local ZenML server and connect to it
             start_local_server(
                 docker=docker,
@@ -965,14 +982,14 @@ def login(
                 ngrok_token=ngrok_token,
                 restart=restart,
             )
-        elif login_method == "pro":
+        elif login_method == LoginMethod.PRO:
             # Connect to ZenML Pro
             connect_to_pro_server(
                 api_key=api_key_value,
                 pro_api_url=pro_api_url,
                 verify_ssl=verify_ssl,
             )
-        elif login_method == "cloud":
+        elif login_method == LoginMethod.CLOUD:
             # Get custom server URL from user
             console.print()
             server_url = Prompt.ask(
