@@ -40,6 +40,7 @@ class CustomFormatter(logging.Formatter):
     """Formats logs according to custom specifications."""
 
     grey: str = "\x1b[90m"
+    white: str = "\x1b[37m"
     pink: str = "\x1b[35m"
     green: str = "\x1b[32m"
     yellow: str = "\x1b[33m"
@@ -59,7 +60,7 @@ class CustomFormatter(logging.Formatter):
 
     COLORS: Dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
-        LoggingLevels.INFO: grey,
+        LoggingLevels.INFO: white,
         LoggingLevels.WARN: yellow,
         LoggingLevels.ERROR: red,
         LoggingLevels.CRITICAL: bold_red,
