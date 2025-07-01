@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base orchestrator class."""
 
+import time
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -125,7 +126,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
             Whether the orchestrator supports client side caching.
         """
         return True
-    
+
     @property
     def handles_step_retries(self) -> bool:
         """Whether the orchestrator handles step retries.
@@ -345,12 +346,42 @@ class BaseOrchestrator(StackComponent, ABC):
             step: The step to run.
         """
         assert self._active_deployment
-        launcher = StepLauncher(
-            deployment=self._active_deployment,
-            step=step,
-            orchestrator_run_id=self.get_orchestrator_run_id(),
-        )
-        launcher.launch()
+
+        def _launch_step() -> None:
+            launcher = StepLauncher(
+                deployment=self._active_deployment,
+                step=step,
+                orchestrator_run_id=self.get_orchestrator_run_id(),
+            )
+            launcher.launch()
+
+        if self.config.handles_step_retries:
+            _launch_step()
+        else:
+            # The orchestrator subclass doesn't handle step retries, so we
+            # handle it in-process instead
+            retries = 0
+            retry_config = step.config.retry
+            max_retries = retry_config.max_retries if retry_config else 1
+            delay = retry_config.delay if retry_config else 0
+            backoff = retry_config.backoff if retry_config else 1
+
+            while retries < max_retries:
+                try:
+                    _launch_step()
+                except BaseException:
+                    retries += 1
+                    if retries < max_retries:
+                        logger.info(
+                            f"Sleeping for {delay} seconds before retrying step `{step.config.name}`."
+                        )
+                        time.sleep(delay)
+                        delay *= backoff
+                    else:
+                        logger.error(
+                            f"Failed to run step `{step.config.name}` after {max_retries} retries."
+                        )
+                        raise
 
     @staticmethod
     def requires_resources_in_orchestration_environment(

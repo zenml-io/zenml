@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
-import os
 import time
 from contextlib import nullcontext
 from functools import partial
@@ -24,7 +23,6 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
-    ENV_ZENML_IGNORE_FAILURE_HOOK,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus
@@ -239,14 +237,13 @@ class StepLauncher:
                             force_write_logs=force_write_logs,
                         )
                     except BaseException as e:  # noqa: E722
-                            logger.error(
-                                f"Failed to run step `{self._step_name}`."
-                            )
-                            logger.exception(e)
-                            publish_utils.publish_failed_step_run(
-                                step_run.id
-                            )
-                            raise
+                        logger.error(
+                            "Failed to run step `%s`: %s",
+                            self._step_name,
+                            e,
+                        )
+                        publish_utils.publish_failed_step_run(step_run.id)
+                        raise
                 else:
                     logger.info(
                         f"Using cached version of step `{self._step_name}`."

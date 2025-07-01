@@ -180,7 +180,7 @@ class KubernetesOrchestratorConfig(
         # The Kubernetes orchestrator starts step pods from a pipeline pod.
         # This is currently not supported when using client-side caching.
         return False
-    
+
     @property
     def handles_step_retries(self) -> bool:
         """Whether the orchestrator handles step retries.
@@ -189,6 +189,7 @@ class KubernetesOrchestratorConfig(
             Whether the orchestrator handles step retries.
         """
         return True
+
 
 class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
     """Kubernetes orchestrator flavor."""
