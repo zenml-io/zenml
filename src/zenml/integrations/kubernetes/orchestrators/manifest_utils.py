@@ -442,3 +442,42 @@ def build_secret_manifest(
         "type": secret_type,
         "data": encoded_data,
     }
+
+
+def pod_template_manifest_from_pod(
+    pod: k8s_client.V1Pod,
+) -> k8s_client.V1PodTemplateSpec:
+    """Build a Kubernetes pod template manifest from a pod."""
+    return k8s_client.V1PodTemplateSpec(
+        metadata=pod.metadata,
+        spec=pod.spec,
+    )
+
+
+def build_job_manifest(
+    job_name: str,
+    pod_template: k8s_client.V1PodTemplateSpec,
+    backoff_limit: Optional[int] = None,
+    ttl_seconds_after_finished: Optional[int] = None,
+    labels: Optional[Dict[str, str]] = None,
+) -> k8s_client.V1Job:
+    """Build a Kubernetes job manifest.
+
+    Args:
+        job_name: Name of the job.
+        pod_template: The pod template to use for the job.
+        backoff_limit: The backoff limit for the job.
+        ttl_seconds_after_finished: The TTL seconds after finished for the job.
+        labels: The labels to use for the job.
+
+    Returns:
+        The Kubernetes job manifest.
+    """
+    job_spec = k8s_client.V1JobSpec(
+        template=pod_template,
+        backoff_limit=backoff_limit,
+        ttl_seconds_after_finished=ttl_seconds_after_finished,
+    )
+    job_metadata = k8s_client.V1ObjectMeta(name=job_name, labels=labels)
+
+    return k8s_client.V1Job(spec=job_spec, metadata=job_metadata)

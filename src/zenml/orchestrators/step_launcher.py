@@ -294,8 +294,8 @@ class StepLauncher:
                         )
 
         except:  # noqa: E722
-            logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
-            publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+            # logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
+            # publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:

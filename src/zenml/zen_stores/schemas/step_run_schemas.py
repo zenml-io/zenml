@@ -76,6 +76,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         UniqueConstraint(
             "name",
             "pipeline_run_id",
+            "active",
             name="unique_step_name_for_pipeline_run",
         ),
     )
@@ -89,6 +90,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     cache_key: Optional[str] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_hash: Optional[str] = Field(nullable=True)
+    active: Optional[bool] = Field(nullable=True)
 
     step_configuration: str = Field(
         sa_column=Column(
@@ -299,6 +301,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             cache_key=request.cache_key,
             code_hash=request.code_hash,
             source_code=request.source_code,
+            active=True,
         )
 
     def to_model(

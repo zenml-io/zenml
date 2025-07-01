@@ -5347,7 +5347,11 @@ class SqlZenStore(BaseZenStore):
             )
             assert run.deployment is not None
             deployment = run.deployment
-            step_runs = {step.name: step for step in run.step_runs}
+            step_runs = {
+                step.name: step
+                for step in run.step_runs
+                if step.active is True
+            }
 
             pipeline_configuration = PipelineConfiguration.model_validate_json(
                 deployment.pipeline_configuration
@@ -8825,6 +8829,9 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: if the step run already exists.
         """
+        if step_run.status == ExecutionStatus.RETRIED:
+            raise ValueError("Retried status can not be set manually.")
+
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
 
@@ -8842,7 +8849,20 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
+            # Release the read locks of the previous two queries before we
+            # try to acquire more exclusive locks
+            session.commit()
 
+            # Update all existing step runs
+            session.exec(
+                update(StepRunSchema)
+                .where(
+                    col(StepRunSchema.pipeline_run_id)
+                    == step_run.pipeline_run_id
+                )
+                .where(col(StepRunSchema.name) == step_run.name)
+                .values(status=ExecutionStatus.RETRIED, active=None)
+            )
             step_schema = StepRunSchema.from_request(
                 step_run, deployment_id=run.deployment_id
             )
@@ -8996,19 +9016,34 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
-            if step_run.status != ExecutionStatus.RUNNING:
-                self._update_pipeline_run_status(
-                    pipeline_run_id=step_run.pipeline_run_id, session=session
-                )
+            # if step_run.status != ExecutionStatus.RUNNING:
+            self._update_pipeline_run_status(
+                pipeline_run_id=step_run.pipeline_run_id, session=session
+            )
 
             session.commit()
             session.refresh(
                 step_schema, ["input_artifacts", "output_artifacts"]
             )
 
-            if model_version_id := self._get_or_create_model_version_for_run(
-                step_schema
-            ):
+            existing_model_version_id = session.exec(
+                select(StepRunSchema.model_version_id)
+                .where(
+                    col(StepRunSchema.pipeline_run_id)
+                    == step_run.pipeline_run_id
+                )
+                .where(col(StepRunSchema.name) == step_run.name)
+                .order_by(col(StepRunSchema.created).desc())
+            ).first()
+
+            if existing_model_version_id:
+                model_version_id: Optional[UUID] = existing_model_version_id
+            else:
+                model_version_id = self._get_or_create_model_version_for_run(
+                    step_schema
+                )
+
+            if model_version_id:
                 step_schema.model_version_id = model_version_id
                 session.add(step_schema)
                 session.commit()
@@ -9072,7 +9107,9 @@ class SqlZenStore(BaseZenStore):
                 filter_model=step_run_filter_model,
                 session=session,
             )
-            query = select(StepRunSchema)
+            query = select(StepRunSchema).where(
+                col(StepRunSchema.active).is_(True)
+            )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -9096,6 +9133,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The updated step run.
         """
+        if step_run_update.status == ExecutionStatus.RETRIED:
+            raise ValueError("Retried status can not be set manually.")
+
         with Session(self.engine) as session:
             # Check if the step exists
             existing_step_run = self._get_schema_by_id(
@@ -9366,9 +9406,9 @@ class SqlZenStore(BaseZenStore):
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
         step_run_statuses = session.exec(
-            select(StepRunSchema.status).where(
-                StepRunSchema.pipeline_run_id == pipeline_run_id
-            )
+            select(StepRunSchema.status)
+            .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
+            .where(col(StepRunSchema.active).is_(True))
         ).all()
 
         # Deployment always exists for pipeline runs of newer versions

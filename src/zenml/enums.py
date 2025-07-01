@@ -78,6 +78,7 @@ class ExecutionStatus(StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+    RETRIED = "retried"
 
     @property
     def is_finished(self) -> bool:

@@ -581,3 +581,89 @@ def get_pod_owner_references(
     return cast(
         List[k8s_client.V1OwnerReference], pod.metadata.owner_references
     )
+
+
+def create_job(
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_manifest: k8s_client.V1Job,
+) -> None:
+    """Create a Kubernetes job."""
+    batch_api.create_namespaced_job(
+        namespace=namespace,
+        body=job_manifest,
+    )
+
+
+def wait_for_job_to_finish(
+    batch_api: k8s_client.BatchV1Api,
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    job_name: str,
+    container_name: Optional[str] = None,
+    stream_logs: bool = True,
+    backoff_interval: float = 1,
+    maximum_backoff: float = 32,
+) -> None:
+    """Wait for a job to finish.
+
+    Args:
+        job_name: Name of the job for which to wait.
+
+    Raises:
+        RuntimeError: If the job failed or timed out.
+    """
+    from collections import defaultdict
+
+    logged_lines_per_pod = defaultdict(int)
+
+    while True:
+        job: k8s_client.V1Job = batch_api.read_namespaced_job(
+            name=job_name, namespace=namespace
+        )
+
+        if job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return
+                if condition.type == "Failed" and condition.status == "True":
+                    raise RuntimeError(f"Job `{namespace}:{job_name}` failed.")
+
+        pod_list: k8s_client.V1PodList = core_api.list_namespaced_pod(
+            namespace=namespace,
+            label_selector=f"job-name={job_name}",
+        )
+        # Sort pods by creation timestamp, oldest first
+        pod_list.items.sort(
+            key=lambda pod: pod.metadata.creation_timestamp,
+        )
+
+        if pod_list.items and pod_is_not_pending(pod_list.items[-1]):
+            pod = pod_list.items[-1]
+            containers = pod.spec.containers
+            if not container_name:
+                container_name = containers[0].name
+
+            try:
+                response = core_api.read_namespaced_pod_log(
+                    name=pod.metadata.name,
+                    namespace=namespace,
+                    container=container_name,
+                    _preload_content=False,
+                )
+            except ApiException as e:
+                logger.error(f"Error reading pod logs: {e}.")
+            else:
+                raw_data = response.data
+                decoded_log = raw_data.decode("utf-8", errors="replace")
+                logs = decoded_log.splitlines()
+                logged_lines = logged_lines_per_pod[pod.metadata.name]
+                if len(logs) > logged_lines:
+                    for line in logs[logged_lines:]:
+                        logger.info(line)
+                    logged_lines_per_pod[pod.metadata.name] = len(logs)
+
+        # Wait (using exponential backoff).
+        time.sleep(backoff_interval)
+        if backoff_interval < maximum_backoff:
+            backoff_interval *= 2
