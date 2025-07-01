@@ -63,6 +63,8 @@ from zenml.models import (
     OAuthDeviceInternalResponse,
     OAuthDeviceInternalUpdate,
     OAuthTokenResponse,
+    ServiceAccountRequest,
+    ServiceAccountUpdate,
     UserAuthModel,
     UserRequest,
     UserResponse,
@@ -714,14 +716,17 @@ def authenticate_external_user(
 
     # Check if the external user already exists in the ZenML server database
     # If not, create a new user. If yes, update the existing user.
+    user: Optional[UserResponse] = None
     try:
-        user = store.get_external_user(user_id=external_user.id)
+        user = store.get_external_user_or_service_account(
+            account_id=external_user.id
+        )
 
         # Update the user information
         user = store.update_user(
             user_id=user.id,
             user_update=UserUpdate(
-                name=external_user.email,
+                name=external_user.username,
                 full_name=external_user.name or "",
                 email_opted_in=True,
                 active=True,
@@ -732,19 +737,84 @@ def authenticate_external_user(
     except KeyError:
         logger.info(
             f"External user with ID {external_user.id} not found in ZenML "
-            f"server database. Creating a new user."
+            f"server database."
         )
-        user = store.create_user(
-            UserRequest(
-                name=external_user.email,
-                full_name=external_user.name or "",
-                external_user_id=external_user.id,
-                email_opted_in=True,
-                active=True,
-                email=external_user.email,
-                is_admin=external_user.is_admin,
+
+        # Try finding a user or service account with the same username.
+        # This is to handle migration of users from ZenML OSS to ZenML Cloud.
+        if external_user.is_service_account:
+            try:
+                service_account = store.get_service_account(
+                    service_account_name_or_id=external_user.username
+                )
+                if service_account.external_user_id is not None:
+                    raise AuthorizationException(
+                        f"Service account with username {external_user.username} "
+                        f"already exists with a different external user ID: "
+                        f"{service_account.external_user_id}."
+                    )
+                # Update the user information
+                user = store.update_service_account(
+                    service_account_name_or_id=service_account.name,
+                    service_account_update=ServiceAccountUpdate(
+                        name=external_user.username,
+                        active=True,
+                        external_user_id=external_user.id,
+                    ),
+                ).to_user_model()
+            except KeyError:
+                pass
+        else:
+            # Try finding a user with the same username
+            try:
+                user = store.get_user(user_name_or_id=external_user.username)
+                if user.external_user_id is not None:
+                    raise AuthorizationException(
+                        f"User with username {external_user.username} "
+                        f"already exists with a different external user ID: "
+                        f"{user.external_user_id}."
+                    )
+                # Update the user information
+                user = store.update_user(
+                    user_id=user.id,
+                    user_update=UserUpdate(
+                        name=external_user.username,
+                        full_name=external_user.name or "",
+                        email_opted_in=True,
+                        active=True,
+                        email=external_user.email,
+                        is_admin=external_user.is_admin,
+                    ),
+                )
+            except KeyError:
+                pass
+
+    if user is None:
+        logger.info(
+            f"External account with ID {external_user.id} or name "
+            f"{external_user.username} not found in ZenML server database. "
+            f"Creating a new account."
+        )
+        if external_user.is_service_account:
+            user = store.create_service_account(
+                service_account=ServiceAccountRequest(
+                    name=external_user.username,
+                    external_user_id=external_user.id,
+                    active=True,
+                ),
+            ).to_user_model()
+        else:
+            user = store.create_user(
+                UserRequest(
+                    name=external_user.username,
+                    full_name=external_user.name or "",
+                    external_user_id=external_user.id,
+                    email_opted_in=True,
+                    active=True,
+                    email=external_user.email,
+                    is_admin=external_user.is_admin,
+                )
             )
-        )
 
         with AnalyticsContext() as context:
             context.user_id = user.id
