@@ -476,6 +476,7 @@ def build_job_manifest(
     job_spec = k8s_client.V1JobSpec(
         template=pod_template,
         backoff_limit=backoff_limit,
+        parallelism=1,
         ttl_seconds_after_finished=ttl_seconds_after_finished,
     )
     job_metadata = k8s_client.V1ObjectMeta(name=job_name, labels=labels)

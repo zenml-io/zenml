@@ -125,6 +125,15 @@ class BaseOrchestratorConfig(StackComponentConfig):
             Whether the orchestrator supports client side caching.
         """
         return True
+    
+    @property
+    def handles_step_retries(self) -> bool:
+        """Whether the orchestrator handles step retries.
+
+        Returns:
+            Whether the orchestrator handles step retries.
+        """
+        return False
 
 
 class BaseOrchestrator(StackComponent, ABC):

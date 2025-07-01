@@ -616,6 +616,7 @@ def wait_for_job_to_finish(
     from collections import defaultdict
 
     logged_lines_per_pod = defaultdict(int)
+    finished_pods = set()
 
     while True:
         job: k8s_client.V1Job = batch_api.read_namespaced_job(
@@ -629,39 +630,59 @@ def wait_for_job_to_finish(
                 if condition.type == "Failed" and condition.status == "True":
                     raise RuntimeError(f"Job `{namespace}:{job_name}` failed.")
 
-        pod_list: k8s_client.V1PodList = core_api.list_namespaced_pod(
-            namespace=namespace,
-            label_selector=f"job-name={job_name}",
-        )
-        # Sort pods by creation timestamp, oldest first
-        pod_list.items.sort(
-            key=lambda pod: pod.metadata.creation_timestamp,
-        )
+        if stream_logs:
+            pod_list: k8s_client.V1PodList = core_api.list_namespaced_pod(
+                namespace=namespace,
+                label_selector=f"job-name={job_name}",
+            )
+            # Sort pods by creation timestamp, oldest first
+            pod_list.items.sort(
+                key=lambda pod: pod.metadata.creation_timestamp,
+            )
 
-        if pod_list.items and pod_is_not_pending(pod_list.items[-1]):
-            pod = pod_list.items[-1]
-            containers = pod.spec.containers
-            if not container_name:
-                container_name = containers[0].name
+            for pod in pod_list.items:
+                pod_name = pod.metadata.name
+                pod_status = pod.status.phase
 
-            try:
-                response = core_api.read_namespaced_pod_log(
-                    name=pod.metadata.name,
-                    namespace=namespace,
-                    container=container_name,
-                    _preload_content=False,
-                )
-            except ApiException as e:
-                logger.error(f"Error reading pod logs: {e}.")
-            else:
-                raw_data = response.data
-                decoded_log = raw_data.decode("utf-8", errors="replace")
-                logs = decoded_log.splitlines()
-                logged_lines = logged_lines_per_pod[pod.metadata.name]
-                if len(logs) > logged_lines:
-                    for line in logs[logged_lines:]:
-                        logger.info(line)
-                    logged_lines_per_pod[pod.metadata.name] = len(logs)
+                if pod_name in finished_pods:
+                    # We've already streamed all logs for this pod, so we can
+                    # skip it.
+                    continue
+
+                if pod_status == PodPhase.PENDING.value:
+                    # The pod is still pending, so we can't stream logs for it
+                    # yet.
+                    continue
+
+                if pod_status in [
+                    PodPhase.SUCCEEDED.value,
+                    PodPhase.FAILED.value,
+                ]:
+                    finished_pods.add(pod_name)
+                    continue
+
+                containers = pod.spec.containers
+                if not container_name:
+                    container_name = containers[0].name
+
+                try:
+                    response = core_api.read_namespaced_pod_log(
+                        name=pod_name,
+                        namespace=namespace,
+                        container=container_name,
+                        _preload_content=False,
+                    )
+                except ApiException as e:
+                    logger.error(f"Error reading pod logs: {e}.")
+                else:
+                    raw_data = response.data
+                    decoded_log = raw_data.decode("utf-8", errors="replace")
+                    logs = decoded_log.splitlines()
+                    logged_lines = logged_lines_per_pod[pod_name]
+                    if len(logs) > logged_lines:
+                        for line in logs[logged_lines:]:
+                            logger.info(line)
+                        logged_lines_per_pod[pod_name] = len(logs)
 
         # Wait (using exponential backoff).
         time.sleep(backoff_interval)

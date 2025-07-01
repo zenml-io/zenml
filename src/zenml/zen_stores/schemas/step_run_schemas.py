@@ -304,27 +304,17 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             active=True,
         )
 
-    def to_model(
-        self,
-        include_metadata: bool = False,
-        include_resources: bool = False,
-        **kwargs: Any,
-    ) -> StepRunResponse:
-        """Convert a `StepRunSchema` to a `StepRunResponse`.
-
-        Args:
-            include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the resources will be filled.
-            **kwargs: Keyword arguments to allow schema specific logic
-
-
-        Returns:
-            The created StepRunResponse.
+    def get_step_configuration(self) -> Step:
+        """Get the step configuration for the step run.
 
         Raises:
-            ValueError: In case the step run configuration is missing.
+            ValueError: If the step run has no step configuration.
+
+        Returns:
+            The step configuration.
         """
         step = None
+
         if self.deployment is not None:
             if self.step_configuration_schema:
                 pipeline_configuration = (
@@ -353,6 +343,27 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "that this step run belongs to. Pipeline Run ID: "
                 f"`{self.pipeline_run_id}`."
             )
+
+        return step
+
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> StepRunResponse:
+        """Convert a `StepRunSchema` to a `StepRunResponse`.
+
+        Args:
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+
+        Returns:
+            The created StepRunResponse.
+        """
+        step = self.get_step_configuration()
 
         body = StepRunResponseBody(
             user_id=self.user_id,

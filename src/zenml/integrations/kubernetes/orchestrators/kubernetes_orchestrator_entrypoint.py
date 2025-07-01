@@ -253,10 +253,13 @@ def main() -> None:
             labels=step_pod_labels,
         )
 
+        retry_config = step_config.retry
+        backoff_limit = retry_config.max_retries if retry_config else 0
+
         job_manifest = build_job_manifest(
             job_name=pod_name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
-            backoff_limit=3,
+            backoff_limit=backoff_limit,
         )
 
         kube_utils.create_job(

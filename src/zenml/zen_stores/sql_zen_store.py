@@ -9016,10 +9016,10 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
-            # if step_run.status != ExecutionStatus.RUNNING:
-            self._update_pipeline_run_status(
-                pipeline_run_id=step_run.pipeline_run_id, session=session
-            )
+            if step_run.status != ExecutionStatus.RUNNING:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=step_run.pipeline_run_id, session=session
+                )
 
             session.commit()
             session.refresh(
@@ -9143,6 +9143,29 @@ class SqlZenStore(BaseZenStore):
                 schema_class=StepRunSchema,
                 session=session,
             )
+
+            retry_config = (
+                existing_step_run.get_step_configuration().config.retry
+            )
+            retry_count = retry_config.max_retries if retry_config else 0
+
+            if (
+                step_run_update.status == ExecutionStatus.FAILED
+                and retry_count > 0
+            ):
+                step_count = session.scalar(
+                    select(func.count(StepRunSchema.id))
+                    .where(
+                        col(StepRunSchema.pipeline_run_id)
+                        == existing_step_run.pipeline_run_id
+                    )
+                    .where(col(StepRunSchema.name) == existing_step_run.name)
+                )
+
+                if step_count <= retry_count:
+                    # This step will be retried by the orchestrator, so we
+                    # set its status accordingly.
+                    step_run_update.status = ExecutionStatus.RETRYING
 
             # Update the step
             existing_step_run.update(step_run_update)

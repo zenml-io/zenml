@@ -78,6 +78,7 @@ class ExecutionStatus(StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+    RETRYING = "retrying"
     RETRIED = "retried"
 
     @property
@@ -91,6 +92,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
+            ExecutionStatus.RETRIED,
         }
 
 

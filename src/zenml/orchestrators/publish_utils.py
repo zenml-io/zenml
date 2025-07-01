@@ -108,6 +108,7 @@ def get_pipeline_run_status(
         return ExecutionStatus.FAILED
     if (
         ExecutionStatus.RUNNING in step_statuses
+        or ExecutionStatus.RETRYING in step_statuses
         or len(step_statuses) < num_steps
     ):
         return ExecutionStatus.RUNNING
