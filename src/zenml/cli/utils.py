@@ -211,13 +211,24 @@ def success(
         italic: Optional boolean to italicize the text.
         **kwargs: Optional kwargs to be passed to console.print().
     """
-    # Automatically prepend checkmark to success messages
-    if not text.startswith("✔ "):
-        text = f"✔ {text}"
+    from rich.text import Text
     
-    base_style = zenml_style_defaults["success"]
-    style = Style.chain(base_style, Style(bold=bold, italic=italic))
-    console.print(text, style=style, **kwargs)
+    # Create a Rich Text object to ensure proper styling
+    if not text.startswith("✔ "):
+        # Explicitly style the checkmark in green and the text with the success style
+        base_style = zenml_style_defaults["success"]
+        style = Style.chain(base_style, Style(bold=bold, italic=italic))
+        
+        styled_text = Text()
+        styled_text.append("✔ ", style="green bold")  # Explicit green for checkmark
+        styled_text.append(text, style=style)
+        
+        console.print(styled_text, **kwargs)
+    else:
+        # If checkmark already exists, apply success style to entire text
+        base_style = zenml_style_defaults["success"]
+        style = Style.chain(base_style, Style(bold=bold, italic=italic))
+        console.print(text, style=style, **kwargs)
 
 
 def print_markdown(text: str) -> None:
