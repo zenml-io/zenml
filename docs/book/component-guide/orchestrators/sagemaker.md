@@ -47,8 +47,8 @@ zenml integration install aws s3
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack (configured with an `authentication_secret` attribute).
 * A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
-* An IAM role or user with [an `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) applied to it as well as `sagemaker.amazonaws.com` added as a Principal Service. Full details on these permissions can be found [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html) or use the ZenML recipe (when available) which will set up the necessary permissions for you.
-* The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
+* An IAM role with specific SageMaker permissions following the principle of least privilege (see [Required IAM Permissions](#required-iam-permissions) below) as well as `sagemaker.amazonaws.com` added as a Principal Service. Avoid using the broad `AmazonSageMakerFullAccess` managed policy in production environments.
+* The local client (whoever is running the pipeline) will also need specific permissions to launch SageMaker jobs (see [Required IAM Permissions](#required-iam-permissions) below for the minimal required permissions).
 * If you want to use schedules, you also need to set up the correct roles, permissions and policies covered [here](sagemaker.md#required-iam-permissions-for-schedules).
 
 There are three ways you can authenticate your orchestrator and link it to the IAM role you have created:
@@ -95,6 +95,111 @@ python run.py  # Authenticates with `default` profile in `~/.aws/config`
 ```
 {% endtab %}
 {% endtabs %}
+
+## Required IAM Permissions
+
+Instead of using the broad `AmazonSageMakerFullAccess` managed policy, follow the principle of least privilege by creating custom policies with only the required permissions:
+
+### Execution Role Permissions (for SageMaker jobs)
+
+Create a custom policy for the execution role that SageMaker will assume:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:DescribeProcessingJob",
+        "sagemaker:StopProcessingJob",
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:DescribeTrainingJob",
+        "sagemaker:StopTrainingJob"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-bucket-name",
+        "arn:aws:s3:::your-bucket-name/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+### Client Permissions (for pipeline submission)
+
+Create a custom policy for the client/user submitting pipelines:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:CreatePipeline",
+        "sagemaker:StartPipelineExecution",
+        "sagemaker:StopPipelineExecution",
+        "sagemaker:DescribePipeline",
+        "sagemaker:DescribePipelineExecution",
+        "sagemaker:ListPipelineExecutions",
+        "sagemaker:ListPipelineExecutionSteps",
+        "sagemaker:UpdatePipeline",
+        "sagemaker:DeletePipeline"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::ACCOUNT-ID:role/EXECUTION-ROLE-NAME",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "sagemaker.amazonaws.com"
+        }
+      }
+    }
+  ]
+}
+```
+
+Replace `ACCOUNT-ID` and `EXECUTION-ROLE-NAME` with your actual values.
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Sagemaker. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
@@ -511,6 +616,6 @@ This is particularly useful when:
     Without these permissions, the scheduling functionality will fail. Make sure to configure them before attempting to use scheduled pipelines.
 3.  **Required IAM Permissions for the `scheduler_role`**
 
-    The `scheduler_role` requires the same permissions as the client role (that would run the pipeline in a non-scheduled case) to launch and manage Sagemaker jobs. This would be covered by the `AmazonSageMakerFullAccess` permission.
+    The `scheduler_role` requires the same permissions as the client role (that would run the pipeline in a non-scheduled case) to launch and manage SageMaker jobs. Use the same custom client permissions policy shown in the [Required IAM Permissions](#required-iam-permissions) section above instead of the broad `AmazonSageMakerFullAccess` managed policy.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

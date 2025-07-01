@@ -94,7 +94,14 @@ Successfully registered service connector `gcp-generic` with access to the follo
 ```
 {% endcode %}
 
-> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined_roles)). The GCP Service Connector supports [many different authentication methods](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
+> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs. Instead of using the broad `Cloud Build Editor` role, follow the principle of least privilege by creating a custom role with only the required permissions:
+> - `cloudbuild.builds.create`
+> - `cloudbuild.builds.get` 
+> - `cloudbuild.builds.list`
+> - `source.repos.get` (if using Cloud Source Repositories)
+> - `storage.objects.get` and `storage.objects.create` (for accessing build artifacts)
+> 
+> Alternatively, you can use the predefined [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined_roles) if broader permissions are acceptable for your use case. The GCP Service Connector supports [many different authentication methods](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more GCP Service Connectors configured in your ZenML deployment, you can check which of them can be used to access generic GCP resources like the GCP Image Builder required for your GCP Image Builder by running e.g.:
 
