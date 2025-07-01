@@ -804,6 +804,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The pipeline run or `None` if running with a schedule.
         """
+        # Enforce authentication requirement for pipeline execution
+        from zenml.utils.auth_utils import (
+            require_pipeline_execution_authentication,
+        )
+
+        require_pipeline_execution_authentication()
+
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
             # pipelines. This is done to prevent execution of module-level

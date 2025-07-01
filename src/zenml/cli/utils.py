@@ -186,6 +186,25 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
+def require_login(bypass_local_check: bool = False) -> None:
+    """Check if user is logged in and force login if not.
+
+    This function enforces mandatory login for pipeline execution and other
+    critical operations. It checks if the user has valid authentication
+    credentials and raises an error with helpful guidance if not.
+
+    Args:
+        bypass_local_check: If True, skips the check for local stores
+            (used for operations that always require server connectivity).
+
+    Raises:
+        ClickException: If user is not logged in with helpful error message.
+    """
+    from zenml.utils.auth_utils import cli_require_login
+
+    cli_require_login(bypass_local_check=bypass_local_check)
+
+
 def print_markdown(text: str) -> None:
     """Prints a string as markdown.
 

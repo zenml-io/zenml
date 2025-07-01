@@ -2503,6 +2503,10 @@ class Client(metaclass=ClientMetaClass):
             validate_stack_is_runnable_from_server,
             wait_for_pipeline_run_to_finish,
         )
+        from zenml.utils.auth_utils import require_user_authentication
+
+        # Enforce authentication requirement for pipeline triggering
+        require_user_authentication(context="trigger pipelines")
 
         if Counter([template_id, pipeline_name_or_id])[None] != 1:
             raise RuntimeError(

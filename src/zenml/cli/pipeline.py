@@ -98,6 +98,9 @@ def register_pipeline(
         source: Importable source resolving to a pipeline instance.
         parameters_path: Path to pipeline parameters file.
     """
+    # Enforce login requirement for pipeline registration
+    cli_utils.require_login()
+
     if "." not in source:
         cli_utils.error(
             f"The given source path `{source}` is invalid. Make sure it looks "
@@ -181,6 +184,9 @@ def build_pipeline(
             be built.
         output_path: Optional file path to write the output to.
     """
+    # Enforce login requirement for pipeline builds
+    cli_utils.require_login()
+
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline build` command without a "
@@ -267,6 +273,9 @@ def run_pipeline(
         prevent_build_reuse: If True, prevents automatic reusing of previous
             builds.
     """
+    # Enforce login requirement for pipeline execution
+    cli_utils.require_login()
+
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline run` command without a "
@@ -344,6 +353,9 @@ def create_run_template(
         stack_name_or_id: Name or ID of the stack for which the template should
             be created.
     """
+    # Enforce login requirement for creating run templates
+    cli_utils.require_login()
+
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline create-run-template` command "
@@ -372,6 +384,9 @@ def list_pipelines(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter pipelines.
     """
+    # Enforce login requirement for listing pipelines
+    cli_utils.require_login()
+
     client = Client()
     with console.status("Listing pipelines...\n"):
         pipelines = client.list_pipelines(**kwargs)
@@ -404,6 +419,9 @@ def delete_pipeline(
         pipeline_name_or_id: The name or ID of the pipeline to delete.
         yes: If set, don't ask for confirmation.
     """
+    # Enforce login requirement for pipeline deletion
+    cli_utils.require_login()
+
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline "
@@ -437,6 +455,9 @@ def list_schedules(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter schedules.
     """
+    # Enforce login requirement for listing schedules
+    cli_utils.require_login()
+
     client = Client()
 
     schedules = client.list_schedules(**kwargs)
@@ -466,6 +487,9 @@ def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
         schedule_name_or_id: The name or ID of the schedule to delete.
         yes: If set, don't ask for confirmation.
     """
+    # Enforce login requirement for deleting schedules
+    cli_utils.require_login()
+
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete schedule "
@@ -496,6 +520,9 @@ def list_pipeline_runs(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter pipeline runs.
     """
+    # Enforce login requirement for listing pipeline runs
+    cli_utils.require_login()
+
     client = Client()
     try:
         with console.status("Listing pipeline runs...\n"):
@@ -529,6 +556,9 @@ def delete_pipeline_run(
         run_name_or_id: The name or ID of the pipeline run to delete.
         yes: If set, don't ask for confirmation.
     """
+    # Enforce login requirement for deleting pipeline runs
+    cli_utils.require_login()
+
     # Ask for confirmation to delete run.
     if not yes:
         confirmation = cli_utils.confirmation(
@@ -557,6 +587,9 @@ def refresh_pipeline_run(run_name_or_id: str) -> None:
     Args:
         run_name_or_id: The name or ID of the pipeline run to refresh.
     """
+    # Enforce login requirement for refreshing pipeline run status
+    cli_utils.require_login()
+
     try:
         # Fetch and update the run
         run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
@@ -583,6 +616,9 @@ def list_pipeline_builds(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter pipeline builds.
     """
+    # Enforce login requirement for listing pipeline builds
+    cli_utils.require_login()
+
     client = Client()
     try:
         with console.status("Listing pipeline builds...\n"):
@@ -625,6 +661,9 @@ def delete_pipeline_build(
         build_id: The ID of the pipeline build to delete.
         yes: If set, don't ask for confirmation.
     """
+    # Enforce login requirement for deleting pipeline builds
+    cli_utils.require_login()
+
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline build `{build_id}`?"
