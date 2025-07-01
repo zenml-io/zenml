@@ -164,7 +164,18 @@ def error(text: str) -> NoReturn:
     Raises:
         ClickException: when called.
     """
-    raise click.ClickException(message=click.style(text, fg="red", bold=True))
+    error_prefix = click.style("Error: ", fg="red", bold=True)
+    error_message = click.style(text, fg="red", bold=False)
+    
+    # Create a custom ClickException that bypasses Click's default "Error: " prefix
+    class StyledClickException(click.ClickException):
+        def show(self, file=None):
+            if file is None:
+                file = click.get_text_stream('stderr')
+            # Print our custom styled message directly without Click's prefix
+            click.echo(self.message, file=file)
+    
+    raise StyledClickException(message=error_prefix + error_message)
 
 
 def warning(
@@ -182,6 +193,29 @@ def warning(
         **kwargs: Optional kwargs to be passed to console.print().
     """
     base_style = zenml_style_defaults["warning"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style, **kwargs)
+
+
+def success(
+    text: str,
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+    **kwargs: Any,
+) -> None:
+    """Echo a success string on the CLI.
+
+    Args:
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
+        **kwargs: Optional kwargs to be passed to console.print().
+    """
+    # Automatically prepend checkmark to success messages
+    if not text.startswith("✔ "):
+        text = f"✔ {text}"
+    
+    base_style = zenml_style_defaults["success"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
     console.print(text, style=style, **kwargs)
 

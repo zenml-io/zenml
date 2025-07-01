@@ -21,6 +21,7 @@ from typing import Optional, Union
 import requests
 
 from zenml import __version__
+from zenml.cli import utils as cli_utils
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     API,
@@ -175,11 +176,14 @@ def web_login(
         # URL to it
         verification_uri = base_url + verification_uri
     webbrowser.open(verification_uri)
-    logger.info(
-        f"If your browser did not open automatically, please open the "
-        f"following URL into your browser to proceed with the authentication:"
-        f"\n\n{verification_uri}\n"
-    )
+    
+    # Display the verification URL without panel styling
+    from zenml.console import console
+    
+    console.print()
+    console.print("If your browser did not open automatically, please open the following URL into your browser to proceed with the authentication:", style="white")
+    console.print(verification_uri, style="bright_blue underline")
+    console.print()
 
     # Poll the OAuth2 server until the user has authorized the device
     token_request = OAuthDeviceTokenRequest(
@@ -201,9 +205,9 @@ def web_login(
             # The user has authorized the device, so we can extract the access token
             token_response = OAuthTokenResponse(**response.json())
             if zenml_pro:
-                logger.info("Successfully logged in to ZenML Pro.")
+                cli_utils.success("Successfully logged in to ZenML Pro.")
             else:
-                logger.info(f"Successfully logged in to {url}.")
+                cli_utils.success(f"Successfully logged in to {url}.")
             break
         elif response.status_code == 400:
             try:

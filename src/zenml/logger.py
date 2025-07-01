@@ -39,14 +39,14 @@ ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
 class CustomFormatter(logging.Formatter):
     """Formats logs according to custom specifications."""
 
-    grey: str = "\x1b[38;21m"
+    grey: str = "\x1b[90m"
     pink: str = "\x1b[35m"
     green: str = "\x1b[32m"
     yellow: str = "\x1b[33m"
     red: str = "\x1b[31m"
     cyan: str = "\x1b[1;36m"
     bold_red: str = "\x1b[31;1m"
-    purple: str = "\x1b[1;35m"
+    purple: str = "\x1b[38;5;105m"
     blue: str = "\x1b[34m"
     reset: str = "\x1b[0m"
 
@@ -59,7 +59,7 @@ class CustomFormatter(logging.Formatter):
 
     COLORS: Dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
-        LoggingLevels.INFO: purple,
+        LoggingLevels.INFO: grey,
         LoggingLevels.WARN: yellow,
         LoggingLevels.ERROR: red,
         LoggingLevels.CRITICAL: bold_red,
@@ -77,7 +77,11 @@ class CustomFormatter(logging.Formatter):
         if ZENML_LOGGING_COLORS_DISABLED:
             # If color formatting is disabled, use the default format without colors
             formatter = logging.Formatter(self.format_template)
-            return formatter.format(record)
+            formatted_message = formatter.format(record)
+            # Add warning icon for warning messages even when colors are disabled
+            if record.levelno == LoggingLevels.WARN.value:
+                formatted_message = "⚠ " + formatted_message
+            return formatted_message
         else:
             # Use color formatting
             log_fmt = (
@@ -87,12 +91,16 @@ class CustomFormatter(logging.Formatter):
             )
             formatter = logging.Formatter(log_fmt)
             formatted_message = formatter.format(record)
+            
+            # Add warning icon for warning messages
+            if record.levelno == LoggingLevels.WARN.value:
+                formatted_message = self.yellow + "⚠ " + self.reset + formatted_message
             quoted_groups = re.findall("`([^`]*)`", formatted_message)
             for quoted in quoted_groups:
                 formatted_message = formatted_message.replace(
                     "`" + quoted + "`",
                     self.reset
-                    + self.cyan
+                    + self.purple
                     + quoted
                     + self.COLORS.get(LoggingLevels(record.levelno)),
                 )
