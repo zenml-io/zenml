@@ -165,102 +165,96 @@ class StepLauncher:
                 artifact_store_id=self._stack.artifact_store.id,
             )
 
-        try:
-            with logs_context:
-                if run_was_created:
-                    pipeline_run_metadata = (
-                        self._stack.get_pipeline_run_metadata(
-                            run_id=pipeline_run.id
-                        )
+        with logs_context:
+            if run_was_created:
+                pipeline_run_metadata = (
+                    self._stack.get_pipeline_run_metadata(
+                        run_id=pipeline_run.id
                     )
-                    publish_utils.publish_pipeline_run_metadata(
-                        pipeline_run_id=pipeline_run.id,
-                        pipeline_run_metadata=pipeline_run_metadata,
+                )
+                publish_utils.publish_pipeline_run_metadata(
+                    pipeline_run_id=pipeline_run.id,
+                    pipeline_run_metadata=pipeline_run_metadata,
+                )
+                if model_version := pipeline_run.model_version:
+                    step_run_utils.log_model_version_dashboard_url(
+                        model_version=model_version
                     )
-                    if model_version := pipeline_run.model_version:
-                        step_run_utils.log_model_version_dashboard_url(
-                            model_version=model_version
-                        )
 
-                request_factory = step_run_utils.StepRunRequestFactory(
-                    deployment=self._deployment,
-                    pipeline_run=pipeline_run,
-                    stack=self._stack,
+            request_factory = step_run_utils.StepRunRequestFactory(
+                deployment=self._deployment,
+                pipeline_run=pipeline_run,
+                stack=self._stack,
+            )
+            step_run_request = request_factory.create_request(
+                invocation_id=self._step_name
+            )
+            step_run_request.logs = logs_model
+
+            try:
+                request_factory.populate_request(request=step_run_request)
+            except:
+                logger.exception(
+                    f"Failed preparing step `{self._step_name}`."
                 )
-                step_run_request = request_factory.create_request(
-                    invocation_id=self._step_name
+                step_run_request.status = ExecutionStatus.FAILED
+                step_run_request.end_time = utc_now()
+                raise
+            finally:
+                step_run = Client().zen_store.create_run_step(
+                    step_run_request
                 )
-                step_run_request.logs = logs_model
+                if model_version := step_run.model_version:
+                    step_run_utils.log_model_version_dashboard_url(
+                        model_version=model_version
+                    )
+
+            if not step_run.status.is_finished:
+                logger.info(f"Step `{self._step_name}` has started.")
 
                 try:
-                    request_factory.populate_request(request=step_run_request)
-                except:
-                    logger.exception(
-                        f"Failed preparing step `{self._step_name}`."
-                    )
-                    step_run_request.status = ExecutionStatus.FAILED
-                    step_run_request.end_time = utc_now()
-                    raise
-                finally:
-                    step_run = Client().zen_store.create_run_step(
-                        step_run_request
-                    )
-                    if model_version := step_run.model_version:
-                        step_run_utils.log_model_version_dashboard_url(
-                            model_version=model_version
-                        )
-
-                if not step_run.status.is_finished:
-                    logger.info(f"Step `{self._step_name}` has started.")
-
-                    try:
-                        # here pass a forced save_to_file callable to be
-                        # used as a dump function to use before starting
-                        # the external jobs in step operators
-                        if isinstance(
-                            logs_context,
-                            step_logging.PipelineLogsStorageContext,
-                        ):
-                            force_write_logs = partial(
-                                logs_context.storage.save_to_file,
-                                force=True,
-                            )
-                        else:
-
-                            def _bypass() -> None:
-                                return None
-
-                            force_write_logs = _bypass
-                        self._run_step(
-                            pipeline_run=pipeline_run,
-                            step_run=step_run,
-                            force_write_logs=force_write_logs,
-                        )
-                    except BaseException as e:  # noqa: E722
-                        logger.error(
-                            "Failed to run step `%s`: %s",
-                            self._step_name,
-                            e,
-                        )
-                        publish_utils.publish_failed_step_run(step_run.id)
-                        raise
-                else:
-                    logger.info(
-                        f"Using cached version of step `{self._step_name}`."
-                    )
-                    if (
-                        model_version := step_run.model_version
-                        or pipeline_run.model_version
+                    # here pass a forced save_to_file callable to be
+                    # used as a dump function to use before starting
+                    # the external jobs in step operators
+                    if isinstance(
+                        logs_context,
+                        step_logging.PipelineLogsStorageContext,
                     ):
-                        step_run_utils.link_output_artifacts_to_model_version(
-                            artifacts=step_run.outputs,
-                            model_version=model_version,
+                        force_write_logs = partial(
+                            logs_context.storage.save_to_file,
+                            force=True,
                         )
+                    else:
 
-        except:  # noqa: E722
-            # logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
-            # publish_utils.publish_failed_pipeline_run(pipeline_run.id)
-            raise
+                        def _bypass() -> None:
+                            return None
+
+                        force_write_logs = _bypass
+                    self._run_step(
+                        pipeline_run=pipeline_run,
+                        step_run=step_run,
+                        force_write_logs=force_write_logs,
+                    )
+                except BaseException as e:  # noqa: E722
+                    logger.error(
+                        "Failed to run step `%s`: %s",
+                        self._step_name,
+                        e,
+                    )
+                    publish_utils.publish_failed_step_run(step_run.id)
+                    raise
+            else:
+                logger.info(
+                    f"Using cached version of step `{self._step_name}`."
+                )
+                if (
+                    model_version := step_run.model_version
+                    or pipeline_run.model_version
+                ):
+                    step_run_utils.link_output_artifacts_to_model_version(
+                        artifacts=step_run.outputs,
+                        model_version=model_version,
+                    )
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.

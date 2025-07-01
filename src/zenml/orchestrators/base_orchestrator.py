@@ -373,13 +373,17 @@ class BaseOrchestrator(StackComponent, ABC):
                     retries += 1
                     if retries < max_retries:
                         logger.info(
-                            f"Sleeping for {delay} seconds before retrying step `{step.config.name}`."
+                            "Sleeping for %d seconds before retrying step `%s`.",
+                            delay,
+                            step.config.name,
                         )
                         time.sleep(delay)
                         delay *= backoff
                     else:
                         logger.error(
-                            f"Failed to run step `{step.config.name}` after {max_retries} retries."
+                            "Failed to run step `%s` after %d retries.",
+                            step.config.name,
+                            max_retries,
                         )
                         raise
 
