@@ -993,8 +993,8 @@ def login(
             # Get custom server URL from user
             console.print()
             server_url = Prompt.ask(
-                "[bold purple]Enter the ZenML server URL[/bold purple]",
-                default="https://"
+                "[bold]Enter the ZenML server URL[/bold]",
+                default="http/https"
             )
             
             if not server_url.strip():
