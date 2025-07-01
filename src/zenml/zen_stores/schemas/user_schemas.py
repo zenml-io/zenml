@@ -213,6 +213,7 @@ class UserSchema(NamedSchema, table=True):
         return cls(
             name=model.name,
             description=model.description or "",
+            external_user_id=model.external_user_id,
             active=model.active,
             is_service_account=True,
             email_opted_in=False,
@@ -330,6 +331,7 @@ class UserSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ServiceAccountResponseMetadata(
                 description=self.description or "",
+                external_user_id=self.external_user_id,
             )
 
         body = ServiceAccountResponseBody(

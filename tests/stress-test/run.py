@@ -67,7 +67,7 @@ def get_kubernetes_settings(
         ),
         orchestrator_pod_settings=KubernetesPodSettings(
             resources={
-                "requests": {"cpu": "100m", "memory": "500Mi"},
+                "requests": {"cpu": "100m", "memory": "2Gi"},
                 # "limits": {"memory": "500Mi"}, # -> grows linearly with number of steps
             },
             node_selectors={"pool": "workloads"},
@@ -85,6 +85,8 @@ def get_kubernetes_settings(
 
 docker_settings = DockerSettings(
     python_package_installer=PythonPackageInstaller.UV,
+    parent_image="public.ecr.aws/f7g3v0f1/zenml:stefan",
+    prevent_build_reuse=True,
 )
 settings = {"docker": docker_settings}
 
@@ -232,6 +234,14 @@ def load_step(
         if p.items:
             print("Fetching pipeline run...")
             client.get_pipeline_run(p.items[-1].id)
+            print("Listing steps...")
+            s = client.list_run_steps(
+                pipeline_run_id=p.items[-1].id,
+            )
+            if s.items:
+                print("Fetching step...")
+                client.get_run_step(s.items[-1].id)
+
         print("Listing stacks...")
         s = client.list_stacks()
         if s.items:
@@ -265,7 +275,7 @@ report_kubernetes_settings = KubernetesOrchestratorSettings(
     service_account_name="zenml-service-account",
     pod_settings=KubernetesPodSettings(
         resources={
-            "requests": {"cpu": "100m", "memory": "800Mi"},
+            "requests": {"cpu": "100m", "memory": "2Gi"},
             # "limits": {"memory": "800Mi"}, # -> grows linearly with number of steps
         },
         node_selectors={"pool": "workloads"},
