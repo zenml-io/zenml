@@ -167,10 +167,8 @@ class StepLauncher:
 
         with logs_context:
             if run_was_created:
-                pipeline_run_metadata = (
-                    self._stack.get_pipeline_run_metadata(
-                        run_id=pipeline_run.id
-                    )
+                pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
+                    run_id=pipeline_run.id
                 )
                 publish_utils.publish_pipeline_run_metadata(
                     pipeline_run_id=pipeline_run.id,
@@ -194,16 +192,12 @@ class StepLauncher:
             try:
                 request_factory.populate_request(request=step_run_request)
             except:
-                logger.exception(
-                    f"Failed preparing step `{self._step_name}`."
-                )
+                logger.exception(f"Failed preparing step `{self._step_name}`.")
                 step_run_request.status = ExecutionStatus.FAILED
                 step_run_request.end_time = utc_now()
                 raise
             finally:
-                step_run = Client().zen_store.create_run_step(
-                    step_run_request
-                )
+                step_run = Client().zen_store.create_run_step(step_run_request)
                 if model_version := step_run.model_version:
                     step_run_utils.log_model_version_dashboard_url(
                         model_version=model_version

@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import NonNegativeInt, PositiveInt
+from pydantic import NonNegativeInt, PositiveInt, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -65,8 +65,12 @@ class KubernetesOrchestratorSettings(BaseSettings):
         failed_jobs_history_limit: The number of failed jobs to retain.
             This only applies to jobs created when scheduling a pipeline.
         ttl_seconds_after_finished: The amount of seconds to keep finished jobs
-            before deleting them. This only applies to jobs created when
-            scheduling a pipeline.
+            before deleting them. **Note**: This does not clean up the
+            orchestrator pod for non-scheduled runs.
+        active_deadline_seconds: The active deadline seconds for the job that is
+            executing the step.
+        pod_failure_policy: The pod failure policy to use for the job that is
+            executing the step.
         prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
             not try to compute cached steps before starting the step pods.
     """
@@ -87,7 +91,29 @@ class KubernetesOrchestratorSettings(BaseSettings):
     successful_jobs_history_limit: Optional[NonNegativeInt] = None
     failed_jobs_history_limit: Optional[NonNegativeInt] = None
     ttl_seconds_after_finished: Optional[NonNegativeInt] = None
+    active_deadline_seconds: Optional[NonNegativeInt] = None
+    pod_failure_policy: Optional[Dict[str, Any]] = None
     prevent_orchestrator_pod_caching: bool = False
+
+    @field_validator("pod_failure_policy", mode="before")
+    @classmethod
+    def _convert_pod_failure_policy(cls, value: Any) -> Any:
+        """Converts Kubernetes pod failure policy to a dict.
+
+        Args:
+            value: The pod failure policy value.
+
+        Returns:
+            The converted value.
+        """
+        from kubernetes.client.models import V1PodFailurePolicy
+
+        from zenml.integrations.kubernetes import serialization_utils
+
+        if isinstance(value, V1PodFailurePolicy):
+            return serialization_utils.serialize_kubernetes_model(value)
+        else:
+            return value
 
 
 class KubernetesOrchestratorConfig(

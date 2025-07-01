@@ -260,6 +260,9 @@ def main() -> None:
             job_name=pod_name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
             backoff_limit=backoff_limit,
+            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+            active_deadline_seconds=settings.active_deadline_seconds,
+            pod_failure_policy=settings.pod_failure_policy,
         )
 
         kube_utils.create_job(
