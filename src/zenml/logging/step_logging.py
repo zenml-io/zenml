@@ -610,13 +610,19 @@ def setup_orchestrator_logging(
         The logs context (PipelineLogsStorageContext)
     """
     try:
+        step_logging_enabled = True
+
         # Check whether logging is enabled
         if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
             step_logging_enabled = False
         else:
-            step_logging_enabled = (
+            if (
                 deployment.pipeline_configuration.enable_pipeline_logs
-            ) or False
+                is not None
+            ):
+                step_logging_enabled = (
+                    deployment.pipeline_configuration.enable_pipeline_logs
+                )
 
         if not step_logging_enabled:
             return nullcontext()
