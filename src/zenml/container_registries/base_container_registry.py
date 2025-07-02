@@ -94,16 +94,13 @@ class BaseContainerRegistry(AuthenticationMixin):
     def credentials(self) -> Optional[Tuple[str, str]]:
         """Username and password to authenticate with this container registry.
 
+        Service connector credentials take precedence over direct authentication secrets.
+
         Returns:
             Tuple with username and password if this container registry
             requires authentication, `None` otherwise.
         """
-        secret = self.get_typed_authentication_secret(
-            expected_schema_type=BasicAuthSecretSchema
-        )
-        if secret:
-            return secret.username, secret.password
-
+        # Check service connector credentials first as they take precedence
         connector = self.get_connector()
         if connector:
             from zenml.service_connectors.docker_service_connector import (
@@ -115,6 +112,13 @@ class BaseContainerRegistry(AuthenticationMixin):
                     connector.config.username.get_secret_value(),
                     connector.config.password.get_secret_value(),
                 )
+
+        # Fall back to direct authentication secrets
+        secret = self.get_typed_authentication_secret(
+            expected_schema_type=BasicAuthSecretSchema
+        )
+        if secret:
+            return secret.username, secret.password
 
         return None
 
@@ -231,6 +235,47 @@ class BaseContainerRegistry(AuthenticationMixin):
             return None
 
         return cast(str, metadata.id.split(":")[-1])
+
+    @property
+    def registry_server_uri(self) -> str:
+        """Get the normalized registry server URI.
+
+        This property returns a normalized registry server URI suitable for
+        authentication and API access. Subclasses can override this property
+        to provide registry-specific normalization logic.
+
+        Returns:
+            The normalized registry server URI.
+        """
+        registry_uri = self.config.uri
+
+        # Check if there's a service connector with a different registry setting
+        connector = self.get_connector()
+        if connector:
+            from zenml.service_connectors.docker_service_connector import (
+                DockerServiceConnector,
+            )
+
+            if (
+                isinstance(connector, DockerServiceConnector)
+                and connector.config.registry
+            ):
+                # Use the service connector's registry setting
+                registry_uri = connector.config.registry
+
+        # Normalize registry URI for consistency
+        if registry_uri.startswith("https://"):
+            registry_uri = registry_uri[8:]
+        elif registry_uri.startswith("http://"):
+            registry_uri = registry_uri[7:]
+
+        # For generic registries, extract just the domain part for better image matching
+        if not registry_uri.startswith(("http://", "https://")):
+            domain = registry_uri.split("/")[0]
+            return f"https://{domain}"
+        
+        return registry_uri
+
 
 
 class BaseContainerRegistryFlavor(Flavor):

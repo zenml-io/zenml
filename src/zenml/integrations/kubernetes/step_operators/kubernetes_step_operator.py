@@ -27,6 +27,7 @@ from zenml.integrations.kubernetes.flavors import (
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
+    create_image_pull_secrets_from_manifests,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -204,7 +205,8 @@ class KubernetesStepOperator(BaseStepOperator):
         args = entrypoint_command[3:]
 
         # Create and run the orchestrator pod.
-        pod_manifest = build_pod_manifest(
+        pod_manifest, secret_manifests = build_pod_manifest(
+            run_name=info.run_name,
             pod_name=pod_name,
             image_name=image_name,
             command=command,
@@ -214,6 +216,17 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=settings.pod_settings,
             env=environment,
             mount_local_stores=False,
+            namespace=self.config.kubernetes_namespace,
+            auto_generate_image_pull_secrets=settings.auto_generate_image_pull_secrets,
+            core_api=self._k8s_core_api,
+        )
+
+        # Create imagePullSecrets, reusing existing ones
+        create_image_pull_secrets_from_manifests(
+            secret_manifests=secret_manifests,
+            core_api=self._k8s_core_api,
+            namespace=self.config.kubernetes_namespace,
+            reuse_existing=True,  # Step operator reuses orchestrator-created secrets
             labels={
                 "run_id": kube_utils.sanitize_label(str(info.run_id)),
                 "pipeline": kube_utils.sanitize_label(info.pipeline.name),

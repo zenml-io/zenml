@@ -130,6 +130,7 @@ Some configuration options for the Kubernetes orchestrator can only be set throu
 - **`skip_local_validations`** (default: False): If `True`, skips the local validations that would otherwise be performed when `local` is set.
 - **`parallel_step_startup_waiting_period`**: How long (in seconds) to wait between starting parallel steps, useful for distributing server load in highly parallel pipelines.
 - **`pass_zenml_token_as_secret`** (default: False): By default, the Kubernetes orchestrator will pass a short-lived API token to authenticate to the ZenML server as an environment variable as part of the Pod manifest. If you want this token to be stored in a Kubernetes secret instead, set `pass_zenml_token_as_secret=True` when registering your orchestrator. If you do so, make sure the service connector that you configure for your has permissions to create Kubernetes secrets. Additionally, the service account used for the Pods running your pipeline must have permissions to delete secrets, otherwise the cleanup will fail and you'll be left with orphaned secrets.
+- **`auto_generate_image_pull_secrets`** (default: True): If `True`, automatically generates imagePullSecrets from container registry credentials in the stack. If `False`, relies on manually configured imagePullSecrets. When enabled, the service account used for running pipelines must have permissions to create and list secrets in the target namespace.
 
 The following configuration options can be set either through the orchestrator config or overridden using `KubernetesOrchestratorSettings` (at the pipeline or step level):
 
@@ -463,6 +464,38 @@ kubectl logs job/<job-name> -n zenml
 ```
 
 Common issues include incorrect cron expressions, insufficient permissions for the service account, or resource constraints.
+
+#### Required Kubernetes RBAC Permissions
+
+When using the automatic imagePullSecret generation feature (`auto_generate_image_pull_secrets=True`), the service account used by ZenML must have the following additional permissions in the target namespace:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: zenml  # or your configured namespace
+  name: zenml-image-pull-secret-manager
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "list", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zenml-image-pull-secret-binding
+  namespace: zenml  # or your configured namespace
+subjects:
+- kind: ServiceAccount
+  name: zenml-service-account  # or your configured service account
+  namespace: zenml
+roleRef:
+  kind: Role
+  name: zenml-image-pull-secret-manager
+  apiGroup: rbac.authorization.k8s.io
+```
+
+If you're using a custom service account (via `service_account_name`), ensure it has these permissions. The default `edit` role granted to `zenml-service-account` includes these permissions.
 
 For a tutorial on how to work with schedules in ZenML, check out our ['Managing
 Scheduled

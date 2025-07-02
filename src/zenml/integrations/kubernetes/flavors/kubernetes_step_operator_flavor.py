@@ -43,6 +43,9 @@ class KubernetesStepOperatorSettings(BaseSettings):
             failure retries and pod startup retries (in seconds)
         pod_failure_backoff: The backoff factor for pod failure retries and
             pod startup retries.
+        auto_generate_image_pull_secrets: If `True`, automatically generates
+            imagePullSecrets from container registry credentials in the stack.
+            If `False`, relies on manually configured imagePullSecrets.
     """
 
     pod_settings: Optional[KubernetesPodSettings] = None
@@ -52,6 +55,7 @@ class KubernetesStepOperatorSettings(BaseSettings):
     pod_failure_max_retries: int = 3
     pod_failure_retry_delay: int = 10
     pod_failure_backoff: float = 1.0
+    auto_generate_image_pull_secrets: bool = True
 
 
 class KubernetesStepOperatorConfig(

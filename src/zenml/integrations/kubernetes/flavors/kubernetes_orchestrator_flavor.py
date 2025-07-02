@@ -69,6 +69,9 @@ class KubernetesOrchestratorSettings(BaseSettings):
             scheduling a pipeline.
         prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
             not try to compute cached steps before starting the step pods.
+        auto_generate_image_pull_secrets: If `True`, automatically generates
+            imagePullSecrets from container registry credentials in the stack.
+            If `False`, relies on manually configured imagePullSecrets.
     """
 
     synchronous: bool = True
@@ -88,6 +91,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     failed_jobs_history_limit: Optional[NonNegativeInt] = None
     ttl_seconds_after_finished: Optional[NonNegativeInt] = None
     prevent_orchestrator_pod_caching: bool = False
+    auto_generate_image_pull_secrets: bool = True
 
 
 class KubernetesOrchestratorConfig(

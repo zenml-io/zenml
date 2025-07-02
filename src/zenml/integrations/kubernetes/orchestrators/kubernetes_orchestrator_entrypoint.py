@@ -36,6 +36,8 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import 
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
+    cleanup_old_image_pull_secrets,
+    create_image_pull_secrets_from_manifests,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import publish_utils
@@ -235,8 +237,10 @@ def main() -> None:
                 }
             )
 
-        # Define Kubernetes pod manifest.
-        pod_manifest = build_pod_manifest(
+        logger.info(f"Container registry: {active_stack.container_registry}")
+
+        # Define Kubernetes pod manifest and any required secrets.
+        pod_manifest, secret_manifests = build_pod_manifest(
             pod_name=pod_name,
             image_name=image,
             command=step_command,
@@ -248,6 +252,19 @@ def main() -> None:
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
             owner_references=owner_references,
+            namespace=args.kubernetes_namespace,
+            auto_generate_image_pull_secrets=pipeline_settings.auto_generate_image_pull_secrets,
+            container_registry=active_stack.container_registry,
+            core_api=core_api,
+        )
+
+        # Step pods should reuse secrets created by the orchestrator pod
+        # Only create secrets if they don't already exist
+        create_image_pull_secrets_from_manifests(
+            secret_manifests=secret_manifests,
+            core_api=core_api,
+            namespace=args.kubernetes_namespace,
+            reuse_existing=True,  # Step pods reuse orchestrator-created secrets
             labels=step_pod_labels,
         )
 
@@ -362,6 +379,16 @@ def main() -> None:
                 )
             except k8s_client.rest.ApiException as e:
                 logger.error(f"Error cleaning up secret {secret_name}: {e}")
+
+        # Clean up old imagePullSecrets to prevent accumulation
+        # Only clean up for non-scheduled runs to avoid interfering with running schedules
+        if deployment.schedule is None:
+            logger.info("Cleaning up old imagePullSecrets...")
+            cleanup_old_image_pull_secrets(
+                core_api=core_api,
+                namespace=args.kubernetes_namespace,
+                max_age_hours=24,  # Keep secrets for 24 hours
+            )
 
 
 if __name__ == "__main__":
