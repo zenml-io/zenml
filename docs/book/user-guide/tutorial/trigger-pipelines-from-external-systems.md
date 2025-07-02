@@ -758,160 +758,18 @@ Preventing execution of pipeline '<pipeline_name>'. If this is not intended beha
 ```
 {% endhint %}
 
-The FastAPI example above uses threading, but due to ZenML's architecture, concurrent pipeline execution will fail. The recommended solution is to run each pipeline in a separate container.
+The FastAPI example above uses threading, but due to ZenML's architecture, concurrent pipeline execution will fail. For production environments that need to handle concurrent pipeline requests, consider deploying your pipeline triggers through container orchestration platforms.
 
-#### Container-Per-Pipeline Solution
-
-For production environments, use container orchestration to achieve true concurrency:
-
-```python
-import docker
-import json
-import os
-
-@app.post("/trigger", status_code=202)
-async def trigger_pipeline(
-    request: PipelineRequest, 
-    api_key: str = Depends(get_api_key)
-):
-    """Trigger a pipeline in a separate container."""
-    
-    client = docker.from_env()
-    
-    # Prepare environment variables for the container
-    env_vars = {
-        "ZENML_STORE_URL": os.environ.get("ZENML_STORE_URL"),
-        "ZENML_STORE_API_KEY": os.environ.get("ZENML_STORE_API_KEY"),
-        "ZENML_ACTIVE_STACK_ID": os.environ.get("ZENML_ACTIVE_STACK_ID")
-    }
-    
-    # Build the pipeline execution command with parameters
-    step_params = []
-    if request.steps:
-        for step_name, step_config in request.steps.items():
-            if step_config.parameters:
-                for param_name, param_value in step_config.parameters.items():
-                    step_params.append(f"{param_name}='{param_value}'")
-    
-    param_string = ", ".join(step_params)
-    command = f"python -c \"from common import {request.pipeline_name}; {request.pipeline_name}({param_string})\""
-    
-    try:
-        # Run the pipeline in a new container
-        container = client.containers.run(
-            "zenml-pipeline-runner",  # Your pipeline runner image
-            command=command,
-            environment=env_vars,
-            detach=True,
-            remove=True  # Auto-remove when finished
-        )
-        
-        return {
-            "status": "started",
-            "message": f"Pipeline '{request.pipeline_name}' started in container",
-            "container_id": container.id
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start container: {str(e)}")
-```
-
-### Building the Pipeline Runner Container
-
-Create a dedicated container image for running pipelines. This should be separate from your API server container:
-
-#### Pipeline Runner Dockerfile
-
-```dockerfile
-FROM python:3.9-slim
-
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install base Python dependencies
-COPY requirements.txt .
-RUN pip install -U pip uv && uv pip install --system --no-cache-dir -r requirements.txt
-
-# Copy your pipeline code
-COPY common.py .
-
-# Set environment variables
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-
-# Define build arguments for ZenML configuration
-ARG ZENML_ACTIVE_STACK_ID
-ARG ZENML_STORE_URL
-ARG ZENML_STORE_API_KEY
-
-# Set environment variables from build args
-ENV ZENML_ACTIVE_STACK_ID=${ZENML_ACTIVE_STACK_ID}
-ENV ZENML_STORE_URL=${ZENML_STORE_URL}
-ENV ZENML_STORE_API_KEY=${ZENML_STORE_API_KEY}
-
-# Export and install stack requirements
-RUN if [ -n "$ZENML_ACTIVE_STACK_ID" ]; then \
-    zenml stack set $ZENML_ACTIVE_STACK_ID && \
-    zenml stack export-requirements $ZENML_ACTIVE_STACK_ID --output-file stack_requirements.txt && \
-    uv pip install --system -r stack_requirements.txt; \
-    else echo "Warning: ZENML_ACTIVE_STACK_ID not set, skipping stack requirements"; \
-    fi
-
-# The container will run the pipeline specified in the command
-# No default CMD - command will be provided by the API server
-```
-
-#### Building and Managing the Container
-
-```bash
-# Build the pipeline runner image with stack requirements
-docker build -t zenml-pipeline-runner \
-  --build-arg ZENML_ACTIVE_STACK_ID="your-stack-id" \
-  --build-arg ZENML_STORE_URL="https://your-zenml-server" \
-  --build-arg ZENML_STORE_API_KEY="your-zenml-api-key" \
-  -f Dockerfile.pipeline .
-
-# The API server will use this image to run pipelines
-# Each pipeline execution gets its own container instance
-```
-
-#### Container Orchestration Considerations
+#### Recommended Solutions for Concurrent Execution
 
 For production deployments, consider using:
 
-1. **Kubernetes Jobs**: For better resource management and scaling
-2. **Docker Swarm**: For simpler container orchestration
-3. **Cloud Container Services**: Like AWS ECS, Google Cloud Run, or Azure Container Instances
+1. **Kubernetes Jobs**: Deploy each pipeline execution as a separate Kubernetes Job for resource management and scaling
+2. **Docker Containers**: Use a container orchestration platform like Docker Swarm or ECS to run separate container instances
+3. **Cloud Container Services**: Leverage services like AWS ECS, Google Cloud Run, or Azure Container Instances
+4. **Serverless Functions**: Deploy pipeline triggers as serverless functions (AWS Lambda, Azure Functions, etc.)
 
-Example Kubernetes Job template:
-
-```yaml
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: zenml-pipeline-${PIPELINE_ID}
-spec:
-  template:
-    spec:
-      containers:
-      - name: pipeline-runner
-        image: zenml-pipeline-runner:latest
-        command: ["python", "-c"]
-        args: ["from common import ${PIPELINE_NAME}; ${PIPELINE_NAME}(${PARAMETERS})"]
-        env:
-        - name: ZENML_STORE_URL
-          value: "${ZENML_STORE_URL}"
-        - name: ZENML_STORE_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: zenml-secrets
-              key: api-key
-      restartPolicy: Never
-  backoffLimit: 3
-```
+These approaches ensure each pipeline runs in its own isolated environment, avoiding the concurrency limitations of ZenML's shared state architecture.
 
 ### Security Considerations
 
