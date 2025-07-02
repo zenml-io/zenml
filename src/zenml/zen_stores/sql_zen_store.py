@@ -5335,7 +5335,14 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.deployment)
                     ).load_only(
-                        jl_arg(PipelineDeploymentSchema.pipeline_configuration)
+                        jl_arg(
+                            PipelineDeploymentSchema.pipeline_configuration
+                        ),
+                    ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.deployment)
+                    ).selectinload(
+                        jl_arg(PipelineDeploymentSchema.step_configurations)
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
@@ -5365,7 +5372,7 @@ class SqlZenStore(BaseZenStore):
                     json.loads(config_table.config),
                     pipeline_configuration=pipeline_configuration,
                 )
-                for config_table in deployment.get_step_configurations()
+                for config_table in deployment.step_configurations
             }
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
