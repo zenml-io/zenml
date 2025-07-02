@@ -210,6 +210,43 @@ Identify and maintain a set of representative pipelines for testing:
   - Rebuild templates using the upgraded ZenML version
   - Execute each run template in the staging environment to verify it completes successfully
 
+**Code example for recreating run templates:**
+
+```python
+from zenml.client import Client
+
+# Get the pipeline by name
+pipeline = Client().get_pipeline("your_pipeline_name")
+
+# Get the most recent runs for this pipeline
+runs = Client().list_pipeline_runs(
+    pipeline_id=pipeline.id, 
+    sort_by="desc:created", 
+    size=1
+)
+
+if runs:
+    latest_run = runs[0]
+    
+    # Create a template from this run
+    template = latest_run.create_run_template(
+        name="upgraded-template-name",
+        deployment_id=latest_run.deployment_id,
+        config={"steps": {"your_step": {"parameters": {"param": "value"}}}}
+    )
+    
+    print(f"Created template: {template.name} with ID: {template.id}")
+```
+
+```bash
+# Alternative: Using CLI
+zenml pipeline create-run-template your_pipeline_name \
+    --name=upgraded-template-name \
+    --config=config.yaml \
+    --stack=your-stack-name
+```
+Read [here](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems#method-1-using-run-templates-zenml-pro) for more details on how to re-create run templates.
+
 - [ ] **Reschedule Pipelines** *(All users)*
   - Cancel existing scheduled pipelines
   - Recreate pipeline schedules using the upgraded ZenML version
@@ -242,6 +279,7 @@ Identify and maintain a set of representative pipelines for testing:
 - [ ] Run post-upgrade smoke tests *(All users)*
 - [ ] Rebuild and execute run templates in production *(Pro only)*
   - 🔧 ZenML Pro SaaS Workspace: Like in staging, run templates must be rebuilt and re-executed in production with the upgraded ZenML version to ensure compatibility
+  - Use the same code patterns from Phase 3 to recreate templates in production
 - [ ] Reschedule pipelines in production *(All users)*
   - Cancel existing scheduled pipelines and recreate them with the upgraded ZenML version
 - [ ] Monitor system health for 24 hours *(All users)*
@@ -255,8 +293,9 @@ Identify and maintain a set of representative pipelines for testing:
 - [ ] Test changes with each team *(All users)*
 - [ ] Rebuild and execute run templates in production *(Pro only)*
   - 🔧 ZenML Pro SaaS Workspace: Run templates must be rebuilt and re-executed in production with the upgraded ZenML version, especially important for breaking changes
+  - Use the same code patterns from Phase 3 to recreate templates in production
 - [ ] Reschedule pipelines in production *(All users)*
-  - Cancel existing scheduled pipelines and recreate them with the upgraded ZenML version, critical for breaking changes
+  - Cancel existing scheduled pipelines and recreate them with the upgraded ZenML version, critical for breaking changes. Read [these docs](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) for more details.
 - [ ] Gradually rollout access to updated environment *(All users)*
 - [ ] Monitor for issues and provide support *(All users)*
 
