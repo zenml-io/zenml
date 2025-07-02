@@ -154,7 +154,8 @@ Create a custom policy for the execution role that SageMaker will assume:
       "Action": [
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents"
+        "logs:PutLogEvents",
+        "logs:GetLogEvents"
       ],
       "Resource": "*"
     }
