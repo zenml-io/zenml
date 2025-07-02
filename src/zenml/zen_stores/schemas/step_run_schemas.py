@@ -76,7 +76,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         UniqueConstraint(
             "name",
             "pipeline_run_id",
-            "active",
+            "retry_count",
             name="unique_step_name_for_pipeline_run",
         ),
     )
@@ -90,9 +90,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     cache_key: Optional[str] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_hash: Optional[str] = Field(nullable=True)
-    active: Optional[bool] = Field(nullable=True)
-    retry_count: int = Field(default=0, nullable=False)
-    is_retriable: bool = Field(default=True, nullable=False)
+    retry_count: int = Field(nullable=False)
+    is_retriable: bool = Field(nullable=False)
 
     step_configuration: str = Field(
         sa_column=Column(
@@ -278,7 +277,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def from_request(
-        cls, request: StepRunRequest, deployment_id: Optional[UUID]
+        cls,
+        request: StepRunRequest,
+        deployment_id: Optional[UUID],
+        retry_count: int,
+        is_retriable: bool,
     ) -> "StepRunSchema":
         """Create a step run schema from a step run request model.
 
@@ -303,7 +306,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             cache_key=request.cache_key,
             code_hash=request.code_hash,
             source_code=request.source_code,
-            active=True,
+            retry_count=retry_count,
+            is_retriable=is_retriable,
         )
 
     def get_step_configuration(self) -> Step:

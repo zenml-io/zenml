@@ -626,6 +626,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
+        "exclude_retried",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -690,6 +691,10 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
+    exclude_retried: Optional[bool] = Field(
+        default=None,
+        description="Whether to exclude retried step runs.",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -722,5 +727,10 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
                 ),
             )
             custom_filters.append(model_filter)
+
+        if self.exclude_retried:
+            custom_filters.append(
+                StepRunSchema.status != ExecutionStatus.RETRIED.value
+            )
 
         return custom_filters

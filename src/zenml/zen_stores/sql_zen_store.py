@@ -5357,7 +5357,7 @@ class SqlZenStore(BaseZenStore):
             step_runs = {
                 step.name: step
                 for step in run.step_runs
-                if step.active is True
+                if step.status != ExecutionStatus.RETRIED.value
             }
 
             pipeline_configuration = PipelineConfiguration.model_validate_json(
@@ -8911,19 +8911,21 @@ class SqlZenStore(BaseZenStore):
                             [sr.id for sr in existing_step_runs]
                         )
                     )
-                    .values(status=ExecutionStatus.RETRIED, active=None)
+                    .values(status=ExecutionStatus.RETRIED.value)
                 )
 
             step_schema = StepRunSchema.from_request(
-                step_run, deployment_id=run.deployment_id
+                step_run,
+                deployment_id=run.deployment_id,
+                retry_count=len(existing_step_runs),
+                # TODO: This isn't actually guaranteed to be correct, how
+                # do we handle these cases? E.g. if the step on kubernetes
+                # is retried during startup, it will not actually create X
+                # step runs. Or if it doesn't reach the point in code where
+                # the step run is created.
+                is_retriable=len(existing_step_runs) < max_retries,
             )
-            step_schema.retry_count = len(existing_step_runs)
-            # TODO: This isn't actually guaranteed to be correct, how
-            # do we handle these cases? E.g. if the step on kubernetes
-            # is retried during startup, it will not actually create X
-            # step runs. Or if it doesn't reach the point in code where
-            # the step run is created.
-            step_schema.is_retriable = len(existing_step_runs) < max_retries
+
             session.add(step_schema)
             try:
                 session.commit()
@@ -9161,9 +9163,7 @@ class SqlZenStore(BaseZenStore):
                 filter_model=step_run_filter_model,
                 session=session,
             )
-            query = select(StepRunSchema).where(
-                col(StepRunSchema.active).is_(True)
-            )
+            query = select(StepRunSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -9205,6 +9205,14 @@ class SqlZenStore(BaseZenStore):
                 schema_class=StepRunSchema,
                 session=session,
             )
+
+            if (
+                existing_step_run.status == ExecutionStatus.RETRIED.value
+                and step_run_update.status == ExecutionStatus.FAILED
+            ):
+                raise ValueError(
+                    "The status of retried step runs can not be updated."
+                )
 
             if (
                 existing_step_run.is_retriable
@@ -9478,7 +9486,7 @@ class SqlZenStore(BaseZenStore):
         step_run_statuses = session.exec(
             select(StepRunSchema.status)
             .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
-            .where(col(StepRunSchema.active).is_(True))
+            .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
         ).all()
 
         # Deployment always exists for pipeline runs of newer versions
