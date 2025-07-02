@@ -616,7 +616,7 @@ def setup_orchestrator_logging(
         else:
             step_logging_enabled = (
                 deployment.pipeline_configuration.enable_pipeline_logs
-            )
+            ) or False
 
         if not step_logging_enabled:
             return nullcontext()
