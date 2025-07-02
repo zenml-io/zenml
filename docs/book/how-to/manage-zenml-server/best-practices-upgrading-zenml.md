@@ -118,6 +118,11 @@ Development → Staging → Production
   - Export or list all existing run templates
   - Plan to delete and rebuild them after the server upgrade to avoid incompatibilities
 
+- [ ] **Scheduled Pipeline Audit** *(All users)*
+  - List all currently scheduled pipelines and their schedules
+  - Plan to reschedule them after the server upgrade to ensure compatibility
+  - Document pipeline schedules for recreation after upgrade
+
 ### Phase 2: Code and Compatibility Testing
 
 **Local Testing and Validation**
@@ -230,6 +235,8 @@ Identify and maintain a set of representative pipelines for testing:
 - [ ] Schedule upgrade during low-activity periods *(All users)*
 - [ ] Upgrade production server *(All users)*
 - [ ] Run post-upgrade smoke tests *(All users)*
+- [ ] Rebuild and execute run templates in production *(Pro only)*
+  - 🔧 ZenML Pro SaaS Workspace: Like in staging, run templates must be rebuilt and re-executed in production with the upgraded ZenML version to ensure compatibility
 - [ ] Monitor system health for 24 hours *(All users)*
 - [ ] Communicate successful upgrade to teams *(All users)*
 - [ ] Prompt all users to upgrade their local ZenML client (`pip install -U zenml`) *(All users)*
@@ -239,6 +246,8 @@ Identify and maintain a set of representative pipelines for testing:
 - [ ] Provide migration guides to teams *(All users)*
 - [ ] Allow time for teams to adjust their code *(All users)*
 - [ ] Test changes with each team *(All users)*
+- [ ] Rebuild and execute run templates in production *(Pro only)*
+  - 🔧 ZenML Pro SaaS Workspace: Run templates must be rebuilt and re-executed in production with the upgraded ZenML version, especially important for breaking changes
 - [ ] Gradually rollout access to updated environment *(All users)*
 - [ ] Monitor for issues and provide support *(All users)*
 
