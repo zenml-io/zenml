@@ -8872,12 +8872,18 @@ class SqlZenStore(BaseZenStore):
             existing_step_runs = session.exec(
                 select(StepRunSchema)
                 .with_for_update()
-                .options(load_only(jl_arg(StepRunSchema.status)))
+                .options(
+                    load_only(
+                        jl_arg(StepRunSchema.status),
+                        jl_arg(StepRunSchema.model_version_id),
+                    )
+                )
                 .where(
                     col(StepRunSchema.pipeline_run_id)
                     == step_run.pipeline_run_id
                 )
                 .where(col(StepRunSchema.name) == step_run.name)
+                .order_by(desc(StepRunSchema.retry_count))
             ).all()
 
             if any(
@@ -9082,18 +9088,8 @@ class SqlZenStore(BaseZenStore):
                 step_schema, ["input_artifacts", "output_artifacts"]
             )
 
-            existing_model_version_id = session.exec(
-                select(StepRunSchema.model_version_id)
-                .where(
-                    col(StepRunSchema.pipeline_run_id)
-                    == step_run.pipeline_run_id
-                )
-                .where(col(StepRunSchema.name) == step_run.name)
-                .order_by(col(StepRunSchema.created).desc())
-            ).first()
-
-            if existing_model_version_id:
-                model_version_id: Optional[UUID] = existing_model_version_id
+            if existing_step_runs:
+                model_version_id = existing_step_runs[-1].model_version_id
             else:
                 model_version_id = self._get_or_create_model_version_for_run(
                     step_schema
