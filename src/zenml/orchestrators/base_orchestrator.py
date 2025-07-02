@@ -369,7 +369,7 @@ class BaseOrchestrator(StackComponent, ABC):
             delay = retry_config.delay if retry_config else 0
             backoff = retry_config.backoff if retry_config else 1
 
-            while retries < max_retries:
+            while retries <= max_retries:
                 try:
                     _launch_step()
                 except BaseException:
