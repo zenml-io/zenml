@@ -447,7 +447,14 @@ def build_secret_manifest(
 def pod_template_manifest_from_pod(
     pod: k8s_client.V1Pod,
 ) -> k8s_client.V1PodTemplateSpec:
-    """Build a Kubernetes pod template manifest from a pod."""
+    """Build a Kubernetes pod template manifest from a pod.
+
+    Args:
+        pod: The pod manifest to build the template from.
+
+    Returns:
+        The pod template manifest.
+    """
     return k8s_client.V1PodTemplateSpec(
         metadata=pod.metadata,
         spec=pod.spec,
@@ -471,6 +478,8 @@ def build_job_manifest(
         backoff_limit: The backoff limit for the job.
         ttl_seconds_after_finished: The TTL seconds after finished for the job.
         labels: The labels to use for the job.
+        active_deadline_seconds: The active deadline seconds for the job.
+        pod_failure_policy: The pod failure policy for the job.
 
     Returns:
         The Kubernetes job manifest.

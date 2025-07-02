@@ -344,6 +344,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Args:
             step: The step to run.
+
+        Raises:
+            BaseException: If the step failed all retries.
         """
         assert self._active_deployment
 

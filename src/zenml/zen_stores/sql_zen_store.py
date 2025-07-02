@@ -8827,6 +8827,7 @@ class SqlZenStore(BaseZenStore):
             The created step run.
 
         Raises:
+            ValueError: If trying to create a step run with a retried status.
             EntityExistsError: if the step run already exists.
         """
         if step_run.status == ExecutionStatus.RETRIED:
@@ -9129,6 +9130,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
+
+        Raises:
+            ValueError: If trying to update the step status to retried.
 
         Returns:
             The updated step run.

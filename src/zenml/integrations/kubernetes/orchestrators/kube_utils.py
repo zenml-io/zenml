@@ -588,7 +588,13 @@ def create_job(
     namespace: str,
     job_manifest: k8s_client.V1Job,
 ) -> None:
-    """Create a Kubernetes job."""
+    """Create a Kubernetes job.
+
+    Args:
+        batch_api: Kubernetes batch api.
+        namespace: Kubernetes namespace.
+        job_manifest: The manifest of the job to create.
+    """
     batch_api.create_namespaced_job(
         namespace=namespace,
         body=job_manifest,
@@ -600,15 +606,23 @@ def wait_for_job_to_finish(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     job_name: str,
-    container_name: Optional[str] = None,
-    stream_logs: bool = True,
     backoff_interval: float = 1,
     maximum_backoff: float = 32,
+    container_name: Optional[str] = None,
+    stream_logs: bool = True,
 ) -> None:
     """Wait for a job to finish.
 
     Args:
+        batch_api: Kubernetes BatchV1Api client.
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
         job_name: Name of the job for which to wait.
+        backoff_interval: The interval to wait between polling the job status.
+        maximum_backoff: The maximum interval to wait between polling the job
+            status.
+        stream_logs: Whether to stream the job logs.
+        container_name: Name of the container to stream logs from.
 
     Raises:
         RuntimeError: If the job failed or timed out.
