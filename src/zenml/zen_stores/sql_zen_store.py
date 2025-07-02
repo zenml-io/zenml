@@ -6119,7 +6119,6 @@ class SqlZenStore(BaseZenStore):
                 resources=existing_run,
                 session=session,
             )
-            session.refresh(existing_run)
 
             if run_update.status is not None:
                 self._update_pipeline_run_status(
