@@ -341,7 +341,7 @@ class StepLauncher:
                             break
                         except RunStoppedException as e:
                             raise e
-                        except Exception as e:  # noqa: E722
+                        except BaseException as e:  # noqa: E722
                             retries += 1
                             if retries < max_retries:
                                 logger.error(

@@ -77,7 +77,7 @@ class ThreadedDagRunner:
         finalize_fn: Optional[Callable[[Dict[str, NodeStatus]], None]] = None,
         parallel_node_startup_waiting_period: float = 0.0,
         max_parallelism: Optional[int] = None,
-        check_fn: Optional[Callable[[], bool]] = None,
+        continue_fn: Optional[Callable[[], bool]] = None,
     ) -> None:
         """Define attributes and initialize all nodes in waiting state.
 
@@ -94,7 +94,7 @@ class ThreadedDagRunner:
             parallel_node_startup_waiting_period: Delay in seconds to wait in
                 between starting parallel nodes.
             max_parallelism: Maximum number of nodes to run in parallel
-            check_fn: A function that returns True if the run should continue
+            continue_fn: A function that returns True if the run should continue
                 after each step execution, False if it should stop (e.g., due
                 to cancellation). If None, execution continues normally.
 
@@ -113,7 +113,7 @@ class ThreadedDagRunner:
         self.run_fn = run_fn
         self.preparation_fn = preparation_fn
         self.finalize_fn = finalize_fn
-        self.check_fn = check_fn
+        self.continue_fn = continue_fn
         self.nodes = dag.keys()
         self.node_states = {
             node: NodeStatus.NOT_STARTED for node in self.nodes
@@ -182,8 +182,10 @@ class ThreadedDagRunner:
         self._prepare_node_run(node)
 
         # Check if execution should continue (e.g., check for cancellation)
-        if self.check_fn:
-            self._stop_requested = self._stop_requested or not self.check_fn()
+        if self.continue_fn:
+            self._stop_requested = (
+                self._stop_requested or not self.continue_fn()
+            )
             if self._stop_requested:
                 self._finish_node(node, cancelled=True)
                 return
