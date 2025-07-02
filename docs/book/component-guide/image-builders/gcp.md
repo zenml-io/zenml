@@ -99,7 +99,7 @@ Successfully registered service connector `gcp-generic` with access to the follo
 > - `cloudbuild.builds.get` 
 > - `cloudbuild.builds.list`
 > - `source.repos.get` (if using Cloud Source Repositories)
-> - `storage.objects.get` and `storage.objects.create` (for accessing build artifacts)
+> - `storage.objects.get`, `storage.objects.create`, and `storage.objects.list` (for accessing build artifacts and build context stored in GCS)
 > 
 > Alternatively, you can use the predefined [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined_roles) if broader permissions are acceptable for your use case. The GCP Service Connector supports [many different authentication methods](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 

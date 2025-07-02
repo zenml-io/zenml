@@ -80,7 +80,7 @@ The configured credentials must have at least the following Azure IAM permission
 
 * allow listing the AKS clusters and fetching their credentials (e.g. the `Azure Kubernetes Service Cluster Admin Role` role)
 
-If set, the resource name must identify an EKS cluster using one of the following formats:
+If set, the resource name must identify an AKS cluster using one of the following formats:
 
 * resource group scoped AKS cluster name (canonical): `[{resource-group}/]{cluster-name}`
 * AKS cluster name: `{cluster-name}`
