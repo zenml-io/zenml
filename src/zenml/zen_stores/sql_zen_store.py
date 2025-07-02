@@ -8887,7 +8887,7 @@ class SqlZenStore(BaseZenStore):
             retry_config = step_config.config.retry
             max_retries = retry_config.max_retries if retry_config else 0
 
-            if len(existing_step_runs) >= max_retries:
+            if len(existing_step_runs) > max_retries:
                 raise EntityExistsError(
                     f"Unable to create step `{step_run.name}`: The step has "
                     f"exceeded the maximum number of retries."
