@@ -334,6 +334,29 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             trigger_execution_id=request.trigger_execution_id,
         )
 
+    def get_pipeline_configuration(self) -> PipelineConfiguration:
+        """Get the pipeline configuration for the pipeline run.
+
+        Raises:
+            RuntimeError: if the pipeline run has no deployment and no pipeline
+                configuration.
+
+        Returns:
+            The pipeline configuration.
+        """
+        if self.deployment:
+            return PipelineConfiguration.model_validate_json(
+                self.deployment.pipeline_configuration
+            )
+        elif self.pipeline_configuration:
+            return PipelineConfiguration.model_validate_json(
+                self.pipeline_configuration
+            )
+        else:
+            raise RuntimeError(
+                "Pipeline run has no deployment and no pipeline configuration."
+            )
+
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
     ) -> Dict[str, List[RunMetadataEntry]]:
