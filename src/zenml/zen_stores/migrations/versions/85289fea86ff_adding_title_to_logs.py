@@ -22,7 +22,7 @@ def upgrade() -> None:
     with op.batch_alter_table("logs", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
-                "title", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+                "source", sqlmodel.sql.sqltypes.AutoString(), nullable=True
             )
         )
 
@@ -30,4 +30,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
     with op.batch_alter_table("logs", schema=None) as batch_op:
-        batch_op.drop_column("title")
+        batch_op.drop_column("source")

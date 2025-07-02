@@ -33,6 +33,7 @@ from zenml.artifacts.utils import (
 )
 from zenml.client import Client
 from zenml.constants import (
+    ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     handle_bool_env_var,
 )
@@ -43,7 +44,11 @@ from zenml.logging import (
     STEP_LOGS_STORAGE_MAX_MESSAGES,
     STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
 )
-from zenml.models import LogsRequest, PipelineRunUpdate
+from zenml.models import (
+    LogsRequest,
+    PipelineDeploymentResponse,
+    PipelineRunUpdate,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -590,8 +595,7 @@ class PipelineLogsStorageContext:
 
 
 def setup_orchestrator_logging(
-    run_id: str,
-    title: str = "orchestrator",
+    run_id: str, deployment: "PipelineDeploymentResponse"
 ) -> Any:
     """Set up logging for an orchestrator environment.
 
@@ -600,12 +604,23 @@ def setup_orchestrator_logging(
 
     Args:
         run_id: The pipeline run ID.
-        title: Title for the orchestrator logs.
+        deployment: The deployment of the pipeline run.
 
     Returns:
         The logs context (PipelineLogsStorageContext)
     """
     try:
+        # Check whether logging is enabled
+        if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
+            step_logging_enabled = False
+        else:
+            step_logging_enabled = (
+                deployment.pipeline_configuration.enable_pipeline_logs
+            )
+
+        if not step_logging_enabled:
+            return nullcontext()
+
         # Fetch the active stack
         client = Client()
         active_stack = client.active_stack
@@ -623,7 +638,7 @@ def setup_orchestrator_logging(
 
         logs_model = LogsRequest(
             uri=logs_uri,
-            title=title,
+            source="orchestrator",
             artifact_store_id=active_stack.artifact_store.id,
         )
 
@@ -635,7 +650,7 @@ def setup_orchestrator_logging(
             )
         except Exception as e:
             logger.error(
-                f"Failed to add {title} logs to the run {run_id}: {e}"
+                f"Failed to add orchestrator logs to the run {run_id}: {e}"
             )
             raise e
         return logs_context

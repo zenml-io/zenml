@@ -6125,7 +6125,7 @@ class SqlZenStore(BaseZenStore):
                     # Create the log entry
                     log_entry = LogsSchema(
                         uri=log_request.uri,
-                        title=log_request.title,
+                        source=log_request.source,
                         pipeline_run_id=existing_run.id,
                         artifact_store_id=log_request.artifact_store_id,
                     )

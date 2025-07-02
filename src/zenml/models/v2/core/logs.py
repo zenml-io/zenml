@@ -35,8 +35,8 @@ class LogsRequest(BaseRequest):
 
     uri: str = Field(title="The uri of the logs file")
 
-    title: Optional[str] = Field(
-        title="The title of the logs file",
+    source: Optional[str] = Field(
+        title="The source of the logs file",
         default=None,
     )
 
@@ -80,8 +80,8 @@ class LogsResponseBody(BaseDatedResponseBody):
         title="The uri of the logs file",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    title: Optional[str] = Field(
-        title="The title of the logs file",
+    source: Optional[str] = Field(
+        title="The source of the logs file",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
@@ -136,13 +136,13 @@ class LogsResponse(
         return self.get_body().uri
 
     @property
-    def title(self) -> Optional[str]:
-        """The `title` property.
+    def source(self) -> Optional[str]:
+        """The `source` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().title
+        return self.get_body().source
 
     @property
     def step_run_id(self) -> Optional[UUID]:

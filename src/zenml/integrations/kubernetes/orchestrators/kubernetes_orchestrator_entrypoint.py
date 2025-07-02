@@ -89,7 +89,9 @@ def main() -> None:
             orchestrator_run_id=orchestrator_pod_name,
         )
 
-    logs_context = setup_orchestrator_logging(run_id=str(pipeline_run.id))
+    logs_context = setup_orchestrator_logging(
+        run_id=str(pipeline_run.id), deployment=deployment
+    )
 
     with logs_context:
         active_stack = client.active_stack
