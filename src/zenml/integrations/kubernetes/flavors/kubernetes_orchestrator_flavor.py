@@ -69,6 +69,8 @@ class KubernetesOrchestratorSettings(BaseSettings):
             scheduling a pipeline.
         prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
             not try to compute cached steps before starting the step pods.
+        always_build_pipeline_image: If `True`, the orchestrator will always
+            build the pipeline image, even if all steps have a custom build.
     """
 
     synchronous: bool = True
@@ -88,6 +90,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     failed_jobs_history_limit: Optional[NonNegativeInt] = None
     ttl_seconds_after_finished: Optional[NonNegativeInt] = None
     prevent_orchestrator_pod_caching: bool = False
+    always_build_pipeline_image: bool = False
 
 
 class KubernetesOrchestratorConfig(
