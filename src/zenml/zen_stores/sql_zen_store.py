@@ -5710,7 +5710,7 @@ class SqlZenStore(BaseZenStore):
 
             log_entry = LogsSchema(
                 uri=pipeline_run.logs.uri,
-                title=pipeline_run.logs.title,
+                source=pipeline_run.logs.source,
                 pipeline_run_id=new_run.id,
                 artifact_store_id=pipeline_run.logs.artifact_store_id,
             )
@@ -6132,7 +6132,6 @@ class SqlZenStore(BaseZenStore):
                     session.add(log_entry)
 
                 session.commit()
-                session.refresh(existing_run)
 
             self._attach_tags_to_resources(
                 tags=run_update.add_tags,
@@ -8915,7 +8914,7 @@ class SqlZenStore(BaseZenStore):
 
                 log_entry = LogsSchema(
                     uri=step_run.logs.uri,
-                    descriptor=getattr(step_run.logs, "descriptor", "step"),
+                    source=getattr(step_run.logs, "source", "step"),
                     step_run_id=step_schema.id,
                     artifact_store_id=step_run.logs.artifact_store_id,
                 )
