@@ -536,13 +536,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             logs = None
 
             client_logs = [
-                log_entry
+                log_entry.to_model()
                 for log_entry in self.logs
                 if log_entry.source == "client"
             ]
 
             if client_logs:
-                logs = client_logs[0].to_model()
+                logs = client_logs[0]
 
             resources = PipelineRunResponseResources(
                 user=self.user.to_model() if self.user else None,
