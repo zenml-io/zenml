@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Retry configuration for a step."""
 
+from pydantic import NonNegativeInt, PositiveInt
+
 from zenml.config.strict_base_model import StrictBaseModel
-from pydantic import PositiveInt, NonNegativeInt
 
 
 class StepRetryConfig(StrictBaseModel):
