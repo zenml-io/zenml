@@ -5,27 +5,27 @@ description: >-
 
 # Best Practices for Upgrading ZenML Servers (Workspaces)
 
-*A comprehensive guide for platform teams managing ZenML upgrades at enterprise scale*
+This document serves as a comprehensive guide for platform teams managing ZenML upgrades at enterprise scale.
 
 {% hint style="info" %}
 **ZenML Pro (SaaS Workspaces)**: ZenML Pro is available in two deployment modes: self-hosted and hosted (SaaS). If you're using the hosted **ZenML Pro SaaS** offering, many server-side upgrade procedures are handled automatically by the ZenML team. Look for the 🔧 **ZenML Pro SaaS Workspace** call-outs throughout this document to see which sections you can skip. Self-hosted ZenML Pro users should follow all steps exactly as documented for self-hosted deployments.
 {% endhint %}
 
 
-This high-level checklist summarizes the entire upgrade process at a glance.  Most platform teams can complete a standard (non-breaking) upgrade in **~3–5 days** end-to-end, depending on complexity and team availability.
+This high-level checklist summarizes the entire upgrade process at a glance.
 
-- **Phase 1 – Backup & Preparation (≈ 2-4 hours):** Safeguard database and configurations; inventory critical pipelines.
-- **Phase 2 – Code & Compatibility Testing (≈ 1-2 days):** Validate code, artifacts, and dependencies locally and in CI.
-- **Phase 3 – Staging Upgrade (≈ 2-4 hours):** Upgrade the staging server and run smoke tests.
-- **Phase 4 – User Acceptance Testing (≈ 1-2 days):** Power users and teams validate real workflows.
-- **Phase 5 – Production Upgrade (≈ 2-4 hours):** Perform the production cut-over, monitor, and sign-off.
+- **Phase 1 – Backup & Preparation:** Safeguard database and configurations; inventory critical pipelines.
+- **Phase 2 – Code & Compatibility Testing:** Validate code, artifacts, and dependencies locally and in CI.
+- **Phase 3 – Staging Upgrade:** Upgrade the staging server and run smoke tests.
+- **Phase 4 – User Acceptance Testing:** Power users and teams validate real workflows.
+- **Phase 5 – Production Upgrade:** Perform the production cut-over, monitor, and sign-off.
 
 ```mermaid
 flowchart TD
-    A[Phase 1: Backup & Preparation\n≈2-4 hrs] --> B[Phase 2: Code & Compatibility Testing\n≈1-2 days]
-    B --> C[Phase 3: Staging Upgrade\n≈2-4 hrs]
-    C --> D[Phase 4: User Acceptance Testing\n≈1-2 days]
-    D --> E[Phase 5: Production Upgrade\n≈2-4 hrs]
+    A[Phase 1: Backup & Preparation] --> B[Phase 2: Code & Compatibility Testing]
+    B --> C[Phase 3: Staging Upgrade]
+    C --> D[Phase 4: User Acceptance Testing]
+    D --> E[Phase 5: Production Upgrade]
 ```
 
 
@@ -90,7 +90,7 @@ Development → Staging → Production
 
 ## Upgrade Execution Checklist
 
-### Phase 1: Backup and Preparation (≈ 2-4 Hours)
+### Phase 1: Backup and Preparation
 
 {% hint style="warning" %}
 🔧 **ZenML Pro SaaS Workspace**: Database backups and server configuration backups are handled automatically by the ZenML team. You can skip the server-related backup steps below.
@@ -114,11 +114,11 @@ Development → Staging → Production
   - Document pipeline dependencies and stack requirements
 
 - [ ] **Run Template Audit** *(Pro only)*
-  - 🔧 ZenML Pro SaaS Workspace: Run templates must be rebuilt and recreated with the upgraded ZenML version.
+  - 🔧 ZenML Pro SaaS Workspace: Run templates must be rebuilt and re-executed with the upgraded ZenML version.
   - Export or list all existing run templates
-  - Plan to delete and recreate them after the server upgrade to avoid incompatibilities
+  - Plan to delete and rebuild them after the server upgrade to avoid incompatibilities
 
-### Phase 2: Code and Compatibility Testing (≈ 1-2 Days)
+### Phase 2: Code and Compatibility Testing
 
 **Local Testing and Validation**
 - Test locally first after upgrading (`pip install zenml --upgrade`)
@@ -174,13 +174,14 @@ def test_upgrade_compatibility():
 ```
 
 **Key Pipeline Testing**
+
 Identify and maintain a set of representative pipelines for testing:
 - **Basic Pipeline**: Simple training pipeline with standard components
 - **Complex Pipeline**: Multi-step pipeline with custom components
 - **Integration Pipeline**: Pipeline using specific integrations (MLflow, Kubeflow, etc.)
 - **Artifact Pipeline**: Pipeline that loads artifacts from previous runs
 
-### Phase 3: Staging Environment Upgrade (≈ 2-4 Hours)
+### Phase 3: Staging Environment Upgrade
 
 {% hint style="warning" %}
 🔧 **ZenML Pro SaaS Workspace**: Server upgrades are handled automatically. Focus on testing your pipeline code and configurations in your development environment.
@@ -199,12 +200,12 @@ Identify and maintain a set of representative pipelines for testing:
   - Check experiment tracking and model registry
 
 - [ ] **Refresh Run Templates** *(Pro only)*
-  - 🔧 ZenML Pro SaaS Workspace: Run templates must be rebuilt and recreated to ensure compatibility with the new version.
+  - 🔧 ZenML Pro SaaS Workspace: Run templates must be rebuilt and re-executed to ensure compatibility with the new version.
   - Delete outdated run templates
-  - Recreate templates using the upgraded ZenML version
+  - Rebuild templates using the upgraded ZenML version
   - Execute each run template in the staging environment to verify it completes successfully *(Pro only)*
 
-### Phase 4: User Acceptance Testing (UAT) (≈ 1-2 Days)
+### Phase 4: User Acceptance Testing (UAT)
 
 - [ ] **Power User Testing** *(All users)*
   - Invite key power users to test staging environment
@@ -219,22 +220,22 @@ Identify and maintain a set of representative pipelines for testing:
   - Confirm custom materializers and step implementations
   - For Pro users, run all rebuilt run templates end-to-end in the UAT workspace to ensure they execute without errors
 
-### Phase 5: Production Upgrade (≈ 2-4 Hours)
+### Phase 5: Production Upgrade
 
 {% hint style="warning" %}
 🔧 **ZenML Pro SaaS Workspace**: Production server upgrades are handled automatically with minimal downtime. You'll be notified of upgrade schedules and any required actions.
 {% endhint %}
 
 **For Non-Breaking Changes:**
-- [ ] Schedule upgrade during low-activity periods *(Self-hosted only)*
-- [ ] Upgrade production server *(Self-hosted only)*
+- [ ] Schedule upgrade during low-activity periods *(All users)*
+- [ ] Upgrade production server *(All users)*
 - [ ] Run post-upgrade smoke tests *(All users)*
 - [ ] Monitor system health for 24 hours *(All users)*
 - [ ] Communicate successful upgrade to teams *(All users)*
 - [ ] Prompt all users to upgrade their local ZenML client (`pip install -U zenml`) *(All users)*
 
 **For Breaking Changes:**
-- [ ] Upgrade server first *(Self-hosted only)*
+- [ ] Upgrade server first *(All users)*
 - [ ] Provide migration guides to teams *(All users)*
 - [ ] Allow time for teams to adjust their code *(All users)*
 - [ ] Test changes with each team *(All users)*
@@ -244,6 +245,7 @@ Identify and maintain a set of representative pipelines for testing:
 ## Handling Breaking Changes and Dependencies
 
 ### API Changes and Migration
+
 While ZenML strives for backward compatibility, be prepared for occasional breaking changes (e.g., [the Pydantic 2 upgrade](https://github.com/zenml-io/zenml/releases/tag/0.60.0)).
 
 - **Changelog Review**: Always review the [changelog from new releases](https://github.com/zenml-io/zenml/releases) for new syntax, instructions, or breaking changes
@@ -275,13 +277,6 @@ vertex_ai_minimal:
     - storage.objects.get
 ```
 
-### Compliance Considerations
-
-- **Data Processing**: Ensure pipelines handling personal data are properly tagged
-- **Audit Trail**: Maintain logs of all upgrade activities
-- **Backup Retention**: Follow company policies for backup retention
-- **Change Management**: Document all changes for compliance audits
-
 ## Rollback Procedures
 
 {% hint style="warning" %}
@@ -300,61 +295,6 @@ vertex_ai_minimal:
 3. Revert server to previous version
 4. Verify system functionality
 5. Communicate rollback to all teams
-
-## Post-Upgrade Activities
-
-### Monitoring and Validation
-
-**First 24 Hours:**
-- Monitor system performance and stability
-- Check error logs for upgrade-related issues
-- Validate critical pipeline executions
-- Respond to team questions and issues
-
-**First Week:**
-- Gather feedback from all teams
-- Monitor artifact compatibility issues
-- Track any performance degradation
-- Document lessons learned
-
-### Team Support
-
-**Communication:**
-- Send upgrade completion notification
-- Provide updated documentation links
-- Share any new features or changes
-- Offer dedicated support hours
-
-**Training:**
-- Schedule sessions for new features
-- Update internal documentation
-- Create team-specific upgrade guides
-- Provide troubleshooting resources
-
-## Enterprise-Specific Considerations
-
-### Multi-Region Deployments
-
-{% hint style="warning" %}
-🔧 **ZenML Pro SaaS Workspace**: Multi-region coordination is handled automatically for ZenML Pro SaaS users.
-{% endhint %}
-
-- Stagger upgrades across regions *(Self-hosted only)*
-- Consider data sovereignty requirements
-- Plan for cross-region artifact compatibility
-- Coordinate with regional teams
-
-### Integration with Enterprise Tools
-- **CI/CD Integration**: Update pipeline templates in version control
-- **Monitoring Systems**: Update alerts and dashboards
-- **Compliance Tools**: Export updated compliance data (e.g., One Trust integration)
-- **Identity Management**: Verify SSO and LDAP integrations
-
-### Cost Management
-- Monitor resource usage post-upgrade
-- Update cost allocation tags
-- Review new pricing implications
-- Optimize resource configurations
 
 ## Troubleshooting Common Issues
 
@@ -397,7 +337,7 @@ For teams still managing their own ZenML servers, here are additional considerat
 ## Metrics and KPIs
 
 Track upgrade success with these metrics:
-- **Downtime Duration**: Target < 2 hours for maintenance window *(Self-hosted only)*
+- **Downtime Duration**: Minimize maintenance window duration *(Self-hosted only)*
 - **Rollback Rate**: Target < 5% of upgrades require rollback
 - **Issue Resolution Time**: Average time to resolve post-upgrade issues
 - **Team Adoption**: Percentage of teams successfully using new version within 1 week
