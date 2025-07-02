@@ -11,7 +11,6 @@ description: >-
 **ZenML Pro (SaaS Workspaces)**: ZenML Pro is available in two deployment modes: self-hosted and hosted (SaaS). If you're using the hosted **ZenML Pro SaaS** offering, many server-side upgrade procedures are handled automatically by the ZenML team. Look for the 🔧 **ZenML Pro SaaS Workspace** call-outs throughout this document to see which sections you can skip. Self-hosted ZenML Pro users should follow all steps exactly as documented for self-hosted deployments.
 {% endhint %}
 
-## Executive Summary
 
 This high-level checklist summarizes the entire upgrade process at a glance.  Most platform teams can complete a standard (non-breaking) upgrade in **~3–5 days** end-to-end, depending on complexity and team availability.
 
@@ -29,7 +28,6 @@ flowchart TD
     D --> E[Phase 5: Production Upgrade\n≈2-4 hrs]
 ```
 
-## Overview
 
 This guide provides best practices specifically designed for platform teams responsible for managing ZenML infrastructure across multiple teams, environments, and business units. It builds upon general upgrade practices with enterprise-specific considerations.
 
