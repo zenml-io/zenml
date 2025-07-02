@@ -374,7 +374,7 @@ class BaseOrchestrator(StackComponent, ABC):
                     _launch_step()
                 except BaseException:
                     retries += 1
-                    if retries < max_retries:
+                    if retries <= max_retries:
                         logger.info(
                             "Sleeping for %d seconds before retrying step `%s`.",
                             delay,
@@ -383,11 +383,12 @@ class BaseOrchestrator(StackComponent, ABC):
                         time.sleep(delay)
                         delay *= backoff
                     else:
-                        logger.error(
-                            "Failed to run step `%s` after %d retries.",
-                            step.config.name,
-                            max_retries,
-                        )
+                        if max_retries > 0:
+                            logger.error(
+                                "Failed to run step `%s` after %d retries.",
+                                step.config.name,
+                                max_retries,
+                            )
                         raise
                 else:
                     break
