@@ -365,7 +365,7 @@ class BaseOrchestrator(StackComponent, ABC):
             # handle it in-process instead
             retries = 0
             retry_config = step.config.retry
-            max_retries = retry_config.max_retries if retry_config else 1
+            max_retries = retry_config.max_retries if retry_config else 0
             delay = retry_config.delay if retry_config else 0
             backoff = retry_config.backoff if retry_config else 1
 
@@ -389,6 +389,8 @@ class BaseOrchestrator(StackComponent, ABC):
                             max_retries,
                         )
                         raise
+                else:
+                    break
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
