@@ -76,7 +76,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         UniqueConstraint(
             "name",
             "pipeline_run_id",
-            "retry_count",
+            "version",
             name="unique_step_name_for_pipeline_run",
         ),
     )
@@ -90,7 +90,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     cache_key: Optional[str] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_hash: Optional[str] = Field(nullable=True)
-    retry_count: int = Field(nullable=False)
+    version: int = Field(nullable=False)
     is_retriable: bool = Field(nullable=False)
 
     step_configuration: str = Field(
@@ -280,7 +280,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         cls,
         request: StepRunRequest,
         deployment_id: Optional[UUID],
-        retry_count: int,
+        version: int,
         is_retriable: bool,
     ) -> "StepRunSchema":
         """Create a step run schema from a step run request model.
@@ -288,6 +288,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             request: The step run request model.
             deployment_id: The deployment ID.
+            version: The version of the step run.
+            is_retriable: Whether the step run is retriable.
 
         Returns:
             The step run schema.
@@ -306,7 +308,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             cache_key=request.cache_key,
             code_hash=request.code_hash,
             source_code=request.source_code,
-            retry_count=retry_count,
+            version=version,
             is_retriable=is_retriable,
         )
 
@@ -375,7 +377,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             user_id=self.user_id,
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
-            retry_count=self.retry_count,
+            version=self.version,
             is_retriable=self.is_retriable,
             start_time=self.start_time,
             end_time=self.end_time,

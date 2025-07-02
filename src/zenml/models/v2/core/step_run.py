@@ -177,8 +177,8 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
-    retry_count: int = Field(
-        title="The retry count of the step run.",
+    version: int = Field(
+        title="The version of the step run.",
     )
     is_retriable: bool = Field(
         title="Whether the step run is retriable.",
@@ -427,13 +427,13 @@ class StepRunResponse(
         return self.get_body().status
 
     @property
-    def retry_count(self) -> int:
-        """The `retry_count` property.
+    def version(self) -> int:
+        """The `version` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().retry_count
+        return self.get_body().version
 
     @property
     def is_retriable(self) -> bool:

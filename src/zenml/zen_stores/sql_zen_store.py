@@ -8883,7 +8883,7 @@ class SqlZenStore(BaseZenStore):
                     == step_run.pipeline_run_id
                 )
                 .where(col(StepRunSchema.name) == step_run.name)
-                .order_by(desc(StepRunSchema.retry_count))
+                .order_by(desc(StepRunSchema.version))
             ).all()
 
             if any(
@@ -8923,7 +8923,7 @@ class SqlZenStore(BaseZenStore):
             step_schema = StepRunSchema.from_request(
                 step_run,
                 deployment_id=run.deployment_id,
-                retry_count=len(existing_step_runs),
+                version=len(existing_step_runs),
                 # TODO: This isn't actually guaranteed to be correct, how
                 # do we handle these cases? E.g. if the step on kubernetes
                 # is retried during startup, it will not actually create X
