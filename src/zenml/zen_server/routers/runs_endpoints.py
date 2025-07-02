@@ -451,9 +451,6 @@ def run_logs(
 
     Returns:
         The pipeline run logs.
-
-    Raises:
-        KeyError: If no logs are available for the pipeline run.
     """
     store = zen_store()
 
