@@ -378,7 +378,7 @@ def main() -> None:
             run_fn=run_step_on_kubernetes,
             preparation_fn=pre_step_run,
             finalize_fn=finalize_run,
-            check_fn=check_pipeline_cancellation,
+            continue_fn=check_pipeline_cancellation,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
             max_parallelism=pipeline_settings.max_parallelism,
         ).run()
