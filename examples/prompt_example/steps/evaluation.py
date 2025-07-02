@@ -5,7 +5,7 @@ from typing import Annotated, Dict, List
 from zenml import step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.logger import get_logger
-from zenml.types import Prompt
+from zenml.prompts import Prompt
 
 logger = get_logger(__name__)
 

@@ -79,7 +79,7 @@ prompt_example/
 ### Basic Prompt Creation
 
 ```python
-from zenml.types import Prompt
+from zenml.prompts.prompt import Prompt
 from zenml.artifacts.artifact_config import ArtifactConfig
 
 @step

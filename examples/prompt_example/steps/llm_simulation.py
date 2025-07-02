@@ -1,23 +1,22 @@
 """Steps for simulating LLM responses to prompts."""
 
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 from zenml import step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.logger import get_logger
-from zenml.types import Prompt
+from zenml.prompts.prompt import Prompt
 
 logger = get_logger(__name__)
 
 
 @step
 def simulate_llm_response(
-    prompt: Prompt, query: str = None
+    prompt: Prompt, query: Optional[str] = None
 ) -> Annotated[
     str, ArtifactConfig(name="llm_response", tags=["response", "simulation"])
 ]:
     """Simulate an LLM response to demonstrate prompt functionality."""
-
     # Use provided query or default from prompt variables
     if query is None:
         query = prompt.variables.get(

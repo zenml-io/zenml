@@ -17,7 +17,7 @@ from datetime import datetime
 
 from tests.unit.test_general import _test_materializer
 from zenml.materializers.prompt_materializer import PromptMaterializer
-from zenml.types import Prompt
+from zenml.prompts.prompt import Prompt
 
 
 def test_prompt_materializer_basic(clean_client):

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the Prompt materializer."""
+"""Enhanced Prompt materializer for artifact storage and visualization."""
 
 import json
 import os
@@ -20,7 +20,7 @@ from typing import Any, ClassVar, Dict, Type
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.types import Prompt
+from zenml.prompts.prompt import Prompt
 
 logger = get_logger(__name__)
 
@@ -29,10 +29,10 @@ VISUALIZATION_FILENAME = "prompt_visualization.html"
 
 
 class PromptMaterializer(BaseMaterializer):
-    """Materializer for ZenML Prompt abstraction.
+    """Enhanced materializer for ZenML Prompt abstraction.
 
     This materializer handles saving/loading of Prompt objects and creates
-    rich HTML visualizations for the ZenML dashboard.
+    rich HTML visualizations for the ZenML dashboard with enhanced features.
     """
 
     ASSOCIATED_TYPES: ClassVar[tuple[Type[Any], ...]] = (Prompt,)
@@ -82,17 +82,22 @@ class PromptMaterializer(BaseMaterializer):
 
         metadata = {
             # Core information
+            "prompt_id": data.prompt_id,
             "prompt_type": data.prompt_type,
             "task": data.task,
             "domain": data.domain,
             "version": data.version,
             "description": data.description,
+            "author": data.author,
+            "language": data.language,
+            
             # Template analysis
             "template_length": summary["template_length"],
             "variable_count": summary["variable_count"],
             "variable_names": summary["variable_names"],
             "missing_variables": summary["missing_variables"],
             "variables_complete": summary["variables_complete"],
+            
             # Configuration
             "prompt_strategy": data.prompt_strategy,
             "has_examples": summary["has_examples"],
@@ -100,11 +105,14 @@ class PromptMaterializer(BaseMaterializer):
             "has_instructions": summary["has_instructions"],
             "has_context_template": bool(data.context_template),
             "target_models": data.target_models,
+            
             # Performance
             "performance_metrics": data.performance_metrics,
             "min_tokens": data.min_tokens,
             "max_tokens": data.max_tokens,
             "expected_format": data.expected_format,
+            "complexity_score": data.get_complexity_score(),
+            
             # Lineage
             "parent_prompt_id": data.parent_prompt_id,
             "created_at": data.created_at.isoformat()
@@ -113,9 +121,16 @@ class PromptMaterializer(BaseMaterializer):
             "updated_at": data.updated_at.isoformat()
             if data.updated_at
             else None,
+            
             # Tags and metadata
             "tags": data.tags,
             "custom_metadata": data.metadata,
+            
+            # Enhanced fields
+            "license": data.license,
+            "source_url": data.source_url,
+            "use_cache": data.use_cache,
+            "safety_checks": data.safety_checks,
         }
 
         # Add token estimation if possible
@@ -137,7 +152,7 @@ class PromptMaterializer(BaseMaterializer):
         Returns:
             Dictionary mapping visualization file names to their types
         """
-        # Generate HTML visualization
+        # Generate enhanced HTML visualization
         html_content = self._generate_html_visualization(data)
         html_path = os.path.join(self.uri, "visualization.html")
 
@@ -164,6 +179,7 @@ class PromptMaterializer(BaseMaterializer):
         examples_html = self._render_examples_section(data)
         performance_html = self._render_performance_section(data)
         metadata_html = self._render_metadata_section(data)
+        lineage_html = self._render_lineage_section(data)
 
         return f"""
         <!DOCTYPE html>
@@ -174,6 +190,9 @@ class PromptMaterializer(BaseMaterializer):
             <style>
                 {self._get_css_styles()}
             </style>
+            <script>
+                {self._get_javascript()}
+            </script>
         </head>
         <body>
             <div class="prompt-container">
@@ -182,6 +201,7 @@ class PromptMaterializer(BaseMaterializer):
                 {config_html}
                 {examples_html}
                 {performance_html}
+                {lineage_html}
                 {metadata_html}
             </div>
         </body>
@@ -189,17 +209,17 @@ class PromptMaterializer(BaseMaterializer):
         """
 
     def _render_header(self, data: Prompt, summary: Dict[str, Any]) -> str:
-        """Render the header section."""
+        """Render the header section with enhanced information."""
         status_badges = []
 
         # Completion status
         if summary["variables_complete"]:
             status_badges.append(
-                '<span class="badge badge-success">Variables Complete</span>'
+                '<span class="badge badge-success">✓ Variables Complete</span>'
             )
         else:
             status_badges.append(
-                '<span class="badge badge-warning">Missing Variables</span>'
+                '<span class="badge badge-warning">⚠ Missing Variables</span>'
             )
 
         # Type and task badges
@@ -211,14 +231,31 @@ class PromptMaterializer(BaseMaterializer):
             status_badges.append(
                 f'<span class="badge badge-primary">{data.task.title()}</span>'
             )
+        
+        # Complexity badge
+        complexity = data.get_complexity_score()
+        complexity_class = "low" if complexity < 0.3 else "medium" if complexity < 0.7 else "high"
+        status_badges.append(
+            f'<span class="badge badge-{complexity_class}">Complexity: {complexity:.1f}</span>'
+        )
 
         version_info = f"v{data.version}" if data.version else "No Version"
+        prompt_id_short = data.prompt_id[:8] + "..." if data.prompt_id else "unknown"
+
+        # Author info
+        author_info = ""
+        if data.author:
+            author_info = f'<div class="author">👤 {data.author}</div>'
 
         return f"""
         <div class="header">
             <h1>🎯 ZenML Prompt</h1>
             <div class="header-info">
-                <div class="version">{version_info}</div>
+                <div class="left-info">
+                    <div class="version">{version_info}</div>
+                    <div class="prompt-id">ID: {prompt_id_short}</div>
+                    {author_info}
+                </div>
                 <div class="badges">
                     {" ".join(status_badges)}
                 </div>
@@ -231,24 +268,26 @@ class PromptMaterializer(BaseMaterializer):
         """Render the template section with syntax highlighting."""
         formatted_template = data.template.replace("\\n", "<br>")
 
-        # Highlight variables
+        # Highlight variables with enhanced styling
         import re
 
         formatted_template = re.sub(
             r"\{([^}]+)\}",
-            r'<span class="variable">{<span class="variable-name">\1</span>}</span>',
+            r'<span class="variable" title="Variable: \1">{<span class="variable-name">\1</span>}</span>',
             formatted_template,
         )
 
+        # Variables section with status indicators
         variables_html = ""
         if data.variables:
-            var_items = [
-                f'<li><code>{k}</code> = <span class="value">"{v}"</span></li>'
-                for k, v in data.variables.items()
-            ]
+            var_items = []
+            for k, v in data.variables.items():
+                var_items.append(
+                    f'<li><span class="var-key">{k}</span> = <span class="var-value">"{v}"</span></li>'
+                )
             variables_html = f"""
             <div class="variables">
-                <h4>Default Variables</h4>
+                <h4>📋 Default Variables</h4>
                 <ul class="variable-list">
                     {"".join(var_items)}
                 </ul>
@@ -270,11 +309,22 @@ class PromptMaterializer(BaseMaterializer):
             </div>
             """
 
+        # Template stats
+        template_stats = f"""
+        <div class="template-stats">
+            <span class="stat">📏 {len(data.template)} chars</span>
+            <span class="stat">🔢 {len(data.get_variable_names())} variables</span>
+            <span class="stat">📊 {data.estimate_tokens() or 'Unknown'} tokens (est.)</span>
+        </div>
+        """
+
         return f"""
         <div class="section template-section">
             <h2>📝 Template</h2>
+            {template_stats}
             <div class="template-content">
                 <pre class="template-text">{formatted_template}</pre>
+                <button class="copy-btn" onclick="copyTemplate()" title="Copy template">📋</button>
             </div>
             {variables_html}
             {missing_html}
@@ -288,13 +338,15 @@ class PromptMaterializer(BaseMaterializer):
         # Basic configuration
         if data.domain:
             config_items.append(("Domain", data.domain, "🏷️"))
+        if data.language:
+            config_items.append(("Language", data.language, "🌐"))
         if data.prompt_strategy:
             config_items.append(("Strategy", data.prompt_strategy, "🧠"))
         if data.instructions:
-            config_items.append(("Instructions", data.instructions, "📋"))
+            config_items.append(("Instructions", data.instructions[:100] + "..." if len(data.instructions) > 100 else data.instructions, "📋"))
         if data.context_template:
             config_items.append(
-                ("Context Template", data.context_template, "🔗")
+                ("Context Template", data.context_template[:100] + "..." if len(data.context_template) > 100 else data.context_template, "🔗")
             )
 
         # Model configuration
@@ -319,6 +371,17 @@ class PromptMaterializer(BaseMaterializer):
             config_items.append(
                 ("Expected Format", data.expected_format, "📄")
             )
+
+        # Enhanced fields
+        if data.license:
+            config_items.append(("License", data.license, "⚖️"))
+        
+        if data.source_url:
+            config_items.append(("Source", f'<a href="{data.source_url}" target="_blank">Link</a>', "🔗"))
+        
+        if data.safety_checks:
+            checks_str = ", ".join(data.safety_checks)
+            config_items.append(("Safety Checks", checks_str, "🛡️"))
 
         if not config_items:
             return ""
@@ -384,11 +447,15 @@ class PromptMaterializer(BaseMaterializer):
             # Format metric value
             if isinstance(value, float):
                 formatted_value = f"{value:.3f}"
+                # Add trend indicator if available
+                trend_icon = "📈" if value > 0.7 else "📊" if value > 0.5 else "📉"
             else:
                 formatted_value = str(value)
+                trend_icon = "📊"
 
             metrics_html.append(f"""
             <div class="metric-item">
+                <div class="metric-icon">{trend_icon}</div>
                 <div class="metric-name">{metric.replace("_", " ").title()}</div>
                 <div class="metric-value">{formatted_value}</div>
             </div>
@@ -399,6 +466,40 @@ class PromptMaterializer(BaseMaterializer):
             <h2>📈 Performance Metrics</h2>
             <div class="metrics-grid">
                 {"".join(metrics_html)}
+            </div>
+        </div>
+        """
+
+    def _render_lineage_section(self, data: Prompt) -> str:
+        """Render the lineage and versioning section."""
+        if not data.parent_prompt_id and not data.version:
+            return ""
+
+        lineage_items = []
+
+        if data.parent_prompt_id:
+            lineage_items.append(f"""
+            <div class="lineage-item">
+                <span class="lineage-icon">👨‍👩‍👧‍👦</span>
+                <span class="lineage-label">Parent ID:</span>
+                <span class="lineage-value">{data.parent_prompt_id[:8]}...</span>
+            </div>
+            """)
+
+        if data.version:
+            lineage_items.append(f"""
+            <div class="lineage-item">
+                <span class="lineage-icon">🏷️</span>
+                <span class="lineage-label">Version:</span>
+                <span class="lineage-value">{data.version}</span>
+            </div>
+            """)
+
+        return f"""
+        <div class="section lineage-section">
+            <h2>🌳 Lineage & Versioning</h2>
+            <div class="lineage-grid">
+                {"".join(lineage_items)}
             </div>
         </div>
         """
@@ -423,10 +524,6 @@ class PromptMaterializer(BaseMaterializer):
             metadata_items.append(
                 ("Updated", data.updated_at.strftime("%Y-%m-%d %H:%M:%S"))
             )
-
-        # Lineage
-        if data.parent_prompt_id:
-            metadata_items.append(("Parent ID", data.parent_prompt_id))
 
         # Custom metadata
         if data.metadata:
@@ -456,8 +553,37 @@ class PromptMaterializer(BaseMaterializer):
         </div>
         """
 
+    def _get_javascript(self) -> str:
+        """Get JavaScript for interactive features."""
+        return """
+        function copyTemplate() {
+            const templateElement = document.querySelector('.template-text');
+            const text = templateElement.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✅';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 1000);
+            });
+        }
+        
+        // Add click handlers for expandable sections
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = document.querySelectorAll('.section h2');
+            sections.forEach(header => {
+                header.style.cursor = 'pointer';
+                header.addEventListener('click', function() {
+                    const section = this.parentElement;
+                    section.classList.toggle('collapsed');
+                });
+            });
+        });
+        """
+
     def _get_css_styles(self) -> str:
-        """Get CSS styles for the HTML visualization."""
+        """Get enhanced CSS styles for the HTML visualization."""
         return """
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -465,7 +591,8 @@ class PromptMaterializer(BaseMaterializer):
             color: #333;
             margin: 0;
             padding: 20px;
-            background: #f8f9fa;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
         }
         
         .prompt-container {
@@ -473,8 +600,14 @@ class PromptMaterializer(BaseMaterializer):
             margin: 0 auto;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .header {
@@ -482,12 +615,26 @@ class PromptMaterializer(BaseMaterializer):
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
         }
         
         .header h1 {
             margin: 0 0 15px 0;
             font-size: 2.5em;
             font-weight: 300;
+            position: relative;
+            z-index: 1;
         }
         
         .header-info {
@@ -495,18 +642,29 @@ class PromptMaterializer(BaseMaterializer):
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
         }
         
-        .version {
+        .left-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        
+        .version, .prompt-id, .author {
             background: rgba(255, 255, 255, 0.2);
             padding: 5px 15px;
             border-radius: 20px;
             font-weight: 500;
+            font-size: 0.9em;
         }
         
         .badges {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
         
         .badge {
@@ -514,26 +672,41 @@ class PromptMaterializer(BaseMaterializer):
             border-radius: 12px;
             font-size: 0.85em;
             font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
         .badge-success { background: #28a745; color: white; }
         .badge-warning { background: #ffc107; color: #212529; }
         .badge-info { background: #17a2b8; color: white; }
         .badge-primary { background: #007bff; color: white; }
+        .badge-low { background: #6c757d; color: white; }
+        .badge-medium { background: #fd7e14; color: white; }
+        .badge-high { background: #dc3545; color: white; }
         
         .description {
             margin: 15px 0 0 0;
             font-size: 1.1em;
             opacity: 0.9;
+            position: relative;
+            z-index: 1;
         }
         
         .section {
             padding: 30px;
             border-bottom: 1px solid #e9ecef;
+            transition: all 0.3s ease;
         }
         
         .section:last-child {
             border-bottom: none;
+        }
+        
+        .section.collapsed {
+            padding: 15px 30px;
+        }
+        
+        .section.collapsed > *:not(h2) {
+            display: none;
         }
         
         .section h2 {
@@ -542,6 +715,23 @@ class PromptMaterializer(BaseMaterializer):
             color: #495057;
             border-bottom: 2px solid #e9ecef;
             padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .template-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         
         .template-content {
@@ -550,6 +740,7 @@ class PromptMaterializer(BaseMaterializer):
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
+            position: relative;
         }
         
         .template-text {
@@ -561,12 +752,37 @@ class PromptMaterializer(BaseMaterializer):
             word-wrap: break-word;
         }
         
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: #0056b3;
+        }
+        
         .variable {
-            background: #e3f2fd;
+            background: linear-gradient(45deg, #e3f2fd, #bbdefb);
             color: #1565c0;
-            padding: 2px 4px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        
+        .variable:hover {
+            background: linear-gradient(45deg, #bbdefb, #90caf9);
+            transform: scale(1.05);
         }
         
         .variable-name {
@@ -580,12 +796,12 @@ class PromptMaterializer(BaseMaterializer):
         }
         
         .variables {
-            background: #e8f5e8;
+            background: linear-gradient(45deg, #e8f5e8, #c8e6c9);
             border-left: 4px solid #28a745;
         }
         
         .missing-variables {
-            background: #fff3cd;
+            background: linear-gradient(45deg, #fff3cd, #ffeaa7);
             border-left: 4px solid #ffc107;
         }
         
@@ -600,12 +816,25 @@ class PromptMaterializer(BaseMaterializer):
         }
         
         .variable-list li {
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .value {
+        .var-key {
+            background: #495057;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .var-value {
             color: #28a745;
             font-weight: 500;
+            font-family: monospace;
         }
         
         .config-grid {
@@ -618,24 +847,33 @@ class PromptMaterializer(BaseMaterializer):
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px;
-            background: #f8f9fa;
+            padding: 15px;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
             border-radius: 8px;
             border-left: 4px solid #007bff;
+            transition: all 0.3s ease;
+        }
+        
+        .config-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
         .config-icon {
             font-size: 1.2em;
+            flex-shrink: 0;
         }
         
         .config-label {
             font-weight: 600;
             color: #495057;
+            flex-shrink: 0;
         }
         
         .config-value {
             color: #6c757d;
             font-family: monospace;
+            word-break: break-word;
         }
         
         .examples-grid {
@@ -645,10 +883,11 @@ class PromptMaterializer(BaseMaterializer):
         }
         
         .example-item {
-            background: #f8f9fa;
+            background: linear-gradient(45deg, #f8f9fa, #fff);
             border: 1px solid #e9ecef;
             border-radius: 8px;
             padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         
         .example-item h4 {
@@ -689,6 +928,17 @@ class PromptMaterializer(BaseMaterializer):
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-item:hover {
+            transform: translateY(-4px);
+        }
+        
+        .metric-icon {
+            font-size: 1.5em;
+            margin-bottom: 8px;
         }
         
         .metric-name {
@@ -700,6 +950,38 @@ class PromptMaterializer(BaseMaterializer):
         .metric-value {
             font-size: 1.8em;
             font-weight: 600;
+        }
+        
+        .lineage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .lineage-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: linear-gradient(45deg, #f1f3f4, #e8eaed);
+            border-radius: 8px;
+            border-left: 4px solid #6c757d;
+        }
+        
+        .lineage-icon {
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+        
+        .lineage-label {
+            font-weight: 600;
+            color: #495057;
+            flex-shrink: 0;
+        }
+        
+        .lineage-value {
+            color: #6c757d;
+            font-family: monospace;
         }
         
         .metadata-grid {
@@ -719,20 +1001,43 @@ class PromptMaterializer(BaseMaterializer):
             color: #495057;
             margin-right: 10px;
             min-width: 120px;
+            flex-shrink: 0;
         }
         
         .metadata-value {
             color: #6c757d;
             flex: 1;
+            word-break: break-word;
         }
         
         .tag {
             display: inline-block;
-            background: #007bff;
+            background: linear-gradient(45deg, #007bff, #0056b3);
             color: white;
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 0.8em;
             margin-right: 5px;
+            margin-bottom: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .header-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .badges {
+                justify-content: center;
+            }
+            
+            .config-grid,
+            .examples-grid,
+            .metrics-grid,
+            .lineage-grid,
+            .metadata-grid {
+                grid-template-columns: 1fr;
+            }
         }
         """

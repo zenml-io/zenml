@@ -13,7 +13,7 @@ from pipelines.basic_pipeline import basic_prompt_pipeline_with_external
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.types import Prompt
+from zenml.prompts.prompt import Prompt
 
 logger = get_logger(__name__)
 

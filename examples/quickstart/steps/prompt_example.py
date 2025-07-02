@@ -22,7 +22,7 @@ from typing import Annotated, Any, Dict, List, Tuple
 
 from zenml import pipeline, step
 from zenml.logger import get_logger
-from zenml.types import Prompt
+from zenml.prompts.prompt import Prompt
 
 logger = get_logger(__name__)
 

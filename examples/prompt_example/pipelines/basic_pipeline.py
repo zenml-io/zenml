@@ -5,8 +5,7 @@ from steps.llm_simulation import simulate_llm_response
 from steps.prompt_creation import create_basic_prompt
 
 from zenml import pipeline
-from zenml.artifacts.external_artifact import ExternalArtifact
-from zenml.types import Prompt
+from zenml.prompts.prompt import Prompt
 
 
 @pipeline(name="basic_prompt_pipeline")
@@ -25,7 +24,7 @@ def basic_prompt_pipeline() -> None:
 
 @pipeline(name="basic_prompt_pipeline_with_external")
 def basic_prompt_pipeline_with_external(
-    external_prompt: ExternalArtifact[Prompt],
+    external_prompt: Prompt,
 ) -> None:
     """Basic pipeline using external prompt artifact."""
 

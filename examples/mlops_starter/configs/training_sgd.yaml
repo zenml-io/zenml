@@ -1,6 +1,7 @@
 # environment configuration
 settings:
   docker:
+    python_package_installer: uv
     required_integrations:
       - sklearn
       - pandas
