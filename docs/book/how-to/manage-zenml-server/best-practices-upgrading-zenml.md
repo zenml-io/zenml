@@ -208,7 +208,12 @@ Identify and maintain a set of representative pipelines for testing:
   - 🔧 ZenML Pro SaaS Workspace: Run templates must be rebuilt and re-executed to ensure compatibility with the new version.
   - Delete outdated run templates
   - Rebuild templates using the upgraded ZenML version
-  - Execute each run template in the staging environment to verify it completes successfully *(Pro only)*
+  - Execute each run template in the staging environment to verify it completes successfully
+
+- [ ] **Reschedule Pipelines** *(All users)*
+  - Cancel existing scheduled pipelines
+  - Recreate pipeline schedules using the upgraded ZenML version
+  - Test scheduled pipeline execution in the staging environment
 
 ### Phase 4: User Acceptance Testing (UAT)
 
@@ -237,6 +242,8 @@ Identify and maintain a set of representative pipelines for testing:
 - [ ] Run post-upgrade smoke tests *(All users)*
 - [ ] Rebuild and execute run templates in production *(Pro only)*
   - 🔧 ZenML Pro SaaS Workspace: Like in staging, run templates must be rebuilt and re-executed in production with the upgraded ZenML version to ensure compatibility
+- [ ] Reschedule pipelines in production *(All users)*
+  - Cancel existing scheduled pipelines and recreate them with the upgraded ZenML version
 - [ ] Monitor system health for 24 hours *(All users)*
 - [ ] Communicate successful upgrade to teams *(All users)*
 - [ ] Prompt all users to upgrade their local ZenML client (`pip install -U zenml`) *(All users)*
@@ -248,6 +255,8 @@ Identify and maintain a set of representative pipelines for testing:
 - [ ] Test changes with each team *(All users)*
 - [ ] Rebuild and execute run templates in production *(Pro only)*
   - 🔧 ZenML Pro SaaS Workspace: Run templates must be rebuilt and re-executed in production with the upgraded ZenML version, especially important for breaking changes
+- [ ] Reschedule pipelines in production *(All users)*
+  - Cancel existing scheduled pipelines and recreate them with the upgraded ZenML version, critical for breaking changes
 - [ ] Gradually rollout access to updated environment *(All users)*
 - [ ] Monitor for issues and provide support *(All users)*
 
