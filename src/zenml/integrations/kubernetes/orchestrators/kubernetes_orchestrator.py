@@ -70,7 +70,10 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import (
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -83,6 +86,18 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
+
+    @property
+    def always_build_pipeline_image(self) -> bool:
+        """Whether to always build the pipeline image.
+
+        Returns:
+            Whether to always build the pipeline image.
+        """
+        # Users might want to use a different image for the orchestrator pod,
+        # which is why make sure to always build the pipeline image even if
+        # all steps have a custom build.
+        return True
 
     def get_kube_client(
         self, incluster: Optional[bool] = None
