@@ -91,6 +91,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_hash: Optional[str] = Field(nullable=True)
     active: Optional[bool] = Field(nullable=True)
+    retry_count: int = Field(default=0, nullable=False)
+    is_retriable: bool = Field(default=True, nullable=False)
 
     step_configuration: str = Field(
         sa_column=Column(
@@ -369,6 +371,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             user_id=self.user_id,
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
+            retry_count=self.retry_count,
+            is_retriable=self.is_retriable,
             start_time=self.start_time,
             end_time=self.end_time,
             created=self.created,

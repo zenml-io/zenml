@@ -64,7 +64,7 @@ from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
 )
-from sqlalchemy.orm import Mapped, noload, selectinload
+from sqlalchemy.orm import Mapped, load_only, noload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
 from sqlmodel import Session as SqlModelSession
@@ -8830,8 +8830,13 @@ class SqlZenStore(BaseZenStore):
             ValueError: If trying to create a step run with a retried status.
             EntityExistsError: if the step run already exists.
         """
-        if step_run.status == ExecutionStatus.RETRIED:
-            raise ValueError("Retried status can not be set manually.")
+        if step_run.status in {
+            ExecutionStatus.RETRIED,
+            ExecutionStatus.RETRYING,
+        }:
+            raise ValueError(
+                "Retrying/retried status can not be set manually."
+            )
 
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
@@ -8850,30 +8855,72 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
+            step_config = run.get_step_configuration(step_name=step_run.name)
+
             # Release the read locks of the previous two queries before we
             # try to acquire more exclusive locks
             session.commit()
 
-            # Update all existing step runs
-            session.exec(
-                update(StepRunSchema)
+            # TODO: Maybe we need to lock the pipeline run here, to avoid race conditions?
+            existing_step_runs = session.exec(
+                select(StepRunSchema)
+                .with_for_update()
+                .options(load_only(jl_arg(StepRunSchema.status)))
                 .where(
                     col(StepRunSchema.pipeline_run_id)
                     == step_run.pipeline_run_id
                 )
                 .where(col(StepRunSchema.name) == step_run.name)
-                .values(status=ExecutionStatus.RETRIED, active=None)
-            )
+            ).all()
+
+            if any(
+                ExecutionStatus(sr.status).is_successful
+                for sr in existing_step_runs
+            ):
+                # This step already completed successfully
+                raise EntityExistsError(
+                    f"Unable to create step `{step_run.name}`: A successful "
+                    f"step with this name already exists in the pipeline run "
+                    f"with ID '{step_run.pipeline_run_id}'."
+                )
+
+            retry_config = step_config.config.retry
+            max_retries = retry_config.max_retries if retry_config else 0
+
+            if len(existing_step_runs) >= max_retries:
+                raise EntityExistsError(
+                    f"Unable to create step `{step_run.name}`: The step has "
+                    f"exceeded the maximum number of retries."
+                )
+
+            if existing_step_runs:
+                # Update all existing step runs to retried.
+                # TODO: Once we have the health check, this should probably also
+                # cancel the existing step runs in case they're still running?
+                session.exec(
+                    update(StepRunSchema)
+                    .where(
+                        StepRunSchema.id.in_(
+                            [sr.id for sr in existing_step_runs]
+                        )
+                    )
+                    .values(status=ExecutionStatus.RETRIED, active=None)
+                )
+
             step_schema = StepRunSchema.from_request(
                 step_run, deployment_id=run.deployment_id
             )
+            step_schema.retry_count = len(existing_step_runs)
+            # TODO: This isn't actually guaranteed to be correct, how
+            # do we handle these cases? E.g. if the step on kubernetes
+            # is retried during startup, it will not actually create X
+            # step runs. Or if it doesn't reach the point in code where
+            # the step run is created.
+            step_schema.is_retriable = len(existing_step_runs) < max_retries
             session.add(step_schema)
             try:
                 session.commit()
             except IntegrityError:
-                # We have to rollback the failed session first in order
-                # to continue using it
-                session.rollback()
                 raise EntityExistsError(
                     f"Unable to create step `{step_run.name}`: A step with "
                     f"this name already exists in the pipeline run with ID "
@@ -8966,9 +9013,8 @@ class SqlZenStore(BaseZenStore):
                     )
 
             session.commit()
-            step_model = step_schema.to_model(include_metadata=True)
 
-            for upstream_step in step_model.spec.upstream_steps:
+            for upstream_step in step_config.spec.upstream_steps:
                 self._set_run_step_parent_step(
                     child_step_run=step_schema,
                     parent_step_name=upstream_step,
@@ -8996,8 +9042,8 @@ class SqlZenStore(BaseZenStore):
                         # are defined in the step config.
                         input_type = self._get_step_run_input_type_from_config(
                             input_name=input_name,
-                            step_config=step_model.config,
-                            step_spec=step_model.spec,
+                            step_config=step_config.config,
+                            step_spec=step_config.spec,
                         )
                     self._set_run_step_input_artifact(
                         step_run=step_schema,
@@ -9137,8 +9183,13 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The updated step run.
         """
-        if step_run_update.status == ExecutionStatus.RETRIED:
-            raise ValueError("Retried status can not be set manually.")
+        if step_run_update.status in {
+            ExecutionStatus.RETRYING,
+            ExecutionStatus.RETRIED,
+        }:
+            raise ValueError(
+                "Retrying/retried status can not be set manually."
+            )
 
         with Session(self.engine) as session:
             # Check if the step exists
@@ -9148,28 +9199,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            retry_config = (
-                existing_step_run.get_step_configuration().config.retry
-            )
-            retry_count = retry_config.max_retries if retry_config else 0
-
             if (
-                step_run_update.status == ExecutionStatus.FAILED
-                and retry_count > 0
+                existing_step_run.is_retriable
+                and step_run_update.status == ExecutionStatus.FAILED
             ):
-                step_count = session.scalar(
-                    select(func.count(StepRunSchema.id))
-                    .where(
-                        col(StepRunSchema.pipeline_run_id)
-                        == existing_step_run.pipeline_run_id
-                    )
-                    .where(col(StepRunSchema.name) == existing_step_run.name)
-                )
-
-                if step_count <= retry_count:
-                    # This step will be retried by the orchestrator, so we
-                    # set its status accordingly.
-                    step_run_update.status = ExecutionStatus.RETRYING
+                # This step will be retried by the orchestrator, so we
+                # set its status accordingly.
+                step_run_update.status = ExecutionStatus.RETRYING
 
             # Update the step
             existing_step_run.update(step_run_update)

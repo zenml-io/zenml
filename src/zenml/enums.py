@@ -95,6 +95,15 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.RETRIED,
         }
 
+    @property
+    def is_successful(self) -> bool:
+        """Whether the execution status refers to a successful execution.
+
+        Returns:
+            Whether the execution status refers to a successful execution.
+        """
+        return self in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
+
 
 class LoggingLevels(Enum):
     """Enum for logging levels."""
