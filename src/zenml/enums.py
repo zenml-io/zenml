@@ -71,7 +71,7 @@ class ZenMLServiceType(StrEnum):
 
 
 class ExecutionStatus(StrEnum):
-    """Enum that represents the current status of a step or pipeline run."""
+    """Enum that represents the execution status of a step or pipeline run."""
 
     INITIALIZING = "initializing"
     FAILED = "failed"
@@ -80,19 +80,22 @@ class ExecutionStatus(StrEnum):
     CACHED = "cached"
     RETRYING = "retrying"
     RETRIED = "retried"
+    STOPPED = "stopped"
+    STOPPING = "stopping"
 
     @property
     def is_finished(self) -> bool:
-        """Whether the execution status refers to a finished execution.
+        """Returns whether the execution status is in a finished state.
 
         Returns:
-            Whether the execution status refers to a finished execution.
+            Whether the execution status is finished.
         """
         return self in {
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
             ExecutionStatus.RETRIED,
+            ExecutionStatus.STOPPED,
         }
 
     @property

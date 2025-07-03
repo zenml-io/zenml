@@ -165,7 +165,20 @@ This method has some advantages over the implicit authentication method:
 * you don't need to care about enabling your other stack components (orchestrators, step operators and model deployers) to have access to the artifact store through GCP Service Accounts and Workload Identity
 * you can combine the GCS artifact store with other stack components that are not running in GCP
 
-For this method, you need to [create a user-managed GCP service account](https://cloud.google.com/iam/docs/service-accounts-create), grant it privileges to read and write to your GCS bucket (i.e. use the `Storage Object Admin` role) and then [create a service account key](https://cloud.google.com/iam/docs/keys-create-delete#creating).
+For this method, you need to [create a user-managed GCP service account](https://cloud.google.com/iam/docs/service-accounts-create), grant it minimal privileges to read and write to your GCS bucket, and then [create a service account key](https://cloud.google.com/iam/docs/keys-create-delete#creating).
+
+{% hint style="info" %}
+**Security Best Practice:** Instead of using the broad `Storage Object Admin` role, create a custom role with only the specific permissions needed:
+- `storage.buckets.get`
+- `storage.buckets.list` 
+- `storage.objects.create`
+- `storage.objects.delete`
+- `storage.objects.get`
+- `storage.objects.list`
+- `storage.objects.update`
+
+Alternatively, you can use the `Storage Object Admin` role scoped to specific buckets rather than project-wide access.
+{% endhint %}
 
 With the service account key downloaded to a local file, you can register a ZenML secret and reference it in the GCS Artifact Store configuration as follows:
 
