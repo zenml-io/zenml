@@ -63,7 +63,7 @@ from zenml.models import (
     OAuthDeviceInternalResponse,
     OAuthDeviceInternalUpdate,
     OAuthTokenResponse,
-    ServiceAccountRequest,
+    ServiceAccountInternalRequest,
     ServiceAccountUpdate,
     UserAuthModel,
     UserRequest,
@@ -741,7 +741,10 @@ def authenticate_external_user(
         )
 
         # Try finding a user or service account with the same username.
-        # This is to handle migration of users from ZenML OSS to ZenML Cloud.
+        # This is to handle migration of users from ZenML OSS to ZenML Pro:
+        # if the server contains a user or service account with the same
+        # username as the ZenML Pro user/service account, we no longer throw
+        # an error, but instead we adopt the existing user/service account.
         if external_user.is_service_account:
             try:
                 service_account = store.get_service_account(
@@ -797,7 +800,7 @@ def authenticate_external_user(
         )
         if external_user.is_service_account:
             user = store.create_service_account(
-                service_account=ServiceAccountRequest(
+                service_account=ServiceAccountInternalRequest(
                     name=external_user.username,
                     external_user_id=external_user.id,
                     active=True,

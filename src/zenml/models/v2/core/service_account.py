@@ -52,12 +52,17 @@ class ServiceAccountRequest(BaseRequest):
         title="A description of the service account.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
+    active: bool = Field(title="Whether the service account is active or not.")
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")
+
+
+class ServiceAccountInternalRequest(ServiceAccountRequest):
+    """Internal request model for service accounts."""
+
     external_user_id: Optional[UUID] = Field(
         default=None,
         title="The external user ID associated with the account.",
     )
-    active: bool = Field(title="Whether the service account is active or not.")
-    model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
 # ------------------ Update Model ------------------
