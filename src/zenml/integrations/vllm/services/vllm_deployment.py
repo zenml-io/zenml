@@ -150,7 +150,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
 
         try:
             parser: argparse.ArgumentParser = make_arg_parser(
-                FlexibleArgumentParser()  # type: ignore[no-untyped-call]
+                FlexibleArgumentParser()
             )
             # pass in empty list to get default args
             # otherwise it will try to get the args from sys.argv

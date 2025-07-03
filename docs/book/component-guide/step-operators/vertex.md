@@ -16,7 +16,7 @@ You should use the Vertex step operator if:
 ### How to deploy it
 
 * Enable Vertex AI [here](https://console.cloud.google.com/vertex-ai).
-* Create a [service account](https://cloud.google.com/iam/docs/service-accounts) with the right permissions to create Vertex AI jobs (`roles/aiplatform.admin`) and push to the container registry (`roles/storage.admin`).
+* Create a [service account](https://cloud.google.com/iam/docs/service-accounts) with minimal required permissions instead of broad admin roles. See the [Required IAM Permissions](#required-iam-permissions) section below for specific permissions.
 
 ### How to use it
 
@@ -93,6 +93,54 @@ def trainer(...) -> ...:
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in Vertex AI. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
+{% endhint %}
+
+## Required IAM Permissions
+
+Instead of using the broad `roles/aiplatform.admin` and `roles/storage.admin` roles, follow the principle of least privilege by creating a custom role with only the required permissions:
+
+### Service Account Permissions
+
+Create a custom role with these specific permissions:
+
+**For Vertex AI Operations:**
+```
+aiplatform.customJobs.create
+aiplatform.customJobs.get
+aiplatform.customJobs.list
+aiplatform.customJobs.cancel
+aiplatform.jobs.get
+aiplatform.jobs.list
+```
+
+**For Container Registry Access:**
+```
+artifactregistry.repositories.uploadArtifacts
+artifactregistry.repositories.downloadArtifacts
+artifactregistry.repositories.get
+artifactregistry.repositories.list
+storage.objects.get
+storage.objects.create
+storage.buckets.get
+```
+
+**For Artifact Store Access (if using GCS):**
+```
+storage.objects.create
+storage.objects.delete
+storage.objects.get
+storage.objects.list
+storage.buckets.get
+```
+
+### Alternative: Use Predefined Roles with Scope
+
+If you prefer using predefined roles, use these more specific alternatives:
+- **Instead of `roles/aiplatform.admin`**: Use `roles/aiplatform.user` 
+- **Instead of `roles/storage.admin`**: Use `roles/storage.objectAdmin` scoped to specific buckets
+
+{% hint style="warning" %}
+**Security Best Practice:** The original `roles/aiplatform.admin` and `roles/storage.admin` roles grant excessive permissions that violate the principle of least privilege. The admin roles provide project-wide access that is unnecessary for step operator functionality.
 {% endhint %}
 
 #### Additional configuration

@@ -81,7 +81,9 @@ class AWSContainerRegistry(BaseContainerRegistry):
         """
         if self.connector:
             try:
-                model = Client().get_service_connector(self.connector)
+                model = Client().get_service_connector(
+                    self.connector, expand_secrets=True
+                )
                 connector = service_connector_registry.instantiate_connector(
                     model=model
                 )

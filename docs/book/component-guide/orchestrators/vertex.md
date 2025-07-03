@@ -132,6 +132,28 @@ The following GCP service accounts are needed:
    * the [Storage Object Creator Role](https://cloud.google.com/iam/docs/understanding-roles#storage.objectCreator) to be able to write the pipeline JSON file to the artifact store directly (NOTE: not needed if the Artifact Store is configured with credentials or is linked to Service Connector).
 2. a "workload" service account that has permissions to run a Vertex AI pipeline, (e.g. [the `Vertex AI Service Agent` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.serviceAgent)).
 
+{% hint style="info" %}
+**Alternative: Custom Roles for Maximum Security** 
+
+For even more granular control, you can create custom roles instead of using the predefined roles:
+
+**Client Service Account Custom Permissions:**
+- `aiplatform.pipelineJobs.create`
+- `aiplatform.pipelineJobs.get` 
+- `aiplatform.pipelineJobs.list`
+- `cloudfunctions.functions.create`
+- `storage.objects.create` (for artifact store access)
+
+**Workload Service Account Custom Permissions:**
+- `aiplatform.customJobs.create`
+- `aiplatform.customJobs.get`
+- `aiplatform.customJobs.list`
+- `storage.objects.get`
+- `storage.objects.create`
+
+This provides the absolute minimum permissions required for Vertex AI pipeline operations.
+{% endhint %}
+
 A key is also needed for the "client" service account. You can create a key for this service account and download it to your local machine (e.g. in a `connectors-vertex-ai-workload.json` file).
 
 With all the service accounts and the key ready, we can register [the GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) and Vertex AI orchestrator as follows:
