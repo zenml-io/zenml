@@ -233,17 +233,32 @@ class Flavor:
         """Generate SDK docs url for a flavor.
 
         Returns:
-            The complete url to the zenml SDK docs pointing to component configuration
+            The complete url to the zenml SDK docs pointing to component implementation
         """
         from zenml import __version__
 
         base = f"https://sdkdocs.zenml.io/{__version__}"
 
-        # Get the config class name to point to the specific config documentation
-        config_class_name = self.config_class.__name__
+        # Get the implementation class module and name
+        impl_class = self.implementation_class
+        module_name = impl_class.__module__
 
-        # Point to the specific config class documentation page
-        return f"{base}/component_configs/{config_class_name}.html"
+        # Convert module path to docs URL format
+        # e.g., zenml.orchestrators.local.local_orchestrator -> core_code_docs/core-orchestrators
+        if module_name.startswith("zenml.integrations."):
+            # For integrations: zenml.integrations.kubernetes -> integrations-kubernetes
+            integration_name = module_name.split(".")[2]
+            docs_path = (
+                f"integration_code_docs/integrations-{integration_name}.html"
+            )
+            anchor = f"#zenml.integrations.{integration_name}-modules"
+        else:
+            # For core components: zenml.orchestrators -> core-orchestrators
+            component_type = module_name.split(".")[1]
+            docs_path = f"core_code_docs/core-{component_type}"
+            anchor = f"#{module_name}"
+
+        return f"{base}/{docs_path}{anchor}"
 
 
 def validate_flavor_source(

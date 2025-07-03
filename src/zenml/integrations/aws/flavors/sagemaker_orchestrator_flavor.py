@@ -106,31 +106,39 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
     synchronous: bool = Field(
         True,
-        description="If `True`, the client running a pipeline using this "
-        "orchestrator waits until all steps finish running. If `False`, "
-        "the client returns immediately and the pipeline is executed "
-        "asynchronously.",
+        description="Controls whether pipeline execution blocks the client. If True, "
+        "the client waits until all steps complete before returning. If False, "
+        "returns immediately and executes asynchronously. Useful for long-running "
+        "production pipelines where you don't want to maintain a connection",
     )
 
     instance_type: Optional[str] = Field(
         None,
-        description="The instance type to use for the processing job. "
-        "If not provided, defaults to ml.m5.xlarge for training steps "
-        "or ml.t3.medium for processing steps. Examples: ml.t3.medium, "
-        "ml.m5.xlarge, ml.p3.2xlarge.",
+        description="AWS EC2 instance type for step execution. Must be a valid "
+        "SageMaker-supported instance type. Examples: 'ml.t3.medium' (2 vCPU, 4GB RAM), "
+        "'ml.m5.xlarge' (4 vCPU, 16GB RAM), 'ml.p3.2xlarge' (8 vCPU, 61GB RAM, 1 GPU). "
+        "Defaults to ml.m5.xlarge for training steps or ml.t3.medium for processing steps",
     )
     execution_role: Optional[str] = Field(
         None,
-        description="The IAM role to use for the step execution. Example: "
-        "'arn:aws:iam::123456789012:role/SageMakerExecutionRole'",
+        description="IAM role ARN for SageMaker step execution permissions. Must have "
+        "necessary policies attached (SageMakerFullAccess, S3 access, etc.). "
+        "Example: 'arn:aws:iam::123456789012:role/SageMakerExecutionRole'. "
+        "If not provided, uses the default SageMaker execution role",
     )
     volume_size_in_gb: int = Field(
         30,
-        description="The size of the EBS volume to use for the processing job.",
+        description="EBS volume size in GB for step execution storage. Must be between "
+        "1-16384 GB. Used for temporary files, model artifacts, and data processing. "
+        "Larger volumes needed for big datasets or model training. Example: 30 for "
+        "small jobs, 100+ for large ML training jobs",
     )
     max_runtime_in_seconds: int = Field(
         86400,  # 24 hours
-        description="The maximum runtime in seconds for the processing job.",
+        description="Maximum execution time in seconds before job termination. Must be "
+        "between 1-432000 seconds (5 days). Used to prevent runaway jobs and control costs. "
+        "Examples: 3600 (1 hour), 86400 (24 hours), 259200 (3 days). "
+        "Consider your longest expected step duration",
     )
     tags: Dict[str, str] = Field(
         default_factory=dict,

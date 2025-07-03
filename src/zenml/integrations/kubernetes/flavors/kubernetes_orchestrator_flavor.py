@@ -110,7 +110,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     )
     pod_stop_grace_period: PositiveInt = Field(
         default=30,
-        description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully."
+        description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
     )
 
 

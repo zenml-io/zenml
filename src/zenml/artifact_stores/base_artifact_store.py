@@ -176,8 +176,10 @@ class BaseArtifactStoreConfig(StackComponentConfig):
     """
 
     path: str = Field(
-        description="Root path for artifact storage. Must be supported by the specific "
-        "artifact store implementation (e.g., 's3://bucket', '/local/path', 'gs://bucket')."
+        description="Root path for artifact storage. Must be a valid URI supported by the "
+        "specific artifact store implementation. Examples: 's3://my-bucket/artifacts', "
+        "'/local/storage/path', 'gs://bucket-name/zenml-artifacts', 'azure://container/path'. "
+        "Path must be accessible with the configured credentials and permissions"
     )
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
