@@ -210,6 +210,8 @@ Identify and maintain a set of representative pipelines for testing:
   - Delete outdated run templates
   - Rebuild templates using the upgraded ZenML version
   - Execute each run template in the staging environment to verify it completes successfully
+  - Rebuild all custom parent images that you need within your ZenML pipelines
+ 
 
 **Code example for recreating run templates:**
 
