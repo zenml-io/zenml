@@ -510,7 +510,7 @@ def connect_to_pro_server(
     # ZenML Pro workspace object.
     credentials_store.update_server_info(server.url, server)
 
-    cli_utils.success(f"Connected to ZenML Pro server: {server.name}.")
+    cli_utils.success(f"✔ Connected to ZenML Pro server: {server.name}.")
 
 
 def is_pro_server(

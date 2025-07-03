@@ -109,13 +109,15 @@ def register_project(
                 description="",
                 display_name=display_name,
             )
-            cli_utils.success("Project created successfully.")
+            cli_utils.success("✔ Project created successfully.")
         except Exception as e:
             cli_utils.error(str(e))
 
     if set_project:
         client.set_active_project(project_name)
-        cli_utils.success(f"The active project has been set to {project_name}")
+        cli_utils.success(
+            f"✔ The active project has been set to {project_name}"
+        )
 
     if set_default:
         client.update_user(
@@ -123,7 +125,7 @@ def register_project(
             updated_default_project_id=project.id,
         )
         cli_utils.success(
-            f"The default project has been set to {project.name}"
+            f"✔ The default project has been set to {project.name}"
         )
 
 
@@ -148,7 +150,7 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
         try:
             project = client.set_active_project(project_name_or_id)
             cli_utils.success(
-                f"The active project has been set to {project_name_or_id}"
+                f"✔ The active project has been set to {project_name_or_id}"
             )
         except Exception as e:
             cli_utils.error(str(e))

@@ -208,9 +208,9 @@ def web_login(
             # The user has authorized the device, so we can extract the access token
             token_response = OAuthTokenResponse(**response.json())
             if zenml_pro:
-                cli_utils.success("Successfully logged in to ZenML Pro.")
+                cli_utils.success("✔ Successfully logged in to ZenML Pro.")
             else:
-                cli_utils.success(f"Successfully logged in to {url}.")
+                cli_utils.success(f"✔ Successfully logged in to {url}.")
             break
         elif response.status_code == 400:
             try:
