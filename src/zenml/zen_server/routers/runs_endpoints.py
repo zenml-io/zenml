@@ -453,7 +453,7 @@ def run_logs(
         Logs for the specified source.
 
     Raises:
-        HTTPException: If no logs are found for the specified source.
+        KeyError: If no logs are found for the specified source.
     """
     store = zen_store()
 

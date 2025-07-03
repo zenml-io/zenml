@@ -16,7 +16,7 @@
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -46,7 +46,7 @@ class LogsSchema(BaseSchema, table=True):
 
     # Fields
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
-    source: str = Field(sa_column=Column(TEXT, nullable=False))
+    source: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
 
     # Foreign Keys
     pipeline_run_id: Optional[UUID] = build_foreign_key_field(

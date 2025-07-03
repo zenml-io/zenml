@@ -7,7 +7,6 @@ Create Date: 2025-06-30 18:18:24.539265
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -22,9 +21,7 @@ def upgrade() -> None:
     # Add the source column as nullable first
     with op.batch_alter_table("logs", schema=None) as batch_op:
         batch_op.add_column(
-            sa.Column(
-                "source", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-            )
+            sa.Column("source", sa.VARCHAR(255), nullable=True)
         )
 
     # Populate the source field based on existing data
@@ -52,7 +49,7 @@ def upgrade() -> None:
     with op.batch_alter_table("logs", schema=None) as batch_op:
         batch_op.alter_column(
             "source",
-            existing_type=sqlmodel.sql.sqltypes.AutoString(),
+            existing_type=sa.VARCHAR(255),
             nullable=False,
         )
         # Add unique constraint: source is unique for each combination of pipeline_run_id and step_run_id
