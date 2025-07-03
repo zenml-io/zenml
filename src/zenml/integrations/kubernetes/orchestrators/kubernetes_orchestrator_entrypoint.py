@@ -258,21 +258,35 @@ def main() -> None:
         retry_config = step_config.retry
         backoff_limit = retry_config.max_retries if retry_config else 0
 
+        # This is to fix a bug in the kubernetes client which has some wrong
+        # client-side validations that means the `on_exit_codes` field is
+        # unusable. See https://github.com/kubernetes-client/python/issues/2056
+        class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):
+            @property
+            def on_pod_conditions(self):
+                return self._on_pod_conditions
+
+            @on_pod_conditions.setter
+            def on_pod_conditions(self, on_pod_conditions):
+                self._on_pod_conditions = on_pod_conditions
+
+        k8s_client.V1PodFailurePolicyRule = PatchedFailurePolicyRule
+        k8s_client.models.V1PodFailurePolicyRule = PatchedFailurePolicyRule
+
         pod_failure_policy = settings.pod_failure_policy or {
+            # These rules are applied sequentially. This means any failure in
+            # the main container will count towards the max retries. Any other
+            # disruption will not count towards the max retries.
             "rules": [
-                # If the pod is interrupted while running, we count it towards
-                # the max retries.
+                # If the main container fails, we count it towards the max
+                # retries.
                 {
                     "action": "Count",
-                    "onPodConditions": [
-                        {
-                            "type": "DisruptionTarget",
-                        },
-                        {
-                            "type": "Ready",
-                            "status": "True",
-                        },
-                    ],
+                    "onExitCodes": {
+                        "containerName": "main",
+                        "operator": "NotIn",
+                        "values": [0],
+                    },
                 },
                 # If the pod is interrupted at any other time, we don't count
                 # it as a retry
