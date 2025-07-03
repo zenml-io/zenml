@@ -34,12 +34,7 @@ class LogsRequest(BaseRequest):
     """Request model for logs."""
 
     uri: str = Field(title="The uri of the logs file")
-
-    source: Optional[str] = Field(
-        title="The source of the logs file",
-        default=None,
-    )
-
+    source: str = Field(title="The source of the logs file")
     artifact_store_id: UUID = Field(
         title="The artifact store ID to associate the logs with.",
     )
@@ -80,7 +75,7 @@ class LogsResponseBody(BaseDatedResponseBody):
         title="The uri of the logs file",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    source: Optional[str] = Field(
+    source: str = Field(
         title="The source of the logs file",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
@@ -136,7 +131,7 @@ class LogsResponse(
         return self.get_body().uri
 
     @property
-    def source(self) -> Optional[str]:
+    def source(self) -> str:
         """The `source` property.
 
         Returns:

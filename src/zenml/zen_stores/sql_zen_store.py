@@ -8913,7 +8913,7 @@ class SqlZenStore(BaseZenStore):
 
                 log_entry = LogsSchema(
                     uri=step_run.logs.uri,
-                    source=getattr(step_run.logs, "source", "step"),
+                    source=step_run.logs.source,
                     step_run_id=step_schema.id,
                     artifact_store_id=step_run.logs.artifact_store_id,
                 )

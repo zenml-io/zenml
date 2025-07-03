@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -436,21 +436,24 @@ def stop_run(
 @async_fastapi_endpoint_wrapper
 def run_logs(
     run_id: UUID,
-    source: Optional[str] = None,
+    source: str,
     offset: int = 0,
     length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
-) -> List[Tuple[str, str]]:
-    """Get pipeline run logs.
+) -> str:
+    """Get pipeline run logs for a specific source.
 
     Args:
         run_id: ID of the pipeline run.
-        source: Optional source to filter logs.
+        source: Required source to get logs for.
         offset: The offset from which to start reading.
         length: The amount of bytes that should be read.
 
     Returns:
-        The pipeline run logs.
+        Logs for the specified source.
+
+    Raises:
+        HTTPException: If no logs are found for the specified source.
     """
     store = zen_store()
 
@@ -460,30 +463,26 @@ def run_logs(
         hydrate=True,
     )
 
-    logs = []
-    if run.deployment_id:
+    # Handle runner logs from workload manager
+    if run.deployment_id and source == "runner":
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
-            if source is None or source == "runner":
-                workload_logs = workload_manager().get_logs(
-                    workload_id=deployment.id
-                )
-                logs.append(("runner", workload_logs))
+            workload_logs = workload_manager().get_logs(
+                workload_id=deployment.id
+            )
+            return workload_logs
 
+    # Handle logs from log collection
     if run.log_collection:
         for log_entry in run.log_collection:
-            if source is None or log_entry.source == source:
-                logs.append(
-                    (
-                        log_entry.source or "",
-                        fetch_logs(
-                            zen_store=store,
-                            artifact_store_id=log_entry.artifact_store_id,
-                            logs_uri=log_entry.uri,
-                            offset=offset,
-                            length=length,
-                        ),
-                    )
+            if log_entry.source == source:
+                return fetch_logs(
+                    zen_store=store,
+                    artifact_store_id=log_entry.artifact_store_id,
+                    logs_uri=log_entry.uri,
+                    offset=offset,
+                    length=length,
                 )
 
-    return logs
+    # If no logs found for the specified source, raise an error
+    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
