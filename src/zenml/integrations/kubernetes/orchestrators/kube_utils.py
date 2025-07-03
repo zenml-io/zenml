@@ -643,7 +643,8 @@ def wait_for_job_to_finish(
                     return
                 if condition.type == "Failed" and condition.status == "True":
                     raise RuntimeError(
-                        f"Job `{namespace}:{job_name}` failed: {condition.message}"
+                        f"Job `{namespace}:{job_name}` failed: "
+                        f"{condition.message}"
                     )
 
         if stream_logs:
