@@ -51,21 +51,49 @@ Select it, and you will start the process of creating an AzureML workspace. As y
 
 ![Azure Role Assignments](../../.gitbook/assets/azure_6.png)
 
-## 3. Create the required role assignments
+## 3. Create the required role assignments with least privilege
 
-Now, that you have your app registration and the resources, you have to create the corresponding role assignments. In order to do this, go to your resource group, open up `Access control (IAM)` on the left side and `+Add` a new role assignment.
+Now, that you have your app registration and the resources, you have to create the corresponding role assignments following the principle of least privilege. In order to do this, go to your resource group, open up `Access control (IAM)` on the left side and `+Add` a new role assignment.
 
 ![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-1.png)
 
-In the role assignment page, search for AzureML, which will show you a list of roles defined with the scope of AzureML workspaces.
+### Required Role Assignments for ZenML Components
+
+**For AzureML Orchestrator:**
+- **`AzureML Data Scientist`** - Allows creating and managing AzureML jobs and experiments
+- **`AzureML Compute Operator`** - Allows managing compute resources (instances, clusters)
+
+**For Azure Blob Storage Artifact Store:**
+- **`Storage Blob Data Contributor`** - Allows read/write access to blob storage containers
+- **`Reader and Data Access`** - Required for listing containers (if needed)
+
+**For Azure Container Registry:**
+- **`AcrPush`** - Allows pushing container images
+- **`AcrPull`** - Allows pulling container images
+- **`Contributor`** (scoped to ACR only) - Allows listing registries for discovery
+
+### Assign the Roles
+
+In the role assignment page, search for the specific roles mentioned above:
 
 ![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-2.png)
 
-One by one, you have to select `AzureML Compute Operator`, `AzureML Data Scientist`, and `AzureML Registry User` and click `Next`.
+**Step 1:** Assign AzureML roles
+One by one, select `AzureML Data Scientist` and `AzureML Compute Operator` and click `Next`.
+
+**Step 2:** Assign Storage roles
+Assign `Storage Blob Data Contributor` role to your service principal.
+
+**Step 3:** Assign Container Registry roles
+Assign `AcrPush`, `AcrPull`, and `Contributor` (scoped to ACR resource) roles to your service principal.
 
 ![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-3.png)
 
-Finally, click `+Select Members`, search for your registered app by its ID, and assign the role accordingly.
+Finally, click `+Select Members`, search for your registered app by its ID, and assign each role accordingly.
+
+{% hint style="info" %}
+**Security Best Practice:** These role assignments provide the minimum permissions required for ZenML operations. Avoid using broader roles like `Contributor` or `Owner` at the resource group level, as they grant unnecessary permissions.
+{% endhint %}
 
 ## 4. Create a service connector
 
@@ -166,10 +194,28 @@ Save this code to run.py and execute it. The pipeline will use Azure Blob Storag
 python run.py
 ```
 
-Now that you have a functional Azure stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
+Now that you have a functional Azure stack set up with ZenML using least privilege permissions, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
 
 * Dive deeper into ZenML's [production guide](https://docs.zenml.io/user-guides/production-guide) to learn best practices for deploying and managing production-ready pipelines.
 * Explore ZenML's [integrations](https://docs.zenml.io/stacks) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
+
+## Best Practices for Using an Azure Stack with ZenML
+
+### Security and Least Privilege
+
+The guide above implements security best practices by:
+
+- **Using specific Azure roles** instead of broad permissions like `Owner` or `Contributor`
+- **Scoping permissions to resources** rather than subscription-wide access
+- **Separating concerns** with different roles for different components (storage, compute, registry)
+- **Following Azure's principle of least privilege** for service principal authentication
+
+### Regular Security Maintenance
+
+- **Rotate service principal credentials** regularly using Azure Key Vault
+- **Review role assignments** periodically to ensure they remain necessary
+- **Use Azure Security Center** to monitor for security recommendations
+- **Enable Azure AD Conditional Access** for additional security layers when appropriate
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

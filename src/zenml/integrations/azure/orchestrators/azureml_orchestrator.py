@@ -515,14 +515,16 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.INITIALIZING
         elif status in ["Running", "Finalizing"]:
             return ExecutionStatus.RUNNING
+        elif status == "CancelRequested":
+            return ExecutionStatus.STOPPING
+        elif status == "Canceled":
+            return ExecutionStatus.STOPPED
         elif status in [
-            "CancelRequested",
             "Failed",
-            "Canceled",
             "NotResponding",
         ]:
             return ExecutionStatus.FAILED
-        elif status in ["Completed"]:
+        elif status == "Completed":
             return ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline job.")

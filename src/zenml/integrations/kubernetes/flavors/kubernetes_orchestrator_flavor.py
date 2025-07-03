@@ -71,6 +71,8 @@ class KubernetesOrchestratorSettings(BaseSettings):
             not try to compute cached steps before starting the step pods.
         always_build_pipeline_image: If `True`, the orchestrator will always
             build the pipeline image, even if all steps have a custom build.
+        pod_stop_grace_period: When stopping a pipeline run, the amount of
+            seconds to wait for a step pod to shutdown gracefully.
     """
 
     synchronous: bool = True
@@ -91,6 +93,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     ttl_seconds_after_finished: Optional[NonNegativeInt] = None
     prevent_orchestrator_pod_caching: bool = False
     always_build_pipeline_image: bool = False
+    pod_stop_grace_period: PositiveInt = 30
 
 
 class KubernetesOrchestratorConfig(

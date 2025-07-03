@@ -65,18 +65,118 @@ aws iam create-role --role-name zenml-role --assume-role-policy-document file://
 
 Be sure to take note of the information that is output to the terminal, as you will need it in the next steps, especially the Role ARN.
 
-3. Attach policies to the role:
+3. Create and attach least-privilege policies to the role:
 
-Attach the following policies to the role to grant access to the necessary AWS services:
+Instead of using broad managed policies, create custom policies that follow the principle of least privilege. First, create the necessary policy documents:
 
-* `AmazonS3FullAccess`
-* `AmazonEC2ContainerRegistryFullAccess`
-* `AmazonSageMakerFullAccess`
+**Create S3 policy document (`s3-policy.json`):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:GetBucketVersioning",
+        "s3:ListBucketVersions",
+        "s3:DeleteObjectVersion"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-bucket-name",
+        "arn:aws:s3:::your-bucket-name/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+**Create ECR policy document (`ecr-policy.json`):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchGetImage",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:GetAuthorizationToken",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage",
+        "ecr:DescribeRepositories",
+        "ecr:ListRepositories",
+        "ecr:DescribeImages"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+**Create SageMaker policy document (`sagemaker-policy.json`):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:CreatePipeline",
+        "sagemaker:StartPipelineExecution",
+        "sagemaker:StopPipelineExecution",
+        "sagemaker:DescribePipeline",
+        "sagemaker:DescribePipelineExecution",
+        "sagemaker:ListPipelineExecutions",
+        "sagemaker:ListPipelineExecutionSteps",
+        "sagemaker:UpdatePipeline",
+        "sagemaker:DeletePipeline",
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:DescribeProcessingJob",
+        "sagemaker:StopProcessingJob",
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:DescribeTrainingJob",
+        "sagemaker:StopTrainingJob"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::<YOUR_ACCOUNT_ID>:role/zenml-role",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "sagemaker.amazonaws.com"
+        }
+      }
+    }
+  ]
+}
+```
+
+Replace `<YOUR_ACCOUNT_ID>` and `your-bucket-name` with your actual values, then create and attach the policies:
 
 ```shell
-aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
-aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
-aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+# Create the custom policies
+aws iam create-policy --policy-name ZenML-S3-Policy --policy-document file://s3-policy.json
+aws iam create-policy --policy-name ZenML-ECR-Policy --policy-document file://ecr-policy.json
+aws iam create-policy --policy-name ZenML-SageMaker-Policy --policy-document file://sagemaker-policy.json
+
+# Attach the custom policies to the role
+aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-S3-Policy
+aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-ECR-Policy
+aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-SageMaker-Policy
 ```
 
 4. If you have not already, install the AWS and S3 ZenML integrations:
@@ -246,10 +346,15 @@ aws sagemaker delete-domain --domain-id <DOMAIN_ID>
 # delete the ECR repository
 aws ecr delete-repository --repository-name zenml-repository --force
 
-# detach policies from the IAM role
-aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
-aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
-aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+# detach custom policies from the IAM role
+aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-S3-Policy
+aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-ECR-Policy
+aws iam detach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-SageMaker-Policy
+
+# delete the custom policies
+aws iam delete-policy --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-S3-Policy
+aws iam delete-policy --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-ECR-Policy
+aws iam delete-policy --policy-arn arn:aws:iam::<YOUR_ACCOUNT_ID>:policy/ZenML-SageMaker-Policy
 
 # delete the IAM role
 aws iam delete-role --role-name zenml-role
@@ -293,7 +398,14 @@ When working with an AWS stack in ZenML, consider the following best practices t
 
 ### Use IAM Roles and Least Privilege Principle
 
-Always adhere to the principle of least privilege when setting up IAM roles. Only grant the minimum permissions necessary for your ZenML pipelines to function. Regularly review and audit your [IAM roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) to ensure they remain appropriate and secure.
+Always adhere to the principle of least privilege when setting up IAM roles. The guide above provides specific custom IAM policies with minimal required permissions instead of broad managed policies. This approach significantly reduces security risks by:
+
+- Limiting S3 access to only your specific bucket
+- Restricting SageMaker permissions to pipeline operations only
+- Scoping ECR access to container operations only
+- Including proper IAM PassRole conditions
+
+Regularly review and audit your [IAM roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) to ensure they remain appropriate and secure. Consider using AWS CloudTrail to monitor which permissions are actually being used and remove any unnecessary ones.
 
 ### Leverage AWS Resource Tagging
 
