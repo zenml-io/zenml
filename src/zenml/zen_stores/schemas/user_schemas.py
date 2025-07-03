@@ -14,13 +14,14 @@
 """SQLModel implementation of user tables."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
+    ServiceAccountInternalRequest,
     ServiceAccountRequest,
     ServiceAccountResponse,
     ServiceAccountResponseBody,
@@ -199,13 +200,13 @@ class UserSchema(NamedSchema, table=True):
 
     @classmethod
     def from_service_account_request(
-        cls, model: ServiceAccountRequest
+        cls, model: Union[ServiceAccountRequest, ServiceAccountInternalRequest]
     ) -> "UserSchema":
         """Create a `UserSchema` from a Service Account request.
 
         Args:
-            model: The `ServiceAccountRequest` from which to create the
-                schema.
+            model: The `ServiceAccountRequest` or `ServiceAccountInternalRequest`
+                from which to create the schema.
 
         Returns:
             The created `UserSchema`.
@@ -213,7 +214,9 @@ class UserSchema(NamedSchema, table=True):
         return cls(
             name=model.name,
             description=model.description or "",
-            external_user_id=model.external_user_id,
+            external_user_id=model.external_user_id
+            if isinstance(model, ServiceAccountInternalRequest)
+            else None,
             active=model.active,
             is_service_account=True,
             email_opted_in=False,
