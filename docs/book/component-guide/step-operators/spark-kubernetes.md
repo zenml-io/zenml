@@ -187,7 +187,50 @@ The following guide will walk you through how to spin up and configure a [Amazon
 * Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/service_IAM_role.html#create-service-role) to create an Amazon EKS cluster role.
 * Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/create-node-role.html#create-worker-node-role) to create an Amazon EC2 node role.
 * Go to the [IAM website](https://console.aws.amazon.com/iam), and select `Roles` to edit both roles.
-* Attach the `AmazonRDSFullAccess` and `AmazonS3FullAccess` policies to both roles.
+* Instead of using broad managed policies, create custom policies with least privilege permissions:
+
+**For S3 Access (if needed for Spark jobs):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-spark-bucket",
+        "arn:aws:s3:::your-spark-bucket/*"
+      ]
+    }
+  ]
+}
+```
+
+**For RDS Access (only if your Spark jobs access RDS):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBClusters"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+{% hint style="warning" %}
+**Security Best Practice:** Only attach the policies your Spark jobs actually need. The original `AmazonRDSFullAccess` and `AmazonS3FullAccess` policies grant excessive permissions that violate the principle of least privilege. Most Spark workloads only need specific S3 bucket access and rarely need RDS permissions.
+{% endhint %}
 * Go to the [EKS website](https://console.aws.amazon.com/eks).
 * Make sure the correct region is selected on the top right.
 * Click on `Add cluster` and select `Create`.
