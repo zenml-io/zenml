@@ -238,10 +238,10 @@ class Flavor:
         from zenml import __version__
 
         base = f"https://sdkdocs.zenml.io/{__version__}"
-        
+
         # Get the config class name to point to the specific config documentation
         config_class_name = self.config_class.__name__
-        
+
         # Point to the specific config class documentation page
         return f"{base}/component_configs/{config_class_name}.html"
 

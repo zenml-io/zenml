@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import Field
+
 from zenml.integrations.mlflow import MLFLOW_MODEL_DEPLOYER_FLAVOR
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
 
 class MLFlowModelDeployerConfig(BaseModelDeployerConfig):
     """Configuration for the MLflow model deployer.
-    
+
     Configuration for local MLflow model serving.
     Field descriptions are defined inline using Field() descriptors.
     """
@@ -36,7 +37,7 @@ class MLFlowModelDeployerConfig(BaseModelDeployerConfig):
     service_path: str = Field(
         default="",
         description="Local directory for MLflow deployment service files "
-        "(configuration, PID, and logs). Uses temp directory if empty."
+        "(configuration, PID, and logs). Uses temp directory if empty.",
     )
 
     @property

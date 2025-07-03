@@ -68,58 +68,58 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
 
     kubernetes_context: str = Field(
         ...,
-        description="The Kubernetes context in which to run the Kaniko pod."
+        description="The Kubernetes context in which to run the Kaniko pod.",
     )
     kubernetes_namespace: str = Field(
         "zenml-kaniko",
         description="The Kubernetes namespace in which to run the Kaniko pod. "
-        "This namespace will not be created and must already exist."
+        "This namespace will not be created and must already exist.",
     )
     executor_image: str = Field(
         DEFAULT_KANIKO_EXECUTOR_IMAGE,
-        description="The image of the Kaniko executor to use for building container images."
+        description="The image of the Kaniko executor to use for building container images.",
     )
     pod_running_timeout: PositiveInt = Field(
         DEFAULT_KANIKO_POD_RUNNING_TIMEOUT,
-        description="The timeout to wait until the pod is running in seconds."
+        description="The timeout to wait until the pod is running in seconds.",
     )
 
     env: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="Environment variables section of the Kubernetes container spec. "
-        "Used to configure secrets and environment variables for registry access."
+        "Used to configure secrets and environment variables for registry access.",
     )
     env_from: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="EnvFrom section of the Kubernetes container spec. "
-        "Used to load environment variables from ConfigMaps or Secrets."
+        "Used to load environment variables from ConfigMaps or Secrets.",
     )
     volume_mounts: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="VolumeMounts section of the Kubernetes container spec. "
-        "Used to mount volumes containing credentials or other data."
+        "Used to mount volumes containing credentials or other data.",
     )
     volumes: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="Volumes section of the Kubernetes pod spec. "
-        "Used to define volumes for credentials or other data."
+        "Used to define volumes for credentials or other data.",
     )
     service_account_name: Optional[str] = Field(
         None,
         description="Name of the Kubernetes service account to use for the Kaniko pod. "
-        "This service account should have the necessary permissions for building and pushing images."
+        "This service account should have the necessary permissions for building and pushing images.",
     )
 
     store_context_in_artifact_store: bool = Field(
         False,
         description="If `True`, the build context will be stored in the artifact store. "
-        "If `False`, the build context will be streamed over stdin of the kubectl process."
+        "If `False`, the build context will be streamed over stdin of the kubectl process.",
     )
 
     executor_args: List[str] = Field(
         default_factory=list,
         description="Additional arguments to forward to the Kaniko executor. "
-        "See Kaniko documentation for available flags, e.g. ['--compressed-caching=false']."
+        "See Kaniko documentation for available flags, e.g. ['--compressed-caching=false'].",
     )
 
 

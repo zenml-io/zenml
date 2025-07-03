@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Optional, Tuple, cast
 
 from pydantic import Field
+
 from zenml.logger import get_logger
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
@@ -28,19 +29,19 @@ logger = get_logger(__name__)
 
 class GoogleCredentialsConfigMixin(StackComponentConfig):
     """Config mixin for Google Cloud Platform credentials.
-    
+
     Provides common GCP authentication configuration for stack components.
     Field descriptions are defined inline using Field() descriptors.
     """
 
     project: Optional[str] = Field(
         default=None,
-        description="Google Cloud Project ID. Auto-detected from environment if not specified."
+        description="Google Cloud Project ID. Auto-detected from environment if not specified.",
     )
     service_account_path: Optional[str] = Field(
         default=None,
         description="Path to service account JSON key file for authentication. "
-        "Uses Application Default Credentials if not provided."
+        "Uses Application Default Credentials if not provided.",
     )
 
 

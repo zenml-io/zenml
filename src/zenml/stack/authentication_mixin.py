@@ -29,13 +29,13 @@ class AuthenticationConfigMixin(StackComponentConfig):
 
     Any stack component that implements `AuthenticationMixin` should have a
     config that inherits from this class.
-    
+
     Field descriptions are defined inline using Field() descriptors.
     """
 
     authentication_secret: Optional[str] = Field(
         default=None,
-        description="Name of the ZenML secret containing authentication credentials."
+        description="Name of the ZenML secret containing authentication credentials.",
     )
 
 

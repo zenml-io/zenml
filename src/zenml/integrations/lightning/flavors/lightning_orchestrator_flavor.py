@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, List, Optional, Type
 
 from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.lightning import LIGHTNING_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
@@ -33,7 +34,7 @@ logger = get_logger(__name__)
 
 class LightningOrchestratorSettings(BaseSettings):
     """Lightning orchestrator base settings.
-    
+
     Configuration for executing pipelines on Lightning AI platform.
     Field descriptions are defined inline using Field() descriptors.
     """
@@ -41,41 +42,39 @@ class LightningOrchestratorSettings(BaseSettings):
     # Lightning AI Platform Configuration
     main_studio_name: Optional[str] = Field(
         default=None,
-        description="Lightning AI studio instance name where the pipeline will execute."
+        description="Lightning AI studio instance name where the pipeline will execute.",
     )
     machine_type: Optional[str] = Field(
         default=None,
         description="Compute instance type for pipeline execution. "
-        "Refer to Lightning AI documentation for available options."
+        "Refer to Lightning AI documentation for available options.",
     )
     user_id: Optional[str] = SecretField(
-        default=None,
-        description="Lightning AI user ID for authentication."
+        default=None, description="Lightning AI user ID for authentication."
     )
     api_key: Optional[str] = SecretField(
         default=None,
-        description="Lightning AI API key for platform authentication."
+        description="Lightning AI API key for platform authentication.",
     )
     username: Optional[str] = Field(
-        default=None,
-        description="Lightning AI platform username."
+        default=None, description="Lightning AI platform username."
     )
     teamspace: Optional[str] = Field(
         default=None,
-        description="Lightning AI teamspace for collaborative pipeline execution."
+        description="Lightning AI teamspace for collaborative pipeline execution.",
     )
     organization: Optional[str] = Field(
         default=None,
-        description="Lightning AI organization name for enterprise accounts."
+        description="Lightning AI organization name for enterprise accounts.",
     )
     custom_commands: Optional[List[str]] = Field(
         default=None,
-        description="Additional shell commands to execute in the Lightning AI environment."
+        description="Additional shell commands to execute in the Lightning AI environment.",
     )
     synchronous: bool = Field(
         default=True,
         description="Whether to wait for pipeline completion. "
-        "When `False`, execution continues asynchronously after submission."
+        "When `False`, execution continues asynchronously after submission.",
     )
 
 

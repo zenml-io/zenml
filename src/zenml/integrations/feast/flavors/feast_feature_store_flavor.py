@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import Field
+
 from zenml.feature_stores.base_feature_store import (
     BaseFeatureStoreConfig,
     BaseFeatureStoreFlavor,
@@ -28,18 +29,17 @@ if TYPE_CHECKING:
 
 class FeastFeatureStoreConfig(BaseFeatureStoreConfig):
     """Config for Feast feature store.
-    
+
     Configuration for connecting to Feast feature stores.
     Field descriptions are defined inline using Field() descriptors.
     """
 
     online_host: str = Field(
         default="localhost",
-        description="Online feature store host address (typically Redis server)."
+        description="Online feature store host address (typically Redis server).",
     )
     online_port: int = Field(
-        default=6379,
-        description="Online feature store port number."
+        default=6379, description="Online feature store port number."
     )
     feast_repo: str = Field(
         description="Local filesystem path to the Feast repository with feature definitions."

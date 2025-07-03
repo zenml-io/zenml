@@ -63,30 +63,30 @@ class VertexOrchestratorSettings(BaseSettings):
 
     labels: Dict[str, str] = Field(
         default_factory=dict,
-        description="Labels to assign to the pipeline job."
+        description="Labels to assign to the pipeline job. "
+        "Example: {'environment': 'production', 'team': 'ml-ops'}",
     )
     synchronous: bool = Field(
         True,
         description="If `True`, the client running a pipeline using this "
         "orchestrator waits until all steps finish running. If `False`, "
         "the client returns immediately and the pipeline is executed "
-        "asynchronously."
+        "asynchronously.",
     )
     node_selector_constraint: Optional[Tuple[str, str]] = Field(
         None,
         description="Each constraint is a key-value pair label. For the container "
         "to be eligible to run on a node, the node must have each of the "
         "constraints appeared as labels. For example, a GPU type can be provided "
-        "by ('cloud.google.com/gke-accelerator', 'NVIDIA_TESLA_T4')."
+        "by ('cloud.google.com/gke-accelerator', 'NVIDIA_TESLA_T4').",
     )
     pod_settings: Optional[KubernetesPodSettings] = Field(
         None,
-        description="Pod settings to apply to the orchestrator and step pods."
+        description="Pod settings to apply to the orchestrator and step pods.",
     )
 
     custom_job_parameters: Optional[VertexCustomJobParameters] = Field(
-        None,
-        description="Custom parameters for the Vertex AI custom job."
+        None, description="Custom parameters for the Vertex AI custom job."
     )
 
     _node_selector_deprecation = (
@@ -157,67 +157,67 @@ class VertexOrchestratorConfig(
         ...,
         description="Name of GCP region where the pipeline job will be executed. "
         "Vertex AI Pipelines is available in specific regions: "
-        "https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability"
+        "https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability",
     )
     pipeline_root: Optional[str] = Field(
         None,
         description="A Cloud Storage URI that will be used by the Vertex AI Pipelines. "
         "If not provided but the artifact store in the stack is a GCPArtifactStore, "
-        "then a subdirectory of the artifact store will be used."
+        "then a subdirectory of the artifact store will be used.",
     )
     encryption_spec_key_name: Optional[str] = Field(
         None,
         description="The Cloud KMS resource identifier of the customer managed "
         "encryption key used to protect the job. Has the form: "
         "projects/<PROJECT>/locations/<REGION>/keyRings/<KR>/cryptoKeys/<KEY>. "
-        "The key needs to be in the same region as where the compute resource is created."
+        "The key needs to be in the same region as where the compute resource is created.",
     )
     workload_service_account: Optional[str] = Field(
         None,
         description="The service account for workload run-as account. Users submitting "
         "jobs must have act-as permission on this run-as account. If not provided, "
-        "the Compute Engine default service account for the GCP project is used."
+        "the Compute Engine default service account for the GCP project is used.",
     )
     network: Optional[str] = Field(
         None,
         description="The full name of the Compute Engine Network to which the job "
         "should be peered. For example, 'projects/12345/global/networks/myVPC'. "
-        "If not provided, the job will not be peered with any network."
+        "If not provided, the job will not be peered with any network.",
     )
     private_service_connect: Optional[str] = Field(
         None,
         description="The full name of a Private Service Connect endpoint to which "
         "the job should be peered. For example, "
         "'projects/12345/regions/us-central1/networkAttachments/NETWORK_ATTACHMENT_NAME'. "
-        "If not provided, the job will not be peered with any private service connect endpoint."
+        "If not provided, the job will not be peered with any private service connect endpoint.",
     )
 
     # Deprecated
     cpu_limit: Optional[str] = Field(
         None,
         description="DEPRECATED: The maximum CPU limit for this operator. "
-        "Use custom_job_parameters or pod_settings instead."
+        "Use custom_job_parameters or pod_settings instead.",
     )
     memory_limit: Optional[str] = Field(
         None,
         description="DEPRECATED: The maximum memory limit for this operator. "
-        "Use custom_job_parameters or pod_settings instead."
+        "Use custom_job_parameters or pod_settings instead.",
     )
     gpu_limit: Optional[int] = Field(
         None,
         description="DEPRECATED: The GPU limit for the operator. "
-        "Use custom_job_parameters or pod_settings instead."
+        "Use custom_job_parameters or pod_settings instead.",
     )
     function_service_account: Optional[str] = Field(
         None,
         description="DEPRECATED: The service account for cloud function run-as account, "
-        "for scheduled pipelines. This functionality is no longer supported."
+        "for scheduled pipelines. This functionality is no longer supported.",
     )
     scheduler_service_account: Optional[str] = Field(
         None,
         description="DEPRECATED: The service account used by the Google Cloud Scheduler "
         "to trigger and authenticate to the pipeline Cloud Function on a schedule. "
-        "This functionality is no longer supported."
+        "This functionality is no longer supported.",
     )
 
     _resource_deprecation = deprecation_utils.deprecate_pydantic_attributes(

@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Dict, Optional, Type
 
 from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.hyperai import HYPERAI_RESOURCE_TYPE
 from zenml.logger import get_logger
@@ -45,7 +46,7 @@ class HyperAIOrchestratorSettings(BaseSettings):
         default_factory=dict,
         description="A dictionary mapping from paths on the HyperAI instance "
         "to paths within the Docker container. This allows users to mount "
-        "directories from the HyperAI instance into the Docker container."
+        "directories from the HyperAI instance into the Docker container.",
     )
 
 
@@ -74,18 +75,18 @@ class HyperAIOrchestratorConfig(
         False,
         description="If True, the orchestrator will attempt to automatically "
         "log in to the container registry specified in the stack configuration "
-        "on the HyperAI instance."
+        "on the HyperAI instance.",
     )
     automatic_cleanup_pipeline_files: bool = Field(
         True,
         description="If True, the orchestrator will automatically clean up old "
         "pipeline files that are on the HyperAI instance. Pipeline files will "
-        "be cleaned up if they are 7 days old or older."
+        "be cleaned up if they are 7 days old or older.",
     )
     gpu_enabled_in_container: bool = Field(
         True,
         description="If True, the orchestrator will enable GPU support in the "
-        "Docker container that runs on the HyperAI instance."
+        "Docker container that runs on the HyperAI instance.",
     )
 
     @property

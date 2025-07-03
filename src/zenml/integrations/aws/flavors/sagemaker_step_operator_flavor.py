@@ -62,28 +62,31 @@ class SagemakerStepOperatorSettings(BaseSettings):
     instance_type: Optional[str] = Field(
         None,
         description="DEPRECATED: The instance type to use for the step execution. "
-        "Use estimator_args instead."
+        "Use estimator_args instead. Example: 'ml.m5.xlarge'",
     )
     experiment_name: Optional[str] = Field(
         None,
         description="The name for the experiment to which the job will be associated. "
-        "If not provided, the job runs would be independent."
+        "If not provided, the job runs would be independent. Example: 'my-training-experiment'",
     )
     input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
-        default=None, 
+        default=None,
         union_mode="left_to_right",
-        description="S3 URI where training data is located if not locally, "
-        "e.g. s3://my-bucket/my-data/train. Can be a string for a single location "
-        "or a dict mapping channel names to S3 locations."
+        description="S3 URI where training data is located if not locally. "
+        "Example string: 's3://my-bucket/my-data/train'. Example dict: "
+        "{'training': 's3://bucket/train', 'validation': 's3://bucket/val'}",
     )
     estimator_args: Dict[str, Any] = Field(
         default_factory=dict,
         description="Arguments that are directly passed to the SageMaker Estimator. "
-        "See SageMaker documentation for available arguments and instance types."
+        "See SageMaker documentation for available arguments and instance types. Example: "
+        "{'instance_type': 'ml.m5.xlarge', 'instance_count': 1, "
+        "'train_max_run': 3600, 'input_mode': 'File'}",
     )
     environment: Dict[str, str] = Field(
         default_factory=dict,
-        description="Environment variables to pass to the container during execution."
+        description="Environment variables to pass to the container during execution. "
+        "Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
     )
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
@@ -108,13 +111,13 @@ class SagemakerStepOperatorConfig(
         ...,
         description="The IAM role ARN that has to be assigned to the jobs "
         "running in SageMaker. This role must have the necessary permissions "
-        "to access SageMaker and S3 resources."
+        "to access SageMaker and S3 resources.",
     )
     bucket: Optional[str] = Field(
         None,
         description="Name of the S3 bucket to use for storing artifacts from the job run. "
         "If not provided, a default bucket will be created based on the format: "
-        "'sagemaker-{region}-{aws-account-id}'."
+        "'sagemaker-{region}-{aws-account-id}'.",
     )
 
     @property

@@ -67,33 +67,33 @@ class S3ArtifactStoreConfig(
     key: Optional[str] = SecretField(
         default=None,
         description="AWS access key ID for authentication. "
-        "If not provided, credentials will be inferred from the environment."
+        "If not provided, credentials will be inferred from the environment.",
     )
     secret: Optional[str] = SecretField(
         default=None,
         description="AWS secret access key for authentication. "
-        "If not provided, credentials will be inferred from the environment."
+        "If not provided, credentials will be inferred from the environment.",
     )
     token: Optional[str] = SecretField(
         default=None,
         description="AWS session token for temporary credentials. "
-        "If not provided, credentials will be inferred from the environment."
+        "If not provided, credentials will be inferred from the environment.",
     )
     client_kwargs: Optional[Dict[str, Any]] = Field(
         None,
         description="Additional keyword arguments to pass to the S3 client. "
         "For example, to connect to a custom S3-compatible endpoint: "
-        "{'endpoint_url': 'http://minio:9000'}"
+        "{'endpoint_url': 'http://minio:9000'}",
     )
     config_kwargs: Optional[Dict[str, Any]] = Field(
         None,
         description="Additional keyword arguments to pass to the S3 client configuration. "
-        "For example: {'region_name': 'us-west-2', 'signature_version': 's3v4'}"
+        "For example: {'region_name': 'us-west-2', 'signature_version': 's3v4'}",
     )
     s3_additional_kwargs: Optional[Dict[str, Any]] = Field(
         None,
         description="Additional keyword arguments for S3 operations. "
-        "For example: {'ACL': 'bucket-owner-full-control'}"
+        "For example: {'ACL': 'bucket-owner-full-control'}",
     )
 
     _bucket: Optional[str] = None

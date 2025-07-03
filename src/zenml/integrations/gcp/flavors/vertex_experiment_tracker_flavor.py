@@ -48,12 +48,11 @@ class VertexExperimentTrackerSettings(BaseSettings):
     """
 
     experiment: Optional[str] = Field(
-        None,
-        description="The VertexAI experiment name."
+        None, description="The VertexAI experiment name."
     )
     experiment_tensorboard: Optional[Union[str, bool]] = Field(
         None,
-        description="The VertexAI experiment tensorboard instance to use."
+        description="The VertexAI experiment tensorboard instance to use.",
     )
 
     @field_validator("experiment", mode="before")

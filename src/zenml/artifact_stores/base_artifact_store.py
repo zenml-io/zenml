@@ -170,14 +170,14 @@ class _sanitize_paths:
 
 class BaseArtifactStoreConfig(StackComponentConfig):
     """Config class for `BaseArtifactStore`.
-    
+
     Base configuration for artifact storage backends.
     Field descriptions are defined inline using Field() descriptors.
     """
 
     path: str = Field(
         description="Root path for artifact storage. Must be supported by the specific "
-        "artifact store implementation (e.g., 's3://bucket', '/local/path')."
+        "artifact store implementation (e.g., 's3://bucket', '/local/path', 'gs://bucket')."
     )
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]

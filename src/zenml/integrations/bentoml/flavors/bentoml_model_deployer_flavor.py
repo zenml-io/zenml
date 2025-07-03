@@ -33,7 +33,7 @@ class BentoMLModelDeployerConfig(BaseModelDeployerConfig):
     service_path: str = Field(
         "",
         description="Path to the BentoML service directory. "
-        "If not provided, a default service path will be used."
+        "If not provided, a default service path will be used.",
     )
 
 

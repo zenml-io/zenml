@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import Field
+
 from zenml.integrations.vllm import VLLM_MODEL_DEPLOYER
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
@@ -32,7 +33,7 @@ class VLLMModelDeployerConfig(BaseModelDeployerConfig):
     service_path: str = Field(
         "",
         description="The path where the local vLLM deployment service "
-        "configuration, PID and log files are stored."
+        "configuration, PID and log files are stored.",
     )
 
 
