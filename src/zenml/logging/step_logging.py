@@ -609,33 +609,33 @@ class PipelineLogsStorageContext:
         # Use clean message for console output formatting
         console_output, storage_output = None, None
 
-        if clean_message.strip() not in ["", "\n"]:
-            # 1. Format console output with step name if enabled
-            console_output = clean_message
-            step_names_disabled = (
-                handle_bool_env_var(
-                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
-                )
-                or not self.prepend_step_name
+        # 1. Format console output with step name if enabled
+        console_output = clean_message
+        step_names_disabled = (
+            handle_bool_env_var(
+                ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
             )
-            if not step_names_disabled:
-                # Try to get step context if available
-                step_context = None
-                try:
-                    step_context = get_step_context()
-                except Exception:
-                    pass
+            or not self.prepend_step_name
+        )
+        if not step_names_disabled:
+            # Try to get step context if available
+            step_context = None
+            try:
+                step_context = get_step_context()
+            except Exception:
+                pass
 
-                if step_context:
-                    step_name = step_context.step_name
-                    # For progress bar updates (with \r), inject the step name after the \r
-                    if "\r" in clean_message:
-                        console_output = clean_message.replace(
-                            "\r", f"\r[{step_name}] "
-                        )
-                    else:
-                        console_output = f"[{step_name}] {clean_message}"
+            if step_context:
+                step_name = step_context.step_name
+                # For progress bar updates (with \r), inject the step name after the \r
+                if "\r" in clean_message:
+                    console_output = clean_message.replace(
+                        "\r", f"\r[{step_name}] "
+                    )
+                else:
+                    console_output = f"[{step_name}] {clean_message}"
 
+        if clean_message.strip() not in ["", "\n"]:
             # 2. Format storage output with timestamp, preserving original message format
             timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
 
