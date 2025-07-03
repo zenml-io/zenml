@@ -201,14 +201,13 @@ class SagemakerOrchestratorSettings(BaseSettings):
         "Example string: 's3://my-bucket/my-data/output'. Example dict: "
         "{'output_one': 's3://bucket/out1', 'output_two': 's3://bucket/out2'}",
     )
-
     processor_role: Optional[str] = Field(
         None,
         description="DEPRECATED: use `execution_role` instead. "
         "The IAM role to use for the step execution.",
     )
-    processor_tags: Dict[str, str] = Field(
-        default_factory=dict,
+    processor_tags: Optional[Dict[str, str]] = Field(
+        None,
         description="DEPRECATED: use `tags` instead. "
         "Tags to apply to the Processor assigned to the step.",
     )

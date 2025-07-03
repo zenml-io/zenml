@@ -108,6 +108,10 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=False,
         description="Whether to disable caching optimization in the orchestrator pod.",
     )
+    pod_stop_grace_period: PositiveInt = Field(
+        default=30,
+        description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully."
+    )
 
 
 class KubernetesOrchestratorConfig(

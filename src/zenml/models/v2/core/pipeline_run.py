@@ -125,6 +125,15 @@ class PipelineRunRequest(ProjectScopedRequest):
         title="Logs of the pipeline run.",
     )
 
+    @property
+    def is_placeholder_request(self) -> bool:
+        """Whether the request is a placeholder request.
+
+        Returns:
+            Whether the request is a placeholder request.
+        """
+        return self.status == ExecutionStatus.INITIALIZING
+
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -334,7 +343,7 @@ class PipelineRunResponse(
             if self.stack is None:
                 raise ValueError(
                     "The stack that this pipeline run response was executed on"
-                    "has been deleted."
+                    "is either not accessible or has been deleted."
                 )
 
             # Create the orchestrator instance
@@ -349,7 +358,7 @@ class PipelineRunResponse(
             if len(orchestrator_list) == 0:
                 raise ValueError(
                     "The orchestrator that this pipeline run response was "
-                    "executed with has been deleted."
+                    "executed with is either not accessible or has been deleted."
                 )
 
             orchestrator = cast(
@@ -480,6 +489,7 @@ class PipelineRunResponse(
             for step in pagination_utils.depaginate(
                 Client().list_run_steps,
                 pipeline_run_id=self.id,
+                project=self.project_id,
             )
         }
 
