@@ -7,6 +7,7 @@ Create Date: 2025-06-30 18:18:24.539265
 """
 
 import sqlalchemy as sa
+import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -20,7 +21,11 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     # Add the source column as nullable first
     with op.batch_alter_table("logs", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("source", sa.String(), nullable=True))
+        batch_op.add_column(
+            sa.Column(
+                "source", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
+        )
 
     # Populate the source field based on existing data
     connection = op.get_bind()
@@ -47,7 +52,7 @@ def upgrade() -> None:
     with op.batch_alter_table("logs", schema=None) as batch_op:
         batch_op.alter_column(
             "source",
-            existing_type=sa.String(),
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
             nullable=False,
         )
         # Add unique constraint: source is unique for each combination of pipeline_run_id and step_run_id
