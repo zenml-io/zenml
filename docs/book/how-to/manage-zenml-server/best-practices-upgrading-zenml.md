@@ -78,6 +78,7 @@ Development → Staging → Production
 - Create upgrade announcement templates
 - Establish rollback communication procedures
 - Instruct users to prepare to upgrade their local ZenML client (`pip install -U zenml`) once the server upgrade is complete to avoid API mismatches
+- Instruct user to update the requirements for the gitops environments that interact with ZenML if applicable
 
 **Multi-Team Considerations**
 - For teams with different upgrade readiness, consider separate ZenML server instances
