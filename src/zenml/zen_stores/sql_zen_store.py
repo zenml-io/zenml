@@ -5718,28 +5718,10 @@ class SqlZenStore(BaseZenStore):
 
         try:
             session.commit()
-        except IntegrityError as e:
+        except IntegrityError:
             # We have to rollback the failed session first in order to
             # continue using it
             session.rollback()
-
-            # Check if this is a duplicate run name error
-            error_message = str(e).lower()
-            if "unique_run_name_in_project" in error_message or (
-                "duplicate entry" in error_message
-                and pipeline_run.name in str(e)
-            ):
-                # Provide a user-friendly error message for duplicate run names
-                improved_message = (
-                    f"Pipeline run name '{pipeline_run.name}' already exists in this project. "
-                    f"Each pipeline run must have a unique name.\n\n"
-                    f"To fix this, you can:\n"
-                    f"1. Use a different run name\n"
-                    f'2. Use a dynamic run name with placeholders like: "{pipeline_run.name}_{{date}}_{{time}}"\n'
-                    f"3. Remove the run name from your configuration to auto-generate unique names\n\n"
-                    f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
-                )
-                raise EntityExistsError(improved_message) from e
 
             # This can fail if the name is taken by a different run
             self._verify_name_uniqueness(
@@ -6040,7 +6022,18 @@ class SqlZenStore(BaseZenStore):
                 return self._create_run(pipeline_run, session=session), True
             except EntityExistsError as create_error:
                 if not pipeline_run.orchestrator_run_id:
-                    raise
+                    # No orchestrator_run_id means this is likely a name conflict.
+                    # Provide a user-friendly error message for duplicate run names.
+                    improved_message = (
+                        f"Pipeline run name '{pipeline_run.name}' already exists in this project. "
+                        f"Each pipeline run must have a unique name.\n\n"
+                        f"To fix this, you can:\n"
+                        f"1. Use a different run name\n"
+                        f'2. Use a dynamic run name with placeholders like: "{pipeline_run.name}_{{date}}_{{time}}"\n'
+                        f"3. Remove the run name from your configuration to auto-generate unique names\n\n"
+                        f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
+                    )
+                    raise EntityExistsError(improved_message) from create_error
                 # Creating the run failed because
                 # - a run with the same deployment_id and orchestrator_run_id
                 #   exists. We now fetch and return that run.
@@ -6059,10 +6052,18 @@ class SqlZenStore(BaseZenStore):
                     )
                 except KeyError:
                     # We should only get here if the run creation failed because
-                    # of a name conflict. We raise the error that happened
-                    # during creation in any case to forward the error message
-                    # to the user.
-                    raise create_error
+                    # of a name conflict. Provide a user-friendly error message
+                    # for duplicate run names.
+                    improved_message = (
+                        f"Pipeline run name '{pipeline_run.name}' already exists in this project. "
+                        f"Each pipeline run must have a unique name.\n\n"
+                        f"To fix this, you can:\n"
+                        f"1. Use a different run name\n"
+                        f'2. Use a dynamic run name with placeholders like: "{pipeline_run.name}_{{date}}_{{time}}"\n'
+                        f"3. Remove the run name from your configuration to auto-generate unique names\n\n"
+                        f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
+                    )
+                    raise EntityExistsError(improved_message) from create_error
 
     def list_runs(
         self,
