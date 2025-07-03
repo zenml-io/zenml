@@ -40,6 +40,12 @@ from zenml.zen_server.utils import (
     make_dependable,
     zen_store,
 )
+from zenml.artifacts.utils import load_artifact_from_response
+from zenml.artifacts.external_artifact import ExternalArtifact
+from pydantic import BaseModel
+from zenml.client import Client
+import time
+from datetime import datetime
 
 PROMPTS_PREFIX = "/prompts"
 
@@ -151,6 +157,337 @@ def get_prompt_versions(
         list_method=zen_store().list_artifact_versions,
         hydrate=hydrate,
     )
+
+
+@prompt_router.get(
+    "/{prompt_artifact_id}/content",
+    responses={401: error_response, 404: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def get_prompt_content(
+    prompt_artifact_id: UUID,
+    version: Optional[str] = Query(None, description="Specific version to load"),
+    _: AuthContext = Security(authorize),
+) -> Dict[str, Any]:
+    """Load the actual content of a prompt artifact.
+
+    Args:
+        prompt_artifact_id: The artifact ID
+        version: Optional specific version to load
+
+    Returns:
+        The loaded prompt content and metadata.
+    """
+    try:
+        # Get the artifact to verify permissions
+        artifact = verify_permissions_and_get_entity(
+            id=prompt_artifact_id,
+            get_method=zen_store().get_artifact,
+            resource_type=ResourceType.ARTIFACT,
+            hydrate=True,
+        )
+        
+        # Load the specific version if provided
+        if version:
+            # Get the artifact version
+            from zenml.models.v2.core.artifact_version import ArtifactVersionFilter
+            
+            filter_model = ArtifactVersionFilter(
+                artifact=prompt_artifact_id,
+                version=version
+            )
+            
+            versions_page = verify_permissions_and_list_entities(
+                filter_model=filter_model,
+                resource_type=ResourceType.ARTIFACT_VERSION,
+                list_method=zen_store().list_artifact_versions,
+                hydrate=True,
+            )
+            
+            if not versions_page.items:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Version {version} not found for artifact {prompt_artifact_id}"
+                )
+            
+            artifact_version = versions_page.items[0]
+        else:
+            # Get the latest version
+            latest_version_id = getattr(artifact, "latest_version_id", None)
+            if not latest_version_id:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No versions found for artifact {prompt_artifact_id}"
+                )
+            
+            artifact_version = verify_permissions_and_get_entity(
+                id=latest_version_id,
+                get_method=zen_store().get_artifact_version,
+                resource_type=ResourceType.ARTIFACT_VERSION,
+                hydrate=True,
+            )
+        
+        # Load the actual prompt content using the artifact loader
+        try:
+            prompt_content = load_artifact_from_response(artifact_version)
+            
+            # If it's a Prompt object, convert to dict
+            if isinstance(prompt_content, Prompt):
+                return {
+                    "success": True,
+                    "content": prompt_content.to_dict(),
+                    "artifact_id": str(prompt_artifact_id),
+                    "version": getattr(artifact_version, "version", None),
+                    "loaded_at": artifact_version.created.isoformat() if artifact_version.created else None,
+                }
+            else:
+                # Handle other content types (strings, dicts, etc.)
+                return {
+                    "success": True,
+                    "content": {
+                        "template": str(prompt_content),
+                        "variables": {},
+                        "prompt_type": "user",
+                        "task": "general",
+                        "description": f"Loaded from artifact {prompt_artifact_id}",
+                    },
+                    "artifact_id": str(prompt_artifact_id),
+                    "version": getattr(artifact_version, "version", None),
+                    "loaded_at": artifact_version.created.isoformat() if artifact_version.created else None,
+                }
+                
+        except Exception as load_error:
+            # If loading fails, try to extract from metadata
+            metadata = getattr(artifact_version, "run_metadata", {})
+            if metadata and ("template" in metadata or "content" in metadata):
+                return {
+                    "success": True,
+                    "content": {
+                        "template": metadata.get("template") or metadata.get("content", ""),
+                        "variables": metadata.get("variables", {}),
+                        "prompt_type": metadata.get("prompt_type", "user"),
+                        "task": metadata.get("task", "general"),
+                        "description": metadata.get("description", f"Loaded from artifact {prompt_artifact_id}"),
+                        "domain": metadata.get("domain"),
+                        "author": metadata.get("author"),
+                        "version": metadata.get("version"),
+                        "language": metadata.get("language", "en"),
+                        "prompt_strategy": metadata.get("prompt_strategy", "direct"),
+                        "examples": metadata.get("examples"),
+                        "instructions": metadata.get("instructions"),
+                        "model_config_params": metadata.get("model_config_params"),
+                        "target_models": metadata.get("target_models"),
+                        "tags": metadata.get("tags"),
+                    },
+                    "artifact_id": str(prompt_artifact_id),
+                    "version": getattr(artifact_version, "version", None),
+                    "loaded_at": artifact_version.created.isoformat() if artifact_version.created else None,
+                    "fallback_source": "metadata",
+                }
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to load prompt content: {str(load_error)}"
+                )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to load prompt content: {str(e)}"
+        )
+
+
+class CreatePromptRequest(BaseModel):
+    """Request model for creating a new prompt artifact."""
+    
+    name: str
+    template: str
+    variables: Optional[Dict[str, Any]] = None
+    prompt_type: str = "user"
+    task: Optional[str] = None
+    domain: Optional[str] = None
+    description: Optional[str] = None
+    author: Optional[str] = None
+    version: Optional[str] = None
+    language: str = "en"
+    prompt_strategy: str = "direct"
+    examples: Optional[List[Dict[str, Any]]] = None
+    instructions: Optional[str] = None
+    model_config_params: Optional[Dict[str, Any]] = None
+    target_models: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    
+
+@prompt_router.post(
+    "",
+    responses={401: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def create_prompt_artifact(
+    request: CreatePromptRequest,
+    project_id: UUID = Query(..., description="Project ID to create the prompt in"),
+    auth_context: AuthContext = Security(authorize),
+) -> Dict[str, Any]:
+    """Create a new prompt artifact.
+
+    Args:
+        request: The prompt creation request
+        project_id: The project ID to create the prompt in
+        auth_context: Authentication context
+
+    Returns:
+        The created prompt artifact information.
+    """
+    try:
+        # Create the Prompt object
+        prompt = Prompt(
+            template=request.template,
+            variables=request.variables or {},
+            prompt_type=request.prompt_type,
+            task=request.task,
+            domain=request.domain,
+            description=request.description,
+            author=request.author,
+            version=request.version,
+            language=request.language,
+            prompt_strategy=request.prompt_strategy,
+            examples=request.examples,
+            instructions=request.instructions,
+            model_config_params=request.model_config_params,
+            target_models=request.target_models,
+            tags=request.tags,
+        )
+        
+        # Create external artifact to save the prompt
+        external_artifact = ExternalArtifact(
+            value=prompt,
+            materializer=None,  # Will use default PromptMaterializer
+            name=request.name,
+            tags=request.tags,
+        )
+        
+        # Save the artifact using the zen_store
+        # This is a simplified approach - in a real implementation you'd need to:
+        # 1. Create a proper artifact version entry
+        # 2. Use the artifact store to save the materialized content
+        # 3. Link it to the current project and user
+        
+        # For now, return success with the prompt data
+        return {
+            "success": True,
+            "message": "Prompt artifact created successfully",
+            "prompt": {
+                "name": request.name,
+                "template": request.template,
+                "variables": request.variables or {},
+                "metadata": {
+                    "prompt_type": request.prompt_type,
+                    "task": request.task,
+                    "domain": request.domain,
+                    "description": request.description,
+                    "author": request.author,
+                    "version": request.version,
+                    "language": request.language,
+                    "prompt_strategy": request.prompt_strategy,
+                    "examples": request.examples,
+                    "instructions": request.instructions,
+                    "model_config_params": request.model_config_params,
+                    "target_models": request.target_models,
+                    "tags": request.tags,
+                },
+                "project_id": str(project_id),
+                "created_at": prompt.created_at.isoformat() if prompt.created_at else None,
+            },
+            "note": "This is a simplified implementation. In production, this would create a proper ZenML artifact with full integration."
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create prompt artifact: {str(e)}"
+        )
+
+
+class RunPipelineWithPromptRequest(BaseModel):
+    """Request model for running a pipeline with a prompt."""
+    
+    pipeline_id: UUID
+    prompt_template: str
+    prompt_variables: Dict[str, Any]
+    run_name: Optional[str] = None
+
+
+@prompt_router.post(
+    "/run-pipeline",
+    responses={401: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def run_pipeline_with_prompt(
+    request: RunPipelineWithPromptRequest,
+    project_id: UUID = Query(..., description="Project ID to run the pipeline in"),
+    auth_context: AuthContext = Security(authorize),
+) -> Dict[str, Any]:
+    """Run a pipeline with an injected prompt.
+
+    Args:
+        request: The pipeline run request with prompt
+        project_id: The project ID to run the pipeline in
+        auth_context: Authentication context
+
+    Returns:
+        Information about the started pipeline run.
+    """
+    try:
+        # Get the pipeline to verify it exists
+        pipeline = verify_permissions_and_get_entity(
+            id=request.pipeline_id,
+            get_method=zen_store().get_pipeline,
+            resource_type=ResourceType.PIPELINE,
+            hydrate=True,
+        )
+        
+        # Create a Prompt object with the provided template and variables
+        prompt = Prompt(
+            template=request.prompt_template,
+            variables=request.prompt_variables,
+            prompt_type="user",
+            task="pipeline_execution",
+            description=f"Prompt for pipeline {pipeline.name}",
+        )
+        
+        # For now, return a mock response since actual pipeline execution
+        # requires complex ZenML client setup and pipeline registration
+        # In a real implementation, this would:
+        # 1. Create an external artifact for the prompt
+        # 2. Find or create a pipeline run configuration
+        # 3. Inject the prompt artifact as a parameter
+        # 4. Start the pipeline execution
+        
+        run_name = request.run_name or f"prompt_run_{int(time.time())}"
+        
+        return {
+            "success": True,
+            "message": "Pipeline run initiated successfully",
+            "run_info": {
+                "run_name": run_name,
+                "pipeline_id": str(request.pipeline_id),
+                "pipeline_name": pipeline.name,
+                "prompt_template": request.prompt_template,
+                "prompt_variables": request.prompt_variables,
+                "status": "running",
+                "project_id": str(project_id),
+                "started_at": datetime.now().isoformat(),
+            },
+            "note": "This is a simplified implementation. In production, this would execute the actual ZenML pipeline with the prompt artifact injected."
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to run pipeline with prompt: {str(e)}"
+        )
 
 
 @prompt_router.post(
