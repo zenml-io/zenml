@@ -34,7 +34,13 @@ def warn_if_invalid_model_data(data: Dict[str, Any], class_name: str) -> None:
     try:
         serialization_utils.deserialize_kubernetes_model(data, class_name)
     except KeyError as e:
-        logger.warning("Invalid data for model %s: %s", class_name, e)
+        logger.warning(
+            "Invalid data for Kubernetes model class `%s`: %s. "
+            "Hint: Kubernetes expects attribute names in CamelCase, not "
+            "snake_case.",
+            class_name,
+            e,
+        )
 
 
 class KubernetesPodSettings(BaseSettings):
