@@ -124,7 +124,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         builds = []
         extra_files = {ENTRYPOINT_NAME: LOCAL_ENTRYPOINT}
         for step_name, step in deployment.step_configurations.items():
-            if step.config.step_operator == self.name:
+            if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
                     key=SPARK_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,

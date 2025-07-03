@@ -70,7 +70,11 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import (
+        PipelineDeploymentBase,
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -83,6 +87,22 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
+
+    def should_build_pipeline_image(
+        self, deployment: "PipelineDeploymentBase"
+    ) -> bool:
+        """Whether to always build the pipeline image.
+
+        Args:
+            deployment: The pipeline deployment.
+
+        Returns:
+            Whether to always build the pipeline image.
+        """
+        settings = cast(
+            KubernetesOrchestratorSettings, self.get_settings(deployment)
+        )
+        return settings.always_build_pipeline_image
 
     def get_kube_client(
         self, incluster: Optional[bool] = None
