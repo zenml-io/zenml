@@ -51,10 +51,7 @@ class CustomFormatter(logging.Formatter):
     reset: str = "\x1b[0m"
 
     format_template: str = (
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%("
-        "filename)s:%(lineno)d)"
-        if LoggingLevels[ZENML_LOGGING_VERBOSITY] == LoggingLevels.DEBUG
-        else "%(message)s"
+        "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
     )
 
     COLORS: Dict[LoggingLevels, str] = {

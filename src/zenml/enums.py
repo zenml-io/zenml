@@ -99,6 +99,7 @@ class LoggingLevels(Enum):
     NOTSET = logging.NOTSET
     ERROR = logging.ERROR
     WARN = logging.WARN
+    WARNING = logging.WARNING
     INFO = logging.INFO
     DEBUG = logging.DEBUG
     CRITICAL = logging.CRITICAL

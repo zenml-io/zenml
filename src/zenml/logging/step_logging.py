@@ -20,7 +20,7 @@ import sys
 import time
 from contextvars import ContextVar
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Type, Union
+from typing import Any, Callable, List, Optional, Tuple, Type, Union
 from uuid import UUID, uuid4
 
 from zenml import get_step_context
@@ -34,6 +34,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     handle_bool_env_var,
 )
+from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.logging import (
@@ -271,11 +272,7 @@ class PipelineLogsStorage:
 
         if not self.disabled:
             # Add timestamp to the message when it's received
-            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = (
-                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
-            )
-            self.buffer.append(formatted_message.rstrip())
+            self.buffer.append(remove_ansi_escape_codes(text).rstrip())
             self.save_to_file()
 
     @property
@@ -410,7 +407,9 @@ class PipelineLogsStorage:
             files_ = self.artifact_store.listdir(self.logs_uri)
             if not merge_all_files:
                 # already merged files will not be merged again
-                files_ = [f for f in files_ if merged_file_suffix not in f]
+                files_ = [
+                    f for f in files_ if merged_file_suffix not in str(f)
+                ]
             file_name_ = self._get_timestamped_filename(
                 suffix=merged_file_suffix
             )
@@ -481,10 +480,18 @@ class PipelineLogsStorageContext:
         self.stderr_write = getattr(sys.stderr, "write")
         self.stderr_flush = getattr(sys.stderr, "flush")
 
-        setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
+        setattr(
+            sys.stdout,
+            "write",
+            self._wrap_write(self.stdout_write, is_stderr=False),
+        )
         setattr(sys.stdout, "flush", self._wrap_flush(self.stdout_flush))
 
-        setattr(sys.stderr, "write", self._wrap_write(self.stderr_write))
+        setattr(
+            sys.stderr,
+            "write",
+            self._wrap_write(self.stderr_write, is_stderr=True),
+        )
         setattr(sys.stderr, "flush", self._wrap_flush(self.stderr_flush))
 
         redirected.set(True)
@@ -520,51 +527,38 @@ class PipelineLogsStorageContext:
         except (OSError, IOError) as e:
             logger.warning(f"Step logs roll-up failed: {e}")
 
-    def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
+    def _wrap_write(
+        self, method: Callable[..., Any], is_stderr: bool = False
+    ) -> Callable[..., Any]:
         """Wrapper function that utilizes the storage object to store logs.
 
         Args:
             method: the original write method
+            is_stderr: whether this wrapper is for stderr
 
         Returns:
             the wrapped write method.
         """
 
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
-            step_names_disabled = (
-                handle_bool_env_var(
-                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
-                )
-                or not self.prepend_step_name
+            message = args[0]
+
+            console_output, storage_output = self._format_message(
+                message,
+                default_level=LoggingLevels.ERROR
+                if is_stderr
+                else LoggingLevels.INFO,
             )
 
-            if step_names_disabled:
-                output = method(*args, **kwargs)
-            else:
-                message = args[0]
-                # Try to get step context if not available yet
-                step_context = None
-                try:
-                    step_context = get_step_context()
-                except Exception:
-                    pass
+            if console_output:
+                # Write to the console
+                output = method(console_output, *args[1:], **kwargs)
 
-                if step_context and args[0] not in ["\n", ""]:
-                    # For progress bar updates (with \r), inject the step name after the \r
-                    if "\r" in message:
-                        message = message.replace(
-                            "\r", f"\r[{step_context.step_name}] "
-                        )
-                    else:
-                        message = f"[{step_context.step_name}] {message}"
+            if storage_output:
+                # Save the formatted message to storage
+                self.storage.write(storage_output)
 
-                output = method(message, *args[1:], **kwargs)
-
-            # Save the original message without step name prefix to storage
-            if args:
-                self.storage.write(args[0])
-
-            return output
+            return output if console_output else None
 
         return wrapped_write
 
@@ -584,3 +578,105 @@ class PipelineLogsStorageContext:
             return output
 
         return wrapped_flush
+
+    def _format_message(
+        self, message: str, default_level: LoggingLevels = LoggingLevels.INFO
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Format a message for both console output and logging storage.
+
+        This method handles messages in various formats:
+        - ZenML logger format: "[LEVEL] - message (module:file:line)"
+        - Raw messages: any other format
+
+        It generates two versions:
+
+        1. Console output: Clean message with optional step name prefix
+        2. Storage output: Original message with timestamp (preserving original format)
+
+        Args:
+            message: The log message (may or may not be in ZenML logger format)
+            default_level: Default logging level to use if none can be determined
+                          from the message content
+
+        Returns:
+            A tuple containing (console_output, storage_output) where:
+            - console_output: Message formatted for console display
+            - storage_output: Message formatted for persistent storage
+        """
+        # Try to extract level and clean message from ZenML logger format
+        extracted_level, clean_message = self._parse_zenml_log_format(message)
+
+        # Use clean message for console output formatting
+        console_output, storage_output = None, None
+
+        if clean_message.strip() not in ["", "\n"]:
+            # 1. Format console output with step name if enabled
+            console_output = clean_message
+            step_names_disabled = (
+                handle_bool_env_var(
+                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
+                )
+                or not self.prepend_step_name
+            )
+            if not step_names_disabled:
+                # Try to get step context if available
+                step_context = None
+                try:
+                    step_context = get_step_context()
+                except Exception:
+                    pass
+
+                if step_context:
+                    step_name = step_context.step_name
+                    # For progress bar updates (with \r), inject the step name after the \r
+                    if "\r" in clean_message:
+                        console_output = clean_message.replace(
+                            "\r", f"\r[{step_name}] "
+                        )
+                    else:
+                        console_output = f"[{step_name}] {clean_message}"
+
+            # 2. Format storage output with timestamp, preserving original message format
+            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # For storage, use original message without step names or extra level tags
+            # If it's a formatted log message, keep it as is
+            # If it's a raw message (like print), just add timestamp
+            if extracted_level:
+                # Already formatted message - just add timestamp
+                storage_output = f"[{timestamp} UTC] [{extracted_level.name}] {clean_message}"
+            else:
+                # Raw message (like print) - add timestamp only, no level
+                storage_output = (
+                    f"[{timestamp} UTC] [{default_level.name}] {clean_message}"
+                )
+
+        return console_output, storage_output
+
+    def _parse_zenml_log_format(
+        self, message: str
+    ) -> Tuple[Optional[str], str]:
+        """Parse ZenML logger format to extract level and clean message.
+
+        If the message doesn't match this format, returns None for level
+        and the original message as the clean message.
+
+        Args:
+            message: The log message that may be in ZenML logger format
+
+        Returns:
+            A tuple containing (extracted_level, clean_message) where:
+            - extracted_level: The logging level found in the message, or None
+            - clean_message: The message content without level and location info,
+                           or the original message if parsing fails
+        """
+        from logging import getLevelName
+
+        from zenml.enums import LoggingLevels
+
+        for level in LoggingLevels:
+            if f"[{getLevelName(level.value)}] " in message:
+                return level, message.replace(
+                    f"[{getLevelName(level.value)}] ", ""
+                )
+        return None, message
