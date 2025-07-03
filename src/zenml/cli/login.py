@@ -18,11 +18,11 @@ import os
 import re
 import sys
 import time
-from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 import click
+from pydantic import BaseModel
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.text import Text
@@ -50,71 +50,75 @@ from zenml.utils.server_utils import (
 logger = get_logger(__name__)
 
 
-class LoginMethod(Enum):
-    """Enum for different login methods available in ZenML."""
-    
-    LOCAL = "local"
-    PRO = "pro" 
-    CLOUD = "cloud"
+class LoginMethod(BaseModel):
+    """Login method class."""
+
+    name: str
+    description: str
+    help: str
 
 
-class MenuChoice(Enum):
-    """Enum for menu choice options."""
-    
-    LOCAL_OPTION = "1"
-    PRO_OPTION = "2"
-    CLOUD_OPTION = "3"
+possible_login_methods = [
+    LoginMethod(
+        name="local",
+        description="Login to a local server",
+        help="(zenml login --local)",
+    ),
+    LoginMethod(
+        name="pro",
+        description="Login to ZenML Pro",
+        help="(https://cloud.zenml.io)",
+    ),
+    LoginMethod(
+        name="cloud",
+        description="Login to a cloud server",
+        help="(custom URL)",
+    ),
+]
 
 
 def _display_login_menu() -> LoginMethod:
     """Display an interactive login menu and return the user's choice.
-    
+
     Returns:
         The selected login method enum value.
     """
-    # Create the login options panel with modern styling
     title_text = Text("ZenML Login", style="bold cyan")
-    
+
     options_text = Text()
     options_text.append("Choose your login method:\n\n", style="dim")
-    options_text.append("1.", style="bold purple")
-    options_text.append(" Login to a local server", style="white")
-    options_text.append("   (zenml login --local)", style="dim")
-    options_text.append("\n")
-    options_text.append("2.", style="bold purple") 
-    options_text.append(" Login to ZenML Pro", style="white")
-    options_text.append("        (https://cloud.zenml.io)", style="dim")
-    options_text.append("\n")
-    options_text.append("3.", style="bold purple")
-    options_text.append(" Login to a cloud server", style="white")
-    options_text.append("   (custom URL)", style="dim")
-    
+
+    for i, login_method in enumerate(possible_login_methods):
+        options_text.append(f"{i + 1}. ", style="bold purple")
+        options_text.append(
+            f"{login_method.description}"
+            + " " * (25 - len(login_method.description)),
+            style="white",
+        )
+        options_text.append(f"{login_method.help}", style="dim")
+        if i < len(possible_login_methods) - 1:
+            options_text.append("\n")
+
     panel = Panel(
         options_text,
         title=title_text,
         border_style="white dim",
         padding=(1, 2),
-        width=60
+        width=60,
     )
-    
-    console.print()
+
     console.print(panel)
-    console.print()
-    
+
     # Get user choice with validation
     while True:
         choice = Prompt.ask(
             "[bold]Enter your choice[/bold]",
-            choices=[MenuChoice.LOCAL_OPTION.value, MenuChoice.PRO_OPTION.value, MenuChoice.CLOUD_OPTION.value],
-            default=MenuChoice.PRO_OPTION.value
+            choices=list(
+                str(i) for i in range(1, len(possible_login_methods) + 1)
+            ),
+            default="2",
         )
-        
-        if choice == MenuChoice.LOCAL_OPTION.value:
-            return LoginMethod.LOCAL
-        elif choice == MenuChoice.PRO_OPTION.value:
-            return LoginMethod.PRO 
-        elif choice == MenuChoice.CLOUD_OPTION.value:
-            return LoginMethod.CLOUD
+        return possible_login_methods[int(choice) - 1]
 
 
 def start_local_server(
@@ -970,8 +974,8 @@ def login(
         # If no server argument is provided, and the client is not currently
         # connected to any non-local server, show the interactive login menu.
         login_method = _display_login_menu()
-        
-        if login_method == LoginMethod.LOCAL:
+
+        if login_method.name == "local":
             # Start a local ZenML server and connect to it
             start_local_server(
                 docker=docker,
@@ -982,25 +986,24 @@ def login(
                 ngrok_token=ngrok_token,
                 restart=restart,
             )
-        elif login_method == LoginMethod.PRO:
+        elif login_method.name == "pro":
             # Connect to ZenML Pro
             connect_to_pro_server(
                 api_key=api_key_value,
                 pro_api_url=pro_api_url,
                 verify_ssl=verify_ssl,
             )
-        elif login_method == LoginMethod.CLOUD:
+        elif login_method.name == "cloud":
             # Get custom server URL from user
             console.print()
             server_url = Prompt.ask(
-                "[bold]Enter the ZenML server URL[/bold]",
-                default="http/https"
+                "[bold]Enter the ZenML server URL[/bold]", default="http/https"
             )
-            
+
             if not server_url.strip():
                 cli_utils.error("Server URL cannot be empty.")
                 return
-                
+
             # Validate URL format
             if not re.match(r"^https?://", server_url):
                 cli_utils.error(
@@ -1008,7 +1011,7 @@ def login(
                     "http:// or https://"
                 )
                 return
-            
+
             # Connect to the custom server
             # First, try to discover if the server is a ZenML Pro server or not
             server_is_pro, server_pro_api_url = is_pro_server(server_url)

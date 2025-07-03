@@ -166,15 +166,15 @@ def error(text: str) -> NoReturn:
     """
     error_prefix = click.style("Error: ", fg="red", bold=True)
     error_message = click.style(text, fg="red", bold=False)
-    
+
     # Create a custom ClickException that bypasses Click's default "Error: " prefix
     class StyledClickException(click.ClickException):
         def show(self, file=None):
             if file is None:
-                file = click.get_text_stream('stderr')
+                file = click.get_text_stream("stderr")
             # Print our custom styled message directly without Click's prefix
             click.echo(self.message, file=file)
-    
+
     raise StyledClickException(message=error_prefix + error_message)
 
 
@@ -212,17 +212,19 @@ def success(
         **kwargs: Optional kwargs to be passed to console.print().
     """
     from rich.text import Text
-    
+
     # Create a Rich Text object to ensure proper styling
     if not text.startswith("✔ "):
         # Explicitly style the checkmark in green and the text with the success style
         base_style = zenml_style_defaults["success"]
         style = Style.chain(base_style, Style(bold=bold, italic=italic))
-        
+
         styled_text = Text()
-        styled_text.append("✔ ", style="green bold")  # Explicit green for checkmark
+        styled_text.append(
+            "✔ ", style="green bold"
+        )  # Explicit green for checkmark
         styled_text.append(text, style=style)
-        
+
         console.print(styled_text, **kwargs)
     else:
         # If checkmark already exists, apply success style to entire text
@@ -275,7 +277,11 @@ def print_table(
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(
-        box=box.ROUNDED, show_lines=True, title=title, caption=caption, border_style="dim"
+        box=box.ROUNDED,
+        show_lines=True,
+        title=title,
+        caption=caption,
+        border_style="dim",
     )
     for col_name in column_names:
         if isinstance(col_name, str):

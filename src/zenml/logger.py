@@ -92,10 +92,12 @@ class CustomFormatter(logging.Formatter):
             )
             formatter = logging.Formatter(log_fmt)
             formatted_message = formatter.format(record)
-            
+
             # Add warning icon for warning messages
             if record.levelno == LoggingLevels.WARN.value:
-                formatted_message = self.yellow + "⚠ " + self.reset + formatted_message
+                formatted_message = (
+                    self.yellow + "⚠ " + self.reset + formatted_message
+                )
             quoted_groups = re.findall("`([^`]*)`", formatted_message)
             for quoted in quoted_groups:
                 formatted_message = formatted_message.replace(

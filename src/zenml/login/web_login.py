@@ -176,12 +176,15 @@ def web_login(
         # URL to it
         verification_uri = base_url + verification_uri
     webbrowser.open(verification_uri)
-    
+
     # Display the verification URL without panel styling
     from zenml.console import console
-    
+
     console.print()
-    console.print("If your browser did not open automatically, please open the following URL into your browser to proceed with the authentication:", style="white")
+    console.print(
+        "If your browser did not open automatically, please open the following URL into your browser to proceed with the authentication:",
+        style="white",
+    )
     console.print(verification_uri, style="bright_blue underline")
     console.print()
 

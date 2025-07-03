@@ -884,9 +884,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     if run_url:
                         # Display the dashboard URL directly without panel to avoid wrapping
                         from zenml.console import console
-                        
+
                         console.print()
-                        console.print(f"Dashboard URL: [bright_blue underline]{run_url}[/bright_blue underline]", overflow="ignore", crop=False)
+                        console.print(
+                            f"Dashboard URL: [bright_blue underline]{run_url}[/bright_blue underline]",
+                            overflow="ignore",
+                            crop=False,
+                        )
                         console.print()
                     else:
                         logger.info(
