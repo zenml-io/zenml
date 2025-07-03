@@ -642,7 +642,9 @@ def wait_for_job_to_finish(
                 if condition.type == "Complete" and condition.status == "True":
                     return
                 if condition.type == "Failed" and condition.status == "True":
-                    raise RuntimeError(f"Job `{namespace}:{job_name}` failed: {condition.message}")
+                    raise RuntimeError(
+                        f"Job `{namespace}:{job_name}` failed: {condition.message}"
+                    )
 
         if stream_logs:
             pod_list: k8s_client.V1PodList = core_api.list_namespaced_pod(
