@@ -104,33 +104,121 @@ class SagemakerOrchestratorSettings(BaseSettings):
                     Data must be available locally in /opt/ml/processing/output/data/<ChannelName>.
     """
 
-    synchronous: bool = True
+    synchronous: bool = Field(
+        True,
+        description="Controls whether pipeline execution blocks the client. If True, "
+        "the client waits until all steps complete before returning. If False, "
+        "returns immediately and executes asynchronously. Useful for long-running "
+        "production pipelines where you don't want to maintain a connection",
+    )
 
-    instance_type: Optional[str] = None
-    execution_role: Optional[str] = None
-    volume_size_in_gb: int = 30
-    max_runtime_in_seconds: int = 86400
-    tags: Dict[str, str] = {}
-    pipeline_tags: Dict[str, str] = {}
-    keep_alive_period_in_seconds: Optional[int] = 300  # 5 minutes
-    use_training_step: Optional[bool] = None
+    instance_type: Optional[str] = Field(
+        None,
+        description="AWS EC2 instance type for step execution. Must be a valid "
+        "SageMaker-supported instance type. Examples: 'ml.t3.medium' (2 vCPU, 4GB RAM), "
+        "'ml.m5.xlarge' (4 vCPU, 16GB RAM), 'ml.p3.2xlarge' (8 vCPU, 61GB RAM, 1 GPU). "
+        "Defaults to ml.m5.xlarge for training steps or ml.t3.medium for processing steps",
+    )
+    execution_role: Optional[str] = Field(
+        None,
+        description="IAM role ARN for SageMaker step execution permissions. Must have "
+        "necessary policies attached (SageMakerFullAccess, S3 access, etc.). "
+        "Example: 'arn:aws:iam::123456789012:role/SageMakerExecutionRole'. "
+        "If not provided, uses the default SageMaker execution role",
+    )
+    volume_size_in_gb: int = Field(
+        30,
+        description="EBS volume size in GB for step execution storage. Must be between "
+        "1-16384 GB. Used for temporary files, model artifacts, and data processing. "
+        "Larger volumes needed for big datasets or model training. Example: 30 for "
+        "small jobs, 100+ for large ML training jobs",
+    )
+    max_runtime_in_seconds: int = Field(
+        86400,  # 24 hours
+        description="Maximum execution time in seconds before job termination. Must be "
+        "between 1-432000 seconds (5 days). Used to prevent runaway jobs and control costs. "
+        "Examples: 3600 (1 hour), 86400 (24 hours), 259200 (3 days). "
+        "Consider your longest expected step duration",
+    )
+    tags: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Tags to apply to the Processor/Estimator assigned to the step. "
+        "Example: {'Environment': 'Production', 'Project': 'MLOps'}",
+    )
+    pipeline_tags: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Tags to apply to the pipeline via the "
+        "sagemaker.workflow.pipeline.Pipeline.create method. Example: "
+        "{'Environment': 'Production', 'Project': 'MLOps'}",
+    )
+    keep_alive_period_in_seconds: Optional[int] = Field(
+        300,  # 5 minutes
+        description="The time in seconds after which the provisioned instance "
+        "will be terminated if not used. This is only applicable for "
+        "TrainingStep type.",
+    )
+    use_training_step: Optional[bool] = Field(
+        None,
+        description="Whether to use the TrainingStep type. It is not possible "
+        "to use TrainingStep type if the `output_data_s3_uri` is set to "
+        "Dict[str, str] or if the `output_data_s3_mode` != 'EndOfJob'.",
+    )
 
-    processor_args: Dict[str, Any] = {}
-    estimator_args: Dict[str, Any] = {}
-    environment: Dict[str, str] = {}
+    processor_args: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Arguments that are directly passed to the SageMaker "
+        "Processor for a specific step, allowing for overriding the default "
+        "settings provided when configuring the component. Example: "
+        "{'instance_count': 2, 'base_job_name': 'my-processing-job'}",
+    )
+    estimator_args: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Arguments that are directly passed to the SageMaker "
+        "Estimator for a specific step, allowing for overriding the default "
+        "settings provided when configuring the component. Example: "
+        "{'train_instance_count': 2, 'train_max_run': 3600}",
+    )
+    environment: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Environment variables to pass to the container. "
+        "Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
+    )
 
-    input_data_s3_mode: str = "File"
+    input_data_s3_mode: str = Field(
+        "File",
+        description="How data is made available to the container. "
+        "Two possible input modes: File, Pipe.",
+    )
     input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
-        default=None, union_mode="left_to_right"
+        default=None,
+        union_mode="left_to_right",
+        description="S3 URI where data is located if not locally. Example string: "
+        "'s3://my-bucket/my-data/train'. Example dict: "
+        "{'training': 's3://bucket/train', 'validation': 's3://bucket/val'}",
     )
 
-    output_data_s3_mode: str = DEFAULT_OUTPUT_DATA_S3_MODE
+    output_data_s3_mode: str = Field(
+        DEFAULT_OUTPUT_DATA_S3_MODE,
+        description="How data is uploaded to the S3 bucket. "
+        "Two possible output modes: EndOfJob, Continuous.",
+    )
     output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
-        default=None, union_mode="left_to_right"
+        default=None,
+        union_mode="left_to_right",
+        description="S3 URI where data is uploaded after or during processing run. "
+        "Example string: 's3://my-bucket/my-data/output'. Example dict: "
+        "{'output_one': 's3://bucket/out1', 'output_two': 's3://bucket/out2'}",
     )
-
-    processor_role: Optional[str] = None
-    processor_tags: Optional[Dict[str, str]] = None
+    processor_role: Optional[str] = Field(
+        None,
+        description="DEPRECATED: use `execution_role` instead. "
+        "The IAM role to use for the step execution.",
+    )
+    processor_tags: Optional[Dict[str, str]] = Field(
+        None,
+        description="DEPRECATED: use `tags` instead. "
+        "Tags to apply to the Processor assigned to the step.",
+    )
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("processor_role", "execution_role"), ("processor_tags", "tags")
     )
@@ -209,14 +297,47 @@ class SagemakerOrchestratorConfig(
             "sagemaker-{region}-{aws-account-id}".
     """
 
-    execution_role: str
-    scheduler_role: Optional[str] = None
-    aws_access_key_id: Optional[str] = SecretField(default=None)
-    aws_secret_access_key: Optional[str] = SecretField(default=None)
-    aws_profile: Optional[str] = None
-    aws_auth_role_arn: Optional[str] = None
-    region: Optional[str] = None
-    bucket: Optional[str] = None
+    execution_role: str = Field(
+        ..., description="The IAM role ARN to use for the pipeline."
+    )
+    scheduler_role: Optional[str] = Field(
+        None,
+        description="The ARN of the IAM role that will be assumed by "
+        "the EventBridge service to launch Sagemaker pipelines. "
+        "Required for scheduled pipelines.",
+    )
+    aws_access_key_id: Optional[str] = SecretField(
+        default=None,
+        description="The AWS access key ID to use to authenticate to AWS. "
+        "If not provided, the value from the default AWS config will be used.",
+    )
+    aws_secret_access_key: Optional[str] = SecretField(
+        default=None,
+        description="The AWS secret access key to use to authenticate to AWS. "
+        "If not provided, the value from the default AWS config will be used.",
+    )
+    aws_profile: Optional[str] = Field(
+        None,
+        description="The AWS profile to use for authentication if not using "
+        "service connectors or explicit credentials. If not provided, the "
+        "default profile will be used.",
+    )
+    aws_auth_role_arn: Optional[str] = Field(
+        None,
+        description="The ARN of an intermediate IAM role to assume when "
+        "authenticating to AWS.",
+    )
+    region: Optional[str] = Field(
+        None,
+        description="The AWS region where the processing job will be run. "
+        "If not provided, the value from the default AWS config will be used.",
+    )
+    bucket: Optional[str] = Field(
+        None,
+        description="Name of the S3 bucket to use for storing artifacts "
+        "from the job run. If not provided, a default bucket will be created "
+        "based on the following format: 'sagemaker-{region}-{aws-account-id}'.",
+    )
 
     @property
     def is_remote(self) -> bool:

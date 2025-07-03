@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_STEP_OPERATOR_FLAVOR
@@ -31,27 +33,38 @@ if TYPE_CHECKING:
 class KubernetesStepOperatorSettings(BaseSettings):
     """Settings for the Kubernetes step operator.
 
-    Attributes:
-        pod_settings: Pod settings to apply to pods executing the steps.
-        service_account_name: Name of the service account to use for the pod.
-        privileged: If the container should be run in privileged mode.
-        pod_startup_timeout: The maximum time to wait for a pending step pod to
-            start (in seconds).
-        pod_failure_max_retries: The maximum number of times to retry a step
-            pod if the step Kubernetes pod fails to start
-        pod_failure_retry_delay: The delay in seconds between pod
-            failure retries and pod startup retries (in seconds)
-        pod_failure_backoff: The backoff factor for pod failure retries and
-            pod startup retries.
+    Configuration options for individual step execution on Kubernetes.
+    Field descriptions are defined inline using Field() descriptors.
     """
 
-    pod_settings: Optional[KubernetesPodSettings] = None
-    service_account_name: Optional[str] = None
-    privileged: bool = False
-    pod_startup_timeout: int = 60 * 10  # Default 10 minutes
-    pod_failure_max_retries: int = 3
-    pod_failure_retry_delay: int = 10
-    pod_failure_backoff: float = 1.0
+    pod_settings: Optional[KubernetesPodSettings] = Field(
+        default=None,
+        description="Pod configuration for step execution containers.",
+    )
+    service_account_name: Optional[str] = Field(
+        default=None,
+        description="Kubernetes service account for step pods. Uses default account if not specified.",
+    )
+    privileged: bool = Field(
+        default=False,
+        description="Whether to run step containers in privileged mode with extended permissions.",
+    )
+    pod_startup_timeout: int = Field(
+        default=600,
+        description="Maximum seconds to wait for step pods to start. Default is 10 minutes.",
+    )
+    pod_failure_max_retries: int = Field(
+        default=3,
+        description="Maximum retry attempts when step pods fail to start.",
+    )
+    pod_failure_retry_delay: int = Field(
+        default=10,
+        description="Delay in seconds between pod failure retry attempts.",
+    )
+    pod_failure_backoff: float = Field(
+        default=1.0,
+        description="Exponential backoff factor for retry delays. Values > 1.0 increase delay with each retry.",
+    )
 
 
 class KubernetesStepOperatorConfig(
@@ -59,22 +72,24 @@ class KubernetesStepOperatorConfig(
 ):
     """Configuration for the Kubernetes step operator.
 
-    Attributes:
-        kubernetes_namespace: Name of the Kubernetes namespace to be used.
-        incluster: If `True`, the step operator will run the pipeline inside the
-            same cluster in which the orchestrator is running. For this to work,
-            the pod running the orchestrator needs permissions to create new
-            pods. If set, the `kubernetes_context` config option is ignored. If
-            the stack component is linked to a Kubernetes service connector,
-            this field is ignored.
-        kubernetes_context: Name of a Kubernetes context to run pipelines in.
-            If the stack component is linked to a Kubernetes service connector,
-            this field is ignored. Otherwise, it is mandatory.
+    Defines cluster connection and execution settings.
+    Field descriptions are defined inline using Field() descriptors.
     """
 
-    kubernetes_namespace: str = "zenml"
-    incluster: bool = False
-    kubernetes_context: Optional[str] = None
+    kubernetes_namespace: str = Field(
+        default="zenml",
+        description="Kubernetes namespace for step execution. Must be a valid namespace name.",
+    )
+    incluster: bool = Field(
+        default=False,
+        description="Whether to execute within the same cluster as the orchestrator. "
+        "Requires appropriate pod creation permissions.",
+    )
+    kubernetes_context: Optional[str] = Field(
+        default=None,
+        description="Kubernetes context name for cluster connection. "
+        "Ignored when using service connectors or in-cluster execution.",
+    )
 
     @property
     def is_remote(self) -> bool:

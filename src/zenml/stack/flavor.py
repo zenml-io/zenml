@@ -233,31 +233,32 @@ class Flavor:
         """Generate SDK docs url for a flavor.
 
         Returns:
-            The complete url to the zenml SDK docs
+            The complete url to the zenml SDK docs pointing to component implementation
         """
         from zenml import __version__
 
         base = f"https://sdkdocs.zenml.io/{__version__}"
 
-        component_type = self.type.plural
+        # Get the implementation class module and name
+        impl_class = self.implementation_class
+        module_name = impl_class.__module__
 
-        if "zenml.integrations" in self.__module__:
-            # Get integration name out of module path which will look something
-            #  like this "zenml.integrations.<integration>....
-            integration = self.__module__.split(
-                "zenml.integrations.", maxsplit=1
-            )[1].split(".")[0]
-
-            return (
-                f"{base}/integration_code_docs"
-                f"/integrations-{integration}/#{self.__module__}"
+        # Convert module path to docs URL format
+        # e.g., zenml.orchestrators.local.local_orchestrator -> core_code_docs/core-orchestrators
+        if module_name.startswith("zenml.integrations."):
+            # For integrations: zenml.integrations.kubernetes -> integrations-kubernetes
+            integration_name = module_name.split(".")[2]
+            docs_path = (
+                f"integration_code_docs/integrations-{integration_name}.html"
             )
-
+            anchor = f"#zenml.integrations.{integration_name}-modules"
         else:
-            return (
-                f"{base}/core_code_docs/core-{component_type}/"
-                f"#{self.__module__}"
-            )
+            # For core components: zenml.orchestrators -> core-orchestrators
+            component_type = module_name.split(".")[1]
+            docs_path = f"core_code_docs/core-{component_type}"
+            anchor = f"#{module_name}"
+
+        return f"{base}/{docs_path}{anchor}"
 
 
 def validate_flavor_source(
