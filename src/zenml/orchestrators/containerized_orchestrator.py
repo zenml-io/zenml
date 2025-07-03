@@ -58,6 +58,9 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
     ) -> bool:
         """Whether to build the pipeline image.
 
+        Args:
+            deployment: The pipeline deployment.
+
         Returns:
             Whether to build the pipeline image.
         """

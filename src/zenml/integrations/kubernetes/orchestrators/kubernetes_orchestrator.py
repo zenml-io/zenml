@@ -93,6 +93,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     ) -> bool:
         """Whether to always build the pipeline image.
 
+        Args:
+            deployment: The pipeline deployment.
+
         Returns:
             Whether to always build the pipeline image.
         """
