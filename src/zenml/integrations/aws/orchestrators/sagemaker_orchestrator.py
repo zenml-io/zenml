@@ -853,12 +853,16 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )["PipelineExecutionStatus"]
 
         # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-        # https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/PipelineState
-        if status in ["Executing", "Stopping"]:
+        # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
+        if status == "Executing":
             return ExecutionStatus.RUNNING
-        elif status in ["Stopped", "Failed"]:
+        elif status == "Stopping":
+            return ExecutionStatus.STOPPING
+        elif status == "Stopped":
+            return ExecutionStatus.STOPPED
+        elif status == "Failed":
             return ExecutionStatus.FAILED
-        elif status in ["Succeeded"]:
+        elif status == "Succeeded":
             return ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline execution.")

@@ -5844,18 +5844,33 @@ class SqlZenStore(BaseZenStore):
             # transaction to do so finishes. After the first transaction
             # finishes, the subsequent queries will not be able to find a
             # placeholder run anymore, as we already updated the
-            # orchestrator_run_id.
-            # Note: This only locks a single row if the where clause of
-            # the query is indexed (we have a unique index due to the
-            # unique constraint on those columns). Otherwise, this will lock
-            # multiple rows or even the complete table which we want to
-            # avoid.
+            # status.
+            # Note: Due to our unique index on deployment_id and
+            # orchestrator_run_id, this only locks a single row. If you're
+            # modifying this WHERE clause, make sure to test/adjust so this
+            # does not lock multiple rows or even the complete table.
             .with_for_update()
             .where(PipelineRunSchema.deployment_id == pipeline_run.deployment)
             .where(
-                PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
+                or_(
+                    PipelineRunSchema.orchestrator_run_id
+                    == pipeline_run.orchestrator_run_id,
+                    col(PipelineRunSchema.orchestrator_run_id).is_(None),
+                )
             )
-            .where(PipelineRunSchema.project_id == pipeline_run.project)
+            .where(
+                PipelineRunSchema.status == ExecutionStatus.INITIALIZING.value
+            )
+            # In very rare cases, there can be multiple placeholder runs for
+            # the same deployment. By ordering by the orchestrator_run_id, we
+            # make sure that we use the placeholder run with the matching
+            # orchestrator_run_id if it exists, before falling back to the
+            # placeholder run without any orchestrator_run_id provided.
+            # Note: This works because both SQLite and MySQL consider NULLs
+            # to be lower than any other value. If we add support for other
+            # databases (e.g. PostgreSQL, which considers NULLs to be greater
+            # than any other value), we need to potentially adjust this.
+            .order_by(desc(PipelineRunSchema.orchestrator_run_id))
         ).first()
 
         if not run_schema:
@@ -5902,6 +5917,9 @@ class SqlZenStore(BaseZenStore):
             .where(PipelineRunSchema.deployment_id == deployment_id)
             .where(
                 PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
+            )
+            .where(
+                PipelineRunSchema.status != ExecutionStatus.INITIALIZING.value
             )
         ).first()
 
@@ -5955,27 +5973,31 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            try:
-                return (
-                    self._replace_placeholder_run(
-                        pipeline_run=pipeline_run,
-                        pre_replacement_hook=pre_creation_hook,
-                        session=session,
-                    ),
-                    True,
-                )
-            except KeyError:
-                # We were not able to find/replace a placeholder run. This could
-                # be due to one of the following three reasons:
-                # (1) There never was a placeholder run for the deployment. This
-                #     is the case if the user ran the pipeline on a schedule.
-                # (2) There was a placeholder run, but a previous pipeline run
-                #     already used it. This is the case if users rerun a
-                #     pipeline run e.g. from the orchestrator UI, as they will
-                #     use the same deployment_id with a new orchestrator_run_id.
-                # (3) A step of the same pipeline run already replaced the
-                #     placeholder run.
-                pass
+            if not pipeline_run.is_placeholder_request:
+                # Only run this if the request is not a placeholder run itself,
+                # as we don't want to replace a placeholder run with another
+                # placeholder run.
+                try:
+                    return (
+                        self._replace_placeholder_run(
+                            pipeline_run=pipeline_run,
+                            pre_replacement_hook=pre_creation_hook,
+                            session=session,
+                        ),
+                        True,
+                    )
+                except KeyError:
+                    # We were not able to find/replace a placeholder run. This could
+                    # be due to one of the following three reasons:
+                    # (1) There never was a placeholder run for the deployment. This
+                    #     is the case if the user ran the pipeline on a schedule.
+                    # (2) There was a placeholder run, but a previous pipeline run
+                    #     already used it. This is the case if users rerun a
+                    #     pipeline run e.g. from the orchestrator UI, as they will
+                    #     use the same deployment_id with a new orchestrator_run_id.
+                    # (3) A step of the same pipeline run already replaced the
+                    #     placeholder run.
+                    pass
 
             try:
                 # We now try to create a new run. The following will happen in
@@ -6097,7 +6119,14 @@ class SqlZenStore(BaseZenStore):
                 resources=existing_run,
                 session=session,
             )
+
+            if run_update.status is not None:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=run_id,
+                    session=session,
+                )
             session.refresh(existing_run)
+
             return existing_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -8802,6 +8831,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: if the step run already exists.
+            IllegalOperationError: if the pipeline run is stopped or stopping.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
@@ -8814,6 +8844,15 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            # Validate pipeline status before creating step
+            if run.status in [
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+            ]:
+                raise IllegalOperationError(
+                    f"Cannot create step '{step_run.name}' for pipeline in "
+                    f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
+                )
             self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,
@@ -8889,15 +8928,41 @@ class SqlZenStore(BaseZenStore):
                     )
                     for link in original_metadata_links
                 ]
-                # Add all new links in a single operation
-                session.add_all(new_links)
-                # Commit the changes
-                session.commit()
-                session.refresh(step_schema)
+
+                if new_links:
+                    session.add_all(new_links)
+                    session.commit()
+                    session.refresh(step_schema, ["run_metadata"])
+
+            if step_run.status == ExecutionStatus.CACHED:
+                from zenml.utils.tag_utils import Tag
+
+                cascading_tags = [
+                    tag
+                    for tag in run.get_pipeline_configuration().tags or []
+                    if isinstance(tag, Tag) and tag.cascade
+                ]
+
+                if cascading_tags:
+                    output_artifact_ids = [
+                        id for ids in step_run.outputs.values() for id in ids
+                    ]
+                    output_artifacts = list(
+                        session.exec(
+                            select(ArtifactVersionSchema).where(
+                                col(ArtifactVersionSchema.id).in_(
+                                    output_artifact_ids
+                                )
+                            )
+                        ).all()
+                    )
+                    self._attach_tags_to_resources(
+                        cascading_tags,
+                        resources=output_artifacts,
+                        session=session,
+                    )
 
             session.commit()
-            session.refresh(step_schema)
-
             step_model = step_schema.to_model(include_metadata=True)
 
             for upstream_step in step_model.spec.upstream_steps:
@@ -8949,13 +9014,17 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
+            session.commit()
+
             if step_run.status != ExecutionStatus.RUNNING:
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
 
             session.commit()
-            session.refresh(step_schema)
+            session.refresh(
+                step_schema, ["input_artifacts", "output_artifacts"]
+            )
 
             if model_version_id := self._get_or_create_model_version_for_run(
                 step_schema
@@ -9081,14 +9150,13 @@ class SqlZenStore(BaseZenStore):
                     input_type=StepRunInputArtifactType.MANUAL,
                     session=session,
                 )
+            session.commit()
+            session.refresh(existing_step_run)
 
             self._update_pipeline_run_status(
                 pipeline_run_id=existing_step_run.pipeline_run_id,
                 session=session,
             )
-
-            session.commit()
-            session.refresh(existing_step_run)
 
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
@@ -9308,6 +9376,9 @@ class SqlZenStore(BaseZenStore):
         """
         from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
+        # Make sure we start with a fresh transaction before locking the
+        # pipeline run
+        session.commit()
         pipeline_run = session.exec(
             select(PipelineRunSchema)
             .with_for_update()
@@ -9323,6 +9394,7 @@ class SqlZenStore(BaseZenStore):
         assert pipeline_run.deployment
         num_steps = pipeline_run.deployment.step_count
         new_status = get_pipeline_run_status(
+            run_status=ExecutionStatus(pipeline_run.status),
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
             ],
@@ -12231,7 +12303,7 @@ class SqlZenStore(BaseZenStore):
     def _attach_tags_to_resources(
         self,
         tags: Optional[Sequence[Union[str, tag_utils.Tag]]],
-        resources: Union[BaseSchema, List[BaseSchema]],
+        resources: Union[BaseSchema, Sequence[BaseSchema]],
         session: Session,
     ) -> None:
         """Attaches multiple tags to multiple resources.
