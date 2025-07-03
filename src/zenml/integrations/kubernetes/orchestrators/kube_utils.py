@@ -675,7 +675,6 @@ def wait_for_job_to_finish(
                     PodPhase.FAILED.value,
                 ]:
                     finished_pods.add(pod_name)
-                    continue
 
                 containers = pod.spec.containers
                 if not container_name:
