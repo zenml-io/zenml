@@ -499,7 +499,7 @@ def connect_to_pro_server(
         )
 
     cli_utils.declare(
-        f"Connecting to ZenML Pro server: [tenant]{server.name}[/tenant] [{str(server.id)}] "
+        f"Connecting to ZenML Pro server: '{server.name}' [{str(server.id)}] "
     )
 
     connect_to_server(

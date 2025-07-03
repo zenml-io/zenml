@@ -26,7 +26,6 @@ zenml_style_defaults = {
     "success": Style(color="green"),
     "repr.str": Style(color="white", dim=False),
     "repr.uuid": Style(color="magenta", dim=False),
-    "tenant": Style(color="white", dim=False, bold=False),
 }
 
 zenml_custom_theme = Theme(zenml_style_defaults)
