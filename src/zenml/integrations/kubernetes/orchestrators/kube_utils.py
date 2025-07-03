@@ -34,6 +34,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 import enum
 import re
 import time
+from collections import defaultdict
 from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
@@ -627,10 +628,8 @@ def wait_for_job_to_finish(
     Raises:
         RuntimeError: If the job failed or timed out.
     """
-    from collections import defaultdict
-
-    logged_lines_per_pod = defaultdict(int)
-    finished_pods = set()
+    logged_lines_per_pod: Dict[str, int] = defaultdict(int)
+    finished_pods: Set[str] = set()
 
     while True:
         job: k8s_client.V1Job = batch_api.read_namespaced_job(

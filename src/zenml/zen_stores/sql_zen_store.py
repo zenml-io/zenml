@@ -8886,7 +8886,6 @@ class SqlZenStore(BaseZenStore):
             # try to acquire more exclusive locks
             session.commit()
 
-            # TODO: Maybe we need to lock the pipeline run here, to avoid race conditions?
             existing_step_runs = session.exec(
                 select(StepRunSchema)
                 .with_for_update()
@@ -8928,13 +8927,13 @@ class SqlZenStore(BaseZenStore):
                 # Update all existing step runs to retried.
                 # TODO: Once we have the health check, this should probably also
                 # cancel the existing step runs in case they're still running?
-                session.exec(
+                session.execute(
                     update(StepRunSchema)
                     .where(
-                        StepRunSchema.id.in_(
-                            [sr.id for sr in existing_step_runs]
-                        )
+                        col(StepRunSchema.pipeline_run_id)
+                        == step_run.pipeline_run_id
                     )
+                    .where(col(StepRunSchema.name) == step_run.name)
                     .values(status=ExecutionStatus.RETRIED.value)
                 )
 

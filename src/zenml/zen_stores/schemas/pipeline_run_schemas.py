@@ -369,6 +369,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             step_name: The name of the step to get the configuration for.
 
+        Raises:
+            RuntimeError: If the pipeline run has no deployment.
+
         Returns:
             The step configuration.
         """

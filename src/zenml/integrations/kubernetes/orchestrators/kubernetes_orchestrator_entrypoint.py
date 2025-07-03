@@ -261,13 +261,13 @@ def main() -> None:
         # This is to fix a bug in the kubernetes client which has some wrong
         # client-side validations that means the `on_exit_codes` field is
         # unusable. See https://github.com/kubernetes-client/python/issues/2056
-        class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):
+        class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: ignore[misc]
             @property
-            def on_pod_conditions(self):
+            def on_pod_conditions(self):  # type: ignore[no-untyped-def]
                 return self._on_pod_conditions
 
             @on_pod_conditions.setter
-            def on_pod_conditions(self, on_pod_conditions):
+            def on_pod_conditions(self, on_pod_conditions):  # type: ignore[no-untyped-def]
                 self._on_pod_conditions = on_pod_conditions
 
         k8s_client.V1PodFailurePolicyRule = PatchedFailurePolicyRule

@@ -358,11 +358,13 @@ class BaseOrchestrator(StackComponent, ABC):
             step: The step to run.
 
         Raises:
+            RunStoppedException: If the run was stopped.
             BaseException: If the step failed all retries.
         """
-        assert self._active_deployment
 
         def _launch_step() -> None:
+            assert self._active_deployment
+
             launcher = StepLauncher(
                 deployment=self._active_deployment,
                 step=step,

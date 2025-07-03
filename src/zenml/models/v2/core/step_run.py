@@ -710,7 +710,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_
+        from sqlmodel import and_, col
 
         from zenml.zen_stores.schemas import (
             ModelSchema,
@@ -730,7 +730,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
 
         if self.exclude_retried:
             custom_filters.append(
-                StepRunSchema.status != ExecutionStatus.RETRIED.value
+                col(StepRunSchema.status) != ExecutionStatus.RETRIED.value
             )
 
         return custom_filters
