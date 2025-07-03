@@ -78,11 +78,7 @@ class CustomFormatter(logging.Formatter):
         if ZENML_LOGGING_COLORS_DISABLED:
             # If color formatting is disabled, use the default format without colors
             formatter = logging.Formatter(self.format_template)
-            formatted_message = formatter.format(record)
-            # Add warning icon for warning messages even when colors are disabled
-            if record.levelno == LoggingLevels.WARN.value:
-                formatted_message = "⚠ " + formatted_message
-            return formatted_message
+            return formatter.format(record)
         else:
             # Use color formatting
             log_fmt = (
@@ -93,11 +89,6 @@ class CustomFormatter(logging.Formatter):
             formatter = logging.Formatter(log_fmt)
             formatted_message = formatter.format(record)
 
-            # Add warning icon for warning messages
-            if record.levelno == LoggingLevels.WARN.value:
-                formatted_message = (
-                    self.yellow + "⚠ " + self.reset + formatted_message
-                )
             quoted_groups = re.findall("`([^`]*)`", formatted_message)
             for quoted in quoted_groups:
                 formatted_message = formatted_message.replace(
