@@ -61,7 +61,7 @@ class AriaOrchestratorFlavor(BaseOrchestratorFlavor):
 def test_sdk_docs_url():
     """Tests that SDK Docs URLs are correct."""
     assert AriaOrchestratorFlavor().sdk_docs_url == (
-        f"https://sdkdocs.zenml.io/{zenml_version}/component_configs/AriaOrchestratorConfig.html"
+        f"https://sdkdocs.zenml.io/{zenml_version}/core_code_docs/core-orchestrators/#tests.unit.test_flavor"
     )
 
 
