@@ -24,6 +24,9 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
+_pod_settings_logged_warnings = []
+
+
 def warn_if_invalid_model_data(data: Any, class_name: str) -> None:
     """Validates the data of a Kubernetes model.
 
@@ -37,13 +40,15 @@ def warn_if_invalid_model_data(data: Any, class_name: str) -> None:
     try:
         serialization_utils.deserialize_kubernetes_model(data, class_name)
     except KeyError as e:
-        logger.warning(
-            "Invalid data for Kubernetes model class `%s`: %s. "
-            "Hint: Kubernetes expects attribute names in CamelCase, not "
-            "snake_case.",
-            class_name,
-            e,
-        )
+        if str(e) not in _pod_settings_logged_warnings:
+            _pod_settings_logged_warnings.append(str(e))
+            logger.warning(
+                "Invalid data for Kubernetes model class `%s`: %s. "
+                "Hint: Kubernetes expects attribute names in CamelCase, not "
+                "snake_case.",
+                class_name,
+                e,
+            )
 
 
 class KubernetesPodSettings(BaseSettings):
