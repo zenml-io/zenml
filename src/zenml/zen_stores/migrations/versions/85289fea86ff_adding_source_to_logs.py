@@ -36,12 +36,12 @@ def upgrade() -> None:
         """)
     )
 
-    # Set source to "client" where pipeline_run_id is present but step_run_id is null
+    # Set source to "client" for all other cases (where step_run_id is null)
     connection.execute(
         sa.text("""
             UPDATE logs 
             SET source = 'client' 
-            WHERE pipeline_run_id IS NOT NULL AND step_run_id IS NULL
+            WHERE step_run_id IS NULL
         """)
     )
 
