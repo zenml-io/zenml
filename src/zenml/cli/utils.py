@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 from typing import (
+    IO,
     TYPE_CHECKING,
     AbstractSet,
     Any,
@@ -162,9 +163,20 @@ def error(text: str) -> NoReturn:
         text: Input text string.
 
     Raises:
-        ClickException: when called.
+        StyledClickException: when called.
     """
-    raise click.ClickException(message=click.style(text, fg="red", bold=True))
+    error_prefix = click.style("Error: ", fg="red", bold=True)
+    error_message = click.style(text, fg="red", bold=False)
+
+    # Create a custom ClickException that bypasses Click's default "Error: " prefix
+    class StyledClickException(click.ClickException):
+        def show(self, file: Optional[IO[Any]] = None) -> None:
+            if file is None:
+                file = click.get_text_stream("stderr")
+            # Print our custom styled message directly without Click's prefix
+            click.echo(self.message, file=file)
+
+    raise StyledClickException(message=error_prefix + error_message)
 
 
 def warning(
@@ -182,6 +194,25 @@ def warning(
         **kwargs: Optional kwargs to be passed to console.print().
     """
     base_style = zenml_style_defaults["warning"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style, **kwargs)
+
+
+def success(
+    text: str,
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+    **kwargs: Any,
+) -> None:
+    """Echo a success string on the CLI.
+
+    Args:
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
+        **kwargs: Optional kwargs to be passed to console.print().
+    """
+    base_style = zenml_style_defaults["success"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
     console.print(text, style=style, **kwargs)
 
@@ -230,7 +261,11 @@ def print_table(
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(
-        box=box.HEAVY_EDGE, show_lines=True, title=title, caption=caption
+        box=box.ROUNDED,
+        show_lines=True,
+        title=title,
+        caption=caption,
+        border_style="dim",
     )
     for col_name in column_names:
         if isinstance(col_name, str):
@@ -434,9 +469,10 @@ def print_pydantic_model(
         columns: Optionally specify subset and order of columns to display.
     """
     rich_table = table.Table(
-        box=box.HEAVY_EDGE,
+        box=box.ROUNDED,
         title=title,
         show_lines=True,
+        border_style="dim",
     )
     rich_table.add_column("PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -552,10 +588,11 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     if active:
         stack_caption += " (ACTIVE)"
     rich_table = table.Table(
-        box=box.HEAVY_EDGE,
+        box=box.ROUNDED,
         title="Stack Configuration",
         caption=stack_caption,
         show_lines=True,
+        border_style="dim",
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
@@ -573,9 +610,10 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         declare("No labels are set for this stack.")
     else:
         rich_table = table.Table(
-            box=box.HEAVY_EDGE,
+            box=box.ROUNDED,
             title="Labels",
             show_lines=True,
+            border_style="dim",
         )
         rich_table.add_column("LABEL")
         rich_table.add_column("VALUE", overflow="fold")
@@ -649,9 +687,10 @@ def print_stack_component_configuration(
         if active_status:
             title_ += " (ACTIVE)"
         rich_table = table.Table(
-            box=box.HEAVY_EDGE,
+            box=box.ROUNDED,
             title=title_,
             show_lines=True,
+            border_style="dim",
         )
         rich_table.add_column("COMPONENT_PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -672,9 +711,10 @@ def print_stack_component_configuration(
         declare("No labels are set for this component.")
     else:
         rich_table = table.Table(
-            box=box.HEAVY_EDGE,
+            box=box.ROUNDED,
             title="Labels",
             show_lines=True,
+            border_style="dim",
         )
         rich_table.add_column("LABEL")
         rich_table.add_column("VALUE", overflow="fold")
@@ -688,9 +728,10 @@ def print_stack_component_configuration(
         declare("No connector is set for this component.")
     else:
         rich_table = table.Table(
-            box=box.HEAVY_EDGE,
+            box=box.ROUNDED,
             title="Service Connector",
             show_lines=True,
+            border_style="dim",
         )
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -1165,8 +1206,9 @@ def print_list_items(list_items: List[str], column_title: str) -> None:
         column_title: Title of the column
     """
     rich_table = table.Table(
-        box=box.HEAVY_EDGE,
+        box=box.ROUNDED,
         show_lines=True,
+        border_style="dim",
     )
     rich_table.add_column(column_title.upper(), overflow="fold")
     list_items.sort()
@@ -1291,9 +1333,10 @@ def pretty_print_model_version_details(
     title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
 
     rich_table = table.Table(
-        box=box.HEAVY_EDGE,
+        box=box.ROUNDED,
         title=title_,
         show_lines=True,
+        border_style="dim",
     )
     rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1343,9 +1386,10 @@ def print_served_model_configuration(
     title_ = f"Properties of Served Model {model_service.uuid}"
 
     rich_table = table.Table(
-        box=box.HEAVY_EDGE,
+        box=box.ROUNDED,
         title=title_,
         show_lines=True,
+        border_style="dim",
     )
     rich_table.add_column("MODEL SERVICE PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1745,9 +1789,10 @@ def print_service_connector_configuration(
     if active_status:
         title_ += " (ACTIVE)"
     rich_table = table.Table(
-        box=box.HEAVY_EDGE,
+        box=box.ROUNDED,
         title=title_,
         show_lines=True,
+        border_style="dim",
     )
     rich_table.add_column("PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1819,9 +1864,10 @@ def print_service_connector_configuration(
 
     else:
         rich_table = table.Table(
-            box=box.HEAVY_EDGE,
+            box=box.ROUNDED,
             title="Configuration",
             show_lines=True,
+            border_style="dim",
         )
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -1847,9 +1893,10 @@ def print_service_connector_configuration(
         return
 
     rich_table = table.Table(
-        box=box.HEAVY_EDGE,
+        box=box.ROUNDED,
         title="Labels",
         show_lines=True,
+        border_style="dim",
     )
     rich_table.add_column("LABEL")
     rich_table.add_column("VALUE", overflow="fold")
@@ -2609,7 +2656,7 @@ def multi_choice_prompt(
     table = Table(
         title=f"Available {object_type}",
         show_header=True,
-        border_style=None,
+        border_style="dim",
         expand=True,
         show_lines=True,
     )
