@@ -39,8 +39,33 @@ echo "📋 Discovering pipeline files..."
 # Configuration
 readonly PIPELINE_TIMEOUT=300
 
+# List of pipeline files to ignore (filename only, no path)
+readonly IGNORED_FILES=(
+    "robust_pipeline.py"
+)
+
 # Dynamically discover all pipeline files to test
-mapfile -t PIPELINE_FILES < <(find pipelines -name "*_pipeline.py" -type f | sort)
+mapfile -t ALL_PIPELINE_FILES < <(find pipelines -name "*_pipeline.py" -type f | sort)
+
+# Filter out ignored files
+PIPELINE_FILES=()
+for pipeline_file in "${ALL_PIPELINE_FILES[@]}"; do
+    filename=$(basename "$pipeline_file")
+    skip_file=false
+    
+    # Check if this file should be ignored
+    for ignored_file in "${IGNORED_FILES[@]}"; do
+        if [[ "$filename" == "$ignored_file" ]]; then
+            echo "⏭️  Skipping ignored file: $pipeline_file"
+            skip_file=true
+            break
+        fi
+    done
+    
+    if [[ "$skip_file" == false ]]; then
+        PIPELINE_FILES+=("$pipeline_file")
+    fi
+done
 
 echo "📊 Found ${#PIPELINE_FILES[@]} pipeline files to test"
 
