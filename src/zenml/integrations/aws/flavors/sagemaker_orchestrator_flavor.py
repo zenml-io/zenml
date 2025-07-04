@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker orchestrator flavor."""
 
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from pydantic import Field, model_validator
@@ -34,6 +35,13 @@ if TYPE_CHECKING:
 DEFAULT_TRAINING_INSTANCE_TYPE = "ml.m5.xlarge"
 DEFAULT_PROCESSING_INSTANCE_TYPE = "ml.t3.medium"
 DEFAULT_OUTPUT_DATA_S3_MODE = "EndOfJob"
+
+
+class TrainingRepositoryAccessMode(Enum):
+    """SageMaker training repository access modes."""
+
+    PLATFORM = "Platform"
+    VPC = "Vpc"
 
 
 class SagemakerOrchestratorSettings(BaseSettings):
@@ -105,12 +113,12 @@ class SagemakerOrchestratorSettings(BaseSettings):
         training_repository_access_mode: Specifies how SageMaker accesses the Docker
             image that contains the training algorithm. This is only applicable when
             using TrainingStep. Possible values:
-                - "Platform": The training image is hosted in Amazon ECR (default)
-                - "Vpc": The training image is hosted in a private Docker registry in your VPC
+                - TrainingRepositoryAccessMode.PLATFORM: The training image is hosted in Amazon ECR (default)
+                - TrainingRepositoryAccessMode.VPC: The training image is hosted in a private Docker registry in your VPC
         training_repository_credentials_provider_arn: The Amazon Resource Name (ARN) of an
             AWS Lambda function that provides credentials to authenticate to the private Docker
             registry where your training image is hosted. This is only applicable when
-            training_repository_access_mode is set to "Vpc".
+            training_repository_access_mode is set to TrainingRepositoryAccessMode.VPC.
     """
 
     synchronous: bool = True
@@ -138,7 +146,9 @@ class SagemakerOrchestratorSettings(BaseSettings):
         default=None, union_mode="left_to_right"
     )
 
-    training_repository_access_mode: Optional[str] = None
+    training_repository_access_mode: Optional[TrainingRepositoryAccessMode] = (
+        None
+    )
     training_repository_credentials_provider_arn: Optional[str] = None
 
     processor_role: Optional[str] = None
@@ -186,15 +196,8 @@ class SagemakerOrchestratorSettings(BaseSettings):
                 "`training_repository_access_mode` can only be used when `use_training_step=True`."
             )
 
-        # Validate training repository access mode value
-        if (
-            training_repository_access_mode
-            and training_repository_access_mode not in ["Platform", "Vpc"]
-        ):
-            raise ValueError(
-                f"Invalid `training_repository_access_mode` value: {training_repository_access_mode}. "
-                "Valid values are 'Platform' or 'Vpc'."
-            )
+        # Validate training repository access mode value is handled by the enum type
+        # No additional validation needed as the enum ensures valid values
         instance_type = data.get("instance_type", None)
         if instance_type is None:
             if use_training_step:

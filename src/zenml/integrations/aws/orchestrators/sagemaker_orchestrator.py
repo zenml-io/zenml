@@ -374,7 +374,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 # Add training image config if training_repository_access_mode is configured
                 if step_settings.training_repository_access_mode:
                     training_image_config: Dict[str, Any] = {
-                        "TrainingRepositoryAccessMode": step_settings.training_repository_access_mode
+                        "TrainingRepositoryAccessMode": step_settings.training_repository_access_mode.value
                     }
                     if step_settings.training_repository_credentials_provider_arn:
                         training_image_config[
