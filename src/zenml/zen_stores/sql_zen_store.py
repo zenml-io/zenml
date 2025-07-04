@@ -6154,7 +6154,8 @@ class SqlZenStore(BaseZenStore):
                         "Unable to create log entry: One of the provided sources "
                         f"({', '.join(log.source for log in run_update.add_logs)}) "
                         "already exists within the scope of the same pipeline run "
-                        f"'{existing_run.id}'."
+                        f"'{existing_run.id}'. Existing entry sources: "
+                        f"{', '.join(log.source for log in existing_run.logs)}"
                     )
 
             self._attach_tags_to_resources(
