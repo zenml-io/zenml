@@ -5664,6 +5664,27 @@ class SqlZenStore(BaseZenStore):
             pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
         )
 
+    def _get_duplicate_run_name_error_message(
+        self, pipeline_run_name: str
+    ) -> str:
+        """Generate a user-friendly error message for duplicate pipeline run names.
+
+        Args:
+            pipeline_run_name: The name of the pipeline run that already exists.
+
+        Returns:
+            A formatted error message with helpful suggestions.
+        """
+        return (
+            f"Pipeline run name '{pipeline_run_name}' already exists in this project. "
+            f"Each pipeline run must have a unique name.\n\n"
+            f"To fix this, you can:\n"
+            f"1. Use a different run name\n"
+            f'2. Use a dynamic run name with placeholders like: "{pipeline_run_name}_{{date}}_{{time}}"\n'
+            f"3. Remove the run name from your configuration to auto-generate unique names\n\n"
+            f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
+        )
+
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -5700,20 +5721,21 @@ class SqlZenStore(BaseZenStore):
 
         # Add logs entry for the run if exists
         if pipeline_run.logs is not None:
-            self._get_reference_schema_by_id(
-                resource=pipeline_run,
-                reference_schema=StackComponentSchema,
-                reference_id=pipeline_run.logs.artifact_store_id,
-                session=session,
-                reference_type="logs artifact store",
-            )
+            with session.no_autoflush:
+                self._get_reference_schema_by_id(
+                    resource=pipeline_run,
+                    reference_schema=StackComponentSchema,
+                    reference_id=pipeline_run.logs.artifact_store_id,
+                    session=session,
+                    reference_type="logs artifact store",
+                )
 
-            log_entry = LogsSchema(
-                uri=pipeline_run.logs.uri,
-                pipeline_run_id=new_run.id,
-                artifact_store_id=pipeline_run.logs.artifact_store_id,
-            )
-            session.add(log_entry)
+                log_entry = LogsSchema(
+                    uri=pipeline_run.logs.uri,
+                    pipeline_run_id=new_run.id,
+                    artifact_store_id=pipeline_run.logs.artifact_store_id,
+                )
+                session.add(log_entry)
 
         try:
             session.commit()
@@ -5721,6 +5743,7 @@ class SqlZenStore(BaseZenStore):
             # We have to rollback the failed session first in order to
             # continue using it
             session.rollback()
+
             # This can fail if the name is taken by a different run
             self._verify_name_uniqueness(
                 resource=pipeline_run,
@@ -6020,7 +6043,14 @@ class SqlZenStore(BaseZenStore):
                 return self._create_run(pipeline_run, session=session), True
             except EntityExistsError as create_error:
                 if not pipeline_run.orchestrator_run_id:
-                    raise
+                    # No orchestrator_run_id means this is likely a name conflict.
+                    # Provide a user-friendly error message for duplicate run names.
+                    improved_message = (
+                        self._get_duplicate_run_name_error_message(
+                            pipeline_run.name
+                        )
+                    )
+                    raise EntityExistsError(improved_message) from create_error
                 # Creating the run failed because
                 # - a run with the same deployment_id and orchestrator_run_id
                 #   exists. We now fetch and return that run.
@@ -6039,10 +6069,14 @@ class SqlZenStore(BaseZenStore):
                     )
                 except KeyError:
                     # We should only get here if the run creation failed because
-                    # of a name conflict. We raise the error that happened
-                    # during creation in any case to forward the error message
-                    # to the user.
-                    raise create_error
+                    # of a name conflict. Provide a user-friendly error message
+                    # for duplicate run names.
+                    improved_message = (
+                        self._get_duplicate_run_name_error_message(
+                            pipeline_run.name
+                        )
+                    )
+                    raise EntityExistsError(improved_message) from create_error
 
     def list_runs(
         self,
