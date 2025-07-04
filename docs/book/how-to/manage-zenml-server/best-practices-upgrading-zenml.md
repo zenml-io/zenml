@@ -32,7 +32,7 @@ Whether you're OSS or Pro:
 > 🏢 **ZenML Pro** users: use **two workspaces** (e.g. `prod-workspace`, `staging-workspace`)  
 > 💻 **ZenML OSS** users: run **two ZenML servers** (same logic applies)
 
-![Image Placeholder: Diagram showing "Production" and "Staging" environments side by side. Arrows show pipelines running in production, while staging is used for upgrades only.](#)
+![Image Placeholder: Diagram showing "Production" and "Staging" environments side by side. Arrows show pipelines running in production, while staging is used for upgrades only.](../../.gitbook/assets/upgrading_zenml_prod_staging_env.png)
 
 ---
 
@@ -50,7 +50,7 @@ At setup time:
 | Container registry  | `gcr.io/prod-images`     | `gcr.io/staging-images`   |
 
 
-![Diagram: Mirrored stacks pointing at separate staging infra](../../.gitbook/assets/placeholder-mirrored-stacks.png)
+![Diagram: Mirrored stacks pointing at separate staging infra](../../.gitbook/assets/upgrading_zenml_stacks_env.png)
 
 {% hint style="info" %}
 * Point staging stacks to **staging variants** of your infra (e.g., a smaller K8s cluster, a test S3 bucket).
@@ -61,10 +61,13 @@ At setup time:
 
 ## 🛠️ Rule #3: Use [GitOps](https://about.gitlab.com/topics/gitops/) to Manage Upgrades
 
+![Diagram: GitOps](../../.gitbook/assets/upgrading_zenml_gitops.png)
+
 Put your workspace configuration in a Git repository (Helm charts, Terraform, or the ZenML Pro API – pick your tool). Set up two long-lived branches:
 
 * `staging`  – auto-deploys to the **staging workspace**
 * `main`     – auto-deploys to **production**
+
 
 ```mermaid
 flowchart LR
@@ -140,7 +143,7 @@ After building, execute all run templates end-to-end as a smoke test.
 Ideally, your data science teams have a "smoke test" parameter in the pipeline
 to load mock data just for this scenario!
 
-![Placeholder: CI dashboard turning all tests green](../../.gitbook/assets/placeholder-tests-green.png)
+![Placeholder: CI dashboard turning all tests green](../../.gitbook/assets/upgrading_zenml_ci_dashboard.png)
 
 ---
 
@@ -155,7 +158,7 @@ Once staging is ✅ :
    * **Reschedule** recurring pipelines (delete old schedules, create new ones). Read more [here](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 4. Monitor for a few hours. Done.
 
-![Placeholder: Green arrow from staging to production](../../.gitbook/assets/placeholder-cutover.png)
+![Placeholder: Green arrow from staging to production](../../.gitbook/assets/upgrading_zenml_staging_to_prod.png)
 
 ---
 
