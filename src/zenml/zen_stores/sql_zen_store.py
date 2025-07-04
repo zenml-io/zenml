@@ -5677,7 +5677,9 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
-            EntityExistsError: If a run with the same name already exists.
+            EntityExistsError: If a run with the same name already exists or
+                a log entry with the same source already exists within the
+                scope of the same pipeline run.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
         self._get_reference_schema_by_id(
@@ -5697,23 +5699,6 @@ class SqlZenStore(BaseZenStore):
         new_run = PipelineRunSchema.from_request(pipeline_run)
 
         session.add(new_run)
-
-        # Add logs entry for the run if exists
-        if pipeline_run.logs is not None:
-            self._get_reference_schema_by_id(
-                resource=pipeline_run,
-                reference_schema=StackComponentSchema,
-                reference_id=pipeline_run.logs.artifact_store_id,
-                session=session,
-                reference_type="logs artifact store",
-            )
-
-            log_entry = LogsSchema(
-                uri=pipeline_run.logs.uri,
-                pipeline_run_id=new_run.id,
-                artifact_store_id=pipeline_run.logs.artifact_store_id,
-            )
-            session.add(log_entry)
 
         try:
             session.commit()
@@ -5735,6 +5720,33 @@ class SqlZenStore(BaseZenStore):
                 "the same deployment_id and orchestrator_run_id "
                 "already exists."
             )
+
+        # Add logs entry for the run if exists
+        if pipeline_run.logs is not None:
+            self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=StackComponentSchema,
+                reference_id=pipeline_run.logs.artifact_store_id,
+                session=session,
+                reference_type="logs artifact store",
+            )
+
+            log_entry = LogsSchema(
+                uri=pipeline_run.logs.uri,
+                source=pipeline_run.logs.source,
+                pipeline_run_id=new_run.id,
+                artifact_store_id=pipeline_run.logs.artifact_store_id,
+            )
+            try:
+                session.add(log_entry)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                raise EntityExistsError(
+                    "Unable to create log entry: A log entry with this "
+                    f"source '{pipeline_run.logs.source}' already exists "
+                    f"within the scope of the same pipeline run '{new_run.id}'."
+                )
 
         if model_version_id := self._get_or_create_model_version_for_run(
             new_run
@@ -6095,6 +6107,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated pipeline run.
+
+        Raises:
+            EntityExistsError: If a log entry with the same source already
+                exists within the scope of the same pipeline run.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
@@ -6108,6 +6124,39 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_run)
             session.commit()
             session.refresh(existing_run)
+
+            # Add logs if specified
+            if run_update.add_logs:
+                try:
+                    for log_request in run_update.add_logs:
+                        # Validate the artifact store exists
+                        self._get_reference_schema_by_id(
+                            resource=log_request,
+                            reference_schema=StackComponentSchema,
+                            reference_id=log_request.artifact_store_id,
+                            session=session,
+                            reference_type="logs artifact store",
+                        )
+
+                        # Create the log entry
+                        log_entry = LogsSchema(
+                            uri=log_request.uri,
+                            source=log_request.source,
+                            pipeline_run_id=existing_run.id,
+                            artifact_store_id=log_request.artifact_store_id,
+                        )
+                        session.add(log_entry)
+
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+                    raise EntityExistsError(
+                        "Unable to create log entry: One of the provided sources "
+                        f"({', '.join(log.source for log in run_update.add_logs)}) "
+                        "already exists within the scope of the same pipeline run "
+                        f"'{existing_run.id}'. Existing entry sources: "
+                        f"{', '.join(log.source for log in existing_run.logs)}"
+                    )
 
             self._attach_tags_to_resources(
                 tags=run_update.add_tags,
@@ -8830,7 +8879,9 @@ class SqlZenStore(BaseZenStore):
             The created step run.
 
         Raises:
-            EntityExistsError: if the step run already exists.
+            EntityExistsError: if the step run already exists or a log entry
+                with the same source already exists within the scope of the
+                same step.
             IllegalOperationError: if the pipeline run is stopped or stopping.
         """
         with Session(self.engine) as session:
@@ -8889,11 +8940,20 @@ class SqlZenStore(BaseZenStore):
 
                 log_entry = LogsSchema(
                     uri=step_run.logs.uri,
+                    source=step_run.logs.source,
                     step_run_id=step_schema.id,
                     artifact_store_id=step_run.logs.artifact_store_id,
                 )
-                session.add(log_entry)
-
+                try:
+                    session.add(log_entry)
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+                    raise EntityExistsError(
+                        "Unable to create log entry: A log entry with this "
+                        f"source '{step_run.logs.source}' already exists "
+                        f"within the scope of the same step '{step_schema.id}'."
+                    )
             # If cached, attach metadata of the original step
             if (
                 step_run.status == ExecutionStatus.CACHED

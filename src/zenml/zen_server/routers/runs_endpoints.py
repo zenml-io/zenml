@@ -436,22 +436,24 @@ def stop_run(
 @async_fastapi_endpoint_wrapper
 def run_logs(
     run_id: UUID,
+    source: str,
     offset: int = 0,
     length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
 ) -> str:
-    """Get pipeline run logs.
+    """Get pipeline run logs for a specific source.
 
     Args:
         run_id: ID of the pipeline run.
+        source: Required source to get logs for.
         offset: The offset from which to start reading.
         length: The amount of bytes that should be read.
 
     Returns:
-        The pipeline run logs.
+        Logs for the specified source.
 
     Raises:
-        KeyError: If no logs are available for the pipeline run.
+        KeyError: If no logs are found for the specified source.
     """
     store = zen_store()
 
@@ -461,19 +463,26 @@ def run_logs(
         hydrate=True,
     )
 
-    if run.deployment_id:
+    # Handle runner logs from workload manager
+    if run.deployment_id and source == "runner":
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
-            return workload_manager().get_logs(workload_id=deployment.id)
+            workload_logs = workload_manager().get_logs(
+                workload_id=deployment.id
+            )
+            return workload_logs
 
-    logs = run.logs
-    if logs is None:
-        raise KeyError("No logs available for this pipeline run")
+    # Handle logs from log collection
+    if run.log_collection:
+        for log_entry in run.log_collection:
+            if log_entry.source == source:
+                return fetch_logs(
+                    zen_store=store,
+                    artifact_store_id=log_entry.artifact_store_id,
+                    logs_uri=log_entry.uri,
+                    offset=offset,
+                    length=length,
+                )
 
-    return fetch_logs(
-        zen_store=store,
-        artifact_store_id=logs.artifact_store_id,
-        logs_uri=logs.uri,
-        offset=offset,
-        length=length,
-    )
+    # If no logs found for the specified source, raise an error
+    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
