@@ -5677,7 +5677,9 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
-            EntityExistsError: If a run with the same name already exists.
+            EntityExistsError: If a run with the same name already exists or
+                a log entry with the same source already exists within the
+                scope of the same pipeline run.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
         self._get_reference_schema_by_id(
@@ -6105,6 +6107,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated pipeline run.
+
+        Raises:
+            EntityExistsError: If a log entry with the same source already
+                exists within the scope of the same pipeline run.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
@@ -8871,7 +8877,9 @@ class SqlZenStore(BaseZenStore):
             The created step run.
 
         Raises:
-            EntityExistsError: if the step run already exists.
+            EntityExistsError: if the step run already exists or a log entry
+                with the same source already exists within the scope of the
+                same step.
             IllegalOperationError: if the pipeline run is stopped or stopping.
         """
         with Session(self.engine) as session:
