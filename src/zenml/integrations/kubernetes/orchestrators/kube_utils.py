@@ -386,6 +386,7 @@ def create_secret(
     namespace: str,
     secret_name: str,
     data: Dict[str, Optional[str]],
+    secret_type: str = "Opaque",
 ) -> None:
     """Create a Kubernetes secret.
 
@@ -394,10 +395,13 @@ def create_secret(
         namespace: The namespace in which to create the secret.
         secret_name: The name of the secret to create.
         data: The secret data.
+        secret_type: The secret type.
     """
     core_api.create_namespaced_secret(
         namespace=namespace,
-        body=build_secret_manifest(name=secret_name, data=data),
+        body=build_secret_manifest(
+            name=secret_name, data=data, secret_type=secret_type
+        ),
     )
 
 
@@ -416,10 +420,20 @@ def update_secret(
         data: The secret data. If the value is None, the key will be removed
             from the secret.
     """
+    # For updates, we only patch the data field, not the type (which is immutable)
+    import base64
+
+    encoded_data = {
+        key: base64.b64encode(value.encode()).decode() if value else None
+        for key, value in data.items()
+    }
+
+    patch_body = {"data": encoded_data}
+
     core_api.patch_namespaced_secret(
         namespace=namespace,
         name=secret_name,
-        body=build_secret_manifest(name=secret_name, data=data),
+        body=patch_body,
     )
 
 
@@ -428,6 +442,7 @@ def create_or_update_secret(
     namespace: str,
     secret_name: str,
     data: Dict[str, Optional[str]],
+    secret_type: str = "Opaque",
 ) -> None:
     """Create a Kubernetes secret if it doesn't exist, or update it if it does.
 
@@ -437,17 +452,35 @@ def create_or_update_secret(
         secret_name: The name of the secret to create or update.
         data: The secret data. If the value is None, the key will be removed
             from the secret.
+        secret_type: The secret type.
 
     Raises:
         ApiException: If the secret creation failed for any reason other than
             the secret already existing.
     """
     try:
-        create_secret(core_api, namespace, secret_name, data)
+        create_secret(core_api, namespace, secret_name, data, secret_type)
     except ApiException as e:
         if e.status != 409:
             raise
-        update_secret(core_api, namespace, secret_name, data)
+
+        # Check if the existing secret has a different type
+        try:
+            existing_secret = core_api.read_namespaced_secret(
+                name=secret_name, namespace=namespace
+            )
+            if existing_secret.type != secret_type:
+                # Delete the secret if the type is different (type is immutable)
+                delete_secret(core_api, namespace, secret_name)
+                create_secret(
+                    core_api, namespace, secret_name, data, secret_type
+                )
+            else:
+                # Same type, just update the data
+                update_secret(core_api, namespace, secret_name, data)
+        except ApiException:
+            # If we can't read the existing secret, try to update anyway
+            update_secret(core_api, namespace, secret_name, data)
 
 
 def create_or_update_secret_from_manifest(
@@ -466,30 +499,37 @@ def create_or_update_secret_from_manifest(
     """
     namespace = secret_manifest["metadata"]["namespace"]
     secret_name = secret_manifest["metadata"]["name"]
-    
+
     # Extract data from manifest - handle both 'data' and 'stringData' fields
     secret_data = {}
-    
+
     # Handle base64-encoded 'data' field
     if "data" in secret_manifest:
         import base64
+
         for key, encoded_value in secret_manifest["data"].items():
             if encoded_value is not None:
                 # Decode base64 data back to string
-                secret_data[key] = base64.b64decode(encoded_value).decode('utf-8')
+                secret_data[key] = base64.b64decode(encoded_value).decode(
+                    "utf-8"
+                )
             else:
                 secret_data[key] = None
-    
+
     # Handle plain text 'stringData' field
     if "stringData" in secret_manifest:
         secret_data.update(secret_manifest["stringData"])
-    
+
+    # Extract secret type from manifest, default to "Opaque" if not specified
+    secret_type = secret_manifest.get("type", "Opaque")
+
     # Use the existing create_or_update_secret function
     create_or_update_secret(
         core_api=core_api,
         namespace=namespace,
         secret_name=secret_name,
         data=secret_data,
+        secret_type=secret_type,
     )
 
 

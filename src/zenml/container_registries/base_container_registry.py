@@ -273,9 +273,8 @@ class BaseContainerRegistry(AuthenticationMixin):
         if not registry_uri.startswith(("http://", "https://")):
             domain = registry_uri.split("/")[0]
             return f"https://{domain}"
-        
-        return registry_uri
 
+        return registry_uri
 
 
 class BaseContainerRegistryFlavor(Flavor):

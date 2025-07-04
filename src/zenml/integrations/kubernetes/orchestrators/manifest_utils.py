@@ -26,6 +26,7 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 
@@ -143,26 +144,25 @@ def _generate_image_pull_secrets(
             safe_registry_name = safe_registry_name[8:]
         elif safe_registry_name.startswith("http://"):
             safe_registry_name = safe_registry_name[7:]
-        
+
         # Replace invalid characters for Kubernetes names
         safe_registry_name = (
-            safe_registry_name
-            .replace(".", "-")
+            safe_registry_name.replace(".", "-")
             .replace("/", "-")
             .replace(":", "-")
             .replace("_", "-")
             .lower()
         )
-        
+
         # Ensure it starts and ends with alphanumeric character
         safe_registry_name = safe_registry_name.strip("-")
         if not safe_registry_name:
             safe_registry_name = "registry"
-            
+
         secret_name = f"zenml-registry-{safe_registry_name}-{i}"[
             :63
         ]  # K8s name limit
-        
+
         # Final validation: ensure name is valid for Kubernetes
         # Must start and end with alphanumeric character
         if not secret_name[0].isalnum():
@@ -239,7 +239,7 @@ def create_image_pull_secrets_from_manifests(
     """
     for secret_manifest in secret_manifests:
         secret_name = secret_manifest["metadata"]["name"]
-        
+
         try:
             kube_utils.create_or_update_secret_from_manifest(
                 core_api=core_api,
@@ -449,12 +449,10 @@ def build_pod_manifest(
     # Auto-generate imagePullSecrets from container registry credentials
     if auto_generate_image_pull_secrets and registry_credentials:
         try:
-            generated_secrets, generated_refs = (
-                _generate_image_pull_secrets(
-                    namespace=namespace,
-                    registry_credentials=registry_credentials,
-                    core_api=core_api,
-                )
+            generated_secrets, generated_refs = _generate_image_pull_secrets(
+                namespace=namespace,
+                registry_credentials=registry_credentials,
+                core_api=core_api,
             )
             secret_manifests.extend(generated_secrets)
             image_pull_secrets.extend(generated_refs)

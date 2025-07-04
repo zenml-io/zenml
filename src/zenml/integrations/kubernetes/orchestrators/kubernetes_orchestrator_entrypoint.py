@@ -239,6 +239,15 @@ def main() -> None:
 
         logger.info(f"Container registry: {active_stack.container_registry}")
 
+        # Get registry credentials for imagePullSecrets
+        registry_credentials = None
+        if pipeline_settings.auto_generate_image_pull_secrets:
+            registry_credentials = (
+                orchestrator.get_kubernetes_image_pull_secret_data(
+                    active_stack.container_registry
+                )
+            )
+
         # Define Kubernetes pod manifest and any required secrets.
         pod_manifest, secret_manifests = build_pod_manifest(
             pod_name=pod_name,
@@ -252,10 +261,11 @@ def main() -> None:
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
             owner_references=owner_references,
-            namespace=args.kubernetes_namespace,
+            namespace=namespace,
             auto_generate_image_pull_secrets=pipeline_settings.auto_generate_image_pull_secrets,
-            container_registry=active_stack.container_registry,
+            registry_credentials=registry_credentials,
             core_api=core_api,
+            labels=step_pod_labels,
         )
 
         # Step pods should reuse secrets created by the orchestrator pod
@@ -263,9 +273,6 @@ def main() -> None:
         create_image_pull_secrets_from_manifests(
             secret_manifests=secret_manifests,
             core_api=core_api,
-            namespace=args.kubernetes_namespace,
-            reuse_existing=True,  # Step pods reuse orchestrator-created secrets
-            labels=step_pod_labels,
         )
 
         kube_utils.create_and_wait_for_pod_to_start(
@@ -386,7 +393,7 @@ def main() -> None:
             logger.info("Cleaning up old imagePullSecrets...")
             cleanup_old_image_pull_secrets(
                 core_api=core_api,
-                namespace=args.kubernetes_namespace,
+                namespace=namespace,
                 max_age_hours=24,  # Keep secrets for 24 hours
             )
 

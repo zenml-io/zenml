@@ -532,12 +532,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     "schedule. Use `Schedule(cron_expression=...)` instead."
                 )
             cron_expression = deployment.schedule.cron_expression
-            
+
             # Prepare dependencies for pod creation
-            registry_credentials, local_stores_path = self._prepare_pod_dependencies(
-                settings, stack
+            registry_credentials, local_stores_path = (
+                self._prepare_pod_dependencies(settings, stack)
             )
-            
+
             cron_job_manifest, secret_manifests = build_cron_job_manifest(
                 cron_expression=cron_expression,
                 pod_name=pod_name,
@@ -574,13 +574,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             return None
         else:
             # Prepare dependencies for pod creation
-            registry_credentials, local_stores_path = self._prepare_pod_dependencies(
-                settings, stack
+            registry_credentials, local_stores_path = (
+                self._prepare_pod_dependencies(settings, stack)
             )
-            
+
             # Create and run the orchestrator pod.
             pod_manifest, secret_manifests = build_pod_manifest(
-                run_name=orchestrator_run_name,
                 pod_name=pod_name,
                 image_name=image,
                 command=command,
@@ -675,16 +674,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             return service_account_name
 
     def _prepare_pod_dependencies(
-        self, 
-        settings: KubernetesOrchestratorSettings,
-        stack: "Stack"
+        self, settings: KubernetesOrchestratorSettings, stack: "Stack"
     ) -> Tuple[Optional[Tuple[str, str, str]], Optional[str]]:
         """Prepare dependencies needed for pod manifest creation.
-        
+
         Args:
             settings: The orchestrator settings.
             stack: The stack the pipeline will run on.
-            
+
         Returns:
             Tuple of (registry_credentials, local_stores_path).
         """
@@ -694,15 +691,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             registry_credentials = self.get_kubernetes_image_pull_secret_data(
                 stack.container_registry
             )
-        
+
         # Get local stores path if mounting local stores
         local_stores_path = None
         if self.config.is_local:
             from zenml.config.global_config import GlobalConfiguration
-            
+
             stack.check_local_paths()
             local_stores_path = GlobalConfiguration().local_stores_path
-            
+
         return registry_credentials, local_stores_path
 
     def _create_image_pull_secrets(
@@ -710,7 +707,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         secret_manifests: List[Dict[str, str]],
     ) -> None:
         """Create imagePullSecrets in the cluster.
-        
+
         Args:
             secret_manifests: List of secret manifests for imagePullSecrets.
         """
@@ -750,7 +747,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             Tuple of (registry_uri, username, password) if credentials are available,
-            None otherwise. The registry_uri is normalized for use in Kubernetes 
+            None otherwise. The registry_uri is normalized for use in Kubernetes
             imagePullSecrets.
         """
         from zenml.logger import get_logger
