@@ -215,7 +215,6 @@ def test_fetching_cached_step_run_queries_cache_candidates(
 
 
 def test_fetching_cached_step_run_uses_latest_candidate(
-    mocker,
     clean_client,
     sample_pipeline_deployment_request_model,
     sample_pipeline_run_request_model,
@@ -228,7 +227,11 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_pipeline_deployment_request_model.project = (
         clean_client.active_project.id
     )
+    sample_pipeline_deployment_request_model.stack = (
+        clean_client.active_stack.id
+    )
     sample_pipeline_run_request_model.project = clean_client.active_project.id
+    sample_pipeline_run_request_model.pipeline = None
 
     sample_step = Step.model_validate(
         {
@@ -244,13 +247,6 @@ def test_fetching_cached_step_run_uses_latest_candidate(
         "sample_step": sample_step
     }
 
-    # Given that we are using dummy references, we need to mock the
-    # reference validation function
-    mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore._get_reference_schema_by_id",
-        return_value=None,
-    )
-
     # Create a pipeline deployment, pipeline run and step run
     deployment_response = clean_client.zen_store.create_deployment(
         sample_pipeline_deployment_request_model
@@ -265,10 +261,6 @@ def test_fetching_cached_step_run_uses_latest_candidate(
 
     sample_step_request_model.pipeline_run_id = run.id
 
-    mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore._get_reference_schema_by_id",
-        return_value=run,
-    )
     response_1 = clean_client.zen_store.create_run_step(
         sample_step_request_model
     )
@@ -287,10 +279,6 @@ def test_fetching_cached_step_run_uses_latest_candidate(
 
     sample_step_request_model.pipeline_run_id = new_run.id
 
-    mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore._get_reference_schema_by_id",
-        return_value=run,
-    )
     response_2 = clean_client.zen_store.create_run_step(
         sample_step_request_model
     )

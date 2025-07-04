@@ -36,7 +36,9 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import 
     KubernetesOrchestrator,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+    build_job_manifest,
     build_pod_manifest,
+    pod_template_manifest_from_pod,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import publish_utils
@@ -97,6 +99,7 @@ def main() -> None:
     # the Kubernetes cluster.
     kube_client = orchestrator.get_kube_client(incluster=True)
     core_api = k8s_client.CoreV1Api(kube_client)
+    batch_api = k8s_client.BatchV1Api(kube_client)
 
     env = get_config_environment_vars()
     env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_pod_name
@@ -236,7 +239,6 @@ def main() -> None:
                 }
             )
 
-        # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
             image_name=image,
@@ -253,34 +255,83 @@ def main() -> None:
             labels=step_pod_labels,
         )
 
-        kube_utils.create_and_wait_for_pod_to_start(
-            core_api=core_api,
-            pod_display_name=f"pod for step `{step_name}`",
-            pod_name=pod_name,
-            pod_manifest=pod_manifest,
-            namespace=namespace,
-            startup_max_retries=settings.pod_failure_max_retries,
-            startup_failure_delay=settings.pod_failure_retry_delay,
-            startup_failure_backoff=settings.pod_failure_backoff,
-            startup_timeout=settings.pod_startup_timeout,
+        retry_config = step_config.retry
+        backoff_limit = (
+            retry_config.max_retries if retry_config else 0
+        ) + settings.backoff_limit_margin
+
+        # This is to fix a bug in the kubernetes client which has some wrong
+        # client-side validations that means the `on_exit_codes` field is
+        # unusable. See https://github.com/kubernetes-client/python/issues/2056
+        class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: ignore[misc]
+            @property
+            def on_pod_conditions(self):  # type: ignore[no-untyped-def]
+                return self._on_pod_conditions
+
+            @on_pod_conditions.setter
+            def on_pod_conditions(self, on_pod_conditions):  # type: ignore[no-untyped-def]
+                self._on_pod_conditions = on_pod_conditions
+
+        k8s_client.V1PodFailurePolicyRule = PatchedFailurePolicyRule
+        k8s_client.models.V1PodFailurePolicyRule = PatchedFailurePolicyRule
+
+        pod_failure_policy = settings.pod_failure_policy or {
+            # These rules are applied sequentially. This means any failure in
+            # the main container will count towards the max retries. Any other
+            # disruption will not count towards the max retries.
+            "rules": [
+                # If the main container fails, we count it towards the max
+                # retries.
+                {
+                    "action": "Count",
+                    "onExitCodes": {
+                        "containerName": "main",
+                        "operator": "NotIn",
+                        "values": [0],
+                    },
+                },
+                # If the pod is interrupted at any other time, we don't count
+                # it as a retry
+                {
+                    "action": "Ignore",
+                    "onPodConditions": [
+                        {
+                            "type": "DisruptionTarget",
+                        }
+                    ],
+                },
+            ]
+        }
+        job_manifest = build_job_manifest(
+            job_name=pod_name,
+            pod_template=pod_template_manifest_from_pod(pod_manifest),
+            backoff_limit=backoff_limit,
+            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+            active_deadline_seconds=settings.active_deadline_seconds,
+            pod_failure_policy=pod_failure_policy,
         )
 
-        # Wait for pod to finish.
-        logger.info(f"Waiting for pod of step `{step_name}` to finish...")
+        kube_utils.create_job(
+            batch_api=batch_api,
+            namespace=namespace,
+            job_manifest=job_manifest,
+        )
+
+        logger.info(f"Waiting for job of step `{step_name}` to finish...")
         try:
-            kube_utils.wait_pod(
-                kube_client_fn=lambda: orchestrator.get_kube_client(
-                    incluster=True
-                ),
-                pod_name=pod_name,
+            kube_utils.wait_for_job_to_finish(
+                batch_api=batch_api,
+                core_api=core_api,
                 namespace=namespace,
-                exit_condition_lambda=kube_utils.pod_is_done,
+                job_name=pod_name,
                 stream_logs=True,
+                backoff_interval=1,
+                maximum_backoff=1,  # We want to stream the logs without delay
             )
 
-            logger.info(f"Pod for step `{step_name}` completed.")
+            logger.info(f"Job for step `{step_name}` completed.")
         except Exception:
-            logger.error(f"Pod for step `{step_name}` failed.")
+            logger.error(f"Job for step `{step_name}` failed.")
 
             raise
 

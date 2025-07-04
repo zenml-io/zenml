@@ -76,6 +76,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         UniqueConstraint(
             "name",
             "pipeline_run_id",
+            "version",
             name="unique_step_name_for_pipeline_run",
         ),
     )
@@ -89,6 +90,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     cache_key: Optional[str] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_hash: Optional[str] = Field(nullable=True)
+    version: int = Field(nullable=False)
+    is_retriable: bool = Field(nullable=False)
 
     step_configuration: str = Field(
         sa_column=Column(
@@ -274,13 +277,19 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def from_request(
-        cls, request: StepRunRequest, deployment_id: Optional[UUID]
+        cls,
+        request: StepRunRequest,
+        deployment_id: Optional[UUID],
+        version: int,
+        is_retriable: bool,
     ) -> "StepRunSchema":
         """Create a step run schema from a step run request model.
 
         Args:
             request: The step run request model.
             deployment_id: The deployment ID.
+            version: The version of the step run.
+            is_retriable: Whether the step run is retriable.
 
         Returns:
             The step run schema.
@@ -299,29 +308,21 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             cache_key=request.cache_key,
             code_hash=request.code_hash,
             source_code=request.source_code,
+            version=version,
+            is_retriable=is_retriable,
         )
 
-    def to_model(
-        self,
-        include_metadata: bool = False,
-        include_resources: bool = False,
-        **kwargs: Any,
-    ) -> StepRunResponse:
-        """Convert a `StepRunSchema` to a `StepRunResponse`.
-
-        Args:
-            include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the resources will be filled.
-            **kwargs: Keyword arguments to allow schema specific logic
-
-
-        Returns:
-            The created StepRunResponse.
+    def get_step_configuration(self) -> Step:
+        """Get the step configuration for the step run.
 
         Raises:
-            ValueError: In case the step run configuration is missing.
+            ValueError: If the step run has no step configuration.
+
+        Returns:
+            The step configuration.
         """
         step = None
+
         if self.deployment is not None:
             if self.step_configuration_schema:
                 pipeline_configuration = (
@@ -351,10 +352,33 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 f"`{self.pipeline_run_id}`."
             )
 
+        return step
+
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> StepRunResponse:
+        """Convert a `StepRunSchema` to a `StepRunResponse`.
+
+        Args:
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+
+        Returns:
+            The created StepRunResponse.
+        """
+        step = self.get_step_configuration()
+
         body = StepRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
+            version=self.version,
+            is_retriable=self.is_retriable,
             start_time=self.start_time,
             end_time=self.end_time,
             created=self.created,

@@ -206,6 +206,7 @@ class Compiler:
                 tags=config.tags,
                 extra=config.extra,
                 model=config.model,
+                retry=config.retry,
                 parameters=config.parameters,
             )
 

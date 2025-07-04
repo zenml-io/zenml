@@ -568,6 +568,8 @@ def create_step_run(
                 user_id=sample_user_model.id,
                 project_id=sample_project_model.id,
                 status=ExecutionStatus.COMPLETED,
+                version=0,
+                is_retriable=False,
                 created=datetime.now(),
                 updated=datetime.now(),
             ),

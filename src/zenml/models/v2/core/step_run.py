@@ -177,6 +177,12 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
+    version: int = Field(
+        title="The version of the step run.",
+    )
+    is_retriable: bool = Field(
+        title="Whether the step run is retriable.",
+    )
     start_time: Optional[datetime] = Field(
         title="The start time of the step run.",
         default=None,
@@ -421,6 +427,24 @@ class StepRunResponse(
         return self.get_body().status
 
     @property
+    def version(self) -> int:
+        """The `version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().version
+
+    @property
+    def is_retriable(self) -> bool:
+        """The `is_retriable` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().is_retriable
+
+    @property
     def inputs(self) -> Dict[str, List[StepRunInputResponse]]:
         """The `inputs` property.
 
@@ -602,6 +626,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
+        "exclude_retried",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -666,6 +691,10 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
+    exclude_retried: Optional[bool] = Field(
+        default=None,
+        description="Whether to exclude retried step runs.",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -681,7 +710,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_
+        from sqlmodel import and_, col
 
         from zenml.zen_stores.schemas import (
             ModelSchema,
@@ -698,5 +727,10 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
                 ),
             )
             custom_filters.append(model_filter)
+
+        if self.exclude_retried:
+            custom_filters.append(
+                col(StepRunSchema.status) != ExecutionStatus.RETRIED.value
+            )
 
         return custom_filters
