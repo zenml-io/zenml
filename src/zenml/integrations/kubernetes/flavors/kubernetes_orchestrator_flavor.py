@@ -69,6 +69,8 @@ class KubernetesOrchestratorSettings(BaseSettings):
             orchestrator pod for non-scheduled runs.
         active_deadline_seconds: The active deadline seconds for the job that is
             executing the step.
+        backoff_limit_margin: The value to add to the backoff limit which is
+            configured for the step.
         pod_failure_policy: The pod failure policy to use for the job that is
             executing the step.
         prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
@@ -94,6 +96,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     failed_jobs_history_limit: Optional[NonNegativeInt] = None
     ttl_seconds_after_finished: Optional[NonNegativeInt] = None
     active_deadline_seconds: Optional[NonNegativeInt] = None
+    backoff_limit_margin: NonNegativeInt = 0
     pod_failure_policy: Optional[Dict[str, Any]] = None
     prevent_orchestrator_pod_caching: bool = False
     pod_stop_grace_period: PositiveInt = 30

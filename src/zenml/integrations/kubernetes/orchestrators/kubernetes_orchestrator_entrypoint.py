@@ -256,7 +256,9 @@ def main() -> None:
         )
 
         retry_config = step_config.retry
-        backoff_limit = retry_config.max_retries if retry_config else 0
+        backoff_limit = (
+            retry_config.max_retries if retry_config else 0
+        ) + settings.backoff_limit_margin
 
         # This is to fix a bug in the kubernetes client which has some wrong
         # client-side validations that means the `on_exit_codes` field is
