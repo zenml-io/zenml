@@ -24,13 +24,16 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def warn_if_invalid_model_data(data: Dict[str, Any], class_name: str) -> None:
+def warn_if_invalid_model_data(data: Any, class_name: str) -> None:
     """Validates the data of a Kubernetes model.
 
     Args:
         data: The data to validate.
         class_name: Name of the class of the model.
     """
+    if not isinstance(data, dict):
+        return
+
     try:
         serialization_utils.deserialize_kubernetes_model(data, class_name)
     except KeyError as e:
