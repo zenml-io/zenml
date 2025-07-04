@@ -115,10 +115,12 @@ class SagemakerOrchestratorSettings(BaseSettings):
             using TrainingStep. Possible values:
                 - TrainingRepositoryAccessMode.PLATFORM: The training image is hosted in Amazon ECR (default)
                 - TrainingRepositoryAccessMode.VPC: The training image is hosted in a private Docker registry in your VPC
+            Note: Cannot be used together with training_image_config in estimator_args.
         training_repository_credentials_provider_arn: The Amazon Resource Name (ARN) of an
             AWS Lambda function that provides credentials to authenticate to the private Docker
             registry where your training image is hosted. This is only applicable when
             training_repository_access_mode is set to TrainingRepositoryAccessMode.VPC.
+            Note: Cannot be used together with training_image_config in estimator_args.
     """
 
     synchronous: bool = True
@@ -191,9 +193,34 @@ class SagemakerOrchestratorSettings(BaseSettings):
         training_repository_access_mode = data.get(
             "training_repository_access_mode"
         )
+        training_repository_credentials_provider_arn = data.get(
+            "training_repository_credentials_provider_arn"
+        )
+
         if training_repository_access_mode and not use_training_step:
             raise ValueError(
                 "`training_repository_access_mode` can only be used when `use_training_step=True`."
+            )
+
+        # Validate that credentials ARN is only used with VPC access mode
+        if (
+            training_repository_credentials_provider_arn
+            and not training_repository_access_mode
+        ):
+            raise ValueError(
+                "`training_repository_credentials_provider_arn` can only be used when "
+                "`training_repository_access_mode` is set to TrainingRepositoryAccessMode.VPC."
+            )
+
+        if (
+            training_repository_credentials_provider_arn
+            and training_repository_access_mode
+            and training_repository_access_mode
+            != TrainingRepositoryAccessMode.VPC
+        ):
+            raise ValueError(
+                "`training_repository_credentials_provider_arn` can only be used when "
+                "`training_repository_access_mode` is set to TrainingRepositoryAccessMode.VPC."
             )
 
         # Validate training repository access mode value is handled by the enum type

@@ -373,6 +373,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
                 # Add training image config if training_repository_access_mode is configured
                 if step_settings.training_repository_access_mode:
+                    # Check for conflicts with manually specified estimator_args
+                    if "training_image_config" in args_for_step_executor:
+                        raise ValueError(
+                            "Cannot use `training_repository_access_mode` or "
+                            "`training_repository_credentials_provider_arn` when "
+                            "`training_image_config` is already specified in `estimator_args`. "
+                            "Please use either the convenience fields or the raw `estimator_args`, not both."
+                        )
+
                     training_image_config: Dict[str, Any] = {
                         "TrainingRepositoryAccessMode": step_settings.training_repository_access_mode.value
                     }
@@ -382,8 +391,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         ] = {
                             "TrainingRepositoryCredentialsProviderArn": step_settings.training_repository_credentials_provider_arn
                         }
-                    args_for_step_executor.setdefault(
-                        "training_image_config", training_image_config
+                    args_for_step_executor["training_image_config"] = (
+                        training_image_config
                     )
             else:
                 args_for_step_executor = step_settings.processor_args or {}
