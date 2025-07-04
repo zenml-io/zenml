@@ -19,9 +19,7 @@ Whether you're using the open-source (OSS) version or ZenML Pro (where servers a
 
 That's it. The rest of this chapter just fills in the details.
 
----
-
-## ☝️ Rule #1: Always Use Two Environments
+## ☝️ Step #1: Always Use Two Environments
 
 Whether you're OSS or Pro:
 
@@ -34,9 +32,7 @@ Whether you're OSS or Pro:
 
 ![Image Placeholder: Diagram showing "Production" and "Staging" environments side by side. Arrows show pipelines running in production, while staging is used for upgrades only.](../../.gitbook/assets/upgrading_zenml_prod_staging_env.png)
 
----
-
-## 🧱 Rule #2: Mirror Your Stacks in Both Environments
+## 🧱 Step #2: Mirror Your Stacks in Both Environments
 
 At setup time:
 
@@ -57,9 +53,7 @@ At setup time:
 * When you change a stack in production, immediately update the twin in staging.
 {% endhint %}
 
----
-
-## 🛠️ Rule #3: Use [GitOps](https://about.gitlab.com/topics/gitops/) to Manage Upgrades
+## 🛠️ Step #3: Use [GitOps](https://about.gitlab.com/topics/gitops/) to Manage Upgrades
 
 ![Diagram: GitOps](../../.gitbook/assets/upgrading_zenml_gitops.png)
 
@@ -73,15 +67,13 @@ Put your workspace configuration in a Git repository (Helm charts, Terraform, or
 flowchart LR
     dev["PR → staging branch"] --> stg["CI/CD upgrades Staging workspace"]
     stg --> tests["Run upgrade test suite"]
-    tests -->|green| merge["Merge staging ➜ main"]
+    tests -->|✅| merge["Merge staging ➜ main"]
     merge --> prod["CI/CD upgrades Production workspace"]
 ```
 
 ZenML Pro users can call the [Workspace API](https://cloudapi.zenml.io/) from CI to bump the version. OSS users typically re-deploy the Helm chart/Docker image with the new tag.
 
----
-
-## 🤝 Rule #4: Run a test suite in staging
+## 🤝 Step #4: Run a test suite in staging
 
 After upgrading staging, assume things might break — this is normal and expected.
 
@@ -102,7 +94,7 @@ def test_simple_pipeline():
     assert run.status == "COMPLETED"
 ```
 
-## 🔄 Rule #5: Update all run templates (deployed pipelines)
+## 🔄 Step #5: Update all run templates (deployed pipelines)
 
 Pipelines that are already deployed as [run templates](https://docs.zenml.io/concepts/templates) may now break as they have the older version of the ZenML client installed. Therefore, you would need to rebuild the run template and associated images.
 
@@ -143,11 +135,7 @@ After building, execute all run templates end-to-end as a smoke test.
 Ideally, your data science teams have a "smoke test" parameter in the pipeline
 to load mock data just for this scenario!
 
-![Placeholder: CI dashboard turning all tests green](../../.gitbook/assets/upgrading_zenml_ci_dashboard.png)
-
----
-
-## 🚀 Rule #6: Upgrade Production and Go Live
+## 🚀 Step #6: Upgrade Production and Go Live
 
 Once staging is ✅ :
 
@@ -158,9 +146,7 @@ Once staging is ✅ :
    * **Reschedule** recurring pipelines (delete old schedules, create new ones). Read more [here](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 4. Monitor for a few hours. Done.
 
-![Placeholder: Green arrow from staging to production](../../.gitbook/assets/upgrading_zenml_staging_to_prod.png)
-
----
+![From staging to production](../../.gitbook/assets/upgrading_zenml_staging_to_prod.png)
 
 ## Ops Notes (OSS only)
 
@@ -171,8 +157,6 @@ If you self-host the ZenML server:
 * Store logs from the migration job.
 
 [ZenML Pro](http://zenml.io/pro) SaaS handles all of the above for you.
-
----
 
 ## ✅ Summary: The Upgrade Flow
 
