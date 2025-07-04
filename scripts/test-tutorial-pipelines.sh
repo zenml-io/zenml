@@ -47,23 +47,13 @@ readonly IGNORED_FILES=(
 # Dynamically discover all pipeline files to test
 mapfile -t ALL_PIPELINE_FILES < <(find pipelines -name "*_pipeline.py" -type f | sort)
 
-# Filter out ignored files
-PIPELINE_FILES=()
-for pipeline_file in "${ALL_PIPELINE_FILES[@]}"; do
-    filename=$(basename "$pipeline_file")
-    skip_file=false
-    
-    # Check if this file should be ignored
-    for ignored_file in "${IGNORED_FILES[@]}"; do
-        if [[ "$filename" == "$ignored_file" ]]; then
-            echo "⏭️  Skipping ignored file: $pipeline_file"
-            skip_file=true
-            break
-        fi
-    done
-    
-    if [[ "$skip_file" == false ]]; then
-        PIPELINE_FILES+=("$pipeline_file")
+# Filter out ignored files using grep
+PIPELINE_FILES=($(printf '%s\n' "${ALL_PIPELINE_FILES[@]}" | grep -vF -f <(printf '%s\n' "${IGNORED_FILES[@]}")))
+
+# Log skipped files
+for ignored_file in "${IGNORED_FILES[@]}"; do
+    if printf '%s\n' "${ALL_PIPELINE_FILES[@]}" | grep -qF "$ignored_file"; then
+        echo "⏭️  Skipping ignored file: $ignored_file"
     fi
 done
 
