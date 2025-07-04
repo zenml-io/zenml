@@ -18,6 +18,7 @@ import socket
 from typing import Callable, Dict, Optional, cast
 
 from kubernetes import client as k8s_client
+from kubernetes.client.rest import ApiException
 
 from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
@@ -248,6 +249,7 @@ def main() -> None:
             or settings.service_account_name,
             mount_local_stores=mount_local_stores,
             owner_references=owner_references,
+            termination_grace_period_seconds=settings.pod_stop_grace_period,
             labels=step_pod_labels,
         )
 
@@ -330,6 +332,38 @@ def main() -> None:
             # as the pipeline run status will already have been published.
             pass
 
+    def check_pipeline_cancellation() -> bool:
+        """Check if the pipeline should continue execution.
+
+        Returns:
+            True if execution should continue, False if it should stop.
+        """
+        try:
+            run = client.get_pipeline_run(
+                name_id_or_prefix=pipeline_run.id,
+                project=pipeline_run.project_id,
+                hydrate=False,  # We only need status, not full hydration
+            )
+
+            # If the run is STOPPING or STOPPED, we should stop the execution
+            if run.status in [
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+            ]:
+                logger.info(
+                    f"Pipeline run is in {run.status} state, stopping execution"
+                )
+                return False
+
+            return True
+
+        except Exception as e:
+            # If we can't check the status, assume we should continue
+            logger.warning(
+                f"Failed to check pipeline cancellation status: {e}"
+            )
+            return True
+
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
     )
@@ -344,6 +378,7 @@ def main() -> None:
             run_fn=run_step_on_kubernetes,
             preparation_fn=pre_step_run,
             finalize_fn=finalize_run,
+            continue_fn=check_pipeline_cancellation,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
             max_parallelism=pipeline_settings.max_parallelism,
         ).run()
@@ -360,7 +395,7 @@ def main() -> None:
                     namespace=namespace,
                     secret_name=secret_name,
                 )
-            except k8s_client.rest.ApiException as e:
+            except ApiException as e:
                 logger.error(f"Error cleaning up secret {secret_name}: {e}")
 
 
