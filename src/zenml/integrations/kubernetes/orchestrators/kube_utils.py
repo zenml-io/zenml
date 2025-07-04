@@ -601,9 +601,6 @@ def retry_on_api_exception(
         delay: The delay between retries.
         backoff: The backoff factor.
 
-    Raises:
-        ApiException: If the function fails after the maximum number of retries.
-
     Returns:
         The wrapped function with retry logic.
     """
@@ -623,6 +620,10 @@ def retry_on_api_exception(
                     _delay *= backoff
                 else:
                     raise
+
+        raise RuntimeError(
+            f"Failed to call {func.__name__} after {max_retries} retries."
+        )
 
     return wrapper
 
