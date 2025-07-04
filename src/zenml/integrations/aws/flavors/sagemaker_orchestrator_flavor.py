@@ -102,6 +102,15 @@ class SagemakerOrchestratorSettings(BaseSettings):
                     channels (e.g. output_one, output_two) where
                     specific parts of the data are stored locally for S3 upload.
                     Data must be available locally in /opt/ml/processing/output/data/<ChannelName>.
+        training_repository_access_mode: Specifies how SageMaker accesses the Docker
+            image that contains the training algorithm. This is only applicable when
+            using TrainingStep. Possible values:
+                - "Platform": The training image is hosted in Amazon ECR (default)
+                - "Vpc": The training image is hosted in a private Docker registry in your VPC
+        training_repository_credentials_provider_arn: The Amazon Resource Name (ARN) of an
+            AWS Lambda function that provides credentials to authenticate to the private Docker
+            registry where your training image is hosted. This is only applicable when
+            training_repository_access_mode is set to "Vpc".
     """
 
     synchronous: bool = True
@@ -128,6 +137,9 @@ class SagemakerOrchestratorSettings(BaseSettings):
     output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
         default=None, union_mode="left_to_right"
     )
+
+    training_repository_access_mode: Optional[str] = None
+    training_repository_credentials_provider_arn: Optional[str] = None
 
     processor_role: Optional[str] = None
     processor_tags: Optional[Dict[str, str]] = None
@@ -163,6 +175,25 @@ class SagemakerOrchestratorSettings(BaseSettings):
             raise ValueError(
                 "`use_training_step=True` is not supported when `output_data_s3_uri` is a dict or "
                 f"when `output_data_s3_mode` is not '{DEFAULT_OUTPUT_DATA_S3_MODE}'."
+            )
+
+        # Validate training repository access mode settings
+        training_repository_access_mode = data.get(
+            "training_repository_access_mode"
+        )
+        if training_repository_access_mode and not use_training_step:
+            raise ValueError(
+                "`training_repository_access_mode` can only be used when `use_training_step=True`."
+            )
+
+        # Validate training repository access mode value
+        if (
+            training_repository_access_mode
+            and training_repository_access_mode not in ["Platform", "Vpc"]
+        ):
+            raise ValueError(
+                f"Invalid `training_repository_access_mode` value: {training_repository_access_mode}. "
+                "Valid values are 'Platform' or 'Vpc'."
             )
         instance_type = data.get("instance_type", None)
         if instance_type is None:

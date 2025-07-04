@@ -370,6 +370,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 args_for_step_executor.setdefault(
                     "max_run", step_settings.max_runtime_in_seconds
                 )
+
+                # Add training image config if training_repository_access_mode is configured
+                if step_settings.training_repository_access_mode:
+                    training_image_config: Dict[str, Any] = {
+                        "TrainingRepositoryAccessMode": step_settings.training_repository_access_mode
+                    }
+                    if step_settings.training_repository_credentials_provider_arn:
+                        training_image_config[
+                            "TrainingRepositoryAuthConfig"
+                        ] = {
+                            "TrainingRepositoryCredentialsProviderArn": step_settings.training_repository_credentials_provider_arn
+                        }
+                    args_for_step_executor.setdefault(
+                        "training_image_config", training_image_config
+                    )
             else:
                 args_for_step_executor = step_settings.processor_args or {}
                 args_for_step_executor.setdefault(
