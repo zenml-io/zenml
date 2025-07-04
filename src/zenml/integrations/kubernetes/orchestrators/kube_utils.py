@@ -32,6 +32,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 """
 
 import enum
+import functools
 import re
 import time
 from collections import defaultdict
@@ -51,6 +52,8 @@ from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
+
+R = TypeVar("R")
 
 
 class PodPhase(enum.Enum):
@@ -584,6 +587,46 @@ def get_pod_owner_references(
     )
 
 
+def retry_on_api_exception(
+    func: Callable[..., R],
+    max_retries: int = 3,
+    delay: float = 1,
+    backoff: float = 1,
+) -> Callable[..., R]:
+    """Retry a function on API exceptions.
+
+    Args:
+        func: The function to retry.
+        max_retries: The maximum number of retries.
+        delay: The delay between retries.
+        backoff: The backoff factor.
+
+    Raises:
+        ApiException: If the function fails after the maximum number of retries.
+
+    Returns:
+        The wrapped function with retry logic.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> R:
+        _delay = delay
+        retries = 0
+        while retries <= max_retries:
+            try:
+                return func(*args, **kwargs)
+            except ApiException as e:
+                retries += 1
+                if retries <= max_retries:
+                    logger.warning("Error calling %s: %s.", func.__name__, e)
+                    time.sleep(_delay)
+                    _delay *= backoff
+                else:
+                    raise
+
+    return wrapper
+
+
 def create_job(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
@@ -596,7 +639,7 @@ def create_job(
         namespace: Kubernetes namespace.
         job_manifest: The manifest of the job to create.
     """
-    batch_api.create_namespaced_job(
+    retry_on_api_exception(batch_api.create_namespaced_job)(
         namespace=namespace,
         body=job_manifest,
     )
@@ -629,12 +672,12 @@ def wait_for_job_to_finish(
         RuntimeError: If the job failed or timed out.
     """
     logged_lines_per_pod: Dict[str, int] = defaultdict(int)
-    finished_pods: Set[str] = set()
+    finished_pods = set()
 
     while True:
-        job: k8s_client.V1Job = batch_api.read_namespaced_job(
-            name=job_name, namespace=namespace
-        )
+        job: k8s_client.V1Job = retry_on_api_exception(
+            batch_api.read_namespaced_job
+        )(name=job_name, namespace=namespace)
 
         if job.status.conditions:
             for condition in job.status.conditions:
@@ -647,14 +690,19 @@ def wait_for_job_to_finish(
                     )
 
         if stream_logs:
-            pod_list: k8s_client.V1PodList = core_api.list_namespaced_pod(
-                namespace=namespace,
-                label_selector=f"job-name={job_name}",
-            )
-            # Sort pods by creation timestamp, oldest first
-            pod_list.items.sort(
-                key=lambda pod: pod.metadata.creation_timestamp,
-            )
+            try:
+                pod_list: k8s_client.V1PodList = core_api.list_namespaced_pod(
+                    namespace=namespace,
+                    label_selector=f"job-name={job_name}",
+                )
+            except ApiException:
+                logger.error("Error fetching pods: %s.", e)
+                pod_list = []
+            else:
+                # Sort pods by creation timestamp, oldest first
+                pod_list.items.sort(
+                    key=lambda pod: pod.metadata.creation_timestamp,
+                )
 
             for pod in pod_list.items:
                 pod_name = pod.metadata.name
@@ -688,7 +736,7 @@ def wait_for_job_to_finish(
                         _preload_content=False,
                     )
                 except ApiException as e:
-                    logger.error(f"Error reading pod logs: {e}.")
+                    logger.error("Error reading pod logs: %s.", e)
                 else:
                     raw_data = response.data
                     decoded_log = raw_data.decode("utf-8", errors="replace")
