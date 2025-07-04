@@ -36,14 +36,9 @@ This guide provides best practices specifically designed for platform teams resp
 **Review Release Notes Thoroughly**
 - Check [GitHub releases](https://github.com/zenml-io/zenml/releases) for breaking changes (look for highlighted breaking change sections)
 - Identify any security updates or critical patches
-- Note new features that might benefit your teams
 - Review migration scripts availability for major version changes
-
-**Compatibility Assessment**
-- Verify Python version compatibility with new ZenML version
 - Check integration dependencies for version conflicts
 - Review custom materializers and pipeline code for potential compatibility issues
-- Assess impact on existing artifacts (especially pickle-based materializers)
 
 {% hint style="info" %}
 All of these will be clearly indicated in the [release notes](https://github.com/zenml-io/zenml/releases).
@@ -57,9 +52,9 @@ All of these will be clearly indicated in the [release notes](https://github.com
 
 **Multi-Environment Approach**
 ```
-Development → Staging → Production
-     ↓           ↓         ↓
-  Quick test   Full UAT   Rollout
+Development (local) → Staging → Production
+     ↓                 ↓         ↓
+  Quick test         Full UAT   Rollout
 ```
 
 In general, the goal is to move from one environment to the other step by step:
