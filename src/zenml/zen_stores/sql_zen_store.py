@@ -5743,9 +5743,9 @@ class SqlZenStore(BaseZenStore):
             except IntegrityError:
                 session.rollback()
                 raise EntityExistsError(
-                    "Unable to create log entry: "
-                    "A log entry with this source already exists within "
-                    "the scope of the same pipeline run."
+                    "Unable to create log entry: A log entry with this "
+                    f"source '{pipeline_run.logs.source}' already exists "
+                    f"within the scope of the same pipeline run '{new_run.id}'."
                 )
 
         if model_version_id := self._get_or_create_model_version_for_run(
@@ -6151,9 +6151,10 @@ class SqlZenStore(BaseZenStore):
                 except IntegrityError:
                     session.rollback()
                     raise EntityExistsError(
-                        "Unable to create log entry: "
-                        "A log entry with this source already exists within "
-                        "the scope of the same pipeline run."
+                        "Unable to create log entry: One of the provided sources "
+                        f"({', '.join(log.source for log in run_update.add_logs)}) "
+                        "already exists within the scope of the same pipeline run "
+                        f"'{existing_run.id}'."
                     )
 
             self._attach_tags_to_resources(
@@ -8948,9 +8949,9 @@ class SqlZenStore(BaseZenStore):
                 except IntegrityError:
                     session.rollback()
                     raise EntityExistsError(
-                        "Unable to create log entry: "
-                        "A log entry with this source already exists within "
-                        "the scope of the same step."
+                        "Unable to create log entry: A log entry with this "
+                        f"source '{step_run.logs.source}' already exists "
+                        f"within the scope of the same step '{step_schema.id}'."
                     )
             # If cached, attach metadata of the original step
             if (
