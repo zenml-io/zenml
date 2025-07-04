@@ -47,7 +47,11 @@ class DiscordAlerterConfig(BaseAlerterConfig):
             True if the stack component is valid, False otherwise.
         """
         try:
-            from discord import Client, DiscordException, Intents
+            from discord import (
+                Client,
+                DiscordException,
+                Intents,
+            )
         except ImportError:
             logger.warning(
                 "Unable to validate Discord alerter credentials because the Discord integration is not installed."
