@@ -1,0 +1,372 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Entrypoint of the Modal orchestrator sandbox."""
+
+import argparse
+import asyncio
+import os
+from copy import deepcopy
+from typing import Any, Dict, List, Optional, cast
+from uuid import UUID
+
+import modal
+
+from zenml.client import Client
+from zenml.config.constants import RESOURCE_SETTINGS_KEY
+from zenml.entrypoints.pipeline_entrypoint_configuration import (
+    PipelineEntrypointConfiguration,
+)
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
+)
+from zenml.enums import ExecutionStatus
+from zenml.exceptions import AuthorizationException
+from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
+    ModalExecutionMode,
+    ModalOrchestratorSettings,
+)
+from zenml.integrations.modal.orchestrators.modal_orchestrator import (
+    ModalOrchestrator,
+)
+from zenml.integrations.modal.utils import (
+    ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
+    build_modal_image,
+    generate_sandbox_tags,
+    get_gpu_values,
+    get_resource_values,
+    setup_modal_client,
+)
+from zenml.logger import get_logger
+from zenml.orchestrators import publish_utils
+from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
+from zenml.orchestrators.utils import get_config_environment_vars
+
+logger = get_logger(__name__)
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse entrypoint arguments.
+
+    Returns:
+        Parsed args.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--deployment_id", type=str, required=True)
+    parser.add_argument("--orchestrator_run_id", type=str, required=True)
+    parser.add_argument("--run_id", type=str, required=False)
+    return parser.parse_args()
+
+
+def run_step_on_modal(
+    step_name: str,
+    deployment: Any,
+    settings: ModalOrchestratorSettings,
+    environment: Dict[str, str],
+) -> None:
+    """Run a pipeline step in a separate Modal sandbox.
+
+    Args:
+        step_name: Name of the step.
+        deployment: The deployment configuration.
+        settings: Modal orchestrator settings.
+        environment: Environment variables.
+
+    Raises:
+        Exception: If the sandbox fails to execute.
+    """
+    logger.info(f"Running step '{step_name}' in Modal sandbox")
+
+    # Create a deep copy of pipeline-level settings to avoid modifying the original
+    step_settings_copy = deepcopy(settings)
+
+    # Get step-specific settings if any
+    step_config = deployment.step_configurations[step_name].config
+    step_settings = step_config.settings.get("orchestrator.modal", None)
+    if step_settings:
+        step_modal_settings = ModalOrchestratorSettings.model_validate(
+            step_settings.model_dump() if step_settings else {}
+        )
+        # Merge with pipeline-level settings copy
+        for key, value in step_modal_settings.model_dump(
+            exclude_unset=True
+        ).items():
+            if value is not None:
+                setattr(step_settings_copy, key, value)
+
+    # Get resource settings for this step
+    resource_settings = step_config.settings.get(RESOURCE_SETTINGS_KEY)
+
+    # Build Modal image for this step
+    client = Client()
+    active_stack = client.active_stack
+    image_name = ModalOrchestrator.get_image(
+        deployment=deployment, step_name=step_name
+    )
+    zenml_image = build_modal_image(image_name, active_stack, environment)
+
+    # Configure resources
+    gpu_values = get_gpu_values(step_settings_copy.gpu, resource_settings)
+    cpu_count, memory_mb = get_resource_values(resource_settings)
+
+    # Create step entrypoint command
+    step_command = StepEntrypointConfiguration.get_entrypoint_command()
+    step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
+        step_name=step_name, deployment_id=deployment.id
+    )
+    entrypoint_command = step_command + step_args
+
+    # Create app name for this step
+    pipeline_name = deployment.pipeline_configuration.name.replace("_", "-")
+    app_name = f"zenml-pipeline-{pipeline_name}"
+
+    # Execute step in sandbox
+    try:
+        asyncio.run(
+            _execute_step_sandbox(
+                app_name=app_name,
+                step_name=step_name,
+                zenml_image=zenml_image,
+                entrypoint_command=entrypoint_command,
+                deployment=deployment,
+                gpu_values=gpu_values,
+                cpu_count=cpu_count,
+                memory_mb=memory_mb,
+                cloud=step_settings_copy.cloud,
+                region=step_settings_copy.region,
+                timeout=step_settings_copy.timeout,
+                environment_name=step_settings_copy.modal_environment,
+            )
+        )
+        logger.info(f"Step {step_name} completed successfully")
+    except Exception as e:
+        logger.error(f"Step {step_name} failed: {e}")
+        raise
+
+
+async def _execute_step_sandbox(
+    app_name: str,
+    step_name: str,
+    zenml_image: Any,
+    entrypoint_command: List[str],
+    deployment: Any,
+    gpu_values: Optional[str] = None,
+    cpu_count: Optional[int] = None,
+    memory_mb: Optional[int] = None,
+    cloud: Optional[str] = None,
+    region: Optional[str] = None,
+    timeout: int = 86400,
+    environment_name: Optional[str] = None,
+) -> None:
+    """Execute a single step using Modal sandbox.
+
+    Args:
+        app_name: Name of the Modal app
+        step_name: Name of the step
+        zenml_image: Pre-built ZenML Docker image for Modal
+        entrypoint_command: Command to execute in the sandbox
+        deployment: Pipeline deployment for tagging
+        gpu_values: GPU configuration string
+        cpu_count: Number of CPU cores
+        memory_mb: Memory allocation in MB
+        cloud: Cloud provider to use
+        region: Region to deploy in
+        timeout: Maximum execution timeout
+        environment_name: Modal environment name
+    """
+    # Get or create persistent app
+    app = modal.App.lookup(
+        app_name, create_if_missing=True, environment_name=environment_name
+    )
+
+    logger.info(f"Creating sandbox for step {step_name}")
+
+    # Generate tags for the step sandbox
+    step_tags = generate_sandbox_tags(
+        pipeline_name=deployment.pipeline_configuration.name,
+        deployment_id=str(deployment.id),
+        execution_mode="PER_STEP",
+        step_name=step_name,
+    )
+    logger.info(f"Step sandbox tags: {step_tags}")
+
+    with modal.enable_output():
+        # Create sandbox for this step
+        sb = await modal.Sandbox.create.aio(
+            *entrypoint_command,
+            image=zenml_image,
+            gpu=gpu_values,
+            cpu=cpu_count,
+            memory=memory_mb,
+            cloud=cloud,
+            region=region,
+            app=app,
+            timeout=timeout,
+        )
+
+        # Set tags on the step sandbox
+        sb.set_tags(step_tags)
+
+        # Wait for step completion
+        await sb.wait.aio()
+        logger.info(f"Sandbox for step {step_name} completed")
+
+
+def finalize_run(
+    node_states: Dict[str, NodeStatus], args: argparse.Namespace
+) -> None:
+    """Finalize the run by updating step and pipeline run statuses.
+
+    Args:
+        node_states: The states of the nodes.
+        args: Parsed command line arguments.
+    """
+    try:
+        client = Client()
+        deployment = client.get_deployment(args.deployment_id)
+
+        # Fetch the pipeline run
+        list_args: Dict[str, Any] = {}
+        if args.run_id:
+            list_args = dict(id=UUID(args.run_id))
+        else:
+            list_args = dict(orchestrator_run_id=args.orchestrator_run_id)
+
+        pipeline_runs = client.list_pipeline_runs(
+            hydrate=True,
+            project=deployment.project_id,
+            deployment_id=deployment.id,
+            **list_args,
+        )
+
+        if not len(pipeline_runs):
+            return
+
+        pipeline_run = pipeline_runs[0]
+        pipeline_failed = False
+
+        for step_name, node_state in node_states.items():
+            if node_state != NodeStatus.FAILED:
+                continue
+
+            pipeline_failed = True
+
+            # Mark failed step runs as failed
+            step_run = pipeline_run.steps.get(step_name)
+            if step_run and step_run.status in {
+                ExecutionStatus.INITIALIZING,
+                ExecutionStatus.RUNNING,
+            }:
+                publish_utils.publish_failed_step_run(step_run.id)
+
+        # Mark pipeline as failed if any steps failed
+        if pipeline_failed and pipeline_run.status in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.RUNNING,
+        }:
+            publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+
+    except AuthorizationException:
+        # Token may be invalidated after completion, this is expected
+        pass
+
+
+def main() -> None:
+    """Entrypoint of the Modal orchestrator sandbox.
+
+    This entrypoint is used to execute the pipeline in a Modal sandbox.
+
+    Raises:
+        Exception: If the pipeline execution fails.
+    """
+    logger.info("Modal orchestrator sandbox started.")
+
+    args = parse_args()
+    os.environ[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = args.orchestrator_run_id
+
+    client = Client()
+    active_stack = client.active_stack
+    orchestrator = active_stack.orchestrator
+    assert isinstance(orchestrator, ModalOrchestrator)
+
+    deployment = client.get_deployment(args.deployment_id)
+    pipeline_settings = cast(
+        ModalOrchestratorSettings,
+        orchestrator.get_settings(deployment),
+    )
+
+    # Setup Modal client
+    setup_modal_client(
+        token_id=orchestrator.config.token_id,
+        token_secret=orchestrator.config.token_secret,
+        workspace=orchestrator.config.workspace,
+        environment=orchestrator.config.modal_environment,
+    )
+
+    environment = get_config_environment_vars()
+    environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = args.orchestrator_run_id
+
+    # Check execution mode
+    execution_mode = getattr(
+        pipeline_settings, "execution_mode", ModalExecutionMode.PIPELINE
+    )
+
+    try:
+        if execution_mode == ModalExecutionMode.PIPELINE:
+            # Execute entire pipeline in this sandbox
+            logger.info("Executing entire pipeline in single sandbox")
+            entrypoint_args = (
+                PipelineEntrypointConfiguration.get_entrypoint_arguments(
+                    deployment_id=args.deployment_id
+                )
+            )
+            config = PipelineEntrypointConfiguration(arguments=entrypoint_args)
+            config.run()
+
+        else:
+            # PER_STEP mode: Execute each step in separate sandbox
+            logger.info("Executing pipeline with per-step sandboxes")
+
+            def run_step_wrapper(step_name: str) -> None:
+                run_step_on_modal(
+                    step_name, deployment, pipeline_settings, environment
+                )
+
+            def finalize_wrapper(node_states: Dict[str, NodeStatus]) -> None:
+                finalize_run(node_states, args)
+
+            # Build DAG from deployment
+            pipeline_dag = {
+                step_name: step.spec.upstream_steps
+                for step_name, step in deployment.step_configurations.items()
+            }
+
+            # Run using ThreadedDagRunner
+            ThreadedDagRunner(
+                dag=pipeline_dag,
+                run_fn=run_step_wrapper,
+                finalize_fn=finalize_wrapper,
+                max_parallelism=getattr(
+                    pipeline_settings, "max_parallelism", None
+                ),
+            ).run()
+
+        logger.info("Pipeline execution completed successfully")
+
+    except Exception as e:
+        logger.error(f"Pipeline execution failed: {e}")
+        raise
+
+
+if __name__ == "__main__":
+    main()
