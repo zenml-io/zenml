@@ -45,7 +45,7 @@ class LogCollectorRegistry:
 
     def __new__(cls) -> "LogCollectorRegistry":
         """Create a new instance of the LogCollectorRegistry.
-            
+
         Returns:
             The singleton instance of the LogCollectorRegistry.
         """
@@ -111,27 +111,21 @@ class LogCollectorRegistry:
 
     def _parse_and_clean_message(self, message: str) -> str:
         """Parse and clean ZenML log format tokens from message.
-        
+
         Args:
             message: The original message that may contain log level tokens.
-            
+
         Returns:
             The cleaned message with log level tokens and location info removed.
         """
         clean_message = message
-        
+
         # Try to remove log level tokens
         for level in LoggingLevels:
             level_token = f"[{getLevelName(level.value)}] "
             if level_token in clean_message:
                 clean_message = clean_message.replace(level_token, "")
-        
-        # Remove location information in format (module:file.py:line) from the end
-        # Pattern matches: (anything:anything.py:digits) at the very end
-        # The key is the .py: pattern which is unique to location info
-        location_pattern = r'\s*\([^)]*\.py:\d+\)\s*$'
-        clean_message = re.sub(location_pattern, '', clean_message)
-        
+
         return clean_message
 
     def _wrapped_write(self, is_stderr: bool = False) -> Callable:
