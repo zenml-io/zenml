@@ -17,7 +17,8 @@ import logging
 import os
 import re
 import sys
-from typing import Any, Dict
+from logging import getLevelName
+from typing import Any, Callable, Dict, List, Optional
 
 from rich.traceback import install as rich_tb_install
 
@@ -34,6 +35,172 @@ from zenml.enums import LoggingLevels
 ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
     ENV_ZENML_LOGGING_COLORS_DISABLED, False
 )
+
+
+class LogCollectorRegistry:
+    """Singleton registry for log collectors."""
+
+    _instance: Optional["LogCollectorRegistry"] = None
+    _initialized: bool = False
+
+    def __new__(cls) -> "LogCollectorRegistry":
+        """Create a new instance of the LogCollectorRegistry.
+            
+        Returns:
+            The singleton instance of the LogCollectorRegistry.
+        """
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self) -> None:
+        """Initialize the LogCollectorRegistry.
+
+        Returns:
+            The singleton instance of the LogCollectorRegistry.
+        """
+        if not self._initialized:
+            self.collectors: List[Callable[[str, bool], Any]] = []
+            self.original_stdout_write: Optional[Callable] = None
+            self.original_stderr_write: Optional[Callable] = None
+            self.original_stdout_flush: Optional[Callable] = None
+            self.original_stderr_flush: Optional[Callable] = None
+            self._stdout_stderr_wrapped: bool = False
+            self._initialized = True
+
+    def add_collector(self, collector: Callable[[str, bool], Any]) -> None:
+        """Add a collector to handle log messages.
+
+        Args:
+            collector: A callable that takes (message: str, is_stderr: bool) and processes it.
+        """
+        # Setup stdout/stderr wrapping on first registration
+        if not self._stdout_stderr_wrapped:
+            self._setup_stdout_stderr_wrapping()
+
+        if collector not in self.collectors:
+            self.collectors.append(collector)
+
+    def remove_collector(self, collector: Callable[[str, bool], Any]) -> None:
+        """Remove a collector from the registry.
+
+        Args:
+            collector: The collector to remove.
+        """
+        if collector in self.collectors:
+            self.collectors.remove(collector)
+
+    def _default_collector(self, message: str, is_stderr: bool) -> Any:
+        """Default collector that writes to original stdout/stderr.
+
+        Args:
+            message: The message to write.
+            is_stderr: Whether this is stderr output.
+
+        Returns:
+            The result of the original write method.
+        """
+        # Parse out log level tokens before writing to console
+        clean_message = self._parse_and_clean_message(message)
+
+        if is_stderr and self.original_stderr_write:
+            return self.original_stderr_write(clean_message)
+        elif not is_stderr and self.original_stdout_write:
+            return self.original_stdout_write(clean_message)
+        return None
+
+    def _parse_and_clean_message(self, message: str) -> str:
+        """Parse and clean ZenML log format tokens from message.
+        
+        Args:
+            message: The original message that may contain log level tokens.
+            
+        Returns:
+            The cleaned message with log level tokens and location info removed.
+        """
+        clean_message = message
+        
+        # Try to remove log level tokens
+        for level in LoggingLevels:
+            level_token = f"[{getLevelName(level.value)}] "
+            if level_token in clean_message:
+                clean_message = clean_message.replace(level_token, "")
+        
+        # Remove location information in format (module:file.py:line) from the end
+        # Pattern matches: (anything:anything.py:digits) at the very end
+        # The key is the .py: pattern which is unique to location info
+        location_pattern = r'\s*\([^)]*\.py:\d+\)\s*$'
+        clean_message = re.sub(location_pattern, '', clean_message)
+        
+        return clean_message
+
+    def _wrapped_write(self, is_stderr: bool = False) -> Callable:
+        """Create a wrapped write function.
+
+        Args:
+            is_stderr: Whether this is for stderr.
+
+        Returns:
+            The wrapped write function.
+        """
+
+        def wrapped_write(*args: Any, **kwargs: Any) -> Any:
+            message = args[0]
+            result = None
+
+            # Call all collectors in sequence
+            for collector in self.collectors:
+                try:
+                    result = collector(message, is_stderr)
+                except Exception as e:
+                    # If a collector fails, log the error but continue
+                    print(f"Error in log collector: {e}", file=sys.stderr)
+
+            return result
+
+        return wrapped_write
+
+    def _wrapped_flush(self, is_stderr: bool = False) -> Callable:
+        """Create a wrapped flush function.
+
+        Args:
+            is_stderr: Whether this is for stderr.
+
+        Returns:
+            The wrapped flush function.
+        """
+
+        def wrapped_flush(*args: Any, **kwargs: Any) -> Any:
+            original_flush = (
+                self.original_stderr_flush
+                if is_stderr
+                else self.original_stdout_flush
+            )
+            if original_flush:
+                return original_flush(*args, **kwargs)
+            return None
+
+        return wrapped_flush
+
+    def _setup_stdout_stderr_wrapping(self) -> None:
+        """Set up stdout and stderr wrapping."""
+        if not self._stdout_stderr_wrapped:
+            # Store original methods
+            self.original_stdout_write = getattr(sys.stdout, "write")
+            self.original_stdout_flush = getattr(sys.stdout, "flush")
+            self.original_stderr_write = getattr(sys.stderr, "write")
+            self.original_stderr_flush = getattr(sys.stderr, "flush")
+
+            # Add default collector directly to avoid recursion
+            self.collectors.append(self._default_collector)
+
+            # Wrap stdout and stderr
+            setattr(sys.stdout, "write", self._wrapped_write(is_stderr=False))
+            setattr(sys.stdout, "flush", self._wrapped_flush(is_stderr=False))
+            setattr(sys.stderr, "write", self._wrapped_write(is_stderr=True))
+            setattr(sys.stderr, "flush", self._wrapped_flush(is_stderr=True))
+
+            self._stdout_stderr_wrapped = True
 
 
 class CustomFormatter(logging.Formatter):
@@ -149,7 +316,7 @@ def get_formatter() -> logging.Formatter:
         The formatter.
     """
     if log_format := os.environ.get(ENV_ZENML_LOGGING_FORMAT, None):
-        return logging.Formatter(fmt=log_format)
+        return logging.Formatter(fmt=f"[%(levelname)s] {log_format}")
     else:
         return CustomFormatter()
 
@@ -191,6 +358,9 @@ def init_logging() -> None:
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(get_formatter())
     logging.root.addHandler(console_handler)
+
+    # Initialize the singleton registry (wrapping happens on first registration)
+    LogCollectorRegistry()
 
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
     suppress_zenml_logs: bool = handle_bool_env_var(
