@@ -25,6 +25,7 @@ from zenml.constants import (
     SERVICE_ACCOUNTS,
     VERSION_1,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     APIKeyFilter,
     APIKeyRequest,
@@ -226,6 +227,10 @@ def create_api_key(
 
     Returns:
         The created API key.
+
+    Raises:
+        IllegalOperationError: If the service account was created via external
+            authentication.
     """
 
     def create_api_key_wrapper(
@@ -237,6 +242,12 @@ def create_api_key(
         )
 
     service_account = zen_store().get_service_account(service_account_id)
+
+    if service_account.external_user_id is not None:
+        raise IllegalOperationError(
+            "Service accounts created via external authentication cannot "
+            "have associated API keys."
+        )
 
     return verify_permissions_and_create_entity(
         request_model=api_key,
@@ -333,8 +344,19 @@ def update_api_key(
 
     Returns:
         The updated API key.
+
+    Raises:
+        IllegalOperationError: If the service account was created via external
+            authentication.
     """
     service_account = zen_store().get_service_account(service_account_id)
+
+    if service_account.external_user_id is not None:
+        raise IllegalOperationError(
+            "Service accounts created via external authentication cannot "
+            "have associated API keys."
+        )
+
     verify_permission_for_model(service_account, action=Action.UPDATE)
     return zen_store().update_api_key(
         service_account_id=service_account_id,
@@ -367,8 +389,19 @@ def rotate_api_key(
 
     Returns:
         The updated API key.
+
+    Raises:
+        IllegalOperationError: If the service account was created via external
+            authentication.
     """
     service_account = zen_store().get_service_account(service_account_id)
+
+    if service_account.external_user_id is not None:
+        raise IllegalOperationError(
+            "Service accounts created via external authentication cannot "
+            "have associated API keys."
+        )
+
     verify_permission_for_model(service_account, action=Action.UPDATE)
     return zen_store().rotate_api_key(
         service_account_id=service_account_id,

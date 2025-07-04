@@ -260,6 +260,7 @@ from zenml.models import (
     ServerSettingsResponse,
     ServerSettingsUpdate,
     ServiceAccountFilter,
+    ServiceAccountInternalRequest,
     ServiceAccountRequest,
     ServiceAccountResponse,
     ServiceAccountUpdate,
@@ -7232,7 +7233,10 @@ class SqlZenStore(BaseZenStore):
 
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
     def create_service_account(
-        self, service_account: ServiceAccountRequest
+        self,
+        service_account: Union[
+            ServiceAccountRequest, ServiceAccountInternalRequest
+        ],
     ) -> ServiceAccountResponse:
         """Creates a new service account.
 
@@ -10313,6 +10317,28 @@ class SqlZenStore(BaseZenStore):
                 return True
 
         return False
+
+    def get_external_user_or_service_account(
+        self, account_id: UUID
+    ) -> UserResponse:
+        """Get a user or service account by external ID.
+
+        Args:
+            account_id: The external ID of the user or service account.
+
+        Returns:
+            The user or service account with the supplied external ID.
+
+        Raises:
+            KeyError: If a user or service account with the given external ID
+                doesn't exist.
+        """
+        users = self.list_users(UserFilter(external_user_id=account_id))
+        if users.total == 0:
+            raise KeyError(
+                f"Account with external ID '{account_id}' not found."
+            )
+        return users.items[0]
 
     # ----------------------------- Projects -----------------------------
 

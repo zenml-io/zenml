@@ -14,6 +14,7 @@
 """Models representing service accounts."""
 
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
+from uuid import UUID
 
 from pydantic import ConfigDict, Field
 
@@ -55,6 +56,15 @@ class ServiceAccountRequest(BaseRequest):
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
+class ServiceAccountInternalRequest(ServiceAccountRequest):
+    """Internal request model for service accounts."""
+
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
+    )
+
+
 # ------------------ Update Model ------------------
 
 
@@ -77,6 +87,10 @@ class ServiceAccountUpdate(BaseUpdate):
         title="Whether the service account is active or not.",
         default=None,
     )
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
+    )
 
     model_config = ConfigDict(validate_assignment=True)
 
@@ -97,6 +111,11 @@ class ServiceAccountResponseMetadata(BaseResponseMetadata):
         default="",
         title="A description of the service account.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
     )
 
 
@@ -184,6 +203,15 @@ class ServiceAccountResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def external_user_id(self) -> Optional[UUID]:
+        """The `external_user_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().external_user_id
 
 
 # ------------------ Filter Model ------------------

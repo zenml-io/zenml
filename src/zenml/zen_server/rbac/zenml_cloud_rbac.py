@@ -54,8 +54,10 @@ class ZenMLCloudRBAC(RBACInterface):
             # No need to send a request if there are no resources
             return {}
 
-        if user.is_service_account:
-            # Service accounts have full permissions for now
+        if user.is_service_account and user.external_user_id is None:
+            # Internal service accounts have full permissions for now
+            # TODO: remove this once we have a proper way to migrate the
+            # service accounts
             return {resource: True for resource in resources}
 
         # At this point it's a regular user, which in a ZenML Pro with RBAC
@@ -95,8 +97,10 @@ class ZenMLCloudRBAC(RBACInterface):
             the action on.
         """
         assert not resource.id
-        if user.is_service_account:
-            # Service accounts have full permissions for now
+        if user.is_service_account and user.external_user_id is None:
+            # Internal service accounts have full permissions for now
+            # TODO: remove this once we have a proper way to migrate the
+            # service accounts
             return True, []
 
         # At this point it's a regular user, which in the ZenML Pro with RBAC
