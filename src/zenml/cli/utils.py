@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 from typing import (
+    IO,
     TYPE_CHECKING,
     AbstractSet,
     Any,
@@ -162,14 +163,14 @@ def error(text: str) -> NoReturn:
         text: Input text string.
 
     Raises:
-        ClickException: when called.
+        StyledClickException: when called.
     """
     error_prefix = click.style("Error: ", fg="red", bold=True)
     error_message = click.style(text, fg="red", bold=False)
 
     # Create a custom ClickException that bypasses Click's default "Error: " prefix
     class StyledClickException(click.ClickException):
-        def show(self, file=None):
+        def show(self, file: Optional[IO[Any]] = None) -> None:
             if file is None:
                 file = click.get_text_stream("stderr")
             # Print our custom styled message directly without Click's prefix
