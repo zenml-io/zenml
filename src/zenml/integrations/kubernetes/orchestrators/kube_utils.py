@@ -695,7 +695,7 @@ def wait_for_job_to_finish(
                     namespace=namespace,
                     label_selector=f"job-name={job_name}",
                 )
-            except ApiException:
+            except ApiException as e:
                 logger.error("Error fetching pods: %s.", e)
                 pod_list = []
             else:
