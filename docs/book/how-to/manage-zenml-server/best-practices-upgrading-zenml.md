@@ -30,7 +30,7 @@ Whether you're OSS or Pro:
 > 🏢 **ZenML Pro** users: use **two workspaces** (e.g. `prod-workspace`, `staging-workspace`)  
 > 💻 **ZenML OSS** users: run **two ZenML servers** (same logic applies)
 
-![Image Placeholder: Diagram showing "Production" and "Staging" environments side by side. Arrows show pipelines running in production, while staging is used for upgrades only.](../../.gitbook/assets/upgrading_zenml_prod_staging_env.png)
+![Diagram showing "Production" and "Staging" environments side by side. Arrows show pipelines running in production, while staging is used for upgrades only.](../../.gitbook/assets/upgrading_zenml_prod_staging_env.png)
 
 ## 🧱 Step #2: Mirror Your Stacks in Both Environments
 
