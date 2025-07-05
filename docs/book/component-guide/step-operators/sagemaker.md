@@ -15,7 +15,7 @@ You should use the SageMaker step operator if:
 
 ### How to deploy it
 
-Create a role in the IAM console that you want the jobs running in SageMaker to assume. This role should at least have the `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` policies applied. Check [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) for a guide on how to set up this role.
+Create a role in the IAM console that you want the jobs running in SageMaker to assume. This role should follow the principle of least privilege with specific permissions instead of broad managed policies. See the [Required IAM Permissions](#required-iam-permissions) section below for the minimal required permissions, or check [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) for AWS's general guide on execution roles.
 
 ### How to use it
 
@@ -37,7 +37,7 @@ There are two ways you can authenticate your orchestrator to AWS to be able to r
 
 {% tabs %}
 {% tab title="Authentication via Service Connector" %}
-The recommended way to authenticate your SageMaker step operator is by registering or using an existing [AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector) and connecting it to your SageMaker step operator. The credentials configured for the connector must have permissions to create and manage SageMaker runs (e.g. [the `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions). The SageMaker step operator uses these `aws-generic` resource type, so make sure to configure the connector accordingly:
+The recommended way to authenticate your SageMaker step operator is by registering or using an existing [AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector) and connecting it to your SageMaker step operator. The credentials configured for the connector must have the permissions described in the [Required IAM Permissions](#required-iam-permissions) section below. The SageMaker step operator uses these `aws-generic` resource type, so make sure to configure the connector accordingly:
 
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type aws -i
@@ -55,7 +55,7 @@ zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
 {% tab title="Implicit Authentication" %}
 If you don't connect your step operator to a service connector:
 
-* If using a [local orchestrator](https://docs.zenml.io/stacks/orchestrators/local): ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). Make sure this profile has permissions to create and manage SageMaker runs (e.g. [the `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions).
+* If using a [local orchestrator](https://docs.zenml.io/stacks/orchestrators/local): ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). Make sure this profile has the permissions described in the [Required IAM Permissions](#required-iam-permissions) section below.
 * If using a remote orchestrator: the remote environment in which the orchestrator runs needs to be able to implicitly authenticate to AWS and assume the IAM role specified when registering the SageMaker step operator. This is only possible if the orchestrator is also running in AWS and uses a form of implicit workload authentication like the IAM role of an EC2 instance. If this is not the case, you will need to use a service connector.
 
 ```shell
@@ -77,7 +77,7 @@ Once you added the step operator to your active stack, you can use it to execute
 from zenml import step
 
 
-@step(step_operator= <NAME>)
+@step(step_operator=True)
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in SageMaker.
@@ -92,6 +92,108 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 For additional configuration of the SageMaker step operator, you can pass `SagemakerStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the SageMaker step operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) .
+
+## Required IAM Permissions
+
+Instead of using the broad `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` managed policies, follow the principle of least privilege by creating custom policies with only the required permissions:
+
+### Execution Role Permissions (for SageMaker jobs)
+
+Create a custom policy for the execution role that SageMaker will assume when running your steps:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:DescribeProcessingJob",
+        "sagemaker:StopProcessingJob",
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:DescribeTrainingJob",
+        "sagemaker:StopTrainingJob"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-artifact-store-bucket",
+        "arn:aws:s3:::your-artifact-store-bucket/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+### Client Permissions (for step operator usage)
+
+The client needs permissions to launch SageMaker jobs and pass the execution role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:DescribeProcessingJob",
+        "sagemaker:StopProcessingJob",
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:DescribeTrainingJob",
+        "sagemaker:StopTrainingJob"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::ACCOUNT-ID:role/EXECUTION-ROLE-NAME",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "sagemaker.amazonaws.com"
+        }
+      }
+    }
+  ]
+}
+```
+
+Replace `ACCOUNT-ID`, `EXECUTION-ROLE-NAME`, and `your-artifact-store-bucket` with your actual values.
 
 #### Enabling CUDA for GPU-backed hardware
 
