@@ -277,3 +277,35 @@ def test_stack_component_config_converts_json_strings():
     assert config.mapping_ == {"key": 1}
     assert config.pydantic_model == PydanticModel(value=1)
     assert config.optional_model == PydanticModel(value=1)
+
+
+def test_stack_component_config_json_error_messages():
+    """Tests that helpful error messages are provided for invalid JSON."""
+
+    class ComponentConfig(StackComponentConfig):
+        dict_: Dict[str, int]
+        list_: List[str]
+
+    # Test unquoted property names
+    with pytest.raises(ValueError) as exc_info:
+        ComponentConfig(dict_='{foo: "bar"}', list_="[]")
+    assert "Invalid JSON for configuration key 'dict_'" in str(exc_info.value)
+    assert "Make sure to quote property names" in str(exc_info.value)
+
+    # Test trailing commas
+    with pytest.raises(ValueError) as exc_info:
+        ComponentConfig(dict_='{"foo": "bar",}', list_="[]")
+    assert "Invalid JSON for configuration key 'dict_'" in str(exc_info.value)
+    assert "Remove trailing commas" in str(exc_info.value)
+
+    # Test missing values
+    with pytest.raises(ValueError) as exc_info:
+        ComponentConfig(dict_='{"foo": }', list_="[]")
+    assert "Invalid JSON for configuration key 'dict_'" in str(exc_info.value)
+    assert "Check for missing values" in str(exc_info.value)
+
+    # Test missing commas
+    with pytest.raises(ValueError) as exc_info:
+        ComponentConfig(dict_='{"foo": "bar" "baz": "qux"}', list_="[]")
+    assert "Invalid JSON for configuration key 'dict_'" in str(exc_info.value)
+    assert "Separate object properties" in str(exc_info.value)
