@@ -1,0 +1,44 @@
+[
+  {
+    "name": "basic_qa",
+    "template": "Answer the following question: {question}",
+    "prompt_type": "user",
+    "task": "question_answering",
+    "version": "1.0.0"
+  },
+  {
+    "name": "expert_qa",
+    "template": "You are an expert in {domain}. Please provide a detailed and accurate answer to the following question:\n\n{question}",
+    "prompt_type": "user",
+    "task": "question_answering",
+    "variables": {
+      "domain": "science and technology"
+    },
+    "version": "1.0.0"
+  },
+  {
+    "name": "cot_qa",
+    "template": "Question: {question}\n\nLet's approach this step-by-step:\n1. First, I'll identify the key concepts\n2. Then, I'll explain the relationships\n3. Finally, I'll provide a comprehensive answer\n\nAnswer:",
+    "prompt_type": "user",
+    "task": "question_answering",
+    "instructions": "Use chain-of-thought reasoning to provide detailed explanations",
+    "version": "1.0.0"
+  },
+  {
+    "name": "few_shot_qa",
+    "template": "Here are some example question-answer pairs:\n\n{examples}\n\nNow answer this question: {question}",
+    "prompt_type": "user",
+    "task": "question_answering",
+    "examples": [
+      {
+        "question": "What is Python?",
+        "answer": "Python is a high-level, interpreted programming language known for its simplicity and readability."
+      },
+      {
+        "question": "What is machine learning?",
+        "answer": "Machine learning is a subset of AI that enables systems to learn and improve from experience without explicit programming."
+      }
+    ],
+    "version": "1.0.0"
+  }
+]

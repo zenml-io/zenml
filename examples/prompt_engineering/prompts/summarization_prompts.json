@@ -1,0 +1,42 @@
+[
+  {
+    "name": "basic_summary",
+    "template": "Summarize the following text in {max_length} words or less:\n\n{text}",
+    "prompt_type": "user",
+    "task": "summarization",
+    "variables": {
+      "max_length": "50"
+    },
+    "version": "1.0.0"
+  },
+  {
+    "name": "bullet_summary",
+    "template": "Summarize the following text as {num_bullets} bullet points:\n\n{text}\n\nSummary:",
+    "prompt_type": "user",
+    "task": "summarization",
+    "variables": {
+      "num_bullets": "3-5"
+    },
+    "instructions": "Each bullet point should capture a key idea",
+    "version": "1.0.0"
+  },
+  {
+    "name": "executive_summary",
+    "template": "You are preparing an executive summary for {audience}. Summarize the following content focusing on key decisions and actionable insights:\n\n{text}\n\nExecutive Summary:",
+    "prompt_type": "user",
+    "task": "summarization",
+    "variables": {
+      "audience": "senior management"
+    },
+    "instructions": "Focus on business impact and strategic implications",
+    "version": "1.0.0"
+  },
+  {
+    "name": "technical_summary",
+    "template": "Provide a technical summary of the following content, highlighting:\n- Key technical concepts\n- Implementation details\n- Performance considerations\n\nContent: {text}\n\nTechnical Summary:",
+    "prompt_type": "user",
+    "task": "summarization",
+    "instructions": "Maintain technical accuracy while being concise",
+    "version": "1.0.0"
+  }
+]

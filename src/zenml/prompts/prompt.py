@@ -11,13 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Enhanced Prompt abstraction for LLMOps workflows."""
+"""Prompt abstraction for LLMOps workflows in ZenML."""
 
 import json
 import re
-import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -31,31 +30,28 @@ if TYPE_CHECKING:
 
 
 class Prompt(BaseModel):
-    """Enhanced Prompt abstraction for LLMOps workflows.
+    """Prompt abstraction for LLMOps workflows in ZenML.
 
-    This is the main prompt abstraction in ZenML that can handle any prompt use case
-    through configuration rather than inheritance. Like ZenML's Model abstraction,
-    this single class can be configured for different prompt types, tasks, and scenarios.
+    This is the main prompt abstraction in ZenML, designed as a simple yet
+    flexible artifact that integrates seamlessly with ZenML pipelines.
 
     Examples:
         # Simple prompt
         prompt = Prompt(template="Hello {name}!")
 
-        # Complex prompt with rich configuration
+        # Prompt with examples for few-shot learning
         prompt = Prompt(
-            template="You are a {role} assistant...",
-            prompt_type="conversation",
+            template="Answer the following question: {question}",
+            prompt_type="user",
             task="question_answering",
-            model_config={"temperature": 0.7, "max_tokens": 100},
-            prompt_strategy="few_shot",
-            examples=[{"input": "Q: ...", "output": "A: ..."}]
+            examples=[{"question": "What is 2+2?", "answer": "4"}]
         )
 
         # System prompt with instructions
         prompt = Prompt(
-            template="You are an expert {domain} analyst...",
+            template="You are a helpful assistant.",
             prompt_type="system",
-            instructions="Always provide detailed analysis with sources"
+            instructions="Always be concise and accurate"
         )
     """
 
@@ -70,10 +66,10 @@ class Prompt(BaseModel):
         description="Default variable values for template substitution",
     )
 
-    # Prompt classification and configuration
+    # Prompt classification
     prompt_type: Optional[str] = Field(
         default="user",
-        description="Type of prompt: 'system', 'user', 'assistant', 'function', 'tool', etc.",
+        description="Type of prompt: 'system', 'user', 'assistant'",
     )
 
     task: Optional[str] = Field(
@@ -81,17 +77,7 @@ class Prompt(BaseModel):
         description="Task this prompt is designed for: 'qa', 'summarization', 'classification', 'generation', etc.",
     )
 
-    domain: Optional[str] = Field(
-        default=None,
-        description="Domain/subject area: 'medical', 'legal', 'technical', 'creative', etc.",
-    )
-
-    # Prompt engineering configuration
-    prompt_strategy: Optional[str] = Field(
-        default="direct",
-        description="Prompting strategy: 'direct', 'few_shot', 'chain_of_thought', 'tree_of_thought', etc.",
-    )
-
+    # Prompt engineering
     examples: Optional[List[Dict[str, Any]]] = Field(
         default=None,
         description="Example inputs/outputs for few-shot prompting",
@@ -100,22 +86,6 @@ class Prompt(BaseModel):
     instructions: Optional[str] = Field(
         default=None,
         description="Specific instructions or constraints for the prompt",
-    )
-
-    context_template: Optional[str] = Field(
-        default=None,
-        description="Template for context injection: 'Context: {context}\\n\\nQuery: {query}'",
-    )
-
-    # Model and performance configuration
-    model_config_params: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Model-specific parameters: temperature, max_tokens, top_p, etc.",
-    )
-
-    target_models: Optional[List[str]] = Field(
-        default=None,
-        description="Models this prompt is optimized for: ['gpt-4', 'claude-3', 'llama-2']",
     )
 
     # Metadata and tracking
@@ -137,13 +107,7 @@ class Prompt(BaseModel):
         description="Additional metadata for tracking and analysis",
     )
 
-    # Performance and evaluation
-    performance_metrics: Optional[Dict[str, float]] = Field(
-        default=None,
-        description="Tracked performance metrics: accuracy, bleu_score, response_time, etc.",
-    )
-
-    # Timestamps and lineage
+    # Timestamps
     created_at: Optional[datetime] = Field(
         default=None, description="When the prompt was created"
     )
@@ -152,61 +116,10 @@ class Prompt(BaseModel):
         default=None, description="When the prompt was last updated"
     )
 
-    # Parent/lineage tracking
-    parent_prompt_id: Optional[str] = Field(
-        default=None,
-        description="ID of parent prompt if this is derived from another",
-    )
-
-    # Validation and constraints
-    min_tokens: Optional[int] = Field(
-        default=None, description="Minimum expected tokens in response"
-    )
-
-    max_tokens: Optional[int] = Field(
-        default=None, description="Maximum expected tokens in response"
-    )
-
-    expected_format: Optional[str] = Field(
-        default=None,
-        description="Expected response format: 'json', 'xml', 'markdown', 'code', etc.",
-    )
-
-    # NEW: Enhanced fields for better prompt management
+    # Unique identifier
     prompt_id: Optional[str] = Field(
         default_factory=lambda: str(uuid4()),
         description="Unique identifier for this prompt",
-    )
-
-    author: Optional[str] = Field(
-        default=None,
-        description="Author or creator of the prompt",
-    )
-
-    license: Optional[str] = Field(
-        default=None,
-        description="License for the prompt usage",
-    )
-
-    source_url: Optional[str] = Field(
-        default=None,
-        description="URL source of the prompt if imported",
-    )
-
-    language: Optional[str] = Field(
-        default="en",
-        description="Primary language of the prompt",
-    )
-
-    # Experimental features
-    use_cache: Optional[bool] = Field(
-        default=True,
-        description="Whether to cache responses for this prompt",
-    )
-
-    safety_checks: Optional[List[str]] = Field(
-        default=None,
-        description="Safety checks to apply: ['content_filter', 'bias_check', 'toxicity']",
     )
 
     # ========================
@@ -252,15 +165,8 @@ class Prompt(BaseModel):
         Returns:
             Formatted prompt with context
         """
-        if self.context_template:
-            # Use custom context template
-            context_formatted = self.context_template.format(
-                context=context, **kwargs
-            )
-            return self.format(context=context_formatted, **kwargs)
-        else:
-            # Default context injection
-            return self.format(context=context, **kwargs)
+        # Inject context as a variable
+        return self.format(context=context, **kwargs)
 
     def get_variable_names(self) -> List[str]:
         """Extract variable names from the template.
@@ -318,28 +224,6 @@ class Prompt(BaseModel):
         """
         return self.model_copy(update={"instructions": instructions})
 
-    def with_context_template(self, context_template: str) -> "Prompt":
-        """Set context injection template.
-
-        Args:
-            context_template: Template for context injection
-
-        Returns:
-            New Prompt instance with context template
-        """
-        return self.model_copy(update={"context_template": context_template})
-
-    def with_model_config(self, **config: Any) -> "Prompt":
-        """Add model configuration parameters.
-
-        Args:
-            **config: Model configuration parameters
-
-        Returns:
-            New Prompt instance with model config
-        """
-        new_config = {**(self.model_config_params or {}), **config}
-        return self.model_copy(update={"model_config_params": new_config})
 
     def for_task(self, task: str, **task_config: Any) -> "Prompt":
         """Configure prompt for specific task.
@@ -356,47 +240,6 @@ class Prompt(BaseModel):
             updates["metadata"] = {**(self.metadata or {}), **task_config}
         return self.model_copy(update=updates)
 
-    def for_domain(self, domain: str, **domain_config: Any) -> "Prompt":
-        """Configure prompt for specific domain.
-
-        Args:
-            domain: Domain/subject area
-            **domain_config: Domain-specific configuration
-
-        Returns:
-            New Prompt instance configured for domain
-        """
-        updates = {"domain": domain}
-        if domain_config:
-            updates["metadata"] = {**(self.metadata or {}), **domain_config}
-        return self.model_copy(update=updates)
-
-    # ========================
-    # Evaluation and Metrics
-    # ========================
-
-    def log_performance(self, metrics: Dict[str, float]) -> "Prompt":
-        """Log performance metrics.
-
-        Args:
-            metrics: Performance metrics to log
-
-        Returns:
-            New Prompt instance with updated metrics
-        """
-        new_metrics = {**(self.performance_metrics or {}), **metrics}
-        return self.model_copy(update={"performance_metrics": new_metrics})
-
-    def get_performance(self, metric: str) -> Optional[float]:
-        """Get specific performance metric.
-
-        Args:
-            metric: Metric name to retrieve
-
-        Returns:
-            Metric value or None if not found
-        """
-        return (self.performance_metrics or {}).get(metric)
 
     # ========================
     # Versioning and Lineage
@@ -499,35 +342,15 @@ class Prompt(BaseModel):
             "missing_variables": self.get_missing_variables(),
             "prompt_type": self.prompt_type,
             "task": self.task,
-            "domain": self.domain,
-            "strategy": self.prompt_strategy,
             "has_examples": bool(self.examples),
             "example_count": len(self.examples) if self.examples else 0,
             "has_instructions": bool(self.instructions),
-            "target_models": self.target_models,
             "version": self.version,
             "tags": self.tags,
-            "author": self.author,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
 
-    def is_compatible_with_model(self, model_name: str) -> bool:
-        """Check if prompt is compatible with a specific model.
-
-        Args:
-            model_name: Name of the model to check compatibility
-
-        Returns:
-            True if compatible, False otherwise
-        """
-        if not self.target_models:
-            return True  # Compatible with all models if not specified
-
-        return any(
-            model_name.lower() in target.lower()
-            for target in self.target_models
-        )
 
     def estimate_tokens(self, **format_vars: Any) -> Optional[int]:
         """Estimate token count for formatted prompt.
@@ -568,161 +391,8 @@ class Prompt(BaseModel):
         if self.instructions:
             score += min(len(self.instructions) / 500, 0.1)
             
-        # Context template adds complexity
-        if self.context_template:
-            score += 0.1
-            
-        # Strategy complexity
-        complex_strategies = ["chain_of_thought", "tree_of_thought", "role_playing"]
-        if self.prompt_strategy in complex_strategies:
-            score += 0.1
             
         return min(score, 1.0)
-
-    # ========================
-    # Analytics and A/B Testing Integration
-    # ========================
-
-    def execute_with_analytics(
-        self,
-        model_function: Callable[..., str],
-        track_analytics: bool = True,
-        ab_test_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        **format_kwargs: Any
-    ) -> Tuple[str, Optional["PromptExecution"]]:
-        """Execute prompt with analytics tracking.
-
-        Args:
-            model_function: Function that takes formatted prompt and returns response
-            track_analytics: Whether to track execution analytics
-            ab_test_id: ID of A/B test if this execution is part of one
-            user_id: User ID for A/B test assignment
-            **format_kwargs: Variables for prompt formatting
-
-        Returns:
-            Tuple of (response, execution_record)
-        """
-        from .prompt_analytics import get_analytics_manager
-        
-        start_time = time.time()
-        execution_record = None
-        
-        try:
-            # Format the prompt
-            formatted_prompt = self.format(**format_kwargs)
-            
-            # For A/B testing, we might need to select a different prompt variant
-            if ab_test_id:
-                analytics_manager = get_analytics_manager()
-                variant = analytics_manager.select_variant(ab_test_id, user_id)
-                # Note: In a full implementation, this would load the variant prompt
-                # For now, we'll just track the variant in analytics
-            
-            # Execute the model function
-            response = model_function(formatted_prompt)
-            execution_time_ms = (time.time() - start_time) * 1000
-            
-            # Track analytics if enabled
-            if track_analytics:
-                analytics_manager = get_analytics_manager()
-                execution_record = analytics_manager.log_execution(
-                    prompt_id=self.prompt_id or "unknown",
-                    input_variables=format_kwargs,
-                    formatted_prompt=formatted_prompt,
-                    response=response,
-                    execution_time_ms=execution_time_ms,
-                    prompt_version=self.version,
-                    user_id=user_id,
-                    ab_test_id=ab_test_id,
-                    ab_test_group=variant if ab_test_id else None,
-                    success=True
-                )
-            
-            return response, execution_record
-            
-        except Exception as e:
-            execution_time_ms = (time.time() - start_time) * 1000
-            
-            # Track failed execution
-            if track_analytics:
-                analytics_manager = get_analytics_manager()
-                execution_record = analytics_manager.log_execution(
-                    prompt_id=self.prompt_id or "unknown",
-                    input_variables=format_kwargs,
-                    formatted_prompt=self.format(**format_kwargs) if format_kwargs else self.template,
-                    execution_time_ms=execution_time_ms,
-                    success=False,
-                    error_message=str(e),
-                    user_id=user_id,
-                    ab_test_id=ab_test_id
-                )
-            
-            raise
-
-    def get_analytics(
-        self,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
-    ) -> Optional["PromptAnalytics"]:
-        """Get analytics for this prompt.
-
-        Args:
-            start_date: Start of analysis period
-            end_date: End of analysis period
-
-        Returns:
-            Analytics summary for this prompt
-        """
-        from .prompt_analytics import get_analytics_manager
-        
-        if not self.prompt_id:
-            return None
-            
-        analytics_manager = get_analytics_manager()
-        return analytics_manager.get_analytics(
-            prompt_id=self.prompt_id,
-            start_date=start_date,
-            end_date=end_date
-        )
-
-    def create_ab_test(
-        self,
-        variant_prompts: Dict[str, "Prompt"],
-        test_name: str,
-        traffic_allocation: Optional[Dict[str, float]] = None,
-        duration_days: int = 7,
-        primary_metric: str = "quality_score"
-    ) -> "ABTestConfiguration":
-        """Create an A/B test with this prompt as the control.
-
-        Args:
-            variant_prompts: Dictionary of variant names to Prompt objects
-            test_name: Name for the A/B test
-            traffic_allocation: Traffic allocation per variant
-            duration_days: How long to run the test
-            primary_metric: Primary metric to optimize
-
-        Returns:
-            A/B test configuration
-        """
-        from .prompt_analytics import get_analytics_manager
-        
-        # Include this prompt as the control variant
-        variants = {"control": self.prompt_id or "unknown"}
-        variants.update({
-            name: prompt.prompt_id or "unknown" 
-            for name, prompt in variant_prompts.items()
-        })
-        
-        analytics_manager = get_analytics_manager()
-        return analytics_manager.create_ab_test(
-            name=test_name,
-            variants=variants,
-            traffic_allocation=traffic_allocation,
-            duration_days=duration_days,
-            primary_metric=primary_metric
-        )
 
     def clone(self, **updates: Any) -> "Prompt":
         """Create a deep copy of the prompt with optional updates.

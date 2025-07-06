@@ -85,11 +85,8 @@ class PromptMaterializer(BaseMaterializer):
             "prompt_id": data.prompt_id,
             "prompt_type": data.prompt_type,
             "task": data.task,
-            "domain": data.domain,
             "version": data.version,
             "description": data.description,
-            "author": data.author,
-            "language": data.language,
             
             # Template analysis
             "template_length": summary["template_length"],
@@ -99,22 +96,12 @@ class PromptMaterializer(BaseMaterializer):
             "variables_complete": summary["variables_complete"],
             
             # Configuration
-            "prompt_strategy": data.prompt_strategy,
             "has_examples": summary["has_examples"],
             "example_count": len(data.examples) if data.examples else 0,
             "has_instructions": summary["has_instructions"],
-            "has_context_template": bool(data.context_template),
-            "target_models": data.target_models,
-            
-            # Performance
-            "performance_metrics": data.performance_metrics,
-            "min_tokens": data.min_tokens,
-            "max_tokens": data.max_tokens,
-            "expected_format": data.expected_format,
             "complexity_score": data.get_complexity_score(),
             
-            # Lineage
-            "parent_prompt_id": data.parent_prompt_id,
+            # Timestamps
             "created_at": data.created_at.isoformat()
             if data.created_at
             else None,
@@ -125,12 +112,6 @@ class PromptMaterializer(BaseMaterializer):
             # Tags and metadata
             "tags": data.tags,
             "custom_metadata": data.metadata,
-            
-            # Enhanced fields
-            "license": data.license,
-            "source_url": data.source_url,
-            "use_cache": data.use_cache,
-            "safety_checks": data.safety_checks,
         }
 
         # Add token estimation if possible
@@ -242,11 +223,6 @@ class PromptMaterializer(BaseMaterializer):
         version_info = f"v{data.version}" if data.version else "No Version"
         prompt_id_short = data.prompt_id[:8] + "..." if data.prompt_id else "unknown"
 
-        # Author info
-        author_info = ""
-        if data.author:
-            author_info = f'<div class="author">👤 {data.author}</div>'
-
         return f"""
         <div class="header">
             <h1>🎯 ZenML Prompt</h1>
@@ -254,7 +230,6 @@ class PromptMaterializer(BaseMaterializer):
                 <div class="left-info">
                     <div class="version">{version_info}</div>
                     <div class="prompt-id">ID: {prompt_id_short}</div>
-                    {author_info}
                 </div>
                 <div class="badges">
                     {" ".join(status_badges)}
@@ -336,52 +311,12 @@ class PromptMaterializer(BaseMaterializer):
         config_items = []
 
         # Basic configuration
-        if data.domain:
-            config_items.append(("Domain", data.domain, "🏷️"))
-        if data.language:
-            config_items.append(("Language", data.language, "🌐"))
-        if data.prompt_strategy:
-            config_items.append(("Strategy", data.prompt_strategy, "🧠"))
+        if data.prompt_type:
+            config_items.append(("Prompt Type", data.prompt_type, "🏷️"))
+        if data.task:
+            config_items.append(("Task", data.task, "🎯"))
         if data.instructions:
             config_items.append(("Instructions", data.instructions[:100] + "..." if len(data.instructions) > 100 else data.instructions, "📋"))
-        if data.context_template:
-            config_items.append(
-                ("Context Template", data.context_template[:100] + "..." if len(data.context_template) > 100 else data.context_template, "🔗")
-            )
-
-        # Model configuration
-        if data.target_models:
-            models_list = ", ".join(data.target_models)
-            config_items.append(("Target Models", models_list, "🤖"))
-
-        if data.model_config_params:
-            params_str = ", ".join(
-                [f"{k}={v}" for k, v in data.model_config_params.items()]
-            )
-            config_items.append(("Model Parameters", params_str, "⚙️"))
-
-        # Constraints
-        if data.min_tokens or data.max_tokens:
-            token_range = (
-                f"{data.min_tokens or '∞'} - {data.max_tokens or '∞'} tokens"
-            )
-            config_items.append(("Token Range", token_range, "📊"))
-
-        if data.expected_format:
-            config_items.append(
-                ("Expected Format", data.expected_format, "📄")
-            )
-
-        # Enhanced fields
-        if data.license:
-            config_items.append(("License", data.license, "⚖️"))
-        
-        if data.source_url:
-            config_items.append(("Source", f'<a href="{data.source_url}" target="_blank">Link</a>', "🔗"))
-        
-        if data.safety_checks:
-            checks_str = ", ".join(data.safety_checks)
-            config_items.append(("Safety Checks", checks_str, "🛡️"))
 
         if not config_items:
             return ""
