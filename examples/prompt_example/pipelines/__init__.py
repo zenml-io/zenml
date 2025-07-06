@@ -1,1 +1,0 @@
-# Pipelines module for prompt example 
