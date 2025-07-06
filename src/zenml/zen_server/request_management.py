@@ -285,13 +285,14 @@ class RequestManager:
                 if deduplicate_request:
                     assert transaction_id is not None
                     try:
-                        api_transaction, transaction_created = (
-                            zen_store().get_or_create_api_transaction(
-                                api_transaction=ApiTransactionRequest(
-                                    transaction_id=transaction_id,
-                                    method=request_context.request.method,
-                                    url=str(request_context.request.url),
-                                )
+                        (
+                            api_transaction,
+                            transaction_created,
+                        ) = zen_store().get_or_create_api_transaction(
+                            api_transaction=ApiTransactionRequest(
+                                transaction_id=transaction_id,
+                                method=request_context.request.method,
+                                url=str(request_context.request.url),
                             )
                         )
                     except EntityExistsError:

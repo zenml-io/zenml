@@ -41,9 +41,10 @@ class CSVString(str):
 class JSONString(str):
     """Special string class to indicate a JSON string."""
 
+
 __all__ = [
     "HTMLString",
-    "MarkdownString", 
+    "MarkdownString",
     "CSVString",
     "JSONString",
     "Prompt",

@@ -358,7 +358,8 @@ def async_fastapi_endpoint_wrapper(
 
 @overload
 def async_fastapi_endpoint_wrapper(
-    *, deduplicate: Optional[bool] = None
+    *,
+    deduplicate: Optional[bool] = None,
 ) -> Callable[[Callable[P, R]], Callable[P, Awaitable[Any]]]: ...
 
 

@@ -224,7 +224,6 @@ class Prompt(BaseModel):
         """
         return self.model_copy(update={"instructions": instructions})
 
-
     def for_task(self, task: str, **task_config: Any) -> "Prompt":
         """Configure prompt for specific task.
 
@@ -239,7 +238,6 @@ class Prompt(BaseModel):
         if task_config:
             updates["metadata"] = {**(self.metadata or {}), **task_config}
         return self.model_copy(update=updates)
-
 
     # ========================
     # Versioning and Lineage
@@ -351,7 +349,6 @@ class Prompt(BaseModel):
             "updated_at": self.updated_at,
         }
 
-
     def estimate_tokens(self, **format_vars: Any) -> Optional[int]:
         """Estimate token count for formatted prompt.
 
@@ -375,23 +372,22 @@ class Prompt(BaseModel):
             Complexity score from 0.0 to 1.0
         """
         score = 0.0
-        
+
         # Template length contributes to complexity
         score += min(len(self.template) / 1000, 0.3)
-        
+
         # Variable count
         var_count = len(self.variables) if self.variables else 0
         score += min(var_count / 10, 0.2)
-        
+
         # Examples add complexity
         if self.examples:
             score += min(len(self.examples) / 5, 0.2)
-            
+
         # Instructions add complexity
         if self.instructions:
             score += min(len(self.instructions) / 500, 0.1)
-            
-            
+
         return min(score, 1.0)
 
     def clone(self, **updates: Any) -> "Prompt":

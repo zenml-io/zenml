@@ -29,7 +29,8 @@ def upgrade() -> None:
 
     # Update secrets that are referenced by service connectors to be internal
     connection.execute(
-        sa.text("""
+        sa.text(
+            """
             UPDATE secret 
             SET internal = TRUE 
             WHERE id IN (
@@ -37,16 +38,19 @@ def upgrade() -> None:
                 FROM service_connector 
                 WHERE secret_id IS NOT NULL
             );
-        """)
+        """
+        )
     )
 
     # Update all other secrets to be not internal
     connection.execute(
-        sa.text("""
+        sa.text(
+            """
             UPDATE secret 
             SET internal = FALSE 
             WHERE internal IS NULL;
-        """)
+        """
+        )
     )
 
     # Step 3: Make internal column non-nullable

@@ -87,20 +87,17 @@ class PromptMaterializer(BaseMaterializer):
             "task": data.task,
             "version": data.version,
             "description": data.description,
-            
             # Template analysis
             "template_length": summary["template_length"],
             "variable_count": summary["variable_count"],
             "variable_names": summary["variable_names"],
             "missing_variables": summary["missing_variables"],
             "variables_complete": summary["variables_complete"],
-            
             # Configuration
             "has_examples": summary["has_examples"],
             "example_count": len(data.examples) if data.examples else 0,
             "has_instructions": summary["has_instructions"],
             "complexity_score": data.get_complexity_score(),
-            
             # Timestamps
             "created_at": data.created_at.isoformat()
             if data.created_at
@@ -108,7 +105,6 @@ class PromptMaterializer(BaseMaterializer):
             "updated_at": data.updated_at.isoformat()
             if data.updated_at
             else None,
-            
             # Tags and metadata
             "tags": data.tags,
             "custom_metadata": data.metadata,
@@ -212,16 +208,24 @@ class PromptMaterializer(BaseMaterializer):
             status_badges.append(
                 f'<span class="badge badge-primary">{data.task.title()}</span>'
             )
-        
+
         # Complexity badge
         complexity = data.get_complexity_score()
-        complexity_class = "low" if complexity < 0.3 else "medium" if complexity < 0.7 else "high"
+        complexity_class = (
+            "low"
+            if complexity < 0.3
+            else "medium"
+            if complexity < 0.7
+            else "high"
+        )
         status_badges.append(
             f'<span class="badge badge-{complexity_class}">Complexity: {complexity:.1f}</span>'
         )
 
         version_info = f"v{data.version}" if data.version else "No Version"
-        prompt_id_short = data.prompt_id[:8] + "..." if data.prompt_id else "unknown"
+        prompt_id_short = (
+            data.prompt_id[:8] + "..." if data.prompt_id else "unknown"
+        )
 
         return f"""
         <div class="header">
@@ -289,7 +293,7 @@ class PromptMaterializer(BaseMaterializer):
         <div class="template-stats">
             <span class="stat">📏 {len(data.template)} chars</span>
             <span class="stat">🔢 {len(data.get_variable_names())} variables</span>
-            <span class="stat">📊 {data.estimate_tokens() or 'Unknown'} tokens (est.)</span>
+            <span class="stat">📊 {data.estimate_tokens() or "Unknown"} tokens (est.)</span>
         </div>
         """
 
@@ -316,20 +320,30 @@ class PromptMaterializer(BaseMaterializer):
         if data.task:
             config_items.append(("Task", data.task, "🎯"))
         if data.instructions:
-            config_items.append(("Instructions", data.instructions[:100] + "..." if len(data.instructions) > 100 else data.instructions, "📋"))
+            config_items.append(
+                (
+                    "Instructions",
+                    data.instructions[:100] + "..."
+                    if len(data.instructions) > 100
+                    else data.instructions,
+                    "📋",
+                )
+            )
 
         if not config_items:
             return ""
 
         config_html = []
         for label, value, icon in config_items:
-            config_html.append(f"""
+            config_html.append(
+                f"""
             <div class="config-item">
                 <span class="config-icon">{icon}</span>
                 <span class="config-label">{label}:</span>
                 <span class="config-value">{value}</span>
             </div>
-            """)
+            """
+            )
 
         return f"""
         <div class="section config-section">
@@ -349,19 +363,23 @@ class PromptMaterializer(BaseMaterializer):
         for i, example in enumerate(data.examples, 1):
             example_content = []
             for key, value in example.items():
-                example_content.append(f"""
+                example_content.append(
+                    f"""
                 <div class="example-field">
                     <label>{key.title()}:</label>
                     <div class="example-value">{value}</div>
                 </div>
-                """)
+                """
+                )
 
-            examples_html.append(f"""
+            examples_html.append(
+                f"""
             <div class="example-item">
                 <h4>Example {i}</h4>
                 {"".join(example_content)}
             </div>
-            """)
+            """
+            )
 
         return f"""
         <div class="section examples-section">
@@ -383,18 +401,22 @@ class PromptMaterializer(BaseMaterializer):
             if isinstance(value, float):
                 formatted_value = f"{value:.3f}"
                 # Add trend indicator if available
-                trend_icon = "📈" if value > 0.7 else "📊" if value > 0.5 else "📉"
+                trend_icon = (
+                    "📈" if value > 0.7 else "📊" if value > 0.5 else "📉"
+                )
             else:
                 formatted_value = str(value)
                 trend_icon = "📊"
 
-            metrics_html.append(f"""
+            metrics_html.append(
+                f"""
             <div class="metric-item">
                 <div class="metric-icon">{trend_icon}</div>
                 <div class="metric-name">{metric.replace("_", " ").title()}</div>
                 <div class="metric-value">{formatted_value}</div>
             </div>
-            """)
+            """
+            )
 
         return f"""
         <div class="section performance-section">
@@ -413,22 +435,26 @@ class PromptMaterializer(BaseMaterializer):
         lineage_items = []
 
         if data.parent_prompt_id:
-            lineage_items.append(f"""
+            lineage_items.append(
+                f"""
             <div class="lineage-item">
                 <span class="lineage-icon">👨‍👩‍👧‍👦</span>
                 <span class="lineage-label">Parent ID:</span>
                 <span class="lineage-value">{data.parent_prompt_id[:8]}...</span>
             </div>
-            """)
+            """
+            )
 
         if data.version:
-            lineage_items.append(f"""
+            lineage_items.append(
+                f"""
             <div class="lineage-item">
                 <span class="lineage-icon">🏷️</span>
                 <span class="lineage-label">Version:</span>
                 <span class="lineage-value">{data.version}</span>
             </div>
-            """)
+            """
+            )
 
         return f"""
         <div class="section lineage-section">
@@ -472,12 +498,14 @@ class PromptMaterializer(BaseMaterializer):
 
         metadata_html = []
         for label, value in metadata_items:
-            metadata_html.append(f"""
+            metadata_html.append(
+                f"""
             <div class="metadata-item">
                 <span class="metadata-label">{label}:</span>
                 <span class="metadata-value">{value}</span>
             </div>
-            """)
+            """
+            )
 
         return f"""
         <div class="section metadata-section">

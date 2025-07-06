@@ -2,17 +2,12 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.models.v2.base.base import (
-    BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
-    BaseResponseMetadata,
-    BaseResponseResources,
     BaseUpdate,
 )
 from zenml.models.v2.base.scoped import (
@@ -70,10 +65,15 @@ class PromptTemplateRequest(ProjectScopedRequest):
 
     name: str = Field(..., description="Name of the prompt template")
     content: str = Field(..., description="The prompt template content")
-    description: Optional[str] = Field(None, description="Description of the prompt")
-    category: Optional[str] = Field(None, description="Category for organization")
+    description: Optional[str] = Field(
+        None, description="Description of the prompt"
+    )
+    category: Optional[str] = Field(
+        None, description="Category for organization"
+    )
     variables: Optional[List[str]] = Field(
-        default_factory=list, description="List of variable names in the template"
+        default_factory=list,
+        description="List of variable names in the template",
     )
     tags: Optional[List[str]] = Field(
         default_factory=list, description="Tags for categorization"
@@ -81,7 +81,9 @@ class PromptTemplateRequest(ProjectScopedRequest):
     metadata: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Additional metadata"
     )
-    status: PromptStatus = Field(default=PromptStatus.DRAFT, description="Prompt status")
+    status: PromptStatus = Field(
+        default=PromptStatus.DRAFT, description="Prompt status"
+    )
 
 
 class PromptTemplateUpdate(BaseUpdate):
@@ -103,14 +105,21 @@ class PromptTemplateResponseBody(ProjectScopedResponseBody):
 
     name: str = Field(..., description="Name of the prompt template")
     content: str = Field(..., description="The prompt template content")
-    description: Optional[str] = Field(None, description="Description of the prompt")
-    category: Optional[str] = Field(None, description="Category for organization")
+    description: Optional[str] = Field(
+        None, description="Description of the prompt"
+    )
+    category: Optional[str] = Field(
+        None, description="Category for organization"
+    )
     variables: List[str] = Field(
-        default_factory=list, description="List of variable names in the template"
+        default_factory=list,
+        description="List of variable names in the template",
     )
     status: PromptStatus = Field(description="Prompt status")
     version_count: int = Field(default=0, description="Number of versions")
-    latest_version: Optional[str] = Field(None, description="Latest version identifier")
+    latest_version: Optional[str] = Field(
+        None, description="Latest version identifier"
+    )
 
 
 class PromptTemplateResponseMetadata(ProjectScopedResponseMetadata):
@@ -130,7 +139,9 @@ class PromptTemplateResponseMetadata(ProjectScopedResponseMetadata):
 class PromptTemplateResponseResources(ProjectScopedResponseResources):
     """Response resources for prompt templates."""
 
-    tags: List[str] = Field(default_factory=list, description="Associated tags")
+    tags: List[str] = Field(
+        default_factory=list, description="Associated tags"
+    )
 
 
 class PromptTemplateResponse(
@@ -169,7 +180,9 @@ class PromptTemplateFilter(ProjectScopedFilter, TaggableFilter):
     name: Optional[str] = Field(None, description="Filter by name")
     content: Optional[str] = Field(None, description="Filter by content")
     category: Optional[str] = Field(None, description="Filter by category")
-    status: Optional[PromptStatus] = Field(None, description="Filter by status")
+    status: Optional[PromptStatus] = Field(
+        None, description="Filter by status"
+    )
 
 
 # ------------------ Prompt Experiment Models ------------------
@@ -179,12 +192,16 @@ class PromptVariant(BaseModel):
     """A variant in a prompt experiment."""
 
     name: str = Field(..., description="Name of the variant")
-    prompt_template_id: UUID = Field(..., description="ID of the prompt template")
+    prompt_template_id: UUID = Field(
+        ..., description="ID of the prompt template"
+    )
     prompt_version: Optional[str] = Field(None, description="Specific version")
     variables: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Variable values for this variant"
     )
-    weight: float = Field(default=1.0, description="Traffic weight for A/B testing")
+    weight: float = Field(
+        default=1.0, description="Traffic weight for A/B testing"
+    )
 
 
 class PromptExperimentRequest(ProjectScopedRequest):
@@ -198,7 +215,9 @@ class PromptExperimentRequest(ProjectScopedRequest):
     evaluation_criteria: List[str] = Field(
         default_factory=list, description="Criteria for evaluation"
     )
-    test_dataset: Optional[str] = Field(None, description="Test dataset identifier")
+    test_dataset: Optional[str] = Field(
+        None, description="Test dataset identifier"
+    )
     metadata: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Additional metadata"
     )
@@ -224,14 +243,18 @@ class PromptExperimentResponseBody(ProjectScopedResponseBody):
     variants: List[PromptVariant] = Field(description="Experiment variants")
     evaluation_criteria: List[str] = Field(description="Evaluation criteria")
     test_dataset: Optional[str] = Field(None, description="Test dataset")
-    results: Optional[Dict[str, Any]] = Field(None, description="Experiment results")
+    results: Optional[Dict[str, Any]] = Field(
+        None, description="Experiment results"
+    )
 
 
 class PromptExperimentResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for prompt experiments."""
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    metrics: Optional[Dict[str, Any]] = Field(None, description="Performance metrics")
+    metrics: Optional[Dict[str, Any]] = Field(
+        None, description="Performance metrics"
+    )
 
 
 class PromptExperimentResponseResources(ProjectScopedResponseResources):
@@ -273,7 +296,9 @@ class PromptEvaluationRequest(ProjectScopedRequest):
 
     prompt_template_id: UUID = Field(..., description="ID of prompt template")
     prompt_version: Optional[str] = Field(None, description="Specific version")
-    evaluation_type: EvaluationType = Field(..., description="Type of evaluation")
+    evaluation_type: EvaluationType = Field(
+        ..., description="Type of evaluation"
+    )
     evaluator_config: Dict[str, Any] = Field(
         default_factory=dict, description="Evaluator configuration"
     )
@@ -297,13 +322,19 @@ class PromptEvaluationUpdate(BaseUpdate):
 class PromptEvaluationResponseBody(ProjectScopedResponseBody):
     """Response body for prompt evaluations."""
 
-    prompt_template_id: UUID = Field(description="ID of evaluated prompt template")
-    prompt_version: Optional[str] = Field(None, description="Evaluated version")
+    prompt_template_id: UUID = Field(
+        description="ID of evaluated prompt template"
+    )
+    prompt_version: Optional[str] = Field(
+        None, description="Evaluated version"
+    )
     evaluation_type: EvaluationType = Field(description="Type of evaluation")
     score: Optional[float] = Field(None, description="Evaluation score")
     feedback: Optional[str] = Field(None, description="Evaluation feedback")
     test_cases: List[Dict[str, Any]] = Field(description="Test cases used")
-    results: Optional[Dict[str, Any]] = Field(None, description="Detailed results")
+    results: Optional[Dict[str, Any]] = Field(
+        None, description="Detailed results"
+    )
     status: str = Field(default="pending", description="Evaluation status")
 
 
@@ -311,7 +342,9 @@ class PromptEvaluationResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for prompt evaluations."""
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    evaluator_config: Dict[str, Any] = Field(description="Evaluator configuration")
+    evaluator_config: Dict[str, Any] = Field(
+        description="Evaluator configuration"
+    )
 
 
 class PromptEvaluationResponseResources(ProjectScopedResponseResources):
@@ -353,9 +386,15 @@ class PromptDeploymentRequest(ProjectScopedRequest):
 
     prompt_template_id: UUID = Field(..., description="ID of prompt template")
     prompt_version: str = Field(..., description="Version to deploy")
-    environment: DeploymentEnvironment = Field(..., description="Target environment")
-    description: Optional[str] = Field(None, description="Deployment description")
-    rollback_version: Optional[str] = Field(None, description="Rollback version")
+    environment: DeploymentEnvironment = Field(
+        ..., description="Target environment"
+    )
+    description: Optional[str] = Field(
+        None, description="Deployment description"
+    )
+    rollback_version: Optional[str] = Field(
+        None, description="Rollback version"
+    )
     metadata: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Additional metadata"
     )
@@ -373,12 +412,20 @@ class PromptDeploymentUpdate(BaseUpdate):
 class PromptDeploymentResponseBody(ProjectScopedResponseBody):
     """Response body for prompt deployments."""
 
-    prompt_template_id: UUID = Field(description="ID of deployed prompt template")
+    prompt_template_id: UUID = Field(
+        description="ID of deployed prompt template"
+    )
     prompt_version: str = Field(description="Deployed version")
-    environment: DeploymentEnvironment = Field(description="Deployment environment")
-    description: Optional[str] = Field(None, description="Deployment description")
+    environment: DeploymentEnvironment = Field(
+        description="Deployment environment"
+    )
+    description: Optional[str] = Field(
+        None, description="Deployment description"
+    )
     status: str = Field(default="active", description="Deployment status")
-    rollback_version: Optional[str] = Field(None, description="Rollback version")
+    rollback_version: Optional[str] = Field(
+        None, description="Rollback version"
+    )
     deployed_at: datetime = Field(description="Deployment timestamp")
 
 
@@ -429,7 +476,9 @@ class PromptExperimentFilter(ProjectScopedFilter):
     """Filter model for prompt experiments."""
 
     name: Optional[str] = Field(None, description="Filter by name")
-    status: Optional[ExperimentStatus] = Field(None, description="Filter by status")
+    status: Optional[ExperimentStatus] = Field(
+        None, description="Filter by status"
+    )
     prompt_template_id: Optional[UUID] = Field(
         None, description="Filter by prompt template"
     )

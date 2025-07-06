@@ -1,6 +1,5 @@
 """Endpoint definitions for comprehensive prompt management."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -19,11 +18,9 @@ from zenml.models import (
     PromptDeploymentFilter,
     PromptDeploymentRequest,
     PromptDeploymentResponse,
-    PromptDeploymentUpdate,
     PromptEvaluationFilter,
     PromptEvaluationRequest,
     PromptEvaluationResponse,
-    PromptEvaluationUpdate,
     PromptExperimentFilter,
     PromptExperimentRequest,
     PromptExperimentResponse,

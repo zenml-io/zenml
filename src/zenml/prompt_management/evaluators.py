@@ -280,7 +280,9 @@ class CustomEvaluator(PromptEvaluator):
             Evaluation result.
         """
         try:
-            result = self.evaluation_function(prompt_content, test_cases, **kwargs)
+            result = self.evaluation_function(
+                prompt_content, test_cases, **kwargs
+            )
             if isinstance(result, EvaluationResult):
                 return result
             elif isinstance(result, dict):
@@ -355,10 +357,14 @@ class BatchEvaluator:
         Returns:
             Comparison results.
         """
-        results_a = [evaluator.evaluate(prompt_a, test_cases, **kwargs) 
-                    for evaluator in self.evaluators]
-        results_b = [evaluator.evaluate(prompt_b, test_cases, **kwargs) 
-                    for evaluator in self.evaluators]
+        results_a = [
+            evaluator.evaluate(prompt_a, test_cases, **kwargs)
+            for evaluator in self.evaluators
+        ]
+        results_b = [
+            evaluator.evaluate(prompt_b, test_cases, **kwargs)
+            for evaluator in self.evaluators
+        ]
 
         comparison = {
             "prompt_a_results": results_a,
@@ -368,6 +374,10 @@ class BatchEvaluator:
             "avg_score_b": sum(r.score for r in results_b) / len(results_b),
         }
 
-        comparison["winner"] = "prompt_a" if comparison["avg_score_a"] > comparison["avg_score_b"] else "prompt_b"
-        
+        comparison["winner"] = (
+            "prompt_a"
+            if comparison["avg_score_a"] > comparison["avg_score_b"]
+            else "prompt_b"
+        )
+
         return comparison

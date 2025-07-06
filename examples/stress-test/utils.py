@@ -394,9 +394,11 @@ class LogFile(BaseModel):
                 try:
                     # Extract common fields
                     pod, timestamp = cls._parse_pod_and_timestamp(line)
-                    request_id, client_type, transaction_id = (
-                        cls._parse_request_id(line)
-                    )
+                    (
+                        request_id,
+                        client_type,
+                        transaction_id,
+                    ) = cls._parse_request_id(line)
 
                     # Extract metrics if present
                     metrics_match = re.search(r"\[\s+(.*)\s+\]", line)

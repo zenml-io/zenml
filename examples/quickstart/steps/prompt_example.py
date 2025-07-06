@@ -670,7 +670,8 @@ if __name__ == "__main__":
     print(f"   Temperature: {variant.model_config_params.get('temperature')}")
 
     logger.info("\n🎉 Prompt Abstraction Demo Complete!")
-    logger.info("""
+    logger.info(
+        """
     The ZenML Prompt abstraction provides:
     ✅ Single configurable class (no inheritance needed)
     ✅ Rich metadata and tracking capabilities
@@ -682,4 +683,5 @@ if __name__ == "__main__":
     ✅ Seamless ZenML artifact integration
     ✅ Beautiful HTML visualizations
     ✅ ExternalArtifact support for easy pipeline reruns
-    """)
+    """
+    )
