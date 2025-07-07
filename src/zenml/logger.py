@@ -67,7 +67,7 @@ class LogCollectorRegistry:
             self.original_stderr_flush: Optional[Callable] = None
             self._stdout_stderr_wrapped: bool = False
             self._initialized = True
-            
+
             self._setup_stdout_stderr_wrapping()
 
     def add_collector(self, collector: Callable[[str, bool], Any]) -> None:
@@ -132,6 +132,7 @@ class LogCollectorRegistry:
         Returns:
             The wrapped write function.
         """
+
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
             message = args[0]
             result = None
