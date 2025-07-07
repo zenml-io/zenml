@@ -87,6 +87,8 @@ class KubernetesOrchestratorSettings(BaseSettings):
             executing the step.
         prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
             not try to compute cached steps before starting the step pods.
+        always_build_pipeline_image: If `True`, the orchestrator will always
+            build the pipeline image, even if all steps have a custom build.
         pod_stop_grace_period: When stopping a pipeline run, the amount of
             seconds to wait for a step pod to shutdown gracefully.
     """
@@ -111,6 +113,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     backoff_limit_margin: NonNegativeInt = 0
     pod_failure_policy: Optional[Dict[str, Any]] = None
     prevent_orchestrator_pod_caching: bool = False
+    always_build_pipeline_image: bool = False
     pod_stop_grace_period: PositiveInt = 30
 
     @field_validator("pod_failure_policy", mode="before")
