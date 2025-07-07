@@ -976,13 +976,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_pod_phase = self._check_pod_status(
                 pod_name=pod_name,
             )
-
-            step_statuses[step_name] = step_pod_phase
-
-        # Convert pod statuses to execution statuses
-        for step_name, pod_phase in step_statuses.items():
-            new_status = self._map_pod_phase_to_execution_status(pod_phase)
-            step_statuses[step_name] = new_status
+            execution_status = self._map_pod_phase_to_execution_status(
+                step_pod_phase
+            )
+            step_statuses[step_name] = execution_status
 
         return step_statuses
 

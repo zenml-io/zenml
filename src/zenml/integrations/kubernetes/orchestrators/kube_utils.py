@@ -60,9 +60,10 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
-    from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
+    from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
         KubernetesOrchestratorSettings,
     )
+
 
 logger = get_logger(__name__)
 
