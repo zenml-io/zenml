@@ -80,6 +80,14 @@ from zenml.models.v2.core.api_key import (
     APIKeyInternalUpdate,
     APIKeyRotateRequest,
 )
+from zenml.models.v2.core.api_transaction import (
+    ApiTransactionRequest,
+    ApiTransactionUpdate,
+    ApiTransactionResponse,
+    ApiTransactionResponseBody,
+    ApiTransactionResponseMetadata,
+    ApiTransactionResponseResources,
+)
 from zenml.models.v2.core.artifact import (
     ArtifactFilter,
     ArtifactRequest,
@@ -278,6 +286,7 @@ from zenml.models.v2.core.service_account import (
     ServiceAccountResponse,
 )
 from zenml.models.v2.core.service_connector import (
+    ServiceConnectorConfiguration,
     ServiceConnectorRequest,
     ServiceConnectorUpdate,
     ServiceConnectorFilter,
@@ -433,6 +442,7 @@ from zenml.models.v2.misc.info_models import (
 ActionResponseResources.model_rebuild()
 ActionResponseMetadata.model_rebuild()
 APIKeyResponseBody.model_rebuild()
+ApiTransactionResponse.model_rebuild()
 ArtifactResponse.model_rebuild()
 ArtifactResponseBody.model_rebuild()
 ArtifactResponseMetadata.model_rebuild()
@@ -570,6 +580,12 @@ __all__ = [
     "APIKeyInternalResponse",
     "APIKeyInternalUpdate",
     "APIKeyRotateRequest",
+    "ApiTransactionRequest",
+    "ApiTransactionUpdate",
+    "ApiTransactionResponse",
+    "ApiTransactionResponseBody",
+    "ApiTransactionResponseMetadata",
+    "ApiTransactionResponseResources",
     "ArtifactFilter",
     "ArtifactRequest",
     "ArtifactResponse",
@@ -724,6 +740,7 @@ __all__ = [
     "ServiceAccountUpdate",
     "ServiceAccountRequest",
     "ServiceAccountResponse",
+    "ServiceConnectorConfiguration",
     "ServiceConnectorRequest",
     "ServiceConnectorUpdate",
     "ServiceConnectorFilter",

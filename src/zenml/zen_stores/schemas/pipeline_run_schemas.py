@@ -20,7 +20,7 @@ from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship
 
@@ -51,7 +51,9 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+)
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -156,9 +158,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             overlaps="run_metadata",
         ),
     )
-    logs: Optional["LogsSchema"] = Relationship(
+    logs: List["LogsSchema"] = Relationship(
         back_populates="pipeline_run",
-        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
@@ -259,19 +261,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         from zenml.zen_stores.schemas import ModelVersionSchema
 
         options = [
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.pipeline)
             ),
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.stack)
             ),
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.build)
             ),
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.schedule)
             ),
-            joinedload(jl_arg(PipelineRunSchema.deployment)).joinedload(
+            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
                 jl_arg(PipelineDeploymentSchema.code_reference)
             ),
         ]
@@ -286,14 +288,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_resources:
             options.extend(
                 [
-                    joinedload(
+                    selectinload(
                         jl_arg(PipelineRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    joinedload(jl_arg(PipelineRunSchema.logs)),
-                    joinedload(jl_arg(PipelineRunSchema.user)),
-                    # joinedload(jl_arg(PipelineRunSchema.tags)),
+                    selectinload(jl_arg(PipelineRunSchema.logs)),
+                    selectinload(jl_arg(PipelineRunSchema.user)),
+                    selectinload(jl_arg(PipelineRunSchema.tags)),
                 ]
             )
 
@@ -331,6 +333,29 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
         )
+
+    def get_pipeline_configuration(self) -> PipelineConfiguration:
+        """Get the pipeline configuration for the pipeline run.
+
+        Raises:
+            RuntimeError: if the pipeline run has no deployment and no pipeline
+                configuration.
+
+        Returns:
+            The pipeline configuration.
+        """
+        if self.deployment:
+            return PipelineConfiguration.model_validate_json(
+                self.deployment.pipeline_configuration
+            )
+        elif self.pipeline_configuration:
+            return PipelineConfiguration.model_validate_json(
+                self.pipeline_configuration
+            )
+        else:
+            raise RuntimeError(
+                "Pipeline run has no deployment and no pipeline configuration."
+            )
 
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
@@ -389,19 +414,36 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             RuntimeError: if the model creation fails.
         """
         if self.deployment is not None:
-            deployment = self.deployment.to_model(
-                include_metadata=True,
-                include_python_packages=include_python_packages,
+            config = PipelineConfiguration.model_validate_json(
+                self.deployment.pipeline_configuration
             )
+            client_environment = json.loads(self.deployment.client_environment)
 
-            config = deployment.pipeline_configuration
-            client_environment = deployment.client_environment
-
-            stack = deployment.stack
-            pipeline = deployment.pipeline
-            build = deployment.build
-            schedule = deployment.schedule
-            code_reference = deployment.code_reference
+            stack = (
+                self.deployment.stack.to_model()
+                if self.deployment.stack
+                else None
+            )
+            pipeline = (
+                self.deployment.pipeline.to_model()
+                if self.deployment.pipeline
+                else None
+            )
+            build = (
+                self.deployment.build.to_model()
+                if self.deployment.build
+                else None
+            )
+            schedule = (
+                self.deployment.schedule.to_model()
+                if self.deployment.schedule
+                else None
+            )
+            code_reference = (
+                self.deployment.code_reference.to_model()
+                if self.deployment.code_reference
+                else None
+            )
 
         elif self.pipeline_configuration is not None:
             config = PipelineConfiguration.model_validate_json(
@@ -489,13 +531,22 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         resources = None
         if include_resources:
+            # Add the client logs as "logs" if they exist, for backwards compatibility
+            # TODO: This will be safe to remove in future releases (>0.84.0).
+            client_logs = [
+                log_entry
+                for log_entry in self.logs
+                if log_entry.source == "client"
+            ]
+
             resources = PipelineRunResponseResources(
                 user=self.user.to_model() if self.user else None,
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
                 tags=[tag.to_model() for tag in self.tags],
-                logs=self.logs.to_model() if self.logs else None,
+                logs=client_logs[0].to_model() if client_logs else None,
+                log_collection=[log.to_model() for log in self.logs],
             )
 
         return PipelineRunResponse(
@@ -533,8 +584,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Raises:
             RuntimeError: If the DB entry does not represent a placeholder run.
-            ValueError: If the run request does not match the deployment or
-                pipeline ID of the placeholder run.
+            ValueError: If the run request is not a valid request to replace the
+                placeholder run.
 
         Returns:
             The updated `PipelineRunSchema`.
@@ -545,13 +596,33 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "placeholder run."
             )
 
+        if request.is_placeholder_request:
+            raise ValueError(
+                "Cannot replace a placeholder run with another placeholder run."
+            )
+
         if (
             self.deployment_id != request.deployment
             or self.pipeline_id != request.pipeline
+            or self.project_id != request.project
         ):
             raise ValueError(
-                "Deployment or orchestrator run ID of placeholder run do not "
-                "match the IDs of the run request."
+                "Deployment, project or pipeline ID of placeholder run "
+                "do not match the IDs of the run request."
+            )
+
+        if not request.orchestrator_run_id:
+            raise ValueError(
+                "Orchestrator run ID is required to replace a placeholder run."
+            )
+
+        if (
+            self.orchestrator_run_id
+            and self.orchestrator_run_id != request.orchestrator_run_id
+        ):
+            raise ValueError(
+                "Orchestrator run ID of placeholder run does not match the "
+                "ID of the run request."
             )
 
         orchestrator_environment = json.dumps(request.orchestrator_environment)
@@ -570,7 +641,4 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             Whether the pipeline run is a placeholder run.
         """
-        return (
-            self.orchestrator_run_id is None
-            and self.status == ExecutionStatus.INITIALIZING
-        )
+        return self.status == ExecutionStatus.INITIALIZING.value

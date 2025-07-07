@@ -86,7 +86,7 @@ Once you added the step operator to your active stack, you can use it to execute
 from zenml import step
 
 
-@step(step_operator=<NAME>)
+@step(step_operator=True)
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in Kubernetes.
@@ -111,10 +111,21 @@ kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 
 #### Additional configuration
 
-For additional configuration of the Kubernetes step operator, you can pass `KubernetesStepOperatorSettings` which allows you to configure (among others) the following attributes:
+Some configuration options for the Kubernetes step operator can only be set through the step operator config when you register it (and cannot be changed per-run or per-step through the settings):
 
-* `pod_settings`: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
-* `service_account_name`: The name of the service account to use for the Kubernetes Pods.
+- **`kubernetes_namespace`** (default: "zenml"): The Kubernetes namespace to use for running the step pods. The namespace must already exist in the Kubernetes cluster.
+- **`incluster`** (default: False): If `True`, the step operator will run the step inside the same Kubernetes cluster as the orchestrator, ignoring the `kubernetes_context`.
+- **`kubernetes_context`**: The name of the Kubernetes context to use for running steps (ignored if using a service connector or `incluster`).
+
+The following configuration options can be set either through the step operator config or overridden using `KubernetesStepOperatorSettings`:
+
+- **`pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+- **`service_account_name`**: Name of the service account to use for the pod.
+- **`privileged`** (default: False): If the container should be run in privileged mode.
+- **`pod_startup_timeout`** (default: 600): The maximum time (in seconds) to wait for a pending step pod to start.
+- **`pod_failure_max_retries`** (default: 3): The maximum number of times to retry a step pod if it fails to start.
+- **`pod_failure_retry_delay`** (default: 10): The delay (in seconds) between pod failure retries and pod startup retries.
+- **`pod_failure_backoff`** (default: 1.0): The backoff factor for pod failure retries and pod startup retries.
 
 ```python
 from zenml.integrations.kubernetes.flavors import KubernetesStepOperatorSettings
@@ -218,7 +229,6 @@ kubernetes_settings = KubernetesStepOperatorSettings(
             "team": "data-science"
         }
     },
-    kubernetes_namespace="ml-pipelines",
     service_account_name="zenml-pipeline-runner"
 )
 

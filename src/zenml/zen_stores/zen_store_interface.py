@@ -1296,7 +1296,10 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_deployment(
-        self, deployment_id: UUID, hydrate: bool = True
+        self,
+        deployment_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -1304,6 +1307,9 @@ class ZenStoreInterface(ABC):
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
 
         Returns:
             The deployment.
@@ -1974,7 +1980,10 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_service_connector(
-        self, service_connector_id: UUID, hydrate: bool = True
+        self,
+        service_connector_id: UUID,
+        hydrate: bool = True,
+        expand_secrets: bool = False,
     ) -> ServiceConnectorResponse:
         """Gets a specific service connector.
 
@@ -1982,6 +1991,8 @@ class ZenStoreInterface(ABC):
             service_connector_id: The ID of the service connector to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: Flag deciding whether to include the secrets
+                associated with the service connector.
 
         Returns:
             The requested service connector, if it was found.
@@ -1995,6 +2006,7 @@ class ZenStoreInterface(ABC):
         self,
         filter_model: ServiceConnectorFilter,
         hydrate: bool = False,
+        expand_secrets: bool = False,
     ) -> Page[ServiceConnectorResponse]:
         """List all service connectors.
 
@@ -2003,6 +2015,8 @@ class ZenStoreInterface(ABC):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: Flag deciding whether to include the secrets
+                associated with the service connector.
 
         Returns:
             A page of all service connectors.

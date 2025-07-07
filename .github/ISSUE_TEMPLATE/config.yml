@@ -5,7 +5,7 @@ contact_links:
     url: https://zenml.io/discussion
     about: Request a new feature.
   - name: Slack Channel
-    url: https://zenml.io/slack-invite/
+    url: https://zenml.io/slack/
     about: Chat with us directly here.
   - name: Docs
     url: https://docs.zenml.io/

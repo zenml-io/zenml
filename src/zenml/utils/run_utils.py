@@ -85,7 +85,7 @@ def refresh_run_status(
         run: The pipeline run to refresh.
         include_step_updates: Flag deciding whether we should also refresh
             the status of individual steps.
-    
+
     Returns:
         The refreshed pipeline run.
     """

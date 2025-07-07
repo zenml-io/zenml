@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Utilities for creating step runs."""
 
-from typing import Dict, List, Optional, Set, Tuple, Union
+import json
+from typing import Dict, List, Optional, Set, Tuple
 
-from zenml import Tag, add_tags
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
@@ -32,6 +32,7 @@ from zenml.models import (
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
+from zenml.utils import pagination_utils
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
@@ -95,7 +96,7 @@ class StepRunRequestFactory:
         """
         step = self.deployment.step_configurations[request.name]
 
-        input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
+        input_artifacts = input_utils.resolve_step_inputs(
             step=step,
             pipeline_run=self.pipeline_run,
             step_runs=step_runs,
@@ -108,7 +109,6 @@ class StepRunRequestFactory:
         request.inputs = {
             name: [artifact.id] for name, artifact in input_artifacts.items()
         }
-        request.parent_step_ids = parent_step_ids
 
         cache_key = cache_utils.generate_cache_key(
             step=step,
@@ -151,6 +151,15 @@ class StepRunRequestFactory:
 
                 request.status = ExecutionStatus.CACHED
                 request.end_time = request.start_time
+
+                # As a last resort, we try to reuse the docstring/source code
+                # from the cached step run. This is part of the cache key
+                # computation, so it must be identical to the one we would have
+                # computed ourselves.
+                if request.source_code is None:
+                    request.source_code = cached_step_run.source_code
+                if request.docstring is None:
+                    request.docstring = cached_step_run.docstring
 
     def _get_docstring_and_source_code(
         self, invocation_id: str
@@ -334,26 +343,14 @@ def create_cached_step_runs(
                 # -> We don't need to do anything here
                 continue
 
-            step_run = Client().zen_store.create_run_step(step_run_request)
+            step_run = publish_cached_step_run(
+                step_run_request, pipeline_run=pipeline_run
+            )
 
             # Include the newly created step run in the step runs dictionary to
             # avoid fetching it again later when downstream steps need it for
             # input resolution.
             step_runs[invocation_id] = step_run
-
-            if (
-                model_version := step_run.model_version
-                or pipeline_run.model_version
-            ):
-                link_output_artifacts_to_model_version(
-                    artifacts=step_run.outputs,
-                    model_version=model_version,
-                )
-
-            cascade_tags_for_output_artifacts(
-                artifacts=step_run.outputs,
-                tags=pipeline_run.config.tags,
-            )
 
             logger.info("Using cached version of step `%s`.", invocation_id)
             cached_invocations.add(invocation_id)
@@ -406,24 +403,71 @@ def link_output_artifacts_to_model_version(
             )
 
 
-def cascade_tags_for_output_artifacts(
-    artifacts: Dict[str, List[ArtifactVersionResponse]],
-    tags: Optional[List[Union[str, Tag]]] = None,
-) -> None:
-    """Tag the outputs of a step run.
+def publish_cached_step_run(
+    request: "StepRunRequest", pipeline_run: "PipelineRunResponse"
+) -> "StepRunResponse":
+    """Create a cached step run and link to model version and tags.
 
     Args:
-        artifacts: The step output artifacts.
-        tags: The tags to add to the artifacts.
+        request: The request for the step run.
+        pipeline_run: The pipeline run of the step.
+
+    Returns:
+        The createdstep run.
     """
-    if tags is None:
-        return
+    step_run = Client().zen_store.create_run_step(request)
 
-    cascade_tags = [t for t in tags if isinstance(t, Tag) and t.cascade]
+    if model_version := step_run.model_version or pipeline_run.model_version:
+        link_output_artifacts_to_model_version(
+            artifacts=step_run.outputs,
+            model_version=model_version,
+        )
 
-    for output_artifacts in artifacts.values():
-        for output_artifact in output_artifacts:
-            add_tags(
-                tags=[t.name for t in cascade_tags],
-                artifact_version_id=output_artifact.id,
-            )
+    return step_run
+
+
+def fetch_step_runs_by_names(
+    step_run_names: List[str], pipeline_run: "PipelineRunResponse"
+) -> Dict[str, "StepRunResponse"]:
+    """Fetch step runs by names.
+
+    Args:
+        step_run_names: The names of the step runs to fetch.
+        pipeline_run: The pipeline run of the step runs.
+
+    Returns:
+        A dictionary of step runs by name.
+    """
+    step_runs = {}
+
+    chunks = []
+    current_chunk = []
+    current_length = 0
+    # stay under 6KB for good measure.
+    max_chunk_length = 6000
+
+    for step_name in step_run_names:
+        current_chunk.append(step_name)
+        current_length += len(step_name) + 5  # 5 is for the JSON encoding
+
+        if current_length > max_chunk_length:
+            chunks.append(current_chunk)
+            current_chunk = []
+            current_length = 0
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    for chunk in chunks:
+        step_runs.update(
+            {
+                run_step.name: run_step
+                for run_step in pagination_utils.depaginate(
+                    Client().list_run_steps,
+                    pipeline_run_id=pipeline_run.id,
+                    project=pipeline_run.project_id,
+                    name="oneof:" + json.dumps(chunk),
+                )
+            }
+        )
+    return step_runs

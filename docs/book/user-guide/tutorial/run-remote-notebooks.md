@@ -35,7 +35,7 @@ import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-@step(step_operator="<STEP_OPERATOR_NAME>")  # remove argument if not using a step operator
+@step(step_operator=True)  # remove argument if not using a step operator
 def svc_trainer(
     X_train: pd.DataFrame,
     y_train: pd.Series,

@@ -13,7 +13,11 @@
 #  permissions and limitations under the License.
 import pytest
 
-from zenml.utils.package_utils import clean_requirements
+from zenml import __version__ as current_zenml_version
+from zenml.utils.package_utils import (
+    clean_requirements,
+    get_package_information,
+)
 
 
 @pytest.mark.parametrize(
@@ -73,3 +77,8 @@ def test_clean_requirements_mixed_types():
     """Test clean_requirements function with mixed types in list."""
     with pytest.raises(ValueError):
         clean_requirements(["package1==1.0.0", 2, "package3<3.0.0"])
+
+
+def test_get_package_information_works():
+    """Test that the package information is returned."""
+    assert get_package_information()["zenml"] == current_zenml_version

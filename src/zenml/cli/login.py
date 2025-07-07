@@ -229,6 +229,7 @@ def connect_to_pro_server(
     api_key: Optional[str] = None,
     refresh: bool = False,
     pro_api_url: Optional[str] = None,
+    verify_ssl: Union[str, bool] = True,
 ) -> None:
     """Connect the client to a ZenML Pro server.
 
@@ -238,6 +239,8 @@ def connect_to_pro_server(
         api_key: The API key to use to authenticate with the ZenML Pro server.
         refresh: Whether to force a new login flow with the ZenML Pro server.
         pro_api_url: The URL for the ZenML Pro API.
+        verify_ssl: Whether to verify the server's TLS certificate. If a string
+            is passed, it is interpreted as the path to a CA bundle file.
 
     Raises:
         ValueError: If incorrect parameters are provided.
@@ -280,7 +283,12 @@ def connect_to_pro_server(
         # server to connect to.
         if api_key:
             if server_url:
-                connect_to_server(server_url, api_key=api_key, pro_server=True)
+                connect_to_server(
+                    server_url,
+                    api_key=api_key,
+                    pro_server=True,
+                    verify_ssl=verify_ssl,
+                )
                 return
             else:
                 raise ValueError(
@@ -299,6 +307,7 @@ def connect_to_pro_server(
         try:
             token = web_login(
                 pro_api_url=pro_api_url,
+                verify_ssl=verify_ssl,
             )
         except AuthorizationException as e:
             cli_utils.error(f"Authorization error: {e}")
@@ -418,7 +427,9 @@ def connect_to_pro_server(
         f"Connecting to ZenML Pro server: {server.name} [{str(server.id)}] "
     )
 
-    connect_to_server(server.url, api_key=api_key, pro_server=True)
+    connect_to_server(
+        server.url, api_key=api_key, pro_server=True, verify_ssl=verify_ssl
+    )
 
     # Update the stored server info with more accurate data taken from the
     # ZenML Pro workspace object.
@@ -555,7 +566,7 @@ def _fail_if_authentication_environment_variables_set() -> None:
         not return until the server exits or is stopped with CTRL+C
 
       * `--docker`: start the local ZenML server as a Docker container instead
-        of a local process
+        of a local background process.
 
       * `--port`: use a custom TCP port value for the local ZenML server
 
@@ -775,6 +786,9 @@ def login(
             pro_server=server,
             refresh=True,
             pro_api_url=pro_api_url,
+            verify_ssl=ssl_ca_cert
+            if ssl_ca_cert is not None
+            else not no_verify_ssl,
         )
         return
 
@@ -822,6 +836,7 @@ def login(
                     # Prefer the pro API URL extracted from the server info if
                     # available
                     pro_api_url=server_pro_api_url or pro_api_url,
+                    verify_ssl=verify_ssl,
                 )
             else:
                 connect_to_server(
@@ -837,6 +852,7 @@ def login(
                 api_key=api_key_value,
                 refresh=refresh,
                 pro_api_url=pro_api_url,
+                verify_ssl=verify_ssl,
             )
 
     elif current_non_local_server and not refresh:
@@ -861,6 +877,7 @@ def login(
                 # Prefer the pro API URL extracted from the server info if
                 # available
                 pro_api_url=server_pro_api_url or pro_api_url,
+                verify_ssl=verify_ssl,
             )
         else:
             cli_utils.declare(
@@ -890,6 +907,7 @@ def login(
         connect_to_pro_server(
             api_key=api_key_value,
             pro_api_url=pro_api_url,
+            verify_ssl=verify_ssl,
         )
 
 

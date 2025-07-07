@@ -19,7 +19,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -63,7 +62,7 @@ from zenml.integrations.azure.orchestrators.azureml_orchestrator_entrypoint_conf
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
-from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
@@ -198,27 +197,32 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             command=" ".join(command + arguments),
         )
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Iterator[Dict[str, MetadataType]]:
-        """Prepares or runs a pipeline on AzureML.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to the orchestrator.
+
+        This method should only submit the pipeline and not wait for it to
+        complete. If the orchestrator is configured to wait for the pipeline run
+        to complete, a function that waits for the pipeline run to complete can
+        be passed as part of the submission result.
 
         Args:
-            deployment: The deployment to prepare or run.
-            stack: The stack to run on.
+            deployment: The pipeline deployment to submit.
+            stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
-                environment.
+                environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If the creation of the schedule fails.
 
-        Yields:
-            A dictionary of metadata related to the pipeline run.
+        Returns:
+            Optional submission result.
         """
         # Authentication
         if connector := self.get_connector():
@@ -384,13 +388,10 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                     "Failed to create schedule for the pipeline "
                     f"'{run_name}': {str(e)}"
                 )
-
+            return None
         else:
             job = ml_client.jobs.create_or_update(pipeline_job)
             logger.info(f"Pipeline {run_name} has been started.")
-
-            # Yield metadata based on the generated job object
-            yield from self.compute_metadata(job)
 
             assert job.services is not None
             assert job.name is not None
@@ -401,9 +402,17 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 f"{job.services['Studio'].endpoint}"
             )
 
+            _wait_for_completion = None
             if settings.synchronous:
-                logger.info("Waiting for pipeline to finish...")
-                ml_client.jobs.stream(job.name)
+
+                def _wait_for_completion() -> None:
+                    logger.info("Waiting for pipeline to finish...")
+                    ml_client.jobs.stream(job.name)
+
+            return SubmissionResult(
+                metadata=self.compute_metadata(job),
+                wait_for_completion=_wait_for_completion,
+            )
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -524,13 +533,13 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # AzureML doesn't support step-level status fetching yet
         return pipeline_status, None
 
-    def compute_metadata(self, job: Any) -> Iterator[Dict[str, MetadataType]]:
+    def compute_metadata(self, job: Any) -> Dict[str, MetadataType]:
         """Generate run metadata based on the generated AzureML PipelineJob.
 
         Args:
             job: The corresponding PipelineJob object.
 
-        Yields:
+        Returns:
             A dictionary of metadata related to the pipeline run.
         """
         # Metadata
@@ -544,7 +553,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         if orchestrator_url := self._compute_orchestrator_url(job):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
-        yield metadata
+        return metadata
 
     @staticmethod
     def _compute_orchestrator_url(job: Any) -> Optional[str]:

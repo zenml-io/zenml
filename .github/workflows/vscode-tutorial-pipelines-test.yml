@@ -1,0 +1,96 @@
+---
+# Regression testing workflow that runs all tutorial pipelines from the
+# zenml-io/vscode-tutorial-extension repository to ensure ZenML core changes
+# don't break the user-facing tutorial examples
+name: VSCode Tutorial Pipelines Test
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: Python version
+        type: choice
+        options: ['3.12']
+        required: false
+        default: '3.12'
+      enable_tmate:
+        description: Enable tmate session for debugging
+        type: choice
+        options: [no, on-failure, always, before-tests]
+        required: false
+        default: 'no'
+jobs:
+  test-tutorial-pipelines:
+    name: test-tutorial-pipelines
+    runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: true
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_LOGGING_VERBOSITY: INFO
+      MLSTACKS_ANALYTICS_OPT_OUT: true
+      AUTO_OPEN_DASHBOARD: false
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      TOKENIZERS_PARALLELISM: false
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+    steps:
+      - name: Checkout ZenML code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.12'
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-tutorial-${{ runner.os }}-3.12-${{ github.run_id }}
+          restore-keys: |
+            uv-tutorial-${{ runner.os }}-3.12-
+      - name: Setup tmate session before tests
+        if: ${{ inputs.enable_tmate == 'before-tests' }}
+        uses: mxschmitt/action-tmate@v3.17
+      - name: Clone tutorial repository
+        run: |
+          # Clone with retry logic for network resilience
+          for i in {1..3}; do
+            if git clone --branch develop https://github.com/zenml-io/vscode-tutorial-extension.git tutorial-repo; then
+              break
+            elif [ $i -lt 3 ]; then
+              echo "Clone attempt $i failed, retrying in 5 seconds..."
+              sleep 5
+            else
+              echo "Failed to clone tutorial repository after 3 attempts"
+              exit 1
+            fi
+          done
+      - name: Create virtual environment
+        run: |
+          uv venv
+      - name: Install ZenML from current branch
+        run: |
+          source .venv/bin/activate
+          uv pip install "git+https://github.com/${{ github.repository }}@${{ github.sha }}[server,templates,dev]"
+      - name: Install tutorial requirements
+        run: |
+          source .venv/bin/activate
+          # Validate requirements.txt exists and is readable
+          if [ ! -f "tutorial-repo/requirements.txt" ]; then
+            echo "Error: requirements.txt not found in tutorial repository"
+            exit 1
+          fi
+          uv pip install -r tutorial-repo/requirements.txt
+      - name: Run tutorial pipelines test script
+        run: |
+          source .venv/bin/activate
+          bash scripts/test-tutorial-pipelines.sh
+      - name: Setup tmate session after tests
+        if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
+        uses: mxschmitt/action-tmate@v3.17

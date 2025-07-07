@@ -21,6 +21,44 @@ zenml:
   #
   # threadPoolSize: 40
 
+  # The number of ZenML server threads that are dedicated to authentication.
+  # This controls the number of concurrent requests that can be verified
+  # concurrently. If not specified, the default value is 5.
+  #
+  # NOTE: this value should be coordinated with the `zenml.database.poolSize`
+  # and `zenml.database.maxOverflow` values to ensure that the ZenML server
+  # worker threads do not block on database connections (i.e. the sum of the
+  # pool size and max overflow should be greater than or equal to the main
+  # thread pool size plus the auth thread pool size).
+  #
+  # authThreadPoolSize: 5
+
+  # The timeout in seconds after which a request is considered timed out by the
+  # server if it takes too long to complete. After this time value, the server
+  # will preemptively return a 429 status code (rate limit exceeded) to the
+  # client to free up connections. If not specified, the default value is 30.
+  #
+  # NOTE: this values should be lower than the client's configured HTTP timeout
+  # (which defaults at 30 seconds) to avoid the client timing out before the
+  # server does. 
+  #
+  # requestTimeout: 20
+
+  # Whether to cache request responses and use them to deduplicate retried
+  # requests. If not specified, the default value is true. Only POST requests
+  # and requests to endpoints that are known to incur longer processing times
+  # at scale are cached and deduplicated.
+  #
+  # NOTE: don't disable this feature unless you know what you are doing. This is
+  # crucial to ensure idempotency of POST requests.
+  #
+  # requestDeduplication: true
+
+  # The timeout in seconds after which a cached request result is deleted.
+  # If not specified, the default value is 300.
+  #
+  # requestCacheTimeout: 300
+
   image:
     repository: zenmldocker/zenml-server
     pullPolicy: Always
@@ -268,10 +306,18 @@ zenml:
   enableImplicitAuthMethods: false
 
   # MySQL database configuration. If not set, a local sqlite database will be
-  # used, which will not be persisted across pod restarts.
+  # used. To ensure data are not lost, check the persistence part.
   # NOTE: the certificate files need to be copied in the helm chart folder and
   # the paths configured here need to be relative to the root of the helm chart.
   database:
+
+    # If set to true, path where the local database is created will be
+    # mounted as a persistent volume so the data is not lost on pod restarts.
+    # Only relevant for local sqlite database.
+    persistence:
+      enabled: false
+      size: 1Gi
+      storageClassName: ""
 
     # The database URL. If not set, a local sqlite database will be used, which
     # will not be persisted across pod restarts. The URL can contain the
@@ -345,7 +391,8 @@ zenml:
     # NOTE: these values should be coordinated with the `zenml.threadPoolSize`
     # to ensure that the ZenML server workers do not block on database
     # connections (i.e. the sum of the pool size and max overflow should be
-    # greater than or equal to the thread pool size).
+    # greater than or equal to the main thread pool size plus the auth thread
+    # pool size).
     #
     # poolSize: 20
     # maxOverflow: 20

@@ -21,7 +21,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -50,6 +50,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
+    StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -187,6 +188,14 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     original_step_run: Optional["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"remote_side": "StepRunSchema.id"}
     )
+    step_configuration_schema: Optional["StepConfigurationSchema"] = (
+        Relationship(
+            sa_relationship_kwargs=dict(
+                viewonly=True,
+                primaryjoin="and_(foreign(StepConfigurationSchema.name) == StepRunSchema.name, foreign(StepConfigurationSchema.deployment_id) == StepRunSchema.deployment_id)",
+            ),
+        )
+    )
 
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
@@ -209,17 +218,25 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             A list of query options.
         """
-        from zenml.zen_stores.schemas import ModelVersionSchema
+        from zenml.zen_stores.schemas import (
+            ArtifactVersionSchema,
+            ModelVersionSchema,
+        )
 
         options = [
-            joinedload(jl_arg(StepRunSchema.deployment)),
-            joinedload(jl_arg(StepRunSchema.pipeline_run)),
+            selectinload(jl_arg(StepRunSchema.deployment)).load_only(
+                jl_arg(PipelineDeploymentSchema.pipeline_configuration)
+            ),
+            selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
+                jl_arg(PipelineRunSchema.start_time)
+            ),
+            joinedload(jl_arg(StepRunSchema.step_configuration_schema)),
         ]
 
         if include_metadata:
             options.extend(
                 [
-                    joinedload(jl_arg(StepRunSchema.logs)),
+                    selectinload(jl_arg(StepRunSchema.logs)),
                     # joinedload(jl_arg(StepRunSchema.parents)),
                     # joinedload(jl_arg(StepRunSchema.run_metadata)),
                 ]
@@ -228,12 +245,28 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(StepRunSchema.model_version)).joinedload(
+                    selectinload(
+                        jl_arg(StepRunSchema.model_version)
+                    ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    joinedload(jl_arg(StepRunSchema.user)),
-                    # joinedload(jl_arg(StepRunSchema.input_artifacts)),
-                    # joinedload(jl_arg(StepRunSchema.output_artifacts)),
+                    selectinload(jl_arg(StepRunSchema.user)),
+                    selectinload(jl_arg(StepRunSchema.input_artifacts))
+                    .joinedload(
+                        jl_arg(StepRunInputArtifactSchema.artifact_version),
+                        innerjoin=True,
+                    )
+                    .joinedload(
+                        jl_arg(ArtifactVersionSchema.artifact), innerjoin=True
+                    ),
+                    selectinload(jl_arg(StepRunSchema.output_artifacts))
+                    .joinedload(
+                        jl_arg(StepRunOutputArtifactSchema.artifact_version),
+                        innerjoin=True,
+                    )
+                    .joinedload(
+                        jl_arg(ArtifactVersionSchema.artifact), innerjoin=True
+                    ),
                 ]
             )
 
@@ -290,10 +323,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         step = None
         if self.deployment is not None:
-            step_configurations = json.loads(
-                self.deployment.step_configurations
-            )
-            if self.name in step_configurations:
+            if self.step_configuration_schema:
                 pipeline_configuration = (
                     PipelineConfiguration.model_validate_json(
                         self.deployment.pipeline_configuration
@@ -304,7 +334,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     inplace=True,
                 )
                 step = Step.from_dict(
-                    step_configurations[self.name],
+                    json.loads(self.step_configuration_schema.config),
                     pipeline_configuration=pipeline_configuration,
                 )
         if not step and self.step_configuration:

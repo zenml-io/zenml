@@ -16,7 +16,6 @@ from unittest.mock import patch
 import pytest
 from click import ClickException
 
-from zenml import __version__ as current_zenml_version
 from zenml.cli import utils as cli_utils
 from zenml.cli.utils import requires_mac_env_var_warning
 
@@ -99,14 +98,6 @@ def test_parsing_unknown_component_attributes():
         cli_utils.parse_unknown_component_attributes(["foo"])
     with pytest.raises(AssertionError):
         cli_utils.parse_unknown_component_attributes(["foo=bar=qux"])
-
-
-def test_get_package_information_works():
-    """Test that the package information is returned."""
-    assert (
-        cli_utils.get_package_information("zenml")["zenml"]
-        == current_zenml_version
-    )
 
 
 def test_validate_keys():

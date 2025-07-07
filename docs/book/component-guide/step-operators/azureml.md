@@ -45,7 +45,14 @@ There are two ways you can authenticate your step operator to be able to run ste
 
 {% tabs %}
 {% tab title="Authentication via Service Connector" %}
-The recommended way to authenticate your AzureML step operator is by registering or using an existing [Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) and connecting it to your AzureML step operator. The credentials configured for the connector must have permissions to create and manage AzureML jobs (e.g. [the `AzureML Data Scientist` and `AzureML Compute Operator` managed roles](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead)). The AzureML step operator uses the `azure-generic` resource type, so make sure to configure the connector accordingly:
+The recommended way to authenticate your AzureML step operator is by registering or using an existing [Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) and connecting it to your AzureML step operator. The credentials configured for the connector must have permissions to create and manage AzureML jobs. Use these specific Azure-managed roles following the principle of least privilege:
+
+- **`AzureML Data Scientist`** - Allows creating and managing machine learning experiments and jobs
+- **`AzureML Compute Operator`** - Allows managing compute resources for running jobs
+
+These roles are scoped specifically to AzureML operations and provide the minimum permissions needed. Avoid using broader roles like `Contributor` or `Owner` at the resource group level. See [Azure ML role documentation](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead) for more details.
+
+The AzureML step operator uses the `azure-generic` resource type, so make sure to configure the connector accordingly:
 
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type azure -i
@@ -64,7 +71,7 @@ zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
 {% tab title="Implicit Authentication" %}
 If you don't connect your step operator to a service connector:
 
-* If using a [local orchestrator](https://docs.zenml.io/stacks/orchestrators/local): ZenML will try to implicitly authenticate to Azure via the local [Azure CLI configuration](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-interactively). Make sure the Azure CLI has permissions to create and manage AzureML jobs (e.g. [the `AzureML Data Scientist` and `AzureML Compute Operator` managed roles](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead)).
+* If using a [local orchestrator](https://docs.zenml.io/stacks/orchestrators/local): ZenML will try to implicitly authenticate to Azure via the local [Azure CLI configuration](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-interactively). Make sure the Azure CLI account has the minimum required permissions: the `AzureML Data Scientist` and `AzureML Compute Operator` managed roles scoped to the specific AzureML workspace.
 * If using a remote orchestrator: the remote environment in which the orchestrator runs needs to be able to implicitly authenticate to Azure and have permissions to create and manage AzureML jobs. This is only possible if the orchestrator is also running in Azure and uses a form of implicit workload authentication like a service role. If this is not the case, you will need to use a service connector.
 
 ```shell
@@ -86,7 +93,7 @@ Once you added the step operator to your active stack, you can use it to execute
 from zenml import step
 
 
-@step(step_operator=<NAME>)
+@step(step_operator=True)
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in AzureML.
@@ -130,6 +137,7 @@ Here is an example how you can use the `AzureMLStepOperatorSettings` to define
 a compute instance:
 
 ```python
+from zenml import step
 from zenml.integrations.azure.flavors import AzureMLStepOperatorSettings
 
 azureml_settings = AzureMLStepOperatorSettings(

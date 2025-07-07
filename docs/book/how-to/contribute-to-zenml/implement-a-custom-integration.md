@@ -89,6 +89,7 @@ This will be the name of the integration when you run:
 In `src/zenml/integrations/<YOUR_INTEGRATION>/init__.py` you must now create a new class, which is a subclass of the `Integration` class, set some important attributes (`NAME` and `REQUIREMENTS`), and overwrite the `flavors` class method.
 
 ```python
+from typing import List, Type
 from zenml.integrations.constants import <EXAMPLE_INTEGRATION>
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor

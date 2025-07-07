@@ -40,7 +40,6 @@ from typing import (
 )
 
 import click
-import pkg_resources
 import yaml
 from pydantic import BaseModel, SecretStr
 from rich import box, table
@@ -80,6 +79,7 @@ from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
+from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
 
@@ -1052,7 +1052,7 @@ def install_packages(
         # just return without doing anything
         return
 
-    if use_uv and not is_installed_in_python_environment("uv"):
+    if use_uv and not requirement_installed("uv"):
         # If uv is installed globally, don't run as a python module
         command = []
     else:
@@ -1094,7 +1094,7 @@ def uninstall_package(package: str, use_uv: bool = False) -> None:
         package: The package to uninstall.
         use_uv: Whether to use uv for package uninstallation.
     """
-    if use_uv and not is_installed_in_python_environment("uv"):
+    if use_uv and not requirement_installed("uv"):
         # If uv is installed globally, don't run as a python module
         command = []
     else:
@@ -1108,22 +1108,6 @@ def uninstall_package(package: str, use_uv: bool = False) -> None:
     command += [package]
 
     subprocess.check_call(command)
-
-
-def is_installed_in_python_environment(package: str) -> bool:
-    """Check if a package is installed in the current python environment.
-
-    Args:
-        package: The package to check.
-
-    Returns:
-        True if the package is installed, False otherwise.
-    """
-    try:
-        pkg_resources.get_distribution(package)
-        return True
-    except pkg_resources.DistributionNotFound:
-        return False
 
 
 def is_uv_installed() -> bool:
@@ -1141,7 +1125,7 @@ def is_pip_installed() -> bool:
     Returns:
         True if pip is installed, False otherwise.
     """
-    return is_installed_in_python_environment("pip")
+    return requirement_installed("pip")
 
 
 def pretty_print_secret(
@@ -1830,7 +1814,7 @@ def print_service_connector_configuration(
 
     console.print(rich_table)
 
-    if len(connector.configuration) == 0 and len(connector.secrets) == 0:
+    if len(connector.configuration) == 0:
         declare("No configuration options are set for this connector.")
 
     else:
@@ -1842,8 +1826,8 @@ def print_service_connector_configuration(
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
 
-        config = connector.configuration.copy()
-        secrets = connector.secrets.copy()
+        config = connector.configuration.non_secrets
+        secrets = connector.configuration.secrets
         for key, value in secrets.items():
             if not show_secrets:
                 config[key] = "[HIDDEN]"
@@ -2501,30 +2485,6 @@ def temporary_active_stack(
             Client().activate_stack(old_stack_id)
 
 
-def get_package_information(
-    package_names: Optional[List[str]] = None,
-) -> Dict[str, str]:
-    """Get a dictionary of installed packages.
-
-    Args:
-        package_names: Specific package names to get the information for.
-
-    Returns:
-        A dictionary of the name:version for the package names passed in or
-            all packages and their respective versions.
-    """
-    import pkg_resources
-
-    if package_names:
-        return {
-            pkg.key: pkg.version
-            for pkg in pkg_resources.working_set
-            if pkg.key in package_names
-        }
-
-    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
-
-
 def print_user_info(info: Dict[str, Any]) -> None:
     """Print user information to the terminal.
 
@@ -2619,11 +2579,7 @@ def is_jupyter_installed() -> bool:
     Returns:
         bool: True if Jupyter notebook is installed, False otherwise.
     """
-    try:
-        pkg_resources.get_distribution("notebook")
-        return True
-    except pkg_resources.DistributionNotFound:
-        return False
+    return requirement_installed("notebook")
 
 
 def multi_choice_prompt(

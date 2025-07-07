@@ -70,7 +70,7 @@ The configured credentials must have at least the following [GCP permissions](ht
 * `storage.objects.list`
 * `storage.objects.update`
 
-For example, the GCP Storage Admin role includes all of the required permissions, but it also includes additional permissions that are not required by the connector.
+For example, the GCP `Storage Object Admin` role includes all of the required permissions, but it also includes additional permissions that are not required by the connector. Follow the principle of least privilege by creating a custom role with only the specific permissions listed above, or scope the `Storage Object Admin` role to specific buckets rather than using it project-wide.
 
 If set, the resource name must identify a GCS bucket using one of the following formats:
 

@@ -546,7 +546,7 @@ def stop_pipeline_run(
             f"Are you sure you want to {action} pipeline run `{run_name_or_id}`?"
         )
         if not confirmation:
-            cli_utils.declare("Pipeline run stop canceled.")
+            cli_utils.declare("Not stopping the pipeline run.")
             return
 
     # Stop run.
