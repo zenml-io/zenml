@@ -33,7 +33,7 @@ def upgrade() -> None:
         )
 
     op.execute(
-        sa.text("UPDATE step_run SET version = 0 WHERE version IS NULL")
+        sa.text("UPDATE step_run SET version = 1 WHERE version IS NULL")
     )
     op.execute(
         sa.text(

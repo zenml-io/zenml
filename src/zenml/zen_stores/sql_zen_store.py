@@ -8940,7 +8940,7 @@ class SqlZenStore(BaseZenStore):
             step_schema = StepRunSchema.from_request(
                 step_run,
                 deployment_id=run.deployment_id,
-                version=len(existing_step_runs),
+                version=len(existing_step_runs) + 1,
                 # TODO: This isn't actually guaranteed to be correct, how
                 # do we handle these cases? E.g. if the step on kubernetes
                 # is retried during startup, it will not actually create X
