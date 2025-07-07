@@ -895,7 +895,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> Tuple[ExecutionStatus, Optional[Dict[str, ExecutionStatus]]]:
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
         """Refreshes the status of a specific pipeline run.
 
         Args:

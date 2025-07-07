@@ -773,7 +773,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> Tuple[ExecutionStatus, Optional[Dict[str, ExecutionStatus]]]:
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
@@ -822,7 +824,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"Orchestrator pod {orchestrator_run_id} not found in namespace "
                 f"{self.config.kubernetes_namespace}"
             )
-            pipeline_status = ExecutionStatus.FAILED
+            pipeline_status = None
 
         step_status = None
         if include_steps:

@@ -136,7 +136,7 @@ def refresh_run_status(
                     )
 
     # Update pipeline status
-    if pipeline_status != run.status:
+    if pipeline_status is not None and pipeline_status != run.status:
         return client.zen_store.update_run(
             run_id=run.id,
             run_update=PipelineRunUpdate(status=pipeline_status),
