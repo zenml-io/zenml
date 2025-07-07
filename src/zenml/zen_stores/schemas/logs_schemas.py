@@ -16,7 +16,7 @@
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -35,9 +35,18 @@ class LogsSchema(BaseSchema, table=True):
     """SQL Model for logs."""
 
     __tablename__ = "logs"
+    __table_args__ = (
+        UniqueConstraint(
+            "source",
+            "pipeline_run_id",
+            "step_run_id",
+            name="unique_source_per_run_and_step",
+        ),
+    )
 
     # Fields
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
+    source: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
 
     # Foreign Keys
     pipeline_run_id: Optional[UUID] = build_foreign_key_field(
@@ -87,12 +96,12 @@ class LogsSchema(BaseSchema, table=True):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
-
         Returns:
             The created `LogsResponse`.
         """
         body = LogsResponseBody(
             uri=self.uri,
+            source=self.source,
             created=self.created,
             updated=self.updated,
         )

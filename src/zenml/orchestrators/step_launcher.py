@@ -14,10 +14,11 @@
 """Class to launch (run directly or using a step operator) steps."""
 
 import os
+import signal
 import time
 from contextlib import nullcontext
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -29,6 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
+from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
@@ -53,7 +55,7 @@ logger = get_logger(__name__)
 
 
 def _get_step_operator(
-    stack: "Stack", step_operator_name: str
+    stack: "Stack", step_operator_name: Optional[str]
 ) -> "BaseStepOperator":
     """Fetches the step operator from the stack.
 
@@ -76,7 +78,7 @@ def _get_step_operator(
             f"No step operator specified for active stack '{stack.name}'."
         )
 
-    if step_operator_name != step_operator.name:
+    if step_operator_name and step_operator_name != step_operator.name:
         raise RuntimeError(
             f"No step operator named '{step_operator_name}' in active "
             f"stack '{stack.name}'."
@@ -131,11 +133,86 @@ class StepLauncher:
         self._stack = Stack.from_model(deployment.stack)
         self._step_name = step.spec.pipeline_parameter_name
 
+        # Internal properties and methods
+        self._step_run: Optional[StepRunResponse] = None
+        self._setup_signal_handlers()
+
+    def _setup_signal_handlers(self) -> None:
+        """Set up signal handlers for graceful shutdown, chaining previous handlers."""
+        # Save previous handlers
+        self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
+        self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
+
+        def signal_handler(signum: int, frame: Any) -> None:
+            """Handle shutdown signals gracefully.
+
+            Args:
+                signum: The signal number.
+                frame: The frame of the signal handler.
+
+            Raises:
+                RunStoppedException: If the pipeline run is stopped by the user.
+                RunInterruptedException: If the execution is interrupted for any
+                    other reason.
+            """
+            logger.info(
+                f"Received signal shutdown {signum}. Requesting shutdown "
+                f"for step '{self._step_name}'..."
+            )
+
+            try:
+                client = Client()
+                pipeline_run = None
+
+                if self._step_run:
+                    pipeline_run = client.get_pipeline_run(
+                        self._step_run.pipeline_run_id
+                    )
+                else:
+                    raise RunInterruptedException(
+                        "The execution was interrupted and the step does not "
+                        "exist yet."
+                    )
+
+                if pipeline_run and pipeline_run.status in [
+                    ExecutionStatus.STOPPING,
+                    ExecutionStatus.STOPPED,
+                ]:
+                    if self._step_run:
+                        publish_utils.publish_step_run_status_update(
+                            step_run_id=self._step_run.id,
+                            status=ExecutionStatus.STOPPED,
+                            end_time=utc_now(),
+                        )
+                    raise RunStoppedException("Pipeline run in stopped.")
+                else:
+                    raise RunInterruptedException(
+                        "The execution was interrupted."
+                    )
+            except (RunStoppedException, RunInterruptedException):
+                raise
+            except Exception as e:
+                raise RunInterruptedException(str(e))
+            finally:
+                # Chain to previous handler if it exists and is not default/ignore
+                if signum == signal.SIGTERM and callable(
+                    self._prev_sigterm_handler
+                ):
+                    self._prev_sigterm_handler(signum, frame)
+                elif signum == signal.SIGINT and callable(
+                    self._prev_sigint_handler
+                ):
+                    self._prev_sigint_handler(signum, frame)
+
+        # Register handlers for common termination signals
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+
     def launch(self) -> None:
         """Launches the step.
 
         Raises:
-            BaseException: If the step failed to launch, run, or publish.
+            RunStoppedException: If the pipeline run is stopped by the user.
         """
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
@@ -164,6 +241,7 @@ class StepLauncher:
 
             logs_model = LogsRequest(
                 uri=logs_uri,
+                source="execution",
                 artifact_store_id=self._stack.artifact_store.id,
             )
 
@@ -207,6 +285,8 @@ class StepLauncher:
                     step_run = Client().zen_store.create_run_step(
                         step_run_request
                     )
+                    # Store step run ID for signal handler
+                    self._step_run = step_run
                     if model_version := step_run.model_version:
                         step_run_utils.log_model_version_dashboard_url(
                             model_version=model_version
@@ -259,6 +339,8 @@ class StepLauncher:
                                 force_write_logs=force_write_logs,
                             )
                             break
+                        except RunStoppedException as e:
+                            raise e
                         except BaseException as e:  # noqa: E722
                             retries += 1
                             if retries < max_retries:
@@ -292,14 +374,11 @@ class StepLauncher:
                             artifacts=step_run.outputs,
                             model_version=model_version,
                         )
-                    step_run_utils.cascade_tags_for_output_artifacts(
-                        artifacts=step_run.outputs,
-                        tags=pipeline_run.config.tags,
-                    )
-
+        except RunStoppedException:
+            logger.info(f"Pipeline run `{pipeline_run.name}` stopped.")
+            raise
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
-            publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
@@ -371,8 +450,12 @@ class StepLauncher:
         start_time = time.time()
         try:
             if self._step.config.step_operator:
+                step_operator_name = None
+                if isinstance(self._step.config.step_operator, str):
+                    step_operator_name = self._step.config.step_operator
+
                 self._run_step_with_step_operator(
-                    step_operator_name=self._step.config.step_operator,
+                    step_operator_name=step_operator_name,
                     step_run_info=step_run_info,
                     last_retry=last_retry,
                 )
@@ -399,7 +482,7 @@ class StepLauncher:
 
     def _run_step_with_step_operator(
         self,
-        step_operator_name: str,
+        step_operator_name: Optional[str],
         step_run_info: StepRunInfo,
         last_retry: bool,
     ) -> None:

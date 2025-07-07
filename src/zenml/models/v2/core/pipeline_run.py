@@ -125,6 +125,15 @@ class PipelineRunRequest(ProjectScopedRequest):
         title="Logs of the pipeline run.",
     )
 
+    @property
+    def is_placeholder_request(self) -> bool:
+        """Whether the request is a placeholder request.
+
+        Returns:
+            Whether the request is a placeholder request.
+        """
+        return self.status == ExecutionStatus.INITIALIZING
+
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -143,6 +152,9 @@ class PipelineRunUpdate(BaseUpdate):
     )
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the pipeline run."
+    )
+    add_logs: Optional[List[LogsRequest]] = Field(
+        default=None, title="New logs to add to the pipeline run."
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -256,6 +268,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
         title="Logs associated with this pipeline run.",
         default=None,
     )
+    log_collection: Optional[List["LogsResponse"]] = Field(
+        title="Logs associated with this pipeline run.",
+        default=None,
+    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -334,7 +350,7 @@ class PipelineRunResponse(
             if self.stack is None:
                 raise ValueError(
                     "The stack that this pipeline run response was executed on"
-                    "has been deleted."
+                    "is either not accessible or has been deleted."
                 )
 
             # Create the orchestrator instance
@@ -349,7 +365,7 @@ class PipelineRunResponse(
             if len(orchestrator_list) == 0:
                 raise ValueError(
                     "The orchestrator that this pipeline run response was "
-                    "executed with has been deleted."
+                    "executed with is either not accessible or has been deleted."
                 )
 
             orchestrator = cast(
@@ -591,6 +607,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().logs
+
+    @property
+    def log_collection(self) -> Optional[List["LogsResponse"]]:
+        """The `log_collection` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().log_collection
 
 
 # ------------------ Filter Model ------------------

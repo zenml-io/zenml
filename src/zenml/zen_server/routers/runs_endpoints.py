@@ -25,6 +25,7 @@ from zenml.constants import (
     RUNS,
     STATUS,
     STEPS,
+    STOP,
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -40,6 +41,7 @@ from zenml.models import (
     StepRunFilter,
     StepRunResponse,
 )
+from zenml.utils import run_utils
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -51,6 +53,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    dehydrate_response_model,
     verify_permission_for_model,
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
@@ -389,36 +392,37 @@ def refresh_run_status(
 
     Args:
         run_id: ID of the pipeline run to refresh.
-
-    Raises:
-        RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
-    # Verify access to the run
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=zen_store().get_run,
         hydrate=True,
     )
-
-    # Check the stack and its orchestrator
-    if run.stack is not None:
-        orchestrators = run.stack.components.get(
-            StackComponentType.ORCHESTRATOR, []
-        )
-        if orchestrators:
-            verify_permission_for_model(
-                model=orchestrators[0], action=Action.READ
-            )
-        else:
-            raise RuntimeError(
-                f"The orchestrator, the run '{run.id}' was executed with, is "
-                "deleted."
-            )
-    else:
-        raise RuntimeError(
-            f"The stack, the run '{run.id}' was executed on, is deleted."
-        )
     run.refresh_run_status()
+
+
+@router.post(
+    "/{run_id}" + STOP,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def stop_run(
+    run_id: UUID,
+    graceful: bool = False,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Stops a specific pipeline run.
+
+    Args:
+        run_id: ID of the pipeline run to stop.
+        graceful: If True, allows for graceful shutdown where possible.
+            If False, forces immediate termination. Default is False.
+    """
+    run = zen_store().get_run(run_id, hydrate=True)
+    verify_permission_for_model(run, action=Action.READ)
+    verify_permission_for_model(run, action=Action.UPDATE)
+    dehydrate_response_model(run)
+    run_utils.stop_run(run=run, graceful=graceful)
 
 
 @router.get(
@@ -432,22 +436,24 @@ def refresh_run_status(
 @async_fastapi_endpoint_wrapper
 def run_logs(
     run_id: UUID,
+    source: str,
     offset: int = 0,
     length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
 ) -> str:
-    """Get pipeline run logs.
+    """Get pipeline run logs for a specific source.
 
     Args:
         run_id: ID of the pipeline run.
+        source: Required source to get logs for.
         offset: The offset from which to start reading.
         length: The amount of bytes that should be read.
 
     Returns:
-        The pipeline run logs.
+        Logs for the specified source.
 
     Raises:
-        KeyError: If no logs are available for the pipeline run.
+        KeyError: If no logs are found for the specified source.
     """
     store = zen_store()
 
@@ -457,19 +463,26 @@ def run_logs(
         hydrate=True,
     )
 
-    if run.deployment_id:
+    # Handle runner logs from workload manager
+    if run.deployment_id and source == "runner":
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
-            return workload_manager().get_logs(workload_id=deployment.id)
+            workload_logs = workload_manager().get_logs(
+                workload_id=deployment.id
+            )
+            return workload_logs
 
-    logs = run.logs
-    if logs is None:
-        raise KeyError("No logs available for this pipeline run")
+    # Handle logs from log collection
+    if run.log_collection:
+        for log_entry in run.log_collection:
+            if log_entry.source == source:
+                return fetch_logs(
+                    zen_store=store,
+                    artifact_store_id=log_entry.artifact_store_id,
+                    logs_uri=log_entry.uri,
+                    offset=offset,
+                    length=length,
+                )
 
-    return fetch_logs(
-        zen_store=store,
-        artifact_store_id=logs.artifact_store_id,
-        logs_uri=logs.uri,
-        offset=offset,
-        length=length,
-    )
+    # If no logs found for the specified source, raise an error
+    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
