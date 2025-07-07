@@ -117,7 +117,8 @@ def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
         if key not in attribute_mapping:
             raise KeyError(
                 f"Got value for attribute {key} which is not one of the "
-                f"available attributes {set(attribute_mapping)}."
+                f"available attributes for class {class_name}: "
+                f"{set(attribute_mapping)}."
             )
 
         attribute_name = attribute_mapping[key]
