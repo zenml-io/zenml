@@ -221,9 +221,8 @@ def get_pod(
         The found pod object. None if it's not found.
     """
     try:
-        pod = core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
-        return cast(k8s_client.V1Pod, pod)
-    except ApiException as e:
+        return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
+    except k8s_client.rest.ApiException as e:
         if e.status == 404:
             return None
         raise RuntimeError from e
