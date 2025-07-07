@@ -46,11 +46,10 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.config.base_settings import BaseSettings
-from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
@@ -907,6 +906,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_statuses[step_name] = new_status
 
         return step_statuses
+
     def get_pipeline_run_metadata(
         self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:

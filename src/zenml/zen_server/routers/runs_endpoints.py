@@ -28,7 +28,7 @@ from zenml.constants import (
     STOP,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
@@ -169,7 +169,6 @@ def get_run(
     run_id: UUID,
     hydrate: bool = True,
     refresh_status: bool = False,
-    refresh_step_status: bool = False,
     include_python_packages: bool = False,
     include_full_metadata: bool = False,
     _: AuthContext = Security(authorize),
@@ -182,8 +181,6 @@ def get_run(
             by including metadata fields in the response.
         refresh_status: Flag deciding whether we should try to refresh
             the status of the pipeline run using its orchestrator.
-        refresh_step_status: Flag deciding whether we should also refresh
-            the status of individual steps.
         include_python_packages: Flag deciding whether to include the
             Python packages in the response.
         include_full_metadata: Flag deciding whether to include the
@@ -205,25 +202,8 @@ def get_run(
 
     if refresh_status:
         try:
-            # For permission check, we need to verify access to the orchestrator
-            if run.stack is not None:
-                verify_permission_for_model(
-                    model=run.stack, action=Action.READ
-                )
-
-                orchestrators = run.stack.components.get(
-                    StackComponentType.ORCHESTRATOR, []
-                )
-                if orchestrators:
-                    verify_permission_for_model(
-                        model=orchestrators[0], action=Action.READ
-                    )
-
             # Use the run's own refresh method
-            run = run_utils.refresh_run_status(
-                run=run, include_step_updates=refresh_step_status
-            )
-
+            run = run_utils.refresh_run_status(run=run)
         except Exception as e:
             logger.warning(
                 "An error occurred while refreshing the status of the "
@@ -403,29 +383,7 @@ def refresh_run_status(
         get_method=zen_store().get_run,
         hydrate=True,
     )
-
-    try:
-        # For permission check, we need to verify access to the orchestrator
-        if run.stack is not None:
-            verify_permission_for_model(model=run.stack, action=Action.READ)
-            orchestrators = run.stack.components.get(
-                StackComponentType.ORCHESTRATOR, []
-            )
-            if orchestrators:
-                verify_permission_for_model(
-                    model=orchestrators[0], action=Action.READ
-                )
-
-        # Use the run's own refresh method
-        run = run_utils.refresh_run_status(
-            run=run, include_step_updates=include_steps
-        )
-
-    except Exception as e:
-        logger.warning(
-            "An error occurred while refreshing the status of the "
-            f"pipeline run: {e}"
-        )
+    run_utils.refresh_run_status(run=run, include_step_updates=include_steps)
 
 
 @router.post(
