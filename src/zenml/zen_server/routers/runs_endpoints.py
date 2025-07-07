@@ -202,8 +202,13 @@ def get_run(
 
     if refresh_status:
         try:
-            # Use the run's own refresh method
+            logger.warning(
+                "DEPRECATED: Refreshing the status through the ZenML server "
+                "is deprecated and will be removed in a future version. "
+                "Please use the `/{run_id}/refresh` endpoint instead."
+            )
             run = run_utils.refresh_run_status(run=run)
+
         except Exception as e:
             logger.warning(
                 "An error occurred while refreshing the status of the "
