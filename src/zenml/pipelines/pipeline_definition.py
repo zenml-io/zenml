@@ -856,6 +856,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
                 logs_model = LogsRequest(
                     uri=logs_uri,
+                    source="client",
                     artifact_store_id=stack.artifact_store.id,
                 )
 
