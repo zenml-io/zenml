@@ -32,6 +32,7 @@ from zenml.artifacts.utils import (
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
+    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
@@ -54,8 +55,8 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 logger = get_logger(__name__)
 
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
-step_names_in_logs: ContextVar[bool] = ContextVar(
-    "step_names_in_logs", default=False
+step_names_in_console: ContextVar[bool] = ContextVar(
+    "step_names_in_console", default=False
 )
 
 LOGS_EXTENSION = ".log"
@@ -485,6 +486,20 @@ class PipelineLogsStorageContext:
         # Import here to avoid circular imports
         from zenml.logger import LogCollectorRegistry
 
+        # Set the step names context variable
+        step_names_disabled = handle_bool_env_var(
+            ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=None
+        )
+
+        if step_names_disabled is None:
+            # If env var is not set, use the prepend_step_name setting
+            # Pipeline context: prepend_step_name=False -> show step names (False)
+            # Step context: prepend_step_name=True -> don't show step names (True)
+            step_names_in_console.set(self.prepend_step_name)
+        else:
+            # If env var disables step names, always set to False
+            step_names_in_console.set(not step_names_disabled)
+
         registry = LogCollectorRegistry()
 
         # Create our collector function
@@ -528,6 +543,9 @@ class PipelineLogsStorageContext:
             self.storage.merge_log_files(merge_all_files=True)
         except (OSError, IOError) as e:
             logger.warning(f"Step logs roll-up failed: {e}")
+
+        # Reset the step names context to default
+        step_names_in_console.set(False)
 
     def _create_collector(self) -> Callable[[str, bool], Any]:
         """Create a collector function for handling log messages.

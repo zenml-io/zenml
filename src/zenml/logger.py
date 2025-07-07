@@ -17,13 +17,13 @@ import logging
 import os
 import re
 import sys
-from logging import getLevelName
 from typing import Any, Callable, Dict, List, Optional
 
 from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SUPPRESS_LOGS,
@@ -98,30 +98,33 @@ class LogCollectorRegistry:
         Returns:
             The result of the original write method.
         """
-        # Parse out log level tokens before writing to console
-        clean_message = self._parse_and_clean_message(message)
-
+        # Import here to avoid circular imports
+        from zenml.logging.step_logging import step_names_in_console
+        
+        # Apply step name prepending if enabled
+        if step_names_in_console.get():
+            try:
+                from zenml.steps import get_step_context
+                step_context = get_step_context()
+                
+                if step_context and message not in ["\n", ""]:
+                    # For progress bar updates (with \r), inject the step name after the \r
+                    if "\r" in message:
+                        message = message.replace(
+                            "\r", f"\r[{step_context.step_name}] "
+                        )
+                    else:
+                        message = f"[{step_context.step_name}] {message}"
+            except Exception:
+                # If we can't get step context, just use the original message
+                pass
+        
+        # Write the (possibly modified) message to original stdout/stderr
         if is_stderr and self.original_stderr_write:
-            return self.original_stderr_write(clean_message)
+            return self.original_stderr_write(message)
         elif not is_stderr and self.original_stdout_write:
-            return self.original_stdout_write(clean_message)
+            return self.original_stdout_write(message)
         return None
-
-    def _parse_and_clean_message(self, message: str) -> str:
-        """Parse and clean ZenML log format tokens from message.
-
-        Args:
-            message: The original message that may contain log level tokens.
-
-        Returns:
-            The cleaned message with log level tokens and location info removed.
-        """
-        clean_message = message
-        for level in LoggingLevels:
-            level_token = f"[{getLevelName(level.value)}] "
-            if level_token in clean_message:
-                clean_message = clean_message.replace(level_token, "", 1)
-        return clean_message
 
     def _wrapped_write(self, is_stderr: bool = False) -> Callable:
         """Create a wrapped write function.
@@ -206,9 +209,20 @@ class CustomFormatter(logging.Formatter):
     blue: str = "\x1b[34m"
     reset: str = "\x1b[0m"
 
-    format_template: str = (
-        "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
-    )
+    def _get_format_template(self, record: logging.LogRecord) -> str:
+        """Get the format template based on the logging level.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            The format template string.
+        """
+        # Only include location info for DEBUG level
+        if record.levelno == LoggingLevels.DEBUG.value:
+            return "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
+        else:
+            return "[%(levelname)s] %(message)s"
 
     COLORS: Dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
@@ -227,15 +241,17 @@ class CustomFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
+        format_template = self._get_format_template(record)
+
         if ZENML_LOGGING_COLORS_DISABLED:
             # If color formatting is disabled, use the default format without colors
-            formatter = logging.Formatter(self.format_template)
+            formatter = logging.Formatter(format_template)
             return formatter.format(record)
         else:
             # Use color formatting
             log_fmt = (
                 self.COLORS[LoggingLevels(record.levelno)]
-                + self.format_template
+                + format_template
                 + self.reset
             )
             formatter = logging.Formatter(log_fmt)
