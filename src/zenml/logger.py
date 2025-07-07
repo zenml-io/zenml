@@ -67,6 +67,8 @@ class LogCollectorRegistry:
             self.original_stderr_flush: Optional[Callable] = None
             self._stdout_stderr_wrapped: bool = False
             self._initialized = True
+            
+            self._setup_stdout_stderr_wrapping()
 
     def add_collector(self, collector: Callable[[str, bool], Any]) -> None:
         """Add a collector to handle log messages.
@@ -74,10 +76,6 @@ class LogCollectorRegistry:
         Args:
             collector: A callable that takes (message: str, is_stderr: bool) and processes it.
         """
-        # Setup stdout/stderr wrapping on first registration
-        if not self._stdout_stderr_wrapped:
-            self._setup_stdout_stderr_wrapping()
-
         if collector not in self.collectors:
             self.collectors.append(collector)
 
@@ -119,13 +117,10 @@ class LogCollectorRegistry:
             The cleaned message with log level tokens and location info removed.
         """
         clean_message = message
-
-        # Try to remove log level tokens
         for level in LoggingLevels:
             level_token = f"[{getLevelName(level.value)}] "
             if level_token in clean_message:
-                clean_message = clean_message.replace(level_token, "")
-
+                clean_message = clean_message.replace(level_token, "", 1)
         return clean_message
 
     def _wrapped_write(self, is_stderr: bool = False) -> Callable:
@@ -137,7 +132,6 @@ class LogCollectorRegistry:
         Returns:
             The wrapped write function.
         """
-
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
             message = args[0]
             result = None
@@ -353,7 +347,7 @@ def init_logging() -> None:
     console_handler.setFormatter(get_formatter())
     logging.root.addHandler(console_handler)
 
-    # Initialize the singleton registry (wrapping happens on first registration)
+    # Initialize the singleton registry (wrapping is set up automatically)
     LogCollectorRegistry()
 
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True

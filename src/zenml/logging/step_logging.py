@@ -560,15 +560,11 @@ class PipelineLogsStorageContext:
             # Format storage output with timestamp
             timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # For storage, use clean message with timestamp
-            if extracted_level:
-                # Already formatted message - just add timestamp
-                return f"[{timestamp} UTC] [{extracted_level.name}] {clean_message}"
-            else:
-                # Raw message (like print) - add timestamp and level
-                return (
-                    f"[{timestamp} UTC] [{default_level.name}] {clean_message}"
-                )
+            # Use the extracted level if found, otherwise use default
+            level_to_use = extracted_level if extracted_level is not None else default_level
+
+            # For storage, always use clean message with timestamp and level
+            return f"[{timestamp} UTC] [{level_to_use.name}] {clean_message}"
 
         return None
 
@@ -594,8 +590,9 @@ class PipelineLogsStorageContext:
         from zenml.enums import LoggingLevels
 
         for level in LoggingLevels:
-            if f"[{getLevelName(level.value)}] " in message:
-                return level, message.replace(
-                    f"[{getLevelName(level.value)}] ", ""
-                )
+            # Check for standard getLevelName result (e.g., "WARNING")
+            standard_token = f"[{getLevelName(level.value)}] "
+            if standard_token in message:
+                return level, message.replace(standard_token, "", 1)
+
         return None, message
