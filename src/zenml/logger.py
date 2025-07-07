@@ -17,7 +17,7 @@ import logging
 import os
 import re
 import sys
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict
 
 from rich.traceback import install as rich_tb_install
 
@@ -89,11 +89,12 @@ class CustomFormatter(logging.Formatter):
         try:
             # Import here to avoid circular imports
             from zenml.logging.step_logging import step_names_in_console
-            
+
             if step_names_in_console.get():
                 from zenml.steps import get_step_context
+
                 step_context = get_step_context()
-                
+
                 if step_context and message not in ["\n", ""]:
                     # For progress bar updates (with \r), inject the step name after the \r
                     if "\r" in message:
@@ -235,10 +236,11 @@ def init_logging() -> None:
     # Check if console handler already exists to avoid duplicates
     root_logger = logging.getLogger()
     has_console_handler = any(
-        isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout
+        isinstance(handler, logging.StreamHandler)
+        and handler.stream == sys.stdout
         for handler in root_logger.handlers
     )
-    
+
     if not has_console_handler:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(get_formatter())

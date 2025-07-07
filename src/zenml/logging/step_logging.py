@@ -21,7 +21,7 @@ import time
 from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Tuple, Type, Union
+from typing import Any, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
 from zenml.artifact_stores import BaseArtifactStore
@@ -38,8 +38,8 @@ from zenml.constants import (
     ENV_ZENML_STORAGE_LOGGING_VERBOSITY,
     handle_bool_env_var,
 )
-from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
+
 # Removed get_logger import to avoid circular dependency
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
@@ -88,7 +88,9 @@ class ArtifactStoreHandler(logging.Handler):
         self.storage = storage
 
         # Get storage log level from environment
-        storage_level = os.environ.get(ENV_ZENML_STORAGE_LOGGING_VERBOSITY, "INFO")
+        storage_level = os.environ.get(
+            ENV_ZENML_STORAGE_LOGGING_VERBOSITY, "INFO"
+        )
         try:
             self.setLevel(getattr(logging, storage_level.upper()))
         except AttributeError:
@@ -104,7 +106,9 @@ class ArtifactStoreHandler(logging.Handler):
         try:
             # Format for storage with timestamp, level, and message
             timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            message = f"[{timestamp} UTC] [{record.levelname}] {record.getMessage()}"
+            message = (
+                f"[{timestamp} UTC] [{record.levelname}] {record.getMessage()}"
+            )
             self.storage.write(message)
         except Exception:
             # Don't let storage errors break logging
@@ -114,25 +118,28 @@ class ArtifactStoreHandler(logging.Handler):
 def setup_global_print_wrapping() -> None:
     """Set up global print() wrapping with context-aware handlers."""
     # Check if we should capture prints
-    capture_prints = handle_bool_env_var(ENV_ZENML_CAPTURE_PRINTS, default=True)
-    
+    capture_prints = handle_bool_env_var(
+        ENV_ZENML_CAPTURE_PRINTS, default=True
+    )
+
     if not capture_prints:
         return
-    
+
     # Check if already wrapped to avoid double wrapping
     if hasattr(__builtins__, "_zenml_original_print"):
         return
 
     import builtins
+
     original_print = builtins.print
 
     def wrapped_print(*args, **kwargs):
         # Convert print arguments to message
-        message = ' '.join(str(arg) for arg in args)
-        
+        message = " ".join(str(arg) for arg in args)
+
         # Determine if this should go to stderr or stdout based on file argument
-        file_arg = kwargs.get('file', sys.stdout)
-        
+        file_arg = kwargs.get("file", sys.stdout)
+
         # Call active handlers first (for storage)
         if message.strip():
             if file_arg == sys.stderr:
@@ -141,7 +148,7 @@ def setup_global_print_wrapping() -> None:
             else:
                 handlers = active_stdout_handlers.get()
                 level = logging.INFO
-                
+
             for handler in handlers:
                 try:
                     # Create a LogRecord for the handler
@@ -152,7 +159,7 @@ def setup_global_print_wrapping() -> None:
                         lineno=0,
                         msg=message,
                         args=(),
-                        exc_info=None
+                        exc_info=None,
                     )
                     handler.emit(record)
                 except Exception:
@@ -589,21 +596,28 @@ class PipelineLogsStorageContext:
         """
         # Create storage handler
         self.artifact_store_handler = ArtifactStoreHandler(self.storage)
-        
+
         # Set formatter for storage handler
-        storage_formatter = logging.Formatter("[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)")
+        storage_formatter = logging.Formatter(
+            "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
+        )
         self.artifact_store_handler.setFormatter(storage_formatter)
 
         # Add handler to root logger
         root_logger = logging.getLogger()
         root_logger.addHandler(self.artifact_store_handler)
-        
+
         # Set root logger level to minimum of console and storage levels
         # This ensures records can reach both handlers
         self.original_root_level = root_logger.level
-        storage_level = getattr(logging, os.environ.get(ENV_ZENML_STORAGE_LOGGING_VERBOSITY, "INFO").upper())
+        storage_level = getattr(
+            logging,
+            os.environ.get(
+                ENV_ZENML_STORAGE_LOGGING_VERBOSITY, "INFO"
+            ).upper(),
+        )
         console_level = root_logger.level
-        
+
         min_level = min(storage_level, console_level)
         if min_level < root_logger.level:
             root_logger.setLevel(min_level)
@@ -655,7 +669,7 @@ class PipelineLogsStorageContext:
             root_logger = logging.getLogger()
             root_logger.removeHandler(self.artifact_store_handler)
             # Restore original root logger level
-            if hasattr(self, 'original_root_level'):
+            if hasattr(self, "original_root_level"):
                 root_logger.setLevel(self.original_root_level)
 
         # Remove handler from context variables
