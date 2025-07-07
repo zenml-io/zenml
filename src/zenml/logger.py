@@ -23,7 +23,6 @@ from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ENABLE_RICH_TRACEBACK,
-    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SUPPRESS_LOGS,
@@ -100,13 +99,14 @@ class LogCollectorRegistry:
         """
         # Import here to avoid circular imports
         from zenml.logging.step_logging import step_names_in_console
-        
+
         # Apply step name prepending if enabled
         if step_names_in_console.get():
             try:
                 from zenml.steps import get_step_context
+
                 step_context = get_step_context()
-                
+
                 if step_context and message not in ["\n", ""]:
                     # For progress bar updates (with \r), inject the step name after the \r
                     if "\r" in message:
@@ -118,7 +118,7 @@ class LogCollectorRegistry:
             except Exception:
                 # If we can't get step context, just use the original message
                 pass
-        
+
         # Write the (possibly modified) message to original stdout/stderr
         if is_stderr and self.original_stderr_write:
             return self.original_stderr_write(message)
