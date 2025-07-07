@@ -36,165 +36,6 @@ ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
 )
 
 
-class LogCollectorRegistry:
-    """Singleton registry for log collectors."""
-
-    _instance: Optional["LogCollectorRegistry"] = None
-    _initialized: bool = False
-
-    def __new__(cls) -> "LogCollectorRegistry":
-        """Create a new instance of the LogCollectorRegistry.
-
-        Returns:
-            The singleton instance of the LogCollectorRegistry.
-        """
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self) -> None:
-        """Initialize the LogCollectorRegistry.
-
-        Returns:
-            The singleton instance of the LogCollectorRegistry.
-        """
-        if not self._initialized:
-            self.collectors: List[Callable[[str, bool], Any]] = []
-            self.original_stdout_write: Optional[Callable] = None
-            self.original_stderr_write: Optional[Callable] = None
-            self.original_stdout_flush: Optional[Callable] = None
-            self.original_stderr_flush: Optional[Callable] = None
-            self._stdout_stderr_wrapped: bool = False
-            self._initialized = True
-
-            self._setup_stdout_stderr_wrapping()
-
-    def add_collector(self, collector: Callable[[str, bool], Any]) -> None:
-        """Add a collector to handle log messages.
-
-        Args:
-            collector: A callable that takes (message: str, is_stderr: bool) and processes it.
-        """
-        if collector not in self.collectors:
-            self.collectors.append(collector)
-
-    def remove_collector(self, collector: Callable[[str, bool], Any]) -> None:
-        """Remove a collector from the registry.
-
-        Args:
-            collector: The collector to remove.
-        """
-        if collector in self.collectors:
-            self.collectors.remove(collector)
-
-    def _default_collector(self, message: str, is_stderr: bool) -> Any:
-        """Default collector that writes to original stdout/stderr.
-
-        Args:
-            message: The message to write.
-            is_stderr: Whether this is stderr output.
-
-        Returns:
-            The result of the original write method.
-        """
-        # Import here to avoid circular imports
-        from zenml.logging.step_logging import step_names_in_console
-
-        # Apply step name prepending if enabled
-        if step_names_in_console.get():
-            try:
-                from zenml.steps import get_step_context
-
-                step_context = get_step_context()
-
-                if step_context and message not in ["\n", ""]:
-                    # For progress bar updates (with \r), inject the step name after the \r
-                    if "\r" in message:
-                        message = message.replace(
-                            "\r", f"\r[{step_context.step_name}] "
-                        )
-                    else:
-                        message = f"[{step_context.step_name}] {message}"
-            except Exception:
-                # If we can't get step context, just use the original message
-                pass
-
-        # Write the (possibly modified) message to original stdout/stderr
-        if is_stderr and self.original_stderr_write:
-            return self.original_stderr_write(message)
-        elif not is_stderr and self.original_stdout_write:
-            return self.original_stdout_write(message)
-        return None
-
-    def _wrapped_write(self, is_stderr: bool = False) -> Callable:
-        """Create a wrapped write function.
-
-        Args:
-            is_stderr: Whether this is for stderr.
-
-        Returns:
-            The wrapped write function.
-        """
-
-        def wrapped_write(*args: Any, **kwargs: Any) -> Any:
-            message = args[0]
-            result = None
-
-            # Call all collectors in sequence
-            for collector in self.collectors:
-                try:
-                    result = collector(message, is_stderr)
-                except Exception as e:
-                    # If a collector fails, log the error but continue
-                    print(f"Error in log collector: {e}", file=sys.stderr)
-
-            return result
-
-        return wrapped_write
-
-    def _wrapped_flush(self, is_stderr: bool = False) -> Callable:
-        """Create a wrapped flush function.
-
-        Args:
-            is_stderr: Whether this is for stderr.
-
-        Returns:
-            The wrapped flush function.
-        """
-
-        def wrapped_flush(*args: Any, **kwargs: Any) -> Any:
-            original_flush = (
-                self.original_stderr_flush
-                if is_stderr
-                else self.original_stdout_flush
-            )
-            if original_flush:
-                return original_flush(*args, **kwargs)
-            return None
-
-        return wrapped_flush
-
-    def _setup_stdout_stderr_wrapping(self) -> None:
-        """Set up stdout and stderr wrapping."""
-        if not self._stdout_stderr_wrapped:
-            # Store original methods
-            self.original_stdout_write = getattr(sys.stdout, "write")
-            self.original_stdout_flush = getattr(sys.stdout, "flush")
-            self.original_stderr_write = getattr(sys.stderr, "write")
-            self.original_stderr_flush = getattr(sys.stderr, "flush")
-
-            # Add default collector directly to avoid recursion
-            self.collectors.append(self._default_collector)
-
-            # Wrap stdout and stderr
-            setattr(sys.stdout, "write", self._wrapped_write(is_stderr=False))
-            setattr(sys.stdout, "flush", self._wrapped_flush(is_stderr=False))
-            setattr(sys.stderr, "write", self._wrapped_write(is_stderr=True))
-            setattr(sys.stderr, "flush", self._wrapped_flush(is_stderr=True))
-
-            self._stdout_stderr_wrapped = True
-
-
 class CustomFormatter(logging.Formatter):
     """Formats logs according to custom specifications."""
 
@@ -219,10 +60,10 @@ class CustomFormatter(logging.Formatter):
             The format template string.
         """
         # Only include location info for DEBUG level
-        if record.levelno == LoggingLevels.DEBUG.value:
+        if get_logging_level() == LoggingLevels.DEBUG:
             return "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
         else:
-            return "[%(levelname)s] %(message)s"
+            return "%(message)s"
 
     COLORS: Dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
@@ -243,10 +84,43 @@ class CustomFormatter(logging.Formatter):
         """
         format_template = self._get_format_template(record)
 
+        # Apply step name prepending if enabled (for console display)
+        message = record.getMessage()
+        try:
+            # Import here to avoid circular imports
+            from zenml.logging.step_logging import step_names_in_console
+            
+            if step_names_in_console.get():
+                from zenml.steps import get_step_context
+                step_context = get_step_context()
+                
+                if step_context and message not in ["\n", ""]:
+                    # For progress bar updates (with \r), inject the step name after the \r
+                    if "\r" in message:
+                        message = message.replace(
+                            "\r", f"\r[{step_context.step_name}] "
+                        )
+                    else:
+                        message = f"[{step_context.step_name}] {message}"
+        except Exception:
+            # If we can't get step context, just use the original message
+            pass
+
+        # Create a new record with the modified message
+        modified_record = logging.LogRecord(
+            name=record.name,
+            level=record.levelno,
+            pathname=record.pathname,
+            lineno=record.lineno,
+            msg=message,
+            args=(),
+            exc_info=record.exc_info,
+        )
+
         if ZENML_LOGGING_COLORS_DISABLED:
             # If color formatting is disabled, use the default format without colors
             formatter = logging.Formatter(format_template)
-            return formatter.format(record)
+            return formatter.format(modified_record)
         else:
             # Use color formatting
             log_fmt = (
@@ -255,7 +129,7 @@ class CustomFormatter(logging.Formatter):
                 + self.reset
             )
             formatter = logging.Formatter(log_fmt)
-            formatted_message = formatter.format(record)
+            formatted_message = formatter.format(modified_record)
             quoted_groups = re.findall("`([^`]*)`", formatted_message)
             for quoted in quoted_groups:
                 formatted_message = formatted_message.replace(
@@ -321,7 +195,7 @@ def get_formatter() -> logging.Formatter:
         The formatter.
     """
     if log_format := os.environ.get(ENV_ZENML_LOGGING_FORMAT, None):
-        return logging.Formatter(fmt=f"[%(levelname)s] {log_format}")
+        return logging.Formatter(fmt=log_format)
     else:
         return CustomFormatter()
 
@@ -334,6 +208,8 @@ def get_console_handler() -> Any:
     """
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(get_formatter())
+    # Set console handler level explicitly to console verbosity
+    console_handler.setLevel(get_logging_level().value)
     return console_handler
 
 
@@ -347,10 +223,6 @@ def get_logger(logger_name: str) -> logging.Logger:
         A logger object.
     """
     logger = logging.getLogger(logger_name)
-    logger.setLevel(get_logging_level().value)
-    logger.addHandler(get_console_handler())
-
-    logger.propagate = False
     return logger
 
 
@@ -360,12 +232,29 @@ def init_logging() -> None:
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(get_formatter())
-    logging.root.addHandler(console_handler)
+    # Check if console handler already exists to avoid duplicates
+    root_logger = logging.getLogger()
+    has_console_handler = any(
+        isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout
+        for handler in root_logger.handlers
+    )
+    
+    if not has_console_handler:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(get_formatter())
+        # Set console handler level explicitly to console verbosity
+        console_handler.setLevel(get_logging_level().value)
+        root_logger.addHandler(console_handler)
 
-    # Initialize the singleton registry (wrapping is set up automatically)
-    LogCollectorRegistry()
+    # Initialize global print wrapping
+    try:
+        # Import here to avoid circular imports
+        from zenml.logging.step_logging import setup_global_print_wrapping
+
+        setup_global_print_wrapping()
+    except ImportError:
+        # If step_logging is not available, skip the wrapping
+        pass
 
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
     suppress_zenml_logs: bool = handle_bool_env_var(
