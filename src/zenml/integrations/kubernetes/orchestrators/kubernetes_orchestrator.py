@@ -426,6 +426,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     "configuration for step %s.",
                     step_name,
                 )
+            
+            if retry_config := step.config.retry:
+                if retry_config.delay or retry_config.backoff:
+                    logger.warning(
+                        "Specifying retry delay or backoff is not supported "
+                        "for the Kubernetes orchestrator."
+                    )
 
         pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
