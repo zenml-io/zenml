@@ -799,31 +799,16 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 "Unable to fetch the status."
             )
 
-        # Check the orchestrator pod status
-        orchestrator_pod = kube_utils.get_pod(
-            core_api=self._k8s_core_api,
-            pod_name=orchestrator_run_id,
-            namespace=self.config.kubernetes_namespace,
-        )
-
-        if (
-            orchestrator_pod
-            and orchestrator_pod.status
-            and orchestrator_pod.status.phase
-        ):
-            try:
-                pod_phase = kube_utils.PodPhase(orchestrator_pod.status.phase)
-                pipeline_status = self._map_pod_phase_to_execution_status(
-                    pod_phase
-                )
-            except ValueError:
-                # Handle unknown pod phases
-                pipeline_status = ExecutionStatus.FAILED
-        else:
-            logger.warning(
-                f"Orchestrator pod {orchestrator_run_id} not found in namespace "
-                f"{self.config.kubernetes_namespace}"
+        # Check the orchestrator pod status (only if run is not finished)
+        if not run.status.is_finished:
+            orchestrator_pod_phase = self._check_pod_status(
+                pod_name=orchestrator_run_id,
             )
+            pipeline_status = self._map_pod_phase_to_execution_status(
+                orchestrator_pod_phase
+            )
+        else:
+            # Run is already finished, don't change status
             pipeline_status = None
 
         step_status = None
@@ -831,6 +816,107 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_status = self._fetch_step_status(run, orchestrator_run_id)
 
         return pipeline_status, step_status
+
+    def _pod_has_failure_events(self, pod_name: str) -> bool:
+        """Check if pod events indicate failure.
+
+        Args:
+            pod_name: The name of the pod to check events for.
+
+        Returns:
+            True if events indicate pod failure/deletion, False otherwise.
+        """
+        try:
+            # List events related to the pod
+            events = self._k8s_core_api.list_namespaced_event(
+                namespace=self.config.kubernetes_namespace,
+                field_selector=f"involvedObject.name={pod_name}",
+                limit=15,
+            )
+
+            # Look for failure/eviction/deletion related events
+            failure_reasons = [
+                "Evicted",
+                "OOMKilled",
+                "Killing",
+                "Failed",
+                "FailedMount",
+                "FailedScheduling",
+                "NodeLost",
+                "NodeNotReady",
+                "Preempted",
+                "NodeAffinity",
+                "InsufficientMemory",
+                "InsufficientCPU",
+                "Unschedulable",
+                "FailedCreate",
+                "Unhealthy",
+                "BackOff",
+                "ImagePullBackOff",
+                "CrashLoopBackOff",
+            ]
+
+            for event in events.items:
+                if event.reason in failure_reasons:
+                    return True
+
+            return False
+        except Exception as e:
+            logger.debug(f"Could not retrieve events for pod {pod_name}: {e}")
+            return False
+
+    def _check_pod_status(
+        self,
+        pod_name: str,
+    ) -> kube_utils.PodPhase:
+        """Check pod status and handle deletion scenarios for both orchestrator and step pods.
+
+        This method should only be called for non-finished pipeline runs/steps.
+
+        Args:
+            pod_name: The name of the pod to check.
+
+        Returns:
+            The pod phase if the pod exists, or PodPhase.FAILED if pod was deleted.
+        """
+        pod = kube_utils.get_pod(
+            core_api=self._k8s_core_api,
+            pod_name=pod_name,
+            namespace=self.config.kubernetes_namespace,
+        )
+
+        if pod and pod.status and pod.status.phase:
+            try:
+                return kube_utils.PodPhase(pod.status.phase)
+            except ValueError:
+                # Handle unknown pod phases
+                logger.warning(
+                    f"Unknown pod phase for pod {pod_name}: {pod.status.phase}"
+                )
+                return kube_utils.PodPhase.UNKNOWN
+        else:
+            # Pod is missing - check events to determine if this indicates failure or unknown status
+            logger.warning(
+                f"Pod {pod_name} not found in namespace "
+                f"{self.config.kubernetes_namespace}"
+            )
+
+            indicates_failure = self._pod_has_failure_events(pod_name)
+
+            if indicates_failure:
+                # We have evidence of actual failure/deletion
+                logger.warning(
+                    f"Pod {pod_name} failed based on events. "
+                    f"Marking as failed."
+                )
+                return kube_utils.PodPhase.FAILED
+            else:
+                # No clear evidence of failure - could be cleanup, TTL, etc.
+                logger.warning(
+                    f"Pod {pod_name} not found but no clear failure events. "
+                    f"Marking as unknown."
+                )
+                return kube_utils.PodPhase.UNKNOWN
 
     def _map_pod_phase_to_execution_status(
         self, pod_phase: kube_utils.PodPhase
@@ -885,22 +971,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 namespace=self.config.kubernetes_namespace,
                 settings=settings,
             )
-            pod = kube_utils.get_pod(
-                core_api=self._k8s_core_api,
+
+            # Check pod status with deletion handling
+            step_pod_phase = self._check_pod_status(
                 pod_name=pod_name,
-                namespace=self.config.kubernetes_namespace,
             )
 
-            if pod and pod.status and pod.status.phase:
-                try:
-                    step_statuses[step_name] = kube_utils.PodPhase(
-                        pod.status.phase
-                    )
-                except ValueError:
-                    # Handle unknown pod phases
-                    step_statuses[step_name] = kube_utils.PodPhase.UNKNOWN
-            else:
-                step_statuses[step_name] = kube_utils.PodPhase.UNKNOWN
+            step_statuses[step_name] = step_pod_phase
 
         # Convert pod statuses to execution statuses
         for step_name, pod_phase in step_statuses.items():
