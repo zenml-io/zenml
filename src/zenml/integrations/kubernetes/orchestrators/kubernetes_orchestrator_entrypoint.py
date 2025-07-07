@@ -14,6 +14,7 @@
 """Entrypoint of the Kubernetes master/orchestrator pod."""
 
 import argparse
+import random
 import socket
 from typing import Callable, Dict, Optional, cast
 
@@ -321,8 +322,16 @@ def main() -> None:
                     },
                 ]
             }
+
+            job_name = settings.pod_name_prefix or ""
+            random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+            job_name += f"-{random_prefix}-{step_name}-{deployment.pipeline_configuration.name}"
+            # The job name will be used as a label on the pods, so we need to make
+            # sure it doesn't exceed the label length limit
+            job_name = kube_utils.sanitize_label(job_name)
+
             job_manifest = build_job_manifest(
-                job_name=pod_name,
+                job_name=job_name,
                 pod_template=pod_template_manifest_from_pod(pod_manifest),
                 backoff_limit=backoff_limit,
                 ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
@@ -342,7 +351,7 @@ def main() -> None:
                     batch_api=batch_api,
                     core_api=core_api,
                     namespace=namespace,
-                    job_name=pod_name,
+                    job_name=job_name,
                     stream_logs=True,
                     backoff_interval=1,
                     maximum_backoff=1,  # We want to stream the logs without delay
