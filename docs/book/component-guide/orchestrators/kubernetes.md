@@ -145,6 +145,13 @@ The following configuration options can be set either through the orchestrator c
 - **`pod_failure_max_retries`** (default: 3): The maximum number of retries to create a step pod that fails to start.
 - **`pod_failure_retry_delay`** (default: 10): The delay (in seconds) between retries to create a step pod that fails to start.
 - **`pod_failure_backoff`** (default: 1.0): The backoff factor for pod failure retries and pod startup retries.
+- **`backoff_limit_margin`** (default 0): The value to add to the backoff limit in addition to the [step retries](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries). The retry configuration defined on
+the step defines the maximum number of retries that the server will accept for a step. For this orchestrator, this controls how often the
+job running the step will try to start the step pod. There are some circumstances however where the job will start the pod, but the pod
+doesn't actually get to the point of running the step. That means the server will not receive the maximum amount of retry requests,
+which in turn causes other inconsistencies like wrong step statuses. To mitigate this, this attribute allows to add a margin to the
+backoff limit. This means that the job will retry the pod startup for the configured amount of times plus the margin, which increases
+the chance of the server receiving the maximum amount of retry requests.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.

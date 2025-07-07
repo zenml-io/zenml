@@ -69,8 +69,20 @@ class KubernetesOrchestratorSettings(BaseSettings):
             orchestrator pod for non-scheduled runs.
         active_deadline_seconds: The active deadline seconds for the job that is
             executing the step.
-        backoff_limit_margin: The value to add to the backoff limit which is
-            configured for the step.
+        backoff_limit_margin: The value to add to the backoff limit in addition
+            to the step retries. The retry configuration defined on the step
+            defines the maximum number of retries that the server will accept
+            for a step. For this orchestrator, this controls how often the
+            job running the step will try to start the step pod. There are some
+            circumstances however where the job will start the pod, but the pod
+            doesn't actually get to the point of running the step. That means
+            the server will not receive the maximum amount of retry requests,
+            which in turn causes other inconsistencies like wrong step statuses.
+            To mitigate this, this attribute allows to add a margin to the
+            backoff limit. This means that the job will retry the pod startup
+            for the configured amount of times plus the margin, which increases
+            the chance of the server receiving the maximum amount of retry
+            requests.
         pod_failure_policy: The pod failure policy to use for the job that is
             executing the step.
         prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
