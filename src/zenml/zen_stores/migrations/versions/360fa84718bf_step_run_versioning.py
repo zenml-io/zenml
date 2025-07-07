@@ -1,7 +1,7 @@
 """Step run versioning [360fa84718bf].
 
 Revision ID: 360fa84718bf
-Revises: 5bb25e95849c
+Revises: 85289fea86ff
 Create Date: 2025-07-03 16:11:14.013214
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "360fa84718bf"
-down_revision = "5bb25e95849c"
+down_revision = "85289fea86ff"
 branch_labels = None
 depends_on = None
 
