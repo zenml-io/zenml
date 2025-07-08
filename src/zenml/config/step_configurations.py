@@ -307,7 +307,11 @@ class StepConfiguration(PartialStepConfiguration):
                 exclude_none=True,
             )
 
-            updated_config = self.model_copy(update=pipeline_values, deep=True)
+            updated_config_dict = {
+                **self.model_dump(),
+                **pipeline_values,
+            }
+            updated_config = self.model_validate(updated_config_dict)
             return update_model(updated_config, original_values)
         else:
             return self.model_copy(deep=True)
