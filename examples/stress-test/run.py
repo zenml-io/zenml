@@ -22,7 +22,7 @@ import click
 
 from zenml import Tag, get_step_context, log_metadata, pipeline, step
 from zenml.client import Client
-from zenml.config import DockerSettings
+from zenml.config import DockerSettings, StepRetryConfig
 from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
@@ -45,6 +45,7 @@ def get_kubernetes_settings(
         service_account_name="zenml-service-account",
         pod_startup_timeout=600,
         max_parallelism=max_parallelism,
+        backoff_limit_margin=3,
         pod_settings=KubernetesPodSettings(
             resources={
                 "requests": {"cpu": "100m", "memory": "500Mi"},
