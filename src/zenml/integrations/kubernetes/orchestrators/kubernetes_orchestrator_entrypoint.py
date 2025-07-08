@@ -113,7 +113,14 @@ def main() -> None:
         # Get a Kubernetes client from the active Kubernetes orchestrator, but
         # override the `incluster` setting to `True` since we are running inside
         # the Kubernetes cluster.
-        kube_client = orchestrator.get_kube_client(incluster=True)
+
+        api_client_config = orchestrator.get_kube_client(
+            incluster=True
+        ).configuration
+        api_client_config.connection_pool_maxsize = (
+            pipeline_settings.max_parallelism
+        )
+        kube_client = k8s_client.ApiClient(api_client_config)
         core_api = k8s_client.CoreV1Api(kube_client)
         batch_api = k8s_client.BatchV1Api(kube_client)
 
