@@ -135,6 +135,7 @@ The following configuration options can be set either through the orchestrator c
 
 - **`synchronous`** (default: True): If `True`, the client waits for all steps to finish; if `False`, the pipeline runs asynchronously.
 - **`timeout`** (default: 0): How many seconds to wait for synchronous runs. `0` means to wait indefinitely.
+- **`stream_step_logs`** (default: True): If `True`, the orchestrator pod will stream the logs of the step pods.
 - **`service_account_name`**: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
 - **`step_pod_service_account_name`**: Name of the service account to use for the step pods.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
@@ -475,5 +476,13 @@ For a tutorial on how to work with schedules in ZenML, check out our ['Managing
 Scheduled
 Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 docs page.
+
+## Best practices for highly parallel pipelines
+
+If you're trying to run pipelines with mutliple parallel steps, there are some configuration options that you can tweak to ensure the best possible performance:
+- Ensure you enable [retries for your steps](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries) in case something doesn't work
+- Add a `backoff_limit_margin` to deal with unexpected Kubernetes evictions/preemptions
+- Limit the amount of maximum parallel steps using the `max_parallelism` setting
+- Disable streaming step logs using the `stream_step_logs` setting. All steps will have their logs tracked individually, so streaming them to the orchestrator pod is often unnecessary and can slow things down if your steps are logging a lot.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
