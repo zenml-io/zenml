@@ -8990,10 +8990,7 @@ class SqlZenStore(BaseZenStore):
                 # TODO: set end date
 
             is_retriable = len(existing_step_runs) < max_retries
-            if (
-                is_retriable
-                and step_run.status == ExecutionStatus.FAILED
-            ):
+            if is_retriable and step_run.status == ExecutionStatus.FAILED:
                 # This step will be retried by the orchestrator, so we
                 # set its status accordingly.
                 step_run.status = ExecutionStatus.RETRYING
