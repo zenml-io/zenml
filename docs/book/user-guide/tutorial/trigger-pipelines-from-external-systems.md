@@ -141,7 +141,7 @@ These parameters make it an ideal candidate for external triggering scenarios wh
 ## Method 1: Using Run Templates (ZenML Pro)
 
 {% hint style="success" %}
-This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://zenml.io/book-your-demo) to get access.
 {% endhint %}
 
 {% hint style="info" %}
