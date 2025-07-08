@@ -653,6 +653,7 @@ def wait_for_job_to_finish(
     job_name: str,
     backoff_interval: float = 1,
     maximum_backoff: float = 32,
+    exponential_backoff: bool = False,
     container_name: Optional[str] = None,
     stream_logs: bool = True,
 ) -> None:
@@ -666,6 +667,7 @@ def wait_for_job_to_finish(
         backoff_interval: The interval to wait between polling the job status.
         maximum_backoff: The maximum interval to wait between polling the job
             status.
+        exponential_backoff: Whether to use exponential backoff.
         stream_logs: Whether to stream the job logs.
         container_name: Name of the container to stream logs from.
 
@@ -748,7 +750,6 @@ def wait_for_job_to_finish(
                             logger.info(line)
                         logged_lines_per_pod[pod_name] = len(logs)
 
-        # Wait (using exponential backoff).
         time.sleep(backoff_interval)
-        if backoff_interval < maximum_backoff:
+        if exponential_backoff and backoff_interval < maximum_backoff:
             backoff_interval *= 2

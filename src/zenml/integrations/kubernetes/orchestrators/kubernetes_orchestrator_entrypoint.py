@@ -353,8 +353,6 @@ def main() -> None:
                     namespace=namespace,
                     job_name=job_name,
                     stream_logs=True,
-                    backoff_interval=1,
-                    maximum_backoff=1,  # We want to stream the logs without delay
                 )
 
                 logger.info(f"Job for step `{step_name}` completed.")
