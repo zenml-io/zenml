@@ -154,6 +154,9 @@ def main() -> None:
                 Returns:
                     Whether the step node needs to be run.
                 """
+                if not step_run_request_factory.has_caching_enabled(step_name):
+                    return True
+
                 step_run_request = step_run_request_factory.create_request(
                     step_name
                 )
