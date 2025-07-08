@@ -40,6 +40,9 @@ class KubernetesOrchestratorSettings(BaseSettings):
             asynchronously. Defaults to `True`.
         timeout: How many seconds to wait for synchronous runs. `0` means
             to wait for an unlimited duration.
+        stream_step_logs: If `True`, the orchestrator pod will stream the logs
+            of the step pods. This only has an effect if specified on the
+            pipeline, not on individual steps.
         service_account_name: Name of the service account to use for the
             orchestrator pod. If not provided, a new service account with "edit"
             permissions will be created.
@@ -95,6 +98,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
 
     synchronous: bool = True
     timeout: int = 0
+    stream_step_logs: bool = True
     service_account_name: Optional[str] = None
     step_pod_service_account_name: Optional[str] = None
     privileged: bool = False

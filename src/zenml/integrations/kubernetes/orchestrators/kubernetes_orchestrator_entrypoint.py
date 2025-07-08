@@ -362,7 +362,7 @@ def main() -> None:
                     core_api=core_api,
                     namespace=namespace,
                     job_name=job_name,
-                    stream_logs=True,
+                    stream_logs=pipeline_settings.stream_step_logs,
                 )
 
                 logger.info(f"Job for step `{step_name}` completed.")
