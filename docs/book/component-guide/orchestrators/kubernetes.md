@@ -479,7 +479,7 @@ docs page.
 
 ## Best practices for highly parallel pipelines
 
-If you're trying to run pipelines with mutliple parallel steps, there are some configuration options that you can tweak to ensure the best possible performance:
+If you're trying to run pipelines with multiple parallel steps, there are some configuration options that you can tweak to ensure the best possible performance:
 - Ensure you enable [retries for your steps](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries) in case something doesn't work
 - Add a `backoff_limit_margin` to deal with unexpected Kubernetes evictions/preemptions
 - Limit the amount of maximum parallel steps using the `max_parallelism` setting
