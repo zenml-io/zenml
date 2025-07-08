@@ -8937,9 +8937,16 @@ class SqlZenStore(BaseZenStore):
             # try to acquire more exclusive locks
             session.commit()
 
+            # Acquire exclusive lock on the pipeline run to prevent deadlocks
+            # during insertion
+            session.exec(
+                select(PipelineRunSchema.id)
+                .with_for_update()
+                .where(PipelineRunSchema.id == step_run.pipeline_run_id)
+            )
+
             existing_step_runs = session.exec(
                 select(StepRunSchema)
-                .with_for_update()
                 .options(
                     load_only(
                         jl_arg(StepRunSchema.status),
@@ -8985,9 +8992,14 @@ class SqlZenStore(BaseZenStore):
                         == step_run.pipeline_run_id
                     )
                     .where(col(StepRunSchema.name) == step_run.name)
-                    .values(status=ExecutionStatus.RETRIED.value)
+                    .values(
+                        status=ExecutionStatus.RETRIED.value,
+                        end_time=func.coalesce(
+                            StepRunSchema.end_time,
+                            func.now(),
+                        ),
+                    )
                 )
-                # TODO: set end date
 
             is_retriable = len(existing_step_runs) < max_retries
             if is_retriable and step_run.status == ExecutionStatus.FAILED:
