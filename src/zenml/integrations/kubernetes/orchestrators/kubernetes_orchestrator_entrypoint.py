@@ -347,6 +347,7 @@ def main() -> None:
                 active_deadline_seconds=settings.active_deadline_seconds,
                 pod_failure_policy=pod_failure_policy,
                 owner_references=owner_references,
+                labels=step_pod_labels,
             )
 
             kube_utils.create_job(
