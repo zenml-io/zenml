@@ -8987,6 +8987,16 @@ class SqlZenStore(BaseZenStore):
                     .where(col(StepRunSchema.name) == step_run.name)
                     .values(status=ExecutionStatus.RETRIED.value)
                 )
+                # TODO: set end date
+
+            is_retriable = len(existing_step_runs) < max_retries
+            if (
+                is_retriable
+                and step_run.status == ExecutionStatus.FAILED
+            ):
+                # This step will be retried by the orchestrator, so we
+                # set its status accordingly.
+                step_run.status = ExecutionStatus.RETRYING
 
             step_schema = StepRunSchema.from_request(
                 step_run,
@@ -8997,7 +9007,7 @@ class SqlZenStore(BaseZenStore):
                 # is retried during startup, it will not actually create X
                 # step runs. Or if it doesn't reach the point in code where
                 # the step run is created.
-                is_retriable=len(existing_step_runs) < max_retries,
+                is_retriable=is_retriable,
             )
 
             session.add(step_schema)
