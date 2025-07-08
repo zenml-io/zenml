@@ -41,16 +41,59 @@ The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=clou
 * Artifact Registry API # For the container registry
 * Cloud Logging API # Generally needed
 
-### 3) Create a dedicated service account
+### 3) Create a dedicated service account with least privilege permissions
 
-The service account should have these following roles.
+Create a custom service account with only the minimum required permissions instead of using broad predefined roles. This follows the principle of least privilege:
 
-* AI Platform Service Agent
-* Storage Object Admin
+**For ZenML Client Operations (where pipelines are submitted):**
+* **Vertex AI User** (`roles/aiplatform.user`) - for creating and managing Vertex AI pipeline jobs
+* **Storage Object Admin** (`roles/storage.objectAdmin`) - for artifact store operations
+* **Cloud Functions Developer** (`roles/cloudfunctions.developer`) - for scheduled pipelines (if using scheduling)
 
-These roles give permissions for full CRUD on storage objects and full permissions for compute within VertexAI.
+**For Pipeline Workload Operations (where pipeline steps run):**
+Create a separate service account for the actual pipeline execution:
+* **Vertex AI Service Agent** (`roles/aiplatform.serviceAgent`) - for running Vertex AI pipelines
+* **Storage Object Admin** (`roles/storage.objectAdmin`) - for accessing artifacts during pipeline execution
 
-### 4) Create a JSON Key for your service account
+**More Granular Permissions (Alternative):**
+If you prefer even more granular control, you can create custom roles with these specific permissions:
+
+**For GCS Access:**
+```
+storage.buckets.get
+storage.buckets.list
+storage.objects.create
+storage.objects.delete
+storage.objects.get
+storage.objects.list
+storage.objects.update
+```
+
+**For Vertex AI Access:**
+```
+aiplatform.customJobs.create
+aiplatform.customJobs.get
+aiplatform.customJobs.list
+aiplatform.pipelineJobs.create
+aiplatform.pipelineJobs.get
+aiplatform.pipelineJobs.list
+```
+
+**For Container Registry Access:**
+```
+artifactregistry.repositories.uploadArtifacts
+artifactregistry.repositories.downloadArtifacts
+artifactregistry.repositories.get
+artifactregistry.repositories.list
+```
+
+This approach significantly reduces security risks by limiting permissions to only what's necessary for ZenML operations.
+
+### 4) Create the service accounts and assign roles
+
+Create the service accounts and assign the least privilege roles:
+
+```bash\n# Create client service account\ngcloud iam service-accounts create zenml-client \\\n  --display-name=\"ZenML Client Service Account\" \\\n  --description=\"Service account for ZenML client operations\"\n\n# Create workload service account\ngcloud iam service-accounts create zenml-workload \\\n  --display-name=\"ZenML Workload Service Account\" \\\n  --description=\"Service account for ZenML pipeline execution\"\n\n# Assign roles to client service account\ngcloud projects add-iam-policy-binding <PROJECT_ID> \\\n  --member=\"serviceAccount:zenml-client@<PROJECT_ID>.iam.gserviceaccount.com\" \\\n  --role=\"roles/aiplatform.user\"\n\ngcloud projects add-iam-policy-binding <PROJECT_ID> \\\n  --member=\"serviceAccount:zenml-client@<PROJECT_ID>.iam.gserviceaccount.com\" \\\n  --role=\"roles/storage.objectAdmin\"\n\n# Assign roles to workload service account\ngcloud projects add-iam-policy-binding <PROJECT_ID> \\\n  --member=\"serviceAccount:zenml-workload@<PROJECT_ID>.iam.gserviceaccount.com\" \\\n  --role=\"roles/aiplatform.serviceAgent\"\n\ngcloud projects add-iam-policy-binding <PROJECT_ID> \\\n  --member=\"serviceAccount:zenml-workload@<PROJECT_ID>.iam.gserviceaccount.com\" \\\n  --role=\"roles/storage.objectAdmin\"\n```\n\n### 5) Create a JSON Key for your client service account
 
 This [json file](https://cloud.google.com/iam/docs/keys-create-delete) will allow the service account to assume the identity of this service account. You will need the filepath of the downloaded file in the next step.
 
@@ -58,7 +101,7 @@ This [json file](https://cloud.google.com/iam/docs/keys-create-delete) will allo
 export JSON_KEY_FILE_PATH=<JSON_KEY_FILE_PATH>
 ```
 
-### 5) Create a Service Connector within ZenML
+### 6) Create a Service Connector within ZenML
 
 The service connector will allow ZenML and other ZenML components to authenticate themselves with GCP.
 
@@ -75,7 +118,7 @@ zenml integration install gcp \
 {% endtab %}
 {% endtabs %}
 
-### 6) Create Stack Components
+### 7) Create Stack Components
 
 #### Artifact Store
 
@@ -141,7 +184,7 @@ Head on over to our [docs](https://docs.zenml.io/stacks/container-registries) to
 {% endtab %}
 {% endtabs %}
 
-### 7) Create Stack
+### 8) Create Stack
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -176,7 +219,14 @@ When working with a GCP stack in ZenML, consider the following best practices to
 
 ### Use IAM and Least Privilege Principle
 
-Always adhere to the principle of least privilege when setting up IAM roles. Only grant the minimum permissions necessary for your ZenML pipelines to function. Regularly review and audit your IAM roles to ensure they remain appropriate and secure.
+Always adhere to the principle of least privilege when setting up IAM roles. The guide above demonstrates this by using specific roles instead of broad "Editor" or "Owner" permissions:
+
+- **Vertex AI User** instead of broad compute permissions
+- **Storage Object Admin** scoped to specific buckets instead of project-wide storage access
+- **Separate service accounts** for client operations vs. workload execution
+- **Custom roles** with granular permissions when predefined roles are too broad
+
+Regularly review and audit your IAM roles to ensure they remain appropriate and secure. Use Google Cloud's IAM Recommender to identify and remove unused permissions.
 
 ### Leverage GCP Resource Labeling
 

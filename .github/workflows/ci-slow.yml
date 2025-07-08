@@ -311,3 +311,8 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
+  vscode-tutorial-pipelines-test:
+    if: github.event.pull_request.draft == false
+    needs: run-slow-ci-label-is-set
+    uses: ./.github/workflows/vscode-tutorial-pipelines-test.yml
+    secrets: inherit

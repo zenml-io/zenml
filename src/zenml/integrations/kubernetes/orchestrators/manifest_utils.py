@@ -106,6 +106,7 @@ def build_pod_manifest(
     labels: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
+    termination_grace_period_seconds: Optional[int] = 30,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -124,6 +125,8 @@ def build_pod_manifest(
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
         owner_references: List of owner references for the pod.
+        termination_grace_period_seconds: The amount of seconds to wait for a
+            pod to shutdown gracefully.
 
     Returns:
         Pod manifest.
@@ -154,19 +157,20 @@ def build_pod_manifest(
         containers=[container_spec],
         restart_policy="Never",
         image_pull_secrets=image_pull_secrets,
+        termination_grace_period_seconds=termination_grace_period_seconds,
     )
 
     if service_account_name is not None:
         pod_spec.service_account_name = service_account_name
 
+    # Apply pod settings if provided
     labels = labels or {}
 
     if pod_settings:
         add_pod_settings(pod_spec, pod_settings)
 
-        # Add pod_settings.labels to the labels
-        if pod_settings.labels:
-            labels.update(pod_settings.labels)
+    if pod_settings and pod_settings.labels:
+        labels.update(pod_settings.labels)
 
     pod_metadata = k8s_client.V1ObjectMeta(
         name=pod_name,
@@ -273,6 +277,7 @@ def build_cron_job_manifest(
     successful_jobs_history_limit: Optional[int] = None,
     failed_jobs_history_limit: Optional[int] = None,
     ttl_seconds_after_finished: Optional[int] = None,
+    termination_grace_period_seconds: Optional[int] = 30,
 ) -> k8s_client.V1CronJob:
     """Create a manifest for launching a pod as scheduled CRON job.
 
@@ -295,6 +300,8 @@ def build_cron_job_manifest(
         failed_jobs_history_limit: The number of failed jobs to retain.
         ttl_seconds_after_finished: The amount of seconds to keep finished jobs
             before deleting them.
+        termination_grace_period_seconds: The amount of seconds to wait for a
+            pod to shutdown gracefully.
 
     Returns:
         CRON job manifest.
@@ -310,6 +317,7 @@ def build_cron_job_manifest(
         env=env,
         labels=labels,
         mount_local_stores=mount_local_stores,
+        termination_grace_period_seconds=termination_grace_period_seconds,
     )
 
     job_spec = k8s_client.V1CronJobSpec(
