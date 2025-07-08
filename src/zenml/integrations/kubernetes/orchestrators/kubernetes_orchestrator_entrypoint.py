@@ -273,7 +273,6 @@ def main() -> None:
                 service_account_name=settings.step_pod_service_account_name
                 or settings.service_account_name,
                 mount_local_stores=mount_local_stores,
-                owner_references=owner_references,
                 termination_grace_period_seconds=settings.pod_stop_grace_period,
                 labels=step_pod_labels,
             )
@@ -340,6 +339,7 @@ def main() -> None:
                 ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
                 active_deadline_seconds=settings.active_deadline_seconds,
                 pod_failure_policy=pod_failure_policy,
+                owner_references=owner_references,
             )
 
             kube_utils.create_job(

@@ -477,6 +477,7 @@ def build_job_manifest(
     labels: Optional[Dict[str, str]] = None,
     active_deadline_seconds: Optional[int] = None,
     pod_failure_policy: Optional[Dict[str, Any]] = None,
+    owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
 ) -> k8s_client.V1Job:
     """Build a Kubernetes job manifest.
 
@@ -488,6 +489,7 @@ def build_job_manifest(
         labels: The labels to use for the job.
         active_deadline_seconds: The active deadline seconds for the job.
         pod_failure_policy: The pod failure policy for the job.
+        owner_references: The owner references for the job.
 
     Returns:
         The Kubernetes job manifest.
@@ -500,6 +502,10 @@ def build_job_manifest(
         active_deadline_seconds=active_deadline_seconds,
         pod_failure_policy=pod_failure_policy,
     )
-    job_metadata = k8s_client.V1ObjectMeta(name=job_name, labels=labels)
+    job_metadata = k8s_client.V1ObjectMeta(
+        name=job_name,
+        labels=labels,
+        owner_references=owner_references,
+    )
 
     return k8s_client.V1Job(spec=job_spec, metadata=job_metadata)
