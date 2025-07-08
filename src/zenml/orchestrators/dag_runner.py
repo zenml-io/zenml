@@ -217,7 +217,7 @@ class ThreadedDagRunner:
             self.node_states[node] = NodeStatus.PENDING
 
         # Run node in new thread.
-        thread = threading.Thread(target=self._run_node, args=(node,))
+        thread = threading.Thread(name=node, target=self._run_node, args=(node,))
         thread.start()
         return thread
 
