@@ -250,7 +250,7 @@ class Flavor:
 
             return (
                 f"{base}/integration_code_docs"
-                f"/integrations-{integration}.html#{self.__module__}"
+                f"/integrations-{integration}.html#zenml.integrations.{integration}-modules"
             )
 
         else:
