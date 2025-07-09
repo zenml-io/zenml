@@ -70,7 +70,11 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import (
+        PipelineDeploymentBase,
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -83,6 +87,22 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
+
+    def should_build_pipeline_image(
+        self, deployment: "PipelineDeploymentBase"
+    ) -> bool:
+        """Whether to always build the pipeline image.
+
+        Args:
+            deployment: The pipeline deployment.
+
+        Returns:
+            Whether to always build the pipeline image.
+        """
+        settings = cast(
+            KubernetesOrchestratorSettings, self.get_settings(deployment)
+        )
+        return settings.always_build_pipeline_image
 
     def get_kube_client(
         self, incluster: Optional[bool] = None
@@ -545,6 +565,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 successful_jobs_history_limit=settings.successful_jobs_history_limit,
                 failed_jobs_history_limit=settings.failed_jobs_history_limit,
                 ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+                termination_grace_period_seconds=settings.pod_stop_grace_period,
                 labels=orchestrator_pod_labels,
             )
 
@@ -570,6 +591,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 env=environment,
                 labels=orchestrator_pod_labels,
                 mount_local_stores=self.config.is_local,
+                termination_grace_period_seconds=settings.pod_stop_grace_period,
             )
 
             kube_utils.create_and_wait_for_pod_to_start(
@@ -661,6 +683,92 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_KUBERNETES_RUN_ID}."
+            )
+
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = True
+    ) -> None:
+        """Stops a specific pipeline run by terminating step pods.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+            graceful: If True, does nothing (lets the orchestrator and steps finish naturally).
+                If False, stops all running step pods.
+
+        Raises:
+            RuntimeError: If we fail to stop the run.
+        """
+        # If graceful, do nothing and let the orchestrator handle the stop naturally
+        if graceful:
+            logger.info(
+                "Graceful stop requested - the orchestrator pod will handle "
+                "stopping naturally"
+            )
+            return
+
+        pods_stopped = []
+        errors = []
+
+        # Find all pods with the orchestrator run ID label
+        label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
+        try:
+            pods = self._k8s_core_api.list_namespaced_pod(
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to list step pods with run ID {run.id}: {e}"
+            )
+
+        # Filter to only include running or pending pods
+        for pod in pods.items:
+            if pod.status.phase not in ["Running", "Pending"]:
+                logger.debug(
+                    f"Skipping pod {pod.metadata.name} with status {pod.status.phase}"
+                )
+                continue
+
+            try:
+                self._k8s_core_api.delete_namespaced_pod(
+                    name=pod.metadata.name,
+                    namespace=self.config.kubernetes_namespace,
+                )
+                pods_stopped.append(f"step pod: {pod.metadata.name}")
+                logger.debug(
+                    f"Successfully initiated graceful stop of step pod: {pod.metadata.name}"
+                )
+            except Exception as e:
+                error_msg = f"Failed to stop step pod {pod.metadata.name}: {e}"
+                logger.warning(error_msg)
+                errors.append(error_msg)
+
+        # Summary logging
+        settings = cast(KubernetesOrchestratorSettings, self.get_settings(run))
+        grace_period_seconds = settings.pod_stop_grace_period
+        if pods_stopped:
+            logger.debug(
+                f"Successfully initiated graceful termination of: {', '.join(pods_stopped)}. "
+                f"Pods will terminate within {grace_period_seconds} seconds."
+            )
+
+        if errors:
+            error_summary = "; ".join(errors)
+            if not pods_stopped:
+                # If nothing was stopped successfully, raise an error
+                raise RuntimeError(
+                    f"Failed to stop pipeline run: {error_summary}"
+                )
+            else:
+                # If some things were stopped but others failed, raise an error
+                raise RuntimeError(
+                    f"Partial stop operation completed with errors: {error_summary}"
+                )
+
+        # If no step pods were found and no errors occurred
+        if not pods_stopped and not errors:
+            logger.info(
+                f"No running step pods found for pipeline run with ID: {run.id}"
             )
 
     def get_pipeline_run_metadata(

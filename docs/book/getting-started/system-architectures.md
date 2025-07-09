@@ -32,7 +32,7 @@ To learn more about the core concepts for ZenML OSS, go [here](core-concepts.md)
 ## ZenML Pro (SaaS or Self-hosted)
 
 {% hint style="info" %}
-If you're interested in assessing ZenML Pro SaaS, you can create a [free account](https://cloud.zenml.io/?utm_source=docs\&utm_medium=referral_link\&utm_campaign=cloud_promotion\&utm_content=signup_link).
+If you're interested in assessing ZenML Pro SaaS, you can create a [free account](https://zenml.io/pro?utm_source=docs\&utm_medium=referral_link\&utm_campaign=cloud_promotion\&utm_content=signup_link).
 
 If you would like to self-host ZenML Pro, please [book a demo](https://zenml.io/book-a-demo).
 {% endhint %}
@@ -123,7 +123,7 @@ cloud. This is meant for customers who require completely air-gapped deployments
 
 </details>
 
-Are you interested in ZenML Pro? [Sign up](https://cloud.zenml.io/?utm_source=docs\&utm_medium=referral_link\&utm_campaign=cloud_promotion\&utm_content=signup_link) and get access with a free 14-day trial now!
+Are you interested in ZenML Pro? [Sign up](https://zenml.io/pro/?utm_source=docs\&utm_medium=referral_link\&utm_campaign=cloud_promotion\&utm_content=signup_link) and get access with a free trial now!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 

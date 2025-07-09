@@ -8,7 +8,7 @@ Setting up a ZenML server for testing is a quick process. However, most people h
 
 {% hint style="info" %}
 If you are using ZenML Pro, you don't have to worry about any of these. We have got you covered!\
-You can sign up for a free trial [here](https://cloud.zenml.io).
+You can sign up for a free trial [here](https://zenml.io/pro).
 {% endhint %}
 
 ## Autoscaling replicas

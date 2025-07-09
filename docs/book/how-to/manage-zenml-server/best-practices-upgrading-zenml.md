@@ -1,76 +1,196 @@
 ---
 description: >-
-  Learn about best practices for upgrading your ZenML server and your code.
+  Simple, step-by-step guide for keeping your ZenML workspaces (servers) up to date without breaking your teams.
 ---
 
-# Best practices for upgrading ZenML
+# Keeping ZenML Upgraded — Without Breaking Things
 
-While upgrading ZenML is generally a smooth process, there are some best practices that you should follow to ensure a successful upgrade. Based on experiences shared by ZenML users, here are some key strategies and considerations.
+Upgrading ZenML doesn't have to be scary.
 
-## Upgrading your server
+Whether you're using the open-source (OSS) version or ZenML Pro (where servers are called _workspaces_), this guide will help you set up a clean, testable, and stress-free upgrade process using a production + staging pattern.
 
-Follow the tips below while upgrading your server to mitigate data losses, downtime and other issues.
-
-### Data Backups
-
-- **Database Backup**: Before upgrading, create a backup of your MySQL database. This allows you to rollback if necessary.
-- **Automated Backups**: Consider setting up automatic daily backups of your database for added security. Most managed services like AWS RDS, Google Cloud SQL, and Azure Database for MySQL offer automated backup options.
-
-![Screenshot of backups in AWS RDS](../../.gitbook/assets/aws-rds-backups.png)
-
-### Upgrade Strategies
-
-- **Staged Upgrade**: For large organizations or critical systems, consider using two ZenML server instances (old and new) and migrating services one by one to the new version.
-
-![Server Migration Step 1](../../.gitbook/assets/server_migration_1.png)
+1. Always have **two environments**: _production_ and _staging_.
+2. Mirror everything in both places.
+3. Use GitOps to automate upgrades.
+4. Run the right tests in staging.
+5. Re-create run templates.
+6. Cut over to production once staging is green.
 
 
-![Server Migration Step 2](../../.gitbook/assets/server_migration_2.png)
+That's it. The rest of this chapter just fills in the details.
 
-- **Team Coordination**: If multiple teams share a ZenML server instance, coordinate the upgrade timing to minimize disruption.
-- **Separate ZenML Servers**: Coordination between teams might be difficult if one team requires new features but the other can't upgrade yet. In such cases, it is recommended to use dedicated ZenML server instances per team or product to allow for more flexible upgrade schedules.
+## ☝️ Step #1: Always Use Two Environments
+
+Whether you're OSS or Pro:
+
+- You should **always have two environments**:
+  - **Production** — where your team builds and runs real pipelines.
+  - **Staging** — used *only* to test ZenML upgrades before they hit production.
+
+> 🏢 **ZenML Pro** users: use **two workspaces** (e.g. `prod-workspace`, `staging-workspace`)  
+> 💻 **ZenML OSS** users: run **two ZenML servers** (same logic applies)
+
+![Diagram showing "Production" and "Staging" environments side by side. Arrows show pipelines running in production, while staging is used for upgrades only.](../../.gitbook/assets/upgrading_zenml_prod_staging_env.png)
+
+## 🧱 Step #2: Mirror Your Stacks in Both Environments
+
+At setup time:
+
+- For every **stack in production**, create a **mirrored stack in staging**
+- Ideally, they point to **separate infra**, but can also share infra if needed
+
+| Stack Component     | Production              | Staging                   |
+|---------------------|--------------------------|----------------------------|
+| Kubernetes cluster  | `prod-k8s-cluster`       | `staging-k8s-cluster`     |
+| Artifact store      | `s3://prod-bucket`       | `s3://staging-bucket`     |
+| Container registry  | `gcr.io/prod-images`     | `gcr.io/staging-images`   |
+
+
+![Diagram: Mirrored stacks pointing at separate staging infra](../../.gitbook/assets/upgrading_zenml_stacks_env.png)
 
 {% hint style="info" %}
-ZenML Pro comes with multi-tenancy which makes it easy for you to have multiple ZenML servers and switch between them. This is useful if you have multiple teams and you want to upgrade them at different times.
+* Point staging stacks to **staging variants** of your infra (e.g., a smaller K8s cluster, a test S3 bucket).
+* When you change a stack in production, immediately update the twin in staging.
 {% endhint %}
 
-### Minimizing Downtime
+## 🛠️ Step #3: Use [GitOps](https://about.gitlab.com/topics/gitops/) to Manage Upgrades
 
-- **Upgrade Timing**: Plan upgrades during low-activity periods to minimize disruption.
+![Diagram: GitOps](../../.gitbook/assets/upgrading_zenml_gitops.png)
 
-- **Avoid Mid-Pipeline Upgrades**: Be cautious of automated upgrades or redeployments that might interrupt long-running pipelines.
+Put your workspace configuration in a Git repository (Helm charts, Terraform, or the ZenML Pro API – pick your tool). Set up two long-lived branches:
 
-## Upgrading your code
+* `staging`  – auto-deploys to the **staging workspace**
+* `main`     – auto-deploys to **production**
 
-Sometimes, you might have to upgrade your code to work with a new version of ZenML. This is true especially when you are moving from a really old version to a new major version. The following tips might help, in addition to everything you've learned in this document so far.
 
-### Testing and Compatibility
+```mermaid
+flowchart LR
+    dev["PR → staging branch"] --> stg["CI/CD upgrades Staging workspace"]
+    stg --> tests["Run upgrade test suite"]
+    tests -->|✅| merge["Merge staging ➜ main"]
+    merge --> prod["CI/CD upgrades Production workspace"]
+```
 
-- **Local Testing**: It's a good idea to test it locally first after you upgrade (`pip install zenml --upgrade`) and run some old pipelines to check for compatibility issues between the old and new versions.
-- **End-to-End Testing**: You can also develop simple end-to-end tests to ensure that the new version works with your pipeline code and your stack. ZenML already has an [extensive test suite](https://github.com/zenml-io/zenml/tree/main/tests) that we use for releases and you can use it as an example.
-- **Artifact Compatibility**: Be cautious with pickle-based [materializers](../../how-to/artifacts/materializers.md), as they can be sensitive to changes in Python versions or libraries. Consider using version-agnostic materialization methods for critical artifacts. You can try to load older artifacts with the new version of ZenML to see if they are compatible. Every artifact has an ID which you can use to load it in the following way:
+ZenML Pro users can call the [Workspace API](https://cloudapi.zenml.io/) from CI to bump the version. OSS users typically re-deploy the Helm chart/Docker image with the new tag.
+
+## 🤝 Step #4: Run a test suite in staging
+
+After upgrading staging, assume things might break — this is normal and expected.
+
+At this point, the platform and data science / ML engineering teams should have mutually:
+
+* Agree on a smoke test suite of pipelines or steps
+* Maintain shared expectations on what counts as "upgrade success"
+
+For example, the data science repo could contain a test suite that does the following checks:
+
+```python
+def test_artifact_loading():
+    artifact = Client().get_artifact_version("xyz").load()
+    assert artifact is not None
+
+def test_simple_pipeline():
+    run = run_pipeline(pipeline_name="...")
+    assert run.status == "COMPLETED"
+```
+
+## 🔄 Step #5: Update all run templates (deployed pipelines)
+
+Pipelines that are already deployed as [run templates](https://docs.zenml.io/concepts/templates) may now break as they have the older version of the ZenML client installed. Therefore, you would need to rebuild the run template and associated images.
+
+The easiest way to do this is to re-create a run template from the latest run on the staging server/workspace.
 
 ```python
 from zenml.client import Client
 
-artifact = Client().get_artifact_version('YOUR_ARTIFACT_ID')
-loaded_artifact = artifact.load()
+client = Client()
+# Make sure this pipeline was run on this workspace
+pipeline = client.get_pipeline("my_pipeline")
+
+# Get latest successful run
+runs = client.list_pipeline_runs(pipeline_id=pipeline.id, size=1)
+if runs:
+    latest_run = runs[0]
+    template = latest_run.create_run_template(
+        name="upgraded-template",
+        deployment_id=latest_run.deployment_id
+    )
+    print(f"Template created: {template.name}")
 ```
 
-### Dependency Management
+Or with CLI:
 
-- **Python Version**: Make sure that the Python version you are using is compatible with the ZenML version you are upgrading to. Check out the [installation guide](../../getting-started/installation.md) to find out which Python version is supported.
-- **External Dependencies**: Be mindful of external dependencies (e.g. from integrations) that might be incompatible with the new version of ZenML. This could be the case when some older versions are no longer supported or maintained and the ZenML integration is updated to use a newer version. You can find this information in the [release notes](https://github.com/zenml-io/zenml/releases) for the new version of ZenML.
+```shell
+zenml pipeline create-run-template my_pipeline \
+  --name upgraded-template \
+  --stack staging-stack \
+  --config configs/run.yaml
+```
 
-### Handling API Changes
+{% hint style="info" %}
+Read about [how run templates work](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems).
+{% endhint %}
 
-While ZenML strives for backward compatibility, be prepared for occasional breaking changes (e.g., [the Pydantic 2 upgrade](https://github.com/zenml-io/zenml/releases/tag/0.60.0)).
+After building, execute all run templates end-to-end as a smoke test.
+Ideally, your data science teams have a "smoke test" parameter in the pipeline
+to load mock data just for this scenario!
 
-- **Changelog Review**: Always review the [changelog from new releases](https://github.com/zenml-io/zenml/releases) for new syntax, instructions, or breaking changes.
-- **Migration Scripts**: Use provided [migration scripts](migration-guide/migration-guide.md) when available to handle database schema changes.
+## 🚀 Step #6: Upgrade Production and Go Live
 
-By following these best practices, you can minimize risks and ensure a smoother upgrade process for your ZenML server. Remember that each environment is unique, so adapt these guidelines to your specific needs and infrastructure.
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+Once staging is ✅ :
 
+1. Merge `staging` ➜ `main`.
+2. CI upgrades the production workspace.
+3. Immediately:
+   * Rebuild **all run templates** in prod
+   * **Reschedule** recurring pipelines (delete old schedules, create new ones). Read more [here](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
+4. Monitor for a few hours. Done.
 
+![From staging to production](../../.gitbook/assets/upgrading_zenml_staging_to_prod.png)
+
+## Ops Notes (OSS only)
+
+If you self-host the ZenML server:
+
+* Take a **database backup** before every upgrade.
+* Keep the old Docker image tag handy for rollbacks.
+* Store logs from the migration job.
+
+[ZenML Pro](http://zenml.io/pro) SaaS handles all of the above for you.
+
+## ✅ Summary: The Upgrade Flow
+
+```
+     ┌───────────────┐
+     │ Git PR to dev │
+     │ → staging env │
+     └──────┬────────┘
+            │
+            ▼
+   Upgrade staging server
+            │
+       Run all pipelines / tests
+            │
+     ✔ All tests pass?
+        /               \
+      Yes                 No
+      |                    |
+Recreate run templates    Fix
+     │
+Upgrade prod
+     |
+ Rebuild & reschedule
+
+```
+
+* Two workspaces keep upgrades safe.
+* GitOps makes them repeatable.
+* A simple pipeline test suite keeps you honest.
+
+Upgrade with confidence 🚀.
+
+## 🔚 Final Notes
+
+ZenML Pro: Hosted workspaces are upgraded automatically, but you still need to test your pipelines in staging before changes hit production.
+
+ZenML OSS: You are responsible for upgrades, backups, and reconfiguration — this guide helps you minimize downtime and bugs.

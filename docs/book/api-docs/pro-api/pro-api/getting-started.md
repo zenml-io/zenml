@@ -10,7 +10,7 @@ The ZenML Pro API extends the open-source API with additional features designed 
 * Advanced role-based access control
 * Enterprise-grade security features
 
-Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted ZenML Pro instance, you can leverage the API to manage workspaces, organizations, users, roles, and more.
+Whether you're using the [SaaS version](https://zenml.io/pro) or a self-hosted ZenML Pro instance, you can leverage the API to manage workspaces, organizations, users, roles, and more.
 
 ## Understanding the Two APIs in ZenML Pro
 
@@ -44,7 +44,7 @@ The ZenML Pro API is a RESTful API that follows OpenAPI 3.1.0 specifications. It
 
 To use the ZenML Pro API, you need to authenticate your requests. If you are logged in to your ZenML Pro account, you can use the same browser window to authenticate requests to your ZenML Pro API, directly in the OpenAPI docs.
 
-For example, for the SaaS variant, you can access the docs here: [https://cloudapi.zenml.io](https://cloudapi.zenml.io). You can make requests by being logged into ZenML Pro at [https://cloud.zenml.io](https://cloud.zenml.io).
+For example, for the SaaS variant, you can access the docs here: [https://cloudapi.zenml.io](https://cloudapi.zenml.io). 
 
 ### Programmatic access with API tokens
 

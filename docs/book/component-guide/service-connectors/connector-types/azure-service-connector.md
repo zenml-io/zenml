@@ -80,7 +80,7 @@ The configured credentials must have at least the following Azure IAM permission
 
 * allow listing the AKS clusters and fetching their credentials (e.g. the `Azure Kubernetes Service Cluster Admin Role` role)
 
-If set, the resource name must identify an EKS cluster using one of the following formats:
+If set, the resource name must identify an AKS cluster using one of the following formats:
 
 * resource group scoped AKS cluster name (canonical): `[{resource-group}/]{cluster-name}`
 * AKS cluster name: `{cluster-name}`
@@ -96,7 +96,7 @@ Allows Stack Components to access one or more ACR registries as a standard Docke
 The configured credentials must have at least the following Azure IAM permissions associated with the ACR registries that the connector will be allowed to access:
 
 * allow access to pull and push images (e.g. the `AcrPull` and `AcrPush` roles)
-* allow access to list registries (e.g. the `Contributor` role)
+* allow access to list registries - instead of the broad `Contributor` role, use more specific permissions like `Reader` role or create a custom role with only the `Microsoft.ContainerRegistry/registries/read` permission
 
 If set, the resource name must identify an ACR registry using one of the following formats:
 

@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import time
+from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
 from typing import Any, Callable, List, Optional, Type, Union
@@ -30,7 +31,9 @@ from zenml.artifacts.utils import (
     _load_file_from_artifact_store,
     _strip_timestamp_from_multiline_string,
 )
+from zenml.client import Client
 from zenml.constants import (
+    ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     handle_bool_env_var,
 )
@@ -40,6 +43,11 @@ from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     STEP_LOGS_STORAGE_MAX_MESSAGES,
     STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
+)
+from zenml.models import (
+    LogsRequest,
+    PipelineDeploymentResponse,
+    PipelineRunUpdate,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -584,3 +592,76 @@ class PipelineLogsStorageContext:
             return output
 
         return wrapped_flush
+
+
+def setup_orchestrator_logging(
+    run_id: str, deployment: "PipelineDeploymentResponse"
+) -> Any:
+    """Set up logging for an orchestrator environment.
+
+    This function can be reused by different orchestrators to set up
+    consistent logging behavior.
+
+    Args:
+        run_id: The pipeline run ID.
+        deployment: The deployment of the pipeline run.
+
+    Returns:
+        The logs context (PipelineLogsStorageContext)
+    """
+    try:
+        step_logging_enabled = True
+
+        # Check whether logging is enabled
+        if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
+            step_logging_enabled = False
+        else:
+            if (
+                deployment.pipeline_configuration.enable_pipeline_logs
+                is not None
+            ):
+                step_logging_enabled = (
+                    deployment.pipeline_configuration.enable_pipeline_logs
+                )
+
+        if not step_logging_enabled:
+            return nullcontext()
+
+        # Fetch the active stack
+        client = Client()
+        active_stack = client.active_stack
+
+        # Configure the logs
+        logs_uri = prepare_logs_uri(
+            artifact_store=active_stack.artifact_store,
+        )
+
+        logs_context = PipelineLogsStorageContext(
+            logs_uri=logs_uri,
+            artifact_store=active_stack.artifact_store,
+            prepend_step_name=False,
+        )
+
+        logs_model = LogsRequest(
+            uri=logs_uri,
+            source="orchestrator",
+            artifact_store_id=active_stack.artifact_store.id,
+        )
+
+        # Add orchestrator logs to the pipeline run
+        try:
+            run_update = PipelineRunUpdate(add_logs=[logs_model])
+            client.zen_store.update_run(
+                run_id=UUID(run_id), run_update=run_update
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to add orchestrator logs to the run {run_id}: {e}"
+            )
+            raise e
+        return logs_context
+    except Exception as e:
+        logger.error(
+            f"Failed to setup orchestrator logging for run {run_id}: {e}"
+        )
+        return nullcontext()
