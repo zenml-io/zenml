@@ -43,7 +43,8 @@
     <a href="https://www.zenml.io/blog">Blog</a> •
     <a href="https://zenml.io/podcast">Podcast</a>
     <br />
-    🎉 Version 0.83.1 is out. Check out the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
+    <br />
+    🎉 For the latest release, see the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
 </p>
 </div>
 
