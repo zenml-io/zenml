@@ -122,9 +122,9 @@ def refresh_run_status(
     if include_step_updates:
         assert step_statuses is not None
 
+        current_steps = run.steps
         for step_name, step_status in step_statuses.items():
-            # If the new status is different from the current status, update it
-            if step_status != run.steps[step_name].status:
+            if step_status != current_steps[step_name].status:
                 try:
                     client.zen_store.update_run_step(
                         step_run_id=run.steps[step_name].id,
