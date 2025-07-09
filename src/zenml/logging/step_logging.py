@@ -61,12 +61,9 @@ step_names_in_console: ContextVar[bool] = ContextVar(
     "step_names_in_console", default=False
 )
 
-# Context variables for active handlers
-active_stdout_handlers: ContextVar[List[logging.Handler]] = ContextVar(
-    "active_stdout_handlers", default=[]
-)
-active_stderr_handlers: ContextVar[List[logging.Handler]] = ContextVar(
-    "active_stderr_handlers", default=[]
+# Context variable for logging handlers
+logging_handlers: ContextVar[List[logging.Handler]] = ContextVar(
+    "logging_handlers", default=[]
 )
 
 LOGS_EXTENSION = ".log"
@@ -141,10 +138,10 @@ def setup_global_print_wrapping() -> None:
         # Call active handlers first (for storage)
         if message.strip():
             if file_arg == sys.stderr:
-                handlers = active_stderr_handlers.get()
+                handlers = logging_handlers.get()
                 level = logging.ERROR
             else:
-                handlers = active_stdout_handlers.get()
+                handlers = logging_handlers.get()
                 level = logging.INFO
 
             for handler in handlers:
@@ -621,14 +618,9 @@ class PipelineLogsStorageContext:
             root_logger.setLevel(min_level)
 
         # Add handler to context variables for print() capture
-        stdout_handlers = active_stdout_handlers.get().copy()
-        stderr_handlers = active_stderr_handlers.get().copy()
-
-        stdout_handlers.append(self.artifact_store_handler)
-        stderr_handlers.append(self.artifact_store_handler)
-
-        active_stdout_handlers.set(stdout_handlers)
-        active_stderr_handlers.set(stderr_handlers)
+        handlers = logging_handlers.get().copy()
+        handlers.append(self.artifact_store_handler)
+        logging_handlers.set(handlers)
 
         # Set the step names context variable
         step_names_disabled = handle_bool_env_var(
@@ -671,16 +663,10 @@ class PipelineLogsStorageContext:
                 root_logger.setLevel(self.original_root_level)
 
         # Remove handler from context variables
-        stdout_handlers = active_stdout_handlers.get().copy()
-        stderr_handlers = active_stderr_handlers.get().copy()
-
-        if self.artifact_store_handler in stdout_handlers:
-            stdout_handlers.remove(self.artifact_store_handler)
-        if self.artifact_store_handler in stderr_handlers:
-            stderr_handlers.remove(self.artifact_store_handler)
-
-        active_stdout_handlers.set(stdout_handlers)
-        active_stderr_handlers.set(stderr_handlers)
+        handlers = logging_handlers.get().copy()
+        if self.artifact_store_handler in handlers:
+            handlers.remove(self.artifact_store_handler)
+        logging_handlers.set(handlers)
 
         # Force save any remaining logs
         self.storage.save_to_file(force=True)
