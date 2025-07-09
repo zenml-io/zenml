@@ -120,20 +120,19 @@ def refresh_run_status(
 
     # Update step statuses
     if include_step_updates:
-        assert step_statuses is not None
-
-        current_steps = run.steps
-        for step_name, step_status in step_statuses.items():
-            if step_status != current_steps[step_name].status:
-                try:
-                    client.zen_store.update_run_step(
-                        step_run_id=run.steps[step_name].id,
-                        step_run_update=StepRunUpdate(status=step_status),
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to update status for step '{step_name}': {e}"
-                    )
+        if step_statuses:
+            current_steps = run.steps
+            for step_name, step_status in step_statuses.items():
+                if step_status != current_steps[step_name].status:
+                    try:
+                        client.zen_store.update_run_step(
+                            step_run_id=run.steps[step_name].id,
+                            step_run_update=StepRunUpdate(status=step_status),
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to update status for step '{step_name}': {e}"
+                        )
 
     # Update pipeline status
     if pipeline_status is not None and pipeline_status != run.status:
