@@ -203,9 +203,10 @@ def get_run(
     if refresh_status:
         try:
             logger.warning(
-                "DEPRECATED: Refreshing the status through the ZenML server "
-                "is deprecated and will be removed in a future version. "
-                "Please use the `/{run_id}/refresh` endpoint instead."
+                "DEPRECATED: The ability to refresh the status a run through "
+                "the GET `/runs/{run_id}` endpoint is deprecated and will be "
+                "removed in a future version. Please use the POST "
+                "`/runs/{run_id}/refresh` endpoint instead."
             )
             run = run_utils.refresh_run_status(run=run)
 
