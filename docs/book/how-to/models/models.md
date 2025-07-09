@@ -8,7 +8,7 @@ icon: rectangle-history
 Machine learning models are at the heart of any ML workflow. ZenML provides comprehensive model management capabilities through its Model Control Plane, allowing you to track, version, promote, and share models across your ML pipelines.
 
 {% hint style="info" %}
-The ZenML Model Control Plane is a [ZenML Pro](https://zenml.io/pro) feature. While the Python functions for creating and interacting with models are available in the open-source version, the visual dashboard for exploring and managing models is only available in ZenML Pro. Please [sign up here](https://cloud.zenml.io) to get access to the full model management experience.
+The ZenML Model Control Plane is a [ZenML Pro](https://zenml.io/pro) feature. While the Python functions for creating and interacting with models are available in the open-source version, the visual dashboard for exploring and managing models is only available in ZenML Pro. Please [sign up here](https://zenml.io/pro) to get access to the full model management experience.
 {% endhint %}
 
 This guide covers all aspects of working with models in ZenML, from basic concepts to advanced usage patterns.
