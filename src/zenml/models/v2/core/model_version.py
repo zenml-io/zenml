@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing model versions."""
 
+import json
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -408,8 +409,6 @@ class ModelVersionResponse(
             "ModelVersionResponse.data_artifacts is deprecated and will be "
             "removed in a future release."
         )
-
-        import json
 
         from zenml.client import Client
 
