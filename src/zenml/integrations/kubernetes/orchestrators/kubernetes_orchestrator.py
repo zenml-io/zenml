@@ -972,7 +972,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     return ExecutionStatus.COMPLETED
                 elif condition.type == "Failed" and condition.status == "True":
                     return ExecutionStatus.FAILED
-        
+
         # Check job status fields
         if job.status:
             if job.status.active and job.status.active > 0:
@@ -981,7 +981,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 return ExecutionStatus.COMPLETED
             elif job.status.failed and job.status.failed > 0:
                 return ExecutionStatus.FAILED
-        
+
         # Return None if no clear status - don't update
         return None
 
@@ -1001,7 +1001,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         # Query all jobs for this run and match them to steps
         label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
-        
+
         try:
             jobs = self._k8s_batch_api.list_namespaced_job(
                 namespace=self.config.kubernetes_namespace,
@@ -1015,11 +1015,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # Extract step name from job labels
             if not job.metadata or not job.metadata.labels:
                 continue
-                
+
             step_name = job.metadata.labels.get("step_name")
             if not step_name:
                 continue
-                
+
             # Check if this step is already finished
             step_response = run.steps.get(step_name)
             if step_response and step_response.status.is_finished:
