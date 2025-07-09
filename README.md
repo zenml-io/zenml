@@ -1,7 +1,7 @@
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">The Orchestration & Observability Layer for Production AI</h1>
-  <h3 align="center">ZenML brings battle-tested MLOps practices to all your AI applications – from traditional ML to the latest LLMs – handling evaluation, monitoring, and deployment at scale.</h3>
+  <h1 align="center">MLOps for Reliable AI - From Classical ML to Agents</h1>
+  <h3 align="center">Your unified toolkit for shipping everything from decision trees to complex AI agents, built on the MLOps principles you already trust.</h3>
 </div>
 
 <div align="center">
@@ -34,403 +34,201 @@
 
 ---
 
-## 🚨 The Problem: Production AI is 10x Harder Than Your POC
+## 🚨 The Problem: MLOps Works for Models, But What About AI?
 
-You've built an impressive POC. Your LangGraph RAG demo works perfectly. Your sklearn model shows 95% accuracy in notebooks. But now what?
+You're an ML engineer. You've perfected deploying Scikit-learn models and wrangling TensorFlow jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
 
-![MLOps Complexity Gap](docs/book/.gitbook/assets/readme_problem.png)
+- **The Adaptation Struggle:** Your MLOps habits—rigorous testing, versioning, CI/CD—don’t map cleanly onto agent development. How do you version a prompt? How do you regression test a non-deterministic system? The tools that gave you confidence for models now create friction for agents.
 
-**For ML Engineers & Data Scientists:** You're stuck managing experiment sprawl, debugging production failures without lineage, and manually promoting models. Every deployment is a custom script. Every retrain is a prayer.
+- **The Divided Stack:** To cope, teams are building a second, parallel stack just for LLM-based systems. Now you’re maintaining two sets of tools, two deployment pipelines, and two mental models. Your classical models live in one world, your agents in another. It's expensive, complex, and slows everyone down.
 
-**For Platform Teams:** You're drowning in tool proliferation. Data scientists use 5 different experiment trackers, models are scattered across S3 buckets, and you have no idea which model is actually running in production. Compliance is asking for model lineage documentation you can't provide.
+- **The Broken Feedback Loop:** Getting an agent from your local environment to production is a slow, painful journey. By the time you get feedback on performance, cost, or quality, the requirements have already changed. Iteration is a guessing game, not a data-driven process.
 
-**For Engineering Leaders:** Your ML team velocity has cratered. What should take days takes weeks. Models that worked in development fail mysteriously in production. You're hemorrhaging cloud costs from orphaned resources and can't answer basic questions like "which data was used to train the production model?"
+## 💡 The Solution: One Framework for your Entire AI Stack
 
-This is where 90% of AI projects fail – not because the models are bad, but because the path from prototype to production is broken.
-
-## 💡 The Solution: Production-Ready from Day One
-
-ZenML provides the orchestration and observability layer that makes your AI systems production-ready from the start. One framework that handles both traditional ML and modern LLM workloads, with minimal code changes and maximum flexibility.
-
-![ZenML Architecture](docs/book/.gitbook/assets/readme_architecture.png)
-
-**Write once, run anywhere.** Your pipeline code works identically on your laptop and in production. No more "works on my machine" problems.
-
-**Automatic versioning of everything.** Models, data, prompts, embeddings, configurations – all versioned and linked automatically. Full lineage for debugging and compliance.
-
-**Your tools, unified.** Keep using PyTorch, Hugging Face, LangChain, or whatever you prefer. ZenML connects them all without lock-in.
-
-**From POC to production in hours, not months.** Deploy your first production pipeline today, not next quarter.
-
-Instead of stitching together different solutions for traditional ML and LLM workloads, ZenML provides a unified approach. Your `scikit-learn` training pipeline and your RAG ingestion pipeline can share the same infrastructure, monitoring, and deployment practices. Write portable code that works locally for quick iteration and scales seamlessly to production without changes.
-
-## 🚀 Quickstart (2 minutes to your first pipeline)
-
-[Install ZenML](https://docs.zenml.io/getting-started/installation) via [PyPI](https://pypi.org/project/zenml/). Python 3.9 - 3.12 is required:
-
-```bash
-pip install zenml
-```
-
-Create a simple `run.py` file with a basic workflow:
+Stop maintaining two separate worlds. ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It’s one platform to develop, evaluate, and deploy your entire AI portfolio.
 
 ```python
-from zenml import step, pipeline
+# Morning: Your sklearn pipeline is still versioned and reproducible.
+train_and_deploy_classifier()
+
+# Afternoon: Your new agent evaluation pipeline uses the same logic.
+evaluate_and_deploy_agent()
+
+# Same platform. Same principles. New possibilities.
+```
+
+With ZenML, you're not replacing your knowledge; you're extending it. Use the pipelines and practices you already know to version, test, deploy, and monitor everything from classic models to the most advanced agents.
+
+## 💻 See It In Action: Multi-Agent Architecture Comparison
+
+**The Challenge:** Your team built three different customer service agents. Which one should go to production? With ZenML, you can build a reproducible pipeline to test them on real data and make a data-driven decision.
+
+```python
+from zenml import pipeline, step
+import pandas as pd
 
 @step
-def basic_step() -> str:
-    return "Hello World!"
+def load_real_conversations() -> pd.DataFrame:
+    """Load actual customer queries from a feature store."""
+    return load_from_feature_store("customer_queries_sample_1k")
+
+@step
+def run_architecture_comparison(queries: pd.DataFrame) -> dict:
+    """Test three different agent architectures on the same data."""
+    architectures = {
+        "single_agent": SingleAgentRAG(),
+        "multi_specialist": MultiSpecialistAgents(),
+        "hierarchical": HierarchicalAgentTeam()
+    }
+    
+    results = {}
+    for name, agent in architectures.items():
+        # ZenML automatically versions the agent's code, prompts, and tools
+        results[name] = agent.batch_process(queries)
+    return results
+
+@step
+def evaluate_and_decide(results: dict) -> str:
+    """Evaluate results and generate a recommendation report."""
+    # Compare architectures on quality, cost, latency, etc.
+    evaluation_df = evaluate_results(results)
+    
+    # Generate a rich report comparing the architectures
+    report = create_comparison_report(evaluation_df)
+    
+    # Automatically tag the winning architecture for a staging deployment
+    winner = evaluation_df.sort_values("overall_score").iloc[0]
+    tag_for_staging(winner["architecture_name"])
+    
+    return report
 
 @pipeline
-def basic_pipeline():
-    basic_step()
+def compare_agent_architectures():
+    """Your new Friday afternoon ritual: data-driven agent decisions."""
+    queries = load_real_conversations()
+    results = run_architecture_comparison(queries)
+    report = evaluate_and_decide(results)
 
 if __name__ == "__main__":
-    basic_pipeline()
+    # Run locally, compare results in the ZenML dashboard
+    compare_agent_architectures()
 ```
 
-And then run it with, seeing how ZenML automatically tracks the execution and stores artifacts:
+**The Result:** A clear winner is selected based on data, not opinions. You have full lineage from the test data and agent versions to the final report and deployment decision.
+
+## 🔄 The AI Development Lifecycle with ZenML
+
+### From Chaos to Process
+
+```
+📝 Prototype → 🧪 Evaluate → 📊 Compare → 🚀 Deploy → 📈 Monitor → 🔄 Iterate
+     ↓              ↓            ↓            ↓            ↓            ↓
+Scripts & Code ZenML Pipeline  Dashboard   Stack Deploy  Traces    Version++
+```
+<details>
+  <summary><b>Click to see your new, structured workflow</b></summary>
+
+### Your New Workflow
+
+**Monday: Quick Prototype**
+```python
+# Start with a local script, just like always
+agent = LangGraphAgent(prompt="You are a helpful assistant...")
+response = agent.chat("Help me with my order")
+```
+
+**Tuesday: Make it a Pipeline**
+```python
+# Wrap your code in a ZenML step to make it reproducible
+@step
+def customer_service_agent(query: str) -> str:
+    return agent.chat(query)
+```
+
+**Wednesday: Add Evaluation**
+```python
+# Test on real data, not toy examples
+@pipeline
+def eval_pipeline():
+    test_data = load_production_samples()
+    responses = customer_service_agent.map(test_data)
+    scores = evaluate_responses(responses)
+    track_experiment(scores)
+```
+
+**Thursday: Compare Architectures**
+```python
+# Make data-driven architecture decisions
+results = compare_architectures(
+    baseline="current_prod",
+    challenger="new_multiagent_v2"
+)
+```
+
+**Friday: Ship with Confidence**
+```python
+# Deploy the new agent with the same command you use for ML models
+zenml stack deploy agent-prod --model="customer_service:challenger"
+```
+</details>
+
+## 🚀 Get Started (5 minutes)
+
+### For ML Engineers Ready to Tame AI
 
 ```bash
-python run.py
+# You know this drill
+pip install "zenml[llm]"  # Includes LangChain, LlamaIndex integrations
+
+# Initialize (your ML pipelines still work!)
+zenml init
+
+# Pull our agent evaluation template
+zenml init --template agent-evaluation-starter
 ```
 
-## 🎯 Why ZenML?
-
-### For Hands-on Builders: Ship Faster with Less Pain
-
-**Gradual Adoption** - Start with your existing notebooks and scripts. Wrap them in `@step` decorators when ready. No big rewrites required.
+### Your First AI Pipeline
 
 ```python
-# Your existing code
-def train_model(data):
-    model = RandomForestClassifier()
-    model.fit(data)
-    return model
-
-# Make it production-ready with one decorator
-from zenml import step
+# look_familiar.py
+from zenml import pipeline, step
 
 @step
-def train_model(data):
-    model = RandomForestClassifier()
-    model.fit(data)
-    return model
-```
+def run_my_agent(test_queries: list[str]) -> list[str]:
+    """Your existing agent code, now with MLOps superpowers."""
+    # Use ANY framework - LangGraph, CrewAI, raw OpenAI
+    agent = YourExistingAgent()
+    
+    # Automatic versioning of prompts, tools, code, and configs
+    return [agent.run(q) for q in test_queries]
 
-**First-Class LLM Support** - Version prompts, track costs, manage embeddings. Everything you need for modern AI applications.
-
-```python
 @step
-def generate_response(prompt_template: str, context: str) -> dict:
-    # Prompts are automatically versioned
-    response = llm.complete(prompt_template.format(context=context))
-    
-    # Generate embeddings for the response
-    embedding = embedding_model.encode(response.content)
-    
-    # Track costs and metrics including embeddings
-    log_metadata({
-        "prompt_version": prompt_template.version,
-        "token_count": response.usage.total_tokens,
-        "cost_usd": response.usage.total_tokens * 0.0001,
-        "embedding_model": "text-embedding-3-small",
-        "embedding_dimension": len(embedding),
-        "embedding_cost_usd": len(response.content) * 0.00001
-    })
+def evaluate_responses(queries: list[str], responses: list[str]) -> dict:
+    """LLM judges + your custom business metrics."""
+    quality = llm_judge(queries, responses)
+    latency = measure_response_times()
+    costs = calculate_token_usage()
     
     return {
-        "response": response.content,
-        "embedding": embedding,
-        "metadata": response.usage
+        "quality": quality.mean(),
+        "p95_latency": latency.quantile(0.95),
+        "cost_per_query": costs.mean()
     }
-```
-
-**Framework Agnostic** - Use TensorFlow, PyTorch, Hugging Face, LangChain, LangGraph – or all of them together. 60+ integrations available.
-
-_[Placeholder: Grid of framework logos showing compatibility]_
-
-### For Infrastructure Teams: Enterprise-Ready, DevOps-Friendly
-
-**Use Your Existing Infrastructure** - BYO cloud. BYO Kubernetes. BYO everything. ZenML adapts to your setup, not the other way around.
-
-```bash
-# Install and Deploy ZenML with Helm
-helm pull oci://public.ecr.aws/zenml/zenml --version <VERSION> --untar
-helm -n <namespace> install zenml-server . --create-namespace --values custom-values.yaml
-```
-
-Use our Terraform provider to reproducibly provision your infrastructure
-cross-cloud and manage your ZenML stacks.
-
-```bash
-# Register your existing infrastructure
-zenml artifact-store register s3-store --flavor=s3 --path=s3://my-bucket
-zenml container-registry register ecr --flavor=aws --uri=123456789.dkr.ecr.us-east-1.amazonaws.com
-```
-
-
-```hcl
-terraform {
-    required_providers {
-        aws = {
-            source  = "hashicorp/aws"
-        }
-        zenml = {
-            source = "zenml-io/zenml"
-        }
-    }
-}
-
-module "zenml_stack" {
-  source = "zenml-io/zenml-stack/<cloud-provider>"
-  version = "x.y.z"
-
-  # Optional inputs
-  zenml_stack_name = "<your-stack-name>"
-  orchestrator = "<your-orchestrator-type>" # e.g., "local", "sagemaker", "vertex", "azureml", "skypilot"
-}
-```
-
-```bash
-terraform init
-terraform apply
-```
-
-**Security First** - Secrets management, RBAC, audit logs, air-gapped deployments. Everything your security team demands.
-
-```bash
-# Register secrets centrally
-zenml secret create hf-creds --token=...
-zenml secret create openai-api --api_key=...
-```
-
-```python
-import openai
-from transformers import AutoModel
-from zenml import step
-from zenml.client import Client
-
-@step
-def load_and_evaluate(dataset_id: str) -> dict:
-    # Fetch secrets securely at runtime
-    client = Client()
-    hf_secret = client.get_secret("hf-creds")
-    openai_secret = client.get_secret("openai-api")
-    
-    # Use HF token to access private models
-    model = AutoModel.from_pretrained(
-        "my-org/private-model",
-        api_key=hf_secret.secret_values["token"]
-    )
-    
-    # Use OpenAI API for evaluation
-    openai.api_key = openai_secret.secret_values["api_key"]
-    metrics = run_llm_evaluation(model, dataset_id)
-    
-    return metrics  # ZenML handles artifact storage automatically
-```
-
-## 💻 ZenML In Action: Building a Smart Customer Service Platform
-
-See how ZenML orchestrates traditional ML and LLMs to create a comprehensive AI system that's production-ready and compliant.
-
-### Traditional MLOps: Intelligent Ticket Routing
-
-Lightning-fast classification and prioritization using classical ML, feeding insights to our LLM-powered response system.
-
-![Pipelines and Models](docs/book/.gitbook/assets/readme_pipelines_and_models.png)
-
-```python
-from zenml import pipeline, step, Model
-from sklearn.ensemble import RandomForestClassifier
-
-@step
-def analyze_ticket_stream() -> pd.DataFrame:
-    tickets = fetch_from_zendesk(last_hours=24)
-    tickets["sentiment"] = quick_sentiment_analysis(tickets["message"])
-    tickets["customer_tier"] = lookup_customer_value(tickets["customer_id"])
-    return tickets
-
-@step
-def train_routing_model(tickets: pd.DataFrame) -> RandomForestClassifier:
-    # Multi-class: billing, technical, feature_request, urgent
-    X = engineer_features(tickets)  # TF-IDF + metadata
-    model = RandomForestClassifier().fit(X, tickets["category"])
-    log_metadata({"accuracy": 0.94, "daily_volume": len(tickets)})
-    return model
-
-@step
-def predict_churn_risk(tickets: pd.DataFrame) -> pd.DataFrame:
-    # Deep learning model identifies at-risk customers
-    tickets["churn_risk"] = churn_model.predict(tickets)
-    tickets["priority"] = calculate_priority(tickets)
-    return tickets
-
-@step(model=Model(name="ticket_intelligence"))
-def deploy_insights(model: RandomForestClassifier, tickets: pd.DataFrame):
-    # Export insights for LLM pipeline
-    insights = {
-        "high_churn_topics": extract_topics(tickets[tickets.churn_risk > 0.8]),
-        "resolution_patterns": analyze_successful_resolutions(tickets)
-    }
-    save_to_feature_store(insights, "customer_intelligence")
-    deploy_to_sagemaker(model)
-
-@pipeline(schedule="0 */2 * * *")
-def customer_intelligence_pipeline():
-    tickets = analyze_ticket_stream()
-    model = train_routing_model(tickets)
-    enriched = predict_churn_risk(tickets)
-    deploy_insights(model, enriched)
-```
-
-### LLMOps: RAG-Powered Response Generation
-
-Combines ML insights with company knowledge for context-aware responses.
-
-![ZenML RAG Pipeline](docs/book/.gitbook/assets/readme_simple_pipeline.gif)
-
-```python
-@step
-def sync_knowledge_sources() -> list[dict]:
-    sources = []
-    # Company knowledge
-    sources.extend(fetch_from_confluence("support_docs"))
-    sources.extend(parse_product_manuals())
-    
-    # Fresh ML insights
-    ml_insights = load_from_feature_store("customer_intelligence")
-    sources.append({
-        "content": f"High-risk topics: {ml_insights['high_churn_topics']}"
-    })
-    return sources
-
-@step  
-def intelligent_chunking(documents: list[dict]) -> list[dict]:
-    # Context-aware chunking
-    chunks = []
-    for doc in documents:
-        if "support_article" in doc["type"]:
-            chunks.extend(semantic_chunker(doc, preserve_qa_pairs=True))
-        else:
-            chunks.extend(standard_chunker(doc))
-    return chunks
-
-@step
-def generate_embeddings(chunks: list[dict]) -> np.ndarray:
-    # Multi-model strategy: CodeBERT for code, OpenAI for text
-    embeddings = []
-    for chunk in chunks:
-        emb = code_embedder(chunk) if "code" in chunk else openai_embed(chunk)
-        embeddings.append(emb)
-    return np.array(embeddings)
-
-@step(model=Model(name="smart_responder"))
-def deploy_rag_system(embeddings: np.ndarray, chunks: list[dict]) -> str:
-    # Build specialized indexes
-    indexes = {
-        "main": build_vector_db(embeddings, chunks),
-        "urgent": build_filtered_index(chunks, filter="urgent")
-    }
-    
-    if evaluate_quality(indexes["main"]) > 0.85:
-        deploy_to_production({
-            "indexes": indexes,
-            "model": "claude-3-opus",
-            "guardrails": ["no_pii", "professional_tone"]
-        })
-        return "deployed"
-
-@pipeline(enable_cache=False)
-def smart_response_pipeline():
-    knowledge = sync_knowledge_sources()
-    chunks = intelligent_chunking(knowledge)
-    embeddings = generate_embeddings(chunks)
-    deploy_rag_system(embeddings, chunks)
-```
-
-### Compliance & Monitoring: EU AI Act Compliance
-
-Unified monitoring across ML and LLM systems for regulatory compliance.
-
-![ZenML Compliance Pipeline](docs/book/.gitbook/assets/compliance_dashboard.png)
-
-```python
-from zenml import pipeline, step, Model
-from zenml.config.schedule import Schedule
-
-@step
-def collect_unified_metrics() -> dict:
-    return {
-        "ml_metrics": {
-            "routing_accuracy": fetch_model_performance("ticket-router"),
-            "prediction_fairness": calculate_demographic_parity()
-        },
-        "llm_metrics": {
-            "hallucination_rate": analyze_fact_checking_results(),
-            "response_relevance": fetch_rag_quality_scores()
-        },
-        "system_metrics": {
-            "human_escalation_rate": track_human_handoffs(),
-            "resolution_success": measure_satisfaction()
-        }
-    }
-
-@step
-def detect_bias_and_fairness(metrics: dict) -> dict:
-    # Check both ML and LLM for bias
-    bias_report = {
-        "routing_bias": analyze_protected_attributes(metrics["ml_metrics"]),
-        "response_bias": analyze_llm_fairness(sample_n=1000)
-    }
-    
-    if bias_report["routing_bias"]["disparity"] > 0.2:
-        alert_compliance_team("Bias threshold exceeded")
-    
-    return bias_report
-
-@step(model=Model(name="compliance_monitor", tags=["eu-ai-act"]))
-def generate_compliance_report(metrics: dict, bias_report: dict) -> dict:
-    compliance_package = {
-        "risk_level": "limited_risk",  # Customer service = limited risk
-        "technical_documentation": {
-            "performance": metrics,
-            "bias_mitigation": bias_report,
-            "human_oversight": verify_human_in_loop()
-        },
-        "transparency": {
-            "ai_disclosure": "AI-assisted responses",
-            "opt_out_available": True
-        }
-    }
-    
-    # Immutable audit trail
-    store_audit_record(compliance_package, retention_years=5)
-    create_compliance_dashboard(compliance_package)
-    
-    return compliance_package
 
 @pipeline
-def ai_compliance_pipeline():
-    metrics = collect_unified_metrics()
-    bias_report = detect_bias_and_fairness(metrics)
-    compliance = generate_compliance_report(metrics, bias_report)
+def my_first_agent_pipeline():
+    # Look ma, no YAML!
+    queries = ["How do I return an item?", "What's your refund policy?"]
+    responses = run_my_agent(queries)
+    metrics = evaluate_responses(queries, responses)
     
-    if requires_immediate_action(compliance):
-        notify_compliance_team(compliance)
+    # Metrics are auto-logged, versioned, and comparable in the dashboard
+    return metrics
 
-# Create a schedule for daily compliance monitoring
-compliance_schedule = Schedule(
-    name="daily-compliance-monitoring",
-    cron_expression="0 0 * * *"  # Run daily at midnight
-)
-
-# Apply the schedule to the pipeline and execute
-scheduled_compliance_pipeline = ai_compliance_pipeline.with_options(
-    schedule=compliance_schedule
-)
-scheduled_compliance_pipeline()
+if __name__ == "__main__":
+    my_first_agent_pipeline()
+    print("Check your dashboard: http://localhost:8080")
 ```
 
 ## 📚 Learn More
@@ -471,7 +269,7 @@ For visual learners, start with this 11-minute introduction:
 <div align="center">
   <a href="https://www.amazon.com/LLM-Engineers-Handbook-engineering-production/dp/1836200072">
     <img src="docs/book/.gitbook/assets/llm_engineering_handbook_cover.jpg" alt="LLM Engineer's Handbook Cover" width="200"/>
-  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  </a>
   <a href="https://www.amazon.com/-/en/Andrew-McMahon/dp/1837631964">
     <img src="docs/book/.gitbook/assets/ml_engineering_with_python.jpg" alt="Machine Learning Engineering with Python Cover" width="200"/>
   </a>
@@ -479,12 +277,22 @@ For visual learners, start with this 11-minute introduction:
 
 ZenML is featured in these comprehensive guides to production AI systems.
 
-### 🤝 Community & Support
+## 🤝 Join ML Engineers Building the Future of AI
 
-**Get Help:**
-- 💬 [Slack Community](https://zenml.io/slack) - 3000+ practitioners, <2hr response time
-- 📧 [Enterprise Support](https://zenml.io/pro) - SLAs, dedicated support, professional services
-- 🐛 [GitHub Issues](https://github.com/zenml-io/zenml/issues) - Bug reports and feature requests
+**You're Not Alone:**
+- 💬 [Slack Community](https://zenml.io/slack) - 3000+ ML engineers building with ZenML.
+- 🐛 [GitHub Issues](https://github.com/zenml-io/zenml/issues) - Bug reports and feature requests.
+- 📧 [Enterprise Support](https://zenml.io/pro) - SLAs, dedicated support, professional services.
+
+**Real Engineers, Real Stories:**
+> "Same platform for our sklearn models and our RAG pipeline. DevOps loves us now."
+> - ML Platform Lead, European Bank
+
+> "We went from 'YOLO prompt updates' to proper evaluation pipelines. Game changer."
+> - Senior ML Engineer, Fortune 500 Retailer
+
+> "Finally, I can explain to my PM why agent v2 is actually worse than v1. With data!"
+> - Staff Engineer, Series B Startup
 
 **Contribute:**
 - 🌟 [Star us on GitHub](https://github.com/zenml-io/zenml/stargazers) - Help others discover ZenML
@@ -495,6 +303,23 @@ ZenML is featured in these comprehensive guides to production AI systems.
 - 🗺 [Public Roadmap](https://zenml.io/roadmap) - See what's coming next
 - 📰 [Blog](https://zenml.io/blog) - Best practices and case studies
 - 🎙 [Podcast](https://zenml.io/podcast) - Interviews with ML practitioners
+
+## ❓ FAQs from ML Engineers Like You
+
+**Q: "Do I need to rewrite my agents or models to use ZenML?"**
+A: No. Wrap your existing code in a `@step`. Keep using Scikit-Learn, PyTorch, LangGraph, LlamaIndex, or raw API calls. ZenML orchestrates your tools, it doesn't replace them.
+
+**Q: "How is this different from LangSmith/Langfuse?"**
+A: They provide excellent observability for LLM applications. We orchestrate the **full MLOps lifecycle for your entire AI stack**. With ZenML, you manage both your classical ML models and your AI agents in one unified framework, from development and evaluation all the way to production deployment.
+
+**Q: "Can I use my existing MLflow/W&B setup?"**
+A: Yes! We integrate with both. Your experiments, our pipelines.
+
+**Q: "Is this just MLflow with extra steps?"**
+A: No. MLflow tracks experiments. We orchestrate the entire development process – from training and evaluation to deployment and monitoring – for both models and agents.
+
+**Q: "What about cost? I can't afford another platform."**
+A: ZenML's open-source version is free forever. You likely already have the required infrastructure (like a Kubernetes cluster and object storage). We just help you make better use of it for MLOps.
 
 ### 🛠 VS Code Extension
 
