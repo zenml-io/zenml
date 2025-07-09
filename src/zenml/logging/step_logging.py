@@ -39,8 +39,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.exceptions import DoesNotExistException
-
-# Removed get_logger import to avoid circular dependency
+from zenml.logger import get_logger
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     STEP_LOGS_STORAGE_MAX_MESSAGES,
@@ -54,8 +53,7 @@ from zenml.models import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
-# Get the logger using standard Python logging (to avoid circular import)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Context variables
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
