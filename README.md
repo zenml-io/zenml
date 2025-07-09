@@ -34,6 +34,21 @@
 
 ---
 
+<div align="center">
+<p>
+    <a href="https://zenml.io/features">Features</a> •
+    <a href="https://zenml.io/roadmap">Roadmap</a> •
+    <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a> •
+    <a href="https://zenml.io/pro">Sign up for ZenML Pro</a> •
+    <a href="https://www.zenml.io/blog">Blog</a> •
+    <a href="https://zenml.io/podcast">Podcast</a>
+    <br />
+    🎉 Version 0.83.1 is out. Check out the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
+</p>
+</div>
+
+---
+
 ## 🚨 The Problem: MLOps Works for Models, But What About AI?
 
 You're an ML engineer. You've perfected deploying Scikit-learn models and wrangling TensorFlow jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
@@ -333,21 +348,6 @@ Manage pipelines directly from your editor:
 </details>
 
 Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode).
-
----
-
-<div align="center">
-<p>
-    <a href="https://zenml.io/features">Features</a> •
-    <a href="https://zenml.io/roadmap">Roadmap</a> •
-    <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a> •
-    <a href="https://zenml.io/pro">Sign up for ZenML Pro</a> •
-    <a href="https://www.zenml.io/blog">Blog</a> •
-    <a href="https://zenml.io/podcast">Podcast</a>
-    <br />
-    🎉 Version 0.83.1 is out. Check out the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
-</p>
-</div>
 
 ## 📜 License
 
