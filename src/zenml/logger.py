@@ -61,7 +61,7 @@ class CustomFormatter(logging.Formatter):
         """
         # Only include location info for DEBUG level
         if get_logging_level() == LoggingLevels.DEBUG:
-            return "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
+            return "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
         else:
             return "%(message)s"
 
