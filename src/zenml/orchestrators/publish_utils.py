@@ -190,7 +190,10 @@ def get_pipeline_run_status(
         return ExecutionStatus.FAILED
 
     # If there is a running step, the run is running
-    elif ExecutionStatus.RUNNING in step_statuses:
+    elif (
+        ExecutionStatus.RUNNING in step_statuses
+        or ExecutionStatus.RETRYING in step_statuses
+    ):
         return ExecutionStatus.RUNNING
 
     # If there are less steps than the total number of steps, it is running

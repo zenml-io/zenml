@@ -78,6 +78,8 @@ class ExecutionStatus(StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+    RETRYING = "retrying"
+    RETRIED = "retried"
     STOPPED = "stopped"
     STOPPING = "stopping"
 
@@ -92,8 +94,18 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
+            ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
         }
+
+    @property
+    def is_successful(self) -> bool:
+        """Whether the execution status refers to a successful execution.
+
+        Returns:
+            Whether the execution status refers to a successful execution.
+        """
+        return self in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
 
 
 class LoggingLevels(Enum):

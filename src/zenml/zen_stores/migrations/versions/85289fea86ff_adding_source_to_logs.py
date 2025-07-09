@@ -1,4 +1,4 @@
-"""adding-source-to-logs [85289fea86ff].
+"""Add log source [85289fea86ff].
 
 Revision ID: 85289fea86ff
 Revises: 5bb25e95849c

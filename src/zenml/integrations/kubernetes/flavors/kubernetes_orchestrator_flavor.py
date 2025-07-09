@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import NonNegativeInt, PositiveInt
+from pydantic import NonNegativeInt, PositiveInt, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -40,6 +40,9 @@ class KubernetesOrchestratorSettings(BaseSettings):
             asynchronously. Defaults to `True`.
         timeout: How many seconds to wait for synchronous runs. `0` means
             to wait for an unlimited duration.
+        stream_step_logs: If `True`, the orchestrator pod will stream the logs
+            of the step pods. This only has an effect if specified on the
+            pipeline, not on individual steps.
         service_account_name: Name of the service account to use for the
             orchestrator pod. If not provided, a new service account with "edit"
             permissions will be created.
@@ -65,8 +68,26 @@ class KubernetesOrchestratorSettings(BaseSettings):
         failed_jobs_history_limit: The number of failed jobs to retain.
             This only applies to jobs created when scheduling a pipeline.
         ttl_seconds_after_finished: The amount of seconds to keep finished jobs
-            before deleting them. This only applies to jobs created when
-            scheduling a pipeline.
+            before deleting them. **Note**: This does not clean up the
+            orchestrator pod for non-scheduled runs.
+        active_deadline_seconds: The active deadline seconds for the job that is
+            executing the step.
+        backoff_limit_margin: The value to add to the backoff limit in addition
+            to the step retries. The retry configuration defined on the step
+            defines the maximum number of retries that the server will accept
+            for a step. For this orchestrator, this controls how often the
+            job running the step will try to start the step pod. There are some
+            circumstances however where the job will start the pod, but the pod
+            doesn't actually get to the point of running the step. That means
+            the server will not receive the maximum amount of retry requests,
+            which in turn causes other inconsistencies like wrong step statuses.
+            To mitigate this, this attribute allows to add a margin to the
+            backoff limit. This means that the job will retry the pod startup
+            for the configured amount of times plus the margin, which increases
+            the chance of the server receiving the maximum amount of retry
+            requests.
+        pod_failure_policy: The pod failure policy to use for the job that is
+            executing the step.
         prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
             not try to compute cached steps before starting the step pods.
         always_build_pipeline_image: If `True`, the orchestrator will always
@@ -77,6 +98,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
 
     synchronous: bool = True
     timeout: int = 0
+    stream_step_logs: bool = True
     service_account_name: Optional[str] = None
     step_pod_service_account_name: Optional[str] = None
     privileged: bool = False
@@ -91,9 +113,32 @@ class KubernetesOrchestratorSettings(BaseSettings):
     successful_jobs_history_limit: Optional[NonNegativeInt] = None
     failed_jobs_history_limit: Optional[NonNegativeInt] = None
     ttl_seconds_after_finished: Optional[NonNegativeInt] = None
+    active_deadline_seconds: Optional[NonNegativeInt] = None
+    backoff_limit_margin: NonNegativeInt = 0
+    pod_failure_policy: Optional[Dict[str, Any]] = None
     prevent_orchestrator_pod_caching: bool = False
     always_build_pipeline_image: bool = False
     pod_stop_grace_period: PositiveInt = 30
+
+    @field_validator("pod_failure_policy", mode="before")
+    @classmethod
+    def _convert_pod_failure_policy(cls, value: Any) -> Any:
+        """Converts Kubernetes pod failure policy to a dict.
+
+        Args:
+            value: The pod failure policy value.
+
+        Returns:
+            The converted value.
+        """
+        from kubernetes.client.models import V1PodFailurePolicy
+
+        from zenml.integrations.kubernetes import serialization_utils
+
+        if isinstance(value, V1PodFailurePolicy):
+            return serialization_utils.serialize_kubernetes_model(value)
+        else:
+            return value
 
 
 class KubernetesOrchestratorConfig(
@@ -186,6 +231,15 @@ class KubernetesOrchestratorConfig(
         # The Kubernetes orchestrator starts step pods from a pipeline pod.
         # This is currently not supported when using client-side caching.
         return False
+
+    @property
+    def handles_step_retries(self) -> bool:
+        """Whether the orchestrator handles step retries.
+
+        Returns:
+            Whether the orchestrator handles step retries.
+        """
+        return True
 
 
 class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):

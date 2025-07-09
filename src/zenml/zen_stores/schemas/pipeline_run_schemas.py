@@ -25,6 +25,7 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.step_configurations import Step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
@@ -345,17 +346,45 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The pipeline configuration.
         """
         if self.deployment:
-            return PipelineConfiguration.model_validate_json(
+            pipeline_config = PipelineConfiguration.model_validate_json(
                 self.deployment.pipeline_configuration
             )
         elif self.pipeline_configuration:
-            return PipelineConfiguration.model_validate_json(
+            pipeline_config = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )
         else:
             raise RuntimeError(
                 "Pipeline run has no deployment and no pipeline configuration."
             )
+
+        pipeline_config.finalize_substitutions(
+            start_time=self.start_time, inplace=True
+        )
+        return pipeline_config
+
+    def get_step_configuration(self, step_name: str) -> Step:
+        """Get the step configuration for the pipeline run.
+
+        Args:
+            step_name: The name of the step to get the configuration for.
+
+        Raises:
+            RuntimeError: If the pipeline run has no deployment.
+
+        Returns:
+            The step configuration.
+        """
+        if self.deployment:
+            pipeline_configuration = self.get_pipeline_configuration()
+            return Step.from_dict(
+                data=json.loads(
+                    self.deployment.get_step_configuration(step_name).config
+                ),
+                pipeline_configuration=pipeline_configuration,
+            )
+        else:
+            raise RuntimeError("Pipeline run has no deployment.")
 
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
