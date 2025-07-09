@@ -32,8 +32,6 @@
 [license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=9565F6
 [license-url]: https://github.com/zenml-io/zenml/blob/main/LICENSE
 
----
-
 <div align="center">
 <p>
     <a href="https://zenml.io/features">Features</a> •
@@ -52,7 +50,7 @@
 
 ## 🚨 The Problem: MLOps Works for Models, But What About AI?
 
-You're an ML engineer. You've perfected deploying Scikit-learn models and wrangling TensorFlow jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
+You're an ML engineer. You've perfected deploying scikit-learn models and wrangling TensorFlow jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
 
 - **The Adaptation Struggle:** Your MLOps habits—rigorous testing, versioning, CI/CD—don’t map cleanly onto agent development. How do you version a prompt? How do you regression test a non-deterministic system? The tools that gave you confidence for models now create friction for agents.
 
