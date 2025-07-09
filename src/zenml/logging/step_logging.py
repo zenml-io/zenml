@@ -621,7 +621,7 @@ class PipelineLogsStorageContext:
             # Step context: prepend_step_name=True -> don't show step names (True)
             step_names_in_console.set(self.prepend_step_name)
         else:
-            # If env var disables step names, always set to False
+            # Otherwise, set it according to the env var
             step_names_in_console.set(not step_names_disabled)
 
         redirected.set(True)
