@@ -49,6 +49,7 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     DoesNotExistException,
+    IllegalOperationError,
     StepContextError,
 )
 from zenml.io import fileio
@@ -946,7 +947,7 @@ def _load_file_from_artifact_store(
             f"File '{uri}' does not exist in artifact store "
             f"'{artifact_store.name}'."
         )
-    except IOError as e:
+    except (IOError, IllegalOperationError) as e:
         raise e
     except Exception as e:
         logger.exception(e)

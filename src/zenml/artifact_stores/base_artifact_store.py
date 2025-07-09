@@ -35,9 +35,13 @@ from typing import (
 
 from pydantic import model_validator
 
-from zenml.constants import ENV_ZENML_SERVER
+from zenml.constants import (
+    ENV_ZENML_SERVER,
+    ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS,
+    handle_bool_env_var,
+)
 from zenml.enums import StackComponentType
-from zenml.exceptions import ArtifactStoreInterfaceError
+from zenml.exceptions import ArtifactStoreInterfaceError, IllegalOperationError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
@@ -73,6 +77,12 @@ class _sanitize_paths:
         """
         self.func = func
         self.fixed_root_path = fixed_root_path
+        if ENV_ZENML_SERVER in os.environ:
+            self.allow_local_file_access = handle_bool_env_var(
+                ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS, False
+            )
+        else:
+            self.allow_local_file_access = True
 
         self.path_args: List[int] = []
         self.path_kwargs: List[str] = []
@@ -93,11 +103,18 @@ class _sanitize_paths:
         Raises:
             FileNotFoundError: If the path is outside of the artifact store
                 bounds.
+            IllegalOperationError: If the path is a local file and the server
+                is not configured to allow local file access.
         """
         if not path.startswith(self.fixed_root_path):
             raise FileNotFoundError(
                 f"File `{path}` is outside of "
                 f"artifact store bounds `{self.fixed_root_path}`"
+            )
+
+        if not self.allow_local_file_access and not io_utils.is_remote(path):
+            raise IllegalOperationError(
+                "Local files cannot be accessed from the server."
             )
 
     def _sanitize_potential_path(self, potential_path: Any) -> Any:
