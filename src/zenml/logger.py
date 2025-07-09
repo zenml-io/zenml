@@ -40,14 +40,15 @@ ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
 class CustomFormatter(logging.Formatter):
     """Formats logs according to custom specifications."""
 
-    grey: str = "\x1b[38;21m"
+    grey: str = "\x1b[90m"
+    white: str = "\x1b[37m"
     pink: str = "\x1b[35m"
     green: str = "\x1b[32m"
     yellow: str = "\x1b[33m"
     red: str = "\x1b[31m"
     cyan: str = "\x1b[1;36m"
     bold_red: str = "\x1b[31;1m"
-    purple: str = "\x1b[1;35m"
+    purple: str = "\x1b[38;5;105m"
     blue: str = "\x1b[34m"
     reset: str = "\x1b[0m"
 
@@ -68,7 +69,7 @@ class CustomFormatter(logging.Formatter):
 
     COLORS: Dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
-        LoggingLevels.INFO: purple,
+        LoggingLevels.INFO: white,
         LoggingLevels.WARN: yellow,
         LoggingLevels.ERROR: red,
         LoggingLevels.CRITICAL: bold_red,
@@ -137,7 +138,7 @@ class CustomFormatter(logging.Formatter):
                 formatted_message = formatted_message.replace(
                     "`" + quoted + "`",
                     self.reset
-                    + self.cyan
+                    + self.purple
                     + quoted
                     + self.COLORS.get(LoggingLevels(record.levelno)),
                 )

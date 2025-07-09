@@ -450,3 +450,62 @@ def build_secret_manifest(
         "type": secret_type,
         "data": encoded_data,
     }
+
+
+def pod_template_manifest_from_pod(
+    pod: k8s_client.V1Pod,
+) -> k8s_client.V1PodTemplateSpec:
+    """Build a Kubernetes pod template manifest from a pod.
+
+    Args:
+        pod: The pod manifest to build the template from.
+
+    Returns:
+        The pod template manifest.
+    """
+    return k8s_client.V1PodTemplateSpec(
+        metadata=pod.metadata,
+        spec=pod.spec,
+    )
+
+
+def build_job_manifest(
+    job_name: str,
+    pod_template: k8s_client.V1PodTemplateSpec,
+    backoff_limit: Optional[int] = None,
+    ttl_seconds_after_finished: Optional[int] = None,
+    labels: Optional[Dict[str, str]] = None,
+    active_deadline_seconds: Optional[int] = None,
+    pod_failure_policy: Optional[Dict[str, Any]] = None,
+    owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
+) -> k8s_client.V1Job:
+    """Build a Kubernetes job manifest.
+
+    Args:
+        job_name: Name of the job.
+        pod_template: The pod template to use for the job.
+        backoff_limit: The backoff limit for the job.
+        ttl_seconds_after_finished: The TTL seconds after finished for the job.
+        labels: The labels to use for the job.
+        active_deadline_seconds: The active deadline seconds for the job.
+        pod_failure_policy: The pod failure policy for the job.
+        owner_references: The owner references for the job.
+
+    Returns:
+        The Kubernetes job manifest.
+    """
+    job_spec = k8s_client.V1JobSpec(
+        template=pod_template,
+        backoff_limit=backoff_limit,
+        parallelism=1,
+        ttl_seconds_after_finished=ttl_seconds_after_finished,
+        active_deadline_seconds=active_deadline_seconds,
+        pod_failure_policy=pod_failure_policy,
+    )
+    job_metadata = k8s_client.V1ObjectMeta(
+        name=job_name,
+        labels=labels,
+        owner_references=owner_references,
+    )
+
+    return k8s_client.V1Job(spec=job_spec, metadata=job_metadata)

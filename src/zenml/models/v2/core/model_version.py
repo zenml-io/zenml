@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing model versions."""
 
+import json
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -411,10 +412,17 @@ class ModelVersionResponse(
 
         from zenml.client import Client
 
+        data_artifact_types = [
+            value
+            for value in ArtifactType.values()
+            if value
+            not in [ArtifactType.MODEL.value, ArtifactType.SERVICE.value]
+        ]
+
         artifact_versions = pagination_utils.depaginate(
             Client().list_artifact_versions,
             model_version_id=self.id,
-            type=ArtifactType.DATA,
+            type="oneof:" + json.dumps(data_artifact_types),
             project=self.project_id,
         )
 
