@@ -213,33 +213,53 @@ def generate_config_schema(
 
     all_steps: Dict[str, Any] = {}
     all_steps_required = False
-    for name, step in deployment.to_model(
+    for step_name, step in deployment.to_model(
         include_metadata=True
     ).step_configurations.items():
         step_fields = generic_step_fields.copy()
         if step.config.parameters:
-            parameter_fields: Dict[str, Any] = {
-                name: (Any, FieldInfo(default=...))
-                for name in step.config.parameters
-            }
+            parameter_fields: Dict[str, Any] = {}
+
+            for parameter_name in step.config.parameters:
+                # Pydantic doesn't allow field names to start with an underscore
+                sanitized_parameter_name = parameter_name.lstrip("_")
+                while sanitized_parameter_name in parameter_fields:
+                    sanitized_parameter_name = sanitized_parameter_name + "_"
+
+                parameter_fields[sanitized_parameter_name] = (
+                    Any,
+                    FieldInfo(default=..., validation_alias=parameter_name),
+                )
+
             parameters_class = create_model(
-                f"{name}_parameters", **parameter_fields
+                f"{step_name}_parameters", **parameter_fields
             )
             step_fields["parameters"] = (
                 parameters_class,
                 FieldInfo(default=...),
             )
 
-        step_model = create_model(name, **step_fields)
+        step_model = create_model(step_name, **step_fields)
+
+        # Pydantic doesn't allow field names to start with an underscore
+        sanitized_step_name = step_name.lstrip("_")
+        while sanitized_step_name in all_steps:
+            sanitized_step_name = sanitized_step_name + "_"
 
         if step.config.parameters:
             # This step has required parameters -> we make this attribute
             # required and also the parent attribute so these parameters must
             # always be included
             all_steps_required = True
-            all_steps[name] = (step_model, FieldInfo(default=...))
+            all_steps[sanitized_step_name] = (
+                step_model,
+                FieldInfo(default=..., validation_alias=step_name),
+            )
         else:
-            all_steps[name] = (Optional[step_model], FieldInfo(default=None))
+            all_steps[sanitized_step_name] = (
+                Optional[step_model],
+                FieldInfo(default=None, validation_alias=step_name),
+            )
 
     all_steps_model = create_model("Steps", **all_steps)
 
