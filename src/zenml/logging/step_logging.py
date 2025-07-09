@@ -615,14 +615,12 @@ class PipelineLogsStorageContext:
             ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=None
         )
 
-        if step_names_disabled is None:
-            # If env var is not set, use the prepend_step_name setting
-            # Pipeline context: prepend_step_name=False -> show step names (False)
-            # Step context: prepend_step_name=True -> don't show step names (True)
-            step_names_in_console.set(self.prepend_step_name)
+        if step_names_disabled is True or not self.prepend_step_name:
+            # Step names are disabled through the env or they are disabled in the config
+            step_names_in_console.set(False)
         else:
-            # Otherwise, set it according to the env var
-            step_names_in_console.set(not step_names_disabled)
+            # Otherwise, set it True (default)
+            step_names_in_console.set(True)
 
         redirected.set(True)
         return self
