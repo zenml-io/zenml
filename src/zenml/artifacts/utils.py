@@ -66,7 +66,6 @@ from zenml.models import (
 from zenml.stack import StackComponent
 from zenml.steps.step_context import get_step_context
 from zenml.utils import source_utils
-from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -928,7 +927,6 @@ def _load_file_from_artifact_store(
         IOError: If the artifact store rejects the request.
     """
     try:
-        uri = sanitize_remote_path(uri)
         with artifact_store.open(uri, mode) as text_file:
             if offset < 0:
                 # If the offset is negative, we seek backwards from the end of

@@ -435,11 +435,22 @@ class BaseArtifactStore(StackComponent):
             **kwargs: The keyword arguments to pass to the Pydantic object.
         """
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
+        self._add_path_sanitization()
 
         # If running in a ZenML server environment, we don't register
         # the filesystems. We always use the artifact stores directly.
         if ENV_ZENML_SERVER not in os.environ:
             self._register()
+
+    def _add_path_sanitization(self) -> None:
+        """Add path sanitization to the artifact store."""
+        for method_name, method in inspect.getmembers(BaseArtifactStore):
+            if getattr(method, "__isabstractmethod__", False):
+                method_implementation = getattr(self, method_name)
+                sanitized_method = _sanitize_paths(
+                    method_implementation, self.path
+                )
+                setattr(self, method_name, sanitized_method)
 
     def _register(self) -> None:
         """Create and register a filesystem within the filesystem registry."""
@@ -447,27 +458,17 @@ class BaseArtifactStore(StackComponent):
         from zenml.io.filesystem_registry import default_filesystem_registry
         from zenml.io.local_filesystem import LocalFilesystem
 
-        overloads: Dict[str, Any] = {
-            "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
-        }
-        for abc_method in inspect.getmembers(BaseArtifactStore):
-            if getattr(abc_method[1], "__isabstractmethod__", False):
-                sanitized_method = _sanitize_paths(
-                    getattr(self, abc_method[0]), self.path
-                )
-                # prepare overloads for filesystem methods
-                overloads[abc_method[0]] = staticmethod(sanitized_method)
-
-                # decorate artifact store methods
-                setattr(
-                    self,
-                    abc_method[0],
-                    sanitized_method,
-                )
-
         # Local filesystem is always registered, no point in doing it again.
         if isinstance(self, LocalFilesystem):
             return
+
+        overloads: Dict[str, Any] = {
+            "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
+        }
+        for method_name, method in inspect.getmembers(BaseArtifactStore):
+            if getattr(method, "__isabstractmethod__", False):
+                method_implementation = getattr(self, method_name)
+                overloads[method_name] = staticmethod(method_implementation)
 
         filesystem_class = type(
             self.__class__.__name__, (BaseFilesystem,), overloads
