@@ -106,15 +106,16 @@ class _sanitize_paths:
             IllegalOperationError: If the path is a local file and the server
                 is not configured to allow local file access.
         """
+        if not self.allow_local_file_access and not io_utils.is_remote(path):
+            raise IllegalOperationError(
+                "Files in a local artifact store cannot be accessed from the "
+                "server."
+            )
+
         if not path.startswith(self.fixed_root_path):
             raise FileNotFoundError(
                 f"File `{path}` is outside of "
                 f"artifact store bounds `{self.fixed_root_path}`"
-            )
-
-        if not self.allow_local_file_access and not io_utils.is_remote(path):
-            raise IllegalOperationError(
-                "Local files cannot be accessed from the server."
             )
 
     def _sanitize_potential_path(self, potential_path: Any) -> Any:
