@@ -218,6 +218,16 @@ else:
         ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
     ).upper()
 
+
+if IS_DEBUG_ENV:
+    ZENML_STORAGE_LOGGING_VERBOSITY = os.getenv(
+        ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default="DEBUG"
+    ).upper()
+else:
+    ZENML_STORAGE_LOGGING_VERBOSITY = os.getenv(
+        ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default="INFO"
+    ).upper()
+
 INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
 
 # Analytics constants

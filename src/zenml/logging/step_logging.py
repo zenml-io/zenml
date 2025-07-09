@@ -35,11 +35,10 @@ from zenml.constants import (
     ENV_ZENML_CAPTURE_PRINTS,
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
-    ENV_ZENML_STORAGE_LOGGING_VERBOSITY,
     handle_bool_env_var,
 )
 from zenml.exceptions import DoesNotExistException
-from zenml.logger import get_logger
+from zenml.logger import get_logger, get_storage_log_level
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     STEP_LOGS_STORAGE_MAX_MESSAGES,
@@ -83,14 +82,7 @@ class ArtifactStoreHandler(logging.Handler):
         self.storage = storage
 
         # Get storage log level from environment
-        storage_level = os.environ.get(
-            ENV_ZENML_STORAGE_LOGGING_VERBOSITY, "INFO"
-        )
-        try:
-            self.setLevel(getattr(logging, storage_level.upper()))
-        except AttributeError:
-            # Default to INFO if invalid level provided
-            self.setLevel(logging.INFO)
+        self.setLevel(get_storage_log_level().value)
 
     def emit(self, record: logging.LogRecord) -> None:
         """Emit a log record to the storage.
@@ -156,7 +148,9 @@ def setup_global_print_wrapping() -> None:
                         args=(),
                         exc_info=None,
                     )
-                    handler.emit(record)
+                    # Check if handler's level would accept this record
+                    if record.levelno >= handler.level:
+                        handler.emit(record)
                 except Exception:
                     # Don't let handler errors break print
                     pass
@@ -601,18 +595,13 @@ class PipelineLogsStorageContext:
         root_logger = logging.getLogger()
         root_logger.addHandler(self.artifact_store_handler)
 
-        # Set root logger level to minimum of console and storage levels
-        # This ensures records can reach both handlers
+        # Set root logger level to minimum of all active handlers
+        # This ensures records can reach any handler that needs them
         self.original_root_level = root_logger.level
-        storage_level = getattr(
-            logging,
-            os.environ.get(
-                ENV_ZENML_STORAGE_LOGGING_VERBOSITY, "INFO"
-            ).upper(),
-        )
-        console_level = root_logger.level
+        handler_levels = [handler.level for handler in root_logger.handlers]
 
-        min_level = min(storage_level, console_level)
+        # Set root logger to the minimum level among all handlers
+        min_level = min(handler_levels)
         if min_level < root_logger.level:
             root_logger.setLevel(min_level)
 

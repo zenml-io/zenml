@@ -27,6 +27,7 @@ from zenml.constants import (
     ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
+    ZENML_STORAGE_LOGGING_VERBOSITY,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
@@ -165,6 +166,20 @@ def get_logging_level() -> LoggingLevels:
         KeyError: If the logging level is not found.
     """
     verbosity = ZENML_LOGGING_VERBOSITY.upper()
+    if verbosity not in LoggingLevels.__members__:
+        raise KeyError(
+            f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
+        )
+    return LoggingLevels[verbosity]
+
+
+def get_storage_log_level() -> LoggingLevels:
+    """Get storage logging level from the env variable with safe fallback.
+
+    Returns:
+        The storage logging level, defaulting to INFO if invalid.
+    """
+    verbosity = ZENML_STORAGE_LOGGING_VERBOSITY.upper()
     if verbosity not in LoggingLevels.__members__:
         raise KeyError(
             f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
