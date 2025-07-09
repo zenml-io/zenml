@@ -9653,7 +9653,7 @@ class SqlZenStore(BaseZenStore):
 
             completed_onboarding_steps: Set[str] = {
                 OnboardingStep.PIPELINE_RUN,
-                OnboardingStep.STARTER_SETUP_COMPLETED,
+                OnboardingStep.OSS_ONBOARDING_COMPLETED,
             }
             if stack_metadata["orchestrator"] not in {
                 "local",
@@ -9668,21 +9668,9 @@ class SqlZenStore(BaseZenStore):
                 completed_onboarding_steps.update(
                     {
                         OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
-                        OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                        OnboardingStep.PRO_ONBOARDING_COMPLETED,
                     }
                 )
-            if OnboardingStep.THIRD_PIPELINE_RUN not in (
-                self._cached_onboarding_state or {}
-            ):
-                onboarding_state = self.get_onboarding_state()
-                if OnboardingStep.PIPELINE_RUN in onboarding_state:
-                    completed_onboarding_steps.add(
-                        OnboardingStep.SECOND_PIPELINE_RUN
-                    )
-                if OnboardingStep.SECOND_PIPELINE_RUN in onboarding_state:
-                    completed_onboarding_steps.add(
-                        OnboardingStep.THIRD_PIPELINE_RUN
-                    )
 
             self._update_onboarding_state(
                 completed_steps=completed_onboarding_steps, session=session
