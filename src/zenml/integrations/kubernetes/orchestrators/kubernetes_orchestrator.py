@@ -447,6 +447,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     step_name,
                 )
 
+            if retry_config := step.config.retry:
+                if retry_config.delay or retry_config.backoff:
+                    logger.warning(
+                        "Specifying retry delay or backoff is not supported "
+                        "for the Kubernetes orchestrator."
+                    )
+
         pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
             KubernetesOrchestratorSettings, self.get_settings(deployment)
@@ -693,7 +700,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Args:
             run: The run that was executed by this orchestrator.
             graceful: If True, does nothing (lets the orchestrator and steps finish naturally).
-                If False, stops all running step pods.
+                If False, stops all running step jobs.
 
         Raises:
             RuntimeError: If we fail to stop the run.
@@ -706,55 +713,63 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return
 
-        pods_stopped = []
+        jobs_stopped = []
         errors = []
 
-        # Find all pods with the orchestrator run ID label
+        # Find all jobs running steps of the pipeline
         label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
         try:
-            pods = self._k8s_core_api.list_namespaced_pod(
+            jobs = self._k8s_batch_api.list_namespaced_job(
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
             )
         except Exception as e:
             raise RuntimeError(
-                f"Failed to list step pods with run ID {run.id}: {e}"
+                f"Failed to list step jobs with run ID {run.id}: {e}"
             )
 
-        # Filter to only include running or pending pods
-        for pod in pods.items:
-            if pod.status.phase not in ["Running", "Pending"]:
-                logger.debug(
-                    f"Skipping pod {pod.metadata.name} with status {pod.status.phase}"
-                )
-                continue
+        for job in jobs.items:
+            if job.status.conditions:
+                # Don't delete completed/failed jobs
+                for condition in job.status.conditions:
+                    if (
+                        condition.type == "Complete"
+                        and condition.status == "True"
+                    ):
+                        continue
+                    if (
+                        condition.type == "Failed"
+                        and condition.status == "True"
+                    ):
+                        continue
 
             try:
-                self._k8s_core_api.delete_namespaced_pod(
-                    name=pod.metadata.name,
+                self._k8s_batch_api.delete_namespaced_job(
+                    name=job.metadata.name,
                     namespace=self.config.kubernetes_namespace,
+                    propagation_policy="Foreground",
                 )
-                pods_stopped.append(f"step pod: {pod.metadata.name}")
+                jobs_stopped.append(f"step job: {job.metadata.name}")
                 logger.debug(
-                    f"Successfully initiated graceful stop of step pod: {pod.metadata.name}"
+                    f"Successfully initiated graceful stop of step job: {job.metadata.name}"
                 )
             except Exception as e:
-                error_msg = f"Failed to stop step pod {pod.metadata.name}: {e}"
+                error_msg = f"Failed to stop step job {job.metadata.name}: {e}"
                 logger.warning(error_msg)
                 errors.append(error_msg)
 
         # Summary logging
         settings = cast(KubernetesOrchestratorSettings, self.get_settings(run))
         grace_period_seconds = settings.pod_stop_grace_period
-        if pods_stopped:
+        if jobs_stopped:
             logger.debug(
-                f"Successfully initiated graceful termination of: {', '.join(pods_stopped)}. "
+                f"Successfully initiated graceful termination of: {', '.join(jobs_stopped)}. "
                 f"Pods will terminate within {grace_period_seconds} seconds."
             )
 
         if errors:
             error_summary = "; ".join(errors)
-            if not pods_stopped:
+            if not jobs_stopped:
                 # If nothing was stopped successfully, raise an error
                 raise RuntimeError(
                     f"Failed to stop pipeline run: {error_summary}"
@@ -765,10 +780,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     f"Partial stop operation completed with errors: {error_summary}"
                 )
 
-        # If no step pods were found and no errors occurred
-        if not pods_stopped and not errors:
+        if not jobs_stopped and not errors:
             logger.info(
-                f"No running step pods found for pipeline run with ID: {run.id}"
+                f"No running step jobs found for pipeline run with ID: {run.id}"
             )
 
     def fetch_status(

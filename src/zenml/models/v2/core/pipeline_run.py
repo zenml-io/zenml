@@ -438,6 +438,7 @@ class PipelineRunResponse(
                 Client().list_run_steps,
                 pipeline_run_id=self.id,
                 project=self.project_id,
+                exclude_retried=True,
             )
         }
 
