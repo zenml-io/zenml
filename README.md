@@ -50,6 +50,8 @@
 
 ## 🚨 The Problem: MLOps Works for Models, But What About AI?
 
+![No MLOps for modern AI](docs/book/.gitbook/assets/readme_problem.png)
+
 You're an ML engineer. You've perfected deploying scikit-learn models and wrangling TensorFlow jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
 
 - **The Adaptation Struggle:** Your MLOps habits—rigorous testing, versioning, CI/CD—don’t map cleanly onto agent development. How do you version a prompt? How do you regression test a non-deterministic system? The tools that gave you confidence for models now create friction for agents.
@@ -135,11 +137,8 @@ if __name__ == "__main__":
 
 ### From Chaos to Process
 
-```
-📝 Prototype → 🧪 Evaluate → 📊 Compare → 🚀 Deploy → 📈 Monitor → 🔄 Iterate
-     ↓              ↓            ↓            ↓            ↓            ↓
-Scripts & Code ZenML Pipeline  Dashboard   Stack Deploy  Traces    Version++
-```
+![Development lifecycle](docs/book/.gitbook/assets/readme_development_lifecycle.png)
+
 <details>
   <summary><b>Click to see your new, structured workflow</b></summary>
 
