@@ -13,15 +13,17 @@
 #  permissions and limitations under the License.
 """Utility functions for runs."""
 
-from typing import cast
+from typing import TYPE_CHECKING, Optional, cast
 
-from zenml.client import Client
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import PipelineRunResponse, PipelineRunUpdate, StepRunUpdate
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.stack.stack_component import StackComponent
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -78,6 +80,7 @@ def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:
 def refresh_run_status(
     run: PipelineRunResponse,
     include_step_updates: bool = False,
+    zen_store: Optional["BaseZenStore"] = None,
 ) -> PipelineRunResponse:
     """Refresh the status of a pipeline run if it is initializing/running.
 
@@ -85,6 +88,9 @@ def refresh_run_status(
         run: The pipeline run to refresh.
         include_step_updates: Flag deciding whether we should also refresh
             the status of individual steps.
+        zen_store: Optional ZenStore to use for updating the run. If not provided,
+            the ZenStore will be fetched from the Client. This is mainly useful
+            for running inside the ZenML server.
 
     Returns:
         The refreshed pipeline run.
@@ -116,7 +122,12 @@ def refresh_run_status(
         run=run, include_steps=include_step_updates
     )
 
-    client = Client()
+    if zen_store is None:
+        from zenml.client import Client
+
+        zen_store = Client().zen_store
+    else:
+        zen_store = zen_store
 
     # Update step statuses
     if include_step_updates:
@@ -125,7 +136,7 @@ def refresh_run_status(
             for step_name, step_status in step_statuses.items():
                 if step_status != current_steps[step_name].status:
                     try:
-                        client.zen_store.update_run_step(
+                        zen_store.update_run_step(
                             step_run_id=run.steps[step_name].id,
                             step_run_update=StepRunUpdate(status=step_status),
                         )
@@ -136,7 +147,7 @@ def refresh_run_status(
 
     # Update pipeline status
     if pipeline_status is not None and pipeline_status != run.status:
-        return client.zen_store.update_run(
+        return zen_store.update_run(
             run_id=run.id,
             run_update=PipelineRunUpdate(status=pipeline_status),
         )

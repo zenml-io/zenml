@@ -192,9 +192,10 @@ def get_run(
     Raises:
         RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
+    store = zen_store()
     run = verify_permissions_and_get_entity(
         id=run_id,
-        get_method=zen_store().get_run,
+        get_method=store.get_run,
         hydrate=hydrate,
         include_python_packages=include_python_packages,
         include_full_metadata=include_full_metadata,
@@ -208,7 +209,7 @@ def get_run(
                 "removed in a future version. Please use the POST "
                 "`/runs/{run_id}/refresh` endpoint instead."
             )
-            run = run_utils.refresh_run_status(run=run)
+            run = run_utils.refresh_run_status(run=run, zen_store=store)
 
         except Exception as e:
             logger.warning(
@@ -384,12 +385,15 @@ def refresh_run_status(
         include_steps: Flag deciding whether we should also refresh
             the status of individual steps.
     """
+    store = zen_store()
     run = verify_permissions_and_get_entity(
         id=run_id,
-        get_method=zen_store().get_run,
+        get_method=store.get_run,
         hydrate=True,
     )
-    run_utils.refresh_run_status(run=run, include_step_updates=include_steps)
+    run_utils.refresh_run_status(
+        run=run, include_step_updates=include_steps, zen_store=store
+    )
 
 
 @router.post(
