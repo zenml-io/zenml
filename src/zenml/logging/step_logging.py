@@ -386,7 +386,6 @@ class PipelineLogsStorage:
             return
 
         if not self.disabled:
-            # Add timestamp to the message when it's received
             self.buffer.append(remove_ansi_escape_codes(text).rstrip())
             self.save_to_file()
 
