@@ -4051,6 +4051,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_id: Optional[Union[str, UUID]] = None,
         model: Optional[Union[UUID, str]] = None,
         run_metadata: Optional[List[str]] = None,
+        exclude_retried: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -4077,6 +4078,7 @@ class Client(metaclass=ClientMetaClass):
             code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
             run_metadata: Filter by run metadata.
+            exclude_retried: Whether to exclude retried step runs.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4105,6 +4107,7 @@ class Client(metaclass=ClientMetaClass):
             model_version_id=model_version_id,
             model=model,
             run_metadata=run_metadata,
+            exclude_retried=exclude_retried,
         )
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,

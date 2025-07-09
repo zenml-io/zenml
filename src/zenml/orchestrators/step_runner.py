@@ -34,7 +34,6 @@ from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
-    ENV_ZENML_IGNORE_FAILURE_HOOK,
     handle_bool_env_var,
 )
 from zenml.enums import ArtifactSaveType
@@ -194,9 +193,7 @@ class StepRunner:
                 )
             except BaseException as step_exception:  # noqa: E722
                 step_failed = True
-                if not handle_bool_env_var(
-                    ENV_ZENML_IGNORE_FAILURE_HOOK, False
-                ):
+                if not step_run.is_retriable:
                     if (
                         failure_hook_source
                         := self.configuration.failure_hook_source
