@@ -134,6 +134,9 @@ def refresh_run_status(
         if step_statuses:
             current_steps = run.steps
             for step_name, step_status in step_statuses.items():
+                if current_steps[step_name].status.is_finished:
+                    continue
+
                 if step_status != current_steps[step_name].status:
                     try:
                         zen_store.update_run_step(
