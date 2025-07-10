@@ -79,167 +79,144 @@ With ZenML, you're not replacing your knowledge; you're extending it. Use the pi
 
 ```python
 from zenml import pipeline, step
+from zenml.types import HTMLString
 import pandas as pd
 
 @step
 def load_real_conversations() -> pd.DataFrame:
-    """Load actual customer queries from a feature store."""
-    return load_from_feature_store("customer_queries_sample_1k")
+    """Load customer service queries for testing."""
+    return load_customer_queries()
 
 @step
-def run_architecture_comparison(queries: pd.DataFrame) -> dict:
+def train_intent_classifier(queries: pd.DataFrame):
+    """Train a scikit-learn classifier alongside your agents."""
+    return train_sklearn_pipeline(queries)
+
+@step
+def run_architecture_comparison(queries: pd.DataFrame, classifier) -> tuple:
     """Test three different agent architectures on the same data."""
     architectures = {
         "single_agent": SingleAgentRAG(),
-        "multi_specialist": MultiSpecialistAgents(),
-        "hierarchical": HierarchicalAgentTeam()
+        "multi_specialist": MultiSpecialistAgents(), 
+        "langgraph_workflow": LangGraphAgent()  # Real LangGraph implementation!
     }
     
-    results = {}
-    for name, agent in architectures.items():
-        # ZenML automatically versions the agent's code, prompts, and tools
-        results[name] = agent.batch_process(queries)
-    return results
+    # ZenML automatically versions agent code, prompts, and configurations
+    # LiteLLM provides unified access to 100+ LLM providers  
+    results = test_all_architectures(queries, architectures)
+    mermaid_diagram = generate_langgraph_visualization()
+    
+    return results, mermaid_diagram
 
 @step
-def evaluate_and_decide(results: dict) -> str:
-    """Evaluate results and generate a recommendation report."""
-    # Compare architectures on quality, cost, latency, etc.
-    evaluation_df = evaluate_results(results)
-    
-    # Generate a rich report comparing the architectures
-    report = create_comparison_report(evaluation_df)
-    
-    # Automatically tag the winning architecture for a staging deployment
-    winner = evaluation_df.sort_values("overall_score").iloc[0]
-    tag_for_staging(winner["architecture_name"])
-    
-    return report
+def evaluate_and_decide(queries: pd.DataFrame, results: dict) -> HTMLString:
+    """Generate beautiful HTML report with winner selection."""
+    return create_styled_comparison_report(results)
 
 @pipeline
 def compare_agent_architectures():
-    """Your new Friday afternoon ritual: data-driven agent decisions."""
+    """Data-driven agent architecture decisions with full MLOps tracking."""
     queries = load_real_conversations()
-    results = run_architecture_comparison(queries)
-    report = evaluate_and_decide(results)
+    classifier = train_intent_classifier(queries)
+    results, viz = run_architecture_comparison(queries, classifier)
+    report = evaluate_and_decide(queries, results)
 
 if __name__ == "__main__":
-    # Run locally, compare results in the ZenML dashboard
     compare_agent_architectures()
+    # 🎯 Rich visualizations automatically appear in ZenML dashboard
 ```
+
+**🚀 [See the complete working example →](examples/agent_comparison/)**
 
 **The Result:** A clear winner is selected based on data, not opinions. You have full lineage from the test data and agent versions to the final report and deployment decision.
 
-## 🔄 The AI Development Lifecycle with ZenML
-
-### From Chaos to Process
-
 ![Development lifecycle](docs/book/.gitbook/assets/readme_development_lifecycle.png)
-
-<details>
-  <summary><b>Click to see your new, structured workflow</b></summary>
-
-### Your New Workflow
-
-**Monday: Quick Prototype**
-```python
-# Start with a local script, just like always
-agent = LangGraphAgent(prompt="You are a helpful assistant...")
-response = agent.chat("Help me with my order")
-```
-
-**Tuesday: Make it a Pipeline**
-```python
-# Wrap your code in a ZenML step to make it reproducible
-@step
-def customer_service_agent(query: str) -> str:
-    return agent.chat(query)
-```
-
-**Wednesday: Add Evaluation**
-```python
-# Test on real data, not toy examples
-@pipeline
-def eval_pipeline():
-    test_data = load_production_samples()
-    responses = customer_service_agent.map(test_data)
-    scores = evaluate_responses(responses)
-    track_experiment(scores)
-```
-
-**Thursday: Compare Architectures**
-```python
-# Make data-driven architecture decisions
-results = compare_architectures(
-    baseline="current_prod",
-    challenger="new_multiagent_v2"
-)
-```
-
-**Friday: Ship with Confidence**
-```python
-# Deploy the new agent with the same command you use for ML models
-python agent_deployment.py --env=prod --model="customer_service:challenger"
-```
-</details>
 
 ## 🚀 Get Started (5 minutes)
 
-### For ML Engineers Ready to Tame AI
+### 🏗️ Architecture Overview
+
+ZenML uses a **client-server architecture** with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)) for pipeline visualization and management:
+
+- **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
+- **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
 
 ```bash
-# You know this drill
-pip install zenml  # Includes LangChain, LlamaIndex integrations
-zenml integration install langchain llamaindex
+# Install ZenML with server capabilities
+pip install "zenml[server]"
 
-# Initialize (your ML pipelines still work!)
+# Install required dependencies
+pip install scikit-learn openai
+
+# Initialize your ZenML repository
 zenml init
 
-# Pull our agent evaluation template
-zenml init --template agent-evaluation-starter
+# Start local server or connect to a remote one
+zenml login
 ```
 
-### Your First AI Pipeline
+### Your First Pipeline (2 minutes)
 
 ```python
-# look_familiar.py
+# simple_pipeline.py
 from zenml import pipeline, step
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import openai
 
 @step
-def run_my_agent(test_queries: list[str]) -> list[str]:
-    """Your existing agent code, now with MLOps superpowers."""
-    # Use ANY framework - LangGraph, CrewAI, raw OpenAI
-    agent = YourExistingAgent()
-    
-    # Automatic versioning of prompts, tools, code, and configs
-    return [agent.run(q) for q in test_queries]
+def create_dataset() -> tuple:
+    """Generate a simple classification dataset."""
+    X, y = make_classification(n_samples=100, n_features=4, n_classes=2, random_state=42)
+    return train_test_split(X, y, test_size=0.2, random_state=42)
 
 @step
-def evaluate_responses(queries: list[str], responses: list[str]) -> dict:
-    """LLM judges + your custom business metrics."""
-    quality = llm_judge(queries, responses)
-    latency = measure_response_times()
-    costs = calculate_token_usage()
-    
-    return {
-        "quality": quality.mean(),
-        "p95_latency": latency.quantile(0.95),
-        "cost_per_query": costs.mean()
-    }
+def train_model(X_train, y_train) -> RandomForestClassifier:
+    """Train a simple sklearn model."""
+    model = RandomForestClassifier(n_estimators=10, random_state=42)
+    model.fit(X_train, y_train)
+    return model
+
+@step
+def evaluate_model(model: RandomForestClassifier, X_test, y_test) -> float:
+    """Evaluate the model accuracy."""
+    predictions = model.predict(X_test)
+    return accuracy_score(y_test, predictions)
+
+@step
+def generate_summary(accuracy: float) -> str:
+    """Use OpenAI to generate a model summary."""
+    client = openai.OpenAI()  # Set OPENAI_API_KEY environment variable
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{
+            "role": "user", 
+            "content": f"Write a brief summary of a ML model with {accuracy:.2%} accuracy."
+        }],
+        max_tokens=50
+    )
+    return response.choices[0].message.content
 
 @pipeline
-def my_first_agent_pipeline():
-    # Look ma, no YAML!
-    queries = ["How do I return an item?", "What's your refund policy?"]
-    responses = run_my_agent(queries)
-    metrics = evaluate_responses(queries, responses)
-    
-    # Metrics are auto-logged, versioned, and comparable in the dashboard
-    return metrics
+def simple_ml_pipeline():
+    """A simple pipeline combining sklearn and OpenAI."""
+    X_train, X_test, y_train, y_test = create_dataset()
+    model = train_model(X_train, y_train)
+    accuracy = evaluate_model(model, X_test, y_test)
+    summary = generate_summary(accuracy)
+    return summary
 
 if __name__ == "__main__":
-    my_first_agent_pipeline()
-    print("Check your dashboard: http://localhost:8080")
+    result = simple_ml_pipeline()
+    print(f"Pipeline completed! Check dashboard at: http://localhost:8080")
+```
+
+Run it:
+```bash
+export OPENAI_API_KEY="your-api-key-here"
+python simple_pipeline.py
 ```
 
 ## 📚 Learn More
@@ -250,7 +227,7 @@ The best way to learn about ZenML is through our comprehensive documentation and
 
 - **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
 - **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
-- **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete API documentation
+- **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
 
 For visual learners, start with this 11-minute introduction:
 
@@ -258,10 +235,11 @@ For visual learners, start with this 11-minute introduction:
 
 ### 📖 Production Examples
 
-1. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
-2. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
-3. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
-4. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
+1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and HTML visualizations
+2. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
+3. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
+4. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
+5. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
 
 ### 🏢 Deployment Options
 
@@ -270,9 +248,9 @@ For visual learners, start with this 11-minute introduction:
 - **[ZenML Pro](https://cloud.zenml.io/?utm_source=readme)** - Managed service with enterprise support (free trial)
 
 **Infrastructure Requirements:**
-- Kubernetes cluster (or local Docker)
+- Docker (or Kubernetes for production)
 - Object storage (S3/GCS/Azure)
-- PostgreSQL database
+- MySQL-compatible database (MySQL 8.0+ or MariaDB)
 - _[Complete requirements](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm)_
 
 ### 🎓 Books & Resources
@@ -298,7 +276,7 @@ ZenML is featured in these comprehensive guides to production AI systems.
 **Stay Updated:**
 - 🗺 [Public Roadmap](https://zenml.io/roadmap) - See what's coming next
 - 📰 [Blog](https://zenml.io/blog) - Best practices and case studies
-- 🎙 [Podcast](https://zenml.io/podcast) - Interviews with ML practitioners
+- 🎙 [Slack](https://zenml.io/slack) - Talk with AI practitioners
 
 ## ❓ FAQs from ML Engineers Like You
 
@@ -316,6 +294,12 @@ A: No. MLflow tracks experiments. We orchestrate the entire development process 
 
 **Q: "What about cost? I can't afford another platform."**
 A: ZenML's open-source version is free forever. You likely already have the required infrastructure (like a Kubernetes cluster and object storage). We just help you make better use of it for MLOps.
+
+**Q: "How do I set up ZenML with my environment and dependencies?"**
+A: Follow the "Get Started" section above for basic setup. For complex environments, use our [Docker deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-docker) or check our [troubleshooting guide](https://docs.zenml.io/user-guides/advanced-guide/troubleshooting). Use `zenml integration install` for specific tools.
+
+**Q: "How do I configure ZenML with Kubernetes?"**
+A: ZenML integrates with Kubernetes through the native Kubernetes orchestrator, Kubeflow, and other K8s-based orchestrators. See our [Kubernetes orchestrator guide](https://docs.zenml.io/stacks/orchestrators/kubernetes) and [Kubeflow guide](https://docs.zenml.io/stacks/orchestrators/kubeflow), plus [deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm).
 
 ### 🛠 VS Code Extension
 
