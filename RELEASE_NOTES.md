@@ -2,6 +2,59 @@
 
 # 0.84.0
 
+The `0.84.0` release delivers significant **architectural improvements** and **orchestration enhancements** that boost ZenML's reliability, performance, and developer experience. This release focuses on pipeline execution resilience with step retries and early stopping capabilities, enhanced Kubernetes orchestrator features, and improved server-side processing for better scalability.
+
+## 🚀 Orchestration Enhancements
+
+### Pipeline Control & Reliability
+- **Early Pipeline Stopping**: Added ability to stop pipelines early with Kubernetes orchestrator implementation for better resource management
+- **Step Retries**: Implemented configurable step retry mechanisms for improved pipeline resilience
+- **Step Status Refresh**: Enhanced step status monitoring with real-time refresh capabilities
+
+### Kubernetes Orchestrator Improvements
+- **Run Steps using Jobs**: Leverage Kubernetes jobs for better retry behavior when running steps
+- **Enhanced Pod Management**: Always build pipeline images for Kubernetes orchestrator and improved pod caching
+- **Pod Logs Access**: Added orchestrator pod logs functionality for better debugging and monitoring
+- **Kubernetes Model Validation**: Added warnings for invalid Kubernetes model data
+
+## ⚡ Performance Improvements
+
+- **Threadsafe RestZenStore**: Implemented thread-safe operations for improved concurrent access
+- **Server-side Processing**: Moved parent step computation and cascading tags processing to server-side for better performance
+- **Improved Fetching**: Enhanced pipeline and step run fetching mechanisms for faster response times
+
+## 🔧 Developer Experience
+
+### CLI & Login Improvements
+- **New ZenML Login**: Redesigned login experience with improved CLI styling and user interface
+
+### Configuration & Compatibility
+
+- **Easier Configuration**: Simplified step operator and experiment tracker configuration for steps
+- **Unified Imports**: Standardized config imports to match documentation examples
+
+## 🔒 Infrastructure & Security
+
+- **Helm Chart Improvements**: Added PVC creation option for local configuration path
+- **Service Connector Security**: Hidden service connector secrets as internal implementation details
+
+## 🛠️ Fixes
+
+- **Model Version Fetching**: Fixed fetching model versions by UUID passed as string
+- **Visualization Handling**: Ensured visualizations are committed before potential transaction rollbacks
+- **SageMaker Configuration**: Made `SagemakerOrchestratorSettings.processor_tags` optional
+- **Data Artifact Access**: Fixed data artifact fetching issues
+- **Pydantic Validation**: Added support for step/parameter names with leading underscores in run templates
+- **Path Sanitization**: Added missing remote path and Docker tag sanitizations
+
+## 📚 Documentation
+
+- **Best Practices**: Updated documentation with minimum permissions for cloud stack components
+- **Concurrent Execution**: Added guidance for handling concurrent pipeline execution in separate containers
+- **User Guides**: Enhanced user guides with `llm-complete-guide` project and improved examples
+- **ZenML Pro**: Updated URLs in documentation to use zenml.io/pro
+- **VSCode Integration**: Added VSCode tutorial pipeline testing to CI
+
 ## What's Changed
 * Update issue template configurations and URLs by @htahir1 in https://github.com/zenml-io/zenml/pull/3756
 * Add new release to migration tests by @schustmi in https://github.com/zenml-io/zenml/pull/3764
