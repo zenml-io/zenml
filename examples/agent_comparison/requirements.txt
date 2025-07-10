@@ -1,5 +1,5 @@
 # ZenML Core
-zenml[server]>=1.0.0
+zenml[server]
 
 # LangGraph and LangChain
 langgraph>=0.5.0
@@ -15,7 +15,8 @@ litellm>=1.40.0
 openai>=1.0.0
 
 # Observability (optional - automatically used if API keys are available)
-langfuse>=2.0.0
+# Note: LiteLLM requires Langfuse v2, not v3
+langfuse>=2,<3
 
 # Visualization (included in ZenML)
 # These are handled by ZenML's HTMLString type

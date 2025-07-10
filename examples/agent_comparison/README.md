@@ -56,6 +56,7 @@ export GROQ_API_KEY="your-groq-key"
 export COHERE_API_KEY="your-cohere-key"
 
 # Optional: Enable Langfuse observability (tracks costs, performance, traces)
+# Note: LiteLLM requires Langfuse v2, ensure you have: pip install "langfuse>=2,<3"
 export LANGFUSE_PUBLIC_KEY="your-langfuse-public-key"
 export LANGFUSE_SECRET_KEY="your-langfuse-secret-key"
 export LANGFUSE_HOST="https://cloud.langfuse.com"  # or self-hosted

@@ -18,13 +18,8 @@ try:
 except ImportError:
     HAS_LITELLM = False
 
-# Langfuse Integration
-try:
-    from langfuse.callback import CallbackHandler
-
-    HAS_LANGFUSE = True
-except ImportError:
-    HAS_LANGFUSE = False
+# Langfuse Integration - configure via litellm callbacks
+HAS_LANGFUSE = True  # We'll check env vars instead
 
 logger = get_logger(__name__)
 
@@ -54,28 +49,34 @@ def should_use_langfuse() -> bool:
     )
 
 
-def get_langfuse_callback() -> Optional[Any]:
-    """Get Langfuse callback handler if available.
+def configure_langfuse_callbacks() -> None:
+    """Configure LiteLLM to use Langfuse callbacks if available.
 
-    Returns:
-        Langfuse callback handler or None if not available.
+    Note: LiteLLM requires Langfuse v2, not v3. If you get an error about
+    'sdk_integration', please install: pip install "langfuse>=2,<3"
     """
-    if not should_use_langfuse():
-        return None
+    if not should_use_langfuse() or not HAS_LITELLM:
+        return
 
     try:
-        return CallbackHandler(
-            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
-            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
-            host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"),
-        )
+        # Set Langfuse as callback according to documentation
+        litellm.success_callback = ["langfuse"]
+        litellm.failure_callback = ["langfuse"]
     except Exception as e:
-        logger.warning(f"Failed to initialize Langfuse callback: {e}")
-        return None
+        if "sdk_integration" in str(e):
+            logger.warning(
+                "Langfuse version incompatibility detected. "
+                "LiteLLM requires Langfuse v2, not v3. "
+                "Please install: pip install 'langfuse>=2,<3'"
+            )
+        else:
+            logger.warning(f"Failed to configure Langfuse callbacks: {e}")
 
 
 def call_llm(
-    prompt: str, model: str = "gpt-3.5-turbo", metadata: Optional[dict] = None
+    prompt: str,
+    model: str = "gpt-3.5-turbo",
+    metadata: Optional[dict[str, Any]] = None,
 ) -> str:
     """Call LLM using LiteLLM with optional Langfuse observability and fallback to mock response.
 
@@ -92,6 +93,9 @@ def call_llm(
         return f"Mock response for: {prompt[:50]}..."
 
     try:
+        # Configure Langfuse callbacks if available
+        configure_langfuse_callbacks()
+
         # Prepare LiteLLM call parameters
         call_params = {
             "model": model,
@@ -100,12 +104,9 @@ def call_llm(
             "temperature": 0.7,
         }
 
-        # Add Langfuse callback if available
-        langfuse_callback = get_langfuse_callback()
-        if langfuse_callback:
-            call_params["callbacks"] = [langfuse_callback]
-            if metadata:
-                call_params["metadata"] = metadata
+        # Add metadata for Langfuse if available
+        if metadata and should_use_langfuse():
+            call_params["metadata"] = metadata
 
         response = litellm.completion(**call_params)
 
