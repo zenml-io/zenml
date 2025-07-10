@@ -187,7 +187,7 @@ def main() -> None:
 
                 return True
 
-        step_pod_labels = {
+        base_labels = {
             "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
             "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
             "pipeline": kube_utils.sanitize_label(
@@ -235,7 +235,7 @@ def main() -> None:
             )
 
             # Add step name to labels so both pod and job have consistent labeling
-            step_labels = step_pod_labels.copy()
+            step_labels = base_labels.copy()
             step_labels["step_name"] = kube_utils.sanitize_label(step_name)
 
             image = KubernetesOrchestrator.get_image(
