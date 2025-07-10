@@ -40,12 +40,7 @@ if TYPE_CHECKING:
 
 
 class VertexExperimentTrackerSettings(BaseSettings):
-    """Settings for the VertexAI experiment tracker.
-
-    Attributes:
-        experiment: The VertexAI experiment name.
-        experiment_tensorboard: The VertexAI experiment tensorboard.
-    """
+    """Settings for the VertexAI experiment tracker."""
 
     experiment: Optional[str] = Field(
         None, description="The VertexAI experiment name."
@@ -81,39 +76,7 @@ class VertexExperimentTrackerConfig(
     GoogleCredentialsConfigMixin,
     VertexExperimentTrackerSettings,
 ):
-    """Config for the VertexAI experiment tracker.
-
-    Attributes:
-        location: Optional. The default location to use when making API calls. If not
-            set defaults to us-central1.
-        staging_bucket: Optional. The default staging bucket to use to stage artifacts
-            when making API calls. In the form gs://...
-        network:
-            Optional. The full name of the Compute Engine network to which jobs
-            and resources should be peered. E.g. "projects/12345/global/networks/myVPC".
-            Private services access must already be configured for the network.
-            If specified, all eligible jobs and resources created will be peered
-            with this VPC.
-        encryption_spec_key_name:
-            Optional. The Cloud KMS resource identifier of the customer
-            managed encryption key used to protect a resource. Has the
-            form:
-            ``projects/my-project/locations/my-region/keyRings/my-kr/cryptoKeys/my-key``.
-            The key needs to be in the same region as where the compute
-            resource is created.
-        api_endpoint (str):
-                Optional. The desired API endpoint,
-                e.g., us-central1-aiplatform.googleapis.com
-        api_key (str):
-            Optional. The API key to use for service calls.
-            NOTE: Not all services support API keys.
-        api_transport (str):
-            Optional. The transport method which is either 'grpc' or 'rest'.
-            NOTE: "rest" transport functionality is currently in a
-            beta state (preview).
-        request_metadata:
-            Optional. Additional gRPC metadata to send with every client request.
-    """
+    """Config for the VertexAI experiment tracker."""
 
     location: Optional[str] = None
     staging_bucket: Optional[str] = None

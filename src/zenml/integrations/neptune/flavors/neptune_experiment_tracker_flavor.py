@@ -42,10 +42,6 @@ class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
 
     If attributes are left as None, the neptune.init_run() method
     will try to find the relevant values in the environment
-
-    Attributes:
-        project: name of the Neptune project you want to log the metadata to
-        api_token: your Neptune API token
     """
 
     project: Optional[str] = Field(
@@ -58,11 +54,7 @@ class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
 
 
 class NeptuneExperimentTrackerSettings(BaseSettings):
-    """Settings for the Neptune experiment tracker.
-
-    Attributes:
-        tags: Tags for the Neptune run.
-    """
+    """Settings for the Neptune experiment tracker."""
 
     tags: Set[str] = Field(
         default_factory=set, description="Tags for the Neptune run."

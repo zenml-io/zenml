@@ -30,14 +30,7 @@ if TYPE_CHECKING:
 
 
 class WhylogsDataValidatorSettings(BaseSettings):
-    """Settings for the Whylogs data validator.
-
-    Attributes:
-        enable_whylabs: If set to `True` for a step, all the whylogs data
-            profile views returned by the step will automatically be uploaded
-            to the Whylabs platform if Whylabs credentials are configured.
-        dataset_id: Dataset ID to use when uploading profiles to Whylabs.
-    """
+    """Settings for the Whylogs data validator."""
 
     enable_whylabs: bool = Field(
         False,

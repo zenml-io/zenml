@@ -40,14 +40,7 @@ if TYPE_CHECKING:
 
 
 class WandbExperimentTrackerSettings(BaseSettings):
-    """Settings for the Wandb experiment tracker.
-
-    Attributes:
-        run_name: The Wandb run name.
-        tags: Tags for the Wandb run.
-        settings: Settings for the Wandb run.
-        enable_weave: Whether to enable Weave integration.
-    """
+    """Settings for the Wandb experiment tracker."""
 
     run_name: Optional[str] = Field(
         None,
@@ -101,14 +94,7 @@ class WandbExperimentTrackerSettings(BaseSettings):
 class WandbExperimentTrackerConfig(
     BaseExperimentTrackerConfig, WandbExperimentTrackerSettings
 ):
-    """Config for the Wandb experiment tracker.
-
-    Attributes:
-        entity: Name of an existing wandb entity.
-        project_name: Name of an existing wandb project to log to.
-        api_key: API key to should be authorized to log to the configured wandb
-            entity and project.
-    """
+    """Config for the Wandb experiment tracker."""
 
     api_key: str = SecretField(
         description="API key that should be authorized to log to the configured "

@@ -59,13 +59,7 @@ def is_databricks_tracking_uri(tracking_uri: str) -> bool:
 
 
 class MLFlowExperimentTrackerSettings(BaseSettings):
-    """Settings for the MLflow experiment tracker.
-
-    Attributes:
-        experiment_name: The MLflow experiment name.
-        nested: If `True`, will create a nested sub-run for the step.
-        tags: Tags for the Mlflow run.
-    """
+    """Settings for the MLflow experiment tracker."""
 
     experiment_name: Optional[str] = Field(
         None,
@@ -84,32 +78,7 @@ class MLFlowExperimentTrackerSettings(BaseSettings):
 class MLFlowExperimentTrackerConfig(
     BaseExperimentTrackerConfig, MLFlowExperimentTrackerSettings
 ):
-    """Config for the MLflow experiment tracker.
-
-    Attributes:
-        tracking_uri: The uri of the mlflow tracking server. If no uri is set,
-            your stack must contain a `LocalArtifactStore` and ZenML will
-            point MLflow to a subdirectory of your artifact store instead.
-        tracking_username: Username for authenticating with the MLflow
-            tracking server. When a remote tracking uri is specified,
-            either `tracking_token` or `tracking_username` and
-            `tracking_password` must be specified.
-        tracking_password: Password for authenticating with the MLflow
-            tracking server. When a remote tracking uri is specified,
-            either `tracking_token` or `tracking_username` and
-            `tracking_password` must be specified.
-        tracking_token: Token for authenticating with the MLflow
-            tracking server. When a remote tracking uri is specified,
-            either `tracking_token` or `tracking_username` and
-            `tracking_password` must be specified.
-        tracking_insecure_tls: Skips verification of TLS connection to the
-            MLflow tracking server if set to `True`.
-        databricks_host: The host of the Databricks workspace with the MLflow
-            managed server to connect to. This is only required if
-            `tracking_uri` value is set to `"databricks"`.
-        enable_unity_catalog: If `True`, will enable the Databricks Unity Catalog for
-            logging and registering models.
-    """
+    """Config for the MLflow experiment tracker."""
 
     tracking_uri: Optional[str] = Field(
         None,

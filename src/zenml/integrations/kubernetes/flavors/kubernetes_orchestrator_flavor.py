@@ -117,34 +117,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
 class KubernetesOrchestratorConfig(
     BaseOrchestratorConfig, KubernetesOrchestratorSettings
 ):
-    """Configuration for the Kubernetes orchestrator.
-
-    Attributes:
-        incluster: If `True`, the orchestrator will run the pipeline inside the
-            same cluster in which it itself is running. This requires the client
-            to run in a Kubernetes pod itself. If set, the `kubernetes_context`
-            config option is ignored. If the stack component is linked to a
-            Kubernetes service connector, this field is ignored.
-        kubernetes_context: Name of a Kubernetes context to run pipelines in.
-            If the stack component is linked to a Kubernetes service connector,
-            this field is ignored. Otherwise, it is mandatory.
-        kubernetes_namespace: Name of the Kubernetes namespace to be used.
-            If not provided, `zenml` namespace will be used.
-        local: If `True`, the orchestrator will assume it is connected to a
-            local kubernetes cluster and will perform additional validations and
-            operations to allow using the orchestrator in combination with other
-            local stack components that store data in the local filesystem
-            (i.e. it will mount the local stores directory into the pipeline
-            containers).
-        skip_local_validations: If `True`, the local validations will be
-            skipped.
-        parallel_step_startup_waiting_period: How long to wait in between
-            starting parallel steps. This can be used to distribute server
-            load when running pipelines with a huge amount of parallel steps.
-        pass_zenml_token_as_secret: If `True`, the ZenML token will be passed
-            as a Kubernetes secret to the pods. For this to work, the Kubernetes
-            client must have permissions to create secrets in the namespace.
-    """
+    """Configuration for the Kubernetes orchestrator."""
 
     incluster: bool = Field(
         False,

@@ -39,31 +39,6 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
     configure secrets and environment variables so that the Kaniko build
     container is able to push to the container registry (and optionally access
     the artifact store to upload the build context).
-
-    Attributes:
-        kubernetes_context: The Kubernetes context in which to run the Kaniko
-            pod.
-        kubernetes_namespace: The Kubernetes namespace in which to run the
-            Kaniko pod. This namespace will not be created and must already
-            exist.
-        executor_image: The image of the Kaniko executor to use.
-        pod_running_timeout: The timeout to wait until the pod is running
-            in seconds. Defaults to `300`.
-        env: `env` section of the Kubernetes container spec.
-        env_from: `envFrom` section of the Kubernetes container spec.
-        volume_mounts: `volumeMounts` section of the Kubernetes container spec.
-        volumes: `volumes` section of the Kubernetes pod spec.
-        service_account_name: Name of the Kubernetes service account to use.
-        store_context_in_artifact_store: If `True`, the build context will be
-            stored in the artifact store. If `False`, the build context will be
-            streamed over stdin of the `kubectl` process that runs the build.
-            In case the artifact store is used, the container running the build
-            needs read access to the artifact store.
-        executor_args: Additional arguments to forward to the Kaniko executor.
-            See https://github.com/GoogleContainerTools/kaniko#additional-flags
-            for a full list of available arguments.
-            Example: `["--compressed-caching=false"]`
-
     """
 
     kubernetes_context: str = Field(

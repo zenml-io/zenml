@@ -36,25 +36,7 @@ DEFAULT_KFP_UI_PORT = 8080
 
 
 class KubeflowOrchestratorSettings(BaseSettings):
-    """Settings for the Kubeflow orchestrator.
-
-    Attributes:
-        synchronous: If `True`, the client running a pipeline using this
-            orchestrator waits until all steps finish running. If `False`,
-            the client returns immediately and the pipeline is executed
-            asynchronously. Defaults to `True`. This setting only
-            has an effect when specified on the pipeline and will be ignored if
-            specified on steps.
-        timeout: How many seconds to wait for synchronous runs.
-        client_args: Arguments to pass when initializing the KFP client.
-        client_username: Username to generate a session cookie for the kubeflow client. Both `client_username`
-        and `client_password` need to be set together.
-        client_password: Password to generate a session cookie for the kubeflow client. Both `client_username`
-        and `client_password` need to be set together.
-        user_namespace: The user namespace to use when creating experiments
-            and runs.
-        pod_settings: Pod settings to apply.
-    """
+    """Settings for the Kubeflow orchestrator."""
 
     synchronous: bool = Field(
         True,
@@ -158,21 +140,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
 class KubeflowOrchestratorConfig(
     BaseOrchestratorConfig, KubeflowOrchestratorSettings
 ):
-    """Configuration for the Kubeflow orchestrator.
-
-    Attributes:
-        kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
-            API. If not set, the hostname will be derived from the Kubernetes
-            API proxy. Mandatory when connecting to a multi-tenant Kubeflow
-            Pipelines deployment.
-        kubeflow_namespace: The Kubernetes namespace in which Kubeflow
-            Pipelines is deployed. Defaults to `kubeflow`.
-        kubernetes_context: Name of a kubernetes context to run
-            pipelines in. Not applicable when connecting to a multi-tenant
-            Kubeflow Pipelines deployment (i.e. when `kubeflow_hostname` is
-            set) or if the stack component is linked to a Kubernetes service
-            connector.
-    """
+    """Configuration for the Kubeflow orchestrator."""
 
     kubeflow_hostname: Optional[str] = Field(
         None,
