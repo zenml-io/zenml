@@ -146,7 +146,7 @@ ZenML uses a **client-server architecture** with an integrated web dashboard ([z
 pip install "zenml[server]"
 
 # Install required dependencies
-pip install scikit-learn openai
+pip install scikit-learn openai numpy
 
 # Initialize your ZenML repository
 zenml init
@@ -164,23 +164,30 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from typing_extensions import Annotated
+import numpy as np
 import openai
 
 @step
-def create_dataset() -> tuple:
+def create_dataset() -> tuple[
+    Annotated[np.ndarray, "X_train"],
+    Annotated[np.ndarray, "X_test"], 
+    Annotated[np.ndarray, "y_train"],
+    Annotated[np.ndarray, "y_test"]
+]:
     """Generate a simple classification dataset."""
     X, y = make_classification(n_samples=100, n_features=4, n_classes=2, random_state=42)
     return train_test_split(X, y, test_size=0.2, random_state=42)
 
 @step
-def train_model(X_train, y_train) -> RandomForestClassifier:
+def train_model(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestClassifier:
     """Train a simple sklearn model."""
     model = RandomForestClassifier(n_estimators=10, random_state=42)
     model.fit(X_train, y_train)
     return model
 
 @step
-def evaluate_model(model: RandomForestClassifier, X_test, y_test) -> float:
+def evaluate_model(model: RandomForestClassifier, X_test: np.ndarray, y_test: np.ndarray) -> float:
     """Evaluate the model accuracy."""
     predictions = model.predict(X_test)
     return accuracy_score(y_test, predictions)
@@ -281,24 +288,31 @@ ZenML is featured in these comprehensive guides to production AI systems.
 ## ❓ FAQs from ML Engineers Like You
 
 **Q: "Do I need to rewrite my agents or models to use ZenML?"**
+
 A: No. Wrap your existing code in a `@step`. Keep using `scikit-learn`, PyTorch, LangGraph, LlamaIndex, or raw API calls. ZenML orchestrates your tools, it doesn't replace them.
 
 **Q: "How is this different from LangSmith/Langfuse?"**
+
 A: They provide excellent observability for LLM applications. We orchestrate the **full MLOps lifecycle for your entire AI stack**. With ZenML, you manage both your classical ML models and your AI agents in one unified framework, from development and evaluation all the way to production deployment.
 
 **Q: "Can I use my existing MLflow/W&B setup?"**
+
 A: Yes! We integrate with both. Your experiments, our pipelines.
 
 **Q: "Is this just MLflow with extra steps?"**
+
 A: No. MLflow tracks experiments. We orchestrate the entire development process – from training and evaluation to deployment and monitoring – for both models and agents.
 
 **Q: "What about cost? I can't afford another platform."**
+
 A: ZenML's open-source version is free forever. You likely already have the required infrastructure (like a Kubernetes cluster and object storage). We just help you make better use of it for MLOps.
 
 **Q: "How do I set up ZenML with my environment and dependencies?"**
+
 A: Follow the "Get Started" section above for basic setup. For complex environments, use our [Docker deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-docker) or check our [troubleshooting guide](https://docs.zenml.io/user-guides/advanced-guide/troubleshooting). Use `zenml integration install` for specific tools.
 
 **Q: "How do I configure ZenML with Kubernetes?"**
+
 A: ZenML integrates with Kubernetes through the native Kubernetes orchestrator, Kubeflow, and other K8s-based orchestrators. See our [Kubernetes orchestrator guide](https://docs.zenml.io/stacks/orchestrators/kubernetes) and [Kubeflow guide](https://docs.zenml.io/stacks/orchestrators/kubeflow), plus [deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm).
 
 ### 🛠 VS Code Extension
