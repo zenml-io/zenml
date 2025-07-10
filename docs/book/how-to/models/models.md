@@ -5,7 +5,7 @@ icon: rectangle-history
 
 # Models
 
-Machine learning models are at the heart of any ML workflow. ZenML provides comprehensive model management capabilities through its Model Control Plane, allowing you to track, version, promote, and share models across your ML pipelines.
+Machine learning models and AI agent configurations are at the heart of any ML workflow and AI system. ZenML provides comprehensive model management capabilities through its Model Control Plane, allowing you to track, version, promote, and share both traditional ML models and AI agent systems across your pipelines.
 
 {% hint style="info" %}
 The ZenML Model Control Plane is a [ZenML Pro](https://zenml.io/pro) feature. While the Python functions for creating and interacting with models are available in the open-source version, the visual dashboard for exploring and managing models is only available in ZenML Pro. Please [sign up here](https://zenml.io/pro) to get access to the full model management experience.
@@ -19,14 +19,14 @@ This guide covers all aspects of working with models in ZenML, from basic concep
 
 A ZenML Model is an entity that groups together related resources:
 
-* Pipelines that train, evaluate, or deploy the model
-* Artifacts like datasets, model weights, and predictions
-* Metadata including metrics, parameters, and business information
+* Pipelines that train, evaluate, or deploy the model or agent system
+* Artifacts like datasets, model weights, predictions, prompt templates, and agent configurations
+* Metadata including metrics, parameters, evaluation results, and business information
 
-Think of a ZenML Model as a container that organizes all the components related to a specific ML use case or business problem. This extends beyond just the model weights or parameters - it represents the entire ML product.
+Think of a ZenML Model as a container that organizes all the components related to a specific ML use case, business problem, or AI agent system. This extends beyond just model weights or agent prompts - it represents the entire ML product or intelligent system.
 
 {% hint style="info" %}
-A ZenML Model is different from a "technical model" (the actual ML model files with weights and parameters). The technical model is just one artifact that can be associated with a ZenML Model, alongside training data, predictions, and other resources.
+A ZenML Model is different from a "technical model" (the actual ML model files with weights and parameters) or "agent configuration" (prompt templates, tool definitions, etc.). These technical artifacts are just components that can be associated with a ZenML Model, alongside training data, predictions, evaluation results, and other resources.
 {% endhint %}
 
 ### The Model Control Plane
@@ -57,18 +57,19 @@ You can register models in several ways:
 from zenml import Model
 from zenml.client import Client
 
+# Example: Register an AI agent system as a model
 Client().create_model(
-    name="iris_classifier",
-    license="Apache 2.0",
-    description="Classification model for the Iris dataset",
-    tags=["classification", "sklearn", "iris"],
+    name="customer_service_agent",
+    license="MIT",
+    description="Multi-agent system for customer service automation",
+    tags=["agent", "customer-service", "llm", "rag"],
 )
 ```
 
 #### Using the CLI
 
 ```bash
-zenml model register iris_classifier --license="Apache 2.0" --description="Classification model for the Iris dataset"
+zenml model register customer_service_agent --license="MIT" --description="Multi-agent customer service system"
 ```
 
 #### Using a Pipeline
@@ -136,25 +137,30 @@ from zenml.artifacts.artifact_config import ArtifactConfig
 from sklearn.base import ClassifierMixin
 from sklearn.ensemble import RandomForestClassifier
 
-@step(model=Model(name="MyModel", version="1.2.42"))
-def trainer(
-    trn_dataset: pd.DataFrame,
-) -> Annotated[ClassifierMixin, ArtifactConfig("trained_model")]:
-    # Train the model
-    model = RandomForestClassifier().fit(trn_dataset)
+# Example: Agent configuration step linking artifacts
+@step(model=Model(name="CustomerServiceAgent", version="2.1.0"))
+def configure_agent(
+    knowledge_base: pd.DataFrame,
+    evaluation_results: dict
+) -> Annotated[dict, ArtifactConfig("agent_config")]:
+    # Create agent configuration based on knowledge base and evaluations
+    agent_config = {
+        "prompt_template": generate_prompt_from_kb(knowledge_base),
+        "tools": ["search", "database_query", "escalation"],
+        "performance_threshold": evaluation_results["min_accuracy"],
+        "model_params": {"temperature": 0.7, "max_tokens": 500}
+    }
     
-    # Save intermediate checkpoint
-    for epoch in range(10):
-        # Note: train_epoch is a custom function you'd need to implement
-        model = train_epoch(model, trn_dataset)
-        # Save intermediate artifact
+    # Save intermediate prompt variants
+    for variant in ["concise", "detailed", "empathetic"]:
+        prompt_variant = generate_prompt_variant(knowledge_base, variant)
         save_artifact(
-            f"model_checkpoint_{epoch}", 
-            model,
+            f"prompt_template_{variant}", 
+            prompt_variant,
             is_model_artifact=True,
         )
     
-    return model
+    return agent_config
 ```
 
 ### Model Promotion
@@ -179,6 +185,14 @@ model.set_stage(stage=ModelStages.PRODUCTION)
 # Find latest model and promote to staging
 latest_model = Model(name="iris_classifier", version=ModelStages.LATEST)
 latest_model.set_stage(stage=ModelStages.STAGING)
+
+# Example: Promote agent configuration to production
+agent_model = Model(name="customer_service_agent", version="2.1.0")
+agent_model.set_stage(stage=ModelStages.PRODUCTION)
+
+# Promote latest agent version to staging after successful evaluation
+latest_agent = Model(name="customer_service_agent", version=ModelStages.LATEST)
+latest_agent.set_stage(stage=ModelStages.STAGING)
 ```
 
 ## Using Models Across Pipelines
@@ -225,6 +239,28 @@ def inference_pipeline():
         model=model.get_model_artifact("trained_model"),
         data=inference_data,
     )
+
+# Example: Agent inference pipeline using production agent configuration
+@pipeline(
+    model=Model(
+        name="customer_service_agent",
+        # Reference the production agent version
+        version=ModelStages.PRODUCTION,
+    ),
+)
+def agent_inference_pipeline():
+    """Run agent inference using the production agent configuration."""
+    # Get the agent model from the pipeline context
+    agent_model = get_pipeline_context().model
+    
+    # Load customer queries (you'd need to implement this function)
+    customer_queries = load_customer_queries()
+    
+    # Run agent responses using the production agent configuration
+    process_customer_requests(
+        agent_config=agent_model.get_model_artifact("agent_config"),
+        queries=customer_queries,
+    )
 ```
 
 This pattern enables clean separation between training and inference pipelines while maintaining a clear relationship between them.
@@ -263,6 +299,40 @@ def evaluate_model(model, test_data):
         },
         infer_model=True,  # Attaches to the model in the current step context
     )
+
+# Example: Evaluate agent and log metrics
+@step
+def evaluate_agent(agent_config, test_queries):
+    """Evaluate the agent and log performance metrics."""
+    responses = []
+    for query in test_queries:
+        response = agent_config.process_query(query)
+        responses.append(response)
+    
+    # Note: You'd need to implement these agent evaluation functions
+    response_quality = calculate_response_quality(responses, test_queries)
+    response_time = calculate_avg_response_time(responses)
+    user_satisfaction = calculate_satisfaction_score(responses)
+    tool_usage_efficiency = calculate_tool_efficiency(agent_config.tools)
+    
+    # Log agent performance metrics to the model
+    log_metadata(
+        metadata={
+            "agent_evaluation": {
+                "response_quality": response_quality,
+                "avg_response_time_ms": response_time,
+                "user_satisfaction_score": user_satisfaction,
+                "tool_efficiency": tool_usage_efficiency,
+                "total_queries_evaluated": len(test_queries)
+            },
+            "agent_configuration": {
+                "prompt_template_version": agent_config.prompt_version,
+                "tools_enabled": agent_config.tools,
+                "model_temperature": agent_config.temperature
+            }
+        },
+        infer_model=True,  # Attaches to the agent model in the current step context
+    )
 ```
 
 ### Fetching Model Metadata
@@ -278,6 +348,19 @@ model = Client().get_model_version("iris_classifier", "1.2.3")
 # Access metadata
 metrics = model.run_metadata["evaluation_metrics"].value
 print(f"Model accuracy: {metrics['accuracy']}")
+
+# Example: Access agent model metadata
+agent_model = Client().get_model_version("customer_service_agent", "2.1.0")
+
+# Access agent evaluation metadata
+agent_metrics = agent_model.run_metadata["agent_evaluation"].value
+print(f"Agent response quality: {agent_metrics['response_quality']}")
+print(f"Average response time: {agent_metrics['avg_response_time_ms']}ms")
+
+# Access agent configuration metadata
+agent_config = agent_model.run_metadata["agent_configuration"].value
+print(f"Tools enabled: {agent_config['tools_enabled']}")
+print(f"Model temperature: {agent_config['model_temperature']}")
 ```
 
 ## Deleting Models
@@ -292,8 +375,12 @@ from zenml.client import Client
 # Using the Python SDK
 Client().delete_model("iris_classifier")
 
+# Delete an agent model
+Client().delete_model("customer_service_agent")
+
 # Or using the CLI
 # zenml model delete iris_classifier
+# zenml model delete customer_service_agent
 ```
 
 ### Deleting a Specific Version
@@ -318,7 +405,7 @@ Client().delete_model_version("model_version_id")
 
 ## Conclusion
 
-The Model Control Plane in ZenML provides a comprehensive solution for managing models throughout their lifecycle. By properly registering, versioning, linking artifacts, and tracking metadata, you can create a transparent and reproducible workflow for your ML projects.
+The Model Control Plane in ZenML provides a comprehensive solution for managing both traditional ML models and AI agent systems throughout their lifecycle. By properly registering, versioning, linking artifacts, and tracking metadata, you can create a transparent and reproducible workflow for your ML projects and AI agent development.
 
 {% hint style="info" %}
 **OSS vs Pro Feature Summary:**
@@ -326,6 +413,6 @@ The Model Control Plane in ZenML provides a comprehensive solution for managing 
 * **ZenML Pro:** Adds visual model dashboard, advanced model exploration, comprehensive metrics visualization, and integrated model lineage views
 {% endhint %}
 
-Whether you're working on a simple classification model or a complex production ML system, ZenML's model management capabilities help you organize your resources and maintain clarity in your ML processes.
+Whether you're working on a simple classification model, a complex production ML system, or a sophisticated multi-agent AI application, ZenML's unified model management capabilities help you organize your resources and maintain clarity across your entire AI development lifecycle.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
