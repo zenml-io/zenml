@@ -443,27 +443,7 @@ if __name__ == "__main__":
     master_pipeline(template_id=template.id)
 ```
 
-This pattern is particularly useful for:
-
-- **Dynamic data processing**: When the number of chunks/partitions is determined at runtime
-- **Database-driven workflows**: Processing data based on database queries
-- **Scalable batch processing**: Handling varying workloads efficiently
-- **Resource optimization**: Each chunk can be processed with different resource requirements
-
-**Key advantages of this approach:**
-
-1. **True parallelism**: Each chunk runs as a separate pipeline, enabling better resource utilization
-2. **Dynamic scaling**: The number of parallel operations is determined at runtime
-3. **Fault tolerance**: Individual chunk failures don't affect other chunks
-4. **Monitoring**: Each chunk processing run appears separately in the ZenML dashboard
-5. **Template reusability**: The same template can be used for different master pipelines
-
-**Considerations:**
-
-- **Resource management**: Be mindful of the total resource consumption when running many parallel pipelines
-- **Waiting strategy**: The example uses a simple polling approach; consider implementing more sophisticated waiting mechanisms for production use
-- **Error handling**: Add proper error handling for failed chunk processing runs
-- **Template management**: Ensure run templates are properly versioned and managed
+This pattern enables dynamic scaling, true parallelism, and database-driven workflows. Key advantages include fault tolerance and separate monitoring for each chunk. Consider resource management and proper error handling when implementing.
 
 ### Custom Step Invocation IDs
 
