@@ -32,8 +32,10 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 """
 
 import enum
+import functools
 import re
 import time
+from collections import defaultdict
 from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
@@ -50,6 +52,8 @@ from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
+
+R = TypeVar("R")
 
 
 class PodPhase(enum.Enum):
@@ -581,3 +585,171 @@ def get_pod_owner_references(
     return cast(
         List[k8s_client.V1OwnerReference], pod.metadata.owner_references
     )
+
+
+def retry_on_api_exception(
+    func: Callable[..., R],
+    max_retries: int = 3,
+    delay: float = 1,
+    backoff: float = 1,
+) -> Callable[..., R]:
+    """Retry a function on API exceptions.
+
+    Args:
+        func: The function to retry.
+        max_retries: The maximum number of retries.
+        delay: The delay between retries.
+        backoff: The backoff factor.
+
+    Returns:
+        The wrapped function with retry logic.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> R:
+        _delay = delay
+        retries = 0
+        while retries <= max_retries:
+            try:
+                return func(*args, **kwargs)
+            except ApiException as e:
+                retries += 1
+                if retries <= max_retries:
+                    logger.warning("Error calling %s: %s.", func.__name__, e)
+                    time.sleep(_delay)
+                    _delay *= backoff
+                else:
+                    raise
+
+        raise RuntimeError(
+            f"Failed to call {func.__name__} after {max_retries} retries."
+        )
+
+    return wrapper
+
+
+def create_job(
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_manifest: k8s_client.V1Job,
+) -> None:
+    """Create a Kubernetes job.
+
+    Args:
+        batch_api: Kubernetes batch api.
+        namespace: Kubernetes namespace.
+        job_manifest: The manifest of the job to create.
+    """
+    retry_on_api_exception(batch_api.create_namespaced_job)(
+        namespace=namespace,
+        body=job_manifest,
+    )
+
+
+def wait_for_job_to_finish(
+    batch_api: k8s_client.BatchV1Api,
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    job_name: str,
+    backoff_interval: float = 1,
+    maximum_backoff: float = 32,
+    exponential_backoff: bool = False,
+    container_name: Optional[str] = None,
+    stream_logs: bool = True,
+) -> None:
+    """Wait for a job to finish.
+
+    Args:
+        batch_api: Kubernetes BatchV1Api client.
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
+        job_name: Name of the job for which to wait.
+        backoff_interval: The interval to wait between polling the job status.
+        maximum_backoff: The maximum interval to wait between polling the job
+            status.
+        exponential_backoff: Whether to use exponential backoff.
+        stream_logs: Whether to stream the job logs.
+        container_name: Name of the container to stream logs from.
+
+    Raises:
+        RuntimeError: If the job failed or timed out.
+    """
+    logged_lines_per_pod: Dict[str, int] = defaultdict(int)
+    finished_pods = set()
+
+    while True:
+        job: k8s_client.V1Job = retry_on_api_exception(
+            batch_api.read_namespaced_job
+        )(name=job_name, namespace=namespace)
+
+        if job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return
+                if condition.type == "Failed" and condition.status == "True":
+                    raise RuntimeError(
+                        f"Job `{namespace}:{job_name}` failed: "
+                        f"{condition.message}"
+                    )
+
+        if stream_logs:
+            try:
+                pod_list: k8s_client.V1PodList = core_api.list_namespaced_pod(
+                    namespace=namespace,
+                    label_selector=f"job-name={job_name}",
+                )
+            except ApiException as e:
+                logger.error("Error fetching pods: %s.", e)
+                pod_list = []
+            else:
+                # Sort pods by creation timestamp, oldest first
+                pod_list.items.sort(
+                    key=lambda pod: pod.metadata.creation_timestamp,
+                )
+
+            for pod in pod_list.items:
+                pod_name = pod.metadata.name
+                pod_status = pod.status.phase
+
+                if pod_name in finished_pods:
+                    # We've already streamed all logs for this pod, so we can
+                    # skip it.
+                    continue
+
+                if pod_status == PodPhase.PENDING.value:
+                    # The pod is still pending, so we can't stream logs for it
+                    # yet.
+                    continue
+
+                if pod_status in [
+                    PodPhase.SUCCEEDED.value,
+                    PodPhase.FAILED.value,
+                ]:
+                    finished_pods.add(pod_name)
+
+                containers = pod.spec.containers
+                if not container_name:
+                    container_name = containers[0].name
+
+                try:
+                    response = core_api.read_namespaced_pod_log(
+                        name=pod_name,
+                        namespace=namespace,
+                        container=container_name,
+                        _preload_content=False,
+                    )
+                except ApiException as e:
+                    logger.error("Error reading pod logs: %s.", e)
+                else:
+                    raw_data = response.data
+                    decoded_log = raw_data.decode("utf-8", errors="replace")
+                    logs = decoded_log.splitlines()
+                    logged_lines = logged_lines_per_pod[pod_name]
+                    if len(logs) > logged_lines:
+                        for line in logs[logged_lines:]:
+                            logger.info(line)
+                        logged_lines_per_pod[pod_name] = len(logs)
+
+        time.sleep(backoff_interval)
+        if exponential_backoff and backoff_interval < maximum_backoff:
+            backoff_interval *= 2
