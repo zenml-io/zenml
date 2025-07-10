@@ -827,7 +827,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         step_status = None
         if include_steps:
-            step_status = self._fetch_step_status(run, orchestrator_run_id)
+            step_status = self._fetch_step_statuses(run, orchestrator_run_id)
 
         return pipeline_status, step_status
 
@@ -984,7 +984,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # Return None if no clear status - don't update
         return None
 
-    def _fetch_step_status(
+    def _fetch_step_statuses(
         self, run: "PipelineRunResponse", orchestrator_run_id: str
     ) -> Dict[str, ExecutionStatus]:
         """Fetch the statuses of individual pipeline steps.
