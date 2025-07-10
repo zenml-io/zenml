@@ -52,9 +52,9 @@
 
 ![No MLOps for modern AI](docs/book/.gitbook/assets/readme_problem.png)
 
-You're an ML engineer. You've perfected deploying scikit-learn models and wrangling TensorFlow jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
+You're an ML engineer. You've perfected deploying `scikit-learn` models and wrangling PyTorch jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
 
-- **The Adaptation Struggle:** Your MLOps habits—rigorous testing, versioning, CI/CD—don’t map cleanly onto agent development. How do you version a prompt? How do you regression test a non-deterministic system? The tools that gave you confidence for models now create friction for agents.
+- **The Adaptation Struggle:** Your MLOps habits (rigorous testing, versioning, CI/CD) don’t map cleanly onto agent development. How do you version a prompt? How do you regression test a non-deterministic system? The tools that gave you confidence for models now create friction for agents.
 
 - **The Divided Stack:** To cope, teams are building a second, parallel stack just for LLM-based systems. Now you’re maintaining two sets of tools, two deployment pipelines, and two mental models. Your classical models live in one world, your agents in another. It's expensive, complex, and slows everyone down.
 
@@ -182,7 +182,7 @@ results = compare_architectures(
 **Friday: Ship with Confidence**
 ```python
 # Deploy the new agent with the same command you use for ML models
-zenml stack deploy agent-prod --model="customer_service:challenger"
+python agent_deployment.py --env=prod --model="customer_service:challenger"
 ```
 </details>
 
@@ -192,7 +192,8 @@ zenml stack deploy agent-prod --model="customer_service:challenger"
 
 ```bash
 # You know this drill
-pip install "zenml[llm]"  # Includes LangChain, LlamaIndex integrations
+pip install zenml  # Includes LangChain, LlamaIndex integrations
+zenml integration install langchain llamaindex
 
 # Initialize (your ML pipelines still work!)
 zenml init
@@ -292,25 +293,10 @@ ZenML is featured in these comprehensive guides to production AI systems.
 
 ## 🤝 Join ML Engineers Building the Future of AI
 
-**You're Not Alone:**
-- 💬 [Slack Community](https://zenml.io/slack) - 3000+ ML engineers building with ZenML.
-- 🐛 [GitHub Issues](https://github.com/zenml-io/zenml/issues) - Bug reports and feature requests.
-- 📧 [Enterprise Support](https://zenml.io/pro) - SLAs, dedicated support, professional services.
-
-**Real Engineers, Real Stories:**
-> "Same platform for our sklearn models and our RAG pipeline. DevOps loves us now."
-> - ML Platform Lead, European Bank
-
-> "We went from 'YOLO prompt updates' to proper evaluation pipelines. Game changer."
-> - Senior ML Engineer, Fortune 500 Retailer
-
-> "Finally, I can explain to my PM why agent v2 is actually worse than v1. With data!"
-> - Staff Engineer, Series B Startup
-
 **Contribute:**
 - 🌟 [Star us on GitHub](https://github.com/zenml-io/zenml/stargazers) - Help others discover ZenML
 - 🤝 [Contributing Guide](CONTRIBUTING.md) - Start with [`good-first-issue`](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22)
-- 💻 [Write Integrations](https://docs.zenml.io/how-to/stack-deployment/implement-a-custom-integration) - Add your favorite tools
+- 💻 [Write Integrations](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/README.md) - Add your favorite tools
 
 **Stay Updated:**
 - 🗺 [Public Roadmap](https://zenml.io/roadmap) - See what's coming next
@@ -320,7 +306,7 @@ ZenML is featured in these comprehensive guides to production AI systems.
 ## ❓ FAQs from ML Engineers Like You
 
 **Q: "Do I need to rewrite my agents or models to use ZenML?"**
-A: No. Wrap your existing code in a `@step`. Keep using Scikit-Learn, PyTorch, LangGraph, LlamaIndex, or raw API calls. ZenML orchestrates your tools, it doesn't replace them.
+A: No. Wrap your existing code in a `@step`. Keep using `scikit-learn`, PyTorch, LangGraph, LlamaIndex, or raw API calls. ZenML orchestrates your tools, it doesn't replace them.
 
 **Q: "How is this different from LangSmith/Langfuse?"**
 A: They provide excellent observability for LLM applications. We orchestrate the **full MLOps lifecycle for your entire AI stack**. With ZenML, you manage both your classical ML models and your AI agents in one unified framework, from development and evaluation all the way to production deployment.
