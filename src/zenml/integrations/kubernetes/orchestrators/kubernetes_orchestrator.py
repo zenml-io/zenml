@@ -49,7 +49,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
@@ -784,6 +784,187 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 f"No running step jobs found for pipeline run with ID: {run.id}"
             )
+
+    def fetch_status(
+        self, run: "PipelineRunResponse", include_steps: bool = False
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
+        """Refreshes the status of a specific pipeline run.
+
+        Args:
+            run: The run that was executed by this orchestrator.
+            include_steps: If True, also fetch the status of individual steps.
+
+        Returns:
+            A tuple of (pipeline_status, step_statuses).
+            If include_steps is False, step_statuses will be None.
+            If include_steps is True, step_statuses will be a dict (possibly empty).
+
+        Raises:
+            ValueError: If the orchestrator run ID cannot be found or if the
+                stack components are not accessible.
+        """
+        # Get the orchestrator run ID which corresponds to the orchestrator pod name
+        orchestrator_run_id = run.orchestrator_run_id
+        if not orchestrator_run_id:
+            raise ValueError(
+                "Cannot determine orchestrator run ID for the run. "
+                "Unable to fetch the status."
+            )
+
+        # Check the orchestrator pod status (only if run is not finished)
+        if not run.status.is_finished:
+            orchestrator_pod_phase = self._check_pod_status(
+                pod_name=orchestrator_run_id,
+            )
+            pipeline_status = self._map_pod_phase_to_execution_status(
+                orchestrator_pod_phase
+            )
+        else:
+            # Run is already finished, don't change status
+            pipeline_status = None
+
+        step_statuses = None
+        if include_steps:
+            step_statuses = self._fetch_step_statuses(run)
+
+        return pipeline_status, step_statuses
+
+    def _check_pod_status(
+        self,
+        pod_name: str,
+    ) -> kube_utils.PodPhase:
+        """Check pod status and handle deletion scenarios for both orchestrator and step pods.
+
+        This method should only be called for non-finished pipeline runs/steps.
+
+        Args:
+            pod_name: The name of the pod to check.
+
+        Returns:
+            The pod phase if the pod exists, or PodPhase.FAILED if pod was deleted.
+        """
+        pod = kube_utils.get_pod(
+            core_api=self._k8s_core_api,
+            pod_name=pod_name,
+            namespace=self.config.kubernetes_namespace,
+        )
+
+        if pod and pod.status and pod.status.phase:
+            try:
+                return kube_utils.PodPhase(pod.status.phase)
+            except ValueError:
+                # Handle unknown pod phases
+                logger.warning(
+                    f"Unknown pod phase for pod {pod_name}: {pod.status.phase}"
+                )
+                return kube_utils.PodPhase.UNKNOWN
+        else:
+            logger.warning(
+                f"Can't fetch the status of pod {pod_name} "
+                f"in namespace {self.config.kubernetes_namespace}."
+            )
+            return kube_utils.PodPhase.UNKNOWN
+
+    def _map_pod_phase_to_execution_status(
+        self, pod_phase: kube_utils.PodPhase
+    ) -> Optional[ExecutionStatus]:
+        """Map Kubernetes pod phase to ZenML execution status.
+
+        Args:
+            pod_phase: The Kubernetes pod phase.
+
+        Returns:
+            The corresponding ZenML execution status.
+        """
+        if pod_phase == kube_utils.PodPhase.PENDING:
+            return ExecutionStatus.INITIALIZING
+        elif pod_phase == kube_utils.PodPhase.RUNNING:
+            return ExecutionStatus.RUNNING
+        elif pod_phase == kube_utils.PodPhase.SUCCEEDED:
+            return ExecutionStatus.COMPLETED
+        elif pod_phase == kube_utils.PodPhase.FAILED:
+            return ExecutionStatus.FAILED
+        else:  # UNKNOWN - no update
+            return None
+
+    def _map_job_status_to_execution_status(
+        self, job: k8s_client.V1Job
+    ) -> Optional[ExecutionStatus]:
+        """Map Kubernetes job status to ZenML execution status.
+
+        Args:
+            job: The Kubernetes job.
+
+        Returns:
+            The corresponding ZenML execution status, or None if no clear status.
+        """
+        # Check job conditions first
+        if job.status and job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return ExecutionStatus.COMPLETED
+                elif condition.type == "Failed" and condition.status == "True":
+                    return ExecutionStatus.FAILED
+
+        # Return None if no clear status - don't update
+        return None
+
+    def _fetch_step_statuses(
+        self, run: "PipelineRunResponse"
+    ) -> Dict[str, ExecutionStatus]:
+        """Fetch the statuses of individual pipeline steps.
+
+        Args:
+            run: The pipeline run response.
+
+        Returns:
+            A dictionary mapping step names to their execution statuses.
+        """
+        step_statuses = {}
+
+        # Query all jobs for this run and match them to steps
+        label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
+
+        try:
+            jobs = self._k8s_batch_api.list_namespaced_job(
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to list jobs for run {run.id}: {e}")
+            return {}
+
+        # Fetch the steps from the run response
+        steps_dict = run.steps
+
+        for job in jobs.items:
+            # Extract step name from job labels
+            if not job.metadata or not job.metadata.labels:
+                continue
+
+            step_name = job.metadata.labels.get("step_name")
+            if not step_name:
+                continue
+
+            # Check if this step is already finished
+            step_response = steps_dict.get(step_name, None)
+
+            # If the step is not in the run response yet, skip, we can't update
+            if step_response is None:
+                continue
+
+            # If the step is already in a finished state, skip
+            if step_response and step_response.status.is_finished:
+                continue
+
+            # Check job status and map to execution status
+            execution_status = self._map_job_status_to_execution_status(job)
+            if execution_status is not None:
+                step_statuses[step_name] = execution_status
+
+        return step_statuses
 
     def get_pipeline_run_metadata(
         self, run_id: UUID

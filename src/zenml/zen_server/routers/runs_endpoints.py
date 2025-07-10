@@ -28,7 +28,7 @@ from zenml.constants import (
     STOP,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
@@ -188,39 +188,25 @@ def get_run(
 
     Returns:
         The pipeline run.
-
-    Raises:
-        RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
+    store = zen_store()
     run = verify_permissions_and_get_entity(
         id=run_id,
-        get_method=zen_store().get_run,
+        get_method=store.get_run,
         hydrate=hydrate,
         include_python_packages=include_python_packages,
         include_full_metadata=include_full_metadata,
     )
+
     if refresh_status:
         try:
-            # Check the stack and its orchestrator
-            if run.stack is not None:
-                orchestrators = run.stack.components.get(
-                    StackComponentType.ORCHESTRATOR, []
-                )
-                if orchestrators:
-                    verify_permission_for_model(
-                        model=orchestrators[0], action=Action.READ
-                    )
-                else:
-                    raise RuntimeError(
-                        f"The orchestrator, the run '{run.id}' was executed "
-                        "with, is deleted."
-                    )
-            else:
-                raise RuntimeError(
-                    f"The stack, the run '{run.id}' was executed on, is deleted."
-                )
-
-            run = run.refresh_run_status()
+            logger.warning(
+                "DEPRECATED: The ability to refresh the status a run through "
+                "the GET `/runs/{run_id}` endpoint is deprecated and will be "
+                "removed in a future version. Please use the POST "
+                "`/runs/{run_id}/refresh` endpoint instead."
+            )
+            run = run_utils.refresh_run_status(run=run, zen_store=store)
 
         except Exception as e:
             logger.warning(
@@ -379,26 +365,32 @@ def get_run_dag(
     return zen_store().get_pipeline_run_dag(run_id)
 
 
-@router.get(
+@router.post(
     "/{run_id}" + REFRESH,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
 def refresh_run_status(
     run_id: UUID,
+    include_steps: bool = False,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Refreshes the status of a specific pipeline run.
 
     Args:
         run_id: ID of the pipeline run to refresh.
+        include_steps: Flag deciding whether we should also refresh
+            the status of individual steps.
     """
+    store = zen_store()
     run = verify_permissions_and_get_entity(
         id=run_id,
-        get_method=zen_store().get_run,
+        get_method=store.get_run,
         hydrate=True,
     )
-    run.refresh_run_status()
+    run_utils.refresh_run_status(
+        run=run, include_step_updates=include_steps, zen_store=store
+    )
 
 
 @router.post(
