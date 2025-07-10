@@ -219,7 +219,6 @@ def simple_ml_pipeline():
 
 if __name__ == "__main__":
     result = simple_ml_pipeline()
-    print(f"Pipeline completed! Check dashboard at: http://localhost:8080")
 ```
 
 Run it:
