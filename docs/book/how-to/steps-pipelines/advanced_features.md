@@ -303,6 +303,168 @@ The fan-in, fan-out method has the following limitations:
 2. The number of steps need to be known ahead-of-time, and ZenML does not yet support the ability to dynamically create steps on the fly.
 {% endhint %}
 
+### Dynamic Fan-out/Fan-in with Run Templates
+
+For scenarios where you need to determine the number of parallel operations at runtime (e.g., based on database queries or dynamic data), you can use [run templates](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) to create a more flexible fan-out/fan-in pattern. This approach allows you to trigger multiple pipeline runs dynamically and then aggregate their results.
+
+```python
+from typing import List, Optional
+from uuid import UUID
+import time
+
+from zenml import step, pipeline, Client
+from zenml.client import Client
+
+
+@step
+def load_relevant_chunks() -> List[str]:
+    """Load chunk identifiers from database or other dynamic source."""
+    # Example: Query database for chunk IDs
+    # In practice, this could be a database query, API call, etc.
+    return ["chunk_1", "chunk_2", "chunk_3", "chunk_4"]
+
+
+@step
+def trigger_chunk_processing(
+    chunks: List[str], 
+    template_id: Optional[UUID] = None
+) -> List[UUID]:
+    """Trigger multiple pipeline runs for each chunk and wait for completion."""
+    client = Client()
+    
+    # Use template ID if provided, otherwise use pipeline name
+    pipeline_name = None if template_id else "chunk_processing_pipeline"
+    
+    # Trigger all chunk processing runs
+    run_ids = []
+    for chunk_id in chunks:
+        run_config = {
+            "steps": {
+                "process_chunk": {
+                    "parameters": {
+                        "chunk_id": chunk_id
+                    }
+                }
+            }
+        }
+        
+        run = client.trigger_pipeline(
+            template_id=template_id,
+            pipeline_name_or_id=pipeline_name,
+            run_configuration=run_config,
+            synchronous=False  # Run asynchronously
+        )
+        run_ids.append(run.id)
+    
+    # Wait for all runs to complete
+    print(f"Waiting for {len(run_ids)} chunk processing runs to complete...")
+    while True:
+        completed_runs = 0
+        for run_id in run_ids:
+            run = client.get_pipeline_run(run_id)
+            if run.status.is_finished:
+                completed_runs += 1
+        
+        if completed_runs == len(run_ids):
+            print("All chunk processing runs completed!")
+            break
+        
+        print(f"Completed: {completed_runs}/{len(run_ids)} runs")
+        time.sleep(10)  # Wait 10 seconds before checking again
+    
+    return run_ids
+
+
+@step
+def aggregate_results(run_ids: List[UUID]) -> dict:
+    """Aggregate results from all chunk processing runs."""
+    client = Client()
+    aggregated_results = {}
+    
+    for run_id in run_ids:
+        run = client.get_pipeline_run(run_id)
+        
+        # Extract results from the chunk processing step
+        if "process_chunk" in run.steps:
+            step_run = run.steps["process_chunk"]
+            if "output" in step_run.outputs:
+                chunk_result = step_run.outputs["output"].load()
+                aggregated_results[str(run_id)] = chunk_result
+    
+    return aggregated_results
+
+
+@pipeline
+def master_pipeline(template_id: Optional[UUID] = None):
+    """Master pipeline that orchestrates dynamic chunk processing."""
+    # Load chunks dynamically at runtime
+    chunks = load_relevant_chunks()
+    
+    # Trigger chunk processing runs and wait for completion
+    run_ids = trigger_chunk_processing(chunks, template_id)
+    
+    # Aggregate results from all runs
+    results = aggregate_results(run_ids)
+    
+    return results
+
+
+# Define the chunk processing pipeline that will be triggered
+@step
+def process_chunk(chunk_id: str) -> dict:
+    """Process a single chunk of data."""
+    # Simulate chunk processing
+    print(f"Processing chunk: {chunk_id}")
+    return {
+        "chunk_id": chunk_id,
+        "processed_items": 100,
+        "status": "completed"
+    }
+
+
+@pipeline
+def chunk_processing_pipeline():
+    """Pipeline that processes a single chunk."""
+    result = process_chunk()
+    return result
+
+
+# Usage example
+if __name__ == "__main__":
+    # First, create a run template for the chunk processing pipeline
+    # This would typically be done once during setup
+    template = Client().create_run_template(
+        name="chunk_processing_template",
+        pipeline_name="chunk_processing_pipeline",
+        description="Template for processing individual chunks"
+    )
+    
+    # Run the master pipeline with the template
+    master_pipeline(template_id=template.id)
+```
+
+This pattern is particularly useful for:
+
+- **Dynamic data processing**: When the number of chunks/partitions is determined at runtime
+- **Database-driven workflows**: Processing data based on database queries
+- **Scalable batch processing**: Handling varying workloads efficiently
+- **Resource optimization**: Each chunk can be processed with different resource requirements
+
+**Key advantages of this approach:**
+
+1. **True parallelism**: Each chunk runs as a separate pipeline, enabling better resource utilization
+2. **Dynamic scaling**: The number of parallel operations is determined at runtime
+3. **Fault tolerance**: Individual chunk failures don't affect other chunks
+4. **Monitoring**: Each chunk processing run appears separately in the ZenML dashboard
+5. **Template reusability**: The same template can be used for different master pipelines
+
+**Considerations:**
+
+- **Resource management**: Be mindful of the total resource consumption when running many parallel pipelines
+- **Waiting strategy**: The example uses a simple polling approach; consider implementing more sophisticated waiting mechanisms for production use
+- **Error handling**: Add proper error handling for failed chunk processing runs
+- **Template management**: Ensure run templates are properly versioned and managed
+
 ### Custom Step Invocation IDs
 
 When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when defining the execution order of your pipeline steps or use it to fetch information about the invocation after the pipeline has finished running.
