@@ -972,15 +972,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 elif condition.type == "Failed" and condition.status == "True":
                     return ExecutionStatus.FAILED
 
-        # Check job status fields
-        if job.status:
-            if job.status.active and job.status.active > 0:
-                return ExecutionStatus.RUNNING
-            elif job.status.succeeded and job.status.succeeded > 0:
-                return ExecutionStatus.COMPLETED
-            elif job.status.failed and job.status.failed > 0:
-                return ExecutionStatus.FAILED
-
         # Return None if no clear status - don't update
         return None
 
