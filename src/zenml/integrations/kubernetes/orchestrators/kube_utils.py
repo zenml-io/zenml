@@ -58,13 +58,10 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
-    from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
-        KubernetesOrchestratorSettings,
-    )
+    pass
 
 
 logger = get_logger(__name__)
@@ -601,7 +598,6 @@ def get_pod_owner_references(
     return cast(
         List[k8s_client.V1OwnerReference], pod.metadata.owner_references
     )
-
 
 
 def retry_on_api_exception(

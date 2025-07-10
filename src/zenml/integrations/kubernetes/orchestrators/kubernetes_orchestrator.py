@@ -909,10 +909,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 )
                 return kube_utils.PodPhase.UNKNOWN
         else:
-            # Pod is missing - check events to determine if this indicates failure or unknown status
             logger.warning(
-                f"Pod {pod_name} not found in namespace "
-                f"{self.config.kubernetes_namespace}"
+                f"Can't fetch the status of pod {pod_name} "
+                f"in namespace {self.config.kubernetes_namespace}."
             )
 
             indicates_failure = self._pod_has_failure_events(pod_name)
