@@ -457,8 +457,6 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Returns:
             A tuple of (pipeline_status, step_statuses_dict).
-            If include_steps is False, step_statuses_dict will be None.
-            If include_steps is True, step_statuses_dict will be a dict (possibly empty).
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base

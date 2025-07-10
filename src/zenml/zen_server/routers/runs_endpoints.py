@@ -188,9 +188,6 @@ def get_run(
 
     Returns:
         The pipeline run.
-
-    Raises:
-        RuntimeError: If the stack or the orchestrator of the run is deleted.
     """
     store = zen_store()
     run = verify_permissions_and_get_entity(

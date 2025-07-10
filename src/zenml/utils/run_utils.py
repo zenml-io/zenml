@@ -94,6 +94,9 @@ def refresh_run_status(
 
     Returns:
         The refreshed pipeline run.
+
+    Raises:
+        ValueError: If the stack or the orchestrator of the run is deleted.
     """
     # Check if the stack still accessible
     if run.stack is None:
