@@ -450,18 +450,7 @@ def my_step(some_parameter: int = 1):
 
 ### Using Alerter in Hooks
 
-You can use the [Alerter stack component](https://docs.zenml.io/component-guide/alerters) to send notifications when steps fail or succeed:
-
-```python
-from zenml import get_step_context
-from zenml.client import Client
-
-def on_failure():
-    step_name = get_step_context().step_run.name
-    Client().active_stack.alerter.post(f"{step_name} just failed!")
-```
-
-ZenML provides built-in alerter hooks for common scenarios:
+You can use the [Alerter stack component](https://docs.zenml.io/component-guide/alerters) to send notifications when steps fail or succeed. ZenML provides built-in alerter hooks that automatically send structured alerts:
 
 ```python
 from zenml.hooks import alerter_success_hook, alerter_failure_hook
@@ -470,6 +459,39 @@ from zenml.hooks import alerter_success_hook, alerter_failure_hook
 def my_step():
     ...
 ```
+
+These hooks use the new `AlerterMessage` format which provides better structured alerts with titles, body content, and metadata. The failure hook includes the full exception traceback and pipeline context.
+
+You can also create custom alerter hooks using the structured format:
+
+```python
+from zenml import get_step_context
+from zenml.client import Client
+from zenml.models.v2.misc.alerter_models import AlerterMessage
+
+def custom_failure_hook(exception: BaseException):
+    context = get_step_context()
+    alerter = Client().active_stack.alerter
+    
+    if alerter:
+        message = AlerterMessage(
+            title="Custom Pipeline Alert",
+            body=f"Step {context.step_run.name} failed with {type(exception).__name__}: {str(exception)}",
+            metadata={
+                "pipeline": context.pipeline.name,
+                "run_id": str(context.pipeline_run.id),
+                "step": context.step_run.name,
+                "error_type": type(exception).__name__
+            }
+        )
+        alerter.post(message)
+
+@step(on_failure=custom_failure_hook)
+def my_step():
+    ...
+```
+
+The `AlerterMessage` format is automatically handled by all alerter types (Slack, Discord, Email) and each formats the message appropriately for their platform.
 
 
 ## Conclusion
