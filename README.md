@@ -298,23 +298,19 @@ A: They provide excellent observability for LLM applications. We orchestrate the
 
 **Q: "Can I use my existing MLflow/W&B setup?"**
 
-A: Yes! We integrate with both. Your experiments, our pipelines.
+A: Yes! ZenML integrates with both [MLflow](https://docs.zenml.io/stacks/experiment-trackers/mlflow) and [Weights & Biases](https://docs.zenml.io/stacks/experiment-trackers/wandb). Your experiments, our pipelines.
 
 **Q: "Is this just MLflow with extra steps?"**
 
 A: No. MLflow tracks experiments. We orchestrate the entire development process – from training and evaluation to deployment and monitoring – for both models and agents.
 
-**Q: "What about cost? I can't afford another platform."**
-
-A: ZenML's open-source version is free forever. You likely already have the required infrastructure (like a Kubernetes cluster and object storage). We just help you make better use of it for MLOps.
-
-**Q: "How do I set up ZenML with my environment and dependencies?"**
-
-A: Follow the "Get Started" section above for basic setup. For complex environments, use our [Docker deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-docker) or check our [troubleshooting guide](https://docs.zenml.io/user-guides/advanced-guide/troubleshooting). Use `zenml integration install` for specific tools.
-
 **Q: "How do I configure ZenML with Kubernetes?"**
 
 A: ZenML integrates with Kubernetes through the native Kubernetes orchestrator, Kubeflow, and other K8s-based orchestrators. See our [Kubernetes orchestrator guide](https://docs.zenml.io/stacks/orchestrators/kubernetes) and [Kubeflow guide](https://docs.zenml.io/stacks/orchestrators/kubeflow), plus [deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm).
+
+**Q: "What about cost? I can't afford another platform."**
+
+A: ZenML's open-source version is free forever. You likely already have the required infrastructure (like a Kubernetes cluster and object storage). We just help you make better use of it for MLOps.
 
 ### 🛠 VS Code Extension
 
