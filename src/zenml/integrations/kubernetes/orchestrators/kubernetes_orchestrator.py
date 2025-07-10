@@ -1010,6 +1010,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             logger.warning(f"Failed to list jobs for run {run.id}: {e}")
             return {}
 
+        # Fetch the steps from the run response
+        steps_dict = run.steps
+
         for job in jobs.items:
             # Extract step name from job labels
             if not job.metadata or not job.metadata.labels:
@@ -1020,7 +1023,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 continue
 
             # Check if this step is already finished
-            step_response = run.steps.get(step_name)
+            step_response = steps_dict.get(step_name)
             if step_response and step_response.status.is_finished:
                 continue
 
