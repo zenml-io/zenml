@@ -304,8 +304,23 @@ class StackComponentConfig(BaseModel, ABC):
                     try:
                         data[key] = json.loads(value)
                     except json.JSONDecodeError as e:
+                        # Provide helpful error messages for common JSON mistakes
+                        error_msg = str(e)
+                        if "Expecting property name" in error_msg:
+                            if ",}" in value or ",]" in value:
+                                hint = "Remove trailing commas from objects/arrays"
+                            else:
+                                hint = 'Make sure to quote property names, e.g., {"name": "value"}'
+                        elif "Expecting value" in error_msg:
+                            hint = "Check for missing values after colons or commas"
+                        elif "Expecting ',' delimiter" in error_msg:
+                            hint = "Separate object properties and array items with commas"
+                        else:
+                            hint = f"JSON parsing error: {error_msg}"
+
                         raise ValueError(
-                            f"Invalid json string '{value}'"
+                            f"Invalid JSON for configuration key '{key}'. {hint}\n"
+                            f"Provided value: {value}"
                         ) from e
                 elif isclass(annotation) and issubclass(annotation, BaseModel):
                     data[key] = annotation.model_validate_json(
