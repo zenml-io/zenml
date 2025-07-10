@@ -1022,7 +1022,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 continue
 
             # Check if this step is already finished
-            step_response = steps_dict.get(step_name)
+            step_response = steps_dict.get(step_name, None)
+
+            # If the step is not in the run response yet, skip, we can't update
+            if step_response is None:
+                continue
+
+            # If the step is already in a finished state, skip
             if step_response and step_response.status.is_finished:
                 continue
 
