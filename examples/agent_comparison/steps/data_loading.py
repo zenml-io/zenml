@@ -15,9 +15,9 @@ logger = get_logger(__name__)
 
 
 @step
-def load_real_conversations() -> Annotated[
-    pd.DataFrame, "customer_service_queries"
-]:
+def load_real_conversations() -> (
+    Annotated[pd.DataFrame, "customer_service_queries"]
+):
     """Load sample customer service queries for testing.
 
     Returns:
@@ -56,14 +56,16 @@ def load_real_conversations() -> Annotated[
 
 
 @step(output_materializers=PromptMaterializer)
-def load_prompts() -> Tuple[
-    Annotated[Prompt, "single_agent_prompt"],
-    Annotated[Prompt, "specialist_returns_prompt"],
-    Annotated[Prompt, "specialist_billing_prompt"],
-    Annotated[Prompt, "specialist_technical_prompt"],
-    Annotated[Prompt, "specialist_general_prompt"],
-    Annotated[Prompt, "langgraph_workflow_prompt"],
-]:
+def load_prompts() -> (
+    Tuple[
+        Annotated[Prompt, "single_agent_prompt"],
+        Annotated[Prompt, "specialist_returns_prompt"],
+        Annotated[Prompt, "specialist_billing_prompt"],
+        Annotated[Prompt, "specialist_technical_prompt"],
+        Annotated[Prompt, "specialist_general_prompt"],
+        Annotated[Prompt, "langgraph_workflow_prompt"],
+    ]
+):
     """Load prompts from files as individual ZenML artifacts.
 
     Returns:

@@ -14,9 +14,15 @@ from steps import (
 )
 
 from zenml import pipeline
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    requirements="requirements.txt",
+    python_package_installer="uv",
+)
 
 
-@pipeline(enable_cache=False)
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
 def compare_agent_architectures() -> None:
     """Compare different agent architectures on customer service queries."""
     # Load test data
@@ -38,9 +44,9 @@ def compare_agent_architectures() -> None:
     # Run all architectures on the same data (returns metrics and architectural diagrams)
     (
         results,
-        single_agent_diagram,
-        multi_specialist_diagram,
-        langgraph_diagram,
+        _,
+        _,
+        _,
     ) = run_architecture_comparison(
         queries,
         intent_classifier,
