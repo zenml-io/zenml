@@ -49,6 +49,7 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRunUpdate,
 )
+from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -101,15 +102,14 @@ def prepare_logs_uri(
 
     # Delete the file if it already exists
     if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-        logs_uri_folder = os.path.join(logs_base_uri, log_key)
-        if artifact_store.exists(logs_uri_folder):
+        logs_uri = os.path.join(logs_base_uri, log_key)
+        if artifact_store.exists(logs_uri):
             logger.warning(
-                f"Logs directory {logs_uri_folder} already exists! Removing old log directory..."
+                f"Logs directory {logs_uri} already exists! Removing old log directory..."
             )
-            artifact_store.rmtree(logs_uri_folder)
+            artifact_store.rmtree(logs_uri)
 
-        artifact_store.makedirs(logs_uri_folder)
-        return logs_uri_folder
+        artifact_store.makedirs(logs_uri)
     else:
         logs_uri = os.path.join(logs_base_uri, f"{log_key}{LOGS_EXTENSION}")
         if artifact_store.exists(logs_uri):
@@ -117,7 +117,8 @@ def prepare_logs_uri(
                 f"Logs file {logs_uri} already exists! Removing old log file..."
             )
             artifact_store.remove(logs_uri)
-        return logs_uri
+
+    return sanitize_remote_path(logs_uri)
 
 
 def fetch_logs(
