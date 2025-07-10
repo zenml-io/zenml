@@ -36,16 +36,7 @@ import functools
 import re
 import time
 from collections import defaultdict
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    TypeVar,
-    cast,
-)
+from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -59,10 +50,6 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
-
-if TYPE_CHECKING:
-    pass
-
 
 logger = get_logger(__name__)
 

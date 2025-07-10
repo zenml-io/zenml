@@ -455,9 +455,6 @@ class BaseOrchestrator(StackComponent, ABC):
             run: A pipeline run response to fetch its status.
             include_steps: If True, also fetch the status of individual steps.
 
-        Returns:
-            A tuple of (pipeline_status, step_statuses_dict).
-
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
                 class does not implement this logic.
