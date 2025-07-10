@@ -58,7 +58,7 @@ class VertexOrchestratorSettings(BaseSettings):
         "to be eligible to run on a node, the node must have each of the "
         "constraints appeared as labels. For example, a GPU type can be provided "
         "by ('cloud.google.com/gke-accelerator', 'NVIDIA_TESLA_T4')."
-        "Hint: the selected region (location) must provide the requested accelerator" 
+        "Hint: the selected region (location) must provide the requested accelerator"
         "(see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).",
     )
     pod_settings: Optional[KubernetesPodSettings] = Field(

@@ -129,7 +129,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "backoff limit. This means that the job will retry the pod startup "
         "for the configured amount of times plus the margin, which increases "
         "the chance of the server receiving the maximum amount of retry "
-        "requests."
+        "requests.",
     )
     pod_failure_policy: Optional[Dict[str, Any]] = Field(
         default=None,
