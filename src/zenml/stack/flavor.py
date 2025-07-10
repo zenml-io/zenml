@@ -248,9 +248,13 @@ class Flavor:
                 "zenml.integrations.", maxsplit=1
             )[1].split(".")[0]
 
+            # Get the config class name to point to the specific class
+            config_class_name = self.config_class.__name__
+
             return (
                 f"{base}/integration_code_docs"
-                f"/integrations-{integration}.html#zenml.integrations.{integration}-modules"
+                f"/integrations-{integration}"
+                f"#zenml.integrations.{integration}.flavors.{config_class_name}"
             )
 
         else:
