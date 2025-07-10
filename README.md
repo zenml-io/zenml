@@ -75,7 +75,7 @@ With ZenML, you're not replacing your knowledge; you're extending it. Use the pi
 
 ## 💻 See It In Action: Multi-Agent Architecture Comparison
 
-**The Challenge:** Your team built three different customer service agents. Which one should go to production? With ZenML, you can build a reproducible pipeline to test them on real data and make a data-driven decision.
+**The Challenge:** Your team built three different customer service agents. Which one should go to production? With ZenML, you can build a reproducible pipeline to test them on real data and make a data-driven decision, with full observability via Langgraph, LiteLLM & Langfuse.
 
 ```python
 from zenml import pipeline, step
@@ -107,7 +107,9 @@ def run_architecture_comparison(queries: pd.DataFrame, classifier, prompts: dict
     }
     
     # ZenML automatically versions agent code, prompts, and configurations
-    # LiteLLM provides unified access to 100+ LLM providers  
+    # LiteLLM provides unified access to 100+ LLM providers
+    # Langgraph orchestrates a multi-agent graph
+    # Langfuse tracks costs, performance, and traces for full observability
     results = test_all_architectures(queries, architectures)
     mermaid_diagram = generate_langgraph_visualization()
     

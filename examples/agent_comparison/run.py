@@ -20,10 +20,18 @@ def main() -> None:
     print()
 
     # Check if real LLMs will be used
-    from llm_utils import should_use_real_llm
+    from llm_utils import should_use_langfuse, should_use_real_llm
 
     if should_use_real_llm():
         print("✨ Real LLM APIs detected! Using LiteLLM for agent responses.")
+        if should_use_langfuse():
+            print(
+                "📊 Langfuse observability enabled! Tracking costs and performance."
+            )
+        else:
+            print(
+                "💡 Add LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY for observability."
+            )
     else:
         print(
             "📝 No LLM API keys found. Using mock responses (perfect for demos)."
@@ -40,8 +48,10 @@ def main() -> None:
     print("  • Customer service queries dataset")
     print("  • Trained intent classifier model")
     print("  • Architecture performance metrics")
-    print("  • Interactive Mermaid workflow diagram")
+    print("  • Interactive Mermaid diagrams for all three architectures")
     print("  • Beautiful HTML comparison report")
+    if should_use_langfuse():
+        print("  • Langfuse traces with cost and performance data")
     print()
     print("💡 Start the dashboard with: zenml login")
 

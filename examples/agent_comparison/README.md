@@ -212,7 +212,7 @@ response = completion(
     messages=[{"role": "user", "content": query}],
     max_tokens=200,
     # Langfuse integration (automatic when env vars are set)
-    metadata={"user_id": "agent-comparison", "session_id": "pipeline-run"}
+    metadata={"agent_type": "SingleAgentRAG", "query_length": len(query)}
 )
 ```
 

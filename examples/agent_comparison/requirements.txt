@@ -14,6 +14,9 @@ numpy>=1.21.0
 litellm>=1.40.0
 openai>=1.0.0
 
+# Observability (optional - automatically used if API keys are available)
+langfuse>=2.0.0
+
 # Visualization (included in ZenML)
 # These are handled by ZenML's HTMLString type
 # mermaid-js is loaded via CDN in the HTML output

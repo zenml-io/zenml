@@ -112,7 +112,15 @@ class SingleAgentRAG(BaseAgent):
                 # Fallback prompt
                 prompt = f"You are a helpful customer service agent. Use this knowledge base to answer customer questions:\n\nKnowledge Base:\n{knowledge_context}\n\nCustomer Question: {query}\n\nProvide a helpful, professional response:"
 
-            response_text = call_llm(prompt, model="gpt-3.5-turbo")
+            response_text = call_llm(
+                prompt,
+                model="gpt-3.5-turbo",
+                metadata={
+                    "agent_type": "SingleAgentRAG",
+                    "query_length": len(query),
+                    "knowledge_categories": list(self.knowledge_base.keys()),
+                },
+            )
             confidence = random.uniform(
                 0.8, 0.95
             )  # Higher confidence for real LLM
@@ -288,7 +296,16 @@ class MultiSpecialistAgents(BaseAgent):
                 }
                 prompt = fallback_prompts[specialist].format(query=query)
 
-            response_text = call_llm(prompt, model="gpt-3.5-turbo")
+            response_text = call_llm(
+                prompt,
+                model="gpt-3.5-turbo",
+                metadata={
+                    "agent_type": "MultiSpecialistAgents",
+                    "specialist": specialist,
+                    "query_length": len(query),
+                    "routing_decision": specialist,
+                },
+            )
             confidence = random.uniform(
                 0.85, 0.98
             )  # Higher confidence for specialized LLM
@@ -548,7 +565,16 @@ class LangGraphCustomerServiceAgent(BaseAgent):
                 # Fallback prompt
                 prompt = f"You are a customer service agent in a structured workflow. \nYou have analyzed this query and classified it as: {query_type}\n\n{knowledge_context}\n\nCustomer Question: {query}\n\nGenerate a helpful, professional response. Be specific and actionable:"
 
-            response = call_llm(prompt, model="gpt-3.5-turbo")
+            response = call_llm(
+                prompt,
+                model="gpt-3.5-turbo",
+                metadata={
+                    "agent_type": "LangGraphCustomerServiceAgent",
+                    "query_type": query_type,
+                    "workflow_step": "generate_response",
+                    "query_length": len(str(query)),
+                },
+            )
         else:
             # Fallback to mock response generation
             if query_type in self.knowledge_base:
