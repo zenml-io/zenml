@@ -57,7 +57,6 @@ You can register models in several ways:
 from zenml import Model
 from zenml.client import Client
 
-# Example: Register an AI agent system as a model
 Client().create_model(
     name="customer_service_agent",
     license="MIT",
@@ -185,14 +184,6 @@ model.set_stage(stage=ModelStages.PRODUCTION)
 # Find latest model and promote to staging
 latest_model = Model(name="iris_classifier", version=ModelStages.LATEST)
 latest_model.set_stage(stage=ModelStages.STAGING)
-
-# Example: Promote agent configuration to production
-agent_model = Model(name="customer_service_agent", version="2.1.0")
-agent_model.set_stage(stage=ModelStages.PRODUCTION)
-
-# Promote latest agent version to staging after successful evaluation
-latest_agent = Model(name="customer_service_agent", version=ModelStages.LATEST)
-latest_agent.set_stage(stage=ModelStages.STAGING)
 ```
 
 ## Using Models Across Pipelines
@@ -238,28 +229,6 @@ def inference_pipeline():
     predict(
         model=model.get_model_artifact("trained_model"),
         data=inference_data,
-    )
-
-# Example: Agent inference pipeline using production agent configuration
-@pipeline(
-    model=Model(
-        name="customer_service_agent",
-        # Reference the production agent version
-        version=ModelStages.PRODUCTION,
-    ),
-)
-def agent_inference_pipeline():
-    """Run agent inference using the production agent configuration."""
-    # Get the agent model from the pipeline context
-    agent_model = get_pipeline_context().model
-    
-    # Load customer queries (you'd need to implement this function)
-    customer_queries = load_customer_queries()
-    
-    # Run agent responses using the production agent configuration
-    process_customer_requests(
-        agent_config=agent_model.get_model_artifact("agent_config"),
-        queries=customer_queries,
     )
 ```
 
@@ -348,19 +317,6 @@ model = Client().get_model_version("iris_classifier", "1.2.3")
 # Access metadata
 metrics = model.run_metadata["evaluation_metrics"].value
 print(f"Model accuracy: {metrics['accuracy']}")
-
-# Example: Access agent model metadata
-agent_model = Client().get_model_version("customer_service_agent", "2.1.0")
-
-# Access agent evaluation metadata
-agent_metrics = agent_model.run_metadata["agent_evaluation"].value
-print(f"Agent response quality: {agent_metrics['response_quality']}")
-print(f"Average response time: {agent_metrics['avg_response_time_ms']}ms")
-
-# Access agent configuration metadata
-agent_config = agent_model.run_metadata["agent_configuration"].value
-print(f"Tools enabled: {agent_config['tools_enabled']}")
-print(f"Model temperature: {agent_config['model_temperature']}")
 ```
 
 ## Deleting Models
@@ -375,12 +331,8 @@ from zenml.client import Client
 # Using the Python SDK
 Client().delete_model("iris_classifier")
 
-# Delete an agent model
-Client().delete_model("customer_service_agent")
-
 # Or using the CLI
 # zenml model delete iris_classifier
-# zenml model delete customer_service_agent
 ```
 
 ### Deleting a Specific Version
