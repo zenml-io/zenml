@@ -6,11 +6,12 @@ for customer service query processing.
 
 import random
 import time
-from typing import Any, List, TypedDict
+from typing import Any, List, Optional, TypedDict
 
 from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.graph import END, START, StateGraph
 from llm_utils import call_llm, should_use_real_llm
+from materializers import Prompt
 
 
 # LangGraph State Definition
@@ -46,13 +47,15 @@ class AgentResponse:
 class BaseAgent:
     """Base class for all agent architectures."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, prompts: Optional[List[Prompt]] = None):
         """Initialize base agent.
 
         Args:
             name: Name of the agent architecture
+            prompts: List of Prompt objects loaded as ZenML artifacts
         """
         self.name = name
+        self.prompts = {p.name: p for p in (prompts or [])}
 
     def process_query(self, query: str) -> AgentResponse:
         """Process a single query and return response with metadata.
@@ -72,9 +75,9 @@ class BaseAgent:
 class SingleAgentRAG(BaseAgent):
     """Simple RAG agent that handles all queries with one approach."""
 
-    def __init__(self) -> None:
+    def __init__(self, prompts: Optional[List[Prompt]] = None) -> None:
         """Initialize SingleAgentRAG with knowledge base."""
-        super().__init__("SingleAgentRAG")
+        super().__init__("SingleAgentRAG", prompts)
         self.knowledge_base = {
             "return": "Items can be returned within 30 days with original receipt.",
             "refund": "Refunds are processed within 5-7 business days to original payment method.",
@@ -99,14 +102,15 @@ class SingleAgentRAG(BaseAgent):
             knowledge_context = "\n".join(
                 [f"{k}: {v}" for k, v in self.knowledge_base.items()]
             )
-            prompt = f"""You are a helpful customer service agent. Use this knowledge base to answer customer questions:
-
-Knowledge Base:
-{knowledge_context}
-
-Customer Question: {query}
-
-Provide a helpful, professional response:"""
+            # Use loaded prompt template
+            prompt_obj = self.prompts.get("single_agent_rag")
+            if prompt_obj:
+                prompt = prompt_obj.format(
+                    knowledge_context=knowledge_context, query=query
+                )
+            else:
+                # Fallback prompt
+                prompt = f"You are a helpful customer service agent. Use this knowledge base to answer customer questions:\n\nKnowledge Base:\n{knowledge_context}\n\nCustomer Question: {query}\n\nProvide a helpful, professional response:"
 
             response_text = call_llm(prompt, model="gpt-3.5-turbo")
             confidence = random.uniform(
@@ -143,13 +147,82 @@ Provide a helpful, professional response:"""
             tokens_used=tokens_used,
         )
 
+    def get_graph_visualization(self) -> str:
+        """Get a simple text representation of the SingleAgentRAG architecture.
+
+        Returns:
+            Text representation of the SingleAgentRAG workflow structure
+        """
+        return """
+SingleAgentRAG Architecture:
+
+INPUT (Customer Query) → RAG Knowledge Base Lookup → LLM/Fallback Response → OUTPUT
+
+Architecture Details:
+- Single unified approach for all query types
+- Uses predefined knowledge base with 5 categories: return, refund, shipping, support, warranty
+- LLM generates responses using knowledge context, or falls back to keyword matching
+- No query routing or specialization - one size fits all
+
+Knowledge Base Categories:
+• return: Return policy information
+• refund: Refund processing details  
+• shipping: Shipping costs and policies
+• support: Customer support availability
+• warranty: Product warranty information
+"""
+
+    def get_mermaid_diagram(self) -> str:
+        """Get a Mermaid diagram representation of the SingleAgentRAG workflow.
+
+        Returns:
+            HTML string containing interactive Mermaid diagram of the workflow
+        """
+        return """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SingleAgentRAG Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <div class="mermaid">
+        graph TD
+            A[Customer Query] --> B[Knowledge Base Lookup]
+            B --> C{LLM Available?}
+            C -->|Yes| D[LLM Processing]
+            C -->|No| E[Keyword Matching]
+            D --> F[Generate Response]
+            E --> F
+            F --> G[Customer Response]
+
+            B[Knowledge Base Lookup<br/>🔍 Search across 5 categories:<br/>returns, refunds, shipping,<br/>support, warranty]
+            D[LLM Processing<br/>🤖 Use prompt template<br/>with knowledge context]
+            E[Keyword Matching<br/>📝 Simple fallback logic<br/>based on query keywords]
+            F[Generate Response<br/>💬 Unified response<br/>regardless of query type]
+
+            style A fill:#e1f5fe
+            style G fill:#e8f5e8
+            style B fill:#fff3e0
+            style C fill:#f3e5f5
+            style D fill:#e0f2f1
+            style E fill:#ffebee
+            style F fill:#fff8e1
+    </div>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+</html>
+"""
+
 
 class MultiSpecialistAgents(BaseAgent):
     """Multiple specialized agents for different query types."""
 
-    def __init__(self) -> None:
+    def __init__(self, prompts: Optional[List[Prompt]] = None) -> None:
         """Initialize MultiSpecialistAgents with specialist routing."""
-        super().__init__("MultiSpecialistAgents")
+        super().__init__("MultiSpecialistAgents", prompts)
         self.specialists = {
             "returns": "Returns Specialist: I handle all return and exchange requests.",
             "billing": "Billing Specialist: I can help with payment and billing questions.",
@@ -199,19 +272,21 @@ class MultiSpecialistAgents(BaseAgent):
         specialist = self._route_query(query)
 
         if should_use_real_llm():
-            # Use real LLM with specialist context
-            specialist_prompts = {
-                "returns": "You are a Returns Specialist. Help customers with returns, exchanges, and refunds professionally.",
-                "billing": "You are a Billing Specialist. Help customers with payment issues, billing questions, and account management.",
-                "technical": "You are a Technical Support Specialist. Help customers with product setup, troubleshooting, and technical issues.",
-                "general": "You are a General Customer Service Agent. Help customers with general questions and direct them to specialists when needed.",
-            }
-
-            prompt = f"""{specialist_prompts[specialist]}
-
-Customer Question: {query}
-
-Provide a helpful, specific response for this {specialist} inquiry:"""
+            # Use loaded specialist prompts
+            specialist_prompt_obj = self.prompts.get(
+                f"specialist_{specialist}"
+            )
+            if specialist_prompt_obj:
+                prompt = specialist_prompt_obj.format(query=query)
+            else:
+                # Fallback prompts
+                fallback_prompts = {
+                    "returns": "You are a Returns Specialist. Help customers with returns, exchanges, and refunds professionally.\n\nCustomer Question: {query}\n\nProvide a helpful, specific response for this returns inquiry:",
+                    "billing": "You are a Billing Specialist. Help customers with payment issues, billing questions, and account management.\n\nCustomer Question: {query}\n\nProvide a helpful, specific response for this billing inquiry:",
+                    "technical": "You are a Technical Support Specialist. Help customers with product setup, troubleshooting, and technical issues.\n\nCustomer Question: {query}\n\nProvide a helpful, specific response for this technical inquiry:",
+                    "general": "You are a General Customer Service Agent. Help customers with general questions and direct them to specialists when needed.\n\nCustomer Question: {query}\n\nProvide a helpful, specific response for this general inquiry:",
+                }
+                prompt = fallback_prompts[specialist].format(query=query)
 
             response_text = call_llm(prompt, model="gpt-3.5-turbo")
             confidence = random.uniform(
@@ -248,13 +323,111 @@ Provide a helpful, specific response for this {specialist} inquiry:"""
             tokens_used=tokens_used,
         )
 
+    def get_graph_visualization(self) -> str:
+        """Get a simple text representation of the MultiSpecialistAgents architecture.
+
+        Returns:
+            Text representation of the MultiSpecialistAgents workflow structure
+        """
+        return """
+MultiSpecialistAgents Architecture:
+
+INPUT (Customer Query) → Intent Router → Specialist Agent → LLM/Fallback Response → OUTPUT
+
+Architecture Details:
+- Multi-agent system with specialized experts
+- Query routing based on keyword analysis
+- Each specialist has domain expertise and specialized prompts
+- Higher confidence due to specialization
+
+Routing Logic:
+• returns → Returns Specialist (return, exchange, refund keywords)
+• billing → Billing Specialist (payment, billing, charge, price keywords)  
+• technical → Technical Support (setup, install, technical, broken keywords)
+• general → General Support (catch-all for other queries)
+
+Specialist Capabilities:
+• Returns Specialist: Handles returns, exchanges, refunds
+• Billing Specialist: Payment issues, billing questions, account management
+• Technical Support: Product setup, troubleshooting, technical issues
+• General Support: Directs to other specialists, handles general inquiries
+"""
+
+    def get_mermaid_diagram(self) -> str:
+        """Get a Mermaid diagram representation of the MultiSpecialistAgents workflow.
+
+        Returns:
+            HTML string containing interactive Mermaid diagram of the workflow
+        """
+        return """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MultiSpecialistAgents Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <div class="mermaid">
+        graph TD
+            A[Customer Query] --> B[Intent Router]
+            B --> C{Query Classification}
+            C -->|return, exchange, refund| D[Returns Specialist]
+            C -->|payment, billing, charge| E[Billing Specialist]
+            C -->|setup, install, technical| F[Technical Support]
+            C -->|other queries| G[General Support]
+            
+            D --> H{LLM Available?}
+            E --> I{LLM Available?}
+            F --> J{LLM Available?}
+            G --> K{LLM Available?}
+            
+            H -->|Yes| L[Returns LLM]
+            H -->|No| M[Returns Fallback]
+            I -->|Yes| N[Billing LLM]
+            I -->|No| O[Billing Fallback]
+            J -->|Yes| P[Technical LLM]
+            J -->|No| Q[Technical Fallback]
+            K -->|Yes| R[General LLM]
+            K -->|No| S[General Fallback]
+            
+            L --> T[Customer Response]
+            M --> T
+            N --> T
+            O --> T
+            P --> T
+            Q --> T
+            R --> T
+            S --> T
+
+            B[Intent Router<br/>🎯 Keyword-based routing<br/>to appropriate specialist]
+            D[Returns Specialist<br/>↩️ Handles returns,<br/>exchanges, refunds]
+            E[Billing Specialist<br/>💳 Payment issues,<br/>billing questions]
+            F[Technical Support<br/>🔧 Setup, troubleshooting,<br/>technical issues]
+            G[General Support<br/>📞 General inquiries,<br/>routing assistance]
+
+            style A fill:#e1f5fe
+            style T fill:#e8f5e8
+            style B fill:#fff3e0
+            style C fill:#f3e5f5
+            style D fill:#e0f2f1
+            style E fill:#fff8e1
+            style F fill:#fce4ec
+            style G fill:#f1f8e9
+    </div>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+</html>
+"""
+
 
 class LangGraphCustomerServiceAgent(BaseAgent):
     """LangGraph-based customer service agent with workflow visualization."""
 
-    def __init__(self) -> None:
+    def __init__(self, prompts: Optional[List[Prompt]] = None) -> None:
         """Initialize LangGraph agent with workflow and knowledge base."""
-        super().__init__("LangGraphCustomerServiceAgent")
+        super().__init__("LangGraphCustomerServiceAgent", prompts)
         self.graph = self._build_graph()
         self.knowledge_base = {
             "return": "Items can be returned within 30 days with original receipt.",
@@ -363,14 +536,17 @@ class LangGraphCustomerServiceAgent(BaseAgent):
                     f"Relevant knowledge: {self.knowledge_base[query_type]}"
                 )
 
-            prompt = f"""You are a customer service agent in a structured workflow. 
-You have analyzed this query and classified it as: {query_type}
-
-{knowledge_context}
-
-Customer Question: {query}
-
-Generate a helpful, professional response. Be specific and actionable:"""
+            # Use loaded LangGraph workflow prompt
+            prompt_obj = self.prompts.get("langgraph_workflow")
+            if prompt_obj:
+                prompt = prompt_obj.format(
+                    query_type=query_type,
+                    knowledge_context=knowledge_context,
+                    query=query,
+                )
+            else:
+                # Fallback prompt
+                prompt = f"You are a customer service agent in a structured workflow. \nYou have analyzed this query and classified it as: {query_type}\n\n{knowledge_context}\n\nCustomer Question: {query}\n\nGenerate a helpful, professional response. Be specific and actionable:"
 
             response = call_llm(prompt, model="gpt-3.5-turbo")
         else:

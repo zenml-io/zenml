@@ -4,25 +4,31 @@ This example demonstrates how to use ZenML to compare different AI agent archite
 
 ## 🎯 What This Example Demonstrates
 
-- **Multi-Architecture Agent Comparison**: Compare three different customer service agent approaches
+- **Multi-Architecture Agent Comparison**: Compare three different customer service agent approaches with interactive visualizations
 - **Traditional ML Integration**: Train a scikit-learn intent classifier alongside AI agents
 - **LangGraph Workflow**: Implement a real [LangGraph](https://www.langchain.com/langgraph) agent with structured workflow
 - **LiteLLM Integration**: Use [LiteLLM](https://litellm.ai/) for unified access to 100+ LLM providers (OpenAI, Anthropic, Groq, etc.)
+- **Langfuse Observability**: Track LLM calls, costs, and performance with [Langfuse](https://langfuse.com/) integration
 - **Smart LLM Fallbacks**: Automatically use real LLMs when API keys are available, fall back to mock responses otherwise
-- **Rich Visualizations**: Generate HTML reports and Mermaid diagrams for the ZenML dashboard
+- **Rich Visualizations**: Generate interactive Mermaid diagrams for all three architectures
 - **Reproducible AI Evaluation**: Apply MLOps principles to agent development
 
 ## 🏗️ Architecture Overview
 
-The pipeline implements three agent architectures:
+The pipeline implements three agent architectures, each with its own interactive Mermaid diagram:
 
-1. **SingleAgentRAG**: Simple RAG agent handling all queries with one approach
-2. **MultiSpecialistAgents**: Multiple specialized agents for different query types  
-3. **LangGraphCustomerServiceAgent**: LangGraph-based workflow with structured steps:
+1. **SingleAgentRAG**: Simple RAG agent handling all queries with one unified approach
+   - Knowledge base lookup → LLM/fallback processing → response
+   
+2. **MultiSpecialistAgents**: Multiple specialized agents with intelligent routing
+   - Query routing → specialist selection → domain-specific processing → response
+   
+3. **LangGraphCustomerServiceAgent**: Structured workflow with observability:
+   ```
+   START → analyze_query → classify_intent → generate_response → validate_response → END
+   ```
 
-```
-START → analyze_query → classify_intent → generate_response → validate_response → END
-```
+All three architectures are visualized with interactive diagrams in the ZenML dashboard, making it easy to understand the differences between approaches.
 
 ## 🚀 Quick Start
 
@@ -36,7 +42,7 @@ pip install "zenml[server]"
 zenml init
 ```
 
-### Optional: Enable Real LLM Calls
+### Optional: Enable Real LLM Calls & Observability
 
 The pipeline automatically detects API keys and uses real LLMs when available:
 
@@ -48,6 +54,11 @@ export OPENAI_API_KEY="your-api-key-here"
 export ANTHROPIC_API_KEY="your-anthropic-key"
 export GROQ_API_KEY="your-groq-key"
 export COHERE_API_KEY="your-cohere-key"
+
+# Optional: Enable Langfuse observability (tracks costs, performance, traces)
+export LANGFUSE_PUBLIC_KEY="your-langfuse-public-key"
+export LANGFUSE_SECRET_KEY="your-langfuse-secret-key"
+export LANGFUSE_HOST="https://cloud.langfuse.com"  # or self-hosted
 
 # Without API keys, the pipeline uses mock responses (perfect for demos!)
 ```
@@ -75,8 +86,9 @@ zenml login
 # - Customer service queries dataset
 # - Trained intent classifier model  
 # - Architecture performance metrics
-# - Interactive Mermaid workflow diagram
+# - Interactive Mermaid diagrams for all three architectures
 # - Beautiful HTML comparison report
+# - Langfuse traces (if enabled) for LLM call observability
 ```
 
 ## 📁 Project Structure
@@ -125,9 +137,9 @@ def train_intent_classifier(queries: pd.DataFrame) -> Annotated[BaseEstimator, "
 def run_architecture_comparison(
     queries: pd.DataFrame, 
     intent_classifier: BaseEstimator
-) -> Tuple[Dict, HTMLString]:
+) -> Tuple[Dict, HTMLString, HTMLString, HTMLString]:
     # Tests all three architectures on the same data
-    # Returns performance metrics and LangGraph Mermaid diagram
+    # Returns performance metrics and interactive Mermaid diagrams for each architecture
 ```
 
 ### 4. Generate Evaluation Report
@@ -142,9 +154,13 @@ def evaluate_and_decide(
 
 ## 🎨 Visualization Features
 
-- **Mermaid Workflow Diagram**: Interactive visualization of the LangGraph agent workflow
+- **Interactive Architecture Diagrams**: Mermaid visualizations for all three agent architectures
+  - SingleAgentRAG: Simple RAG workflow with knowledge base lookup
+  - MultiSpecialistAgents: Routing-based system with specialized experts
+  - LangGraphCustomerServiceAgent: Structured multi-step workflow
 - **HTML Performance Report**: Styled comparison with metrics, recommendations, and next steps
-- **ZenML Dashboard Integration**: All artifacts are beautifully rendered in the dashboard
+- **ZenML Dashboard Integration**: All artifacts beautifully rendered with rich visualizations
+- **Langfuse Observability**: LLM call traces, cost tracking, and performance monitoring (when enabled)
 
 ## 🔧 Customization
 
@@ -179,9 +195,9 @@ overall_score = (
 )
 ```
 
-### LiteLLM Integration
+### LiteLLM + Langfuse Integration
 
-The pipeline automatically uses real LLMs when API keys are detected:
+The pipeline automatically uses real LLMs when API keys are detected, with optional Langfuse observability:
 
 ```python
 # The pipeline uses LiteLLM for unified access to 100+ providers
@@ -194,7 +210,9 @@ response = completion(
     # model="groq/llama2-70b-4096",  # Groq
     # model="command-r",  # Cohere
     messages=[{"role": "user", "content": query}],
-    max_tokens=200
+    max_tokens=200,
+    # Langfuse integration (automatic when env vars are set)
+    metadata={"user_id": "agent-comparison", "session_id": "pipeline-run"}
 )
 ```
 
@@ -204,6 +222,12 @@ response = completion(
 - **Groq**: `groq/llama2-70b-4096`, `groq/mixtral-8x7b-32768`
 - **Cohere**: `command-r`, `command-r-plus`
 - **100+ other providers** - see [LiteLLM docs](https://docs.litellm.ai/docs/providers)
+
+**Langfuse Observability Benefits:**
+- **Cost Tracking**: Monitor LLM costs across different providers and models
+- **Performance Monitoring**: Track latency, throughput, and error rates
+- **Trace Analysis**: See complete request/response flows for debugging
+- **Model Comparison**: Compare performance metrics across different LLMs
 
 ## 📚 Key Concepts Demonstrated
 
@@ -222,22 +246,32 @@ This example demonstrates ZenML's seamless integration with the modern AI landsc
 - Build complex, multi-step agent workflows with full observability
 - Each workflow step is tracked and versioned by ZenML
 - Interactive Mermaid diagrams show your agent's decision flow
+- Complete lineage tracking from inputs to final responses
 
 ### ⚡ **LiteLLM** - Universal LLM Access  
 - Single interface to 100+ LLM providers (OpenAI, Anthropic, Groq, Cohere, etc.)
 - Automatic fallbacks and smart provider switching
-- Cost and performance tracking across different models
+- Unified API regardless of provider-specific differences
+- Cost optimization through provider comparison
+
+### 📊 **Langfuse** - LLM Observability & Analytics
+- Complete trace visibility for every LLM call across all architectures
+- Real-time cost tracking and budget monitoring
+- Performance analytics: latency, tokens, success rates
+- Debug complex agent workflows with detailed execution traces
+- Compare model performance across different providers
 
 ### 🤝 Integration Points
 
 This example shows how to integrate:
 - **LangGraph**: For structured agent workflows with full lineage tracking
 - **LiteLLM**: For unified access to the entire LLM ecosystem
+- **Langfuse**: For comprehensive LLM observability and cost tracking
 - **scikit-learn**: For traditional ML components alongside AI agents
 - **ZenML**: For orchestration, versioning, and artifact tracking
 - **HTML/Mermaid**: For rich visualizations and interactive diagrams
 
-**The Result**: A unified MLOps approach that works for everything from decision trees to complex agent workflows, all integrated with the tools you already use.
+**The Result**: A unified MLOps approach that works for everything from decision trees to complex agent workflows, with full observability across the entire AI stack.
 
 ## 🎯 Production Readiness
 
@@ -245,10 +279,11 @@ To make this production-ready:
 
 1. **Add Real Data Sources**: Replace sample data with your actual customer queries
 2. **Implement Real LLMs**: Connect to OpenAI, Anthropic, or other LLM providers
-3. **Add More Metrics**: Include cost tracking, customer satisfaction scores, etc.
-4. **Scale Testing**: Run on larger datasets and more architectures
-5. **Add Monitoring**: Track performance degradation over time
-6. **Implement A/B Testing**: Gradually roll out winning architectures
+3. **Enable Full Observability**: Set up Langfuse for cost tracking and performance monitoring
+4. **Add More Metrics**: Include customer satisfaction scores, resolution rates, etc.
+5. **Scale Testing**: Run on larger datasets and more architectures
+6. **Add Monitoring**: Track performance degradation over time with Langfuse dashboards
+7. **Implement A/B Testing**: Gradually roll out winning architectures with proper monitoring
 
 ## 🔗 Related Examples
 

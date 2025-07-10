@@ -93,12 +93,17 @@ def train_intent_classifier(queries: pd.DataFrame):
     return train_sklearn_pipeline(queries)
 
 @step
-def run_architecture_comparison(queries: pd.DataFrame, classifier) -> tuple:
+def load_prompts() -> dict:
+    """Load prompts as versioned ZenML artifacts."""
+    return load_agent_prompts_from_files()
+
+@step
+def run_architecture_comparison(queries: pd.DataFrame, classifier, prompts: dict) -> tuple:
     """Test three different agent architectures on the same data."""
     architectures = {
-        "single_agent": SingleAgentRAG(),
-        "multi_specialist": MultiSpecialistAgents(), 
-        "langgraph_workflow": LangGraphAgent()  # Real LangGraph implementation!
+        "single_agent": SingleAgentRAG(prompts),
+        "multi_specialist": MultiSpecialistAgents(prompts), 
+        "langgraph_workflow": LangGraphAgent(prompts)  # Real LangGraph implementation!
     }
     
     # ZenML automatically versions agent code, prompts, and configurations
@@ -117,8 +122,9 @@ def evaluate_and_decide(queries: pd.DataFrame, results: dict) -> HTMLString:
 def compare_agent_architectures():
     """Data-driven agent architecture decisions with full MLOps tracking."""
     queries = load_real_conversations()
+    prompts = load_prompts()  # Prompts as versioned artifacts
     classifier = train_intent_classifier(queries)
-    results, viz = run_architecture_comparison(queries, classifier)
+    results, viz = run_architecture_comparison(queries, classifier, prompts)
     report = evaluate_and_decide(queries, results)
 
 if __name__ == "__main__":

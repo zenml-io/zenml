@@ -1,6 +1,11 @@
 """Data loading steps for the agent comparison pipeline."""
 
+import json
+from pathlib import Path
+from typing import Tuple
+
 import pandas as pd
+from materializers import Prompt, PromptMaterializer
 from typing_extensions import Annotated
 
 from zenml import step
@@ -48,3 +53,89 @@ def load_real_conversations() -> Annotated[
 
     logger.info(f"Loaded {len(df)} customer service queries for testing")
     return df
+
+
+@step(output_materializers=PromptMaterializer)
+def load_prompts() -> Tuple[
+    Annotated[Prompt, "single_agent_prompt"],
+    Annotated[Prompt, "specialist_returns_prompt"],
+    Annotated[Prompt, "specialist_billing_prompt"],
+    Annotated[Prompt, "specialist_technical_prompt"],
+    Annotated[Prompt, "specialist_general_prompt"],
+    Annotated[Prompt, "langgraph_workflow_prompt"],
+]:
+    """Load prompts from files as individual ZenML artifacts.
+
+    Returns:
+        Tuple of individual Prompt objects for different agent types
+    """
+    prompts_dir = Path(__file__).parent.parent / "prompts"
+
+    # Load single agent RAG prompt
+    single_agent_content = (prompts_dir / "single_agent_rag.txt").read_text()
+    single_agent_prompt = Prompt(
+        name="single_agent_rag",
+        content=single_agent_content,
+        version="1.0.0",
+        description="Single agent RAG prompt for customer service queries",
+        variables={
+            "knowledge_context": "Formatted knowledge base context",
+            "query": "Customer query text",
+        },
+        author="ZenML Agent Comparison Example",
+        tags={"type": "rag", "domain": "customer_service"},
+    )
+
+    # Load specialist prompts
+    specialist_prompts_data = json.loads(
+        (prompts_dir / "specialist_prompts.json").read_text()
+    )
+
+    specialist_prompts = []
+    for specialist_type, content in specialist_prompts_data.items():
+        specialist_prompt = Prompt(
+            name=f"specialist_{specialist_type}",
+            content=content,
+            version="1.0.0",
+            description=f"Specialist prompt for {specialist_type} queries",
+            variables={"query": "Customer query text"},
+            author="ZenML Agent Comparison Example",
+            tags={
+                "type": "specialist",
+                "domain": "customer_service",
+                "specialist_type": specialist_type,
+            },
+        )
+        specialist_prompts.append(specialist_prompt)
+
+    # Load LangGraph workflow prompt
+    langgraph_content = (prompts_dir / "langgraph_workflow.txt").read_text()
+    langgraph_prompt = Prompt(
+        name="langgraph_workflow",
+        content=langgraph_content,
+        version="1.0.0",
+        description="LangGraph workflow prompt for structured customer service processing",
+        variables={
+            "query_type": "Classified query type",
+            "knowledge_context": "Relevant knowledge context",
+            "query": "Customer query text",
+        },
+        author="ZenML Agent Comparison Example",
+        tags={
+            "type": "workflow",
+            "domain": "customer_service",
+            "framework": "langgraph",
+        },
+    )
+
+    logger.info(
+        f"Loaded {1 + len(specialist_prompts) + 1} prompt templates as individual ZenML artifacts"
+    )
+    return (
+        single_agent_prompt,
+        specialist_prompts[0],  # returns
+        specialist_prompts[1],  # billing
+        specialist_prompts[2],  # technical
+        specialist_prompts[3],  # general
+        langgraph_prompt,
+    )
