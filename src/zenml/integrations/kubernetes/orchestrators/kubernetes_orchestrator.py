@@ -797,9 +797,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             include_steps: If True, also fetch the status of individual steps.
 
         Returns:
-            A tuple of (pipeline_status, step_statuses_dict).
-            If include_steps is False, step_statuses_dict will be None.
-            If include_steps is True, step_statuses_dict will be a dict (possibly empty).
+            A tuple of (pipeline_status, step_statuses).
+            If include_steps is False, step_statuses will be None.
+            If include_steps is True, step_statuses will be a dict (possibly empty).
 
         Raises:
             ValueError: If the orchestrator run ID cannot be found or if the
@@ -825,59 +825,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # Run is already finished, don't change status
             pipeline_status = None
 
-        step_status = None
+        step_statuses = None
         if include_steps:
-            step_status = self._fetch_step_statuses(run)
+            step_statuses = self._fetch_step_statuses(run)
 
-        return pipeline_status, step_status
-
-    def _pod_has_failure_events(self, pod_name: str) -> bool:
-        """Check if pod events indicate failure.
-
-        Args:
-            pod_name: The name of the pod to check events for.
-
-        Returns:
-            True if events indicate pod failure/deletion, False otherwise.
-        """
-        try:
-            # List events related to the pod
-            events = self._k8s_core_api.list_namespaced_event(
-                namespace=self.config.kubernetes_namespace,
-                field_selector=f"involvedObject.name={pod_name}",
-                limit=15,
-            )
-
-            # Look for failure/eviction/deletion related events
-            failure_reasons = [
-                "Evicted",
-                "OOMKilled",
-                "Killing",
-                "Failed",
-                "FailedMount",
-                "FailedScheduling",
-                "NodeLost",
-                "NodeNotReady",
-                "Preempted",
-                "NodeAffinity",
-                "InsufficientMemory",
-                "InsufficientCPU",
-                "Unschedulable",
-                "FailedCreate",
-                "Unhealthy",
-                "BackOff",
-                "ImagePullBackOff",
-                "CrashLoopBackOff",
-            ]
-
-            for event in events.items:
-                if event.reason in failure_reasons:
-                    return True
-
-            return False
-        except Exception as e:
-            logger.debug(f"Could not retrieve events for pod {pod_name}: {e}")
-            return False
+        return pipeline_status, step_statuses
 
     def _check_pod_status(
         self,
@@ -913,27 +865,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"Can't fetch the status of pod {pod_name} "
                 f"in namespace {self.config.kubernetes_namespace}."
             )
-
-            indicates_failure = self._pod_has_failure_events(pod_name)
-
-            if indicates_failure:
-                # We have evidence of actual failure/deletion
-                logger.warning(
-                    f"Pod {pod_name} failed based on events. "
-                    f"Marking as failed."
-                )
-                return kube_utils.PodPhase.FAILED
-            else:
-                # No clear evidence of failure - could be cleanup, TTL, etc.
-                logger.warning(
-                    f"Pod {pod_name} not found but no clear failure events. "
-                    f"Marking as unknown."
-                )
-                return kube_utils.PodPhase.UNKNOWN
+            return kube_utils.PodPhase.UNKNOWN
 
     def _map_pod_phase_to_execution_status(
         self, pod_phase: kube_utils.PodPhase
-    ) -> ExecutionStatus:
+    ) -> Optional[ExecutionStatus]:
         """Map Kubernetes pod phase to ZenML execution status.
 
         Args:
@@ -950,8 +886,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.COMPLETED
         elif pod_phase == kube_utils.PodPhase.FAILED:
             return ExecutionStatus.FAILED
-        else:  # UNKNOWN
-            return ExecutionStatus.FAILED
+        else:  # UNKNOWN - no update
+            return None
 
     def _map_job_status_to_execution_status(
         self, job: k8s_client.V1Job
