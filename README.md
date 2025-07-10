@@ -1,17 +1,14 @@
 <div align="center">
-  <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">MLOps for Reliable AI - From Classical ML to Agents</h1>
-  <h3 align="center">Your unified toolkit for shipping everything from decision trees to complex AI agents, built on the MLOps principles you already trust.</h3>
-</div>
-
-<div align="center">
 
   <!-- PROJECT LOGO -->
   <br />
     <a href="https://zenml.io">
-      <img alt="ZenML Logo" src="docs/book/.gitbook/assets/header.png" alt="ZenML Logo">
+      <img alt="ZenML Header" src="docs/book/.gitbook/assets/header.png" alt="ZenML Header">
     </a>
   <br />
+  <div align="center">
+    <h3 align="center">Your unified toolkit for shipping everything from decision trees to complex AI agents, built on the MLOps principles you already trust.</h3>
+  </div>
 
   [![PyPi][pypi-shield]][pypi-url]
   [![PyPi][pypiversion-shield]][pypi-url]
