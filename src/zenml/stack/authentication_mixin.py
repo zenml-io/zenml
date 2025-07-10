@@ -15,7 +15,7 @@
 
 from typing import Optional, Type, TypeVar, cast
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.client import Client
 from zenml.models import SecretResponse
@@ -30,12 +30,13 @@ class AuthenticationConfigMixin(StackComponentConfig):
     Any stack component that implements `AuthenticationMixin` should have a
     config that inherits from this class.
 
-    Attributes:
-        authentication_secret: Name of the secret that stores the
-            authentication credentials.
+    Field descriptions are defined inline using Field() descriptors.
     """
 
-    authentication_secret: Optional[str] = None
+    authentication_secret: Optional[str] = Field(
+        default=None,
+        description="Name of the ZenML secret containing authentication credentials.",
+    )
 
 
 class AuthenticationMixin(StackComponent):

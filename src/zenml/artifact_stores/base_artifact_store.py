@@ -33,7 +33,7 @@ from typing import (
     cast,
 )
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from zenml.constants import (
     ENV_ZENML_SERVER,
@@ -187,9 +187,18 @@ class _sanitize_paths:
 
 
 class BaseArtifactStoreConfig(StackComponentConfig):
-    """Config class for `BaseArtifactStore`."""
+    """Config class for `BaseArtifactStore`.
 
-    path: str
+    Base configuration for artifact storage backends.
+    Field descriptions are defined inline using Field() descriptors.
+    """
+
+    path: str = Field(
+        description="Root path for artifact storage. Must be a valid URI supported by the "
+        "specific artifact store implementation. Examples: 's3://my-bucket/artifacts', "
+        "'/local/storage/path', 'gs://bucket-name/zenml-artifacts', 'azure://container/path'. "
+        "Path must be accessible with the configured credentials and permissions"
+    )
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
     IS_IMMUTABLE_FILESYSTEM: ClassVar[bool] = False

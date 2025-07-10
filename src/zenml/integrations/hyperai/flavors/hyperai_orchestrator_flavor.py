@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Dict, Optional, Type
 
+from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.hyperai import HYPERAI_RESOURCE_TYPE
 from zenml.logger import get_logger
@@ -31,42 +33,38 @@ logger = get_logger(__name__)
 
 
 class HyperAIOrchestratorSettings(BaseSettings):
-    """HyperAI orchestrator settings.
+    """HyperAI orchestrator settings."""
 
-    Attributes:
-        mounts_from_to: A dictionary mapping from paths on the HyperAI instance
-            to paths within the Docker container. This allows users to mount
-            directories from the HyperAI instance into the Docker container that runs
-            on it.
-    """
-
-    mounts_from_to: Dict[str, str] = {}
+    mounts_from_to: Dict[str, str] = Field(
+        default_factory=dict,
+        description="A dictionary mapping from paths on the HyperAI instance "
+        "to paths within the Docker container. This allows users to mount "
+        "directories from the HyperAI instance into the Docker container.",
+    )
 
 
 class HyperAIOrchestratorConfig(
     BaseOrchestratorConfig, HyperAIOrchestratorSettings
 ):
-    """Configuration for the HyperAI orchestrator.
+    """Configuration for the HyperAI orchestrator."""
 
-    Attributes:
-        container_registry_autologin: If True, the orchestrator will attempt to
-            automatically log in to the container registry specified in the stack
-            configuration on the HyperAI instance. This is useful if the container
-            registry requires authentication and the HyperAI instance has not been
-            manually logged in to the container registry. Defaults to `False`.
-        automatic_cleanup_pipeline_files: If True, the orchestrator will
-            automatically clean up old pipeline files that are on the HyperAI
-            instance. Pipeline files will be cleaned up if they are 7 days old or
-            older. Defaults to `True`.
-        gpu_enabled_in_container: If True, the orchestrator will enable GPU
-            support in the Docker container that runs on the HyperAI instance.
-            Defaults to `True`.
-
-    """
-
-    container_registry_autologin: bool = False
-    automatic_cleanup_pipeline_files: bool = True
-    gpu_enabled_in_container: bool = True
+    container_registry_autologin: bool = Field(
+        False,
+        description="If True, the orchestrator will attempt to automatically "
+        "log in to the container registry specified in the stack configuration "
+        "on the HyperAI instance.",
+    )
+    automatic_cleanup_pipeline_files: bool = Field(
+        True,
+        description="If True, the orchestrator will automatically clean up old "
+        "pipeline files that are on the HyperAI instance. Pipeline files will "
+        "be cleaned up if they are 7 days old or older.",
+    )
+    gpu_enabled_in_container: bool = Field(
+        True,
+        description="If True, the orchestrator will enable GPU support in the "
+        "Docker container that runs on the HyperAI instance.",
+    )
 
     @property
     def is_remote(self) -> bool:

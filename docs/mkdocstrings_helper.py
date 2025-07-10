@@ -1,8 +1,10 @@
 import argparse
+import ast
 import os
 import subprocess
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
+import re
 
 PYDOCSTYLE_CMD = (
     "pydocstyle --convention=google --add-ignore=D100,D101,D102,"
@@ -64,6 +66,147 @@ def generate_title(s: str) -> str:
     s = s.replace("_", " ")
     s = s.title()
     return s
+
+
+def extract_field_description_from_code(code: str, field_name: str) -> Optional[str]:
+    """Extract Field description from Python code using AST parsing."""
+    try:
+        tree = ast.parse(code)
+        
+        for node in ast.walk(tree):
+            if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                if node.target.id == field_name and isinstance(node.value, ast.Call):
+                    # Check if it's a Field call
+                    if (isinstance(node.value.func, ast.Name) and node.value.func.id == "Field") or \
+                       (isinstance(node.value.func, ast.Attribute) and node.value.func.attr == "Field"):
+                        
+                        # Extract description from Field arguments
+                        for keyword in node.value.keywords:
+                            if keyword.arg == "description" and isinstance(keyword.value, ast.Constant):
+                                return keyword.value.value
+    except:
+        pass
+    return None
+
+
+def generate_docstring_attributes_from_fields(file_path: Path) -> None:
+    """Generate docstring attributes section from Pydantic Field descriptions."""
+    if not file_path.exists() or not file_path.name.endswith('.py'):
+        return
+        
+    try:
+        content = file_path.read_text(encoding='utf-8')
+        
+        # Skip if no Field imports or pydantic usage
+        if 'from pydantic import' not in content and 'import pydantic' not in content:
+            return
+            
+        # Parse the file to find classes with Field definitions
+        tree = ast.parse(content)
+        modified = False
+        
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                # Check if class has Field definitions
+                field_descriptions = {}
+                class_start_line = node.lineno
+                
+                # Find Field definitions in the class
+                for item in node.body:
+                    if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
+                        field_name = item.target.id
+                        if isinstance(item.value, ast.Call):
+                            # Check if it's a Field call
+                            if (isinstance(item.value.func, ast.Name) and item.value.func.id == "Field") or \
+                               (isinstance(item.value.func, ast.Attribute) and item.value.func.attr == "Field"):
+                                
+                                # Extract description
+                                for keyword in item.value.keywords:
+                                    if keyword.arg == "description" and isinstance(keyword.value, ast.Constant):
+                                        field_descriptions[field_name] = keyword.value.value
+                
+                # If we found Field descriptions, update the docstring
+                if field_descriptions:
+                    lines = content.split('\n')
+                    docstring_start, docstring_end = find_class_docstring_range(lines, class_start_line - 1)
+                    
+                    if docstring_start is not None and docstring_end is not None:
+                        # Extract existing docstring
+                        existing_docstring = '\n'.join(lines[docstring_start:docstring_end + 1])
+                        
+                        # Check if it already has Attributes section
+                        if 'Attributes:' not in existing_docstring:
+                            # Generate attributes section
+                            attributes_section = generate_attributes_section(field_descriptions)
+                            
+                            # Insert before the closing triple quotes
+                            if existing_docstring.strip().endswith('"""'):
+                                # Multi-line docstring
+                                new_docstring = existing_docstring.rstrip('"""').rstrip() + '\n\n' + attributes_section + '\n    """'
+                            elif existing_docstring.strip().endswith("'''"):
+                                # Multi-line docstring with single quotes
+                                new_docstring = existing_docstring.rstrip("'''").rstrip() + '\n\n' + attributes_section + "\n    '''"
+                            else:
+                                continue
+                                
+                            lines[docstring_start:docstring_end + 1] = new_docstring.split('\n')
+                            modified = True
+        
+        if modified:
+            file_path.write_text('\n'.join(lines), encoding='utf-8')
+            
+    except Exception as e:
+        print(f"Warning: Could not process {file_path}: {e}")
+
+
+def find_class_docstring_range(lines: List[str], class_line: int) -> Tuple[Optional[int], Optional[int]]:
+    """Find the start and end line numbers of a class docstring."""
+    # Look for docstring starting after class definition
+    for i in range(class_line + 1, min(class_line + 10, len(lines))):
+        line = lines[i].strip()
+        if line.startswith('"""') or line.startswith("'''"):
+            quote_type = '"""' if line.startswith('"""') else "'''"
+            start_line = i
+            
+            # Check if it's a single-line docstring
+            if line.count(quote_type) >= 2:
+                return start_line, start_line
+                
+            # Find the end of multi-line docstring
+            for j in range(i + 1, len(lines)):
+                if quote_type in lines[j]:
+                    return start_line, j
+    return None, None
+
+
+def generate_attributes_section(field_descriptions: dict) -> str:
+    """Generate an Attributes section from field descriptions."""
+    attributes_lines = ["    Attributes:"]
+    
+    for field_name, description in field_descriptions.items():
+        # Clean up description - remove extra whitespace and line breaks
+        clean_description = ' '.join(description.split())
+        attributes_lines.append(f"        {field_name}: {clean_description}")
+    
+    return '\n'.join(attributes_lines)
+
+
+def process_pydantic_files_in_directory(directory: Path) -> None:
+    """Process all Python files in a directory to generate docstring attributes."""
+    if not directory.exists():
+        return
+        
+    print(f"Processing Pydantic files in {directory}...")
+    
+    # Find all Python files recursively
+    python_files = list(directory.rglob("*.py"))
+    
+    for file_path in python_files:
+        # Skip __pycache__ directories and other non-source files
+        if "__pycache__" in str(file_path) or file_path.name.startswith("_"):
+            continue
+            
+        generate_docstring_attributes_from_fields(file_path)
 
 
 def create_entity_docs(
@@ -164,6 +307,8 @@ def generate_docs(
         ignored_modules: A list of modules that should be ignored.
         validate: Boolean if pydocstyle should be verified within dir
     """
+    # First, process all Pydantic files to generate docstring attributes
+    process_pydantic_files_in_directory(path)
     # Set up output paths for the generated md files
     api_doc_file_dir = output_path / API_DOCS
     cli_dev_doc_file_dir = output_path / API_DOCS / "cli"

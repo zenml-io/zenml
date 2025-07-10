@@ -34,38 +34,37 @@ if TYPE_CHECKING:
 
 
 class SagemakerStepOperatorSettings(BaseSettings):
-    """Settings for the Sagemaker step operator.
+    """Settings for the Sagemaker step operator."""
 
-    Attributes:
-        experiment_name: The name for the experiment to which the job
-            will be associated. If not provided, the job runs would be
-            independent.
-        input_data_s3_uri: S3 URI where training data is located if not locally,
-            e.g. s3://my-bucket/my-data/train. How data will be made available
-            to the container is configured with estimator_args.input_mode. Two possible
-            input types:
-                - str: S3 location where training data is saved.
-                - Dict[str, str]: (ChannelName, S3Location) which represent
-                    channels (e.g. training, validation, testing) where
-                    specific parts of the data are saved in S3.
-        estimator_args: Arguments that are directly passed to the SageMaker
-            Estimator. See
-            https://sagemaker.readthedocs.io/en/stable/api/training/estimators.html#sagemaker.estimator.Estimator
-            for a full list of arguments.
-            For estimator_args.instance_type, check
-            https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
-            for a list of available instance types.
-        environment: Environment variables to pass to the container.
-
-    """
-
-    instance_type: Optional[str] = None
-    experiment_name: Optional[str] = None
-    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
-        default=None, union_mode="left_to_right"
+    instance_type: Optional[str] = Field(
+        None,
+        description="DEPRECATED: The instance type to use for the step execution. "
+        "Use estimator_args instead. Example: 'ml.m5.xlarge'",
     )
-    estimator_args: Dict[str, Any] = {}
-    environment: Dict[str, str] = {}
+    experiment_name: Optional[str] = Field(
+        None,
+        description="The name for the experiment to which the job will be associated. "
+        "If not provided, the job runs would be independent. Example: 'my-training-experiment'",
+    )
+    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
+        default=None,
+        union_mode="left_to_right",
+        description="S3 URI where training data is located if not locally. "
+        "Example string: 's3://my-bucket/my-data/train'. Example dict: "
+        "{'training': 's3://bucket/train', 'validation': 's3://bucket/val'}",
+    )
+    estimator_args: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Arguments that are directly passed to the SageMaker Estimator. "
+        "See SageMaker documentation for available arguments and instance types. Example: "
+        "{'instance_type': 'ml.m5.xlarge', 'instance_count': 1, "
+        "'train_max_run': 3600, 'input_mode': 'File'}",
+    )
+    environment: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Environment variables to pass to the container during execution. "
+        "Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
+    )
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "instance_type"
@@ -75,18 +74,20 @@ class SagemakerStepOperatorSettings(BaseSettings):
 class SagemakerStepOperatorConfig(
     BaseStepOperatorConfig, SagemakerStepOperatorSettings
 ):
-    """Config for the Sagemaker step operator.
+    """Config for the Sagemaker step operator."""
 
-    Attributes:
-        role: The role that has to be assigned to the jobs which are
-            running in Sagemaker.
-        bucket: Name of the S3 bucket to use for storing artifacts
-            from the job run. If not provided, a default bucket will be created
-            based on the following format: "sagemaker-{region}-{aws-account-id}".
-    """
-
-    role: str
-    bucket: Optional[str] = None
+    role: str = Field(
+        ...,
+        description="The IAM role ARN that has to be assigned to the jobs "
+        "running in SageMaker. This role must have the necessary permissions "
+        "to access SageMaker and S3 resources.",
+    )
+    bucket: Optional[str] = Field(
+        None,
+        description="Name of the S3 bucket to use for storing artifacts from the job run. "
+        "If not provided, a default bucket will be created based on the format: "
+        "'sagemaker-{region}-{aws-account-id}'.",
+    )
 
     @property
     def is_remote(self) -> bool:
