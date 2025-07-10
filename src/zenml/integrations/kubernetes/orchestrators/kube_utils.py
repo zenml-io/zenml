@@ -603,37 +603,6 @@ def get_pod_owner_references(
     )
 
 
-def compute_step_pod_name(
-    step_name: str,
-    orchestrator_pod_name: str,
-    namespace: str,
-    settings: "KubernetesOrchestratorSettings",
-) -> str:
-    """Compute the step pod name for a given step.
-
-    Args:
-        step_name: The name of the step.
-        orchestrator_pod_name: The name of the orchestrator pod.
-        namespace: The namespace in which the pod will be created.
-        settings: The settings for the orchestrator.
-
-    Returns:
-        The computed step pod name.
-    """
-    prefix = settings.pod_name_prefix
-    if prefix and not orchestrator_pod_name.startswith(prefix):
-        max_length = calculate_max_pod_name_length_for_namespace(
-            namespace=namespace
-        )
-        pod_name_prefix = get_orchestrator_run_name(
-            pipeline_name=prefix, max_length=max_length
-        )
-        pod_name = f"{pod_name_prefix}-{step_name}"
-    else:
-        pod_name = f"{orchestrator_pod_name}-{step_name}"
-
-    return sanitize_pod_name(pod_name=pod_name, namespace=namespace)
-
 
 def retry_on_api_exception(
     func: Callable[..., R],
