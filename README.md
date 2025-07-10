@@ -164,12 +164,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from typing import Tuple
 from typing_extensions import Annotated
 import numpy as np
 import openai
 
 @step
-def create_dataset() -> tuple[
+def create_dataset() -> Tuple[
     Annotated[np.ndarray, "X_train"],
     Annotated[np.ndarray, "X_test"], 
     Annotated[np.ndarray, "y_train"],
@@ -177,7 +178,8 @@ def create_dataset() -> tuple[
 ]:
     """Generate a simple classification dataset."""
     X, y = make_classification(n_samples=100, n_features=4, n_classes=2, random_state=42)
-    return train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    return X_train, X_test, y_train, y_test
 
 @step
 def train_model(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestClassifier:
