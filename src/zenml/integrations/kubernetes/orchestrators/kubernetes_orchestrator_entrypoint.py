@@ -187,7 +187,7 @@ def main() -> None:
 
                 return True
 
-        step_pod_labels = {
+        base_labels = {
             "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
             "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
             "pipeline": kube_utils.sanitize_label(
@@ -233,6 +233,10 @@ def main() -> None:
             pod_name = kube_utils.sanitize_pod_name(
                 pod_name, namespace=namespace
             )
+
+            # Add step name to labels so both pod and job have consistent labeling
+            step_labels = base_labels.copy()
+            step_labels["step_name"] = kube_utils.sanitize_label(step_name)
 
             image = KubernetesOrchestrator.get_image(
                 deployment=deployment, step_name=step_name
@@ -281,7 +285,7 @@ def main() -> None:
                 or settings.service_account_name,
                 mount_local_stores=mount_local_stores,
                 termination_grace_period_seconds=settings.pod_stop_grace_period,
-                labels=step_pod_labels,
+                labels=step_labels,
             )
 
             retry_config = step_config.retry
@@ -347,7 +351,7 @@ def main() -> None:
                 active_deadline_seconds=settings.active_deadline_seconds,
                 pod_failure_policy=pod_failure_policy,
                 owner_references=owner_references,
-                labels=step_pod_labels,
+                labels=step_labels,
             )
 
             kube_utils.create_job(
