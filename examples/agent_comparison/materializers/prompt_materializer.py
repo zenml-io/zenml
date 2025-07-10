@@ -38,7 +38,7 @@ class PromptMaterializer(BaseMaterializer):
             prompt_data = json.load(f)
         return Prompt.from_dict(prompt_data)
 
-    def save(self, data) -> None:
+    def save(self, data: Any) -> None:
         """Save Prompt object to artifact store.
 
         Args:
@@ -64,7 +64,7 @@ class PromptMaterializer(BaseMaterializer):
             f.write("=" * 50 + "\n")
             f.write(data.content)
 
-    def save_visualizations(self, data) -> Dict[str, VisualizationType]:
+    def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
         """Generate and save visualizations for Prompt object.
 
         Args:
@@ -84,7 +84,7 @@ class PromptMaterializer(BaseMaterializer):
 
         return {visualization_path: VisualizationType.HTML}
 
-    def extract_metadata(self, data) -> Dict[str, Any]:
+    def extract_metadata(self, data: Any) -> Dict[str, Any]:
         """Extract metadata from Prompt object.
 
         Args:

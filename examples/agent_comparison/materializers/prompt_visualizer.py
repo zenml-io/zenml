@@ -1,7 +1,7 @@
 """Prompt visualizer for generating HTML visualizations of prompts."""
 
 import html
-from typing import List
+from typing import Any, List
 
 from zenml.types import HTMLString
 
@@ -459,7 +459,7 @@ def visualize_prompts(prompts: List[Prompt]) -> HTMLString:
     return HTMLString(html_content)
 
 
-def visualize_prompt_data(data) -> HTMLString:
+def visualize_prompt_data(data: Any) -> HTMLString:
     """Generate HTML visualization for prompt data.
 
     Args:
