@@ -22,7 +22,7 @@ import click
 
 from zenml import Tag, get_step_context, log_metadata, pipeline, step
 from zenml.client import Client
-from zenml.config import DockerSettings
+from zenml.config import DockerSettings, StepRetryConfig
 from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
@@ -45,6 +45,7 @@ def get_kubernetes_settings(
         service_account_name="zenml-service-account",
         pod_startup_timeout=600,
         max_parallelism=max_parallelism,
+        backoff_limit_margin=3,
         pod_settings=KubernetesPodSettings(
             resources={
                 "requests": {"cpu": "100m", "memory": "500Mi"},
@@ -390,12 +391,21 @@ def load_test_pipeline(
     default=None,
     type=int,
 )
+@click.option(
+    "--retries",
+    "-r",
+    help="Number of retries for the step",
+    required=False,
+    default=3,
+    type=int,
+)
 def main(
     parallel_steps: int,
     duration: int,
     sleep_interval: float,
     num_tags: int,
     max_parallel_steps: Optional[int] = None,
+    retries: int = 3,
 ) -> None:
     """Execute a ZenML load test with configurable parallel steps.
 
@@ -408,6 +418,7 @@ def main(
         sleep_interval: The interval to sleep between API calls in seconds.
         num_tags: The number of tags to add to the pipeline.
         max_parallel_steps: The maximum number of parallel steps to run.
+        retries: The number of retries for the step.
     """
     if max_parallel_steps:
         click.echo(
@@ -426,6 +437,7 @@ def main(
     load_test_pipeline.configure(
         tags=[Tag(name=f"tag_{i}", cascade=True) for i in range(num_tags)],
         settings=settings,
+        retry=StepRetryConfig(max_retries=retries),
     )
 
     load_test_pipeline(

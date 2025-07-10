@@ -200,9 +200,10 @@ synchronous: bool = Field(
 ### Continuous Integration
 - ZenML uses a two-tier CI approach:
   - **Fast CI**: Runs automatically on all PRs (basic tests, linting, type checking)
-  - **Full CI**: Includes integration tests and more extensive test coverage
+  - **Full CI**: Includes integration tests, tutorial pipeline regression tests, and more extensive test coverage
 - The `run-slow-ci` label triggers full CI testing
 - Full CI is required before merging - maintainers will add the label if needed
+- Tutorial pipeline testing runs all VSCode tutorial examples against the current branch to catch breaking changes
 - If your changes touch integrations or core functionality, mention in the PR that full CI should be run
 - CI failures will show in the PR checks - review logs to understand any issues
 

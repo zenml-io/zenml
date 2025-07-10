@@ -207,6 +207,27 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 "Missing DB session to fetch step configurations."
             )
 
+    def get_step_configuration(
+        self, step_name: str
+    ) -> "StepConfigurationSchema":
+        """Get the step configuration for the deployment.
+
+        Args:
+            step_name: The name of the step to get the configuration for.
+
+        Raises:
+            KeyError: If the step configuration is not found.
+
+        Returns:
+            The step configuration.
+        """
+        step_configs = self.get_step_configurations(include=[step_name])
+        if len(step_configs) == 0:
+            raise KeyError(
+                f"Step configuration for step `{step_name}` not found."
+            )
+        return step_configs[0]
+
     @classmethod
     def get_query_options(
         cls,

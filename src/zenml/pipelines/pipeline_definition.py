@@ -104,6 +104,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.client_lazy_loader import ClientLazyLoader
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
@@ -142,6 +143,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
     ) -> None:
         """Initializes a pipeline.
@@ -166,6 +168,7 @@ class Pipeline:
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
+            retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
         """
         self._invocations: Dict[str, StepInvocation] = {}
@@ -188,6 +191,7 @@ class Pipeline:
                 on_failure=on_failure,
                 on_success=on_success,
                 model=model,
+                retry=retry,
                 substitutions=substitutions,
             )
         self.entrypoint = entrypoint
@@ -308,6 +312,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
+        retry: Optional["StepRetryConfig"] = None,
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
@@ -347,6 +352,7 @@ class Pipeline:
                 overwrite all existing ones. See the general description of this
                 method for an example.
             model: configuration of the model version in the Model Control Plane.
+            retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
 
@@ -381,6 +387,7 @@ class Pipeline:
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
                 "model": model,
+                "retry": retry,
                 "parameters": parameters,
                 "substitutions": substitutions,
             }
@@ -856,6 +863,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
                 logs_model = LogsRequest(
                     uri=logs_uri,
+                    source="client",
                     artifact_store_id=stack.artifact_store.id,
                 )
 

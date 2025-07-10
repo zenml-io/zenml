@@ -153,6 +153,9 @@ class PipelineRunUpdate(BaseUpdate):
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the pipeline run."
     )
+    add_logs: Optional[List[LogsRequest]] = Field(
+        default=None, title="New logs to add to the pipeline run."
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -262,6 +265,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
         title="Tags associated with the pipeline run.",
     )
     logs: Optional["LogsResponse"] = Field(
+        title="Logs associated with this pipeline run.",
+        default=None,
+    )
+    log_collection: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this pipeline run.",
         default=None,
     )
@@ -490,6 +497,7 @@ class PipelineRunResponse(
                 Client().list_run_steps,
                 pipeline_run_id=self.id,
                 project=self.project_id,
+                exclude_retried=True,
             )
         }
 
@@ -600,6 +608,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().logs
+
+    @property
+    def log_collection(self) -> Optional[List["LogsResponse"]]:
+        """The `log_collection` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().log_collection
 
 
 # ------------------ Filter Model ------------------

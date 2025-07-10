@@ -85,7 +85,7 @@ Once you added the step operator to your active stack, you can use it to execute
 from zenml import step
 
 
-@step(step_operator=<NAME>)
+@step(step_operator=True)
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in Vertex.
@@ -163,7 +163,7 @@ For additional configuration of the Vertex step operator, you can pass `VertexSt
 from zenml import step
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import VertexStepOperatorSettings
 
-@step(step_operator=<STEP_OPERATOR_NAME>, settings={"step_operator": VertexStepOperatorSettings(
+@step(step_operator=True, settings={"step_operator": VertexStepOperatorSettings(
     accelerator_type= "NVIDIA_TESLA_T4",  # see https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
     accelerator_count = 1,
     machine_type = "n1-standard-2",       # see https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
@@ -215,7 +215,7 @@ Or ensure that your worker pool configuration in your persistent storage matches
 ```python
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import VertexStepOperatorSettings
 
-@step(step_operator=<STEP_OPERATOR_NAME>, settings={"step_operator": VertexStepOperatorSettings(
+@step(step_operator=True, settings={"step_operator": VertexStepOperatorSettings(
     persistent_resource_id="my-persistent-resource",  # specify your persistent resource ID
     machine_type="n1-standard-4",
     accelerator_type="NVIDIA_TESLA_T4",

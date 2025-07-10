@@ -40,7 +40,7 @@ Deploy multiple ZenML servers through [workspaces](workspaces.md) with enterpris
 - Early access to pro-specific features like triggers, filters, and usage reports
 
 {% hint style="info" %}
-Try ZenML Pro with a [free account](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link).
+Try ZenML Pro with a [free account](https://zenml.io/pro?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link).
 {% endhint %}
 
 ## Deployment Options

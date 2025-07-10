@@ -53,6 +53,19 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
             component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
         )
 
+    def should_build_pipeline_image(
+        self, deployment: "PipelineDeploymentBase"
+    ) -> bool:
+        """Whether to build the pipeline image.
+
+        Args:
+            deployment: The pipeline deployment.
+
+        Returns:
+            Whether to build the pipeline image.
+        """
+        return False
+
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
@@ -86,5 +99,14 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 )
                 builds.append(pipeline_build)
                 included_pipeline_build = True
+
+        if not included_pipeline_build and self.should_build_pipeline_image(
+            deployment
+        ):
+            pipeline_build = BuildConfiguration(
+                key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
+                settings=pipeline_settings,
+            )
+            builds.append(pipeline_build)
 
         return builds
