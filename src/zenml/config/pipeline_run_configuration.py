@@ -48,6 +48,7 @@ class PipelineRunConfiguration(
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, Tag]]] = None
+    stack: Optional[str] = None
     extra: Dict[str, Any] = {}
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
