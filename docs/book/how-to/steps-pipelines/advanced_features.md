@@ -312,7 +312,7 @@ from typing import List, Optional
 from uuid import UUID
 import time
 
-from zenml import step, pipeline, Client
+from zenml import step, pipeline
 from zenml.client import Client
 
 
