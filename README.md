@@ -161,6 +161,9 @@ zenml init
 
 # Start local server or connect to a remote one
 zenml login
+
+# Set OpenAI API key (optional)
+export OPENAI_API_KEY=sk-svv....
 ```
 
 ### Your First Pipeline (2 minutes)
@@ -175,7 +178,6 @@ from sklearn.metrics import accuracy_score
 from typing import Tuple
 from typing_extensions import Annotated
 import numpy as np
-import openai
 
 @step
 def create_dataset() -> Tuple[
@@ -205,6 +207,8 @@ def evaluate_model(model: RandomForestClassifier, X_test: np.ndarray, y_test: np
 @step
 def generate_summary(accuracy: float) -> str:
     """Use OpenAI to generate a model summary."""
+    import openai
+
     client = openai.OpenAI()  # Set OPENAI_API_KEY environment variable
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -222,8 +226,12 @@ def simple_ml_pipeline():
     X_train, X_test, y_train, y_test = create_dataset()
     model = train_model(X_train, y_train)
     accuracy = evaluate_model(model, X_test, y_test)
-    summary = generate_summary(accuracy)
-    return summary
+    try:
+        import openai  # noqa: F401
+        generate_summary(accuracy)
+    except ImportError:
+        print("OpenAI is not installed. Skipping summary generation.")
+
 
 if __name__ == "__main__":
     result = simple_ml_pipeline()
