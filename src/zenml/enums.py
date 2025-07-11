@@ -109,10 +109,10 @@ class ExecutionStatus(StrEnum):
 
     @property
     def is_failed(self) -> bool:
-        """Whether the execution status refers to a successful execution.
+        """Whether the execution status refers to a failed execution.
 
         Returns:
-            Whether the execution status refers to a successful execution.
+            Whether the execution status refers to a failed execution.
         """
         return self in {ExecutionStatus.FAILED}
 
