@@ -2,6 +2,11 @@
 description: Use your RAG components to generate responses to prompts.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Simple RAG Inference
 
 Now that we have our index store, we can use it to make queries based on the
