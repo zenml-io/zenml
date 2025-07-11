@@ -19,6 +19,7 @@ import modal
 
 from zenml.client import Client
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
+from zenml.config.resource_settings import ResourceSettings
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -105,25 +106,35 @@ class ModalSandboxExecutor:
             Merged Modal orchestrator settings.
         """
         # Start with pipeline-level settings
-        merged_settings = ModalOrchestratorSettings.model_validate(
-            self.settings.model_dump()
-        )
+        pipeline_settings_dict = self.settings.model_dump()
 
         # Get step-specific settings
-        step_config = self.deployment.step_configurations[step_name].config
-        step_settings = step_config.settings.get("orchestrator.modal")
+        if step_name in self.deployment.step_configurations:
+            step_config = self.deployment.step_configurations[step_name].config
+            step_settings = step_config.settings.get("orchestrator.modal")
 
-        if step_settings:
-            step_modal_settings = ModalOrchestratorSettings.model_validate(
-                step_settings.model_dump()
-            )
-            # Merge step settings over pipeline settings
-            for key, value in step_modal_settings.model_dump(
-                exclude_unset=True
-            ).items():
-                if value is not None:
-                    setattr(merged_settings, key, value)
+            if step_settings:
+                # Handle both dict and Pydantic model cases
+                if hasattr(step_settings, "model_dump"):
+                    step_settings_data = step_settings.model_dump()
+                else:
+                    step_settings_data = step_settings
 
+                step_modal_settings = ModalOrchestratorSettings.model_validate(
+                    step_settings_data
+                )
+                # Merge step settings over pipeline settings
+                step_settings_dict = step_modal_settings.model_dump(
+                    exclude_unset=True
+                )
+                for key, value in step_settings_dict.items():
+                    if value is not None:
+                        pipeline_settings_dict[key] = value
+
+        # Create merged settings from the combined dictionary
+        merged_settings = ModalOrchestratorSettings.model_validate(
+            pipeline_settings_dict
+        )
         return merged_settings
 
     def _create_environment_secret(self) -> Optional[Any]:
@@ -137,7 +148,11 @@ class ModalSandboxExecutor:
 
         # Create secret from environment variables
         # Modal handles efficiency internally
-        return modal.Secret.from_dict(self.environment)
+        # Cast to Dict[str, str | None] to match Modal's expected type
+        env_dict: Dict[str, Optional[str]] = {
+            k: v for k, v in self.environment.items()
+        }
+        return modal.Secret.from_dict(env_dict)
 
     def _get_resource_config(
         self, step_name: Optional[str] = None
@@ -154,15 +169,21 @@ class ModalSandboxExecutor:
             step_settings = self._get_step_settings(step_name)
             step_config = self.deployment.step_configurations[step_name].config
             resource_settings = step_config.settings.get(RESOURCE_SETTINGS_KEY)
-            gpu_values = get_gpu_values(step_settings.gpu, resource_settings)
+            gpu_values = get_gpu_values(
+                step_settings.gpu, resource_settings or ResourceSettings()
+            )
         else:
             # Pipeline-level resource settings
             resource_settings = get_resource_settings_from_deployment(
                 self.deployment, RESOURCE_SETTINGS_KEY
             )
-            gpu_values = get_gpu_values(self.settings.gpu, resource_settings)
+            gpu_values = get_gpu_values(
+                self.settings.gpu, resource_settings or ResourceSettings()
+            )
 
-        cpu_count, memory_mb = get_resource_values(resource_settings)
+        cpu_count, memory_mb = get_resource_values(
+            resource_settings or ResourceSettings()
+        )
         return gpu_values, cpu_count, memory_mb
 
     async def _execute_sandbox(
@@ -291,7 +312,7 @@ class ModalSandboxExecutor:
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 deployment_id=self.deployment.id,
                 orchestrator_run_id=orchestrator_run_id,
-                run_id=run_id,
+                run_id=run_id or None,
             )
         )
         entrypoint_command = self._build_entrypoint_command(command, args)

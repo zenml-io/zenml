@@ -225,7 +225,7 @@ def get_or_build_modal_image(
 
     try:
         # Try to look up existing image
-        existing_image = getattr(app, image_name_key, None)
+        existing_image = modal.Image.from_id(image_name_key)
         if existing_image is not None:
             logger.info(
                 f"Using cached Modal image for deployment {deployment_id}"
@@ -274,12 +274,14 @@ def get_or_build_modal_image(
 def build_modal_image(
     image_name: str,
     stack: "Stack",
+    environment: Optional[Dict[str, str]] = None,
 ) -> Any:
     """Build a Modal image from a ZenML-built Docker image.
 
     Args:
         image_name: The name of the Docker image to use as base.
         stack: The ZenML stack containing container registry.
+        environment: The environment variables to pass to the image.
 
     Returns:
         The configured Modal image.
@@ -324,6 +326,9 @@ def build_modal_image(
             image_name, secret=registry_secret
         ).pip_install("modal")  # Install Modal in the container
     )
+
+    if environment:
+        zenml_image = zenml_image.env(environment)
 
     return zenml_image
 
