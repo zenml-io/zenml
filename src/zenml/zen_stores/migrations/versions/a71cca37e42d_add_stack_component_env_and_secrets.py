@@ -1,7 +1,7 @@
 """Add stack/component env and secrets [a71cca37e42d].
 
 Revision ID: a71cca37e42d
-Revises: 0.83.1
+Revises: 0.84.0
 Create Date: 2025-05-08 09:50:39.261042
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a71cca37e42d"
-down_revision = "0.83.1"
+down_revision = "0.84.0"
 branch_labels = None
 depends_on = None
 
