@@ -5,8 +5,8 @@ on customer service queries. It demonstrates how to use ZenML to evaluate and co
 different AI approaches in a reproducible way.
 """
 
-# Register the agent materializer now that imports are resolved
-from materializers import register_agent_materializer
+# Import to trigger materializer registration
+import materializers.agent_materializer  # noqa: F401
 from steps import (
     evaluate_and_decide,
     load_prompts,
@@ -17,8 +17,6 @@ from steps import (
 
 from zenml import Model, pipeline
 from zenml.config import DockerSettings
-
-register_agent_materializer()
 
 docker_settings = DockerSettings(
     requirements="requirements.txt",
