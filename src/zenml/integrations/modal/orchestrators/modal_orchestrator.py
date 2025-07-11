@@ -311,13 +311,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         with modal.enable_output():
             # Create sandbox with the entrypoint command
-            # Use a single persistent secret per app for environment variables
+            # Use secrets for environment variables
             secrets = []
             if environment:
-                secret_name = f"zenml-env-{app.name.replace('-', '_')}"
-                env_secret = modal.Secret.from_dict(
-                    environment, name=secret_name
-                )
+                env_secret = modal.Secret.from_dict(environment)
                 secrets.append(env_secret)
 
             sb = await modal.Sandbox.create.aio(
