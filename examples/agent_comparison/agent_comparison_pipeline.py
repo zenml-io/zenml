@@ -32,14 +32,3 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("🔄 LANGGRAPH WORKFLOW VISUALIZATION")
     print("=" * 60)
-    print("""
-LangGraph Customer Service Agent Workflow:
-
-START → analyze_query → classify_intent → generate_response → validate_response → END
-
-Node Details:
-- analyze_query: Analyzes query complexity and sets initial confidence
-- classify_intent: Classifies into returns, billing, shipping, warranty, or general
-- generate_response: Generates appropriate response based on intent
-- validate_response: Validates response quality and adjusts confidence
-    """)
