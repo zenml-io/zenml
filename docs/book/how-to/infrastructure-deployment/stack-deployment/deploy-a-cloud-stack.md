@@ -3,6 +3,11 @@ description: Deploy a cloud stack from scratch with a single click
 icon: hand-back-point-up
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 1-click Deployment
 
 In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks) is a fundamental concept that represents the configuration of your infrastructure. In a normal workflow, creating a stack requires you to first deploy the necessary pieces of infrastructure and then define them as stack components in ZenML with proper authentication.
