@@ -222,7 +222,8 @@ class ModalSandboxExecutor:
         zenml_image = get_or_build_modal_image(
             image_name=image_name,
             stack=self.stack,
-            deployment_id=str(self.deployment.id),
+            pipeline_name=self.deployment.pipeline_configuration.name,
+            build_id=str(self.deployment.build.id),
             app=self.app,
         )
 
@@ -267,6 +268,37 @@ class ModalSandboxExecutor:
                 await sb.wait.aio()
             else:
                 logger.info("Sandbox started asynchronously")
+
+            # Store the image ID for future caching after sandbox creation
+            # The image should be hydrated after being used in sandbox creation
+            await self._store_image_id(zenml_image)
+
+    async def _store_image_id(self, zenml_image: Any) -> None:
+        """Store the image ID for future caching after sandbox creation.
+
+        Args:
+            zenml_image: The Modal image that was used.
+        """
+        try:
+            # After sandbox creation, the image should be hydrated
+            zenml_image.hydrate()
+            if hasattr(zenml_image, "object_id") and zenml_image.object_id:
+                image_name_key = f"zenml_image_{self.deployment.build.id}"
+
+                # Store the image ID in Modal's persistent storage
+                pipeline_name = self.deployment.pipeline_configuration.name
+                stored_id = modal.Dict.from_name(
+                    f"zenml-image-cache-{pipeline_name}",
+                    create_if_missing=True,
+                )
+                stored_id[image_name_key] = zenml_image.object_id
+                logger.info(
+                    f"Stored Modal image ID for build {self.deployment.build.id}"
+                )
+            else:
+                logger.warning("Image not hydrated after sandbox creation")
+        except Exception as e:
+            logger.warning(f"Failed to store image ID: {e}")
 
     def _get_image_name(self, step_name: Optional[str] = None) -> str:
         """Get the image name for the pipeline or step.

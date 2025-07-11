@@ -195,15 +195,17 @@ def get_resource_values(
 def get_or_build_modal_image(
     image_name: str,
     stack: "Stack",
-    deployment_id: str,
+    pipeline_name: str,
+    build_id: str,
     app: Any,
 ) -> Any:
-    """Get existing Modal image or build new one based on deployment ID.
+    """Get existing Modal image or build new one based on pipeline name and build ID.
 
     Args:
         image_name: The name of the Docker image to use as base.
         stack: The ZenML stack containing container registry.
-        deployment_id: The deployment ID for caching.
+        pipeline_name: The pipeline name for caching.
+        build_id: The build ID for the image key.
         app: The Modal app to store/retrieve images.
 
     Returns:
@@ -221,16 +223,26 @@ def get_or_build_modal_image(
         )
 
     # Try to get existing image from the app
-    image_name_key = f"zenml_image_{deployment_id}"
+    image_name_key = f"zenml_image_{build_id}"
 
     try:
-        # Try to look up existing image
-        existing_image = modal.Image.from_id(image_name_key)
-        if existing_image is not None:
-            logger.info(
-                f"Using cached Modal image for deployment {deployment_id}"
+        # Try to look up existing image by ID from Modal's object store
+        # We'll store the image ID as a Modal object for persistence
+        try:
+            # Try to get stored image ID
+            stored_id = modal.Dict.from_name(
+                f"zenml-image-cache-{pipeline_name}"
             )
-            return existing_image
+            if image_name_key in stored_id:
+                image_id = stored_id[image_name_key]
+                existing_image = modal.Image.from_id(image_id)
+                logger.info(
+                    f"Using cached Modal image for build {build_id} in pipeline {pipeline_name}"
+                )
+                return existing_image
+        except Exception:
+            # Dict doesn't exist or image not found, will build new one
+            pass
     except Exception:
         # If lookup fails, we'll build a new image
         pass
