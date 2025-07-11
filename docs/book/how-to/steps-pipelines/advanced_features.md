@@ -468,7 +468,6 @@ if __name__ == "__main__":
     #  Make sure a remote stack is set before running this
     template = chunk_processing_pipeline.create_run_template(
         name="chunk_processing_template",
-        deployment_id=run.deployment_id,
         description="Template for processing individual chunks"
     )
 
