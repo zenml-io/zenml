@@ -29,6 +29,3 @@ if __name__ == "__main__":
         "Check the ZenML Dashboard for the detailed evaluation report and LangGraph workflow visualization!"
     )
 
-    print("\n" + "=" * 60)
-    print("🔄 LANGGRAPH WORKFLOW VISUALIZATION")
-    print("=" * 60)
