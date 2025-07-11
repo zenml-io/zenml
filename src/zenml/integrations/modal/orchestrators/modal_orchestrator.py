@@ -39,10 +39,10 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator_entrypoint_config
 )
 from zenml.integrations.modal.utils import (
     ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
-    build_modal_image,
     create_modal_stack_validator,
     generate_sandbox_tags,
     get_gpu_values,
+    get_or_build_modal_image,
     get_resource_settings_from_deployment,
     get_resource_values,
     setup_modal_client,
@@ -128,27 +128,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID}."
             )
 
-    def _build_modal_image(
-        self,
-        deployment: "PipelineDeploymentResponse",
-        stack: "Stack",
-        environment: Dict[str, str],
-    ) -> Any:
-        """Build the Modal image for pipeline execution.
-
-        Args:
-            deployment: The pipeline deployment.
-            stack: The stack the pipeline will run on.
-            environment: Environment variables to set.
-
-        Returns:
-            The configured Modal image.
-        """
-        # Get the ZenML-built image that contains all pipeline code
-        image_name = self.get_image(deployment=deployment)
-
-        return build_modal_image(image_name, stack, environment)
-
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -209,9 +188,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             deployment, RESOURCE_SETTINGS_KEY
         )
 
-        # Build Modal image
-        zenml_image = self._build_modal_image(deployment, stack, environment)
-
         # Configure resources from resource settings
         gpu_values = get_gpu_values(settings.gpu, resource_settings)
         cpu_count, memory_mb = get_resource_values(resource_settings)
@@ -224,6 +200,23 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             "_", "-"
         )
         app_name = f"zenml-pipeline-{pipeline_name}"
+
+        # Create Modal app for caching and execution
+        app = modal.App.lookup(
+            app_name,
+            create_if_missing=True,
+            environment_name=settings.modal_environment
+            or self.config.modal_environment,
+        )
+
+        # Get or build Modal image with caching based on deployment ID
+        image_name = self.get_image(deployment=deployment)
+        zenml_image = get_or_build_modal_image(
+            image_name=image_name,
+            stack=stack,
+            deployment_id=str(deployment.id),
+            app=app,
+        )
 
         # Build entrypoint command and args for the orchestrator sandbox
         command = (
@@ -238,59 +231,29 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
         entrypoint_command = command + args
 
-        # Execute using sandbox based on execution mode
+        # Execute using sandbox
         try:
-            if execution_mode == ModalExecutionMode.PIPELINE:
-                # Execute entire pipeline in one sandbox (fastest)
-                asyncio.run(
-                    self._execute_pipeline_sandbox(
-                        app_name=app_name,
-                        zenml_image=zenml_image,
-                        entrypoint_command=entrypoint_command,
-                        deployment=deployment,
-                        execution_mode=execution_mode.value,
-                        run_id=str(placeholder_run.id)
-                        if placeholder_run
-                        else None,
-                        gpu_values=gpu_values,
-                        cpu_count=cpu_count,
-                        memory_mb=memory_mb,
-                        cloud=settings.cloud or self.config.cloud,
-                        region=settings.region or self.config.region,
-                        timeout=settings.timeout or self.config.timeout,
-                        environment_name=settings.modal_environment
-                        or self.config.modal_environment,
-                        synchronous=settings.synchronous
-                        if hasattr(settings, "synchronous")
-                        else self.config.synchronous,
-                    )
+            asyncio.run(
+                self._execute_pipeline_sandbox(
+                    app=app,
+                    zenml_image=zenml_image,
+                    entrypoint_command=entrypoint_command,
+                    deployment=deployment,
+                    run_id=str(placeholder_run.id)
+                    if placeholder_run
+                    else None,
+                    gpu_values=gpu_values,
+                    cpu_count=cpu_count,
+                    memory_mb=memory_mb,
+                    cloud=settings.cloud or self.config.cloud,
+                    region=settings.region or self.config.region,
+                    timeout=settings.timeout or self.config.timeout,
+                    environment=environment,
+                    synchronous=settings.synchronous
+                    if hasattr(settings, "synchronous")
+                    else self.config.synchronous,
                 )
-            else:
-                # PER_STEP mode: Execute each step in separate sandbox
-                # This is handled by the entrypoint using ThreadedDagRunner
-                asyncio.run(
-                    self._execute_pipeline_sandbox(
-                        app_name=app_name,
-                        zenml_image=zenml_image,
-                        entrypoint_command=entrypoint_command,
-                        deployment=deployment,
-                        execution_mode=execution_mode.value,
-                        run_id=str(placeholder_run.id)
-                        if placeholder_run
-                        else None,
-                        gpu_values=gpu_values,
-                        cpu_count=cpu_count,
-                        memory_mb=memory_mb,
-                        cloud=settings.cloud or self.config.cloud,
-                        region=settings.region or self.config.region,
-                        timeout=settings.timeout or self.config.timeout,
-                        environment_name=settings.modal_environment
-                        or self.config.modal_environment,
-                        synchronous=settings.synchronous
-                        if hasattr(settings, "synchronous")
-                        else self.config.synchronous,
-                    )
-                )
+            )
         except Exception as e:
             logger.error(f"Pipeline execution failed: {e}")
             logger.info("Check Modal dashboard for detailed logs")
@@ -302,11 +265,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
     async def _execute_pipeline_sandbox(
         self,
-        app_name: str,
+        app: Any,
         zenml_image: Any,
         entrypoint_command: List[str],
         deployment: "PipelineDeploymentResponse",
-        execution_mode: str,
         run_id: Optional[str] = None,
         gpu_values: Optional[str] = None,
         cpu_count: Optional[int] = None,
@@ -314,17 +276,16 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         cloud: Optional[str] = None,
         region: Optional[str] = None,
         timeout: int = 86400,
-        environment_name: Optional[str] = None,
+        environment: Optional[Dict[str, str]] = None,
         synchronous: bool = True,
     ) -> None:
         """Execute pipeline using Modal sandbox.
 
         Args:
-            app_name: Name of the Modal app
+            app: Modal app instance
             zenml_image: Pre-built ZenML Docker image for Modal
             entrypoint_command: Command to execute in the sandbox
             deployment: Pipeline deployment for tagging
-            execution_mode: Execution mode for tagging
             run_id: Pipeline run ID for tagging
             gpu_values: GPU configuration string
             cpu_count: Number of CPU cores
@@ -332,15 +293,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             cloud: Cloud provider to use
             region: Region to deploy in
             timeout: Maximum execution timeout
-            environment_name: Modal environment name
+            environment: Environment variables for the sandbox
             synchronous: Whether to wait for completion
         """
-        # Create persistent app (will reuse if exists)
-        app = modal.App.lookup(
-            app_name, create_if_missing=True, environment_name=environment_name
-        )
-
-        logger.info(f"Using Modal app: {app_name}")
+        logger.info(f"Using Modal app: {app.name}")
 
         logger.info("Creating sandbox for pipeline execution")
 
@@ -348,14 +304,22 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         sandbox_tags = generate_sandbox_tags(
             pipeline_name=deployment.pipeline_configuration.name,
             deployment_id=str(deployment.id),
-            execution_mode=execution_mode,
+            execution_mode="PIPELINE",
             run_id=run_id,
         )
         logger.info(f"Sandbox tags: {sandbox_tags}")
 
         with modal.enable_output():
             # Create sandbox with the entrypoint command
-            # Note: Modal sandboxes inherit environment from the image
+            # Use a single persistent secret per app for environment variables
+            secrets = []
+            if environment:
+                secret_name = f"zenml-env-{app.name.replace('-', '_')}"
+                env_secret = modal.Secret.from_dict(
+                    environment, name=secret_name
+                )
+                secrets.append(env_secret)
+
             sb = await modal.Sandbox.create.aio(
                 *entrypoint_command,  # Pass as separate arguments to avoid shell quoting issues
                 image=zenml_image,
@@ -366,6 +330,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 region=region,
                 app=app,
                 timeout=timeout,
+                secrets=secrets,
             )
 
             # Set tags on the sandbox for organization

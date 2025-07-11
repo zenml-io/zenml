@@ -195,7 +195,6 @@ async def _execute_step_sandbox(
     step_tags = generate_sandbox_tags(
         pipeline_name=deployment.pipeline_configuration.name,
         deployment_id=str(deployment.id),
-        execution_mode="PER_STEP",
         step_name=step_name,
     )
     logger.info(f"Step sandbox tags: {step_tags}")
