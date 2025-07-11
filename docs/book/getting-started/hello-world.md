@@ -7,7 +7,7 @@ icon: hand-wave
 
 # Hello World
 
-This guide will help you build and deploy your first ZenML pipeline, starting locally and then transitioning to the cloud without changing your code.
+This guide will help you build and deploy your first ZenML pipeline, starting locally and then transitioning to the cloud without changing your code. The same principles you'll learn here apply whether you're building classical ML models or AI agents.
 
 {% stepper %}
 {% step %}
@@ -115,14 +115,24 @@ ZenML handles packaging code, building containers, orchestrating execution, and 
 Congratulations! You've just experienced the core value proposition of ZenML:
 
 * **Write Once, Run Anywhere**: The same code runs locally during development and in the cloud for production
-* **Separation of Concerns**: Infrastructure configuration and ML code are completely decoupled, enabling independent evolution of each
-* **Full Tracking**: Every run, artifact, and model is automatically versioned and tracked
+* **Unified Framework**: Use the same MLOps principles for both classical ML models and AI agents
+* **Separation of Concerns**: Infrastructure configuration and ML code are completely decoupled, enabling independent 
+evolution of each
+* **Full Tracking**: Every run, artifact, and model is automatically versioned and tracked - whether it's a scikit-learn model or a multi-agent system
 
 To continue your ZenML journey, explore these key topics:
 
+**For All AI Workloads:**
 * **Pipeline Development**: Discover advanced features like [scheduling](../how-to/steps-pipelines/advanced_features.md#scheduling) and [caching](../how-to/steps-pipelines/advanced_features.md#caching)
 * **Artifact Management**: Learn how ZenML [stores, versions, and tracks your data](../how-to/artifacts/artifacts.md) automatically
-* **Organization**: Use [tags](../how-to/tags/tags.md) and [metadata](../how-to/metadata/metadata.md) to keep your ML projects structured
+* **Organization**: Use [tags](../how-to/tags/tags.md) and [metadata](../how-to/metadata/metadata.md) to keep your AI projects structured
+
+**For LLMs and AI Agents:**
+* **LLMOps Guide**: Follow our comprehensive [LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide) for agent development patterns
+* **Agent Evaluation**: Learn to [systematically evaluate](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) and compare different agent architectures
+* **Prompt Management**: Version and track prompts, tools, and agent configurations as [artifacts](../how-to/artifacts/artifacts.md)
+
+**Infrastructure & Deployment:**
 * **Containerization**: Understand how ZenML [handles containerization](../how-to/containerization/containerization.md) for reproducible execution
 * **Stacks & Infrastructure**: Explore the concepts behind [stacks](../how-to/stack-components/stack_components.md) and [service connectors](../how-to/stack-components/service_connectors.md) for authentication
 * **Secrets Management**: Learn how to [handle sensitive information](../how-to/secrets/secrets.md) securely

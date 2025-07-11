@@ -9,7 +9,7 @@ icon: briefcase
 **Note**: Workspaces were previously called "Tenants" in earlier versions of ZenML Pro. We've updated the terminology to better reflect their role in organizing MLOps resources.
 {% endhint %}
 
-Workspaces are individual, isolated deployments of the ZenML server. Each workspace has its own set of users, roles, projects, and resources. Essentially, everything you do in ZenML Pro revolves around a workspace: all of your projects, pipelines, stacks, runs, connectors and so on are scoped to a workspace.
+Workspaces are individual, isolated deployments of the ZenML server. Each workspace has its own set of users, roles, projects, and resources. Essentially, everything you do in ZenML Pro revolves around a workspace: all of your projects, pipelines, stacks, runs, connectors and so on are scoped to a workspace. This includes both traditional ML workflows and AI agent development projects.
 
 ![Image showing the workspace page](<.gitbook/assets/Workspace - Home.png>)
 
@@ -125,10 +125,12 @@ Another approach is to create workspaces based on your organization's structure 
    * Data Science Department Workspace
    * Research Department Workspace
    * Production Department Workspace
+   * AI Agent Development Workspace
 2. **Team-based Separation**: Align workspaces with your organizational structure:
    * ML Engineering Team Workspace
    * Research Team Workspace
    * Operations Team Workspace
+   * Agent Development Team Workspace
 3. **Data Classification**: Separate workspaces based on data sensitivity:
    * Public Data Workspace
    * Internal Data Workspace
