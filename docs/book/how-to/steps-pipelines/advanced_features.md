@@ -332,7 +332,10 @@ def trigger_chunk_processing(
     """Trigger multiple pipeline runs for each chunk and wait for completion."""
     client = Client()
     
-    # Use template ID if provided, otherwise use pipeline name
+    # Use template ID if provided, otherwise give the pipeline name 
+    #  of the pipeline you want triggered. Giving the pipeline name
+    #  will automatically find the latest template associated with
+    #  that pipeline.
     pipeline_name = None if template_id else "chunk_processing_pipeline"
     
     # Trigger all chunk processing runs
@@ -460,16 +463,10 @@ def chunk_processing_pipeline():
 
 # Usage example
 if __name__ == "__main__":
-    # First, make sure you run the chunk_processing_pipeline once 
-    #  on a remote orchestrator:
-    # chunk_processing_pipeline()
-
-    # Second, create a run template for the chunk processing pipeline
+    # First, create a run template for the chunk processing pipeline
     #  This would typically be done once during setup.
-    #  You can also do this on the dashboard.
-    pipe = Client().get_pipeline("chunk_processing_pipeline")
-    run = pipe.runs[0]  # We assume latest run
-    template = Client().create_run_template(
+    #  Make sure a remote stack is set before running this
+    template = chunk_processing_pipeline.create_run_template(
         name="chunk_processing_template",
         deployment_id=run.deployment_id,
         description="Template for processing individual chunks"
