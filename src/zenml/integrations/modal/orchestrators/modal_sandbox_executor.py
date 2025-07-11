@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Modal sandbox executor for ZenML orchestration."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import modal
 
@@ -82,21 +82,18 @@ class ModalSandboxExecutor:
     def _build_entrypoint_command(
         self, base_command: List[str], args: List[str]
     ) -> List[str]:
-        """Build the complete entrypoint command with environment variables.
+        """Build the complete entrypoint command (without environment variables).
+
+        Environment variables are now passed via secrets parameter to sandbox.
 
         Args:
             base_command: Base command to execute.
             args: Arguments for the command.
 
         Returns:
-            Complete command with environment variables.
+            Complete command without environment variables.
         """
-        env_prefix = []
-        if self.environment:
-            for key, value in self.environment.items():
-                env_prefix.extend([f"{key}={value}"])
-
-        return ["env"] + env_prefix + base_command + args
+        return base_command + args
 
     def _get_step_settings(self, step_name: str) -> ModalOrchestratorSettings:
         """Get merged settings for a specific step.
@@ -128,6 +125,19 @@ class ModalSandboxExecutor:
                     setattr(merged_settings, key, value)
 
         return merged_settings
+
+    def _create_environment_secret(self) -> Optional[Any]:
+        """Create a Modal secret containing environment variables.
+
+        Returns:
+            Modal secret with environment variables, or None if no env vars.
+        """
+        if not self.environment:
+            return None
+
+        # Create secret from environment variables
+        # Modal handles efficiency internally
+        return modal.Secret.from_dict(self.environment)
 
     def _get_resource_config(
         self, step_name: Optional[str] = None
@@ -195,6 +205,10 @@ class ModalSandboxExecutor:
             app=self.app,
         )
 
+        # Create environment secret
+        env_secret = self._create_environment_secret()
+        secrets = [env_secret] if env_secret else []
+
         # Generate tags
         tags = generate_sandbox_tags(
             pipeline_name=self.deployment.pipeline_configuration.name,
@@ -208,7 +222,7 @@ class ModalSandboxExecutor:
         logger.info(f"Sandbox tags: {tags}")
 
         with modal.enable_output():
-            # Create sandbox
+            # Create sandbox with environment variables passed as secrets
             sb = await modal.Sandbox.create.aio(
                 *entrypoint_command,
                 image=zenml_image,
@@ -219,6 +233,7 @@ class ModalSandboxExecutor:
                 region=region,
                 app=self.app,
                 timeout=timeout,
+                secrets=secrets,
             )
 
             # Set tags
