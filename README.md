@@ -77,6 +77,8 @@ With ZenML, you're not replacing your knowledge; you're extending it. Use the pi
 
 **The Challenge:** Your team built three different customer service agents. Which one should go to production? With ZenML, you can build a reproducible pipeline to test them on real data and make a data-driven decision, with full observability via Langgraph, LiteLLM & Langfuse.
 
+https://github.com/user-attachments/assets/62ab4ba8-279b-4b54-abd6-084585c85f26
+
 ```python
 from zenml import pipeline, step
 from zenml.types import HTMLString
