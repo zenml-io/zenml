@@ -389,7 +389,7 @@ def aggregate_results(run_ids: List[UUID]) -> dict:
         run = client.get_pipeline_run(run_id)
         
         # Check if run succeeded
-        if run.status.is_failed:
+        if run.status.value == "failed":
             failed_runs.append({
                 "run_id": str(run_id),
                 "status": run.status.value,
