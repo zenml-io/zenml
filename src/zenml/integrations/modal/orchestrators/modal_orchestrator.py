@@ -229,7 +229,14 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 run_id=placeholder_run.id if placeholder_run else None,
             )
         )
-        entrypoint_command = command + args
+
+        # Add environment variables as command prefix
+        env_prefix = []
+        if environment:
+            for key, value in environment.items():
+                env_prefix.extend([f"{key}={value}"])
+
+        entrypoint_command = ["env"] + env_prefix + command + args
 
         # Execute using sandbox
         try:
@@ -248,7 +255,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                     cloud=settings.cloud or self.config.cloud,
                     region=settings.region or self.config.region,
                     timeout=settings.timeout or self.config.timeout,
-                    environment=environment,
                     synchronous=settings.synchronous
                     if hasattr(settings, "synchronous")
                     else self.config.synchronous,
@@ -276,7 +282,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         cloud: Optional[str] = None,
         region: Optional[str] = None,
         timeout: int = 86400,
-        environment: Optional[Dict[str, str]] = None,
         synchronous: bool = True,
     ) -> None:
         """Execute pipeline using Modal sandbox.
@@ -293,7 +298,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             cloud: Cloud provider to use
             region: Region to deploy in
             timeout: Maximum execution timeout
-            environment: Environment variables for the sandbox
             synchronous: Whether to wait for completion
         """
         logger.info(f"Using Modal app: {app.name}")
@@ -311,12 +315,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         with modal.enable_output():
             # Create sandbox with the entrypoint command
-            # Use secrets for environment variables
-            secrets = []
-            if environment:
-                env_secret = modal.Secret.from_dict(environment)
-                secrets.append(env_secret)
-
             sb = await modal.Sandbox.create.aio(
                 *entrypoint_command,  # Pass as separate arguments to avoid shell quoting issues
                 image=zenml_image,
@@ -327,7 +325,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 region=region,
                 app=app,
                 timeout=timeout,
-                secrets=secrets,
             )
 
             # Set tags on the sandbox for organization
