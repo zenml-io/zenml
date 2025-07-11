@@ -68,6 +68,14 @@ class ComponentBase(BaseModel):
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    environment: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="Environment variables to set when running on this component.",
+    )
+    secrets: Optional[List[Union[UUID, str]]] = Field(
+        default=None,
+        title="Secrets to set as environment variables when running on this component.",
+    )
 
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
@@ -139,6 +147,10 @@ class ComponentUpdate(BaseUpdate):
         title="The stack component configuration.",
         default=None,
     )
+    environment: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="Environment variables to set when running on this component.",
+    )
     connector_resource_id: Optional[str] = Field(
         description="The ID of a specific resource instance to "
         "gain access to through the connector",
@@ -151,6 +163,14 @@ class ComponentUpdate(BaseUpdate):
     connector: Optional[UUID] = Field(
         title="The service connector linked to this stack component.",
         default=None,
+    )
+    add_secrets: Optional[List[Union[UUID, str]]] = Field(
+        default=None,
+        title="New secrets to add to the stack component.",
+    )
+    remove_secrets: Optional[List[Union[UUID, str]]] = Field(
+        default=None,
+        title="Secrets to remove from the stack component.",
     )
 
 
@@ -185,6 +205,15 @@ class ComponentResponseMetadata(UserScopedResponseMetadata):
 
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
+    )
+    environment: Dict[str, str] = Field(
+        default={},
+        title="Environment variables to set when running on this component.",
+    )
+    secrets: List[UUID] = Field(
+        default=[],
+        title="Secrets to set as environment variables when running on this "
+        "component.",
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -300,6 +329,24 @@ class ComponentResponse(
             the value of the property.
         """
         return self.get_metadata().configuration
+
+    @property
+    def environment(self) -> Dict[str, str]:
+        """The `environment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().environment
+
+    @property
+    def secrets(self) -> List[UUID]:
+        """The `secrets` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().secrets
 
     @property
     def labels(self) -> Optional[Dict[str, Any]]:

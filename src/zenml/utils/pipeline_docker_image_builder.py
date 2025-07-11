@@ -37,8 +37,6 @@ from zenml.config.docker_settings import (
 from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
-    ENV_ZENML_LOGGING_COLORS_DISABLED,
-    handle_bool_env_var,
 )
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
@@ -706,10 +704,6 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        # Set color logging to whatever is locally configured
-        lines.append(
-            f"ENV {ENV_ZENML_LOGGING_COLORS_DISABLED}={str(handle_bool_env_var(ENV_ZENML_LOGGING_COLORS_DISABLED, False))}"
-        )
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}='{value}'")
 

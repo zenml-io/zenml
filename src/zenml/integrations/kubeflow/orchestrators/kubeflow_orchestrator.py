@@ -72,7 +72,7 @@ from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, settings_utils, yaml_utils
+from zenml.utils import io_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
@@ -470,7 +470,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -483,8 +484,11 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -576,6 +580,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     component_name,
                     component,
                 ) in step_name_to_dynamic_component.items():
+                    step_environment = step_environments[component_name]
                     # for each component, check to see what other steps are
                     # upstream of it
                     step = deployment.step_configurations[component_name]
@@ -595,6 +600,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                         )
                         .after(*upstream_step_components)
                     )
+                    for key, value in step_environment.items():
+                        task = task.set_env_variable(name=key, value=value)
+
                     self._configure_container_resources(
                         task,
                         step.config.resource_settings,
@@ -602,39 +610,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     )
 
             return dynamic_pipeline
-
-        def _update_yaml_with_environment(
-            yaml_file_path: str, environment: Dict[str, str]
-        ) -> None:
-            """Updates the env section of the steps in the YAML file with the given environment variables.
-
-            Args:
-                yaml_file_path: The path to the YAML file to update.
-                environment: A dictionary of environment variables to add.
-            """
-            pipeline_definition = yaml_utils.read_yaml(pipeline_file_path)
-
-            # Iterate through each component and add the environment variables
-            for executor in pipeline_definition["deploymentSpec"]["executors"]:
-                if (
-                    "container"
-                    in pipeline_definition["deploymentSpec"]["executors"][
-                        executor
-                    ]
-                ):
-                    container = pipeline_definition["deploymentSpec"][
-                        "executors"
-                    ][executor]["container"]
-                    if "env" not in container:
-                        container["env"] = []
-                    for key, value in environment.items():
-                        container["env"].append({"name": key, "value": value})
-
-            yaml_utils.write_yaml(pipeline_file_path, pipeline_definition)
-
-            print(
-                f"Updated YAML file with environment variables at {yaml_file_path}"
-            )
 
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
@@ -648,9 +623,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             package_path=pipeline_file_path,
             pipeline_name=orchestrator_run_name,
         )
-
-        # Let's update the YAML file with the environment variables
-        _update_yaml_with_environment(pipeline_file_path, environment)
 
         logger.info(
             "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path

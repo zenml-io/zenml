@@ -23,6 +23,7 @@ from typing import (
     Tuple,
     Union,
 )
+from uuid import UUID
 
 from pydantic import (
     ConfigDict,
@@ -38,9 +39,9 @@ from zenml.artifacts.external_artifact_config import (
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
+from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source, SourceWithValidator
-from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
@@ -54,7 +55,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class PartialArtifactConfiguration(StrictBaseModel):
+class PartialArtifactConfiguration(FrozenBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
     materializer_source: Optional[Tuple[SourceWithValidator, ...]] = None
@@ -138,7 +139,7 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
         return value
 
 
-class StepConfigurationUpdate(StrictBaseModel):
+class StepConfigurationUpdate(FrozenBaseModel):
     """Class for step configuration updates."""
 
     enable_cache: Optional[bool] = None
@@ -148,6 +149,8 @@ class StepConfigurationUpdate(StrictBaseModel):
     step_operator: Optional[Union[bool, str]] = None
     experiment_tracker: Optional[Union[bool, str]] = None
     parameters: Dict[str, Any] = {}
+    environment: Dict[str, Any] = {}
+    secrets: List[Union[str, UUID]] = []
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[SourceWithValidator] = None
@@ -291,6 +294,8 @@ class StepConfiguration(PartialStepConfiguration):
                 "success_hook_source",
                 "retry",
                 "substitutions",
+                "environment",
+                "secrets",
             },
             exclude_none=True,
         )
@@ -303,9 +308,15 @@ class StepConfiguration(PartialStepConfiguration):
                     "success_hook_source",
                     "retry",
                     "substitutions",
+                    "environment",
+                    "secrets",
                 },
                 exclude_none=True,
             )
+
+            original_values["secrets"] = pipeline_values.get(
+                "secrets", []
+            ) + original_values.get("secrets", [])
 
             updated_config_dict = {
                 **self.model_dump(),
@@ -317,14 +328,14 @@ class StepConfiguration(PartialStepConfiguration):
             return self.model_copy(deep=True)
 
 
-class InputSpec(StrictBaseModel):
+class InputSpec(FrozenBaseModel):
     """Step input specification."""
 
     step_name: str
     output_name: str
 
 
-class StepSpec(StrictBaseModel):
+class StepSpec(FrozenBaseModel):
     """Specification of a pipeline."""
 
     source: SourceWithValidator
@@ -363,7 +374,7 @@ class StepSpec(StrictBaseModel):
         return NotImplemented
 
 
-class Step(StrictBaseModel):
+class Step(FrozenBaseModel):
     """Class representing a ZenML step."""
 
     spec: StepSpec
