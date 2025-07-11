@@ -308,7 +308,6 @@ _csp_script_src_urls = ["https://widgets-v3.featureos.app"]
 _csp_connect_src_urls = [
     "https://sdkdocs.zenml.io",
     "https://analytics.zenml.io",
-    "https://api.github.com",
     "https://raw.githubusercontent.com",
 ]
 _csp_img_src_urls = [
