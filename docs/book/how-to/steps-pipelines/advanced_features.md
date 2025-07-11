@@ -393,7 +393,6 @@ def aggregate_results(run_ids: List[UUID]) -> dict:
             failed_runs.append({
                 "run_id": str(run_id),
                 "status": run.status.value,
-                "error": getattr(run, 'error', 'Unknown error')
             })
             print(f"WARNING: Run {run_id} failed with status {run.status.value}")
             continue
@@ -401,17 +400,10 @@ def aggregate_results(run_ids: List[UUID]) -> dict:
         # Extract results from successful runs only
         if "process_chunk" in run.steps:
             step_run = run.steps["process_chunk"]
-            if "output" in step_run.outputs:
-                try:
-                    chunk_result = step_run.outputs["output"].load()
-                    aggregated_results[str(run_id)] = chunk_result
-                except Exception as e:
-                    print(f"ERROR: Failed to load output from run {run_id}: {str(e)}")
-                    failed_runs.append({
-                        "run_id": str(run_id),
-                        "status": "artifact_load_failed",
-                        "error": str(e)
-                    })
+            # Simple assumption: process_chunk step has one output that we can load
+            chunk_result = step_run.output.load()
+            aggregated_results[str(run_id)] = chunk_result
+
     
     # Log summary of results
     total_runs = len(run_ids)
@@ -419,11 +411,7 @@ def aggregate_results(run_ids: List[UUID]) -> dict:
     failed_count = len(failed_runs)
     
     print(f"Aggregation complete: {successful_runs}/{total_runs} runs successful")
-    if failed_count > 0:
-        print(f"WARNING: {failed_count} runs failed or had loading errors")
-        for failed in failed_runs:
-            print(f"  - Run {failed['run_id']}: {failed['status']} - {failed['error']}")
-    
+
     return {
         "successful_results": aggregated_results,
         "failed_runs": failed_runs,
@@ -435,7 +423,7 @@ def aggregate_results(run_ids: List[UUID]) -> dict:
     }
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def fan_out_fan_in_pipeline(template_id: Optional[UUID] = None):
     """Fan-out/fan-in pipeline that orchestrates dynamic chunk processing."""
     # Load chunks dynamically at runtime
@@ -452,7 +440,7 @@ def fan_out_fan_in_pipeline(template_id: Optional[UUID] = None):
 
 # Define the chunk processing pipeline that will be triggered
 @step
-def process_chunk(chunk_id: str) -> dict:
+def process_chunk(chunk_id: Optional[str] = None) -> dict:
     """Process a single chunk of data."""
     # Simulate chunk processing
     print(f"Processing chunk: {chunk_id}")
@@ -472,15 +460,23 @@ def chunk_processing_pipeline():
 
 # Usage example
 if __name__ == "__main__":
-    # First, create a run template for the chunk processing pipeline
-    # This would typically be done once during setup
+    # First, make sure you run the chunk_processing_pipeline once 
+    #  on a remote orchestrator:
+    # chunk_processing_pipeline()
+
+    # Second, create a run template for the chunk processing pipeline
+    #  This would typically be done once during setup.
+    #  You can also do this on the dashboard.
+    pipe = Client().get_pipeline("chunk_processing_pipeline")
+    run = pipe.runs[0]  # We assume latest run
     template = Client().create_run_template(
         name="chunk_processing_template",
-        pipeline_name="chunk_processing_pipeline",
+        deployment_id=run.deployment_id,
         description="Template for processing individual chunks"
     )
-    
+
     # Run the fan-out/fan-in pipeline with the template
+    #  You can also get the template ID from the dashboard
     fan_out_fan_in_pipeline(template_id=template.id)
 ```
 
