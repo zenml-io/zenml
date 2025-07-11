@@ -43,6 +43,9 @@ class PromptMaterializer(BaseMaterializer):
 
         Args:
             data: Prompt object to save
+
+        Raises:
+            ValueError: If data is not a Prompt object with required methods
         """
         # Ensure data has the required methods regardless of import path
         if not hasattr(data, "to_dict") or not hasattr(data, "name"):

@@ -8,10 +8,10 @@ import random
 import time
 from typing import Any, List, Optional, TypedDict
 
-from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import END, START, StateGraph
+from langchain_core.messages import BaseMessage, HumanMessage  # type: ignore
+from langgraph.graph import END, START, StateGraph  # type: ignore
 from llm_utils import call_llm, should_use_real_llm
-from materializers import Prompt
+from materializers.prompt import Prompt
 
 
 # LangGraph State Definition
@@ -63,9 +63,6 @@ class BaseAgent:
         Args:
             query: Customer service query text
 
-        Returns:
-            AgentResponse with generated response and metadata
-
         Raises:
             NotImplementedError: This method must be implemented by subclasses
         """
@@ -76,7 +73,11 @@ class SingleAgentRAG(BaseAgent):
     """Simple RAG agent that handles all queries with one approach."""
 
     def __init__(self, prompts: Optional[List[Prompt]] = None) -> None:
-        """Initialize SingleAgentRAG with knowledge base."""
+        """Initialize SingleAgentRAG with knowledge base.
+
+        Args:
+            prompts: Optional list of Prompt objects loaded as ZenML artifacts
+        """
         super().__init__("SingleAgentRAG", prompts)
         self.knowledge_base = {
             "return": "Items can be returned within 30 days with original receipt.",
@@ -229,7 +230,11 @@ class MultiSpecialistAgents(BaseAgent):
     """Multiple specialized agents for different query types."""
 
     def __init__(self, prompts: Optional[List[Prompt]] = None) -> None:
-        """Initialize MultiSpecialistAgents with specialist routing."""
+        """Initialize MultiSpecialistAgents with specialist routing.
+
+        Args:
+            prompts: Optional list of Prompt objects loaded as ZenML artifacts
+        """
         super().__init__("MultiSpecialistAgents", prompts)
         self.specialists = {
             "returns": "Returns Specialist: I handle all return and exchange requests.",
@@ -245,7 +250,7 @@ class MultiSpecialistAgents(BaseAgent):
             query: Customer service query text to route
 
         Returns:
-            Specialist category: 'returns', 'billing', 'technical', or 'general'
+            str: Specialist category: 'returns', 'billing', 'technical', or 'general'
         """
         query_lower = query.lower()
 
@@ -443,7 +448,11 @@ class LangGraphCustomerServiceAgent(BaseAgent):
     """LangGraph-based customer service agent with workflow visualization."""
 
     def __init__(self, prompts: Optional[List[Prompt]] = None) -> None:
-        """Initialize LangGraph agent with workflow and knowledge base."""
+        """Initialize LangGraph agent with workflow and knowledge base.
+
+        Args:
+            prompts: Optional list of Prompt objects loaded as ZenML artifacts
+        """
         super().__init__("LangGraphCustomerServiceAgent", prompts)
         self.graph = self._build_graph()
         self.knowledge_base = {

@@ -5,6 +5,8 @@ on customer service queries. It demonstrates how to use ZenML to evaluate and co
 different AI approaches in a reproducible way.
 """
 
+# Register the agent materializer now that imports are resolved
+from materializers import register_agent_materializer
 from steps import (
     evaluate_and_decide,
     load_prompts,
@@ -13,16 +15,25 @@ from steps import (
     train_intent_classifier,
 )
 
-from zenml import pipeline
+from zenml import Model, pipeline
 from zenml.config import DockerSettings
+
+register_agent_materializer()
 
 docker_settings = DockerSettings(
     requirements="requirements.txt",
     python_package_installer="uv",
 )
 
+model = Model(
+    name="customer_service_agent",
+    description="Customer service agent model",
+)
 
-@pipeline(enable_cache=False, settings={"docker": docker_settings})
+
+@pipeline(
+    enable_cache=False, model=model, settings={"docker": docker_settings}
+)
 def compare_agent_architectures() -> None:
     """Compare different agent architectures on customer service queries."""
     # Load test data
@@ -41,12 +52,12 @@ def compare_agent_architectures() -> None:
     # Train intent classifier on the loaded data
     intent_classifier = train_intent_classifier(queries)
 
-    # Run all architectures on the same data (returns metrics and architectural diagrams)
+    # Run all architectures on the same data (returns metrics and agent instances)
     (
         results,
-        _,
-        _,
-        _,
+        single_agent,
+        multi_specialist_agent,
+        langgraph_agent,
     ) = run_architecture_comparison(
         queries,
         intent_classifier,

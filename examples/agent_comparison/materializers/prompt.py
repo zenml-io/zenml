@@ -67,7 +67,11 @@ class Prompt(BaseModel):
         return required_vars.issubset(provided_vars)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert prompt to dictionary for serialization."""
+        """Convert prompt to dictionary for serialization.
+
+        Returns:
+            Dict[str, Any]: Dictionary representation of the prompt
+        """
         return {
             "name": self.name,
             "content": self.content,
@@ -81,15 +85,30 @@ class Prompt(BaseModel):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Prompt":
-        """Create prompt from dictionary."""
+        """Create prompt from dictionary.
+
+        Args:
+            data: Dictionary containing prompt data
+
+        Returns:
+            Prompt: New Prompt instance created from dictionary
+        """
         if isinstance(data["created_at"], str):
             data["created_at"] = datetime.fromisoformat(data["created_at"])
         return cls(**data)
 
     def __str__(self) -> str:
-        """String representation of the prompt."""
+        """String representation of the prompt.
+
+        Returns:
+            str: Human-readable string representation of the prompt
+        """
         return f"Prompt(name='{self.name}', version='{self.version}', variables={self.get_variable_names()})"
 
     def __repr__(self) -> str:
-        """Detailed representation of the prompt."""
+        """Detailed representation of the prompt.
+
+        Returns:
+            str: Detailed string representation of the prompt
+        """
         return f"Prompt(name='{self.name}', version='{self.version}', content_length={len(self.content)})"

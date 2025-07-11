@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Tuple
 
 import pandas as pd
-from materializers import Prompt, PromptMaterializer
+from materializers.prompt import Prompt
+from materializers.prompt_materializer import PromptMaterializer
 from typing_extensions import Annotated
 
 from zenml import step

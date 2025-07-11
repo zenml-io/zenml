@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 from agents import (
+    BaseAgent,
     LangGraphCustomerServiceAgent,
     MultiSpecialistAgents,
     SingleAgentRAG,
@@ -13,7 +14,6 @@ from typing_extensions import Annotated
 
 from zenml import step
 from zenml.logger import get_logger
-from zenml.types import HTMLString
 
 logger = get_logger(__name__)
 
@@ -32,9 +32,9 @@ def run_architecture_comparison(
     Annotated[
         Dict[str, Dict[str, List[float]]], "architecture_performance_metrics"
     ],
-    Annotated[HTMLString, "single_agent_diagram"],
-    Annotated[HTMLString, "multi_specialist_diagram"],
-    Annotated[HTMLString, "langgraph_workflow_diagram"],
+    Annotated[BaseAgent, "single_agent"],
+    Annotated[BaseAgent, "multi_specialist_agent"],
+    Annotated[BaseAgent, "langgraph_agent"],
 ]:
     """Test three different agent architectures on the same data.
 
@@ -49,7 +49,7 @@ def run_architecture_comparison(
         langgraph_workflow_prompt: LangGraph workflow prompt
 
     Returns:
-        Tuple containing performance metrics dict and HTML diagrams for all three architectures
+        Tuple containing performance metrics dict and three BaseAgent instances
     """
     # Reconstruct the prompts list for the agents
     prompts = [
@@ -103,20 +103,14 @@ def run_architecture_comparison(
         f"Intent classifier predictions for first 5 queries: {sample_predictions}"
     )
 
-    # Generate architectural diagrams for all three approaches
+    # Create the three agent instances to return
     single_agent = SingleAgentRAG(prompts)
-    multi_specialist = MultiSpecialistAgents(prompts)
+    multi_specialist_agent = MultiSpecialistAgents(prompts)
     langgraph_agent = LangGraphCustomerServiceAgent(prompts)
-
-    single_agent_diagram = HTMLString(single_agent.get_mermaid_diagram())
-    multi_specialist_diagram = HTMLString(
-        multi_specialist.get_mermaid_diagram()
-    )
-    langgraph_diagram = HTMLString(langgraph_agent.get_mermaid_diagram())
 
     return (
         results,
-        single_agent_diagram,
-        multi_specialist_diagram,
-        langgraph_diagram,
+        single_agent,
+        multi_specialist_agent,
+        langgraph_agent,
     )
