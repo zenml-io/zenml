@@ -34,7 +34,8 @@ class LogsRequest(BaseRequest):
     """Request model for logs."""
 
     uri: str = Field(title="The uri of the logs file")
-    source: str = Field(title="The source of the logs file")
+    # TODO: Remove default value when not supporting clients <0.84.0 anymore
+    source: str = Field(default="", title="The source of the logs file")
     artifact_store_id: UUID = Field(
         title="The artifact store ID to associate the logs with.",
     )
