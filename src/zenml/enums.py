@@ -107,6 +107,15 @@ class ExecutionStatus(StrEnum):
         """
         return self in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
 
+    @property
+    def is_failed(self) -> bool:
+        """Whether the execution status refers to a failed execution.
+
+        Returns:
+            Whether the execution status refers to a failed execution.
+        """
+        return self in {ExecutionStatus.FAILED}
+
 
 class LoggingLevels(Enum):
     """Enum for logging levels."""
