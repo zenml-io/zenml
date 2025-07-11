@@ -358,18 +358,21 @@ def trigger_chunk_processing(
     
     # Wait for all runs to complete
     print(f"Waiting for {len(run_ids)} chunk processing runs to complete...")
+    completed_runs = set()  # Cache completed runs to avoid re-fetching
     while True:
-        completed_runs = 0
-        for run_id in run_ids:
+        # Only check runs that haven't completed yet
+        pending_runs = [run_id for run_id in run_ids if run_id not in completed_runs]
+        
+        for run_id in pending_runs:
             run = client.get_pipeline_run(run_id)
             if run.status.is_finished:
-                completed_runs += 1
+                completed_runs.add(run_id)
         
-        if completed_runs == len(run_ids):
+        if len(completed_runs) == len(run_ids):
             print("All chunk processing runs completed!")
             break
         
-        print(f"Completed: {completed_runs}/{len(run_ids)} runs")
+        print(f"Completed: {len(completed_runs)}/{len(run_ids)} runs")
         time.sleep(10)  # Wait 10 seconds before checking again
     
     return run_ids
@@ -380,23 +383,61 @@ def aggregate_results(run_ids: List[UUID]) -> dict:
     """Aggregate results from all chunk processing runs."""
     client = Client()
     aggregated_results = {}
+    failed_runs = []
     
     for run_id in run_ids:
         run = client.get_pipeline_run(run_id)
         
-        # Extract results from the chunk processing step
+        # Check if run succeeded
+        if run.status.is_failed:
+            failed_runs.append({
+                "run_id": str(run_id),
+                "status": run.status.value,
+                "error": getattr(run, 'error', 'Unknown error')
+            })
+            print(f"WARNING: Run {run_id} failed with status {run.status.value}")
+            continue
+        
+        # Extract results from successful runs only
         if "process_chunk" in run.steps:
             step_run = run.steps["process_chunk"]
             if "output" in step_run.outputs:
-                chunk_result = step_run.outputs["output"].load()
-                aggregated_results[str(run_id)] = chunk_result
+                try:
+                    chunk_result = step_run.outputs["output"].load()
+                    aggregated_results[str(run_id)] = chunk_result
+                except Exception as e:
+                    print(f"ERROR: Failed to load output from run {run_id}: {str(e)}")
+                    failed_runs.append({
+                        "run_id": str(run_id),
+                        "status": "artifact_load_failed",
+                        "error": str(e)
+                    })
     
-    return aggregated_results
+    # Log summary of results
+    total_runs = len(run_ids)
+    successful_runs = len(aggregated_results)
+    failed_count = len(failed_runs)
+    
+    print(f"Aggregation complete: {successful_runs}/{total_runs} runs successful")
+    if failed_count > 0:
+        print(f"WARNING: {failed_count} runs failed or had loading errors")
+        for failed in failed_runs:
+            print(f"  - Run {failed['run_id']}: {failed['status']} - {failed['error']}")
+    
+    return {
+        "successful_results": aggregated_results,
+        "failed_runs": failed_runs,
+        "summary": {
+            "total_runs": total_runs,
+            "successful_runs": successful_runs,
+            "failed_runs": failed_count
+        }
+    }
 
 
 @pipeline
-def master_pipeline(template_id: Optional[UUID] = None):
-    """Master pipeline that orchestrates dynamic chunk processing."""
+def fan_out_fan_in_pipeline(template_id: Optional[UUID] = None):
+    """Fan-out/fan-in pipeline that orchestrates dynamic chunk processing."""
     # Load chunks dynamically at runtime
     chunks = load_relevant_chunks()
     
@@ -439,8 +480,8 @@ if __name__ == "__main__":
         description="Template for processing individual chunks"
     )
     
-    # Run the master pipeline with the template
-    master_pipeline(template_id=template.id)
+    # Run the fan-out/fan-in pipeline with the template
+    fan_out_fan_in_pipeline(template_id=template.id)
 ```
 
 This pattern enables dynamic scaling, true parallelism, and database-driven workflows. Key advantages include fault tolerance and separate monitoring for each chunk. Consider resource management and proper error handling when implementing.
