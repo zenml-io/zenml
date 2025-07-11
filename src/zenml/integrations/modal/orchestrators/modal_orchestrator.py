@@ -201,7 +201,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             )
         except Exception as e:
             logger.error(f"Pipeline execution failed: {e}")
-            logger.info("Check Modal dashboard for detailed logs")
             raise
 
         logger.info("Pipeline execution completed successfully")
