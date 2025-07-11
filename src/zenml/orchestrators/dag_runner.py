@@ -56,6 +56,7 @@ class NodeStatus(Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class ThreadedDagRunner:
@@ -72,9 +73,11 @@ class ThreadedDagRunner:
         self,
         dag: Dict[str, List[str]],
         run_fn: Callable[[str], Any],
+        preparation_fn: Optional[Callable[[str], bool]] = None,
         finalize_fn: Optional[Callable[[Dict[str, NodeStatus]], None]] = None,
         parallel_node_startup_waiting_period: float = 0.0,
         max_parallelism: Optional[int] = None,
+        continue_fn: Optional[Callable[[], bool]] = None,
     ) -> None:
         """Define attributes and initialize all nodes in waiting state.
 
@@ -83,11 +86,17 @@ class ThreadedDagRunner:
                 E.g.: [(1->2), (1->3), (2->4), (3->4)] should be represented as
                 `dag={2: [1], 3: [1], 4: [2, 3]}`
             run_fn: A function `run_fn(node)` that runs a single node
+            preparation_fn: A function that is called before the node is run.
+                If provided, the function return value determines whether the
+                node should be run or can be skipped.
             finalize_fn: A function `finalize_fn(node_states)` that is called
                 when all nodes have completed.
             parallel_node_startup_waiting_period: Delay in seconds to wait in
                 between starting parallel nodes.
             max_parallelism: Maximum number of nodes to run in parallel
+            continue_fn: A function that returns True if the run should continue
+                after each step execution, False if it should stop (e.g., due
+                to cancellation). If None, execution continues normally.
 
         Raises:
             ValueError: If max_parallelism is not greater than 0.
@@ -102,12 +111,16 @@ class ThreadedDagRunner:
         self.dag = dag
         self.reversed_dag = reverse_dag(dag)
         self.run_fn = run_fn
+        self.preparation_fn = preparation_fn
         self.finalize_fn = finalize_fn
+        self.continue_fn = continue_fn
         self.nodes = dag.keys()
         self.node_states = {
             node: NodeStatus.NOT_STARTED for node in self.nodes
         }
         self._lock = threading.Lock()
+
+        self._stop_requested = False
 
     def _can_run(self, node: str) -> bool:
         """Determine whether a node is ready to be run.
@@ -156,7 +169,7 @@ class ThreadedDagRunner:
                         break
 
                 logger.debug(f"Waiting for {running_nodes} nodes to finish.")
-                time.sleep(10)
+                time.sleep(1)
 
     def _run_node(self, node: str) -> None:
         """Run a single node.
@@ -167,6 +180,21 @@ class ThreadedDagRunner:
             node: The node.
         """
         self._prepare_node_run(node)
+
+        # Check if execution should continue (e.g., check for cancellation)
+        if self.continue_fn:
+            self._stop_requested = (
+                self._stop_requested or not self.continue_fn()
+            )
+            if self._stop_requested:
+                self._finish_node(node, cancelled=True)
+                return
+
+        if self.preparation_fn:
+            run_required = self.preparation_fn(node)
+            if not run_required:
+                self._finish_node(node)
+                return
 
         try:
             self.run_fn(node)
@@ -189,30 +217,32 @@ class ThreadedDagRunner:
             self.node_states[node] = NodeStatus.PENDING
 
         # Run node in new thread.
-        thread = threading.Thread(target=self._run_node, args=(node,))
+        thread = threading.Thread(
+            name=node, target=self._run_node, args=(node,)
+        )
         thread.start()
         return thread
 
-    def _finish_node(self, node: str, failed: bool = False) -> None:
-        """Finish a node run.
-
-        First updates the node status to completed.
-        Then starts all other nodes that can now be run and waits for them.
+    def _finish_node(
+        self, node: str, failed: bool = False, cancelled: bool = False
+    ) -> None:
+        """Mark a node as finished and potentially start new nodes.
 
         Args:
-            node: The node.
+            node: The node to mark as finished.
             failed: Whether the node failed.
+            cancelled: Whether the node was cancelled.
         """
-        # Update node status to completed.
-        assert self.node_states[node] == NodeStatus.RUNNING
         with self._lock:
             if failed:
                 self.node_states[node] = NodeStatus.FAILED
+            elif cancelled:
+                self.node_states[node] = NodeStatus.CANCELLED
             else:
                 self.node_states[node] = NodeStatus.COMPLETED
 
-        if failed:
-            # If the node failed, we don't need to run any downstream nodes.
+        if failed or cancelled:
+            # If the node failed or was cancelled, we don't need to run any downstream nodes.
             return
 
         # Run downstream nodes.

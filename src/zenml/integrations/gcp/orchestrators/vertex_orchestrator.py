@@ -893,14 +893,20 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         return dynamic_component
 
-    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+    def fetch_status(
+        self, run: "PipelineRunResponse", include_steps: bool = False
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: The run that was executed by this orchestrator.
+            include_steps: Whether to fetch steps.
 
         Returns:
-            the actual status of the pipeline job.
+            A tuple of (pipeline_status, step_statuses_dict).
+            Step statuses are not supported for Vertex, so step_statuses_dict will always be None.
 
         Raises:
             AssertionError: If the run was not executed by to this orchestrator.
@@ -942,29 +948,31 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         # Map the potential outputs to ZenML ExecutionStatus. Potential values:
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sagemaker/client/describe_pipeline_execution.html#
-        if status in [PipelineState.PIPELINE_STATE_UNSPECIFIED]:
-            return run.status
+        if status == PipelineState.PIPELINE_STATE_UNSPECIFIED:
+            pipeline_status = run.status
         elif status in [
             PipelineState.PIPELINE_STATE_QUEUED,
             PipelineState.PIPELINE_STATE_PENDING,
         ]:
-            return ExecutionStatus.INITIALIZING
+            pipeline_status = ExecutionStatus.INITIALIZING
         elif status in [
             PipelineState.PIPELINE_STATE_RUNNING,
             PipelineState.PIPELINE_STATE_PAUSED,
         ]:
-            return ExecutionStatus.RUNNING
-        elif status in [PipelineState.PIPELINE_STATE_SUCCEEDED]:
-            return ExecutionStatus.COMPLETED
-
-        elif status in [
-            PipelineState.PIPELINE_STATE_FAILED,
-            PipelineState.PIPELINE_STATE_CANCELLING,
-            PipelineState.PIPELINE_STATE_CANCELLED,
-        ]:
-            return ExecutionStatus.FAILED
+            pipeline_status = ExecutionStatus.RUNNING
+        elif status == PipelineState.PIPELINE_STATE_SUCCEEDED:
+            pipeline_status = ExecutionStatus.COMPLETED
+        elif status == PipelineState.PIPELINE_STATE_CANCELLING:
+            pipeline_status = ExecutionStatus.STOPPING
+        elif status == PipelineState.PIPELINE_STATE_CANCELLED:
+            pipeline_status = ExecutionStatus.STOPPED
+        elif status == PipelineState.PIPELINE_STATE_FAILED:
+            pipeline_status = ExecutionStatus.FAILED
         else:
             raise ValueError("Unknown status for the pipeline job.")
+
+        # Vertex doesn't support step-level status fetching yet
+        return pipeline_status, None
 
     def compute_metadata(
         self, job: aiplatform.PipelineJob

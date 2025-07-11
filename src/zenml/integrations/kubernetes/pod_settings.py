@@ -19,6 +19,36 @@ from pydantic import field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import serialization_utils
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+_pod_settings_logged_warnings = []
+
+
+def warn_if_invalid_model_data(data: Any, class_name: str) -> None:
+    """Validates the data of a Kubernetes model.
+
+    Args:
+        data: The data to validate.
+        class_name: Name of the class of the model.
+    """
+    if not isinstance(data, dict):
+        return
+
+    try:
+        serialization_utils.deserialize_kubernetes_model(data, class_name)
+    except KeyError as e:
+        if str(e) not in _pod_settings_logged_warnings:
+            _pod_settings_logged_warnings.append(str(e))
+            logger.warning(
+                "Invalid data for Kubernetes model class `%s`: %s. "
+                "Hint: Kubernetes expects attribute names in CamelCase, not "
+                "snake_case.",
+                class_name,
+                e,
+            )
 
 
 class KubernetesPodSettings(BaseSettings):
@@ -77,6 +107,7 @@ class KubernetesPodSettings(BaseSettings):
                     serialization_utils.serialize_kubernetes_model(element)
                 )
             else:
+                warn_if_invalid_model_data(element, "V1Volume")
                 result.append(element)
 
         return result
@@ -101,6 +132,7 @@ class KubernetesPodSettings(BaseSettings):
                     serialization_utils.serialize_kubernetes_model(element)
                 )
             else:
+                warn_if_invalid_model_data(element, "V1VolumeMount")
                 result.append(element)
 
         return result
@@ -121,6 +153,7 @@ class KubernetesPodSettings(BaseSettings):
         if isinstance(value, V1Affinity):
             return serialization_utils.serialize_kubernetes_model(value)
         else:
+            warn_if_invalid_model_data(value, "V1Affinity")
             return value
 
     @field_validator("tolerations", mode="before")
@@ -143,6 +176,7 @@ class KubernetesPodSettings(BaseSettings):
                     serialization_utils.serialize_kubernetes_model(element)
                 )
             else:
+                warn_if_invalid_model_data(element, "V1Toleration")
                 result.append(element)
 
         return result
@@ -163,6 +197,7 @@ class KubernetesPodSettings(BaseSettings):
         if isinstance(value, V1ResourceRequirements):
             return serialization_utils.serialize_kubernetes_model(value)
         else:
+            warn_if_invalid_model_data(value, "V1ResourceRequirements")
             return value
 
     @field_validator("env", mode="before")
@@ -185,6 +220,7 @@ class KubernetesPodSettings(BaseSettings):
                     serialization_utils.serialize_kubernetes_model(element)
                 )
             else:
+                warn_if_invalid_model_data(element, "V1EnvVar")
                 result.append(element)
 
         return result
@@ -209,6 +245,7 @@ class KubernetesPodSettings(BaseSettings):
                     serialization_utils.serialize_kubernetes_model(element)
                 )
             else:
+                warn_if_invalid_model_data(element, "V1EnvFromSource")
                 result.append(element)
 
         return result

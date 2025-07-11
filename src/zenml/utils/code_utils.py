@@ -24,7 +24,7 @@ from typing import IO, TYPE_CHECKING, Dict, Optional
 from zenml.client import Client
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import source_utils, string_utils
+from zenml.utils import io_utils, source_utils, string_utils
 from zenml.utils.archivable import Archivable, ArchiveType
 
 if TYPE_CHECKING:
@@ -224,6 +224,7 @@ def upload_code_if_necessary(code_archive: CodeArchive) -> str:
     upload_dir = os.path.join(artifact_store.path, "code_uploads")
     fileio.makedirs(upload_dir)
     upload_path = os.path.join(upload_dir, f"{archive_hash}.tar.gz")
+    upload_path = io_utils.sanitize_remote_path(upload_path)
 
     if not fileio.exists(upload_path):
         archive_size = string_utils.get_human_readable_filesize(
