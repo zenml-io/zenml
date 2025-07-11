@@ -537,7 +537,7 @@ class StackComponent:
         )
 
         # Use the current config as a base
-        settings_dict = self.config.model_dump()
+        settings_dict = self.config.model_dump(exclude_unset=True)
 
         if key in all_settings:
             settings_dict.update(dict(all_settings[key]))

@@ -71,26 +71,41 @@ class ZenMLServiceType(StrEnum):
 
 
 class ExecutionStatus(StrEnum):
-    """Enum that represents the current status of a step or pipeline run."""
+    """Enum that represents the execution status of a step or pipeline run."""
 
     INITIALIZING = "initializing"
     FAILED = "failed"
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+    RETRYING = "retrying"
+    RETRIED = "retried"
+    STOPPED = "stopped"
+    STOPPING = "stopping"
 
     @property
     def is_finished(self) -> bool:
-        """Whether the execution status refers to a finished execution.
+        """Returns whether the execution status is in a finished state.
 
         Returns:
-            Whether the execution status refers to a finished execution.
+            Whether the execution status is finished.
         """
         return self in {
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
+            ExecutionStatus.RETRIED,
+            ExecutionStatus.STOPPED,
         }
+
+    @property
+    def is_successful(self) -> bool:
+        """Whether the execution status refers to a successful execution.
+
+        Returns:
+            Whether the execution status refers to a successful execution.
+        """
+        return self in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
 
 
 class LoggingLevels(Enum):
@@ -415,9 +430,6 @@ class OnboardingStep(StrEnum):
     DEVICE_VERIFIED = "device_verified"
     PROJECT_CREATED = "project_created"
     PIPELINE_RUN = "pipeline_run"
-    SECOND_PIPELINE_RUN = "second_pipeline_run"
-    THIRD_PIPELINE_RUN = "third_pipeline_run"
-    STARTER_SETUP_COMPLETED = "starter_setup_completed"
     STACK_WITH_REMOTE_ORCHESTRATOR_CREATED = (
         "stack_with_remote_orchestrator_created"
     )
@@ -430,7 +442,7 @@ class OnboardingStep(StrEnum):
     PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE = (
         "pipeline_run_with_remote_artifact_store"
     )
-    PRODUCTION_SETUP_COMPLETED = "production_setup_completed"
+    OSS_ONBOARDING_COMPLETED = "oss_onboarding_completed"
     PRO_ONBOARDING_COMPLETED = "pro_onboarding_completed"
 
 

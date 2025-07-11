@@ -766,7 +766,6 @@ def authenticate_external_user(
         store.update_onboarding_state(
             completed_steps={
                 OnboardingStep.DEVICE_VERIFIED,
-                OnboardingStep.PRO_ONBOARDING_COMPLETED,
             }
         )
 

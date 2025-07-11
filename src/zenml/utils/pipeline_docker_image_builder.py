@@ -202,7 +202,10 @@ class PipelineDockerImageBuilder:
                         )
 
                 repository = repository or DEFAULT_ZENML_DOCKER_REPOSITORY
-                user_image_name = f"{repository}:{tag}-intermediate-build"
+                user_image_tag = docker_utils.sanitize_tag(
+                    f"{tag}-intermediate-build"
+                )
+                user_image_name = f"{repository}:{user_image_tag}"
                 if push and container_registry:
                     user_image_name = (
                         f"{container_registry.config.uri}/{user_image_name}"

@@ -135,6 +135,7 @@ The following configuration options can be set either through the orchestrator c
 
 - **`synchronous`** (default: True): If `True`, the client waits for all steps to finish; if `False`, the pipeline runs asynchronously.
 - **`timeout`** (default: 0): How many seconds to wait for synchronous runs. `0` means to wait indefinitely.
+- **`stream_step_logs`** (default: True): If `True`, the orchestrator pod will stream the logs of the step pods.
 - **`service_account_name`**: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
 - **`step_pod_service_account_name`**: Name of the service account to use for the step pods.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
@@ -145,6 +146,13 @@ The following configuration options can be set either through the orchestrator c
 - **`pod_failure_max_retries`** (default: 3): The maximum number of retries to create a step pod that fails to start.
 - **`pod_failure_retry_delay`** (default: 10): The delay (in seconds) between retries to create a step pod that fails to start.
 - **`pod_failure_backoff`** (default: 1.0): The backoff factor for pod failure retries and pod startup retries.
+- **`backoff_limit_margin`** (default 0): The value to add to the backoff limit in addition to the [step retries](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries). The retry configuration defined on
+the step defines the maximum number of retries that the server will accept for a step. For this orchestrator, this controls how often the
+job running the step will try to start the step pod. There are some circumstances however where the job will start the pod, but the pod
+doesn't actually get to the point of running the step. That means the server will not receive the maximum amount of retry requests,
+which in turn causes other inconsistencies like wrong step statuses. To mitigate this, this attribute allows to add a margin to the
+backoff limit. This means that the job will retry the pod startup for the configured amount of times plus the margin, which increases
+the chance of the server receiving the maximum amount of retry requests.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
@@ -468,5 +476,13 @@ For a tutorial on how to work with schedules in ZenML, check out our ['Managing
 Scheduled
 Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 docs page.
+
+## Best practices for highly parallel pipelines
+
+If you're trying to run pipelines with multiple parallel steps, there are some configuration options that you can tweak to ensure the best possible performance:
+- Ensure you enable [retries for your steps](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries) in case something doesn't work
+- Add a `backoff_limit_margin` to deal with unexpected Kubernetes evictions/preemptions
+- Limit the amount of maximum parallel steps using the `max_parallelism` setting
+- Disable streaming step logs using the `stream_step_logs` setting. All steps will have their logs tracked individually, so streaming them to the orchestrator pod is often unnecessary and can slow things down if your steps are logging a lot.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

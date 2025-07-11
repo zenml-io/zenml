@@ -809,14 +809,20 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             settings=settings,
         )
 
-    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+    def fetch_status(
+        self, run: "PipelineRunResponse", include_steps: bool = False
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: The run that was executed by this orchestrator.
+            include_steps: Whether to fetch steps
 
         Returns:
-            the actual status of the pipeline job.
+            A tuple of (pipeline_status, step_statuses_dict).
+            Step statuses are not supported for SageMaker, so step_statuses_dict will always be None.
 
         Raises:
             AssertionError: If the run was not executed by to this orchestrator.
@@ -855,15 +861,22 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )["PipelineExecutionStatus"]
 
         # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-        # https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/PipelineState
-        if status in ["Executing", "Stopping"]:
-            return ExecutionStatus.RUNNING
-        elif status in ["Stopped", "Failed"]:
-            return ExecutionStatus.FAILED
-        elif status in ["Succeeded"]:
-            return ExecutionStatus.COMPLETED
+        # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
+        if status == "Executing":
+            pipeline_status = ExecutionStatus.RUNNING
+        elif status == "Stopping":
+            pipeline_status = ExecutionStatus.STOPPING
+        elif status == "Stopped":
+            pipeline_status = ExecutionStatus.STOPPED
+        elif status == "Failed":
+            pipeline_status = ExecutionStatus.FAILED
+        elif status == "Succeeded":
+            pipeline_status = ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline execution.")
+
+        # SageMaker doesn't support step-level status fetching yet
+        return pipeline_status, None
 
     def compute_metadata(
         self,

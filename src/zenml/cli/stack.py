@@ -1816,14 +1816,10 @@ def _get_service_connector_info(
     answers = {}
     for req_field in required_fields:
         if connector_details:
-            if conf_value := connector_details.configuration.get(
+            if conf_value := connector_details.configuration.get_plain(
                 req_field, None
             ):
                 answers[req_field] = conf_value
-            elif secret_value := connector_details.secrets.get(
-                req_field, None
-            ):
-                answers[req_field] = secret_value.get_secret_value()
         if req_field not in answers:
             answers[req_field] = Prompt.ask(
                 f"Please enter value for `{req_field}`:",

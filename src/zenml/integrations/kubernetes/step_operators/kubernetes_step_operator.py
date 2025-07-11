@@ -120,7 +120,7 @@ class KubernetesStepOperator(BaseStepOperator):
         """
         builds = []
         for step_name, step in deployment.step_configurations.items():
-            if step.config.step_operator == self.name:
+            if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
                     key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
@@ -205,9 +205,7 @@ class KubernetesStepOperator(BaseStepOperator):
 
         # Create and run the orchestrator pod.
         pod_manifest = build_pod_manifest(
-            run_name=info.run_name,
             pod_name=pod_name,
-            pipeline_name=info.pipeline.name,
             image_name=image_name,
             command=command,
             args=args,
@@ -216,6 +214,10 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=settings.pod_settings,
             env=environment,
             mount_local_stores=False,
+            labels={
+                "run_id": kube_utils.sanitize_label(str(info.run_id)),
+                "pipeline": kube_utils.sanitize_label(info.pipeline.name),
+            },
         )
 
         kube_utils.create_and_wait_for_pod_to_start(

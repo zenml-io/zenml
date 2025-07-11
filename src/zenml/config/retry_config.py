@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Retry configuration for a step."""
 
+from pydantic import NonNegativeInt, PositiveInt
+
 from zenml.config.frozen_base_model import FrozenBaseModel
 
 
@@ -22,6 +24,6 @@ class StepRetryConfig(FrozenBaseModel):
     Delay is an integer (specified in seconds).
     """
 
-    max_retries: int = 1
-    delay: int = 0  # in seconds
-    backoff: int = 0
+    max_retries: PositiveInt = 1
+    delay: NonNegativeInt = 0  # in seconds
+    backoff: NonNegativeInt = 0

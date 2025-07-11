@@ -146,8 +146,8 @@ class StepConfigurationUpdate(FrozenBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
-    step_operator: Optional[str] = None
-    experiment_tracker: Optional[str] = None
+    step_operator: Optional[Union[bool, str]] = None
+    experiment_tracker: Optional[Union[bool, str]] = None
     parameters: Dict[str, Any] = {}
     environment: Dict[str, Any] = {}
     secrets: List[Union[str, UUID]] = []
@@ -160,6 +160,38 @@ class StepConfigurationUpdate(FrozenBaseModel):
     substitutions: Dict[str, str] = {}
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+
+    def uses_step_operator(self, name: str) -> bool:
+        """Checks if the step configuration uses the given step operator.
+
+        Args:
+            name: The name of the step operator.
+
+        Returns:
+            If the step configuration uses the given step operator.
+        """
+        if self.step_operator is True:
+            return True
+        elif isinstance(self.step_operator, str):
+            return self.step_operator == name
+        else:
+            return False
+
+    def uses_experiment_tracker(self, name: str) -> bool:
+        """Checks if the step configuration uses the given experiment tracker.
+
+        Args:
+            name: The name of the experiment tracker.
+
+        Returns:
+            If the step configuration uses the given experiment tracker.
+        """
+        if self.experiment_tracker is True:
+            return True
+        elif isinstance(self.experiment_tracker, str):
+            return self.experiment_tracker == name
+        else:
+            return False
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):
@@ -260,6 +292,7 @@ class StepConfiguration(PartialStepConfiguration):
                 "extra",
                 "failure_hook_source",
                 "success_hook_source",
+                "retry",
                 "substitutions",
                 "environment",
                 "secrets",
@@ -273,6 +306,7 @@ class StepConfiguration(PartialStepConfiguration):
                     "extra",
                     "failure_hook_source",
                     "success_hook_source",
+                    "retry",
                     "substitutions",
                     "environment",
                     "secrets",
@@ -284,7 +318,11 @@ class StepConfiguration(PartialStepConfiguration):
                 "secrets", []
             ) + original_values.get("secrets", [])
 
-            updated_config = self.model_copy(update=pipeline_values, deep=True)
+            updated_config_dict = {
+                **self.model_dump(),
+                **pipeline_values,
+            }
+            updated_config = self.model_validate(updated_config_dict)
             return update_model(updated_config, original_values)
         else:
             return self.model_copy(deep=True)
