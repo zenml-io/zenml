@@ -16,7 +16,7 @@
 import argparse
 import asyncio
 import os
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, cast
 from uuid import UUID
 
 from zenml.client import Client

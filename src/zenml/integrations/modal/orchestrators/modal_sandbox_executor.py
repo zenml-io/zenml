@@ -13,16 +13,12 @@
 #  permissions and limitations under the License.
 """Modal sandbox executor for ZenML orchestration."""
 
-import asyncio
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import modal
 
 from zenml.client import Client
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
-from zenml.entrypoints.pipeline_entrypoint_configuration import (
-    PipelineEntrypointConfiguration,
-)
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -36,6 +32,7 @@ from zenml.integrations.modal.utils import (
     generate_sandbox_tags,
     get_gpu_values,
     get_or_build_modal_image,
+    get_resource_settings_from_deployment,
     get_resource_values,
 )
 from zenml.logger import get_logger
@@ -70,9 +67,11 @@ class ModalSandboxExecutor:
         self.environment = environment
         self.settings = settings
         self.client = Client()
-        
+
         # Create Modal app for this pipeline
-        pipeline_name = deployment.pipeline_configuration.name.replace("_", "-")
+        pipeline_name = deployment.pipeline_configuration.name.replace(
+            "_", "-"
+        )
         self.app_name = f"zenml-pipeline-{pipeline_name}"
         self.app = modal.App.lookup(
             self.app_name,
@@ -81,9 +80,7 @@ class ModalSandboxExecutor:
         )
 
     def _build_entrypoint_command(
-        self, 
-        base_command: List[str], 
-        args: List[str]
+        self, base_command: List[str], args: List[str]
     ) -> List[str]:
         """Build the complete entrypoint command with environment variables.
 
@@ -114,25 +111,26 @@ class ModalSandboxExecutor:
         merged_settings = ModalOrchestratorSettings.model_validate(
             self.settings.model_dump()
         )
-        
+
         # Get step-specific settings
         step_config = self.deployment.step_configurations[step_name].config
         step_settings = step_config.settings.get("orchestrator.modal")
-        
+
         if step_settings:
             step_modal_settings = ModalOrchestratorSettings.model_validate(
                 step_settings.model_dump()
             )
             # Merge step settings over pipeline settings
-            for key, value in step_modal_settings.model_dump(exclude_unset=True).items():
+            for key, value in step_modal_settings.model_dump(
+                exclude_unset=True
+            ).items():
                 if value is not None:
                     setattr(merged_settings, key, value)
-        
+
         return merged_settings
 
     def _get_resource_config(
-        self, 
-        step_name: Optional[str] = None
+        self, step_name: Optional[str] = None
     ) -> tuple[Optional[str], Optional[int], Optional[int]]:
         """Get resource configuration for pipeline or step.
 
@@ -149,7 +147,9 @@ class ModalSandboxExecutor:
             gpu_values = get_gpu_values(step_settings.gpu, resource_settings)
         else:
             # Pipeline-level resource settings
-            resource_settings = None
+            resource_settings = get_resource_settings_from_deployment(
+                self.deployment, RESOURCE_SETTINGS_KEY
+            )
             gpu_values = get_gpu_values(self.settings.gpu, resource_settings)
 
         cpu_count, memory_mb = get_resource_values(resource_settings)
@@ -174,6 +174,17 @@ class ModalSandboxExecutor:
         """
         # Get resource configuration
         gpu_values, cpu_count, memory_mb = self._get_resource_config(step_name)
+
+        # Get settings (step-specific for steps, pipeline-level for pipeline)
+        if step_name:
+            step_settings = self._get_step_settings(step_name)
+            cloud = step_settings.cloud
+            region = step_settings.region
+            timeout = step_settings.timeout
+        else:
+            cloud = self.settings.cloud
+            region = self.settings.region
+            timeout = self.settings.timeout
 
         # Get or build Modal image
         image_name = self._get_image_name(step_name)
@@ -204,10 +215,10 @@ class ModalSandboxExecutor:
                 gpu=gpu_values,
                 cpu=cpu_count,
                 memory=memory_mb,
-                cloud=self.settings.cloud,
-                region=self.settings.region,
+                cloud=cloud,
+                region=region,
                 app=self.app,
-                timeout=self.settings.timeout,
+                timeout=timeout,
             )
 
             # Set tags
@@ -230,21 +241,20 @@ class ModalSandboxExecutor:
         Returns:
             Image name to use.
         """
+        # Import here to avoid circular imports
+        from zenml.integrations.modal.orchestrators.modal_orchestrator import (
+            ModalOrchestrator,
+        )
+
         if step_name:
-            from zenml.integrations.modal.orchestrators.modal_orchestrator import (
-                ModalOrchestrator,
-            )
             return ModalOrchestrator.get_image(
                 deployment=self.deployment, step_name=step_name
             )
         else:
-            from zenml.integrations.modal.orchestrators.modal_orchestrator import (
-                ModalOrchestrator,
-            )
             return ModalOrchestrator.get_image(deployment=self.deployment)
 
     async def execute_pipeline(
-        self, 
+        self,
         orchestrator_run_id: str,
         run_id: Optional[str] = None,
         synchronous: bool = True,
@@ -257,13 +267,17 @@ class ModalSandboxExecutor:
             synchronous: Whether to wait for completion.
         """
         logger.info("Executing entire pipeline in single sandbox")
-        
+
         # Build entrypoint command
-        command = ModalOrchestratorEntrypointConfiguration.get_entrypoint_command()
-        args = ModalOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id=self.deployment.id,
-            orchestrator_run_id=orchestrator_run_id,
-            run_id=run_id,
+        command = (
+            ModalOrchestratorEntrypointConfiguration.get_entrypoint_command()
+        )
+        args = (
+            ModalOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
+                deployment_id=self.deployment.id,
+                orchestrator_run_id=orchestrator_run_id,
+                run_id=run_id,
+            )
         )
         entrypoint_command = self._build_entrypoint_command(command, args)
 
@@ -282,7 +296,7 @@ class ModalSandboxExecutor:
             step_name: Name of the step to execute.
         """
         logger.info(f"Executing step '{step_name}' in separate sandbox")
-        
+
         # Build step entrypoint command
         command = StepEntrypointConfiguration.get_entrypoint_command()
         args = StepEntrypointConfiguration.get_entrypoint_arguments(
@@ -297,23 +311,3 @@ class ModalSandboxExecutor:
             step_name=step_name,
             synchronous=True,  # Steps are always synchronous
         )
-
-    def execute_pipeline_sync(
-        self, 
-        orchestrator_run_id: str,
-        run_id: Optional[str] = None,
-        synchronous: bool = True,
-    ) -> None:
-        """Execute the entire pipeline synchronously.
-
-        Args:
-            orchestrator_run_id: The orchestrator run ID.
-            run_id: The pipeline run ID.
-            synchronous: Whether to wait for completion.
-        """
-        # Execute entire pipeline in this sandbox (for PIPELINE mode)
-        entrypoint_args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id=self.deployment.id
-        )
-        config = PipelineEntrypointConfiguration(arguments=entrypoint_args)
-        config.run() 

@@ -189,11 +189,13 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 if hasattr(settings, "synchronous")
                 else self.config.synchronous
             )
-            
+
             asyncio.run(
                 executor.execute_pipeline(
                     orchestrator_run_id=orchestrator_run_id,
-                    run_id=str(placeholder_run.id) if placeholder_run else None,
+                    run_id=str(placeholder_run.id)
+                    if placeholder_run
+                    else None,
                     synchronous=synchronous,
                 )
             )
@@ -204,5 +206,3 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         logger.info("Pipeline execution completed successfully")
         return None
-
-
