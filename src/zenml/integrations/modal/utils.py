@@ -489,39 +489,18 @@ def get_resource_settings_from_deployment(
             pipeline_resource_dict
         )
     else:
-        # Fallback to highest resource requirements across all steps
-        if deployment.step_configurations:
-            # Find step with highest resource requirements for modal execution
-            max_cpu = 0
-            max_memory = 0
-            max_gpu = 0
-            best_step_resources = ResourceSettings()
-
-            for step_config in deployment.step_configurations.values():
-                step_resources = step_config.config.resource_settings
-                step_cpu = step_resources.cpu_count or 0
-                step_memory = step_resources.get_memory() or 0
-                step_gpu = step_resources.gpu_count or 0
-
-                # Calculate resource "score" to find most demanding step
-                resource_score = (
-                    step_cpu + (step_memory / 1024) + (step_gpu * 10)
-                )
-                best_score = max_cpu + (max_memory / 1024) + (max_gpu * 10)
-
-                if resource_score > best_score:
-                    max_cpu = step_cpu
-                    max_memory = step_memory
-                    max_gpu = step_gpu
-                    best_step_resources = step_resources
-
-            logger.info(
-                f"No pipeline-level resource settings found. Using highest resource "
-                f"requirements from steps: {max_cpu} CPUs, {max_memory / 1024:.1f}GB memory, "
-                f"{max_gpu} GPUs"
-            )
-            resource_settings = best_step_resources
-        else:
-            resource_settings = ResourceSettings()  # Default empty settings
-
+        # No explicit pipeline resources: use sane defaults (ignore step-level)
+        # As per user request: for pipeline mode, do not fallback to max(step resources)
+        resource_settings = ResourceSettings(
+            cpu_count=1,
+            memory="1024MB",
+            gpu_count=0,
+        )
+        logger.info(
+            "No explicit pipeline-level resource settings found. "
+            "Using sane defaults: %s CPU, %s memory, %s GPU",
+            resource_settings.cpu_count,
+            resource_settings.memory,
+            resource_settings.gpu_count,
+        )
     return resource_settings
