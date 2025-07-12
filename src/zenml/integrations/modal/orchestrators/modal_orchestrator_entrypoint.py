@@ -128,6 +128,12 @@ async def prepare_shared_image_cache(
     # Collect all unique images needed across all steps
     unique_images: Dict[str, str] = {}  # cache_key -> image_name
 
+    # Check if deployment has a build
+    if deployment.build is None:
+        raise ValueError(
+            "Deployment build is None, cannot prepare image cache"
+        )
+
     # Add pipeline-level image if needed
     pipeline_image = ModalOrchestrator.get_image(deployment=deployment)
     build_id = str(deployment.build.id)

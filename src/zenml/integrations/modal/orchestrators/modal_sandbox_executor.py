@@ -128,7 +128,9 @@ class ModalSandboxExecutor:
                 if hasattr(step_settings, "model_dump"):
                     step_settings_data = step_settings.model_dump()
                 else:
-                    step_settings_data = step_settings
+                    step_settings_data = (
+                        dict(step_settings) if step_settings else {}
+                    )
 
                 step_modal_settings = ModalOrchestratorSettings.model_validate(
                     step_settings_data
@@ -178,22 +180,32 @@ class ModalSandboxExecutor:
         if step_name:
             step_settings = self._get_step_settings(step_name)
             step_config = self.deployment.step_configurations[step_name].config
-            resource_settings = step_config.settings.get(RESOURCE_SETTINGS_KEY)
-            gpu_values = get_gpu_values(
-                step_settings.gpu, resource_settings or ResourceSettings()
+            resource_settings_raw = step_config.settings.get(
+                RESOURCE_SETTINGS_KEY
             )
+
+            # Ensure we have a ResourceSettings object
+            if resource_settings_raw is None:
+                resource_settings = ResourceSettings()
+            elif isinstance(resource_settings_raw, ResourceSettings):
+                resource_settings = resource_settings_raw
+            else:
+                # Convert to ResourceSettings if it's a different type
+                resource_settings = ResourceSettings.model_validate(
+                    resource_settings_raw.model_dump()
+                    if hasattr(resource_settings_raw, "model_dump")
+                    else dict(resource_settings_raw)
+                )
+
+            gpu_values = get_gpu_values(step_settings.gpu, resource_settings)
         else:
             # Pipeline-level resource settings
             resource_settings = get_resource_settings_from_deployment(
                 self.deployment, RESOURCE_SETTINGS_KEY
             )
-            gpu_values = get_gpu_values(
-                self.settings.gpu, resource_settings or ResourceSettings()
-            )
+            gpu_values = get_gpu_values(self.settings.gpu, resource_settings)
 
-        cpu_count, memory_mb = get_resource_values(
-            resource_settings or ResourceSettings()
-        )
+        cpu_count, memory_mb = get_resource_values(resource_settings)
         return gpu_values, cpu_count, memory_mb
 
     async def _execute_sandbox(
@@ -286,18 +298,23 @@ class ModalSandboxExecutor:
             # After sandbox creation, the image should be hydrated
             zenml_image.hydrate()
             if hasattr(zenml_image, "object_id") and zenml_image.object_id:
-                image_name_key = f"zenml_image_{self.deployment.build.id}"
+                if self.deployment.build is not None:
+                    image_name_key = f"zenml_image_{self.deployment.build.id}"
 
-                # Store the image ID in Modal's persistent storage
-                pipeline_name = self.deployment.pipeline_configuration.name
-                stored_id = modal.Dict.from_name(
-                    f"zenml-image-cache-{pipeline_name}",
-                    create_if_missing=True,
-                )
-                stored_id[image_name_key] = zenml_image.object_id
-                logger.info(
-                    f"Stored Modal image ID for build {self.deployment.build.id}"
-                )
+                    # Store the image ID in Modal's persistent storage
+                    pipeline_name = self.deployment.pipeline_configuration.name
+                    stored_id = modal.Dict.from_name(
+                        f"zenml-image-cache-{pipeline_name}",
+                        create_if_missing=True,
+                    )
+                    stored_id[image_name_key] = zenml_image.object_id
+                    logger.info(
+                        f"Stored Modal image ID for build {self.deployment.build.id}"
+                    )
+                else:
+                    logger.warning(
+                        "Deployment build is None, cannot store image ID"
+                    )
             else:
                 logger.warning("Image not hydrated after sandbox creation")
         except Exception as e:
@@ -353,6 +370,9 @@ class ModalSandboxExecutor:
         logger.info(
             f"Building new Modal image for {step_name or 'pipeline'}: {image_name}"
         )
+        if self.deployment.build is None:
+            raise ValueError("Deployment build is None, cannot build image")
+
         return get_or_build_modal_image(
             image_name=image_name,
             stack=self.stack,
@@ -375,6 +395,11 @@ class ModalSandboxExecutor:
         """
         # Use build ID and step name to create unique cache key
         # Include a hash of the image name for uniqueness
+        if self.deployment.build is None:
+            raise ValueError(
+                "Deployment build is None, cannot generate cache key"
+            )
+
         build_id = str(self.deployment.build.id)
         image_hash = str(hash(image_name))[-8:]  # Last 8 chars of hash
         if step_name:
@@ -401,11 +426,18 @@ class ModalSandboxExecutor:
         command = (
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_command()
         )
+        from uuid import UUID
+
+        # Convert run_id to UUID if it's a string
+        run_id_uuid = None
+        if run_id is not None:
+            run_id_uuid = UUID(run_id) if isinstance(run_id, str) else run_id
+
         args = (
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 deployment_id=self.deployment.id,
                 orchestrator_run_id=orchestrator_run_id,
-                run_id=run_id or None,
+                run_id=run_id_uuid,
             )
         )
         entrypoint_command = self._build_entrypoint_command(command, args)
