@@ -54,6 +54,8 @@ class ModalSandboxExecutor:
         stack: "Stack",
         environment: Dict[str, str],
         settings: ModalOrchestratorSettings,
+        shared_image_cache: Optional[Dict[str, Any]] = None,
+        shared_app: Optional[Any] = None,
     ):
         """Initialize the Modal sandbox executor.
 
@@ -62,23 +64,31 @@ class ModalSandboxExecutor:
             stack: The ZenML stack.
             environment: Environment variables.
             settings: Modal orchestrator settings.
+            shared_image_cache: Pre-built images shared across step executions.
+            shared_app: Shared Modal app for the entire pipeline execution.
         """
         self.deployment = deployment
         self.stack = stack
         self.environment = environment
         self.settings = settings
         self.client = Client()
+        self.shared_image_cache = shared_image_cache or {}
 
-        # Create Modal app for this pipeline
-        pipeline_name = deployment.pipeline_configuration.name.replace(
-            "_", "-"
-        )
-        self.app_name = f"zenml-pipeline-{pipeline_name}"
-        self.app = modal.App.lookup(
-            self.app_name,
-            create_if_missing=True,
-            environment_name=settings.modal_environment,
-        )
+        # Use shared app if provided, otherwise create new one
+        if shared_app:
+            self.app = shared_app
+            self.app_name = shared_app.name
+        else:
+            # Create Modal app for this pipeline
+            pipeline_name = deployment.pipeline_configuration.name.replace(
+                "_", "-"
+            )
+            self.app_name = f"zenml-pipeline-{pipeline_name}"
+            self.app = modal.App.lookup(
+                self.app_name,
+                create_if_missing=True,
+                environment_name=settings.modal_environment,
+            )
 
     def _build_entrypoint_command(
         self, base_command: List[str], args: List[str]
@@ -217,15 +227,8 @@ class ModalSandboxExecutor:
             region = self.settings.region
             timeout = self.settings.timeout
 
-        # Get or build Modal image
-        image_name = self._get_image_name(step_name)
-        zenml_image = get_or_build_modal_image(
-            image_name=image_name,
-            stack=self.stack,
-            pipeline_name=self.deployment.pipeline_configuration.name,
-            build_id=str(self.deployment.build.id),
-            app=self.app,
-        )
+        # Get or build Modal image (with shared cache support)
+        zenml_image = self._get_cached_or_build_image(step_name)
 
         # Create environment secret
         env_secret = self._create_environment_secret()
@@ -320,6 +323,64 @@ class ModalSandboxExecutor:
             )
         else:
             return ModalOrchestrator.get_image(deployment=self.deployment)
+
+    def _get_cached_or_build_image(
+        self, step_name: Optional[str] = None
+    ) -> Any:
+        """Get cached Modal image or build new one if not in cache.
+
+        This method first checks the shared image cache for an existing image.
+        If found, it returns the cached image. Otherwise, it falls back to
+        the standard image building process.
+
+        Args:
+            step_name: Name of the step (None for pipeline-level).
+
+        Returns:
+            Modal image (either cached or newly built).
+        """
+        image_name = self._get_image_name(step_name)
+
+        # Check shared cache first
+        cache_key = self._get_image_cache_key(image_name, step_name)
+        if cache_key in self.shared_image_cache:
+            logger.info(
+                f"Using cached Modal image for {step_name or 'pipeline'}: {cache_key}"
+            )
+            return self.shared_image_cache[cache_key]
+
+        # Fallback to existing image building logic
+        logger.info(
+            f"Building new Modal image for {step_name or 'pipeline'}: {image_name}"
+        )
+        return get_or_build_modal_image(
+            image_name=image_name,
+            stack=self.stack,
+            pipeline_name=self.deployment.pipeline_configuration.name,
+            build_id=str(self.deployment.build.id),
+            app=self.app,
+        )
+
+    def _get_image_cache_key(
+        self, image_name: str, step_name: Optional[str] = None
+    ) -> str:
+        """Generate a cache key for Modal images.
+
+        Args:
+            image_name: The base image name.
+            step_name: Name of the step (None for pipeline-level).
+
+        Returns:
+            Cache key for the image.
+        """
+        # Use build ID and step name to create unique cache key
+        # Include a hash of the image name for uniqueness
+        build_id = str(self.deployment.build.id)
+        image_hash = str(hash(image_name))[-8:]  # Last 8 chars of hash
+        if step_name:
+            return f"{build_id}_{step_name}_{image_hash}"
+        else:
+            return f"{build_id}_pipeline_{image_hash}"
 
     async def execute_pipeline(
         self,

@@ -16,10 +16,16 @@
 import argparse
 import asyncio
 import os
-from typing import Any, Dict, cast
+from typing import TYPE_CHECKING, Any, Dict, cast
 from uuid import UUID
 
+import modal
+
 from zenml.client import Client
+
+if TYPE_CHECKING:
+    from zenml.models import PipelineDeploymentResponse
+    from zenml.stack import Stack
 from zenml.entrypoints.pipeline_entrypoint_configuration import (
     PipelineEntrypointConfiguration,
 )
@@ -81,6 +87,161 @@ def run_step_on_modal(
     except Exception as e:
         logger.error(f"Step {step_name} failed: {e}")
         raise
+
+
+async def prepare_shared_image_cache(
+    deployment: "PipelineDeploymentResponse",
+    stack: "Stack",
+    settings: ModalOrchestratorSettings,
+) -> tuple[Dict[str, Any], Any]:
+    """Pre-build all required images for pipeline steps and create shared Modal app.
+
+    This function analyzes all steps in the deployment, identifies unique images
+    needed, and pre-builds them to avoid redundant builds during step execution.
+
+    Args:
+        deployment: The pipeline deployment.
+        stack: The ZenML stack.
+        settings: Modal orchestrator settings.
+
+    Returns:
+        Tuple of (shared_image_cache, shared_modal_app).
+    """
+    from zenml.integrations.modal.orchestrators.modal_orchestrator import (
+        ModalOrchestrator,
+    )
+    from zenml.integrations.modal.utils import get_or_build_modal_image
+
+    logger.info("Preparing shared image cache for per-step execution")
+
+    # Create shared Modal app
+    pipeline_name = deployment.pipeline_configuration.name.replace("_", "-")
+    app_name = f"zenml-pipeline-{pipeline_name}"
+    shared_app = modal.App.lookup(
+        app_name,
+        create_if_missing=True,
+        environment_name=settings.modal_environment,
+    )
+
+    image_cache: Dict[str, Any] = {}
+
+    # Collect all unique images needed across all steps
+    unique_images: Dict[str, str] = {}  # cache_key -> image_name
+
+    # Add pipeline-level image if needed
+    pipeline_image = ModalOrchestrator.get_image(deployment=deployment)
+    build_id = str(deployment.build.id)
+    pipeline_cache_key = (
+        f"{build_id}_pipeline_{str(hash(pipeline_image))[-8:]}"
+    )
+    unique_images[pipeline_cache_key] = pipeline_image
+
+    # Add step-specific images
+    for step_name in deployment.step_configurations:
+        step_image = ModalOrchestrator.get_image(
+            deployment=deployment, step_name=step_name
+        )
+        image_hash = str(hash(step_image))[-8:]
+        step_cache_key = f"{build_id}_{step_name}_{image_hash}"
+        unique_images[step_cache_key] = step_image
+
+    # Build all unique images
+    logger.info(f"Building {len(unique_images)} unique images for pipeline")
+    for cache_key, image_name in unique_images.items():
+        logger.info(f"Building image: {cache_key} from {image_name}")
+        try:
+            built_image = get_or_build_modal_image(
+                image_name=image_name,
+                stack=stack,
+                pipeline_name=deployment.pipeline_configuration.name,
+                build_id=build_id,
+                app=shared_app,
+            )
+            image_cache[cache_key] = built_image
+            logger.info(f"Successfully cached image: {cache_key}")
+        except Exception as e:
+            logger.error(f"Failed to build image {cache_key}: {e}")
+            raise
+
+    logger.info(f"Image cache prepared with {len(image_cache)} images")
+    return image_cache, shared_app
+
+
+def execute_pipeline_mode(args: argparse.Namespace) -> None:
+    """Execute entire pipeline in single sandbox mode.
+
+    Args:
+        args: Parsed command line arguments.
+    """
+    logger.info("Executing entire pipeline in single sandbox")
+    entrypoint_args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
+        deployment_id=args.deployment_id
+    )
+    config = PipelineEntrypointConfiguration(arguments=entrypoint_args)
+    config.run()
+
+
+def execute_per_step_mode(
+    deployment: "PipelineDeploymentResponse",
+    active_stack: "Stack",
+    environment: Dict[str, str],
+    pipeline_settings: ModalOrchestratorSettings,
+    args: argparse.Namespace,
+) -> None:
+    """Execute pipeline with per-step sandboxes.
+
+    Args:
+        deployment: The pipeline deployment.
+        active_stack: The active ZenML stack.
+        environment: Environment variables.
+        pipeline_settings: Modal orchestrator settings.
+        args: Parsed command line arguments.
+    """
+    logger.info("Executing pipeline with per-step sandboxes")
+
+    # Prepare shared image cache and Modal app for all steps
+    logger.info("Pre-building images for step execution")
+    shared_image_cache, shared_app = asyncio.run(
+        prepare_shared_image_cache(
+            deployment=deployment,
+            stack=active_stack,
+            settings=pipeline_settings,
+        )
+    )
+
+    # Create shared executor instance that will be reused across steps
+    shared_executor = ModalSandboxExecutor(
+        deployment=deployment,
+        stack=active_stack,
+        environment=environment,
+        settings=pipeline_settings,
+        shared_image_cache=shared_image_cache,
+        shared_app=shared_app,
+    )
+
+    def run_step_wrapper(step_name: str) -> None:
+        """Wrapper to execute step with shared resources."""
+        run_step_on_modal(step_name, shared_executor)
+
+    def finalize_wrapper(node_states: Dict[str, NodeStatus]) -> None:
+        """Wrapper to finalize pipeline execution."""
+        finalize_run(node_states, args)
+
+    # Build DAG from deployment
+    pipeline_dag = {
+        step_name: step.spec.upstream_steps
+        for step_name, step in deployment.step_configurations.items()
+    }
+
+    logger.info(f"Executing {len(pipeline_dag)} steps with shared image cache")
+
+    # Run using ThreadedDagRunner with optimized execution
+    ThreadedDagRunner(
+        dag=pipeline_dag,
+        run_fn=run_step_wrapper,
+        finalize_fn=finalize_wrapper,
+        max_parallelism=getattr(pipeline_settings, "max_parallelism", None),
+    ).run()
 
 
 def finalize_run(
@@ -183,50 +344,13 @@ def main() -> None:
     )
 
     try:
+        # Execute pipeline based on execution mode
         if execution_mode == ModalExecutionMode.PIPELINE:
-            # Execute entire pipeline in this sandbox
-            logger.info("Executing entire pipeline in single sandbox")
-            entrypoint_args = (
-                PipelineEntrypointConfiguration.get_entrypoint_arguments(
-                    deployment_id=args.deployment_id
-                )
-            )
-            config = PipelineEntrypointConfiguration(arguments=entrypoint_args)
-            config.run()
-
+            execute_pipeline_mode(args)
         else:
-            # PER_STEP mode: Execute each step in separate sandbox
-            logger.info("Executing pipeline with per-step sandboxes")
-
-            # Create executor for step execution
-            executor = ModalSandboxExecutor(
-                deployment=deployment,
-                stack=active_stack,
-                environment=environment,
-                settings=pipeline_settings,
+            execute_per_step_mode(
+                deployment, active_stack, environment, pipeline_settings, args
             )
-
-            def run_step_wrapper(step_name: str) -> None:
-                run_step_on_modal(step_name, executor)
-
-            def finalize_wrapper(node_states: Dict[str, NodeStatus]) -> None:
-                finalize_run(node_states, args)
-
-            # Build DAG from deployment
-            pipeline_dag = {
-                step_name: step.spec.upstream_steps
-                for step_name, step in deployment.step_configurations.items()
-            }
-
-            # Run using ThreadedDagRunner
-            ThreadedDagRunner(
-                dag=pipeline_dag,
-                run_fn=run_step_wrapper,
-                finalize_fn=finalize_wrapper,
-                max_parallelism=getattr(
-                    pipeline_settings, "max_parallelism", None
-                ),
-            ).run()
 
         logger.info("Pipeline execution completed successfully")
 
