@@ -166,23 +166,7 @@ def get_gpu_values(
     # Check if GPU is requested via ResourceSettings
     gpu_count = resource_settings.gpu_count
 
-    # If no GPU type specified but GPU count > 0, try to infer from ResourceSettings
-    if not gpu_type and gpu_count and gpu_count > 0:
-        # Check if ResourceSettings has gpu_type (some versions might support this)
-        if (
-            hasattr(resource_settings, "gpu_type")
-            and resource_settings.gpu_type
-        ):
-            gpu_type = resource_settings.gpu_type
-        else:
-            # Default to a reasonable GPU type if count is specified
-            logger.warning(
-                f"GPU count ({gpu_count}) specified but no GPU type provided. "
-                "Defaulting to 'T4'. Consider specifying gpu_type in Modal orchestrator settings."
-            )
-            gpu_type = "T4"
-
-    # No GPU requested
+    # No GPU requested if no type specified
     if not gpu_type:
         return None
 

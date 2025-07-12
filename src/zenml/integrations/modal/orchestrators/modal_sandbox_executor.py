@@ -201,31 +201,45 @@ class ModalSandboxExecutor:
                 else:
                     # Try to convert to ResourceSettings
                     try:
+                        # Handle different types of settings objects
                         if hasattr(resource_settings_raw, "model_dump"):
-                            resource_settings = (
-                                ResourceSettings.model_validate(
-                                    resource_settings_raw.model_dump()
-                                )
-                            )
+                            # Pydantic model - convert via model_dump
+                            settings_dict = resource_settings_raw.model_dump()
                         elif hasattr(resource_settings_raw, "__dict__"):
-                            resource_settings = (
-                                ResourceSettings.model_validate(
-                                    resource_settings_raw.__dict__
-                                )
-                            )
+                            # Object with attributes - convert via __dict__
+                            settings_dict = resource_settings_raw.__dict__
+                        elif hasattr(
+                            resource_settings_raw, "__iter__"
+                        ) and not isinstance(resource_settings_raw, str):
+                            # Dict-like object - convert to dict
+                            settings_dict = dict(resource_settings_raw)
                         else:
-                            resource_settings = (
-                                ResourceSettings.model_validate(
-                                    dict(resource_settings_raw)
-                                )
-                            )
+                            # Fallback - try direct conversion
+                            settings_dict = dict(resource_settings_raw)
+
+                        # Filter out None values and non-resource fields
+                        filtered_dict = {}
+                        valid_fields = {
+                            "cpu_count",
+                            "memory",
+                            "gpu_count",
+                            "gpu_type",
+                        }
+                        for key, value in settings_dict.items():
+                            if key in valid_fields and value is not None:
+                                filtered_dict[key] = value
+
+                        resource_settings = ResourceSettings.model_validate(
+                            filtered_dict
+                        )
                         logger.debug(
-                            f"Converted resource settings for step {step_name}"
+                            f"Converted resource settings for step {step_name}: {filtered_dict}"
                         )
                         return resource_settings
                     except Exception as e:
                         logger.warning(
                             f"Failed to convert resource settings for step {step_name}: {e}. "
+                            f"Type: {type(resource_settings_raw)}. "
                             f"Using default ResourceSettings."
                         )
 
