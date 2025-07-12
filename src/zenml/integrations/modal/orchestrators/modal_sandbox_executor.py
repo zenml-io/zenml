@@ -106,6 +106,64 @@ class ModalSandboxExecutor:
         """
         return base_command + args
 
+    # ---------------------------------------------------------------------
+    # Resource utilities
+    # ---------------------------------------------------------------------
+
+    @staticmethod
+    def _to_resource_settings(data: Any | None) -> ResourceSettings:
+        """Convert arbitrary input to a ``ResourceSettings`` object.
+
+        This helper makes sure that we *always* return a properly validated
+        ``ResourceSettings`` instance. It gracefully handles different shapes
+        that may appear in historical deployments (actual instance, pydantic
+        model, plain dict, or even a generic object with ``__dict__``).
+
+        Args:
+            data: Raw resource settings information.
+
+        Returns:
+            A validated ``ResourceSettings`` instance (empty when no data).
+        """
+        # Already a ResourceSettings – just return
+        if isinstance(data, ResourceSettings):
+            return data
+
+        # Nothing configured – return an empty instance
+        if data is None:
+            return ResourceSettings()
+
+        # Convert pydantic/BaseSettings models to dict first
+        if hasattr(data, "model_dump"):
+            try:
+                data = data.model_dump()
+            except Exception:
+                # Fallback to __dict__ if model_dump fails for some reason
+                data = getattr(data, "__dict__", {})
+
+        # Convert mapping-like objects to dict
+        if not isinstance(data, dict):
+            try:
+                data = dict(data)  # type: ignore[arg-type]
+            except Exception:
+                # If conversion fails, return empty settings instead of error
+                logger.warning(
+                    "Unable to interpret resource settings of type %s – falling back to default.",
+                    type(data),
+                )
+                return ResourceSettings()
+
+        # Finally validate
+        try:
+            return ResourceSettings.model_validate(data)  # type: ignore[arg-type]
+        except Exception as e:
+            logger.warning(
+                "Failed to validate resource settings %s – %s. Using default.",
+                data,
+                e,
+            )
+            return ResourceSettings()
+
     def _get_step_settings(self, step_name: str) -> ModalOrchestratorSettings:
         """Get merged settings for a specific step.
 
@@ -169,92 +227,45 @@ class ModalSandboxExecutor:
     def _get_resource_settings(
         self, step_name: Optional[str] = None
     ) -> ResourceSettings:
-        """Get resource settings for pipeline or step with robust extraction.
+        """Return validated resource settings for a pipeline or a step.
 
-        Args:
-            step_name: Name of the step (None for pipeline-level).
-
-        Returns:
-            ResourceSettings object, never None.
+        The previous implementation tried multiple ad-hoc extraction methods.
+        We now delegate the heavy lifting to ``_to_resource_settings`` which
+        guarantees a valid object and dramatically reduces the branching.
         """
         if step_name:
-            step_config = self.deployment.step_configurations[step_name].config
+            step_cfg = self.deployment.step_configurations[step_name].config
 
-            # Method 1: Direct access to resource_settings (preferred)
-            resource_settings = step_config.resource_settings
-            if resource_settings is not None:
+            # 1) direct attribute
+            res = self._to_resource_settings(step_cfg.resource_settings)
+            if not res.empty:
                 logger.debug(
-                    f"Using direct resource settings for step {step_name}"
+                    "Using direct resource settings for step %s", step_name
                 )
-                return resource_settings
+                return res
 
-            # Method 2: Look under "resources" key in settings
-            resource_settings_raw = step_config.settings.get(
-                RESOURCE_SETTINGS_KEY
+            # 2) settings["resources"] fallback
+            res = self._to_resource_settings(
+                step_cfg.settings.get(RESOURCE_SETTINGS_KEY)
             )
-            if resource_settings_raw is not None:
-                if isinstance(resource_settings_raw, ResourceSettings):
-                    logger.debug(
-                        f"Using resource settings from settings key for step {step_name}"
-                    )
-                    return resource_settings_raw
-                else:
-                    # Try to convert to ResourceSettings
-                    try:
-                        # Handle different types of settings objects
-                        if hasattr(resource_settings_raw, "model_dump"):
-                            # Pydantic model - convert via model_dump
-                            settings_dict = resource_settings_raw.model_dump()
-                        elif hasattr(resource_settings_raw, "__dict__"):
-                            # Object with attributes - convert via __dict__
-                            settings_dict = resource_settings_raw.__dict__
-                        elif hasattr(
-                            resource_settings_raw, "__iter__"
-                        ) and not isinstance(resource_settings_raw, str):
-                            # Dict-like object - convert to dict
-                            settings_dict = dict(resource_settings_raw)
-                        else:
-                            # Fallback - try direct conversion
-                            settings_dict = dict(resource_settings_raw)
+            if not res.empty:
+                logger.debug(
+                    "Using settings-key resource settings for step %s",
+                    step_name,
+                )
+                return res
 
-                        # Filter out None values and non-resource fields
-                        filtered_dict = {}
-                        valid_fields = {
-                            "cpu_count",
-                            "memory",
-                            "gpu_count",
-                            "gpu_type",
-                        }
-                        for key, value in settings_dict.items():
-                            if key in valid_fields and value is not None:
-                                filtered_dict[key] = value
-
-                        resource_settings = ResourceSettings.model_validate(
-                            filtered_dict
-                        )
-                        logger.debug(
-                            f"Converted resource settings for step {step_name}: {filtered_dict}"
-                        )
-                        return resource_settings
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to convert resource settings for step {step_name}: {e}. "
-                            f"Type: {type(resource_settings_raw)}. "
-                            f"Using default ResourceSettings."
-                        )
-
-            # Method 3: Default empty settings for step
             logger.debug(
-                f"Using default resource settings for step {step_name}"
+                "No resource settings for step %s – defaulting", step_name
             )
             return ResourceSettings()
-        else:
-            # Pipeline-level resource settings
-            resource_settings = get_resource_settings_from_deployment(
-                self.deployment, RESOURCE_SETTINGS_KEY
-            )
-            logger.debug("Using pipeline-level resource settings")
-            return resource_settings
+
+        # Pipeline-level: delegate to existing util (already returns RS)
+        resource_settings = get_resource_settings_from_deployment(
+            self.deployment, RESOURCE_SETTINGS_KEY
+        )
+        logger.debug("Using pipeline-level resource settings")
+        return resource_settings
 
     def _get_resource_config(
         self, step_name: Optional[str] = None
