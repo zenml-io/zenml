@@ -166,47 +166,199 @@ class ModalSandboxExecutor:
         }
         return modal.Secret.from_dict(env_dict)
 
-    def _get_resource_config(
+    def _get_resource_settings(
         self, step_name: Optional[str] = None
-    ) -> tuple[Optional[str], Optional[int], Optional[int]]:
-        """Get resource configuration for pipeline or step.
+    ) -> ResourceSettings:
+        """Get resource settings for pipeline or step with robust extraction.
 
         Args:
             step_name: Name of the step (None for pipeline-level).
 
         Returns:
-            Tuple of (gpu_values, cpu_count, memory_mb).
+            ResourceSettings object, never None.
         """
         if step_name:
-            step_settings = self._get_step_settings(step_name)
             step_config = self.deployment.step_configurations[step_name].config
+
+            # Method 1: Direct access to resource_settings (preferred)
+            resource_settings = step_config.resource_settings
+            if resource_settings is not None:
+                logger.debug(
+                    f"Using direct resource settings for step {step_name}"
+                )
+                return resource_settings
+
+            # Method 2: Look under "resources" key in settings
             resource_settings_raw = step_config.settings.get(
                 RESOURCE_SETTINGS_KEY
             )
+            if resource_settings_raw is not None:
+                if isinstance(resource_settings_raw, ResourceSettings):
+                    logger.debug(
+                        f"Using resource settings from settings key for step {step_name}"
+                    )
+                    return resource_settings_raw
+                else:
+                    # Try to convert to ResourceSettings
+                    try:
+                        if hasattr(resource_settings_raw, "model_dump"):
+                            resource_settings = (
+                                ResourceSettings.model_validate(
+                                    resource_settings_raw.model_dump()
+                                )
+                            )
+                        elif hasattr(resource_settings_raw, "__dict__"):
+                            resource_settings = (
+                                ResourceSettings.model_validate(
+                                    resource_settings_raw.__dict__
+                                )
+                            )
+                        else:
+                            resource_settings = (
+                                ResourceSettings.model_validate(
+                                    dict(resource_settings_raw)
+                                )
+                            )
+                        logger.debug(
+                            f"Converted resource settings for step {step_name}"
+                        )
+                        return resource_settings
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to convert resource settings for step {step_name}: {e}. "
+                            f"Using default ResourceSettings."
+                        )
 
-            # Ensure we have a ResourceSettings object
-            if resource_settings_raw is None:
-                resource_settings = ResourceSettings()
-            elif isinstance(resource_settings_raw, ResourceSettings):
-                resource_settings = resource_settings_raw
-            else:
-                # Convert to ResourceSettings if it's a different type
-                resource_settings = ResourceSettings.model_validate(
-                    resource_settings_raw.model_dump()
-                    if hasattr(resource_settings_raw, "model_dump")
-                    else dict(resource_settings_raw)
-                )
-
-            gpu_values = get_gpu_values(step_settings.gpu, resource_settings)
+            # Method 3: Default empty settings for step
+            logger.debug(
+                f"Using default resource settings for step {step_name}"
+            )
+            return ResourceSettings()
         else:
             # Pipeline-level resource settings
             resource_settings = get_resource_settings_from_deployment(
                 self.deployment, RESOURCE_SETTINGS_KEY
             )
+            logger.debug("Using pipeline-level resource settings")
+            return resource_settings
+
+    def _get_resource_config(
+        self, step_name: Optional[str] = None
+    ) -> tuple[Optional[str], Optional[int], Optional[int]]:
+        """Get validated resource configuration for pipeline or step.
+
+        Args:
+            step_name: Name of the step (None for pipeline-level).
+
+        Returns:
+            Tuple of (gpu_values, cpu_count, memory_mb) with validated values.
+        """
+        # Get resource settings using robust extraction
+        resource_settings = self._get_resource_settings(step_name)
+
+        # Get GPU configuration
+        if step_name:
+            step_settings = self._get_step_settings(step_name)
+            gpu_values = get_gpu_values(step_settings.gpu, resource_settings)
+        else:
             gpu_values = get_gpu_values(self.settings.gpu, resource_settings)
 
+        # Get CPU and memory with validation
         cpu_count, memory_mb = get_resource_values(resource_settings)
+
+        # Log resource configuration for debugging
+        logger.debug(
+            f"Resource config for {step_name or 'pipeline'}: "
+            f"GPU={gpu_values}, CPU={cpu_count}, Memory={memory_mb}MB"
+        )
+
         return gpu_values, cpu_count, memory_mb
+
+    def _prepare_modal_api_params(
+        self,
+        entrypoint_command: List[str],
+        image: Any,
+        gpu: Optional[str],
+        cpu: Optional[int],
+        memory: Optional[int],
+        cloud: Optional[str],
+        region: Optional[str],
+        app: Any,
+        timeout: int,
+        secrets: List[Any],
+    ) -> Dict[str, Any]:
+        """Prepare and validate Modal API parameters.
+
+        This method ensures that all parameters passed to Modal API are valid
+        and handles None values appropriately.
+
+        Args:
+            entrypoint_command: Command to execute.
+            image: Modal image.
+            gpu: GPU configuration string.
+            cpu: CPU count.
+            memory: Memory in MB.
+            cloud: Cloud provider.
+            region: Cloud region.
+            app: Modal app.
+            timeout: Timeout in seconds.
+            secrets: List of Modal secrets.
+
+        Returns:
+            Dictionary of validated parameters for Modal API.
+
+        Raises:
+            ValueError: If required parameters are invalid.
+        """
+        if not entrypoint_command:
+            raise ValueError("Entrypoint command cannot be empty")
+
+        if image is None:
+            raise ValueError("Modal image is required")
+
+        if timeout <= 0:
+            raise ValueError(f"Timeout must be positive, got {timeout}")
+
+        # Build parameters dictionary
+        # Note: entrypoint_command will be passed as *args separately
+        params = {
+            "image": image,
+            "app": app,
+            "timeout": timeout,
+        }
+
+        # Add optional parameters only if they have valid values
+        if gpu is not None:
+            # Validate GPU format
+            if isinstance(gpu, str) and gpu.strip():
+                params["gpu"] = gpu
+            else:
+                logger.warning(f"Invalid GPU value '{gpu}', ignoring")
+
+        if cpu is not None and cpu > 0:
+            params["cpu"] = cpu
+
+        if memory is not None and memory > 0:
+            params["memory"] = memory
+
+        if cloud is not None and cloud.strip():
+            params["cloud"] = cloud
+
+        if region is not None and region.strip():
+            params["region"] = region
+
+        if secrets:
+            params["secrets"] = secrets
+
+        # Log final parameters for debugging
+        param_summary = {
+            k: v
+            for k, v in params.items()
+            if k not in ["image", "app", "secrets"]  # Skip complex objects
+        }
+        logger.debug(f"Modal sandbox parameters: {param_summary}")
+
+        return params
 
     async def _execute_sandbox(
         self,
@@ -225,7 +377,7 @@ class ModalSandboxExecutor:
             run_id: Pipeline run ID for tagging.
             synchronous: Whether to wait for completion.
         """
-        # Get resource configuration
+        # Get resource configuration with validation
         gpu_values, cpu_count, memory_mb = self._get_resource_config(step_name)
 
         # Get settings (step-specific for steps, pipeline-level for pipeline)
@@ -258,19 +410,25 @@ class ModalSandboxExecutor:
         logger.info(f"Creating sandbox for {execution_mode.lower()} execution")
         logger.info(f"Sandbox tags: {tags}")
 
+        # Validate and prepare Modal API parameters
+        modal_params = self._prepare_modal_api_params(
+            entrypoint_command=entrypoint_command,
+            image=zenml_image,
+            gpu=gpu_values,
+            cpu=cpu_count,
+            memory=memory_mb,
+            cloud=cloud,
+            region=region,
+            app=self.app,
+            timeout=timeout,
+            secrets=secrets,
+        )
+
         with modal.enable_output():
-            # Create sandbox with environment variables passed as secrets
+            # Create sandbox with validated parameters
+            # Pass entrypoint command as positional args and others as kwargs
             sb = await modal.Sandbox.create.aio(
-                *entrypoint_command,
-                image=zenml_image,
-                gpu=gpu_values,
-                cpu=cpu_count,
-                memory=memory_mb,
-                cloud=cloud,
-                region=region,
-                app=self.app,
-                timeout=timeout,
-                secrets=secrets,
+                *entrypoint_command, **modal_params
             )
 
             # Set tags

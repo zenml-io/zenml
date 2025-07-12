@@ -151,43 +151,98 @@ def get_gpu_values(
 ) -> Optional[str]:
     """Get the GPU values for Modal components.
 
+    This function unifies GPU configuration from both Modal orchestrator settings
+    and ResourceSettings. It prioritizes explicit GPU type from Modal settings,
+    but falls back to ResourceSettings for GPU count and type.
+
     Args:
-        gpu_type: The GPU type (e.g., "T4", "A100").
-        resource_settings: The resource settings.
+        gpu_type: The GPU type from Modal settings (e.g., "T4", "A100").
+        resource_settings: The resource settings containing GPU configuration.
 
     Returns:
-        The GPU string if a count is specified, otherwise the GPU type.
+        The GPU string for Modal API, or None if no GPU requested.
+        Format: "GPU_TYPE" or "GPU_TYPE:COUNT"
     """
+    # Check if GPU is requested via ResourceSettings
+    gpu_count = resource_settings.gpu_count
+
+    # If no GPU type specified but GPU count > 0, try to infer from ResourceSettings
+    if not gpu_type and gpu_count and gpu_count > 0:
+        # Check if ResourceSettings has gpu_type (some versions might support this)
+        if (
+            hasattr(resource_settings, "gpu_type")
+            and resource_settings.gpu_type
+        ):
+            gpu_type = resource_settings.gpu_type
+        else:
+            # Default to a reasonable GPU type if count is specified
+            logger.warning(
+                f"GPU count ({gpu_count}) specified but no GPU type provided. "
+                "Defaulting to 'T4'. Consider specifying gpu_type in Modal orchestrator settings."
+            )
+            gpu_type = "T4"
+
+    # No GPU requested
     if not gpu_type:
         return None
-    gpu_count = resource_settings.gpu_count
+
+    # GPU type specified but no count, default to 1
     if gpu_count is None or gpu_count == 0:
         return gpu_type
+
+    # Both type and count specified
     return f"{gpu_type}:{gpu_count}"
 
 
 def get_resource_values(
     resource_settings: ResourceSettings,
 ) -> Tuple[Optional[int], Optional[int]]:
-    """Get CPU and memory values from resource settings.
+    """Get CPU and memory values from resource settings with validation.
 
     Args:
         resource_settings: The resource settings.
 
     Returns:
-        Tuple of (cpu_count, memory_mb).
+        Tuple of (cpu_count, memory_mb) with validated values.
     """
-    # Get CPU count
+    # Get CPU count with validation
     cpu_count: Optional[int] = None
     if resource_settings.cpu_count is not None:
         cpu_count = int(resource_settings.cpu_count)
+        # Validate CPU count is reasonable
+        if cpu_count <= 0:
+            logger.warning(f"Invalid CPU count {cpu_count}, ignoring.")
+            cpu_count = None
+        elif cpu_count > 96:  # Modal's typical max
+            logger.warning(
+                f"CPU count {cpu_count} is very high. "
+                "Consider if this is intentional."
+            )
 
-    # Convert memory to MB if needed
+    # Convert memory to MB if needed with validation
     memory_mb: Optional[int] = None
     if resource_settings.memory:
-        memory_value = resource_settings.get_memory(ByteUnit.MB)
-        if memory_value is not None:
-            memory_mb = int(memory_value)
+        try:
+            memory_value = resource_settings.get_memory(ByteUnit.MB)
+            if memory_value is not None:
+                memory_mb = int(memory_value)
+                # Validate memory is reasonable
+                if memory_mb <= 0:
+                    logger.warning(f"Invalid memory {memory_mb}MB, ignoring.")
+                    memory_mb = None
+                elif memory_mb < 128:  # Less than 128MB seems too low
+                    logger.warning(
+                        f"Memory {memory_mb}MB is very low. "
+                        "Consider if this is intentional."
+                    )
+                elif memory_mb > 1024 * 1024:  # More than 1TB seems high
+                    logger.warning(
+                        f"Memory {memory_mb}MB is very high. "
+                        "Consider if this is intentional."
+                    )
+        except Exception as e:
+            logger.warning(f"Failed to parse memory setting: {e}")
+            memory_mb = None
 
     return cpu_count, memory_mb
 
