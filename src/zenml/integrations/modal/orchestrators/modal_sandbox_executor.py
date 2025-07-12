@@ -227,11 +227,20 @@ class ModalSandboxExecutor:
     def _get_resource_settings(
         self, step_name: Optional[str] = None
     ) -> ResourceSettings:
-        """Return validated resource settings for a pipeline or a step.
+        """Return validated resource settings for either pipeline or step.
 
-        The previous implementation tried multiple ad-hoc extraction methods.
-        We now delegate the heavy lifting to ``_to_resource_settings`` which
-        guarantees a valid object and dramatically reduces the branching.
+        The helper always returns a *proper* :class:`~zenml.config.resource_settings.ResourceSettings`
+        instance.  For a step it checks the step-level settings first and
+        falls back to an empty configuration; for the pipeline it delegates
+        to :func:`zenml.integrations.modal.utils.get_resource_settings_from_deployment`.
+
+        Args:
+            step_name: Optional name of the step for which to fetch resource
+                settings. If ``None`` (default), pipeline-level settings are
+                returned.
+
+        Returns:
+            A validated ``ResourceSettings`` object (never ``None``).
         """
         if step_name:
             step_cfg = self.deployment.step_configurations[step_name].config
@@ -552,6 +561,10 @@ class ModalSandboxExecutor:
 
         Returns:
             Modal image (either cached or newly built).
+
+        Raises:
+            ValueError: If the deployment does not have an associated build
+                (required to identify the Docker image).
         """
         image_name = self._get_image_name(step_name)
 
@@ -589,6 +602,10 @@ class ModalSandboxExecutor:
 
         Returns:
             Cache key for the image.
+
+        Raises:
+            ValueError: If the deployment does not have a build ID which is
+                required to scope the cache key.
         """
         # Use build ID and step name to create unique cache key
         # Include a hash of the image name for uniqueness

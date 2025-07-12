@@ -106,6 +106,10 @@ async def prepare_shared_image_cache(
 
     Returns:
         Tuple of (shared_image_cache, shared_modal_app).
+
+    Raises:
+        ValueError: If the deployment has no associated build information.
+        Exception: For any unexpected error while building images.
     """
     from zenml.integrations.modal.orchestrators.modal_orchestrator import (
         ModalOrchestrator,
@@ -226,11 +230,20 @@ def execute_per_step_mode(
     )
 
     def run_step_wrapper(step_name: str) -> None:
-        """Wrapper to execute step with shared resources."""
+        """Wrapper to execute a single pipeline step.
+
+        Args:
+            step_name: Name of the step to execute.
+        """
         run_step_on_modal(step_name, shared_executor)
 
     def finalize_wrapper(node_states: Dict[str, NodeStatus]) -> None:
-        """Wrapper to finalize pipeline execution."""
+        """Wrapper to finalize pipeline execution.
+
+        Args:
+            node_states: Mapping of node/step names to their execution
+                status after DAG completion.
+        """
         finalize_run(node_states, args)
 
     # Build DAG from deployment
