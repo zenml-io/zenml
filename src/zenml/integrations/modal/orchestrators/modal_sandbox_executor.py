@@ -144,7 +144,7 @@ class ModalSandboxExecutor:
         # Convert mapping-like objects to dict
         if not isinstance(data, dict):
             try:
-                data = dict(data)  # type: ignore[arg-type]
+                data = dict(data)
             except Exception:
                 # If conversion fails, return empty settings instead of error
                 logger.warning(
@@ -155,7 +155,7 @@ class ModalSandboxExecutor:
 
         # Finally validate
         try:
-            return ResourceSettings.model_validate(data)  # type: ignore[arg-type]
+            return ResourceSettings.model_validate(data)
         except Exception as e:
             logger.warning(
                 "Failed to validate resource settings %s – %s. Using default.",
@@ -281,13 +281,27 @@ class ModalSandboxExecutor:
         # Get resource settings using robust extraction
         resource_settings = self._get_resource_settings(step_name)
 
-        # Get GPU configuration
+        # Get GPU configuration (with default type if unspecified but gpu_count > 0)
+        gpu_type: Optional[str] = None
         if step_name:
             step_settings = self._get_step_settings(step_name)
-            gpu_values = get_gpu_values(step_settings.gpu, resource_settings)
+            gpu_type = step_settings.gpu
         else:
-            gpu_values = get_gpu_values(self.settings.gpu, resource_settings)
+            gpu_type = self.settings.gpu
 
+        # If gpu_type is missing but gpu_count > 0, default to T4
+        if (
+            gpu_type is None
+            and resource_settings.gpu_count
+            and resource_settings.gpu_count > 0
+        ):
+            gpu_type = "T4"
+            logger.debug(
+                f"No GPU type specified for {'step ' + step_name if step_name else 'pipeline'}, "
+                f"but gpu_count={resource_settings.gpu_count}. Defaulting to {gpu_type}."
+            )
+
+        gpu_values = get_gpu_values(gpu_type, resource_settings)
         # Get CPU and memory with validation
         cpu_count, memory_mb = get_resource_values(resource_settings)
 
