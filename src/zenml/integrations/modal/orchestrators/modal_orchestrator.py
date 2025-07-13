@@ -170,7 +170,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         execution_mode = getattr(
             settings, "execution_mode", ModalExecutionMode.PIPELINE
         )
-        logger.info(f"Using execution mode: {execution_mode}")
+        logger.info(
+            f"🚀 Executing pipeline with Modal ({execution_mode.lower()} mode)"
+        )
 
         # Create sandbox executor
         executor = ModalSandboxExecutor(
@@ -179,9 +181,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             environment=environment,
             settings=settings,
         )
-
-        # Execute pipeline using the executor
-        logger.info("Starting pipeline execution with Modal sandboxes")
 
         try:
             synchronous = (
@@ -203,5 +202,5 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             logger.error(f"Pipeline execution failed: {e}")
             raise
 
-        logger.info("Pipeline execution completed successfully")
+        logger.info("✅ Pipeline execution completed successfully")
         return None

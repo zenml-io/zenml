@@ -87,7 +87,7 @@ def setup_modal_client(
         # Set both token ID and secret
         os.environ["MODAL_TOKEN_ID"] = token_id
         os.environ["MODAL_TOKEN_SECRET"] = token_secret
-        logger.info("Using platform token ID and secret from config")
+        logger.debug("Using platform token ID and secret from config")
         logger.debug(f"Token ID starts with: {token_id[:5]}...")
         logger.debug(f"Token secret starts with: {token_secret[:5]}...")
 
@@ -101,7 +101,7 @@ def setup_modal_client(
 
         # Only token ID provided
         os.environ["MODAL_TOKEN_ID"] = token_id
-        logger.info("Using platform token ID from config")
+        logger.debug("Using platform token ID from config")
         logger.warning(
             "Only token ID provided. Make sure MODAL_TOKEN_SECRET is set "
             "or platform authentication may fail."
@@ -125,7 +125,7 @@ def setup_modal_client(
         logger.debug(f"Token secret starts with: {token_secret[:5]}...")
 
     else:
-        logger.info("Using default platform authentication (~/.modal.toml)")
+        logger.debug("Using default platform authentication (~/.modal.toml)")
         # Check if default auth exists
         modal_toml_path = os.path.expanduser("~/.modal.toml")
         if os.path.exists(modal_toml_path):
@@ -262,8 +262,8 @@ def _build_modal_image_from_registry(
             "it is correctly configured."
         )
 
-    logger.info("Building new Modal image")
-    logger.info(f"Base image: {image_name}")
+    logger.debug("Building new Modal image")
+    logger.debug(f"Base image: {image_name}")
 
     if docker_creds := stack.container_registry.credentials:
         docker_username, docker_password = docker_creds
@@ -281,8 +281,8 @@ def _build_modal_image_from_registry(
     )
 
     # Build Modal image from the ZenML-built image
-    logger.info(f"🔨 Building Modal image from base: {image_name}")
-    logger.info(f"Creating Modal image from base: {image_name}")
+    logger.debug(f"Building Modal image from base: {image_name}")
+    logger.debug(f"Creating Modal image from base: {image_name}")
     zenml_image = (
         modal.Image.from_registry(
             image_name, secret=registry_secret
@@ -324,7 +324,7 @@ def get_or_build_modal_image(
         if image_name_key in stored_id:
             image_id = stored_id[image_name_key]
             existing_image = modal.Image.from_id(image_id)
-            logger.info(
+            logger.debug(
                 f"Using cached Modal image for build {build_id} in pipeline {pipeline_name}"
             )
             return existing_image
@@ -480,7 +480,7 @@ def get_resource_settings_from_deployment(
             memory="1024MB",
             gpu_count=0,
         )
-        logger.info(
+        logger.debug(
             "No explicit pipeline-level resource settings found. "
             "Using sane defaults: %s CPU, %s memory, %s GPU",
             resource_settings.cpu_count,

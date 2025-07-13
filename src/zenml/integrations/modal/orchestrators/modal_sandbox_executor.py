@@ -455,8 +455,10 @@ class ModalSandboxExecutor:
             run_id=run_id,
         )
 
-        logger.info(f"Creating sandbox for {execution_mode.lower()} execution")
-        logger.info(f"Sandbox tags: {tags}")
+        logger.debug(
+            f"Creating sandbox for {execution_mode.lower()} execution"
+        )
+        logger.debug(f"Sandbox tags: {tags}")
 
         # Validate and prepare Modal API parameters
         modal_params = self._prepare_modal_api_params(
@@ -488,7 +490,7 @@ class ModalSandboxExecutor:
                     print(line, end="")
                 await sb.wait.aio()
             else:
-                logger.info("Sandbox started asynchronously")
+                logger.debug("Sandbox started asynchronously")
 
             # Store the image ID for future caching after sandbox creation
             # The image should be hydrated after being used in sandbox creation
@@ -514,7 +516,7 @@ class ModalSandboxExecutor:
                         create_if_missing=True,
                     )
                     stored_id[image_name_key] = zenml_image.object_id
-                    logger.info(
+                    logger.debug(
                         f"Stored Modal image ID for build {self.deployment.build.id}"
                     )
                 else:
@@ -571,13 +573,13 @@ class ModalSandboxExecutor:
         # Check shared cache first
         cache_key = self._get_image_cache_key(image_name, step_name)
         if cache_key in self.shared_image_cache:
-            logger.info(
+            logger.debug(
                 f"Using cached Modal image for {step_name or 'pipeline'}: {cache_key}"
             )
             return self.shared_image_cache[cache_key]
 
         # Fallback to existing image building logic
-        logger.info(
+        logger.debug(
             f"Building new Modal image for {step_name or 'pipeline'}: {image_name}"
         )
         if self.deployment.build is None:
@@ -634,7 +636,7 @@ class ModalSandboxExecutor:
             run_id: The pipeline run ID.
             synchronous: Whether to wait for completion.
         """
-        logger.info("Executing entire pipeline in single sandbox")
+        logger.debug("Executing entire pipeline in single sandbox")
 
         # Build entrypoint command
         command = (
@@ -670,7 +672,7 @@ class ModalSandboxExecutor:
         Args:
             step_name: Name of the step to execute.
         """
-        logger.info(f"Executing step '{step_name}' in separate sandbox")
+        logger.debug(f"Executing step '{step_name}' in separate sandbox")
 
         # Build step entrypoint command
         command = StepEntrypointConfiguration.get_entrypoint_command()

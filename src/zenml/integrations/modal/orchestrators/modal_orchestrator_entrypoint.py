@@ -79,13 +79,13 @@ def run_step_on_modal(
     Raises:
         Exception: If the sandbox fails to execute.
     """
-    logger.info(f"Running step '{step_name}' in Modal sandbox")
+    logger.info(f"▶️  Running step: {step_name}")
 
     try:
         asyncio.run(executor.execute_step(step_name))
-        logger.info(f"Step {step_name} completed successfully")
+        logger.info(f"✅ Step completed: {step_name}")
     except Exception as e:
-        logger.error(f"Step {step_name} failed: {e}")
+        logger.error(f"❌ Step failed: {step_name} - {e}")
         raise
 
 
@@ -116,7 +116,7 @@ async def prepare_shared_image_cache(
     )
     from zenml.integrations.modal.utils import get_or_build_modal_image
 
-    logger.info("Preparing shared image cache for per-step execution")
+    logger.info("🔧 Preparing images for step execution")
 
     # Create shared Modal app
     pipeline_name = deployment.pipeline_configuration.name.replace("_", "-")
@@ -156,9 +156,9 @@ async def prepare_shared_image_cache(
         unique_images[step_cache_key] = step_image
 
     # Build all unique images
-    logger.info(f"Building {len(unique_images)} unique images for pipeline")
+    logger.debug(f"Building {len(unique_images)} unique images for pipeline")
     for cache_key, image_name in unique_images.items():
-        logger.info(f"Building image: {cache_key} from {image_name}")
+        logger.debug(f"Building image: {cache_key} from {image_name}")
         try:
             built_image = get_or_build_modal_image(
                 image_name=image_name,
@@ -168,12 +168,12 @@ async def prepare_shared_image_cache(
                 app=shared_app,
             )
             image_cache[cache_key] = built_image
-            logger.info(f"Successfully cached image: {cache_key}")
+            logger.debug(f"Successfully cached image: {cache_key}")
         except Exception as e:
             logger.error(f"Failed to build image {cache_key}: {e}")
             raise
 
-    logger.info(f"Image cache prepared with {len(image_cache)} images")
+    logger.info(f"✅ Prepared {len(image_cache)} container images")
     return image_cache, shared_app
 
 
@@ -183,7 +183,7 @@ def execute_pipeline_mode(args: argparse.Namespace) -> None:
     Args:
         args: Parsed command line arguments.
     """
-    logger.info("Executing entire pipeline in single sandbox")
+    logger.debug("Executing entire pipeline in single sandbox")
     entrypoint_args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
         deployment_id=args.deployment_id
     )
@@ -207,10 +207,7 @@ def execute_per_step_mode(
         pipeline_settings: Modal orchestrator settings.
         args: Parsed command line arguments.
     """
-    logger.info("Executing pipeline with per-step sandboxes")
-
-    # Prepare shared image cache and Modal app for all steps
-    logger.info("Pre-building images for step execution")
+    logger.debug("Executing pipeline with per-step sandboxes")
     shared_image_cache, shared_app = asyncio.run(
         prepare_shared_image_cache(
             deployment=deployment,
@@ -252,7 +249,7 @@ def execute_per_step_mode(
         for step_name, step in deployment.step_configurations.items()
     }
 
-    logger.info(f"Executing {len(pipeline_dag)} steps with shared image cache")
+    logger.info(f"🚀 Executing {len(pipeline_dag)} pipeline steps")
 
     # Run using ThreadedDagRunner with optimized execution
     ThreadedDagRunner(
@@ -330,7 +327,7 @@ def main() -> None:
     Raises:
         Exception: If the pipeline execution fails.
     """
-    logger.info("Modal orchestrator sandbox started.")
+    logger.debug("Modal orchestrator sandbox started.")
 
     args = parse_args()
     os.environ[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = args.orchestrator_run_id
@@ -371,7 +368,7 @@ def main() -> None:
                 deployment, active_stack, environment, pipeline_settings, args
             )
 
-        logger.info("Pipeline execution completed successfully")
+        logger.debug("Pipeline execution completed successfully")
 
     except Exception as e:
         logger.error(f"Pipeline execution failed: {e}")
