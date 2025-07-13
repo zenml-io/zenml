@@ -16,10 +16,7 @@
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-try:
-    import modal
-except ImportError:
-    modal = None  # type: ignore
+import modal
 
 from zenml.config import ResourceSettings
 from zenml.config.resource_settings import ByteUnit
@@ -170,8 +167,11 @@ def get_gpu_values(
     if not gpu_type:
         return None
 
+    # No GPU requested if count is explicitly 0
+    if gpu_count == 0:
+        return None
     # GPU type specified but no count, default to 1
-    if gpu_count is None or gpu_count == 0:
+    if gpu_count is None:
         return gpu_type
 
     # Both type and count specified
@@ -231,6 +231,70 @@ def get_resource_values(
     return cpu_count, memory_mb
 
 
+def _build_modal_image_from_registry(
+    image_name: str,
+    stack: "Stack",
+    environment: Optional[Dict[str, str]] = None,
+) -> Any:
+    """Build a Modal image from a Docker registry with authentication.
+
+    This helper function centralizes the shared logic for building Modal images
+    from Docker registries, including credential validation, secret creation,
+    and image building with Modal installation.
+
+    Args:
+        image_name: The name of the Docker image to use as base.
+        stack: The ZenML stack containing container registry.
+        environment: Optional environment variables to apply to the image.
+
+    Returns:
+        The configured Modal image.
+
+    Raises:
+        RuntimeError: If no Docker credentials are found.
+        ValueError: If no container registry is found.
+    """
+    if not stack.container_registry:
+        raise ValueError(
+            "No Container registry found in the stack. "
+            "Please add a container registry and ensure "
+            "it is correctly configured."
+        )
+
+    logger.info("Building new Modal image")
+    logger.info(f"Base image: {image_name}")
+
+    if docker_creds := stack.container_registry.credentials:
+        docker_username, docker_password = docker_creds
+    else:
+        raise RuntimeError(
+            "No Docker credentials found for the container registry."
+        )
+
+    # Create Modal secret for registry authentication
+    registry_secret = modal.Secret.from_dict(
+        {
+            "REGISTRY_USERNAME": docker_username,
+            "REGISTRY_PASSWORD": docker_password,
+        }
+    )
+
+    # Build Modal image from the ZenML-built image
+    logger.info(f"🔨 Building Modal image from base: {image_name}")
+    logger.info(f"Creating Modal image from base: {image_name}")
+    zenml_image = (
+        modal.Image.from_registry(
+            image_name, secret=registry_secret
+        ).pip_install("modal")  # Install Modal in the container
+    )
+
+    # Apply environment variables if provided
+    if environment:
+        zenml_image = zenml_image.env(environment)
+
+    return zenml_image
+
+
 def get_or_build_modal_image(
     image_name: str,
     stack: "Stack",
@@ -254,66 +318,28 @@ def get_or_build_modal_image(
         RuntimeError: If no Docker credentials are found.
         ValueError: If no container registry is found.
     """
-    if not stack.container_registry:
-        raise ValueError(
-            "No Container registry found in the stack. "
-            "Please add a container registry and ensure "
-            "it is correctly configured."
-        )
-
     # Try to get existing image from the app
     image_name_key = f"zenml_image_{build_id}"
 
     try:
-        # Try to look up existing image by ID from Modal's object store
-        # We'll store the image ID as a Modal object for persistence
-        try:
-            # Try to get stored image ID
-            stored_id = modal.Dict.from_name(
-                f"zenml-image-cache-{pipeline_name}"
+        # Try to get stored image ID
+        stored_id = modal.Dict.from_name(f"zenml-image-cache-{pipeline_name}")
+        if image_name_key in stored_id:
+            image_id = stored_id[image_name_key]
+            existing_image = modal.Image.from_id(image_id)
+            logger.info(
+                f"Using cached Modal image for build {build_id} in pipeline {pipeline_name}"
             )
-            if image_name_key in stored_id:
-                image_id = stored_id[image_name_key]
-                existing_image = modal.Image.from_id(image_id)
-                logger.info(
-                    f"Using cached Modal image for build {build_id} in pipeline {pipeline_name}"
-                )
-                return existing_image
-        except Exception:
-            # Dict doesn't exist or image not found, will build new one
-            pass
-    except Exception:
-        # If lookup fails, we'll build a new image
+            return existing_image
+    except (modal.exceptions.NotFoundError, KeyError):
+        # Dict doesn't exist or image not found, will build new one
         pass
 
-    logger.info("Building new Modal image")
-    logger.info(f"Base image: {image_name}")
-
-    if docker_creds := stack.container_registry.credentials:
-        docker_username, docker_password = docker_creds
-    else:
-        raise RuntimeError(
-            "No Docker credentials found for the container registry."
-        )
-
-    # Create Modal secret for registry authentication
-    registry_secret = modal.Secret.from_dict(
-        {
-            "REGISTRY_USERNAME": docker_username,
-            "REGISTRY_PASSWORD": docker_password,
-        }
-    )
-
-    # Build new Modal image and register it with consistent name
-    logger.info(f"🔨 Building Modal image from base: {image_name}")
-
-    # Build Modal image from the ZenML-built image
-    # Modal will automatically cache layers and reuse when possible
-    logger.info(f"Creating Modal image from base: {image_name}")
-    zenml_image = (
-        modal.Image.from_registry(
-            image_name, secret=registry_secret
-        ).pip_install("modal")  # Install Modal in the container
+    # Build new image using shared helper
+    zenml_image = _build_modal_image_from_registry(
+        image_name=image_name,
+        stack=stack,
+        environment=None,  # No environment variables for cached images
     )
 
     # Store the image in the app for future use
@@ -341,47 +367,12 @@ def build_modal_image(
         RuntimeError: If no Docker credentials are found.
         ValueError: If no container registry is found.
     """
-    if not stack.container_registry:
-        raise ValueError(
-            "No Container registry found in the stack. "
-            "Please add a container registry and ensure "
-            "it is correctly configured."
-        )
-
-    logger.info("Building Modal image")
-    logger.info(f"Base image: {image_name}")
-
-    if docker_creds := stack.container_registry.credentials:
-        docker_username, docker_password = docker_creds
-    else:
-        raise RuntimeError(
-            "No Docker credentials found for the container registry."
-        )
-
-    # Create Modal secret for registry authentication
-    registry_secret = modal.Secret.from_dict(
-        {
-            "REGISTRY_USERNAME": docker_username,
-            "REGISTRY_PASSWORD": docker_password,
-        }
+    # Use shared helper for image building
+    return _build_modal_image_from_registry(
+        image_name=image_name,
+        stack=stack,
+        environment=environment,
     )
-
-    # Build new Modal image and register it with consistent name
-    logger.info(f"🔨 Building Modal image from base: {image_name}")
-
-    # Build Modal image from the ZenML-built image
-    # Modal will automatically cache layers and reuse when possible
-    logger.info(f"Creating Modal image from base: {image_name}")
-    zenml_image = (
-        modal.Image.from_registry(
-            image_name, secret=registry_secret
-        ).pip_install("modal")  # Install Modal in the container
-    )
-
-    if environment:
-        zenml_image = zenml_image.env(environment)
-
-    return zenml_image
 
 
 def generate_sandbox_tags(
