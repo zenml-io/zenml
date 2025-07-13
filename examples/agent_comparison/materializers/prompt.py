@@ -1,5 +1,6 @@
 """Prompt class for versioned prompt management in ZenML."""
 
+import re
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -49,8 +50,6 @@ class Prompt(BaseModel):
         Returns:
             List of variable names found in the prompt content
         """
-        import re
-
         return re.findall(r"\{(\w+)\}", self.content)
 
     def validate_variables(self, **kwargs: Any) -> bool:
