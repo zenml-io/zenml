@@ -3,7 +3,7 @@
   <!-- PROJECT LOGO -->
   <br />
     <a href="https://zenml.io">
-      <img alt="ZenML Header" src="docs/book/.gitbook/assets/header.png" alt="ZenML Header">
+      <img src="docs/book/.gitbook/assets/header.png" alt="ZenML Header">
     </a>
   <br />
   <div align="center">
