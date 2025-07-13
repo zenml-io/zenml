@@ -170,7 +170,8 @@ def get_gpu_values(
     # No GPU requested if count is explicitly 0
     if gpu_count == 0:
         return None
-    # GPU type specified but no count, default to 1
+
+    # GPU type specified but no count, return just the type
     if gpu_count is None:
         return gpu_type
 
@@ -313,10 +314,6 @@ def get_or_build_modal_image(
 
     Returns:
         The configured Modal image.
-
-    Raises:
-        RuntimeError: If no Docker credentials are found.
-        ValueError: If no container registry is found.
     """
     # Try to get existing image from the app
     image_name_key = f"zenml_image_{build_id}"
@@ -362,10 +359,6 @@ def build_modal_image(
 
     Returns:
         The configured Modal image.
-
-    Raises:
-        RuntimeError: If no Docker credentials are found.
-        ValueError: If no container registry is found.
     """
     # Use shared helper for image building
     return _build_modal_image_from_registry(

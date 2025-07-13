@@ -12,6 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+"""Integration tests for the Modal step operator utilities.
+
+This module verifies helper functions inside the Modal step operator flavor,
+specifically the ``get_gpu_values`` helper which converts GPU type/count pairs
+into the string format expected by the Modal SDK.
+"""
 
 import pytest
 
@@ -30,16 +36,17 @@ from zenml.integrations.modal.step_operators.modal_step_operator import (
         ("", 1, None),
         (None, 1, None),
         ("A100", None, "A100"),
-        ("A100", 0, "A100"),
+        ("A100", 0, None),
         ("A100", 1, "A100:1"),
         ("A100", 2, "A100:2"),
         ("V100", None, "V100"),
-        ("V100", 0, "V100"),
+        ("V100", 0, None),
         ("V100", 1, "V100:1"),
         ("V100", 2, "V100:2"),
     ],
 )
 def test_get_gpu_values(gpu, gpu_count, expected_result):
+    """Test the get_gpu_values function."""
     settings = ModalStepOperatorSettings(gpu=gpu)
     resource_settings = ResourceSettings(gpu_count=gpu_count)
     result = get_gpu_values(settings.gpu, resource_settings)
