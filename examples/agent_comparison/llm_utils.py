@@ -18,9 +18,6 @@ try:
 except ImportError:
     HAS_LITELLM = False
 
-# Langfuse Integration - configure via litellm callbacks
-HAS_LANGFUSE = True  # We'll check env vars instead
-
 logger = get_logger(__name__)
 
 
@@ -44,7 +41,7 @@ def should_use_langfuse() -> bool:
     Returns:
         True if Langfuse is available and API keys are detected, False otherwise.
     """
-    return HAS_LANGFUSE and bool(
+    return bool(
         os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY")
     )
 
