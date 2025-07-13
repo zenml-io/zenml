@@ -125,6 +125,8 @@ class SingleAgentRAG(BaseAgent):
             confidence = random.uniform(
                 0.8, 0.95
             )  # Higher confidence for real LLM
+            # Note: This is a rough approximation. For accurate token counting, use a tokenizer]
+            #  like tiktoken or the tokenizer from the model provider
             tokens_used = len(prompt.split()) + len(response_text.split())
         else:
             # Fallback to mock keyword matching
@@ -314,6 +316,8 @@ class MultiSpecialistAgents(BaseAgent):
             confidence = random.uniform(
                 0.85, 0.98
             )  # Higher confidence for specialized LLM
+            # Note: This is a rough approximation. For accurate token counting, use a tokenizer]
+            #  like tiktoken or the tokenizer from the model provider
             tokens_used = len(prompt.split()) + len(response_text.split())
         else:
             # Fallback to mock specialist responses
