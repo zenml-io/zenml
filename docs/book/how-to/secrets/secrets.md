@@ -180,11 +180,22 @@ def run_llm_agent(prompt: str, query: str) -> str:
     openai_secret = Client().get_secret("openai_secret")
     
     # Use the API key to initialize the LLM client
-    openai.api_key = openai_secret.secret_values["api_key"]
-    openai.organization = openai_secret.secret_values["organization_id"]
+@step
+def run_llm_agent(prompt: str, query: str) -> str:
+    """Execute an LLM agent using securely stored API keys."""
+    # Fetch LLM API credentials from ZenML secrets
+    openai_secret = Client().get_secret("openai_secret")
+    
+    # Initialize the OpenAI client with credentials
+    from openai import OpenAI
+    
+    client = OpenAI(
+        api_key=openai_secret.secret_values["api_key"],
+        organization=openai_secret.secret_values["organization_id"]
+    )
     
     # Execute the agent
-    response = openai.chat.completions.create(
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": prompt},
@@ -192,6 +203,7 @@ def run_llm_agent(prompt: str, query: str) -> str:
         ]
     )
     
+    return response.choices[0].message.content
     return response.choices[0].message.content
 ```
 
