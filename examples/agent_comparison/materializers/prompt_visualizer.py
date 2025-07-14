@@ -3,9 +3,8 @@
 import html
 from typing import Any, List
 
+from materializers.prompt import Prompt
 from zenml.types import HTMLString
-
-from .prompt import Prompt
 
 
 def visualize_prompt(prompt: Prompt) -> HTMLString:

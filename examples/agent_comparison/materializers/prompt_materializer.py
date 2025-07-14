@@ -2,21 +2,14 @@
 
 import json
 import os
-import sys
 from typing import Any, Dict, Type
 
-if sys.version_info >= (3, 9):
-    pass
-else:
-    pass
-
+from materializers.prompt import Prompt
 from materializers.prompt import Prompt as MaterializersPrompt
+from materializers.prompt_visualizer import visualize_prompt_data
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-
-from .prompt import Prompt
-from .prompt_visualizer import visualize_prompt_data
 
 
 class PromptMaterializer(BaseMaterializer):

@@ -1,9 +1,9 @@
 """ZenML steps for agent comparison pipeline."""
 
-from .data_loading import load_prompts, load_real_conversations
-from .evaluation import evaluate_and_decide
-from .model_training import train_intent_classifier
-from .testing import run_architecture_comparison
+from steps.data_loading import load_prompts, load_real_conversations
+from steps.evaluation import evaluate_and_decide
+from steps.model_training import train_intent_classifier
+from steps.testing import run_architecture_comparison
 
 __all__ = [
     "load_prompts",

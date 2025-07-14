@@ -12,7 +12,7 @@ from zenml.logger import get_logger
 
 # LLM Integration
 try:
-    import litellm  # type: ignore
+    import litellm
 
     HAS_LITELLM = True
 except ImportError:

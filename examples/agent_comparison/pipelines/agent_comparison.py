@@ -5,6 +5,8 @@ on customer service queries. It demonstrates how to use ZenML to evaluate and co
 different AI approaches in a reproducible way.
 """
 
+import os
+
 # Import to trigger materializer registration
 import materializers.agent_materializer  # noqa: F401
 from steps import (
@@ -21,6 +23,11 @@ from zenml.config import DockerSettings
 docker_settings = DockerSettings(
     requirements="requirements.txt",
     python_package_installer="uv",
+    environment={
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
+        "LANGFUSE_PUBLIC_KEY": os.getenv("LANGFUSE_PUBLIC_KEY", ""),
+        "LANGFUSE_SECRET_KEY": os.getenv("LANGFUSE_SECRET_KEY", ""),
+    },
 )
 
 model = Model(
