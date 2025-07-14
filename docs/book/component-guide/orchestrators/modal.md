@@ -21,12 +21,13 @@ You should use the Modal orchestrator if:
 * you want cost-effective ML pipeline orchestration without managing infrastructure.
 * you need easy access to GPUs and high-performance computing resources.
 * you prefer a simple setup process without complex Kubernetes configurations.
+* you need flexibility between fast pipeline execution (PIPELINE mode) and step-level resource isolation (PER_STEP mode).
 
 ## When NOT to use it
 
 The Modal orchestrator may not be the best choice if:
 
-* **You need fine-grained step isolation**: Modal orchestrator runs entire pipelines in single sandboxes, which means all steps share the same resources and environment. For pipelines requiring different resource configurations per step, consider the [Modal step operator](../step-operators/modal.md) instead.
+* **You need extremely fine-grained control beyond per-step isolation**: While the Modal orchestrator supports two execution modes (PIPELINE mode for speed and PER_STEP mode for step isolation), if you need even more granular control over individual step execution environments, consider the [Modal step operator](../step-operators/modal.md) instead.
 
 * **You have strict data locality requirements**: Modal runs in specific cloud regions and may not be suitable if you need to keep data processing within specific geographic boundaries or on-premises.
 
@@ -371,6 +372,16 @@ def evaluate_model():
 - **Resource efficiency**: Match CPU/memory to actual step requirements  
 - **Parallel execution**: Steps with different resources can run concurrently
 - **Flexibility**: Each step gets exactly the resources it needs
+
+{% hint style="info" %}
+**Docker Configuration Validation**
+
+The Modal orchestrator validates Docker configurations based on execution mode:
+
+- **PIPELINE mode**: Per-step Docker settings are not allowed since all steps run in the same sandbox. If you have step-specific Docker configurations, you'll get an error suggesting to either use PER_STEP mode or remove the step-specific settings.
+
+- **PER_STEP mode**: Per-step Docker settings are fully supported and each step can have its own Docker configuration.
+{% endhint %}
 
 ### Sandbox Architecture
 
