@@ -49,9 +49,9 @@ class ModalOrchestratorSettings(BaseSettings):
         cloud: The cloud provider to use for the pipeline execution.
         modal_environment: The Modal environment to use for the pipeline execution.
         timeout: Maximum execution time in seconds (default 24h).
-        mode: Execution mode controlling sandbox allocation. PIPELINE mode runs the 
-            entire pipeline in a single Modal sandbox (fastest, shared resources). 
-            PER_STEP mode runs each step in its own sandbox (granular control, 
+        mode: Execution mode controlling sandbox allocation. PIPELINE mode runs the
+            entire pipeline in a single Modal sandbox (fastest, shared resources).
+            PER_STEP mode runs each step in its own sandbox (granular control,
             step-specific resources, better for debugging and resource isolation).
         max_parallelism: Maximum number of parallel sandboxes (for PER_STEP mode).
         synchronous: Wait for completion (True) or fire-and-forget (False).

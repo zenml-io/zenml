@@ -24,7 +24,6 @@ from typing import (
     Type,
     cast,
 )
-from uuid import uuid4
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
@@ -50,7 +49,11 @@ if TYPE_CHECKING:
         ModalOrchestratorConfig,
         ModalOrchestratorSettings,
     )
-    from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import (
+        PipelineDeploymentBase,
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+    )
 
 logger = get_logger(__name__)
 
@@ -88,7 +91,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
-        
+
         For Modal orchestrator in PIPELINE mode, per-step images are not allowed
         since the entire pipeline runs in a single sandbox.
 
@@ -97,23 +100,25 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             The required Docker builds.
-            
+
         Raises:
             ValueError: If PIPELINE mode is used with per-step Docker settings.
         """
         builds = super().get_docker_builds(deployment)
-        
+
         # Get the execution mode from settings
         settings = cast(
             "ModalOrchestratorSettings", self.get_settings(deployment)
         )
         execution_mode = settings.mode
-        
+
         # In PIPELINE mode, check if any builds have step-specific configurations
         if execution_mode == ModalExecutionMode.PIPELINE:
             for build in builds:
-                if (build.key == ORCHESTRATOR_DOCKER_IMAGE_KEY and 
-                    build.step_name is not None):
+                if (
+                    build.key == ORCHESTRATOR_DOCKER_IMAGE_KEY
+                    and build.step_name is not None
+                ):
                     raise ValueError(
                         f"Per-step Docker settings are not supported in PIPELINE "
                         f"execution mode. Step '{build.step_name}' has custom Docker "
@@ -121,7 +126,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                         f"in a single sandbox. Either use PER_STEP execution mode or "
                         f"remove step-specific Docker settings."
                     )
-        
+
         return builds
 
     def _setup_modal_client(self) -> None:

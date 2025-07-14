@@ -262,7 +262,9 @@ def execute_per_step_mode(
 
 
 def finalize_run(
-    node_states: Dict[str, NodeStatus], args: argparse.Namespace, orchestrator_run_id: str
+    node_states: Dict[str, NodeStatus],
+    args: argparse.Namespace,
+    orchestrator_run_id: str,
 ) -> None:
     """Finalize the run by updating step and pipeline run statuses.
 
@@ -332,7 +334,7 @@ def main() -> None:
     logger.debug("Modal orchestrator sandbox started.")
 
     args = parse_args()
-    
+
     # Generate orchestrator run ID locally since it's just a random UUID
     orchestrator_run_id = str(uuid4())
     os.environ[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
@@ -368,7 +370,12 @@ def main() -> None:
             execute_pipeline_mode(args)
         else:
             execute_per_step_mode(
-                deployment, active_stack, environment, pipeline_settings, args, orchestrator_run_id
+                deployment,
+                active_stack,
+                environment,
+                pipeline_settings,
+                args,
+                orchestrator_run_id,
             )
 
         logger.debug("Pipeline execution completed successfully")
