@@ -24,6 +24,7 @@ from transformers import (
 from typing_extensions import Annotated
 
 from zenml import ArtifactConfig, step
+from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
@@ -46,7 +47,8 @@ def train_model(
     gradient_accumulation_steps: int,
     dataloader_num_workers: int,
 ) -> Annotated[
-    T5ForConditionalGeneration, "model", ArtifactConfig(is_model_artifact=True)
+    T5ForConditionalGeneration,
+    ArtifactConfig(name="model", artifact_type=ArtifactType.MODEL),
 ]:
     """Train the model and return the path to the saved model."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
