@@ -19,6 +19,7 @@ from typing import (
     TYPE_CHECKING,
     Dict,
     Iterator,
+    List,
     Optional,
     Type,
     cast,
@@ -26,6 +27,8 @@ from typing import (
 from uuid import uuid4
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
     ModalExecutionMode,
 )
@@ -47,7 +50,7 @@ if TYPE_CHECKING:
         ModalOrchestratorConfig,
         ModalOrchestratorSettings,
     )
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse, PipelineRunResponse
 
 logger = get_logger(__name__)
 
@@ -80,6 +83,46 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
 
         return ModalOrchestratorSettings
+
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBase"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+        
+        For Modal orchestrator in PIPELINE mode, per-step images are not allowed
+        since the entire pipeline runs in a single sandbox.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+            
+        Raises:
+            ValueError: If PIPELINE mode is used with per-step Docker settings.
+        """
+        builds = super().get_docker_builds(deployment)
+        
+        # Get the execution mode from settings
+        settings = cast(
+            "ModalOrchestratorSettings", self.get_settings(deployment)
+        )
+        execution_mode = settings.mode
+        
+        # In PIPELINE mode, check if any builds have step-specific configurations
+        if execution_mode == ModalExecutionMode.PIPELINE:
+            for build in builds:
+                if (build.key == ORCHESTRATOR_DOCKER_IMAGE_KEY and 
+                    build.step_name is not None):
+                    raise ValueError(
+                        f"Per-step Docker settings are not supported in PIPELINE "
+                        f"execution mode. Step '{build.step_name}' has custom Docker "
+                        f"settings but will be ignored since the entire pipeline runs "
+                        f"in a single sandbox. Either use PER_STEP execution mode or "
+                        f"remove step-specific Docker settings."
+                    )
+        
+        return builds
 
     def _setup_modal_client(self) -> None:
         """Setup Modal client with authentication."""
@@ -140,26 +183,13 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         Returns:
             None if the pipeline is executed synchronously, otherwise an iterator of metadata dictionaries.
         """
-        if deployment.schedule:
-            logger.warning(
-                "Modal Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
-
         # Setup Modal authentication
         self._setup_modal_client()
-
-        # Generate orchestrator run ID and include pipeline run ID for isolation
-        orchestrator_run_id = str(uuid4())
-        environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
         # Pass pipeline run ID for proper isolation
         if placeholder_run:
             environment["ZENML_PIPELINE_RUN_ID"] = str(placeholder_run.id)
             logger.debug(f"Pipeline run ID: {placeholder_run.id}")
-
-        logger.debug(f"Orchestrator run ID: {orchestrator_run_id}")
 
         # Get settings from pipeline configuration
         settings = cast(
@@ -167,9 +197,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
 
         # Check execution mode
-        execution_mode = getattr(
-            settings, "execution_mode", ModalExecutionMode.PIPELINE
-        )
+        execution_mode = settings.mode
         logger.info(
             f"🚀 Executing pipeline with Modal ({execution_mode.lower()} mode)"
         )
@@ -191,7 +219,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
             asyncio.run(
                 executor.execute_pipeline(
-                    orchestrator_run_id=orchestrator_run_id,
                     run_id=str(placeholder_run.id)
                     if placeholder_run
                     else None,
@@ -202,5 +229,4 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             logger.error(f"Pipeline execution failed: {e}")
             raise
 
-        logger.info("✅ Pipeline execution completed successfully")
         return None

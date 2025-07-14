@@ -159,7 +159,7 @@ The Modal orchestrator uses two types of settings following ZenML's standard pat
    - `region` - Cloud region preference  
    - `cloud` - Cloud provider selection
    - `modal_environment` - Modal environment name (e.g., "main", "dev", "prod")
-   - `execution_mode` - Execution strategy: "pipeline" (default) or "per_step"
+   - `mode` - Execution strategy: "pipeline" (default) or "per_step"
    - `max_parallelism` - Maximum concurrent steps (for "per_step" mode)
    - `timeout` - Maximum execution time in seconds
    - `synchronous` - Wait for completion (True) or fire-and-forget (False)
@@ -202,7 +202,7 @@ modal_settings = ModalOrchestratorSettings(
     region="us-east-1",             # Preferred region
     cloud="aws",                    # Cloud provider
     modal_environment="production", # Modal environment name
-    execution_mode="pipeline",      # "pipeline" (default) or "per_step"
+    mode="pipeline",      # "pipeline" (default) or "per_step"
     max_parallelism=3,              # Max concurrent steps (per_step mode)
     timeout=3600,                   # 1 hour timeout
     synchronous=True,               # Wait for completion
@@ -284,7 +284,7 @@ The Modal orchestrator supports two execution modes:
 
 ```python
 modal_settings = ModalOrchestratorSettings(
-    execution_mode="pipeline",  # Execute entire pipeline in one sandbox
+    mode="pipeline",  # Execute entire pipeline in one sandbox
     gpu="A100"
 )
 ```
@@ -300,7 +300,7 @@ modal_settings = ModalOrchestratorSettings(
 
 ```python
 modal_settings = ModalOrchestratorSettings(
-    execution_mode="per_step",  # Execute each step in separate sandbox
+    mode="per_step",  # Execute each step in separate sandbox
     max_parallelism=3,          # Run up to 3 steps concurrently
     gpu="T4"                    # Default GPU for steps (can be overridden per step)
 )
@@ -321,7 +321,7 @@ In per-step mode, you can configure different resources for each step, enabling 
 @pipeline(
     settings={
         "orchestrator": ModalOrchestratorSettings(
-            execution_mode="per_step",
+            mode="per_step",
             max_parallelism=2,
             gpu="T4"  # Default GPU for steps
         )
@@ -460,7 +460,7 @@ Available GPU types include:
     settings={
         "orchestrator": ModalOrchestratorSettings(
             gpu="A100",
-            execution_mode="pipeline"  # Default: entire pipeline in one sandbox
+            mode="pipeline"  # Default: entire pipeline in one sandbox
         ),
         "resources": ResourceSettings(gpu_count=1)
     }
@@ -475,7 +475,7 @@ def simple_gpu_pipeline():
     settings={
         "orchestrator": ModalOrchestratorSettings(
             gpu="A100",
-            execution_mode="per_step",  # Each step in separate sandbox
+            mode="per_step",  # Each step in separate sandbox
             max_parallelism=2           # Run up to 2 steps concurrently
         ),
         "resources": ResourceSettings(gpu_count=4)
@@ -598,12 +598,12 @@ This ensures your pipelines start executing quickly by reusing persistent apps a
 ```python
 # Cost-effective: Pipeline mode
 # Single A100 GPU for 30-minute pipeline = ~$0.80
-ModalOrchestratorSettings(execution_mode="pipeline", gpu="A100")
+ModalOrchestratorSettings(mode="pipeline", gpu="A100")
 
 # Higher cost: Per-step mode
 # A100 GPU per step (5 steps × 6 min each) = ~$0.80
 # But steps can run in parallel, reducing total time
-ModalOrchestratorSettings(execution_mode="per_step", gpu="A100")
+ModalOrchestratorSettings(mode="per_step", gpu="A100")
 ```
 
 **Cost Optimization Strategies**:
@@ -627,7 +627,7 @@ Monitor your Modal dashboard to track sandbox execution time and resource usage.
    ```python
    modal_settings = ModalOrchestratorSettings(
        timeout=7200,  # 2 hours
-       execution_mode="pipeline"  # Recommended for most cases
+       mode="pipeline"  # Recommended for most cases
    )
    ```
 

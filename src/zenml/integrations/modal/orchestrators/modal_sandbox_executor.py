@@ -625,14 +625,12 @@ class ModalSandboxExecutor:
 
     async def execute_pipeline(
         self,
-        orchestrator_run_id: str,
         run_id: Optional[str] = None,
         synchronous: bool = True,
     ) -> None:
         """Execute the entire pipeline in a single sandbox.
 
         Args:
-            orchestrator_run_id: The orchestrator run ID.
             run_id: The pipeline run ID.
             synchronous: Whether to wait for completion.
         """
@@ -652,7 +650,6 @@ class ModalSandboxExecutor:
         args = (
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 deployment_id=self.deployment.id,
-                orchestrator_run_id=orchestrator_run_id,
                 run_id=run_id_uuid,
             )
         )

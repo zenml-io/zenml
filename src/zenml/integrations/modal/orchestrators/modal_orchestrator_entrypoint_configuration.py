@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from uuid import UUID
 
 DEPLOYMENT_ID_OPTION = "deployment_id"
-ORCHESTRATOR_RUN_ID_OPTION = "orchestrator_run_id"
 RUN_ID_OPTION = "run_id"
 
 
@@ -35,7 +34,6 @@ class ModalOrchestratorEntrypointConfiguration:
         """
         options = {
             DEPLOYMENT_ID_OPTION,
-            ORCHESTRATOR_RUN_ID_OPTION,
         }
         return options
 
@@ -57,14 +55,12 @@ class ModalOrchestratorEntrypointConfiguration:
     def get_entrypoint_arguments(
         cls,
         deployment_id: "UUID",
-        orchestrator_run_id: str,
         run_id: Optional["UUID"] = None,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
             deployment_id: ID of the deployment.
-            orchestrator_run_id: ID of the orchestrator run.
             run_id: Optional ID of the pipeline run.
 
         Returns:
@@ -73,8 +69,6 @@ class ModalOrchestratorEntrypointConfiguration:
         args = [
             f"--{DEPLOYMENT_ID_OPTION}",
             str(deployment_id),
-            f"--{ORCHESTRATOR_RUN_ID_OPTION}",
-            orchestrator_run_id,
         ]
 
         if run_id:

@@ -17,7 +17,7 @@ import argparse
 import asyncio
 import os
 from typing import TYPE_CHECKING, Any, Dict, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import modal
 
@@ -61,7 +61,6 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--deployment_id", type=str, required=True)
-    parser.add_argument("--orchestrator_run_id", type=str, required=True)
     parser.add_argument("--run_id", type=str, required=False)
     return parser.parse_args()
 
@@ -197,6 +196,7 @@ def execute_per_step_mode(
     environment: Dict[str, str],
     pipeline_settings: ModalOrchestratorSettings,
     args: argparse.Namespace,
+    orchestrator_run_id: str,
 ) -> None:
     """Execute pipeline with per-step sandboxes.
 
@@ -206,6 +206,7 @@ def execute_per_step_mode(
         environment: Environment variables.
         pipeline_settings: Modal orchestrator settings.
         args: Parsed command line arguments.
+        orchestrator_run_id: The orchestrator run ID.
     """
     logger.debug("Executing pipeline with per-step sandboxes")
     shared_image_cache, shared_app = asyncio.run(
@@ -241,7 +242,7 @@ def execute_per_step_mode(
             node_states: Mapping of node/step names to their execution
                 status after DAG completion.
         """
-        finalize_run(node_states, args)
+        finalize_run(node_states, args, orchestrator_run_id)
 
     # Build DAG from deployment
     pipeline_dag = {
@@ -261,13 +262,14 @@ def execute_per_step_mode(
 
 
 def finalize_run(
-    node_states: Dict[str, NodeStatus], args: argparse.Namespace
+    node_states: Dict[str, NodeStatus], args: argparse.Namespace, orchestrator_run_id: str
 ) -> None:
     """Finalize the run by updating step and pipeline run statuses.
 
     Args:
         node_states: The states of the nodes.
         args: Parsed command line arguments.
+        orchestrator_run_id: The orchestrator run ID.
     """
     try:
         client = Client()
@@ -278,7 +280,7 @@ def finalize_run(
         if args.run_id:
             list_args = dict(id=UUID(args.run_id))
         else:
-            list_args = dict(orchestrator_run_id=args.orchestrator_run_id)
+            list_args = dict(orchestrator_run_id=orchestrator_run_id)
 
         pipeline_runs = client.list_pipeline_runs(
             hydrate=True,
@@ -330,7 +332,10 @@ def main() -> None:
     logger.debug("Modal orchestrator sandbox started.")
 
     args = parse_args()
-    os.environ[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = args.orchestrator_run_id
+    
+    # Generate orchestrator run ID locally since it's just a random UUID
+    orchestrator_run_id = str(uuid4())
+    os.environ[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
     client = Client()
     active_stack = client.active_stack
@@ -352,12 +357,10 @@ def main() -> None:
     )
 
     environment = get_config_environment_vars()
-    environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = args.orchestrator_run_id
+    environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
     # Check execution mode
-    execution_mode = getattr(
-        pipeline_settings, "execution_mode", ModalExecutionMode.PIPELINE
-    )
+    execution_mode = pipeline_settings.mode
 
     try:
         # Execute pipeline based on execution mode
@@ -365,7 +368,7 @@ def main() -> None:
             execute_pipeline_mode(args)
         else:
             execute_per_step_mode(
-                deployment, active_stack, environment, pipeline_settings, args
+                deployment, active_stack, environment, pipeline_settings, args, orchestrator_run_id
             )
 
         logger.debug("Pipeline execution completed successfully")
