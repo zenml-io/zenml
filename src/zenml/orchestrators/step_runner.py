@@ -17,6 +17,8 @@
 import copy
 import inspect
 import os
+import re
+import traceback
 from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
@@ -118,11 +120,9 @@ class StepRunner:
         Returns:
             The exception information.
         """
-        import re
-        import traceback
-
-        traceback = traceback.format_tb(exception.__traceback__)
+        tb = traceback.format_tb(exception.__traceback__)
         line_number = None
+        start_index = None
 
         try:
             lines, start_line = inspect.getsourcelines(
@@ -136,7 +136,7 @@ class StepRunner:
 
             line_pattern = re.compile(f'File "{source_file}", line (\d+),')
 
-            for line in traceback:
+            for index, line in enumerate(tb):
                 match = line_pattern.search(line)
                 if match:
                     potential_line_number = int(match.group(1))
@@ -145,12 +145,16 @@ class StepRunner:
                         and potential_line_number <= end_line
                     ):
                         line_number = potential_line_number - start_line
+                        start_index = index
                         break
         except Exception as e:
             logger.debug("Failed to collect exception information: %s", e)
 
+        if start_index is not None:
+            tb = tb[start_index:]
+
         return ExceptionInformation(
-            traceback="\n".join(traceback),
+            traceback="\n".join(tb),
             step_code_line=line_number,
         )
 
