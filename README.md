@@ -245,6 +245,24 @@ export OPENAI_API_KEY="your-api-key-here"
 python simple_pipeline.py
 ```
 
+## 🗣️ Chat With Your Pipelines: ZenML MCP Server
+
+Stop clicking through dashboards to understand your ML workflows. The **[ZenML MCP Server](https://github.com/zenml-io/mcp-zenml)** lets you query your pipelines, analyze runs, and trigger deployments using natural language through Claude Desktop, Cursor, or any MCP-compatible client.
+
+```
+💬 "Which pipeline runs failed this week and why?"
+📊 "Show me accuracy metrics for all my customer churn models"  
+🚀 "Trigger the latest fraud detection pipeline with production data"
+```
+
+**Quick Setup:**
+1. Download the `.dxt` file from [zenml-io/mcp-zenml](https://github.com/zenml-io/mcp-zenml)
+2. Drag it into Claude Desktop settings
+3. Add your ZenML server URL and API key
+4. Start chatting with your ML infrastructure
+
+The MCP (Model Context Protocol) integration transforms your ZenML metadata into conversational insights, making pipeline debugging and analysis as easy as asking a question. Perfect for teams who want to democratize access to ML operations without requiring dashboard expertise.
+
 ## 📚 Learn More
 
 ### 🖼️ Getting Started Resources
