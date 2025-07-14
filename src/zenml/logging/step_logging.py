@@ -20,9 +20,12 @@ import sys
 import time
 from contextlib import nullcontext
 from contextvars import ContextVar
+from datetime import datetime
 from types import TracebackType
 from typing import Any, List, Optional, Type, Union
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifacts.utils import (
@@ -37,6 +40,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     handle_bool_env_var,
 )
+from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger, get_storage_log_level
 from zenml.logging import (
@@ -67,6 +71,30 @@ logging_handlers: ContextVar[List[logging.Handler]] = ContextVar(
 
 LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
+MAX_LOG_ENTRIES = 100  # Maximum number of log entries to return in a single request
+MAX_MESSAGE_SIZE = 10 * 1024  # Maximum size of a single log message in bytes (10KB)
+
+
+class LogEntry(BaseModel):
+    """A structured log entry with parsed information."""
+
+    message: str = Field(description="The log message content")
+    name: Optional[str] = Field(
+        default=None,
+        description="The name of the logger",
+    )
+    level: Optional[LoggingLevels] = Field(
+        default=None,
+        description="The log level",
+    )
+    timestamp: Optional[datetime] = Field(
+        default=None,
+        description="When the log was created",
+    )
+    location: Optional[str] = Field(
+        default=None,
+        description="Source location in format 'logger_name:filename:line_number'",
+    )
 
 
 class ArtifactStoreHandler(logging.Handler):
@@ -91,15 +119,94 @@ class ArtifactStoreHandler(logging.Handler):
             record: The log record to emit.
         """
         try:
-            # Format for storage with timestamp, level, and message
-            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            message = (
-                f"[{timestamp} UTC] [{record.levelname}] {record.getMessage()}"
-            )
-            self.storage.write(message)
+            # Get location information
+            location = None
+            if record.filename and record.lineno:
+                location = f"{record.filename}:{record.lineno}"
+
+            # Get level enum
+            level = LoggingLevels.__members__.get(record.levelname.upper())
+
+            # Get the message
+            message = record.getMessage()
+            
+            # Check if message needs to be chunked
+            message_bytes = message.encode("utf-8")
+            if len(message_bytes) <= MAX_MESSAGE_SIZE:
+                # Message is small enough, emit as-is
+                log_record = LogEntry(
+                    message=message,
+                    name=record.name,
+                    level=level,
+                    timestamp=utc_now(),
+                    location=location,
+                )
+                json_line = log_record.model_dump_json(exclude_none=True)
+                self.storage.write(json_line)
+            else:
+                # Message is too large, split into chunks and emit each one
+                chunks = self._split_to_chunks(message)
+                for i, chunk in enumerate(chunks):
+                    chunk_message = f"{chunk} (chunk {i+1}/{len(chunks)})"
+                    
+                    log_record = LogEntry(
+                        message=chunk_message,
+                        name=record.name,
+                        level=level,
+                        timestamp=utc_now(),
+                        location=location,
+                    )
+                    
+                    json_line = log_record.model_dump_json(exclude_none=True)
+                    self.storage.write(json_line)
         except Exception:
             # Don't let storage errors break logging
             pass
+    
+    def _split_to_chunks(self, message: str) -> List[str]:
+        """Split a large message into chunks.
+        
+        Args:
+            message: The message to split.
+            
+        Returns:
+            A list of message chunks.
+        """
+        # Calculate how many chunks we need
+        message_bytes = message.encode("utf-8")
+        chunk_count = (len(message_bytes) + MAX_MESSAGE_SIZE - 1) // MAX_MESSAGE_SIZE
+        
+        # Split the message into chunks
+        chunks = []
+        start = 0
+        for i in range(chunk_count):
+            # Calculate the end position for this chunk
+            end = min(start + MAX_MESSAGE_SIZE, len(message_bytes))
+            
+            # Extract the chunk and decode it
+            chunk_bytes = message_bytes[start:end]
+            
+            # Handle potential UTF-8 boundary issues
+            try:
+                chunk_text = chunk_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                # If we cut in the middle of a UTF-8 character, back off until we find a valid boundary
+                while len(chunk_bytes) > 0:
+                    try:
+                        chunk_text = chunk_bytes.decode("utf-8")
+                        break
+                    except UnicodeDecodeError:
+                        chunk_bytes = chunk_bytes[:-1]
+                        end -= 1
+                else:
+                    # If we can't decode anything, skip this chunk
+                    start = end
+                    continue
+            
+            chunks.append(chunk_text)
+            start = end
+        
+        return chunks
 
 
 def setup_global_print_wrapping() -> None:
@@ -176,6 +283,44 @@ def remove_ansi_escape_codes(text: str) -> str:
     return ansi_escape.sub("", text)
 
 
+def parse_log_entry(log_line: str) -> Optional[LogEntry]:
+    """Parse a single log entry into a LogEntry object.
+
+    Handles two formats:
+    1. JSON format: {"timestamp": "...", "level": "...", "message": "...", "location": "..."}
+       Uses Pydantic's model_validate_json for automatic parsing and validation.
+    2. Plain text: Any other text (defaults to INFO level)
+
+    Args:
+        log_line: A single log line to parse
+
+    Returns:
+        LogEntry object. For JSON logs, all fields are validated and parsed automatically.
+        For plain text logs, only message is populated with INFO level default.
+        Returns None only for empty lines.
+    """
+    stripped_line = log_line.strip()
+    if not stripped_line:
+        return None
+
+    # Try to parse JSON format first
+    if stripped_line.startswith("{") and stripped_line.endswith("}"):
+        try:
+            return LogEntry.model_validate_json(stripped_line)
+        except Exception:
+            # If JSON parsing or validation fails, treat as plain text
+            pass
+
+    # For any other format (plain text), create LogEntry with defaults
+    return LogEntry(
+        message=stripped_line,
+        name=None,  # No logger name available for plain text logs
+        level=LoggingLevels.INFO,  # Default level for plain text logs
+        timestamp=None,  # No timestamp available for plain text logs
+        location=None,
+    )
+
+
 def prepare_logs_uri(
     artifact_store: "BaseArtifactStore",
     step_name: Optional[str] = None,
@@ -220,6 +365,105 @@ def prepare_logs_uri(
             )
             artifact_store.remove(logs_uri)
         return logs_uri
+
+
+def fetch_log_records(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+    offset: int = 0,
+    length: int = MAX_LOG_ENTRIES,  # Number of entries to return
+    level: Optional[str] = None,
+    search: Optional[str] = None,
+) -> List[LogEntry]:
+    """Fetches the logs from the artifact store and parses them into LogEntry objects.
+
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the artifact.
+        offset: The entry index from which to start reading (0-based) from filtered results.
+        length: The number of entries to return (max MAX_LOG_ENTRIES).
+        level: Optional log level filter. Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
+
+    Returns:
+        A list of LogEntry objects starting from the specified offset in the filtered results.
+
+    Raises:
+        DoesNotExistException: If the artifact does not exist in the artifact
+            store.
+    """
+    # Get raw log content - read all logs
+    raw_logs = fetch_logs(
+        zen_store=zen_store,
+        artifact_store_id=artifact_store_id,
+        logs_uri=logs_uri,
+        offset=0,  # Start from beginning
+        length=1024 * 1024 * 1024,  # 1GB - large enough to read all data
+        strip_timestamp=False,
+    )
+
+    # Parse each line into LogEntry objects using Pydantic validation
+    all_log_records = []
+    lines = raw_logs.split("\n")
+    
+    for line in lines:
+        stripped_line = line.strip()
+        if stripped_line:  # Skip empty lines
+            log_record = parse_log_entry(stripped_line)
+            if log_record:
+                all_log_records.append(log_record)
+    
+    # Apply filters
+    filtered_records = _apply_log_filters(all_log_records, level, search)
+    
+    # Apply pagination to filtered results
+    if offset >= len(filtered_records):
+        return []  # Offset beyond available filtered entries
+    
+    end_index = min(offset + length, len(filtered_records))
+    return filtered_records[offset:end_index]
+
+
+def _apply_log_filters(
+    log_records: List[LogEntry],
+    level: Optional[str] = None,
+    search: Optional[str] = None,
+) -> List[LogEntry]:
+    """Apply level and search filters to log records.
+    
+    Args:
+        log_records: List of log records to filter.
+        level: Optional log level filter. Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
+        
+    Returns:
+        Filtered list of log records.
+    """
+    filtered_records = log_records
+    
+    # Apply level filter
+    if level:
+        try:
+            min_level = LoggingLevels[level.upper()]
+            filtered_records = [
+                record for record in filtered_records
+                if record.level and record.level.value >= min_level.value
+            ]
+        except KeyError:
+            # If invalid level provided, ignore the filter
+            pass
+    
+    # Apply search filter
+    if search:
+        search_lower = search.lower()
+        filtered_records = [
+            record for record in filtered_records
+            if search_lower in record.message.lower()
+        ]
+    
+    return filtered_records
 
 
 def fetch_logs(
@@ -584,12 +828,6 @@ class PipelineLogsStorageContext:
         """
         # Create storage handler
         self.artifact_store_handler = ArtifactStoreHandler(self.storage)
-
-        # Set formatter for storage handler
-        storage_formatter = logging.Formatter(
-            "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
-        )
-        self.artifact_store_handler.setFormatter(storage_formatter)
 
         # Add handler to root logger
         root_logger = logging.getLogger()
