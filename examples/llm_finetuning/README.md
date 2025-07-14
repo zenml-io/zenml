@@ -5,7 +5,7 @@ a great way to get hands-on with ZenML using production-like template.
 The project contains a collection of ZenML steps, pipelines and other artifacts
 and useful resources that can serve as a solid starting point for finetuning open-source LLMs using ZenML.
 
-Using these pipelines, we can run the data-preparation and model finetuning with a single command while using YAML files for [configuration](https://docs.zenml.io/user-guide/production-guide/configure-pipeline) and letting ZenML take care of tracking our metadata and [containerizing our pipelines](https://docs.zenml.io/how-to/customize-docker-builds).
+Using these pipelines, we can run the data-preparation and model finetuning with a single command while using YAML files for [configuration](https://docs.zenml.io/user-guides/production-guide/configure-pipeline) and letting ZenML take care of tracking our metadata and [containerizing our pipelines](https://docs.zenml.io/how-to/customize-docker-builds).
 
 <div align="center">
   <br/>
