@@ -42,6 +42,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.step_run import (
+    ExceptionInformation,
     StepRunInputResponse,
     StepRunResponseResources,
 )
@@ -94,6 +95,14 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     is_retriable: bool = Field(nullable=False)
 
     step_configuration: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
+    exception_info: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -395,6 +404,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
+                exception_info=ExceptionInformation.model_validate_json(
+                    self.exception_info
+                )
+                if self.exception_info
+                else None,
                 logs=self.logs.to_model() if self.logs else None,
                 deployment_id=self.deployment_id,
                 pipeline_run_id=self.pipeline_run_id,
@@ -458,6 +472,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.status = value.value
             if key == "end_time":
                 self.end_time = value
+            if key == "exception_info":
+                self.exception_info = json.dumps(value)
 
         self.updated = utc_now()
 
