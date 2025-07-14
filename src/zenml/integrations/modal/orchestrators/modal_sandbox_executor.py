@@ -411,7 +411,7 @@ class ModalSandboxExecutor:
     async def _execute_sandbox(
         self,
         entrypoint_command: List[str],
-        execution_mode: str,
+        mode: str,
         step_name: Optional[str] = None,
         run_id: Optional[str] = None,
         synchronous: bool = True,
@@ -420,7 +420,7 @@ class ModalSandboxExecutor:
 
         Args:
             entrypoint_command: Command to execute in the sandbox.
-            execution_mode: Execution mode for tagging.
+            mode: Execution mode for tagging.
             step_name: Name of the step (for step execution).
             run_id: Pipeline run ID for tagging.
             synchronous: Whether to wait for completion.
@@ -450,13 +450,13 @@ class ModalSandboxExecutor:
         tags = generate_sandbox_tags(
             pipeline_name=self.deployment.pipeline_configuration.name,
             deployment_id=str(self.deployment.id),
-            execution_mode=execution_mode,
+            execution_mode=mode,
             step_name=step_name,
             run_id=run_id,
         )
 
         logger.debug(
-            f"Creating sandbox for {execution_mode.lower()} execution"
+            f"Creating sandbox for {mode.lower()} execution"
         )
         logger.debug(f"Sandbox tags: {tags}")
 
@@ -658,7 +658,7 @@ class ModalSandboxExecutor:
         # Execute pipeline sandbox
         await self._execute_sandbox(
             entrypoint_command=entrypoint_command,
-            execution_mode="PIPELINE",
+            mode="PIPELINE",
             run_id=run_id,
             synchronous=synchronous,
         )
@@ -681,7 +681,7 @@ class ModalSandboxExecutor:
         # Execute step sandbox
         await self._execute_sandbox(
             entrypoint_command=entrypoint_command,
-            execution_mode="PER_STEP",
+            mode="PER_STEP",
             step_name=step_name,
             synchronous=True,  # Steps are always synchronous
         )

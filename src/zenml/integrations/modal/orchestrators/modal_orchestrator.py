@@ -110,10 +110,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         settings = cast(
             "ModalOrchestratorSettings", self.get_settings(deployment)
         )
-        execution_mode = settings.mode
+        mode = settings.mode
 
         # In PIPELINE mode, check if any builds have step-specific configurations
-        if execution_mode == ModalExecutionMode.PIPELINE:
+        if mode == ModalExecutionMode.PIPELINE:
             for build in builds:
                 if (
                     build.key == ORCHESTRATOR_DOCKER_IMAGE_KEY
@@ -201,9 +201,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
 
         # Check execution mode
-        execution_mode = settings.mode
+        mode = settings.mode
         logger.info(
-            f"🚀 Executing pipeline with Modal ({execution_mode.lower()} mode)"
+            f"🚀 Executing pipeline with Modal ({mode.lower()} mode)"
         )
 
         # Create sandbox executor

@@ -362,11 +362,11 @@ def main() -> None:
     environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
     # Check execution mode
-    execution_mode = pipeline_settings.mode
+    mode = pipeline_settings.mode
 
     try:
         # Execute pipeline based on execution mode
-        if execution_mode == ModalExecutionMode.PIPELINE:
+        if mode == ModalExecutionMode.PIPELINE:
             execute_pipeline_mode(args)
         else:
             execute_per_step_mode(
