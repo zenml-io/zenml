@@ -24,9 +24,9 @@ docker_settings = DockerSettings(
     requirements="requirements.txt",
     python_package_installer="uv",
     environment={
-        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
-        "LANGFUSE_PUBLIC_KEY": os.getenv("LANGFUSE_PUBLIC_KEY", ""),
-        "LANGFUSE_SECRET_KEY": os.getenv("LANGFUSE_SECRET_KEY", ""),
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", None),
+        "LANGFUSE_PUBLIC_KEY": os.getenv("LANGFUSE_PUBLIC_KEY", None),
+        "LANGFUSE_SECRET_KEY": os.getenv("LANGFUSE_SECRET_KEY", None),
     },
 )
 
