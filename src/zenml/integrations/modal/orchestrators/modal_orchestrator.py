@@ -18,7 +18,6 @@ import os
 from typing import (
     TYPE_CHECKING,
     Dict,
-    Iterator,
     List,
     Optional,
     Type,
@@ -40,8 +39,7 @@ from zenml.integrations.modal.utils import (
     setup_modal_client,
 )
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import MetadataType
-from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.stack import Stack, StackValidator
 
 if TYPE_CHECKING:
@@ -165,27 +163,31 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID}."
             )
 
-    def prepare_or_run_pipeline(
+    def submit_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
-        """Runs the complete pipeline using Modal sandboxes.
+    ) -> Optional[SubmissionResult]:
+        """Submits a pipeline to Modal for execution.
+
+        This method submits the pipeline to Modal and returns immediately unless
+        synchronous execution is configured, in which case it provides a wait
+        function in the submission result.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
-            Exception: If pipeline execution fails.
+            Exception: If pipeline submission fails.
 
         Returns:
-            None if the pipeline is executed synchronously, otherwise an iterator of metadata dictionaries.
+            Optional submission result with wait function if synchronous.
         """
         # Setup Modal authentication
         self._setup_modal_client()
@@ -212,23 +214,48 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             settings=settings,
         )
 
-        try:
-            synchronous = (
-                settings.synchronous
-                if hasattr(settings, "synchronous")
-                else self.config.synchronous
-            )
+        # Determine if we should wait for completion
+        synchronous = (
+            settings.synchronous
+            if hasattr(settings, "synchronous")
+            else self.config.synchronous
+        )
 
-            asyncio.run(
-                executor.execute_pipeline(
-                    run_id=str(placeholder_run.id)
-                    if placeholder_run
-                    else None,
-                    synchronous=synchronous,
-                )
-            )
-        except Exception as e:
-            logger.error(f"Pipeline execution failed: {e}")
-            raise
+        # Submit the pipeline
+        run_id = str(placeholder_run.id) if placeholder_run else None
 
-        return None
+        # Execute the pipeline based on synchronous setting
+        if synchronous:
+            # Return a wait function that will execute the pipeline when called
+            def _wait_for_completion() -> None:
+                async def _execute_pipeline() -> None:
+                    try:
+                        await executor.execute_pipeline(
+                            run_id=run_id,
+                            synchronous=True,  # Wait for completion
+                        )
+                        logger.info(
+                            "✅ Pipeline execution completed successfully"
+                        )
+                    except Exception as e:
+                        logger.error(f"Pipeline execution failed: {e}")
+                        raise
+
+                asyncio.run(_execute_pipeline())
+
+            return SubmissionResult(wait_for_completion=_wait_for_completion)
+        else:
+            # Fire and forget - execute the pipeline asynchronously
+            async def _execute_pipeline() -> None:
+                try:
+                    await executor.execute_pipeline(
+                        run_id=run_id,
+                        synchronous=False,  # Don't wait for completion
+                    )
+                    logger.info("✅ Pipeline submitted successfully")
+                except Exception as e:
+                    logger.error(f"Pipeline submission failed: {e}")
+                    raise
+
+            asyncio.run(_execute_pipeline())
+            return None
