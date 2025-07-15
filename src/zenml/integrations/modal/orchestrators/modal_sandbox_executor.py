@@ -32,6 +32,7 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator_entrypoint_config
 from zenml.integrations.modal.utils import (
     generate_sandbox_tags,
     get_gpu_values,
+    get_modal_app_name,
     get_or_build_modal_image,
     get_resource_settings_from_deployment,
     get_resource_values,
@@ -80,10 +81,7 @@ class ModalSandboxExecutor:
             self.app_name = shared_app.name
         else:
             # Create Modal app for this pipeline
-            pipeline_name = deployment.pipeline_configuration.name.replace(
-                "_", "-"
-            )
-            self.app_name = f"zenml-pipeline-{pipeline_name}"
+            self.app_name = get_modal_app_name(settings, deployment)
             self.app = modal.App.lookup(
                 self.app_name,
                 create_if_missing=True,

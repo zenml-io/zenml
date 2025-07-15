@@ -43,6 +43,7 @@ from zenml.integrations.modal.orchestrators.modal_sandbox_executor import (
 )
 from zenml.integrations.modal.utils import (
     ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
+    get_modal_app_name,
     setup_modal_client,
 )
 from zenml.logger import get_logger
@@ -118,8 +119,7 @@ async def prepare_shared_image_cache(
     logger.info("🔧 Preparing images for step execution")
 
     # Create shared Modal app
-    pipeline_name = deployment.pipeline_configuration.name.replace("_", "-")
-    app_name = f"zenml-pipeline-{pipeline_name}"
+    app_name = get_modal_app_name(settings, deployment)
     shared_app = modal.App.lookup(
         app_name,
         create_if_missing=True,

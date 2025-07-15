@@ -160,6 +160,7 @@ The Modal orchestrator uses two types of settings following ZenML's standard pat
    - `region` - Cloud region preference  
    - `cloud` - Cloud provider selection
    - `modal_environment` - Modal environment name (e.g., "main", "dev", "prod")
+   - `app_name` - Custom Modal app name (defaults to pipeline name)
    - `mode` - Execution strategy: "pipeline" (default) or "per_step"
    - `max_parallelism` - Maximum concurrent steps (for "per_step" mode)
    - `timeout` - Maximum execution time in seconds
@@ -203,6 +204,7 @@ modal_settings = ModalOrchestratorSettings(
     region="us-east-1",             # Preferred region
     cloud="aws",                    # Cloud provider
     modal_environment="production", # Modal environment name
+    app_name="ml-training-prod",    # Custom Modal app name (optional)
     mode="pipeline",      # "pipeline" (default) or "per_step"
     max_parallelism=3,              # Max concurrent steps (per_step mode)
     timeout=3600,                   # 1 hour timeout

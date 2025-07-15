@@ -14,7 +14,7 @@
 """Shared utilities for Modal integration components."""
 
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import modal
 
@@ -23,6 +23,12 @@ from zenml.config.resource_settings import ByteUnit
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
+
+if TYPE_CHECKING:
+    from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
+        ModalOrchestratorSettings,
+    )
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 
@@ -488,3 +494,25 @@ def get_resource_settings_from_deployment(
             resource_settings.gpu_count,
         )
     return resource_settings
+
+
+def get_modal_app_name(
+    settings: "ModalOrchestratorSettings",
+    deployment: "PipelineDeploymentResponse",
+) -> str:
+    """Get the Modal app name from settings or generate default from pipeline name.
+
+    Args:
+        settings: Modal orchestrator settings object.
+        deployment: The pipeline deployment object.
+
+    Returns:
+        The Modal app name to use.
+    """
+    if settings.app_name:
+        return settings.app_name
+    else:
+        pipeline_name = deployment.pipeline_configuration.name.replace(
+            "_", "-"
+        )
+        return f"zenml-pipeline-{pipeline_name}"
