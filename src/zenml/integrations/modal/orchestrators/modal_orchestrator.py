@@ -183,9 +183,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 environment.
             placeholder_run: An optional placeholder run for the deployment.
 
-        Raises:
-            Exception: If pipeline submission fails.
-
         Returns:
             Optional submission result with wait function if synchronous.
         """
