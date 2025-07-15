@@ -202,9 +202,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
         # Check execution mode
         mode = settings.mode
-        logger.info(
-            f"🚀 Executing pipeline with Modal ({mode.lower()} mode)"
-        )
+        logger.info(f"🚀 Executing pipeline with Modal ({mode.lower()} mode)")
 
         # Create sandbox executor
         executor = ModalSandboxExecutor(

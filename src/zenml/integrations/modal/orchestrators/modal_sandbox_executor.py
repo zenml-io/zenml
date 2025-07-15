@@ -455,9 +455,7 @@ class ModalSandboxExecutor:
             run_id=run_id,
         )
 
-        logger.debug(
-            f"Creating sandbox for {mode.lower()} execution"
-        )
+        logger.debug(f"Creating sandbox for {mode.lower()} execution")
         logger.debug(f"Sandbox tags: {tags}")
 
         # Validate and prepare Modal API parameters
