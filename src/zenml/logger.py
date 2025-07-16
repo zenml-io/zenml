@@ -179,6 +179,9 @@ def get_storage_log_level() -> LoggingLevels:
 
     Returns:
         The storage logging level, defaulting to INFO if invalid.
+
+    Raises:
+        KeyError: If the storage logging level is not found.
     """
     verbosity = ZENML_STORAGE_LOGGING_VERBOSITY.upper()
     if verbosity not in LoggingLevels.__members__:

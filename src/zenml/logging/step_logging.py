@@ -120,7 +120,7 @@ def setup_global_print_wrapping() -> None:
 
     original_print = builtins.print
 
-    def wrapped_print(*args, **kwargs):
+    def wrapped_print(*args, **kwargs) -> None:
         # Convert print arguments to message
         message = " ".join(str(arg) for arg in args)
 
@@ -159,8 +159,8 @@ def setup_global_print_wrapping() -> None:
         return original_print(*args, **kwargs)
 
     # Store original and replace print
-    builtins._zenml_original_print = original_print
-    builtins.print = wrapped_print
+    setattr(builtins, "_zenml_original_print", original_print)
+    setattr(builtins, "print", wrapped_print)
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -612,10 +612,10 @@ class PipelineLogsStorageContext:
 
         # Set the step names context variable
         step_names_disabled = handle_bool_env_var(
-            ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=None
+            ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
         )
 
-        if step_names_disabled is True or not self.prepend_step_name:
+        if step_names_disabled or not self.prepend_step_name:
             # Step names are disabled through the env or they are disabled in the config
             step_names_in_console.set(False)
         else:
