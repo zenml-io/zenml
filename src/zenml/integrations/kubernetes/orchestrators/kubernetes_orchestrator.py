@@ -614,10 +614,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     startup_timeout=settings.pod_startup_timeout,
                 )
             except Exception as e:
-                if (
-                    self.config.pass_zenml_token_as_secret
-                    and deployment.schedule is None
-                ):
+                if self.config.pass_zenml_token_as_secret:
                     secret_name = self.get_token_secret_name(deployment.id)
                     try:
                         kube_utils.delete_secret(
