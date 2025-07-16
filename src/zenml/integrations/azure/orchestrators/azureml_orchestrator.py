@@ -451,14 +451,20 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             )
             return {}
 
-    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+    def fetch_status(
+        self, run: "PipelineRunResponse", include_steps: bool = False
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: The run that was executed by this orchestrator.
+            include_steps: Whether to fetch steps (not supported for AzureML).
 
         Returns:
-            the actual status of the pipeline execution.
+            A tuple of (pipeline_status, step_statuses_dict).
+            Step statuses are not supported for AzureML, so step_statuses_dict will always be None.
 
         Raises:
             AssertionError: If the run was not executed by to this orchestrator.
@@ -512,22 +518,22 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             "Preparing",
             "Queued",
         ]:
-            return ExecutionStatus.INITIALIZING
+            pipeline_status = ExecutionStatus.INITIALIZING
         elif status in ["Running", "Finalizing"]:
-            return ExecutionStatus.RUNNING
+            pipeline_status = ExecutionStatus.RUNNING
         elif status == "CancelRequested":
-            return ExecutionStatus.STOPPING
+            pipeline_status = ExecutionStatus.STOPPING
         elif status == "Canceled":
-            return ExecutionStatus.STOPPED
-        elif status in [
-            "Failed",
-            "NotResponding",
-        ]:
-            return ExecutionStatus.FAILED
+            pipeline_status = ExecutionStatus.STOPPED
+        elif status in ["Failed", "NotResponding"]:
+            pipeline_status = ExecutionStatus.FAILED
         elif status == "Completed":
-            return ExecutionStatus.COMPLETED
+            pipeline_status = ExecutionStatus.COMPLETED
         else:
             raise ValueError("Unknown status for the pipeline job.")
+
+        # AzureML doesn't support step-level status fetching yet
+        return pipeline_status, None
 
     def compute_metadata(self, job: Any) -> Dict[str, MetadataType]:
         """Generate run metadata based on the generated AzureML PipelineJob.

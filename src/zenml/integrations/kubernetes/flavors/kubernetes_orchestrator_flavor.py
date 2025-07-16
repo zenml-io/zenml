@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import NonNegativeInt, PositiveInt, field_validator
+from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -33,92 +33,122 @@ if TYPE_CHECKING:
 class KubernetesOrchestratorSettings(BaseSettings):
     """Settings for the Kubernetes orchestrator.
 
-    Attributes:
-        synchronous: If `True`, the client running a pipeline using this
-            orchestrator waits until all steps finish running. If `False`,
-            the client returns immediately and the pipeline is executed
-            asynchronously. Defaults to `True`.
-        timeout: How many seconds to wait for synchronous runs. `0` means
-            to wait for an unlimited duration.
-        stream_step_logs: If `True`, the orchestrator pod will stream the logs
-            of the step pods. This only has an effect if specified on the
-            pipeline, not on individual steps.
-        service_account_name: Name of the service account to use for the
-            orchestrator pod. If not provided, a new service account with "edit"
-            permissions will be created.
-        step_pod_service_account_name: Name of the service account to use for the
-            step pods. If not provided, the default service account will be used.
-        privileged: If the container should be run in privileged mode.
-        pod_settings: Pod settings to apply to pods executing the steps.
-        orchestrator_pod_settings: Pod settings to apply to the pod which is
-            launching the actual steps.
-        pod_name_prefix: Prefix to use for the pod name.
-        pod_startup_timeout: The maximum time to wait for a pending step pod to
-            start (in seconds).
-        pod_failure_max_retries: The maximum number of times to retry a step
-            pod if the step Kubernetes pod fails to start
-        pod_failure_retry_delay: The delay in seconds between pod
-            failure retries and pod startup retries (in seconds)
-        pod_failure_backoff: The backoff factor for pod failure retries and
-            pod startup retries.
-        max_parallelism: Maximum number of steps to run in parallel.
-        successful_jobs_history_limit: The number of successful jobs
-            to retain. This only applies to jobs created when scheduling a
-            pipeline.
-        failed_jobs_history_limit: The number of failed jobs to retain.
-            This only applies to jobs created when scheduling a pipeline.
-        ttl_seconds_after_finished: The amount of seconds to keep finished jobs
-            before deleting them. **Note**: This does not clean up the
-            orchestrator pod for non-scheduled runs.
-        active_deadline_seconds: The active deadline seconds for the job that is
-            executing the step.
-        backoff_limit_margin: The value to add to the backoff limit in addition
-            to the step retries. The retry configuration defined on the step
-            defines the maximum number of retries that the server will accept
-            for a step. For this orchestrator, this controls how often the
-            job running the step will try to start the step pod. There are some
-            circumstances however where the job will start the pod, but the pod
-            doesn't actually get to the point of running the step. That means
-            the server will not receive the maximum amount of retry requests,
-            which in turn causes other inconsistencies like wrong step statuses.
-            To mitigate this, this attribute allows to add a margin to the
-            backoff limit. This means that the job will retry the pod startup
-            for the configured amount of times plus the margin, which increases
-            the chance of the server receiving the maximum amount of retry
-            requests.
-        pod_failure_policy: The pod failure policy to use for the job that is
-            executing the step.
-        prevent_orchestrator_pod_caching: If `True`, the orchestrator pod will
-            not try to compute cached steps before starting the step pods.
-        always_build_pipeline_image: If `True`, the orchestrator will always
-            build the pipeline image, even if all steps have a custom build.
-        pod_stop_grace_period: When stopping a pipeline run, the amount of
-            seconds to wait for a step pod to shutdown gracefully.
+    Configuration options for how pipelines are executed on Kubernetes clusters.
+    Field descriptions are defined inline using Field() descriptors.
     """
 
-    synchronous: bool = True
-    timeout: int = 0
-    stream_step_logs: bool = True
-    service_account_name: Optional[str] = None
-    step_pod_service_account_name: Optional[str] = None
-    privileged: bool = False
-    pod_settings: Optional[KubernetesPodSettings] = None
-    orchestrator_pod_settings: Optional[KubernetesPodSettings] = None
-    pod_name_prefix: Optional[str] = None
-    pod_startup_timeout: int = 60 * 10  # Default 10 minutes
-    pod_failure_max_retries: int = 3
-    pod_failure_retry_delay: int = 10
-    pod_failure_backoff: float = 1.0
-    max_parallelism: Optional[PositiveInt] = None
-    successful_jobs_history_limit: Optional[NonNegativeInt] = None
-    failed_jobs_history_limit: Optional[NonNegativeInt] = None
-    ttl_seconds_after_finished: Optional[NonNegativeInt] = None
-    active_deadline_seconds: Optional[NonNegativeInt] = None
-    backoff_limit_margin: NonNegativeInt = 0
-    pod_failure_policy: Optional[Dict[str, Any]] = None
-    prevent_orchestrator_pod_caching: bool = False
-    always_build_pipeline_image: bool = False
-    pod_stop_grace_period: PositiveInt = 30
+    synchronous: bool = Field(
+        default=True,
+        description="Whether to wait for all pipeline steps to complete. "
+        "When `False`, the client returns immediately and execution continues asynchronously.",
+    )
+    timeout: int = Field(
+        default=0,
+        description="Maximum seconds to wait for synchronous runs. Set to `0` for unlimited duration.",
+    )
+    stream_step_logs: bool = Field(
+        default=True,
+        description="If `True`, the orchestrator pod will stream the logs "
+        "of the step pods. This only has an effect if specified on the "
+        "pipeline, not on individual steps.",
+    )
+    service_account_name: Optional[str] = Field(
+        default=None,
+        description="Kubernetes service account for the orchestrator pod. "
+        "If not specified, creates a new account with 'edit' permissions.",
+    )
+    step_pod_service_account_name: Optional[str] = Field(
+        default=None,
+        description="Kubernetes service account for step execution pods. "
+        "Uses the default service account if not specified.",
+    )
+    privileged: bool = Field(
+        default=False,
+        description="Whether to run containers in privileged mode with extended permissions.",
+    )
+    pod_settings: Optional[KubernetesPodSettings] = Field(
+        default=None,
+        description="Pod configuration for step execution containers.",
+    )
+    orchestrator_pod_settings: Optional[KubernetesPodSettings] = Field(
+        default=None,
+        description="Pod configuration for the orchestrator container that launches step pods.",
+    )
+    pod_name_prefix: Optional[str] = Field(
+        default=None,
+        description="Custom prefix for generated pod names. Helps identify pods in the cluster.",
+    )
+    pod_startup_timeout: int = Field(
+        default=600,
+        description="Maximum seconds to wait for step pods to start. Default is 10 minutes.",
+    )
+    pod_failure_max_retries: int = Field(
+        default=3,
+        description="Maximum retry attempts when step pods fail to start.",
+    )
+    pod_failure_retry_delay: int = Field(
+        default=10,
+        description="Delay in seconds between pod failure retry attempts.",
+    )
+    pod_failure_backoff: float = Field(
+        default=1.0,
+        description="Exponential backoff factor for retry delays. Values > 1.0 increase delay with each retry.",
+    )
+    max_parallelism: Optional[PositiveInt] = Field(
+        default=None,
+        description="Maximum number of step pods to run concurrently. No limit if not specified.",
+    )
+    successful_jobs_history_limit: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="Number of successful scheduled jobs to retain in cluster history.",
+    )
+    failed_jobs_history_limit: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="Number of failed scheduled jobs to retain in cluster history.",
+    )
+    ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="Seconds to keep finished scheduled jobs before automatic cleanup.",
+    )
+    active_deadline_seconds: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="Deadline in seconds for the active pod. If the pod is inactive for this many seconds, it will be terminated.",
+    )
+    backoff_limit_margin: NonNegativeInt = Field(
+        default=0,
+        description="The value to add to the backoff limit in addition "
+        "to the step retries. The retry configuration defined on the step "
+        "defines the maximum number of retries that the server will accept "
+        "for a step. For this orchestrator, this controls how often the "
+        "job running the step will try to start the step pod. There are some "
+        "circumstances however where the job will start the pod, but the pod "
+        "doesn't actually get to the point of running the step. That means "
+        "the server will not receive the maximum amount of retry requests, "
+        "which in turn causes other inconsistencies like wrong step statuses. "
+        "To mitigate this, this attribute allows to add a margin to the "
+        "backoff limit. This means that the job will retry the pod startup "
+        "for the configured amount of times plus the margin, which increases "
+        "the chance of the server receiving the maximum amount of retry "
+        "requests.",
+    )
+    pod_failure_policy: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="The pod failure policy to use for the job that is "
+        "executing the step.",
+    )
+    prevent_orchestrator_pod_caching: bool = Field(
+        default=False,
+        description="Whether to disable caching optimization in the orchestrator pod.",
+    )
+    always_build_pipeline_image: bool = Field(
+        default=False,
+        description="If `True`, the orchestrator will always build the pipeline image, "
+        "even if all steps have a custom build.",
+    )
+    pod_stop_grace_period: PositiveInt = Field(
+        default=30,
+        description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
+    )
 
     @field_validator("pod_failure_policy", mode="before")
     @classmethod
@@ -144,42 +174,50 @@ class KubernetesOrchestratorSettings(BaseSettings):
 class KubernetesOrchestratorConfig(
     BaseOrchestratorConfig, KubernetesOrchestratorSettings
 ):
-    """Configuration for the Kubernetes orchestrator.
+    """Configuration for the Kubernetes orchestrator."""
 
-    Attributes:
-        incluster: If `True`, the orchestrator will run the pipeline inside the
-            same cluster in which it itself is running. This requires the client
-            to run in a Kubernetes pod itself. If set, the `kubernetes_context`
-            config option is ignored. If the stack component is linked to a
-            Kubernetes service connector, this field is ignored.
-        kubernetes_context: Name of a Kubernetes context to run pipelines in.
-            If the stack component is linked to a Kubernetes service connector,
-            this field is ignored. Otherwise, it is mandatory.
-        kubernetes_namespace: Name of the Kubernetes namespace to be used.
-            If not provided, `zenml` namespace will be used.
-        local: If `True`, the orchestrator will assume it is connected to a
-            local kubernetes cluster and will perform additional validations and
-            operations to allow using the orchestrator in combination with other
-            local stack components that store data in the local filesystem
-            (i.e. it will mount the local stores directory into the pipeline
-            containers).
-        skip_local_validations: If `True`, the local validations will be
-            skipped.
-        parallel_step_startup_waiting_period: How long to wait in between
-            starting parallel steps. This can be used to distribute server
-            load when running pipelines with a huge amount of parallel steps.
-        pass_zenml_token_as_secret: If `True`, the ZenML token will be passed
-            as a Kubernetes secret to the pods. For this to work, the Kubernetes
-            client must have permissions to create secrets in the namespace.
-    """
-
-    incluster: bool = False
-    kubernetes_context: Optional[str] = None
-    kubernetes_namespace: str = "zenml"
-    local: bool = False
-    skip_local_validations: bool = False
-    parallel_step_startup_waiting_period: Optional[float] = None
-    pass_zenml_token_as_secret: bool = False
+    incluster: bool = Field(
+        False,
+        description="If `True`, the orchestrator will run the pipeline inside the "
+        "same cluster in which it itself is running. This requires the client "
+        "to run in a Kubernetes pod itself. If set, the `kubernetes_context` "
+        "config option is ignored. If the stack component is linked to a "
+        "Kubernetes service connector, this field is ignored.",
+    )
+    kubernetes_context: Optional[str] = Field(
+        None,
+        description="Name of a Kubernetes context to run pipelines in. "
+        "If the stack component is linked to a Kubernetes service connector, "
+        "this field is ignored. Otherwise, it is mandatory.",
+    )
+    kubernetes_namespace: str = Field(
+        "zenml",
+        description="Name of the Kubernetes namespace to be used. "
+        "If not provided, `zenml` namespace will be used.",
+    )
+    local: bool = Field(
+        False,
+        description="If `True`, the orchestrator will assume it is connected to a "
+        "local kubernetes cluster and will perform additional validations and "
+        "operations to allow using the orchestrator in combination with other "
+        "local stack components that store data in the local filesystem "
+        "(i.e. it will mount the local stores directory into the pipeline containers).",
+    )
+    skip_local_validations: bool = Field(
+        False, description="If `True`, the local validations will be skipped."
+    )
+    parallel_step_startup_waiting_period: Optional[float] = Field(
+        None,
+        description="How long to wait in between starting parallel steps. "
+        "This can be used to distribute server load when running pipelines "
+        "with a huge amount of parallel steps.",
+    )
+    pass_zenml_token_as_secret: bool = Field(
+        False,
+        description="If `True`, the ZenML token will be passed as a Kubernetes secret "
+        "to the pods. For this to work, the Kubernetes client must have permissions "
+        "to create secrets in the namespace.",
+    )
 
     @property
     def is_remote(self) -> bool:

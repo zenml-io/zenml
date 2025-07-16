@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, List, Optional, Type
 
+from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.lightning import LIGHTNING_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
@@ -33,33 +35,47 @@ logger = get_logger(__name__)
 class LightningOrchestratorSettings(BaseSettings):
     """Lightning orchestrator base settings.
 
-    Attributes:
-        main_studio_name: Main studio name.
-        machine_type: Machine type.
-        user_id: User id.
-        api_key: api_key.
-        username: Username.
-        teamspace: Teamspace.
-        organization: Organization.
-        custom_commands: Custom commands to run.
-        synchronous: If `True`, the client running a pipeline using this
-            orchestrator waits until all steps finish running. If `False`,
-            the client returns immediately and the pipeline is executed
-            asynchronously. Defaults to `True`. This setting only
-            has an effect when specified on the pipeline and will be ignored if
-            specified on steps.
+    Configuration for executing pipelines on Lightning AI platform.
+    Field descriptions are defined inline using Field() descriptors.
     """
 
-    # Resources
-    main_studio_name: Optional[str] = None
-    machine_type: Optional[str] = None
-    user_id: Optional[str] = SecretField(default=None)
-    api_key: Optional[str] = SecretField(default=None)
-    username: Optional[str] = None
-    teamspace: Optional[str] = None
-    organization: Optional[str] = None
-    custom_commands: Optional[List[str]] = None
-    synchronous: bool = True
+    # Lightning AI Platform Configuration
+    main_studio_name: Optional[str] = Field(
+        default=None,
+        description="Lightning AI studio instance name where the pipeline will execute.",
+    )
+    machine_type: Optional[str] = Field(
+        default=None,
+        description="Compute instance type for pipeline execution. "
+        "Refer to Lightning AI documentation for available options.",
+    )
+    user_id: Optional[str] = SecretField(
+        default=None, description="Lightning AI user ID for authentication."
+    )
+    api_key: Optional[str] = SecretField(
+        default=None,
+        description="Lightning AI API key for platform authentication.",
+    )
+    username: Optional[str] = Field(
+        default=None, description="Lightning AI platform username."
+    )
+    teamspace: Optional[str] = Field(
+        default=None,
+        description="Lightning AI teamspace for collaborative pipeline execution.",
+    )
+    organization: Optional[str] = Field(
+        default=None,
+        description="Lightning AI organization name for enterprise accounts.",
+    )
+    custom_commands: Optional[List[str]] = Field(
+        default=None,
+        description="Additional shell commands to execute in the Lightning AI environment.",
+    )
+    synchronous: bool = Field(
+        default=True,
+        description="Whether to wait for pipeline completion. "
+        "When `False`, execution continues asynchronously after submission.",
+    )
 
 
 class LightningOrchestratorConfig(

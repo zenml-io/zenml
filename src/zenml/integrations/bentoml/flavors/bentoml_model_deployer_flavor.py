@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field
+
 from zenml.integrations.bentoml import BENTOML_MODEL_DEPLOYER_FLAVOR
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
@@ -28,7 +30,11 @@ if TYPE_CHECKING:
 class BentoMLModelDeployerConfig(BaseModelDeployerConfig):
     """Configuration for the BentoMLModelDeployer."""
 
-    service_path: str = ""
+    service_path: str = Field(
+        "",
+        description="Path to the BentoML service directory. "
+        "If not provided, a default service path will be used.",
+    )
 
 
 class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):

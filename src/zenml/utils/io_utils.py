@@ -271,3 +271,21 @@ def get_parent(dir_path: str) -> str:
     if not os.path.exists(dir_path):
         raise ValueError(f"Path '{dir_path}' does not exist.")
     return Path(dir_path).parent.stem
+
+
+def sanitize_remote_path(path: str) -> str:
+    """Sanitizes a remote path.
+
+    Args:
+        path: The path to sanitize.
+
+    Returns:
+        The sanitized path.
+    """
+    if is_remote(path):
+        import ntpath
+        import posixpath
+
+        return path.replace(ntpath.sep, posixpath.sep)
+    else:
+        return path

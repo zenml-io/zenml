@@ -1,7 +1,7 @@
-zenml[server]==0.83.1
+zenml[server]==0.84.0
 notebook
 pyarrow
-datasets
+datasets<4.0.0
 transformers
 transformers[torch]
 torch
