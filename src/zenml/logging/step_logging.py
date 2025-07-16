@@ -121,7 +121,7 @@ def setup_global_print_wrapping() -> None:
 
     original_print = builtins.print
 
-    def wrapped_print(*args, **kwargs) -> None:
+    def wrapped_print(*args: Any, **kwargs: Any) -> None:
         # Convert print arguments to message
         message = " ".join(str(arg) for arg in args)
 
