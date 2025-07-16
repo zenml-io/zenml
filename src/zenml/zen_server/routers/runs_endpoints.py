@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -30,7 +30,13 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.logging.step_logging import fetch_logs
+from zenml.logging.step_logging import (
+    MAX_LOG_ENTRIES,
+    LogEntry,
+    _entry_matches_filters,
+    fetch_log_records,
+    parse_log_entry,
+)
 from zenml.models import (
     Page,
     PipelineRunDAG,
@@ -430,19 +436,25 @@ def run_logs(
     run_id: UUID,
     source: str,
     offset: int = 0,
-    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
+    count: int = MAX_LOG_ENTRIES,
+    level: Optional[str] = None,
+    search: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> str:
+) -> List[LogEntry]:
     """Get pipeline run logs for a specific source.
 
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
-        offset: The offset from which to start reading.
-        length: The amount of bytes that should be read.
+        offset: The entry index from which to start reading (0-based) from filtered results.
+                Returns up to MAX_LOG_ENTRIES entries starting from this index.
+        count: The number of log entries to return.
+        level: Optional log level filter (e.g., "INFO"). Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        Logs for the specified source.
+        A list of up to MAX_LOG_ENTRIES structured LogEntry objects for
+        the specified source, starting from the given offset index in the filtered results.
 
     Raises:
         KeyError: If no logs are found for the specified source.
@@ -462,18 +474,45 @@ def run_logs(
             workload_logs = workload_manager().get_logs(
                 workload_id=deployment.id
             )
-            return workload_logs
+            # Stream parse workload logs with efficient filtering and pagination
+            target_total = offset + count
+            matching_entries = []
+            entries_found = 0
+            
+            for line in workload_logs.split("\n"):
+                if not line.strip():
+                    continue
+                    
+                log_record = parse_log_entry(line)
+                if not log_record:
+                    continue
+                    
+                # Check if this entry matches our filters
+                if _entry_matches_filters(log_record, level, search):
+                    entries_found += 1
+                    
+                    # Only start collecting after we've skipped 'offset' entries
+                    if entries_found > offset:
+                        matching_entries.append(log_record)
+                        
+                    # Stop processing once we have enough entries
+                    if entries_found >= target_total:
+                        break
+                        
+            return matching_entries
 
     # Handle logs from log collection
     if run.log_collection:
         for log_entry in run.log_collection:
             if log_entry.source == source:
-                return fetch_logs(
+                return fetch_log_records(
                     zen_store=store,
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,
                     offset=offset,
-                    length=length,
+                    count=count,
+                    level=level,
+                    search=search,
                 )
 
     # If no logs found for the specified source, raise an error
