@@ -625,9 +625,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                             namespace=self.config.kubernetes_namespace,
                             secret_name=secret_name,
                         )
-                    except Exception as e:
+                    except Exception as cleanup_error:
                         logger.error(
-                            f"Error cleaning up secret {secret_name}: {e}"
+                            "Error cleaning up secret %s: %s",
+                            secret_name,
+                            cleanup_error,
                         )
                 raise e
 
