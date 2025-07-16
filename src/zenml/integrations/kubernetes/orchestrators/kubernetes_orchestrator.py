@@ -434,6 +434,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If a schedule without cron expression is given.
+            Exception: If the orchestrator pod fails to start.
 
         Returns:
             Optional submission result.
