@@ -22,6 +22,7 @@ from typing import (
     Dict,
     Iterator,
     Optional,
+    Tuple,
     Type,
     cast,
 )
@@ -443,11 +444,16 @@ class BaseOrchestrator(StackComponent, ABC):
         """Cleans up the active run."""
         self._active_deployment = None
 
-    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+    def fetch_status(
+        self, run: "PipelineRunResponse", include_steps: bool = False
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: A pipeline run response to fetch its status.
+            include_steps: If True, also fetch the status of individual steps.
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base

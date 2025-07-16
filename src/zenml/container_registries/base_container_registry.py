@@ -16,7 +16,7 @@
 import re
 from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.enums import StackComponentType
@@ -36,12 +36,24 @@ if TYPE_CHECKING:
 class BaseContainerRegistryConfig(AuthenticationConfigMixin):
     """Base config for a container registry.
 
-    Attributes:
-        uri: The URI of the container registry.
+    Configuration for connecting to container image registries.
+    Field descriptions are defined inline using Field() descriptors.
     """
 
-    uri: str
-    default_repository: Optional[str] = None
+    uri: str = Field(
+        description="Container registry URI (e.g., 'gcr.io' for Google Container "
+        "Registry, 'docker.io' for Docker Hub, 'registry.gitlab.com' for GitLab "
+        "Container Registry, 'ghcr.io' for GitHub Container Registry). This is "
+        "the base URL where container images will be pushed to and pulled from."
+    )
+    default_repository: Optional[str] = Field(
+        default=None,
+        description="Default repository namespace for image storage (e.g., "
+        "'username' for Docker Hub, 'project-id' for GCR, 'organization' for "
+        "GitHub Container Registry). If not specified, images will be stored at "
+        "the registry root. For Docker Hub this would mean only official images "
+        "can be pushed.",
+    )
 
     @field_validator("uri")
     @classmethod
