@@ -33,7 +33,7 @@ from zenml.logger import get_logger
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
     LogEntry,
-    _apply_log_filters,
+    _entry_matches_filters,
     fetch_log_records,
     parse_log_entry,
 )
@@ -444,6 +444,7 @@ def run_logs(
     run_id: UUID,
     source: str,
     offset: int = 0,
+    count: int = MAX_LOG_ENTRIES,
     level: Optional[str] = None,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
@@ -455,11 +456,12 @@ def run_logs(
         source: Required source to get logs for.
         offset: The entry index from which to start reading (0-based) from filtered results.
                 Returns up to MAX_LOG_ENTRIES entries starting from this index.
+        count: The number of log entries to return.
         level: Optional log level filter (e.g., "INFO"). Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        A list of up to MAX_LOG_ENTRIES structured LogEntry objects for 
+        A list of up to MAX_LOG_ENTRIES structured LogEntry objects for
         the specified source, starting from the given offset index in the filtered results.
 
     Raises:
@@ -480,23 +482,32 @@ def run_logs(
             workload_logs = workload_manager().get_logs(
                 workload_id=deployment.id
             )
-            # Parse workload logs into LogEntry objects
-            all_log_records = []
+            # Stream parse workload logs with efficient filtering and pagination
+            target_total = offset + count
+            matching_entries = []
+            entries_found = 0
+            
             for line in workload_logs.split("\n"):
-                if line.strip():
-                    log_record = parse_log_entry(line)
-                    if log_record:
-                        all_log_records.append(log_record)
-            
-            # Apply filters
-            filtered_records = _apply_log_filters(all_log_records, level, search)
-            
-            # Apply pagination to filtered results
-            if offset >= len(filtered_records):
-                return []  # Offset beyond available filtered entries
-            
-            end_index = min(offset + MAX_LOG_ENTRIES, len(filtered_records))
-            return filtered_records[offset:end_index]
+                if not line.strip():
+                    continue
+                    
+                log_record = parse_log_entry(line)
+                if not log_record:
+                    continue
+                    
+                # Check if this entry matches our filters
+                if _entry_matches_filters(log_record, level, search):
+                    entries_found += 1
+                    
+                    # Only start collecting after we've skipped 'offset' entries
+                    if entries_found > offset:
+                        matching_entries.append(log_record)
+                        
+                    # Stop processing once we have enough entries
+                    if entries_found >= target_total:
+                        break
+                        
+            return matching_entries
 
     # Handle logs from log collection
     if run.log_collection:
@@ -507,7 +518,7 @@ def run_logs(
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,
                     offset=offset,
-                    length=MAX_LOG_ENTRIES,  # Fetch up to MAX_LOG_ENTRIES entries
+                    count=count,
                     level=level,
                     search=search,
                 )

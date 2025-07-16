@@ -91,9 +91,15 @@ class LogEntry(BaseModel):
         default=None,
         description="When the log was created",
     )
-    location: Optional[str] = Field(
+    module: Optional[str] = Field(
+        default=None, description="The module that generated this log entry"
+    )
+    filename: Optional[str] = Field(
         default=None,
-        description="Source location in format 'logger_name:filename:line_number'",
+        description="The name of the file that generated this log entry",
+    )
+    lineno: Optional[int] = Field(
+        default=None, description="The fileno that generated this log entry"
     )
 
 
@@ -119,17 +125,12 @@ class ArtifactStoreHandler(logging.Handler):
             record: The log record to emit.
         """
         try:
-            # Get location information
-            location = None
-            if record.filename and record.lineno:
-                location = f"{record.filename}:{record.lineno}"
-
             # Get level enum
             level = LoggingLevels.__members__.get(record.levelname.upper())
 
             # Get the message
             message = record.getMessage()
-            
+
             # Check if message needs to be chunked
             message_bytes = message.encode("utf-8")
             if len(message_bytes) <= MAX_MESSAGE_SIZE:
@@ -139,7 +140,9 @@ class ArtifactStoreHandler(logging.Handler):
                     name=record.name,
                     level=level,
                     timestamp=utc_now(),
-                    location=location,
+                    module=record.module,
+                    filename=record.filename,
+                    lineno=record.lineno,
                 )
                 json_line = log_record.model_dump_json(exclude_none=True)
                 self.storage.write(json_line)
@@ -147,45 +150,49 @@ class ArtifactStoreHandler(logging.Handler):
                 # Message is too large, split into chunks and emit each one
                 chunks = self._split_to_chunks(message)
                 for i, chunk in enumerate(chunks):
-                    chunk_message = f"{chunk} (chunk {i+1}/{len(chunks)})"
-                    
+                    chunk_message = f"{chunk} (chunk {i + 1}/{len(chunks)})"
+
                     log_record = LogEntry(
                         message=chunk_message,
                         name=record.name,
                         level=level,
+                        module=record.module,
+                        filename=record.filename,
+                        lineno=record.lineno,
                         timestamp=utc_now(),
-                        location=location,
                     )
-                    
+
                     json_line = log_record.model_dump_json(exclude_none=True)
                     self.storage.write(json_line)
         except Exception:
             # Don't let storage errors break logging
             pass
-    
+
     def _split_to_chunks(self, message: str) -> List[str]:
         """Split a large message into chunks.
-        
+
         Args:
             message: The message to split.
-            
+
         Returns:
             A list of message chunks.
         """
         # Calculate how many chunks we need
         message_bytes = message.encode("utf-8")
-        chunk_count = (len(message_bytes) + MAX_MESSAGE_SIZE - 1) // MAX_MESSAGE_SIZE
-        
+        chunk_count = (
+            len(message_bytes) + MAX_MESSAGE_SIZE - 1
+        ) // MAX_MESSAGE_SIZE
+
         # Split the message into chunks
         chunks = []
         start = 0
         for i in range(chunk_count):
             # Calculate the end position for this chunk
             end = min(start + MAX_MESSAGE_SIZE, len(message_bytes))
-            
+
             # Extract the chunk and decode it
             chunk_bytes = message_bytes[start:end]
-            
+
             # Handle potential UTF-8 boundary issues
             try:
                 chunk_text = chunk_bytes.decode("utf-8")
@@ -202,10 +209,10 @@ class ArtifactStoreHandler(logging.Handler):
                     # If we can't decode anything, skip this chunk
                     start = end
                     continue
-            
+
             chunks.append(chunk_text)
             start = end
-        
+
         return chunks
 
 
@@ -266,7 +273,7 @@ def setup_global_print_wrapping() -> None:
         return original_print(*args, **kwargs)
 
     # Store original and replace print
-    builtins._zenml_original_print = original_print
+    setattr(builtins, '_zenml_original_print', original_print)
     builtins.print = wrapped_print
 
 
@@ -317,7 +324,6 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
         name=None,  # No logger name available for plain text logs
         level=LoggingLevels.INFO,  # Default level for plain text logs
         timestamp=None,  # No timestamp available for plain text logs
-        location=None,
     )
 
 
@@ -372,18 +378,24 @@ def fetch_log_records(
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
     offset: int = 0,
-    length: int = MAX_LOG_ENTRIES,  # Number of entries to return
+    count: int = MAX_LOG_ENTRIES,  # Number of entries to return
     level: Optional[str] = None,
     search: Optional[str] = None,
 ) -> List[LogEntry]:
     """Fetches the logs from the artifact store and parses them into LogEntry objects.
+
+    This implementation uses streaming to efficiently handle large log files by:
+    
+    1. Reading logs line by line instead of loading everything into memory
+    2. Applying filters as we go to avoid processing unnecessary data  
+    3. Stopping once we have the required number of filtered entries
 
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the artifact.
         offset: The entry index from which to start reading (0-based) from filtered results.
-        length: The number of entries to return (max MAX_LOG_ENTRIES).
+        count: The number of entries to return (max MAX_LOG_ENTRIES).
         level: Optional log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
 
@@ -394,76 +406,46 @@ def fetch_log_records(
         DoesNotExistException: If the artifact does not exist in the artifact
             store.
     """
-    # Get raw log content - read all logs
-    raw_logs = fetch_logs(
-        zen_store=zen_store,
-        artifact_store_id=artifact_store_id,
-        logs_uri=logs_uri,
-        offset=0,  # Start from beginning
-        length=1024 * 1024 * 1024,  # 1GB - large enough to read all data
-        strip_timestamp=False,
-    )
-
-    # Parse each line into LogEntry objects using Pydantic validation
-    all_log_records = []
-    lines = raw_logs.split("\n")
+    # We need to find (offset + count) matching entries total
+    target_total = offset + count
+    matching_entries = []
+    entries_found = 0
     
-    for line in lines:
-        stripped_line = line.strip()
-        if stripped_line:  # Skip empty lines
-            log_record = parse_log_entry(stripped_line)
-            if log_record:
-                all_log_records.append(log_record)
-    
-    # Apply filters
-    filtered_records = _apply_log_filters(all_log_records, level, search)
-    
-    # Apply pagination to filtered results
-    if offset >= len(filtered_records):
-        return []  # Offset beyond available filtered entries
-    
-    end_index = min(offset + length, len(filtered_records))
-    return filtered_records[offset:end_index]
-
-
-def _apply_log_filters(
-    log_records: List[LogEntry],
-    level: Optional[str] = None,
-    search: Optional[str] = None,
-) -> List[LogEntry]:
-    """Apply level and search filters to log records.
-    
-    Args:
-        log_records: List of log records to filter.
-        level: Optional log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
+    # Stream logs line by line instead of reading everything
+    try:
+        for line in _stream_logs_line_by_line(
+            zen_store=zen_store,
+            artifact_store_id=artifact_store_id, 
+            logs_uri=logs_uri,
+        ):
+            if not line.strip():
+                continue
+                
+            log_entry = parse_log_entry(line)
+            if not log_entry:
+                continue
+                
+            # Check if this entry matches our filters
+            if _entry_matches_filters(log_entry, level, search):
+                entries_found += 1
+                
+                # Only start collecting after we've skipped 'offset' entries
+                if entries_found > offset:
+                    matching_entries.append(log_entry)
+                    
+                # Stop reading once we have enough entries
+                if entries_found >= target_total:
+                    break
+                    
+        return matching_entries
         
-    Returns:
-        Filtered list of log records.
-    """
-    filtered_records = log_records
-    
-    # Apply level filter
-    if level:
-        try:
-            min_level = LoggingLevels[level.upper()]
-            filtered_records = [
-                record for record in filtered_records
-                if record.level and record.level.value >= min_level.value
-            ]
-        except KeyError:
-            # If invalid level provided, ignore the filter
-            pass
-    
-    # Apply search filter
-    if search:
-        search_lower = search.lower()
-        filtered_records = [
-            record for record in filtered_records
-            if search_lower in record.message.lower()
-        ]
-    
-    return filtered_records
+    except DoesNotExistException:
+        # Re-raise DoesNotExistException as-is
+        raise
+    except Exception as e:
+        # For any other errors during streaming, fall back to empty result
+        logger.warning(f"Error streaming logs from {logs_uri}: {e}")
+        return []
 
 
 def fetch_logs(
@@ -574,6 +556,91 @@ def fetch_logs(
                 return "".join(ret)
     finally:
         artifact_store.cleanup()
+
+
+def _stream_logs_line_by_line(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+) -> Any:
+    """Stream logs line by line without loading the entire file into memory.
+    
+    This generator yields log lines one by one, handling both single files
+    and directories with multiple log files.
+    
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the log file or directory.
+        
+    Yields:
+        Individual log lines as strings.
+        
+    Raises:
+        DoesNotExistException: If the artifact does not exist in the artifact store.
+    """
+    artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+    
+    try:
+        if not artifact_store.isdir(logs_uri):
+            # Single file case
+            with artifact_store.open(logs_uri, "r") as file:
+                for line in file:
+                    yield line.rstrip("\n\r")
+        else:
+            # Directory case - may contain multiple log files
+            files = artifact_store.listdir(logs_uri)
+            if not files:
+                raise DoesNotExistException(
+                    f"Folder '{logs_uri}' is empty in artifact store "
+                    f"'{artifact_store.name}'."
+                )
+            
+            # Sort files to read them in order
+            files.sort()
+            
+            for file in files:
+                file_path = os.path.join(logs_uri, str(file))
+                with artifact_store.open(file_path, "r") as f:
+                    for line in f:
+                        yield line.rstrip("\n\r")
+    finally:
+        artifact_store.cleanup()
+
+
+def _entry_matches_filters(
+    entry: LogEntry, 
+    level: Optional[str] = None, 
+    search: Optional[str] = None
+) -> bool:
+    """Check if a log entry matches the given filters.
+    
+    Args:
+        entry: The log entry to check.
+        level: Optional log level filter. Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
+        
+    Returns:
+        True if the entry matches all filters, False otherwise.
+    """
+    # Apply level filter
+    if level:
+        try:
+            min_level = LoggingLevels[level.upper()]
+            if not entry.level or entry.level.value < min_level.value:
+                return False
+        except KeyError:
+            # If invalid level provided, ignore the filter
+            pass
+    
+    # Apply search filter
+    if search:
+        search_lower = search.lower()
+        if search_lower not in entry.message.lower():
+            return False
+    
+    return True
+
 
 
 class PipelineLogsStorage:
@@ -850,10 +917,10 @@ class PipelineLogsStorageContext:
 
         # Set the step names context variable
         step_names_disabled = handle_bool_env_var(
-            ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=None
+            ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
         )
 
-        if step_names_disabled is True or not self.prepend_step_name:
+        if step_names_disabled or not self.prepend_step_name:
             # Step names are disabled through the env or they are disabled in the config
             step_names_in_console.set(False)
         else:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security
@@ -27,7 +27,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.logging.step_logging import fetch_logs
+from zenml.logging.step_logging import fetch_log_records, LogEntry, MAX_LOG_ENTRIES
 from zenml.models import (
     Page,
     StepRunFilter,
@@ -250,20 +250,22 @@ def get_step_status(
 def get_step_logs(
     step_id: UUID,
     offset: int = 0,
-    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
-    strip_timestamp: bool = False,
+    count: int = MAX_LOG_ENTRIES,  # Number of log entries to return
+    level: Optional[str] = None,
+    search: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> str:
+) -> List[LogEntry]:
     """Get the logs of a specific step.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        offset: The offset from which to start reading.
-        length: The amount of bytes that should be read.
-        strip_timestamp: Whether to strip the timestamp in logs or not.
+        offset: The entry index from which to start reading (0-based) from filtered results.
+        count: The number of log entries to return (max MAX_LOG_ENTRIES).
+        level: Optional log level filter. Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        The logs of the step.
+        A list of LogEntry objects for the step.
 
     Raises:
         HTTPException: If no logs are available for this step.
@@ -278,11 +280,12 @@ def get_step_logs(
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
-    return fetch_logs(
+    return fetch_log_records(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,
         logs_uri=logs.uri,
         offset=offset,
-        length=length,
-        strip_timestamp=strip_timestamp,
+        count=count,
+        level=level,
+        search=search,
     )
