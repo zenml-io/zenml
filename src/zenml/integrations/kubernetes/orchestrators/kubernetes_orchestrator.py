@@ -601,17 +601,35 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 termination_grace_period_seconds=settings.pod_stop_grace_period,
             )
 
-            kube_utils.create_and_wait_for_pod_to_start(
-                core_api=self._k8s_core_api,
-                pod_display_name="Kubernetes orchestrator pod",
-                pod_name=pod_name,
-                pod_manifest=pod_manifest,
-                namespace=self.config.kubernetes_namespace,
-                startup_max_retries=settings.pod_failure_max_retries,
-                startup_failure_delay=settings.pod_failure_retry_delay,
-                startup_failure_backoff=settings.pod_failure_backoff,
-                startup_timeout=settings.pod_startup_timeout,
-            )
+            try:
+                kube_utils.create_and_wait_for_pod_to_start(
+                    core_api=self._k8s_core_api,
+                    pod_display_name="Kubernetes orchestrator pod",
+                    pod_name=pod_name,
+                    pod_manifest=pod_manifest,
+                    namespace=self.config.kubernetes_namespace,
+                    startup_max_retries=settings.pod_failure_max_retries,
+                    startup_failure_delay=settings.pod_failure_retry_delay,
+                    startup_failure_backoff=settings.pod_failure_backoff,
+                    startup_timeout=settings.pod_startup_timeout,
+                )
+            except Exception as e:
+                if (
+                    self.config.pass_zenml_token_as_secret
+                    and deployment.schedule is None
+                ):
+                    secret_name = self.get_token_secret_name(deployment.id)
+                    try:
+                        kube_utils.delete_secret(
+                            core_api=self._k8s_core_api,
+                            namespace=self.config.kubernetes_namespace,
+                            secret_name=secret_name,
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Error cleaning up secret {secret_name}: {e}"
+                        )
+                raise e
 
             metadata: Dict[str, MetadataType] = {
                 METADATA_ORCHESTRATOR_RUN_ID: pod_name,
