@@ -27,7 +27,7 @@ Before starting this tutorial, make sure you have:
 
 1. ZenML installed and configured
 2. Basic understanding of ZenML pipelines and steps
-3. [ZenML Pro](https://cloud.zenml.io) account (for the Projects section only)
+3. [ZenML Pro](https://zenml.io/pro) account (for the Projects section only)
 
 ## Part 1: Basic Pipeline Organization with Tags
 

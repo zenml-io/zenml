@@ -24,7 +24,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -125,6 +124,15 @@ class PipelineRunRequest(ProjectScopedRequest):
         title="Logs of the pipeline run.",
     )
 
+    @property
+    def is_placeholder_request(self) -> bool:
+        """Whether the request is a placeholder request.
+
+        Returns:
+            Whether the request is a placeholder request.
+        """
+        return self.status == ExecutionStatus.INITIALIZING
+
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -143,6 +151,9 @@ class PipelineRunUpdate(BaseUpdate):
     )
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the pipeline run."
+    )
+    add_logs: Optional[List[LogsRequest]] = Field(
+        default=None, title="New logs to add to the pipeline run."
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -256,6 +267,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
         title="Logs associated with this pipeline run.",
         default=None,
     )
+    log_collection: Optional[List["LogsResponse"]] = Field(
+        title="Logs associated with this pipeline run.",
+        default=None,
+    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -316,64 +331,6 @@ class PipelineRunResponse(
         )
 
         return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
-
-    def refresh_run_status(self) -> "PipelineRunResponse":
-        """Method to refresh the status of a run if it is initializing/running.
-
-        Returns:
-            The updated pipeline.
-
-        Raises:
-            ValueError: If the stack of the run response is None.
-        """
-        if self.status in [
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.RUNNING,
-        ]:
-            # Check if the stack still accessible
-            if self.stack is None:
-                raise ValueError(
-                    "The stack that this pipeline run response was executed on"
-                    "has been deleted."
-                )
-
-            # Create the orchestrator instance
-            from zenml.enums import StackComponentType
-            from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-            from zenml.stack.stack_component import StackComponent
-
-            # Check if the stack still accessible
-            orchestrator_list = self.stack.components.get(
-                StackComponentType.ORCHESTRATOR, []
-            )
-            if len(orchestrator_list) == 0:
-                raise ValueError(
-                    "The orchestrator that this pipeline run response was "
-                    "executed with has been deleted."
-                )
-
-            orchestrator = cast(
-                BaseOrchestrator,
-                StackComponent.from_model(
-                    component_model=orchestrator_list[0]
-                ),
-            )
-
-            # Fetch the status
-            status = orchestrator.fetch_status(run=self)
-
-            # If it is different from the current status, update it
-            if status != self.status:
-                from zenml.client import Client
-                from zenml.models import PipelineRunUpdate
-
-                client = Client()
-                return client.zen_store.update_run(
-                    run_id=self.id,
-                    run_update=PipelineRunUpdate(status=status),
-                )
-
-        return self
 
     # Body and metadata properties
     @property
@@ -480,6 +437,8 @@ class PipelineRunResponse(
             for step in pagination_utils.depaginate(
                 Client().list_run_steps,
                 pipeline_run_id=self.id,
+                project=self.project_id,
+                exclude_retried=True,
             )
         }
 
@@ -590,6 +549,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().logs
+
+    @property
+    def log_collection(self) -> Optional[List["LogsResponse"]]:
+        """The `log_collection` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().log_collection
 
 
 # ------------------ Filter Model ------------------

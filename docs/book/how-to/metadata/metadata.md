@@ -249,7 +249,7 @@ In the ZenML dashboard, "model\_metrics" and "data\_details" will appear as sepa
 Once you've logged metadata in your runs, you can use ZenML's Experiment Comparison tool to analyze and compare metrics across different run.
 
 {% hint style="success" %}
-The metadata comparison tool is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
+The metadata comparison tool is a [ZenML Pro](https://zenml.io/pro)-only feature.
 {% endhint %}
 
 [![Experiment Comparison Introduction Video](../../.gitbook/assets/experiment_comparison_video.png)](https://www.loom.com/share/693b2d829600492da7cd429766aeba6a?sid=7182e55b-31e9-4b38-a3be-07c989dbea32)
