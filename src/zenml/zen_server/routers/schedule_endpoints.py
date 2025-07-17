@@ -30,7 +30,12 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
 )
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -77,8 +82,6 @@ def create_schedule(
         project = zen_store().get_project(project_name_or_id)
         schedule.project = project.id
 
-    # NOTE: no RBAC is enforced currently for schedules, but we're
-    # keeping the RBAC checks here for consistency
     return verify_permissions_and_create_entity(
         request_model=schedule,
         create_method=zen_store().create_schedule,
@@ -121,8 +124,10 @@ def list_schedules(
     if project_name_or_id:
         schedule_filter_model.project = project_name_or_id
 
-    return zen_store().list_schedules(
-        schedule_filter_model=schedule_filter_model,
+    return verify_permissions_and_list_entities(
+        filter_model=schedule_filter_model,
+        resource_type=ResourceType.SCHEDULE,
+        list_method=zen_store().list_schedules,
         hydrate=hydrate,
     )
 
@@ -147,8 +152,9 @@ def get_schedule(
     Returns:
         A specific schedule object.
     """
-    return zen_store().get_schedule(
-        schedule_id=schedule_id,
+    return verify_permissions_and_get_entity(
+        id=schedule_id,
+        get_method=zen_store().get_schedule,
         hydrate=hydrate,
     )
 
@@ -172,9 +178,11 @@ def update_schedule(
     Returns:
         The updated schedule object.
     """
-    return zen_store().update_schedule(
-        schedule_id=schedule_id,
-        schedule_update=schedule_update,
+    return verify_permissions_and_update_entity(
+        id=schedule_id,
+        update_model=schedule_update,
+        get_method=zen_store().get_schedule,
+        update_method=zen_store().update_schedule,
     )
 
 
@@ -192,4 +200,8 @@ def delete_schedule(
     Args:
         schedule_id: ID of the schedule to delete.
     """
-    zen_store().delete_schedule(schedule_id=schedule_id)
+    return verify_permissions_and_delete_entity(
+        id=schedule_id,
+        get_method=zen_store().get_schedule,
+        delete_method=zen_store().delete_schedule,
+    )
