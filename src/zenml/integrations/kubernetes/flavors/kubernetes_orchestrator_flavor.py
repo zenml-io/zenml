@@ -138,7 +138,11 @@ class KubernetesOrchestratorSettings(BaseSettings):
             "ImagePullBackOff",
             "CreateContainerConfigError",
         ],
-        description="List of container waiting reasons that will cause the job to fail.",
+        description="List of container waiting reasons that should cause the "
+        "job to fail immediately. This should be set to a list of "
+        "nonrecoverable reasons, which if found in any "
+        "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
+        "should cause the job to fail immediately.",
     )
     pod_failure_policy: Optional[Dict[str, Any]] = Field(
         default=None,
