@@ -74,6 +74,8 @@ def collect_exception_information(
             logger.debug("Failed to detect step code line: %s", e)
 
     if start_index is not None:
+        # If the code failed while executing user code, we remove the initial
+        # part of the traceback that is happening in the ZenML code.
         tb = tb[start_index:]
 
     return ExceptionInfo(
