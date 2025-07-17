@@ -65,6 +65,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.core.schedule import ScheduleUpdate
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -74,6 +75,7 @@ if TYPE_CHECKING:
         PipelineDeploymentBase,
         PipelineDeploymentResponse,
         PipelineRunResponse,
+        ScheduleResponse,
     )
     from zenml.stack import Stack
 
@@ -81,6 +83,7 @@ logger = get_logger(__name__)
 
 ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
 KUBERNETES_SECRET_TOKEN_KEY_NAME = "zenml_api_token"
+KUBERNETES_CRON_JOB_METADATA_KEY = "cron_job_name"
 
 
 class KubernetesOrchestrator(ContainerizedOrchestrator):
@@ -576,7 +579,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 labels=orchestrator_pod_labels,
             )
 
-            self._k8s_batch_api.create_namespaced_cron_job(
+            cron_job = self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
                 namespace=self.config.kubernetes_namespace,
             )
@@ -584,7 +587,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"Scheduling Kubernetes run `{pod_name}` with CRON expression "
                 f'`"{cron_expression}"`.'
             )
-            return None
+            return SubmissionResult(
+                metadata={
+                    KUBERNETES_CRON_JOB_METADATA_KEY: cron_job.metadata.name,
+                }
+            )
         else:
             # Create and run the orchestrator pod.
             pod_manifest = build_pod_manifest(
@@ -980,3 +987,48 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return {
             METADATA_ORCHESTRATOR_RUN_ID: self.get_orchestrator_run_id(),
         }
+
+    def update_schedule(
+        self, schedule: "ScheduleResponse", update: ScheduleUpdate
+    ) -> None:
+        """Updates a schedule.
+
+        Args:
+            schedule: The schedule to update.
+            update: The update to apply to the schedule.
+
+        Raises:
+            RuntimeError: If the cron job name is not found.
+        """
+        cron_job_name = schedule.run_metadata.get(
+            KUBERNETES_CRON_JOB_METADATA_KEY
+        )
+        if not cron_job_name:
+            raise RuntimeError("Unable to find cron job name for schedule.")
+
+        if update.cron_expression:
+            self._k8s_batch_api.patch_namespaced_cron_job(
+                name=cron_job_name,
+                namespace=self.config.kubernetes_namespace,
+                body={"spec": {"schedule": update.cron_expression}},
+            )
+
+    def delete_schedule(self, schedule: "ScheduleResponse") -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule: The schedule to delete.
+
+        Raises:
+            RuntimeError: If the cron job name is not found.
+        """
+        cron_job_name = schedule.run_metadata.get(
+            KUBERNETES_CRON_JOB_METADATA_KEY
+        )
+        if not cron_job_name:
+            raise RuntimeError("Unable to find cron job name for schedule.")
+
+        self._k8s_batch_api.delete_namespaced_cron_job(
+            name=cron_job_name,
+            namespace=self.config.kubernetes_namespace,
+        )
