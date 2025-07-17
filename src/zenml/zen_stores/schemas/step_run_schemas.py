@@ -34,6 +34,7 @@ from zenml.enums import (
     StepRunInputArtifactType,
 )
 from zenml.models import (
+    ExceptionInfo,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
@@ -42,7 +43,6 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.step_run import (
-    ExceptionInformation,
     StepRunInputResponse,
     StepRunResponseResources,
 )
@@ -319,6 +319,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             source_code=request.source_code,
             version=version,
             is_retriable=is_retriable,
+            exception_info=json.dumps(request.exception_info)
+            if request.exception_info
+            else None,
         )
 
     def get_step_configuration(self) -> Step:
@@ -404,7 +407,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
-                exception_info=ExceptionInformation.model_validate_json(
+                exception_info=ExceptionInfo.model_validate_json(
                     self.exception_info
                 )
                 if self.exception_info

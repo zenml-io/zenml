@@ -26,7 +26,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -48,6 +48,7 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
+from zenml.models.v2.misc.exception_info import ExceptionInfo
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -59,11 +60,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-
-
-class ExceptionInformation(BaseModel):
-    traceback: str
-    step_code_line: Optional[int] = None
 
 
 class StepRunInputResponse(ArtifactVersionResponse):
@@ -148,6 +144,10 @@ class StepRunRequest(ProjectScopedRequest):
         title="Logs associated with this step run.",
         default=None,
     )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the step run.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -174,7 +174,7 @@ class StepRunUpdate(BaseUpdate):
         title="The end time of the step run.",
         default=None,
     )
-    exception_info: Optional[ExceptionInformation] = Field(
+    exception_info: Optional[ExceptionInfo] = Field(
         default=None,
         title="The exception information of the step run.",
     )
@@ -246,7 +246,7 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    exception_info: Optional[ExceptionInformation] = Field(
+    exception_info: Optional[ExceptionInfo] = Field(
         default=None,
         title="The exception information of the step run.",
     )

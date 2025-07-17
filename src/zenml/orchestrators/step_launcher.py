@@ -24,6 +24,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus
@@ -453,6 +454,7 @@ class StepLauncher:
         environment = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
         )
+        environment[ENV_ZENML_STEP_OPERATOR] = "True"
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,

@@ -16,9 +16,6 @@
 
 import copy
 import inspect
-import os
-import re
-import traceback
 from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
@@ -45,7 +42,6 @@ from zenml.logger import get_logger
 from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.v2.core.step_run import (
-    ExceptionInformation,
     StepRunInputResponse,
     StepRunUpdate,
 )
@@ -63,6 +59,7 @@ from zenml.steps.utils import (
     resolve_type_annotation,
 )
 from zenml.utils import (
+    exception_utils,
     materializer_utils,
     source_utils,
     string_utils,
@@ -107,56 +104,6 @@ class StepRunner:
             The step configuration.
         """
         return self._step.config
-
-    def _collect_exception_information(
-        self, exception: BaseException, step_instance: "BaseStep"
-    ) -> ExceptionInformation:
-        """Collects the exception information.
-
-        Args:
-            exception: The exception to collect information from.
-            step_instance: The step instance to collect information from.
-
-        Returns:
-            The exception information.
-        """
-        tb = traceback.format_tb(exception.__traceback__)
-        line_number = None
-        start_index = None
-
-        try:
-            lines, start_line = inspect.getsourcelines(
-                step_instance.entrypoint
-            )
-            end_line = start_line + len(lines)
-
-            source_file = os.path.abspath(
-                inspect.getsourcefile(step_instance.entrypoint)
-            )
-
-            line_pattern = re.compile(f'File "{source_file}", line (\d+),')
-
-            for index, line in enumerate(tb):
-                match = line_pattern.search(line)
-                if match:
-                    potential_line_number = int(match.group(1))
-                    if (
-                        potential_line_number >= start_line
-                        and potential_line_number <= end_line
-                    ):
-                        line_number = potential_line_number - start_line
-                        start_index = index
-                        break
-        except Exception as e:
-            logger.debug("Failed to collect exception information: %s", e)
-
-        if start_index is not None:
-            tb = tb[start_index:]
-
-        return ExceptionInformation(
-            traceback="\n".join(tb),
-            step_code_line=line_number,
-        )
 
     def run(
         self,
@@ -253,7 +200,7 @@ class StepRunner:
                 Client().zen_store.update_run_step(
                     step_run_id=step_run_info.step_run_id,
                     step_run_update=StepRunUpdate(
-                        exception_info=self._collect_exception_information(
+                        exception_info=exception_utils.collect_exception_information(
                             step_exception, step_instance
                         ),
                     ),
