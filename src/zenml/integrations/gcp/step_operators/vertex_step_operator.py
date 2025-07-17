@@ -306,6 +306,16 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
         while response.state not in VERTEX_JOB_STATES_COMPLETED:
             time.sleep(POLLING_INTERVAL_IN_SECONDS)
+            if self.connector_has_expired():
+                logger.warning(
+                    "Connector has expired. Recreating client..."
+                )
+                # This call will refresh the credentials if they expired.
+                credentials, project_id = self._get_authentication()
+                # Recreate the Python API client.
+                client = aiplatform.gapic.JobServiceClient(
+                    credentials=credentials, client_options=client_options
+                )
             try:
                 response = client.get_custom_job(name=job_id)
                 retry_count = 0
@@ -318,12 +328,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                         f"Error encountered when polling job "
                         f"{job_id}: {err}\nRetrying...",
                     )
-                    # This call will refresh the credentials if they expired.
-                    credentials, project_id = self._get_authentication()
-                    # Recreate the Python API client.
-                    client = aiplatform.gapic.JobServiceClient(
-                        credentials=credentials, client_options=client_options
-                    )
+                    continue
                 else:
                     logger.exception(
                         "Request failed after %s retries.",
