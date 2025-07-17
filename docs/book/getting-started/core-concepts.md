@@ -7,7 +7,7 @@ icon: lightbulb
 
 ![A diagram of core concepts of ZenML OSS](../.gitbook/assets/core_concepts_oss.png)
 
-**ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. In order to achieve this goal, ZenML introduces various concepts for different aspects of an ML workflow, and we can categorize these concepts under three different threads:
+**ZenML** is a unified, extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. By extending the battle-tested principles you rely on for classical ML to the new world of AI agents, ZenML serves as one platform to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. In order to achieve this goal, ZenML introduces various concepts for different aspects of ML workflows and AI agent development, and we can categorize these concepts under three different threads:
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th><th data-hidden data-card-cover data-type="files"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>1. Development</strong></mark></td><td>As a developer, how do I design my machine learning workflows?</td><td></td><td><a href="core-concepts.md#1-development">#1-development</a></td><td><a href="../.gitbook/assets/development.png">development.png</a></td></tr><tr><td><mark style="color:purple;"><strong>2. Execution</strong></mark></td><td>While executing, how do my workflows utilize the large landscape of MLOps tooling/infrastructure?</td><td></td><td><a href="core-concepts.md#2-execution">#2-execution</a></td><td><a href="../.gitbook/assets/execution.png">execution.png</a></td></tr><tr><td><mark style="color:purple;"><strong>3. Management</strong></mark></td><td>How do I establish and maintain a production-grade and efficient solution?</td><td></td><td><a href="core-concepts.md#3-management">#3-management</a></td><td><a href="../.gitbook/assets/management.png">management.png</a></td></tr></tbody></table>
 
@@ -17,7 +17,7 @@ If you prefer visual learning, this short video demonstrates the key concepts co
 
 ## 1. Development
 
-First, let's look at the main concepts that play a role during the development stage of an ML workflow with ZenML.
+First, let's look at the main concepts that play a role during the development stage of ML workflows and AI agent pipelines with ZenML.
 
 #### Step
 
@@ -42,6 +42,12 @@ def step_2(input_one: str, input_two: str) -> str:
     """Combines the two strings passed in."""
     combined_str = f"{input_one} {input_two}"
     return combined_str
+
+@step
+def evaluate_agent_response(prompt: str, test_query: str) -> dict:
+    """Evaluates an AI agent's response to a test query."""
+    response = call_llm_agent(prompt, test_query)
+    return {"query": test_query, "response": response, "quality_score": 0.95}
 ```
 
 #### Pipelines
@@ -63,6 +69,13 @@ from zenml import pipeline
 def my_pipeline():
     output_step_one = step_1()
     step_2(input_one="hello", input_two=output_step_one)
+
+@pipeline
+def agent_evaluation_pipeline():
+    """An AI agent evaluation pipeline."""
+    prompt = "You are a helpful assistant. Please answer: {query}"
+    test_query = "What is machine learning?"
+    evaluation_result = evaluate_agent_response(prompt, test_query)
 ```
 
 Executing the Pipeline is as easy as calling the function that you decorated with the `@pipeline` decorator.
@@ -70,17 +83,20 @@ Executing the Pipeline is as easy as calling the function that you decorated wit
 ```python
 if __name__ == "__main__":
     my_pipeline()
+    agent_evaluation_pipeline()
 ```
 
 #### Artifacts
 
 Artifacts represent the data that goes through your steps as inputs and outputs, and they are automatically tracked and stored by ZenML in the artifact store. They are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather, when the execution of a step is completed, they are written to storage, and when a new step gets executed, they are loaded from storage.
 
+Artifacts can be traditional ML data (datasets, models, metrics) or AI agent components (prompt templates, agent configurations, evaluation results). The same artifact system seamlessly handles both use cases.
+
 The serialization and deserialization logic of artifacts is defined by [Materializers](../how-to/artifacts/materializers.md).
 
 #### Models
 
-Models are used to represent the outputs of a training process along with all metadata associated with that output. In other words: models in ZenML are more broadly defined as the weights as well as any associated information. Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, client, as well as on the [ZenML Pro](https://zenml.io/pro) dashboard.
+Models are used to represent the outputs of a training process along with all metadata associated with that output. In other words: models in ZenML are more broadly defined as the weights as well as any associated information. This includes traditional ML models (scikit-learn, PyTorch, etc.) and AI agent configurations (prompt templates, tool definitions, multi-agent system architectures). Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, client, as well as on the [ZenML Pro](https://zenml.io/pro) dashboard.
 
 #### Materializers
 
@@ -160,9 +176,9 @@ Secrets are sensitive data that you don't want to store in your code or configur
 
 #### Collaboration
 
-Collaboration is a crucial aspect of any MLOps team as they often need to bring together individuals with diverse skills and expertise to create a cohesive and effective workflow for machine learning projects. A successful MLOps team requires seamless collaboration between data scientists, engineers, and DevOps professionals to develop, train, deploy, and maintain machine learning models.
+Collaboration is a crucial aspect of any MLOps team as they often need to bring together individuals with diverse skills and expertise to create a cohesive and effective workflow for machine learning projects and AI agent development. A successful MLOps team requires seamless collaboration between data scientists, engineers, and DevOps professionals to develop, train, deploy, and maintain both traditional ML models and AI agent systems.
 
-With a deployed **ZenML Server**, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
+With a deployed **ZenML Server**, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork across the entire AI development lifecycle.
 
 #### Dashboard
 

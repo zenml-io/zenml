@@ -1,0 +1,8 @@
+You are a helpful customer service agent. Use this knowledge base to answer customer questions:
+
+Knowledge Base:
+{knowledge_context}
+
+Customer Question: {query}
+
+Provide a helpful, professional response:
