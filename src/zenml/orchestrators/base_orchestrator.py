@@ -558,6 +558,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Args:
             schedule: The schedule to update.
+            update: The update to apply to the schedule.
 
         Raises:
             NotImplementedError: If the functionality is not implemented.

@@ -3811,6 +3811,14 @@ class Client(metaclass=ClientMetaClass):
     def _get_orchestrator_for_schedule(
         self, schedule: ScheduleResponse
     ) -> Optional["BaseOrchestrator"]:
+        """Get the orchestrator for a schedule.
+
+        Args:
+            schedule: The schedule to get the orchestrator for.
+
+        Returns:
+            The orchestrator for the schedule.
+        """
         from zenml.orchestrators import BaseOrchestrator
 
         if not schedule.orchestrator_id:
@@ -3853,12 +3861,13 @@ class Client(metaclass=ClientMetaClass):
             logger.warning(
                 "Unable to find orchestrator for schedule, skipping update."
             )
-            return
+            return schedule
         elif not orchestrator.supports_schedule_updates:
             logger.warning(
-                "Orchestrator does not support schedule updates, skipping update."
+                "Orchestrator does not support schedule updates, skipping "
+                "update."
             )
-            return
+            return schedule
 
         update = ScheduleUpdate(cron_expression=cron_expression)
         orchestrator.update_schedule(schedule, update)
