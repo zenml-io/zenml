@@ -367,6 +367,7 @@ def main() -> None:
                     core_api=core_api,
                     namespace=namespace,
                     job_name=job_name,
+                    fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                     stream_logs=pipeline_settings.stream_step_logs,
                 )
 

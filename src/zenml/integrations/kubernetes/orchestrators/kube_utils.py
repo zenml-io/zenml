@@ -654,8 +654,9 @@ def wait_for_job_to_finish(
     backoff_interval: float = 1,
     maximum_backoff: float = 32,
     exponential_backoff: bool = False,
-    container_name: Optional[str] = None,
+    fail_on_container_waiting_reasons: Optional[List[str]] = None,
     stream_logs: bool = True,
+    container_name: Optional[str] = None,
 ) -> None:
     """Wait for a job to finish.
 
@@ -668,6 +669,8 @@ def wait_for_job_to_finish(
         maximum_backoff: The maximum interval to wait between polling the job
             status.
         exponential_backoff: Whether to use exponential backoff.
+        fail_on_container_waiting_reasons: List of container waiting reasons
+            that will cause the job to fail.
         stream_logs: Whether to stream the job logs.
         container_name: Name of the container to stream logs from.
 
@@ -691,6 +694,36 @@ def wait_for_job_to_finish(
                         f"Job `{namespace}:{job_name}` failed: "
                         f"{condition.message}"
                     )
+
+        if fail_on_container_waiting_reasons:
+            pod_list: k8s_client.V1PodList = retry_on_api_exception(
+                core_api.list_namespaced_pod
+            )(
+                namespace=namespace,
+                label_selector=f"job-name={job_name}",
+                field_selector=f"status.phase=Pending",
+            )
+            for pod in pod_list.items:
+                if not pod.status or not pod.status.container_statuses:
+                    continue
+
+                for container_status in pod.status.container_statuses:
+                    if (
+                        container_status.state
+                        and (waiting_state := container_status.state.waiting)
+                        and waiting_state.reason
+                        in fail_on_container_waiting_reasons
+                    ):
+                        batch_api.delete_namespaced_job(
+                            name=job_name,
+                            namespace=namespace,
+                            propagation_policy="Foreground",
+                        )
+                        raise RuntimeError(
+                            f"Job `{namespace}:{job_name}` failed: "
+                            f"Detected container in state "
+                            f"{waiting_state.reason}"
+                        )
 
         if stream_logs:
             try:

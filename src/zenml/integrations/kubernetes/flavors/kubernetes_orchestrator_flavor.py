@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
 
@@ -130,6 +130,15 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "for the configured amount of times plus the margin, which increases "
         "the chance of the server receiving the maximum amount of retry "
         "requests.",
+    )
+    fail_on_container_waiting_reasons: Optional[List[str]] = Field(
+        default=[
+            "InvalidImageName",
+            "ErrImagePull",
+            "ImagePullBackOff",
+            "CreateContainerConfigError",
+        ],
+        description="List of container waiting reasons that will cause the job to fail.",
     )
     pod_failure_policy: Optional[Dict[str, Any]] = Field(
         default=None,
