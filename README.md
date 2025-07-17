@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/zenml-io-zenml-badge.png)](https://mseep.ai/app/zenml-io-zenml)
+
 <div align="center">
 
   <!-- PROJECT LOGO -->
