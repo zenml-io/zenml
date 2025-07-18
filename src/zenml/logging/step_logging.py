@@ -21,10 +21,9 @@ import time
 from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Type, Union
+from typing import Any, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
-from zenml import get_step_context
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifacts.utils import (
     _load_artifact_store,
@@ -33,12 +32,13 @@ from zenml.artifacts.utils import (
 )
 from zenml.client import Client
 from zenml.constants import (
+    ENV_ZENML_CAPTURE_PRINTS,
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     handle_bool_env_var,
 )
 from zenml.exceptions import DoesNotExistException
-from zenml.logger import get_logger
+from zenml.logger import get_logger, get_storage_log_level
 from zenml.logging import (
     STEP_LOGS_STORAGE_INTERVAL_SECONDS,
     STEP_LOGS_STORAGE_MAX_MESSAGES,
@@ -53,13 +53,115 @@ from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
-# Get the logger
 logger = get_logger(__name__)
 
+# Context variables
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
+step_names_in_console: ContextVar[bool] = ContextVar(
+    "step_names_in_console", default=False
+)
+
+# Context variable for logging handlers
+logging_handlers: ContextVar[List[logging.Handler]] = ContextVar(
+    "logging_handlers", default=[]
+)
 
 LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
+
+
+class ArtifactStoreHandler(logging.Handler):
+    """Handler that writes log messages to artifact store storage."""
+
+    def __init__(self, storage: "PipelineLogsStorage"):
+        """Initialize the handler with a storage instance.
+
+        Args:
+            storage: The PipelineLogsStorage instance to write to.
+        """
+        super().__init__()
+        self.storage = storage
+
+        # Get storage log level from environment
+        self.setLevel(get_storage_log_level().value)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit a log record to the storage.
+
+        Args:
+            record: The log record to emit.
+        """
+        try:
+            # Format for storage with timestamp, level, and message
+            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+            message = (
+                f"[{timestamp} UTC] [{record.levelname}] {record.getMessage()}"
+            )
+            self.storage.write(message)
+        except Exception:
+            # Don't let storage errors break logging
+            pass
+
+
+def setup_global_print_wrapping() -> None:
+    """Set up global print() wrapping with context-aware handlers."""
+    # Check if we should capture prints
+    capture_prints = handle_bool_env_var(
+        ENV_ZENML_CAPTURE_PRINTS, default=True
+    )
+
+    if not capture_prints:
+        return
+
+    # Check if already wrapped to avoid double wrapping
+    if hasattr(__builtins__, "_zenml_original_print"):
+        return
+
+    import builtins
+
+    original_print = builtins.print
+
+    def wrapped_print(*args: Any, **kwargs: Any) -> None:
+        # Convert print arguments to message
+        message = " ".join(str(arg) for arg in args)
+
+        # Determine if this should go to stderr or stdout based on file argument
+        file_arg = kwargs.get("file", sys.stdout)
+
+        # Call active handlers first (for storage)
+        if message.strip():
+            if file_arg == sys.stderr:
+                handlers = logging_handlers.get()
+                level = logging.ERROR
+            else:
+                handlers = logging_handlers.get()
+                level = logging.INFO
+
+            for handler in handlers:
+                try:
+                    # Create a LogRecord for the handler
+                    record = logging.LogRecord(
+                        name="print",
+                        level=level,
+                        pathname="",
+                        lineno=0,
+                        msg=message,
+                        args=(),
+                        exc_info=None,
+                    )
+                    # Check if handler's level would accept this record
+                    if record.levelno >= handler.level:
+                        handler.emit(record)
+                except Exception:
+                    # Don't let handler errors break print
+                    pass
+
+        # Then call original print for console display
+        return original_print(*args, **kwargs)
+
+    # Store original and replace print
+    setattr(builtins, "_zenml_original_print", original_print)
+    setattr(builtins, "print", wrapped_print)
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -279,12 +381,7 @@ class PipelineLogsStorage:
             return
 
         if not self.disabled:
-            # Add timestamp to the message when it's received
-            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = (
-                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
-            )
-            self.buffer.append(formatted_message.rstrip())
+            self.buffer.append(remove_ansi_escape_codes(text).rstrip())
             self.save_to_file()
 
     @property
@@ -419,7 +516,9 @@ class PipelineLogsStorage:
             files_ = self.artifact_store.listdir(self.logs_uri)
             if not merge_all_files:
                 # already merged files will not be merged again
-                files_ = [f for f in files_ if merged_file_suffix not in f]
+                files_ = [
+                    f for f in files_ if merged_file_suffix not in str(f)
+                ]
             file_name_ = self._get_timestamped_filename(
                 suffix=merged_file_suffix
             )
@@ -455,7 +554,7 @@ class PipelineLogsStorage:
 
 
 class PipelineLogsStorageContext:
-    """Context manager which patches stdout and stderr during pipeline run execution."""
+    """Context manager which collects logs during pipeline run execution."""
 
     def __init__(
         self,
@@ -473,28 +572,56 @@ class PipelineLogsStorageContext:
         self.storage = PipelineLogsStorage(
             logs_uri=logs_uri, artifact_store=artifact_store
         )
+        self.artifact_store_handler: Optional[ArtifactStoreHandler] = None
         self.prepend_step_name = prepend_step_name
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
 
-        Wraps the `write` method of both stderr and stdout, so each incoming
-        message gets stored in the pipeline logs storage.
+        Creates and registers an ArtifactStoreHandler for log storage.
 
         Returns:
             self
         """
-        self.stdout_write = getattr(sys.stdout, "write")
-        self.stdout_flush = getattr(sys.stdout, "flush")
+        # Create storage handler
+        self.artifact_store_handler = ArtifactStoreHandler(self.storage)
 
-        self.stderr_write = getattr(sys.stderr, "write")
-        self.stderr_flush = getattr(sys.stderr, "flush")
+        # Set formatter for storage handler
+        storage_formatter = logging.Formatter(
+            "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
+        )
+        self.artifact_store_handler.setFormatter(storage_formatter)
 
-        setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
-        setattr(sys.stdout, "flush", self._wrap_flush(self.stdout_flush))
+        # Add handler to root logger
+        root_logger = logging.getLogger()
+        root_logger.addHandler(self.artifact_store_handler)
 
-        setattr(sys.stderr, "write", self._wrap_write(self.stderr_write))
-        setattr(sys.stderr, "flush", self._wrap_flush(self.stderr_flush))
+        # Set root logger level to minimum of all active handlers
+        # This ensures records can reach any handler that needs them
+        self.original_root_level = root_logger.level
+        handler_levels = [handler.level for handler in root_logger.handlers]
+
+        # Set root logger to the minimum level among all handlers
+        min_level = min(handler_levels)
+        if min_level < root_logger.level:
+            root_logger.setLevel(min_level)
+
+        # Add handler to context variables for print() capture
+        handlers = logging_handlers.get().copy()
+        handlers.append(self.artifact_store_handler)
+        logging_handlers.set(handlers)
+
+        # Set the step names context variable
+        step_names_disabled = handle_bool_env_var(
+            ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
+        )
+
+        if step_names_disabled or not self.prepend_step_name:
+            # Step names are disabled through the env or they are disabled in the config
+            step_names_in_console.set(False)
+        else:
+            # Otherwise, set it True (default)
+            step_names_in_console.set(True)
 
         redirected.set(True)
         return self
@@ -512,15 +639,29 @@ class PipelineLogsStorageContext:
             exc_val: The instance of the exception
             exc_tb: The traceback of the exception
 
-        Restores the `write` method of both stderr and stdout.
+        Removes the handler from loggers and context variables.
         """
+        # Remove handler from root logger and restore original level
+        if self.artifact_store_handler:
+            root_logger = logging.getLogger()
+            # Check if handler is still in the root logger before removing
+            if self.artifact_store_handler in root_logger.handlers:
+                root_logger.removeHandler(self.artifact_store_handler)
+            # Restore original root logger level
+            if hasattr(self, "original_root_level"):
+                root_logger.setLevel(self.original_root_level)
+
+        # Remove handler from context variables
+        handlers = logging_handlers.get().copy()
+        if self.artifact_store_handler in handlers:
+            handlers.remove(self.artifact_store_handler)
+        logging_handlers.set(handlers)
+
+        # Force save any remaining logs
         self.storage.save_to_file(force=True)
 
-        setattr(sys.stdout, "write", self.stdout_write)
-        setattr(sys.stdout, "flush", self.stdout_flush)
-
-        setattr(sys.stderr, "write", self.stderr_write)
-        setattr(sys.stderr, "flush", self.stderr_flush)
+        # Clean up handler reference
+        self.artifact_store_handler = None
 
         redirected.set(False)
 
@@ -529,70 +670,8 @@ class PipelineLogsStorageContext:
         except (OSError, IOError) as e:
             logger.warning(f"Step logs roll-up failed: {e}")
 
-    def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
-        """Wrapper function that utilizes the storage object to store logs.
-
-        Args:
-            method: the original write method
-
-        Returns:
-            the wrapped write method.
-        """
-
-        def wrapped_write(*args: Any, **kwargs: Any) -> Any:
-            step_names_disabled = (
-                handle_bool_env_var(
-                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
-                )
-                or not self.prepend_step_name
-            )
-
-            if step_names_disabled:
-                output = method(*args, **kwargs)
-            else:
-                message = args[0]
-                # Try to get step context if not available yet
-                step_context = None
-                try:
-                    step_context = get_step_context()
-                except Exception:
-                    pass
-
-                if step_context and args[0] not in ["\n", ""]:
-                    # For progress bar updates (with \r), inject the step name after the \r
-                    if "\r" in message:
-                        message = message.replace(
-                            "\r", f"\r[{step_context.step_name}] "
-                        )
-                    else:
-                        message = f"[{step_context.step_name}] {message}"
-
-                output = method(message, *args[1:], **kwargs)
-
-            # Save the original message without step name prefix to storage
-            if args:
-                self.storage.write(args[0])
-
-            return output
-
-        return wrapped_write
-
-    def _wrap_flush(self, method: Callable[..., Any]) -> Callable[..., Any]:
-        """Wrapper function that flushes the buffer of the storage object.
-
-        Args:
-            method: the original flush method
-
-        Returns:
-            the wrapped flush method.
-        """
-
-        def wrapped_flush(*args: Any, **kwargs: Any) -> Any:
-            output = method(*args, **kwargs)
-            self.storage.save_to_file()
-            return output
-
-        return wrapped_flush
+        # Reset the step names context to default
+        step_names_in_console.set(False)
 
 
 def setup_orchestrator_logging(
