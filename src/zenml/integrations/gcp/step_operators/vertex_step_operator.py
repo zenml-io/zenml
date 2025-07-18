@@ -307,9 +307,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         while response.state not in VERTEX_JOB_STATES_COMPLETED:
             time.sleep(POLLING_INTERVAL_IN_SECONDS)
             if self.connector_has_expired():
-                logger.warning(
-                    "Connector has expired. Recreating client..."
-                )
+                logger.warning("Connector has expired. Recreating client...")
                 # This call will refresh the credentials if they expired.
                 credentials, project_id = self._get_authentication()
                 # Recreate the Python API client.
