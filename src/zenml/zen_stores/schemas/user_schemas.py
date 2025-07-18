@@ -77,6 +77,7 @@ class UserSchema(NamedSchema, table=True):
     full_name: str
     description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     email: Optional[str] = Field(nullable=True)
+    avatar_url: Optional[str] = Field(default=None, nullable=True)
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
@@ -185,6 +186,7 @@ class UserSchema(NamedSchema, table=True):
         return cls(
             name=model.name,
             full_name=model.full_name,
+            avatar_url=model.avatar_url,
             active=model.active,
             password=model.create_hashed_password(),
             activation_token=model.create_hashed_activation_token(),
@@ -222,6 +224,7 @@ class UserSchema(NamedSchema, table=True):
             email_opted_in=False,
             full_name="",
             is_admin=False,
+            avatar_url=model.avatar_url,
         )
 
     def update_user(self, user_update: UserUpdate) -> "UserSchema":
@@ -314,6 +317,7 @@ class UserSchema(NamedSchema, table=True):
                 updated=self.updated,
                 is_admin=self.is_admin,
                 default_project_id=self.default_project_id,
+                avatar_url=self.avatar_url,
             ),
             metadata=metadata,
         )
@@ -341,6 +345,7 @@ class UserSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             active=self.active,
+            avatar_url=self.avatar_url,
         )
 
         return ServiceAccountResponse(

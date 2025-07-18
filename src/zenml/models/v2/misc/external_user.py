@@ -28,5 +28,6 @@ class ExternalUserModel(BaseModel):
     name: Optional[str] = None
     is_admin: bool = False
     is_service_account: bool = False
+    avatar_url: Optional[str] = None
 
     model_config = ConfigDict(extra="ignore")
