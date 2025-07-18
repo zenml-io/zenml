@@ -50,7 +50,12 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import (
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+        ScheduleResponse,
+        ScheduleUpdate,
+    )
 
 logger = get_logger(__name__)
 
@@ -519,6 +524,61 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         raise NotImplementedError(
             "The stop run functionality is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
+
+    @property
+    def supports_schedule_updates(self) -> bool:
+        """Whether the orchestrator supports updating schedules.
+
+        Returns:
+            Whether the orchestrator supports updating schedules.
+        """
+        return (
+            getattr(self.update_schedule, "__func__", None)
+            is not BaseOrchestrator.update_schedule
+        )
+
+    @property
+    def supports_schedule_deletion(self) -> bool:
+        """Whether the orchestrator supports deleting schedules.
+
+        Returns:
+            Whether the orchestrator supports deleting schedules.
+        """
+        return (
+            getattr(self.delete_schedule, "__func__", None)
+            is not BaseOrchestrator.delete_schedule
+        )
+
+    def update_schedule(
+        self, schedule: "ScheduleResponse", update: "ScheduleUpdate"
+    ) -> None:
+        """Updates a schedule.
+
+        Args:
+            schedule: The schedule to update.
+            update: The update to apply to the schedule.
+
+        Raises:
+            NotImplementedError: If the functionality is not implemented.
+        """
+        raise NotImplementedError(
+            "Schedule updating is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
+
+    def delete_schedule(self, schedule: "ScheduleResponse") -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule: The schedule to delete.
+
+        Raises:
+            NotImplementedError: If the functionality is not implemented.
+        """
+        raise NotImplementedError(
+            "Schedule deletion is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."
         )
 
