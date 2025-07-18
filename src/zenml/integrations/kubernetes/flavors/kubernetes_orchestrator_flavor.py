@@ -144,6 +144,12 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
         "should cause the job to fail immediately.",
     )
+    job_monitoring_interval: int = Field(
+        default=3,
+        description="The interval in seconds to monitor the job. Each interval "
+        "is used to check for container issues and streaming logs for the "
+        "job pods.",
+    )
     pod_failure_policy: Optional[Dict[str, Any]] = Field(
         default=None,
         description="The pod failure policy to use for the job that is "

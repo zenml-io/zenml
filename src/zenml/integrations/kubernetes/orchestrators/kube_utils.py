@@ -714,7 +714,9 @@ def wait_for_job_to_finish(
                         and waiting_state.reason
                         in fail_on_container_waiting_reasons
                     ):
-                        batch_api.delete_namespaced_job(
+                        retry_on_api_exception(
+                            batch_api.delete_namespaced_job
+                        )(
                             name=job_name,
                             namespace=namespace,
                             propagation_policy="Foreground",
