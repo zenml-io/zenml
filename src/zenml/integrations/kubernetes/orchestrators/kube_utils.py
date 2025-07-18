@@ -701,7 +701,7 @@ def wait_for_job_to_finish(
             )(
                 namespace=namespace,
                 label_selector=f"job-name={job_name}",
-                field_selector=f"status.phase=Pending",
+                field_selector="status.phase=Pending",
             )
             for pod in pod_list.items:
                 if not pod.status or not pod.status.container_statuses:
