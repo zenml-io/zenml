@@ -17,8 +17,8 @@ import logging
 import os
 import re
 import sys
-import time
 import threading
+import time
 from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
@@ -442,7 +442,9 @@ class PipelineLogsStorage:
             files_ = self.artifact_store.listdir(self.logs_uri)
             if not merge_all_files:
                 # already merged files will not be merged again
-                files_ = [f for f in files_ if merged_file_suffix not in str(f)]
+                files_ = [
+                    f for f in files_ if merged_file_suffix not in str(f)
+                ]
             file_name_ = self._get_timestamped_filename(
                 suffix=merged_file_suffix
             )
