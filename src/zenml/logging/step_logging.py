@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import time
+import threading
 from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
@@ -269,6 +270,9 @@ class PipelineLogsStorage:
         # Immutable filesystems state
         self.last_merge_time = time.time()
 
+        # Lock for shared state
+        self.lock = threading.Lock()
+
     def write(self, text: str) -> None:
         """Main write method.
 
@@ -278,14 +282,15 @@ class PipelineLogsStorage:
         if text == "\n":
             return
 
-        if not self.disabled:
-            # Add timestamp to the message when it's received
-            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = (
-                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
-            )
-            self.buffer.append(formatted_message.rstrip())
-            self.save_to_file()
+        with self.lock:
+            if not self.disabled:
+                # Add timestamp to the message when it's received
+                timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+                formatted_message = (
+                    f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
+                )
+                self.buffer.append(formatted_message.rstrip())
+                self._save_to_file()
 
     @property
     def _is_write_needed(self) -> bool:
@@ -312,6 +317,15 @@ class PipelineLogsStorage:
 
     def save_to_file(self, force: bool = False) -> None:
         """Method to save the buffer to the given URI.
+
+        Args:
+            force: whether to force a save even if the write conditions not met.
+        """
+        with self.lock:
+            self._save_to_file(force)
+
+    def _save_to_file(self, force: bool = False) -> None:
+        """Internal method to save the buffer to the given URI (no locking).
 
         Args:
             force: whether to force a save even if the write conditions not met.
@@ -400,7 +414,7 @@ class PipelineLogsStorage:
             and time.time() - self.last_merge_time > self.merge_files_interval
         ):
             try:
-                self.merge_log_files()
+                self._merge_log_files()
             except (OSError, IOError) as e:
                 logger.error(f"Error while trying to roll up logs: {e}")
             finally:
@@ -414,12 +428,21 @@ class PipelineLogsStorage:
         Args:
             merge_all_files: whether to merge all files or only raw files
         """
+        with self.lock:
+            self._merge_log_files(merge_all_files)
+
+    def _merge_log_files(self, merge_all_files: bool = False) -> None:
+        """Internal method to merge log files (no locking).
+
+        Args:
+            merge_all_files: whether to merge all files or only raw files
+        """
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
             merged_file_suffix = "_merged"
             files_ = self.artifact_store.listdir(self.logs_uri)
             if not merge_all_files:
                 # already merged files will not be merged again
-                files_ = [f for f in files_ if merged_file_suffix not in f]
+                files_ = [f for f in files_ if merged_file_suffix not in str(f)]
             file_name_ = self._get_timestamped_filename(
                 suffix=merged_file_suffix
             )
