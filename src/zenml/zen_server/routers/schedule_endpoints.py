@@ -200,7 +200,7 @@ def delete_schedule(
     Args:
         schedule_id: ID of the schedule to delete.
     """
-    return verify_permissions_and_delete_entity(
+    verify_permissions_and_delete_entity(
         id=schedule_id,
         get_method=zen_store().get_schedule,
         delete_method=zen_store().delete_schedule,
