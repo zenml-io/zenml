@@ -435,6 +435,7 @@ from zenml.models.v2.misc.info_models import (
     ServiceConnectorResourcesInfo,
     ResourcesInfo,
 )
+from zenml.models.v2.misc.exception_info import ExceptionInfo
 
 # ----------------------------- Forward References -----------------------------
 
@@ -840,4 +841,5 @@ __all__ = [
     "RunMetadataResource",
     "ProjectStatistics",
     "PipelineRunDAG",
+    "ExceptionInfo",
 ]

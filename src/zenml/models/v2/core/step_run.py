@@ -48,6 +48,7 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
+from zenml.models.v2.misc.exception_info import ExceptionInfo
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -143,6 +144,10 @@ class StepRunRequest(ProjectScopedRequest):
         title="Logs associated with this step run.",
         default=None,
     )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the step run.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -168,6 +173,10 @@ class StepRunUpdate(BaseUpdate):
     end_time: Optional[datetime] = Field(
         title="The end time of the step run.",
         default=None,
+    )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the step run.",
     )
     model_config = ConfigDict(protected_namespaces=())
 
@@ -236,6 +245,10 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
         title="The source code of the step function or class.",
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the step run.",
     )
 
     # References
