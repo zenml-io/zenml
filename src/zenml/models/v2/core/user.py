@@ -81,6 +81,10 @@ class UserBase(BaseModel):
         default=None,
         title="The metadata associated with the user.",
     )
+    avatar_url: Optional[str] = Field(
+        default=None,
+        title="The avatar URL for the account.",
+    )
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -287,6 +291,10 @@ class UserResponseBody(BaseDatedResponseBody):
         default=None,
         title="The default project ID for the user.",
     )
+    avatar_url: Optional[str] = Field(
+        default=None,
+        title="The avatar URL for the account.",
+    )
 
 
 class UserResponseMetadata(BaseResponseMetadata):
@@ -438,6 +446,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_body().default_project_id
+
+    @property
+    def avatar_url(self) -> Optional[str]:
+        """The `avatar_url` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().avatar_url
 
     # Helper methods
     @classmethod

@@ -53,6 +53,11 @@ class ServiceAccountRequest(BaseRequest):
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     active: bool = Field(title="Whether the service account is active or not.")
+    avatar_url: Optional[str] = Field(
+        default=None,
+        title="The avatar URL for the account.",
+    )
+
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
@@ -91,6 +96,10 @@ class ServiceAccountUpdate(BaseUpdate):
         default=None,
         title="The external user ID associated with the account.",
     )
+    avatar_url: Optional[str] = Field(
+        default=None,
+        title="The avatar URL for the account.",
+    )
 
     model_config = ConfigDict(validate_assignment=True)
 
@@ -102,6 +111,10 @@ class ServiceAccountResponseBody(BaseDatedResponseBody):
     """Response body for service accounts."""
 
     active: bool = Field(default=False, title="Whether the account is active.")
+    avatar_url: Optional[str] = Field(
+        default=None,
+        title="The avatar URL for the account.",
+    )
 
 
 class ServiceAccountResponseMetadata(BaseResponseMetadata):
@@ -179,6 +192,7 @@ class ServiceAccountResponse(
                 created=self.created,
                 updated=self.updated,
                 is_admin=False,
+                avatar_url=self.avatar_url,
             ),
             metadata=UserResponseMetadata(
                 description=self.description,
@@ -213,6 +227,15 @@ class ServiceAccountResponse(
         """
         return self.get_metadata().external_user_id
 
+    @property
+    def avatar_url(self) -> Optional[str]:
+        """The `avatar_url` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().avatar_url
+
 
 # ------------------ Filter Model ------------------
 class ServiceAccountFilter(BaseFilter):
@@ -229,6 +252,11 @@ class ServiceAccountFilter(BaseFilter):
     active: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user is active",
+        union_mode="left_to_right",
+    )
+    external_user_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
         union_mode="left_to_right",
     )
 
