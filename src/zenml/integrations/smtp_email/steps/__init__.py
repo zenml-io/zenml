@@ -11,25 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""The hooks package exposes some standard hooks that can be used in ZenML.
+"""ZenML SMTP Email steps."""
 
-Hooks are functions that run after a step has exited.
-"""
-
-from zenml.hooks.alerter_hooks import alerter_success_hook
-from zenml.hooks.alerter_hooks import alerter_failure_hook
-from zenml.hooks.hook_validators import resolve_and_validate_hook
-from zenml.hooks.templates import (
-    get_html_email_template,
-    get_success_template,
-    get_failure_template,
+from zenml.integrations.smtp_email.steps.smtp_email_alerter_post_step import (
+    smtp_email_alerter_post_step,
 )
 
 __all__ = [
-    "alerter_success_hook",
-    "alerter_failure_hook",
-    "resolve_and_validate_hook",
-    "get_html_email_template",
-    "get_success_template",
-    "get_failure_template",
+    "smtp_email_alerter_post_step",
 ]
