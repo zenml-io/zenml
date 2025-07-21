@@ -405,51 +405,20 @@ To view your scheduled jobs and their status:
 ```shell
 # List all CronJobs
 kubectl get cronjobs -n zenml
-
-# Check Jobs created by the CronJob
-kubectl get jobs -n zenml
-
-# View logs of a running job
-kubectl logs job/<job-name> -n zenml
 ```
 
-To update a scheduled pipeline, you need to:
-
-1. Delete the existing CronJob from Kubernetes
-2. Create a new pipeline with the updated schedule
-
-```shell
-# Delete the existing CronJob
-kubectl delete cronjob <cronjob-name> -n zenml
-```
-
-```python
-# Create a new schedule
-new_schedule = Schedule(cron_expression="0 4 * * *")  # Now runs at 4 AM
-updated_pipeline = my_kubernetes_pipeline.with_options(schedule=new_schedule)
-updated_pipeline()
-```
+To update a schedule, use the following command:
+```bash
+# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
+zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='0 4 * * *'
 
 #### Deleting a scheduled pipeline
 
-When you no longer need a scheduled pipeline, you must delete both the ZenML schedule and the Kubernetes CronJob:
-
-1. Delete the schedule from ZenML:
-```python
-from zenml.client import Client
-
-client = Client()
-client.delete_schedule("<schedule-name>")
+When you no longer need a scheduled pipeline, you can delete the schedule as follows:
+```bash
+# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
 ```
-
-2. Delete the CronJob from Kubernetes:
-```shell
-kubectl delete cronjob <cronjob-name> -n zenml
-```
-
-{% hint style="warning" %}
-Deleting just the ZenML schedule will not stop the recurring executions. You must delete the Kubernetes CronJob as well.
-{% endhint %}
 
 #### Troubleshooting
 
