@@ -37,7 +37,7 @@ import json
 import re
 import time
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -657,6 +657,32 @@ def create_job(
     )
 
 
+def get_container_status(
+    pod: k8s_client.V1Pod, container_name: str
+) -> Optional[k8s_client.V1ContainerState]:
+    if not pod.status or not pod.status.container_statuses:
+        return None
+
+    for container_status in pod.status.container_statuses:
+        if container_status.name == container_name:
+            return container_status.state
+
+    return None
+
+
+def get_container_termination_reason(
+    pod: k8s_client.V1Pod, container_name: str
+) -> Optional[Tuple[int, str]]:
+    container_state = get_container_status(pod, container_name)
+    if not container_state or not container_state.terminated:
+        return None
+
+    return (
+        container_state.terminated.exit_code,
+        container_state.terminated.reason or "Unknown",
+    )
+
+
 def wait_for_job_to_finish(
     batch_api: k8s_client.BatchV1Api,
     core_api: k8s_client.CoreV1Api,
@@ -715,28 +741,26 @@ def wait_for_job_to_finish(
                 field_selector="status.phase=Pending",
             )
             for pod in pod_list.items:
-                if not pod.status or not pod.status.container_statuses:
-                    continue
+                container_state = get_container_status(
+                    pod, container_name or "main"
+                )
 
-                for container_status in pod.status.container_statuses:
-                    if (
-                        container_status.state
-                        and (waiting_state := container_status.state.waiting)
-                        and waiting_state.reason
-                        in fail_on_container_waiting_reasons
-                    ):
-                        retry_on_api_exception(
-                            batch_api.delete_namespaced_job
-                        )(
-                            name=job_name,
-                            namespace=namespace,
-                            propagation_policy="Foreground",
-                        )
-                        raise RuntimeError(
-                            f"Job `{namespace}:{job_name}` failed: "
-                            f"Detected container in state "
-                            f"{waiting_state.reason}"
-                        )
+                if (
+                    container_state
+                    and (waiting_state := container_state.waiting)
+                    and waiting_state.reason
+                    in fail_on_container_waiting_reasons
+                ):
+                    retry_on_api_exception(batch_api.delete_namespaced_job)(
+                        name=job_name,
+                        namespace=namespace,
+                        propagation_policy="Foreground",
+                    )
+                    raise RuntimeError(
+                        f"Job `{namespace}:{job_name}` failed: "
+                        f"Detected container in state "
+                        f"{waiting_state.reason}"
+                    )
 
         if stream_logs:
             try:
