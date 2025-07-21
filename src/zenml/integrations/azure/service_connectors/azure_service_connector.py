@@ -1820,9 +1820,16 @@ class AzureServiceConnector(ServiceConnector):
                     )
                 )
 
-                kubeconfig_yaml = creds.kubeconfigs[0].value.decode(
-                    encoding="UTF-8"
-                )
+                if creds.kubeconfigs and creds.kubeconfigs[0].value:
+                    kubeconfig_yaml = creds.kubeconfigs[0].value.decode(
+                        encoding="UTF-8"
+                    )
+                else:
+                    raise AuthorizationException(
+                        f"failed to list credentials for Azure Kubernetes "
+                        f"Service cluster '{cluster_name}' in resource group "
+                        f"'{resource_group}': no kubeconfig found"
+                    )
             except AzureError as e:
                 raise AuthorizationException(
                     f"failed to list credentials for Azure Kubernetes "
