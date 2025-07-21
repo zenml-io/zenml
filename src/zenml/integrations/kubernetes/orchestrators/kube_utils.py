@@ -33,6 +33,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 
 import enum
 import functools
+import json
 import re
 import time
 from collections import defaultdict
@@ -516,9 +517,19 @@ def create_and_wait_for_pod_to_start(
             retries += 1
             if retries < startup_max_retries:
                 logger.debug(f"The {pod_display_name} failed to start: {e}")
+                message = ""
+                try:
+                    if isinstance(e, ApiException) and e.body:
+                        exception_body = json.loads(e.body)
+                        message = exception_body.get("message", "")
+                except Exception:
+                    pass
                 logger.error(
                     f"Failed to create {pod_display_name}. "
                     f"Retrying in {startup_failure_delay} seconds..."
+                    "\nReason: " + message
+                    if message
+                    else ""
                 )
                 time.sleep(startup_failure_delay)
                 startup_failure_delay *= startup_failure_backoff
