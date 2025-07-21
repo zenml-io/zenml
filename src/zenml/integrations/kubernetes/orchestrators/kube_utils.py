@@ -660,6 +660,15 @@ def create_job(
 def get_container_status(
     pod: k8s_client.V1Pod, container_name: str
 ) -> Optional[k8s_client.V1ContainerState]:
+    """Get the status of a container.
+
+    Args:
+        pod: The pod to get the container status for.
+        container_name: The container name.
+
+    Returns:
+        The container status.
+    """
     if not pod.status or not pod.status.container_statuses:
         return None
 
@@ -673,6 +682,15 @@ def get_container_status(
 def get_container_termination_reason(
     pod: k8s_client.V1Pod, container_name: str
 ) -> Optional[Tuple[int, str]]:
+    """Get the termination reason for a container.
+
+    Args:
+        pod: The pod to get the termination reason for.
+        container_name: The container name.
+
+    Returns:
+        The exit code and termination reason for the container.
+    """
     container_state = get_container_status(pod, container_name)
     if not container_state or not container_state.terminated:
         return None
