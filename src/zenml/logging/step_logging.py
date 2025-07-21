@@ -271,7 +271,7 @@ class PipelineLogsStorage:
         self.last_merge_time = time.time()
 
         # Lock for shared state
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
 
     def write(self, text: str) -> None:
         """Main write method.
