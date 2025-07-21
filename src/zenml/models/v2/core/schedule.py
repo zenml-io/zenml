@@ -127,6 +127,7 @@ class ScheduleUpdate(BaseUpdate):
     """Update model for schedules."""
 
     name: Optional[str] = None
+    cron_expression: Optional[str] = None
 
 
 # ------------------ Response Model ------------------

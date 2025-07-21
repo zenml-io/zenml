@@ -372,7 +372,29 @@ def main() -> None:
 
                 logger.info(f"Job for step `{step_name}` completed.")
             except Exception:
-                logger.error(f"Job for step `{step_name}` failed.")
+                reason = ""
+                try:
+                    pods_by_job = core_api.list_namespaced_pod(
+                        label_selector=f"job-name={job_name}",
+                        namespace=namespace,
+                    ).items
+                    first_pod = pods_by_job[0]
+                    if status := first_pod.status:
+                        if container_statuses := status.container_statuses:
+                            for cs in container_statuses:
+                                if cs.name == "main":
+                                    if state := cs.state:
+                                        if terminated := state.terminated:
+                                            if terminated.exit_code != 0:
+                                                reason = f"{terminated.reason}(exit_code={terminated.exit_code})"
+                                    break
+                except Exception:
+                    pass
+                logger.error(
+                    f"Job for step `{step_name}` failed. Reason: {reason}"
+                    if reason
+                    else ""
+                )
 
                 raise
 

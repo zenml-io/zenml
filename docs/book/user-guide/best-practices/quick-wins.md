@@ -220,11 +220,12 @@ schedule = Schedule(
     cron_expression="0 3 * * *"  # Run at 3 AM every day
 )
 
-# Attach the schedule to your pipeline
-@pipeline(schedule=schedule)
 def my_pipeline():
     # Your pipeline steps
     pass
+
+# Attach the schedule to your pipeline
+my_pipeline = my_pipeline.with_options(schedule=schedule)
 
 # Run once to register the schedule
 my_pipeline()
@@ -246,7 +247,7 @@ my_pipeline()
 * For cloud orchestrators, verify service account permissions
 * Remember that deleting a schedule from ZenML doesn't remove it from the orchestrator!
 
-Learn more: [Scheduling Pipelines](https://docs.zenml.io/concepts/steps_and_pipelines/scheduling), [Managing Scheduled Pipelines](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
+Learn more: [Scheduling Pipelines](../../how-to/steps-pipelines/scheduling.md), [Managing Scheduled Pipelines](../../user-guide/tutorial/managing-scheduled-pipelines.md)
 
 ## 6 Kill cold-starts with **SageMaker Warm Pools / Vertex Persistent Resources**
 
