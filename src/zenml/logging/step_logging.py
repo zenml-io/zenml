@@ -97,6 +97,16 @@ class ArtifactStoreHandler(logging.Handler):
             message = (
                 f"[{timestamp} UTC] [{record.levelname}] {record.getMessage()}"
             )
+
+            # Include exception information if present
+            if record.exc_info:
+                import traceback
+
+                exception_text = "".join(
+                    traceback.format_exception(*record.exc_info)
+                )
+                message = f"{message}\n{exception_text.rstrip()}"
+
             self.storage.write(message)
         except Exception:
             # Don't let storage errors break logging
@@ -130,19 +140,16 @@ def setup_global_print_wrapping() -> None:
 
         # Call active handlers first (for storage)
         if message.strip():
-            if file_arg == sys.stderr:
-                handlers = logging_handlers.get()
-                level = logging.ERROR
-            else:
-                handlers = logging_handlers.get()
-                level = logging.INFO
+            handlers = logging_handlers.get()
 
             for handler in handlers:
                 try:
                     # Create a LogRecord for the handler
                     record = logging.LogRecord(
                         name="print",
-                        level=level,
+                        level=logging.ERROR
+                        if file_arg == sys.stderr
+                        else logging.INFO,
                         pathname="",
                         lineno=0,
                         msg=message,
@@ -641,6 +648,21 @@ class PipelineLogsStorageContext:
 
         Removes the handler from loggers and context variables.
         """
+        # Write about the exception if it exists
+        if exc_type is not None:
+            # Write the exception and its traceback to the logs
+            self.artifact_store_handler.emit(
+                logging.LogRecord(
+                    name="exception",
+                    level=logging.ERROR,
+                    pathname="",
+                    lineno=0,
+                    msg="Exception occurred during execution.",
+                    args=(),
+                    exc_info=(exc_type, exc_val, exc_tb),
+                )
+            )
+
         # Remove handler from root logger and restore original level
         if self.artifact_store_handler:
             root_logger = logging.getLogger()
