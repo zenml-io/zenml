@@ -3165,7 +3165,9 @@ def test_logs_are_recorded_properly(clean_client):
         assert "log" in step1_logs_content
 
         # Step 2 does not have logs!
-        assert "Step `int_plus_one_test_step` has started." in step2_logs_content
+        assert (
+            "Step `int_plus_one_test_step` has started." in step2_logs_content
+        )
 
 
 def test_logs_are_recorded_properly_when_disabled(clean_client):
