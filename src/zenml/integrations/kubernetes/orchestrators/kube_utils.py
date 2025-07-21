@@ -782,7 +782,7 @@ def wait_for_job_to_finish(
 
         if stream_logs:
             try:
-                pod_list: k8s_client.V1PodList = core_api.list_namespaced_pod(
+                pod_list = core_api.list_namespaced_pod(
                     namespace=namespace,
                     label_selector=f"job-name={job_name}",
                 )
