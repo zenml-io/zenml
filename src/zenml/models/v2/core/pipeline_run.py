@@ -776,7 +776,8 @@ class PipelineRunFilter(
         if self.template_id:
             run_template_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.template_id == self.template_id,
+                PipelineDeploymentSchema.source_deployment_id
+                == self.template_id,
             )
             custom_filters.append(run_template_filter)
 

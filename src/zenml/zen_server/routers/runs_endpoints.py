@@ -458,7 +458,10 @@ def run_logs(
     # Handle runner logs from workload manager
     if run.deployment_id and source == "runner":
         deployment = store.get_deployment(run.deployment_id)
-        if deployment.template_id and server_config().workload_manager_enabled:
+        if (
+            deployment.source_deployment_id
+            and server_config().workload_manager_enabled
+        ):
             workload_logs = workload_manager().get_logs(
                 workload_id=deployment.id
             )

@@ -552,7 +552,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 code_path=self.deployment.code_path
                 if self.deployment
                 else None,
-                template_id=self.deployment.template_id
+                template_id=self.deployment.source_deployment_id
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,

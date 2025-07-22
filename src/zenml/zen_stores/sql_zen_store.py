@@ -4852,7 +4852,7 @@ class SqlZenStore(BaseZenStore):
             self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=RunTemplateSchema,
-                reference_id=deployment.template,
+                reference_id=deployment.source_deployment,
                 session=session,
             )
 
@@ -5135,11 +5135,12 @@ class SqlZenStore(BaseZenStore):
             # manually as we can't have a foreign key there to avoid a cycle
             deployments = session.exec(
                 select(PipelineDeploymentSchema).where(
-                    PipelineDeploymentSchema.template_id == template_id
+                    PipelineDeploymentSchema.source_deployment_id
+                    == template_id
                 )
             ).all()
             for deployment in deployments:
-                deployment.template_id = None
+                deployment.source_deployment_id = None
                 session.add(deployment)
 
             session.commit()
@@ -9646,7 +9647,7 @@ class SqlZenStore(BaseZenStore):
                 analytics_handler.metadata = {
                     "project_id": pipeline_run.project_id,
                     "pipeline_run_id": pipeline_run_id,
-                    "template_id": pipeline_run.deployment.template_id,
+                    "template_id": pipeline_run.deployment.source_deployment_id,
                     "status": new_status,
                     "num_steps": num_steps,
                     "start_time": start_time_str,

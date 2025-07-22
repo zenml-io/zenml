@@ -527,7 +527,7 @@ def deployment_request_from_template(
         schedule=None,
         code_reference=code_reference_request,
         code_path=deployment.code_path,
-        template=template.id,
+        source_deployment=template.id,
         pipeline_version_hash=deployment.pipeline_version_hash,
         pipeline_spec=deployment.pipeline_spec,
     )

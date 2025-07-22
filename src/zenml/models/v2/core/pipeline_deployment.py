@@ -21,7 +21,8 @@ from pydantic import Field
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -40,6 +41,7 @@ from zenml.models.v2.core.pipeline_build import (
 )
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
+from zenml.models.v2.core.tag import TagResponse
 
 # ------------------ Request Model ------------------
 
@@ -110,21 +112,50 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
-    template: Optional[UUID] = Field(
+    source_deployment: Optional[UUID] = Field(
         default=None,
-        description="Template used for the deployment.",
+        description="Deployment that is the source of this deployment.",
     )
 
 
 # ------------------ Update Model ------------------
 
-# There is no update model for pipeline deployments.
+
+class PipelineDeploymentUpdate(BaseUpdate):
+    """Pipeline deployment update model."""
+
+    name: Optional[str] = Field(
+        default=None,
+        title="The name of the deployment.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the deployment.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    add_tags: Optional[List[str]] = Field(
+        default=None, title="New tags to add to the deployment."
+    )
+    remove_tags: Optional[List[str]] = Field(
+        default=None, title="Tags to remove from the deployment."
+    )
+
 
 # ------------------ Response Model ------------------
 
 
 class PipelineDeploymentResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline deployments."""
+
+    name: Optional[str] = Field(
+        default=None,
+        title="The name of the deployment.",
+    )
+
+    runnable: bool = Field(
+        title="If a run can be started from the deployment.",
+    )
 
 
 class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
@@ -137,6 +168,10 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
         "pipeline_spec",
     ]
 
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the deployment.",
+    )
     run_name_template: str = Field(
         title="The run name template for runs created using this deployment.",
     )
@@ -183,14 +218,24 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="The code reference associated with the deployment.",
     )
-    template_id: Optional[UUID] = Field(
+    source_deployment_id: Optional[UUID] = Field(
         default=None,
-        description="Template used for the pipeline run.",
+        description="Deployment that is the source of this deployment.",
+    )
+    config_template: Optional[Dict[str, Any]] = Field(
+        default=None, title="Run configuration template."
+    )
+    config_schema: Optional[Dict[str, Any]] = Field(
+        default=None, title="Run configuration schema."
     )
 
 
 class PipelineDeploymentResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
+
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the run template.",
+    )
 
 
 class PipelineDeploymentResponse(
@@ -340,13 +385,13 @@ class PipelineDeploymentResponse(
         return self.get_metadata().code_reference
 
     @property
-    def template_id(self) -> Optional[UUID]:
-        """The `template_id` property.
+    def source_deployment_id(self) -> Optional[UUID]:
+        """The `source_deployment_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().template_id
+        return self.get_metadata().source_deployment_id
 
 
 # ------------------ Filter Model ------------------

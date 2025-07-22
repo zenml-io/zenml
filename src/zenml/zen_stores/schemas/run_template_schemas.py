@@ -204,7 +204,10 @@ class RunTemplateSchema(NamedSchema, table=True):
                         col(PipelineDeploymentSchema.id)
                         == col(PipelineRunSchema.deployment_id),
                     )
-                    .where(PipelineDeploymentSchema.template_id == self.id)
+                    .where(
+                        PipelineDeploymentSchema.source_deployment_id
+                        == self.id
+                    )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
                 )

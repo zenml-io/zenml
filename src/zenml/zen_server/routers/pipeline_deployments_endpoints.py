@@ -293,7 +293,10 @@ def deployment_logs(
         hydrate=True,
     )
 
-    if deployment.template_id and server_config().workload_manager_enabled:
+    if (
+        deployment.source_deployment_id
+        and server_config().workload_manager_enabled
+    ):
         return workload_manager().get_logs(workload_id=deployment.id)
 
     # Get the last pipeline run for this deployment
