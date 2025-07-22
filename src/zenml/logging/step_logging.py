@@ -59,6 +59,8 @@ logger = get_logger(__name__)
 
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
 
+ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
 LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
 
@@ -72,7 +74,6 @@ def remove_ansi_escape_codes(text: str) -> str:
     Returns:
         the version of the input string where the escape codes are removed.
     """
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", text)
 
 
@@ -270,8 +271,9 @@ class PipelineLogsStorage:
         # Immutable filesystems state
         self.last_merge_time = time.time()
 
-        # Lock for shared state
-        self.lock = threading.RLock()
+        # Two-lock system for improved concurrency
+        self.buffer_lock = threading.RLock()  # Fast operations: buffer management, decisions
+        self.io_lock = threading.RLock()      # Slow operations: file I/O, merging
 
     def write(self, text: str) -> None:
         """Main write method.
@@ -282,7 +284,7 @@ class PipelineLogsStorage:
         if text == "\n":
             return
 
-        with self.lock:
+        with self.buffer_lock:
             if not self.disabled:
                 # Add timestamp to the message when it's received
                 timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
@@ -321,11 +323,11 @@ class PipelineLogsStorage:
         Args:
             force: whether to force a save even if the write conditions not met.
         """
-        with self.lock:
+        with self.buffer_lock:
             self._save_to_file(force)
 
     def _save_to_file(self, force: bool = False) -> None:
-        """Internal method to save the buffer to the given URI (no locking).
+        """Internal method to save the buffer to the given URI with two-lock optimization.
 
         Args:
             force: whether to force a save even if the write conditions not met.
@@ -352,11 +354,50 @@ class PipelineLogsStorage:
             # No running loop
             pass
 
+        # Fast path: Check conditions and prepare buffer for writing
+        buffer_to_write = None
+        should_merge = False
+        
+        # Note: We're already inside buffer_lock here from the calling code
         if not self.disabled and (self._is_write_needed or force):
-            # IMPORTANT: keep this as the first code line in this method! The
-            # code that follows might still emit logging messages, which will
-            # end up triggering this method again, causing an infinite loop.
-            self.disabled = True
+            if self.buffer:
+                # Copy buffer and clear original
+                buffer_to_write = self.buffer.copy()
+                self.buffer = []
+                self.last_save_time = time.time()
+        
+        # Check if merge is needed (for immutable filesystems)
+        if (
+            self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM
+            and time.time() - self.last_merge_time > self.merge_files_interval
+        ):
+            should_merge = True
+        
+        # Release buffer_lock before doing slow I/O operations
+        # Now we do the slow I/O operations with the copied buffer
+        if buffer_to_write is not None:
+            self._write_buffer_to_file(buffer_to_write)
+        
+        if should_merge:
+            try:
+                with self.io_lock:
+                    self._merge_log_files()
+            except (OSError, IOError) as e:
+                logger.error(f"Error while trying to roll up logs: {e}")
+            finally:
+                with self.buffer_lock:
+                    self.last_merge_time = time.time()
+
+    def _write_buffer_to_file(self, buffer_to_write: List[str]) -> None:
+        """Write the given buffer to file using the I/O lock.
+        
+        Args:
+            buffer_to_write: The buffer contents to write to file.
+        """
+        with self.io_lock:
+            # IMPORTANT: Set disabled flag to prevent recursion during I/O
+            with self.buffer_lock:
+                self.disabled = True
 
             try:
                 # The configured logging handler uses a lock to ensure that
@@ -371,27 +412,26 @@ class PipelineLogsStorage:
                 logging_lock = logging_handler.lock
                 logging_handler.lock = None
 
-                if self.buffer:
-                    if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-                        _logs_uri = self._get_timestamped_filename()
-                        with self.artifact_store.open(
-                            os.path.join(
-                                self.logs_uri,
-                                _logs_uri,
-                            ),
-                            "w",
-                        ) as file:
-                            for message in self.buffer:
-                                file.write(f"{message}\n")
-                    else:
-                        with self.artifact_store.open(
-                            self.logs_uri, "a"
-                        ) as file:
-                            for message in self.buffer:
-                                file.write(f"{message}\n")
-                        self.artifact_store._remove_previous_file_versions(
-                            self.logs_uri
-                        )
+                if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+                    _logs_uri = self._get_timestamped_filename()
+                    with self.artifact_store.open(
+                        os.path.join(
+                            self.logs_uri,
+                            _logs_uri,
+                        ),
+                        "w",
+                    ) as file:
+                        for message in buffer_to_write:
+                            file.write(f"{message}\n")
+                else:
+                    with self.artifact_store.open(
+                        self.logs_uri, "a"
+                    ) as file:
+                        for message in buffer_to_write:
+                            file.write(f"{message}\n")
+                    self.artifact_store._remove_previous_file_versions(
+                        self.logs_uri
+                    )
 
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the
@@ -402,23 +442,10 @@ class PipelineLogsStorage:
             finally:
                 # Restore the original logging handler lock
                 logging_handler.lock = logging_lock
-
-                self.buffer = []
-                self.last_save_time = time.time()
-
-                self.disabled = False
-        # merge created files on a given interval (defaults to 10 minutes)
-        # only runs on Immutable Filesystems
-        if (
-            self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM
-            and time.time() - self.last_merge_time > self.merge_files_interval
-        ):
-            try:
-                self._merge_log_files()
-            except (OSError, IOError) as e:
-                logger.error(f"Error while trying to roll up logs: {e}")
-            finally:
-                self.last_merge_time = time.time()
+                
+                # Re-enable logging
+                with self.buffer_lock:
+                    self.disabled = False
 
     def merge_log_files(self, merge_all_files: bool = False) -> None:
         """Merges all log files into one in the given URI.
@@ -428,11 +455,11 @@ class PipelineLogsStorage:
         Args:
             merge_all_files: whether to merge all files or only raw files
         """
-        with self.lock:
+        with self.io_lock:
             self._merge_log_files(merge_all_files)
 
     def _merge_log_files(self, merge_all_files: bool = False) -> None:
-        """Internal method to merge log files (no locking).
+        """Internal method to merge log files (uses I/O lock).
 
         Args:
             merge_all_files: whether to merge all files or only raw files

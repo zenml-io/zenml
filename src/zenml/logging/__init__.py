@@ -18,7 +18,7 @@
 STEP_LOGS_STORAGE_INTERVAL_SECONDS: int = 15
 
 # How many messages to buffer before uploading logs to the artifact store
-STEP_LOGS_STORAGE_MAX_MESSAGES: int = 100
+STEP_LOGS_STORAGE_MAX_MESSAGES: int = 1000
 
 # How often to merge logs into a single file
 STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS: int = 10 * 60
