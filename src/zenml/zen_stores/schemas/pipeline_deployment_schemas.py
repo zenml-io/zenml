@@ -35,7 +35,9 @@ from zenml.models import (
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
     PipelineDeploymentResponseResources,
+    PipelineDeploymentUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -342,6 +344,25 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             else None,
             code_path=request.code_path,
         )
+
+    def update(
+        self, update: PipelineDeploymentUpdate
+    ) -> "PipelineDeploymentSchema":
+        """Update the deployment schema.
+
+        Args:
+            update: The update to apply.
+
+        Returns:
+            The updated schema.
+        """
+        if update.name:
+            self.name = update.name
+        if update.description:
+            self.description = update.description
+
+        self.updated = utc_now()
+        return self
 
     def to_model(
         self,

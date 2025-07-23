@@ -224,6 +224,7 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -4951,6 +4952,46 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineDeploymentSchema,
                 filter_model=deployment_filter_model,
                 hydrate=hydrate,
+            )
+
+    def update_deployment(
+        self,
+        deployment_id: UUID,
+        deployment_update: PipelineDeploymentUpdate,
+    ) -> PipelineDeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+        """
+        with Session(self.engine) as session:
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=PipelineDeploymentSchema,
+                session=session,
+            )
+            deployment.update(deployment_update)
+            session.add(deployment)
+            session.commit()
+
+            self._attach_tags_to_resources(
+                tags=deployment_update.add_tags,
+                resources=deployment,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=deployment_update.remove_tags,
+                resources=deployment,
+                session=session,
+            )
+
+            session.refresh(deployment)
+            return deployment.to_model(
+                include_metadata=True, include_resources=True
             )
 
     def delete_deployment(self, deployment_id: UUID) -> None:

@@ -132,6 +132,7 @@ from zenml.models import (
     PipelineBuildResponse,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
+    PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineResponse,
     PipelineRunFilter,
@@ -3474,6 +3475,44 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_deployments(
             deployment_filter_model=deployment_filter_model,
             hydrate=hydrate,
+        )
+
+    def update_deployment(
+        self,
+        id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> PipelineDeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            id_or_prefix: The id or id prefix of the deployment.
+            project: The project name/ID to filter by.
+            name: The new name of the deployment.
+            description: The new description of the deployment.
+            add_tags: Tags to add to the deployment.
+            remove_tags: Tags to remove from the deployment.
+
+        Returns:
+            The updated deployment.
+        """
+        deployment = self.get_deployment(
+            id_or_prefix=id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+
+        return self.zen_store.update_deployment(
+            deployment_id=deployment.id,
+            deployment_update=PipelineDeploymentUpdate(
+                name=name,
+                description=description,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
+            ),
         )
 
     def delete_deployment(

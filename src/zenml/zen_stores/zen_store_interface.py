@@ -82,6 +82,7 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1334,6 +1335,22 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A page of all deployments matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_deployment(
+        self,
+        deployment_id: UUID,
+        deployment_update: PipelineDeploymentUpdate,
+    ) -> PipelineDeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
         """
 
     @abstractmethod

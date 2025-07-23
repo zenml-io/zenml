@@ -23,6 +23,7 @@ from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
+    PipelineDeploymentUpdate,
     PipelineRunFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -32,6 +33,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
@@ -234,6 +236,34 @@ def get_deployment(
         }
 
     return deployment.model_dump(mode="json", exclude=exclude)
+
+
+@router.put(
+    "/{deployment_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def update_deployment(
+    deployment_id: UUID,
+    deployment_update: PipelineDeploymentUpdate,
+    _: AuthContext = Security(authorize),
+) -> Any:
+    """Update a deployment.
+
+    Args:
+        request: The request object.
+        deployment_id: ID of the deployment to update.
+        deployment_update: The update to apply.
+
+    Returns:
+        The updated deployment.
+    """
+    return verify_permissions_and_update_entity(
+        id=deployment_id,
+        update_model=deployment_update,
+        get_method=zen_store().get_deployment,
+        update_method=zen_store().update_deployment,
+    )
 
 
 @router.delete(

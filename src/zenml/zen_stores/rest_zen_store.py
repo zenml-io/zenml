@@ -198,6 +198,7 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1685,6 +1686,27 @@ class RestZenStore(BaseZenStore):
             response_model=PipelineDeploymentResponse,
             filter_model=deployment_filter_model,
             params={"hydrate": hydrate},
+        )
+
+    def update_deployment(
+        self,
+        deployment_id: UUID,
+        deployment_update: PipelineDeploymentUpdate,
+    ) -> PipelineDeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+        """
+        return self._update_resource(
+            resource_id=deployment_id,
+            resource_update=deployment_update,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponse,
         )
 
     def delete_deployment(self, deployment_id: UUID) -> None:
