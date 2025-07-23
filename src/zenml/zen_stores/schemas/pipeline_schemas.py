@@ -93,6 +93,7 @@ class PipelineSchema(NamedSchema, table=True):
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(

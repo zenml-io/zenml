@@ -502,8 +502,8 @@ def delete_pipeline(
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline "
-            f"`{pipeline_name_or_id}`? This will change all "
-            "existing runs of this pipeline to become unlisted."
+            f"`{pipeline_name_or_id}`? This will delete all "
+            "runs and deployments of this pipeline."
         )
         if not confirmation:
             cli_utils.declare("Pipeline deletion canceled.")
