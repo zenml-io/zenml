@@ -242,7 +242,7 @@ def initialize_deployment_executor() -> None:
     )
 
     _deployment_executor = BoundedThreadPoolExecutor(
-        max_workers=server_config().max_concurrent_template_runs,
+        max_workers=server_config().max_concurrent_deployment_runs,
         thread_name_prefix="zenml-deployment-executor",
     )
 

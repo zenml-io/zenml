@@ -12821,6 +12821,7 @@ class SqlZenStore(BaseZenStore):
                     TaggableResourceTypes.PIPELINE_RUN.value,
                     TaggableResourceTypes.ARTIFACT_VERSION.value,
                     TaggableResourceTypes.RUN_TEMPLATE.value,
+                    TaggableResourceTypes.PIPELINE_DEPLOYMENT.value,
                 ]
 
                 # Check if tag is associated with any non-allowed resource types
@@ -12865,6 +12866,11 @@ class SqlZenStore(BaseZenStore):
                         TaggableResourceTypes.RUN_TEMPLATE,
                         RunTemplateSchema.id,
                         None,  # Special case - will be handled differently
+                    ),
+                    (
+                        TaggableResourceTypes.PIPELINE_DEPLOYMENT,
+                        PipelineDeploymentSchema.id,
+                        PipelineDeploymentSchema.pipeline_id,
                     ),
                 ]:
                     # Special handling for run templates as they don't have direct pipeline_id
