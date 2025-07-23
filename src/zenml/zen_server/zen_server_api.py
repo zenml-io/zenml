@@ -92,15 +92,15 @@ from zenml.zen_server.secure_headers import (
 )
 from zenml.zen_server.utils import (
     cleanup_request_manager,
+    deployment_executor,
+    initialize_deployment_executor,
     initialize_feature_gate,
     initialize_memcache,
     initialize_plugins,
     initialize_rbac,
     initialize_request_manager,
-    initialize_run_template_executor,
     initialize_workload_manager,
     initialize_zen_store,
-    run_template_executor,
     server_config,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
@@ -165,7 +165,7 @@ async def initialize() -> None:
     initialize_rbac()
     initialize_feature_gate()
     initialize_workload_manager()
-    initialize_run_template_executor()
+    initialize_deployment_executor()
     initialize_plugins()
     initialize_secure_headers()
     initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
@@ -183,7 +183,7 @@ async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
-    run_template_executor().shutdown(wait=True)
+    deployment_executor().shutdown(wait=True)
     await cleanup_request_manager()
 
 

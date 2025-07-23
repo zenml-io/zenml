@@ -12467,6 +12467,7 @@ class SqlZenStore(BaseZenStore):
             PipelineSchema: TaggableResourceTypes.PIPELINE,
             PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
             RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
+            PipelineDeploymentSchema: TaggableResourceTypes.PIPELINE_DEPLOYMENT,
         }
         if type(resource) not in resource_types:
             raise ValueError(
@@ -12492,6 +12493,7 @@ class SqlZenStore(BaseZenStore):
             ArtifactVersionSchema,
             ModelSchema,
             ModelVersionSchema,
+            PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
             RunTemplateSchema,
@@ -12507,6 +12509,7 @@ class SqlZenStore(BaseZenStore):
             TaggableResourceTypes.PIPELINE: PipelineSchema,
             TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
             TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
+            TaggableResourceTypes.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
         }
 
         return resource_type_to_schema_mapping[resource_type]
@@ -13147,6 +13150,30 @@ class SqlZenStore(BaseZenStore):
                                             resource_type=TaggableResourceTypes.RUN_TEMPLATE,
                                         )
                                     )
+                    elif isinstance(resource, PipelineDeploymentSchema):
+                        scope_id = resource.pipeline_id
+                        scope_ids[
+                            TaggableResourceTypes.PIPELINE_DEPLOYMENT
+                        ].append(scope_id)
+
+                        # TODO: This is very inefficient, we should use a
+                        # better query
+                        older_deployments = self.list_deployments(
+                            PipelineDeploymentFilter(
+                                id=f"notequals:{resource.id}",
+                                project=resource.project.id,
+                                pipeline_id=scope_id,
+                                tags=[tag_schema.name],
+                            )
+                        )
+                        if older_deployments.items:
+                            detach_resources.append(
+                                TagResourceRequest(
+                                    tag_id=tag_schema.id,
+                                    resource_id=older_deployments.items[0].id,
+                                    resource_type=TaggableResourceTypes.PIPELINE_DEPLOYMENT,
+                                )
+                            )
                     else:
                         raise ValueError(
                             "Can not attach exclusive tag to resource of type "

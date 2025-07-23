@@ -29,26 +29,26 @@ from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.logger import get_logger
 
 add_tags_warning = """
-# Automatic tagging to a pipeline run (within a step)
+# Automatic tagging of a pipeline run (within a step)
 add_tags(tags=[...])
 
-# Manual tagging to a pipeline run
+# Manual tagging of a pipeline run
 add_tags(tags=[...], run=...)
 
-# Manual tagging to a pipeline
+# Manual tagging of a pipeline
 add_tags(tags=[...], pipeline=...)
 
-# Manual tagging to a run template
+# Manual tagging of a run template
 add_tags(tags=[...], run_template=...)
 
-# Manual tagging to an artifact
+# Manual tagging of an artifact
 add_tags(tags=[...], artifact=...)
 
-# Automatic tagging to an artifact version (within a step)
+# Automatic tagging of an artifact version (within a step)
 add_tags(tags=[...], infer_artifact=True)  # step with single output
 add_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
 
-# Manual tagging to an artifact version
+# Manual tagging of an artifact version
 add_tags(tags=[...], artifact_name=..., artifact_version=...)
 add_tags(tags=[...], artifact_version_id=...)
 """
@@ -177,6 +177,14 @@ def add_tags(
 ) -> None: ...
 
 
+@overload
+def add_tags(
+    *,
+    tags: List[Union[str, Tag]],
+    deployment: Union[UUID, str],
+) -> None: ...
+
+
 def add_tags(
     tags: List[Union[str, Tag]],
     # Pipelines
@@ -185,6 +193,8 @@ def add_tags(
     run: Optional[Union[UUID, str]] = None,
     # Run Templates
     run_template: Optional[Union[UUID, str]] = None,
+    # Deployments
+    deployment: Optional[Union[UUID, str]] = None,
     # Artifacts
     artifact: Optional[Union[UUID, str]] = None,
     # Artifact Versions
@@ -200,6 +210,7 @@ def add_tags(
         pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
         run_template: The ID or the name of the run template.
+        deployment: The ID or the name of the deployment.
         artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
@@ -225,6 +236,7 @@ def add_tags(
         for v in [
             run,
             run_template,
+            deployment,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -242,6 +254,7 @@ def add_tags(
         for v in [
             pipeline,
             run_template,
+            deployment,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -259,6 +272,7 @@ def add_tags(
         for v in [
             pipeline,
             run,
+            deployment,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -272,6 +286,25 @@ def add_tags(
         resource_id = run_template_model.id
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
 
+    # Tag a deployment
+    elif deployment is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
+        # TODO: add support for names
+        deployment_model = client.get_deployment(id_or_prefix=deployment)
+        resource_id = deployment_model.id
+        resource_type = TaggableResourceTypes.PIPELINE_DEPLOYMENT
+
     # Tag an artifact
     elif artifact is not None and all(
         v is None
@@ -279,6 +312,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            deployment,
             artifact_version_id,
             artifact_name,
             artifact_version,
@@ -296,6 +330,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            deployment,
             artifact,
             artifact_name,
             artifact_version,
@@ -312,6 +347,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            deployment,
             artifact,
             artifact_version_id,
             infer_artifact,
@@ -330,6 +366,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            deployment,
             artifact,
             artifact_version_id,
             artifact_version,
@@ -386,6 +423,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            deployment,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -497,6 +535,14 @@ def remove_tags(
 def remove_tags(
     *,
     tags: List[str],
+    deployment: Union[UUID, str],
+) -> None: ...
+
+
+@overload
+def remove_tags(
+    *,
+    tags: List[str],
     artifact: Union[UUID, str],
 ) -> None: ...
 
@@ -535,6 +581,8 @@ def remove_tags(
     run: Optional[Union[UUID, str]] = None,
     # Run Templates
     run_template: Optional[Union[UUID, str]] = None,
+    # Deployments
+    deployment: Optional[Union[UUID, str]] = None,
     # Artifacts
     artifact: Optional[Union[UUID, str]] = None,
     # Artifact Versions
@@ -550,6 +598,7 @@ def remove_tags(
         pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
         run_template: The ID or the name of the run template.
+        deployment: The ID or the name of the deployment.
         artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
@@ -573,6 +622,7 @@ def remove_tags(
         v is None
         for v in [
             run_template,
+            deployment,
             run,
             artifact,
             artifact_version_id,
@@ -590,6 +640,7 @@ def remove_tags(
         v is None
         for v in [
             pipeline,
+            deployment,
             run,
             artifact,
             artifact_version_id,
@@ -604,12 +655,32 @@ def remove_tags(
         resource_id = run_template_model.id
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
 
+    # Remove tags from a deployment
+    elif deployment is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run_template,
+            run,
+            artifact,
+            artifact_version_id,
+            artifact_version,
+            artifact_name,
+            infer_artifact,
+        ]
+    ):
+        # TODO: add support for names
+        deployment_model = client.get_deployment(id_or_prefix=deployment)
+        resource_id = deployment_model.id
+        resource_type = TaggableResourceTypes.PIPELINE_DEPLOYMENT
+
     # Remove tags from a run
     elif run is not None and all(
         v is None
         for v in [
             pipeline,
             run_template,
+            deployment,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -627,6 +698,7 @@ def remove_tags(
         for v in [
             pipeline,
             run_template,
+            deployment,
             run,
             artifact_version_id,
             artifact_name,
@@ -644,6 +716,7 @@ def remove_tags(
         for v in [
             pipeline,
             run_template,
+            deployment,
             run,
             artifact,
             artifact_name,
@@ -660,6 +733,7 @@ def remove_tags(
         for v in [
             pipeline,
             run_template,
+            deployment,
             run,
             artifact,
             artifact_version_id,
@@ -678,6 +752,7 @@ def remove_tags(
         for v in [
             pipeline,
             run_template,
+            deployment,
             run,
             artifact,
             artifact_version_id,
@@ -734,6 +809,7 @@ def remove_tags(
             pipeline,
             run,
             run_template,
+            deployment,
             artifact,
             artifact_version_id,
             artifact_name,

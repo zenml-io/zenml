@@ -87,7 +87,7 @@ _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
-_run_template_executor: Optional["BoundedThreadPoolExecutor"] = None
+_deployment_executor: Optional["BoundedThreadPoolExecutor"] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
 _request_manager: Optional[RequestManager] = None
@@ -218,32 +218,32 @@ def initialize_workload_manager() -> None:
             _workload_manager = workload_manager_class()
 
 
-def run_template_executor() -> "BoundedThreadPoolExecutor":
-    """Return the initialized run template executor.
+def deployment_executor() -> "BoundedThreadPoolExecutor":
+    """Return the initialized deployment executor.
 
     Raises:
-        RuntimeError: If the run template executor is not initialized.
+        RuntimeError: If the deployment executor is not initialized.
 
     Returns:
-        The run template executor.
+        The deployment executor.
     """
-    global _run_template_executor
-    if _run_template_executor is None:
-        raise RuntimeError("Run template executor not initialized")
+    global _deployment_executor
+    if _deployment_executor is None:
+        raise RuntimeError("Deployment executor not initialized")
 
-    return _run_template_executor
+    return _deployment_executor
 
 
-def initialize_run_template_executor() -> None:
-    """Initialize the run template executor."""
-    global _run_template_executor
+def initialize_deployment_executor() -> None:
+    """Initialize the deployment executor."""
+    global _deployment_executor
     from zenml.zen_server.template_execution.utils import (
         BoundedThreadPoolExecutor,
     )
 
-    _run_template_executor = BoundedThreadPoolExecutor(
+    _deployment_executor = BoundedThreadPoolExecutor(
         max_workers=server_config().max_concurrent_template_runs,
-        thread_name_prefix="zenml-run-template-executor",
+        thread_name_prefix="zenml-deployment-executor",
     )
 
 

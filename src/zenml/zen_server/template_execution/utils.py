@@ -58,7 +58,7 @@ from zenml.zen_server.template_execution.runner_entrypoint_configuration import 
     RunnerEntrypointConfiguration,
 )
 from zenml.zen_server.utils import (
-    run_template_executor,
+    deployment_executor,
     server_config,
     workload_manager,
     zen_store,
@@ -318,13 +318,13 @@ def run_deployment(
         _task_with_analytics_and_error_handling()
     else:
         try:
-            run_template_executor().submit(
+            deployment_executor().submit(
                 _task_with_analytics_and_error_handling
             )
         except MaxConcurrentTasksError:
             zen_store().delete_run(run_id=placeholder_run.id)
             raise MaxConcurrentTasksError(
-                "Maximum number of concurrent run template tasks reached."
+                "Maximum number of concurrent deployment tasks reached."
             ) from None
 
     return placeholder_run

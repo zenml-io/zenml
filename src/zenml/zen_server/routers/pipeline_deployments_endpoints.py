@@ -18,16 +18,28 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request, Security
 
-from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.constants import (
+    API,
+    PIPELINE_DEPLOYMENTS,
+    RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
+    VERSION_1,
+)
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentUpdate,
     PipelineRunFilter,
+    PipelineRunResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -35,7 +47,8 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -354,3 +367,66 @@ def deployment_logs(
         offset=offset,
         length=length,
     )
+
+
+if server_config().workload_manager_enabled:
+
+    @router.post(
+        "/{deployment_id}/runs",
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+            429: error_response,
+        },
+    )
+    @async_fastapi_endpoint_wrapper
+    def create_deployment_run(
+        deployment_id: UUID,
+        config: Optional[PipelineRunConfiguration] = None,
+        auth_context: AuthContext = Security(authorize),
+    ) -> PipelineRunResponse:
+        """Run a pipeline from a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment.
+            config: Configuration for the pipeline run.
+            auth_context: Authentication context.
+
+        Returns:
+            The created pipeline run.
+        """
+        from zenml.zen_server.template_execution.utils import (
+            run_deployment,
+        )
+
+        with track_handler(
+            event=AnalyticsEvent.EXECUTED_DEPLOYMENT,
+        ) as analytics_handler:
+            deployment = verify_permissions_and_get_entity(
+                id=deployment_id,
+                get_method=zen_store().get_deployment,
+                hydrate=True,
+            )
+            analytics_handler.metadata = {
+                "project_id": deployment.project_id,
+            }
+
+            verify_permission(
+                resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+                action=Action.CREATE,
+                project_id=deployment.project_id,
+            )
+            verify_permission(
+                resource_type=ResourceType.PIPELINE_RUN,
+                action=Action.CREATE,
+                project_id=deployment.project_id,
+            )
+
+            check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
+
+            return run_deployment(
+                deployment=deployment,
+                auth_context=auth_context,
+                run_config=config,
+            )
