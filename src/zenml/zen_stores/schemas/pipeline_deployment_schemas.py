@@ -166,6 +166,9 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     # backup process
     source_deployment_id: Optional[UUID] = None
 
+    # Deprecated, remove once we remove run templates entirely
+    template_id: Optional[UUID] = None
+
     # SQLModel Relationships
     user: Optional["UserSchema"] = Relationship(
         back_populates="deployments",

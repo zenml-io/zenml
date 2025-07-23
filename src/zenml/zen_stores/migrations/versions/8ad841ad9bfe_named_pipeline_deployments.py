@@ -117,7 +117,7 @@ def migrate_run_templates() -> None:
     # Step 2: Migrate tags from run templates to their source deployments
     tag_run_template_mapping = connection.execute(
         sa.select(
-            tag_resource_table.c.id,
+            tag_resource_table.c.tag_id,
             run_template_table.c.source_deployment_id,
         )
         .join(
@@ -127,24 +127,16 @@ def migrate_run_templates() -> None:
         .where(tag_resource_table.c.resource_type == "run_template")
     ).fetchall()
 
-    tag_resource_updates = [
+    tag_resource_insertions = [
         {
-            "id": tag_resource_id,
+            "tag_id": tag_id,
             "resource_id": source_deployment_id,
             "resource_type": "pipeline_deployment",
         }
-        for tag_resource_id, source_deployment_id in tag_run_template_mapping
+        for tag_id, source_deployment_id in tag_run_template_mapping
     ]
-    if tag_resource_updates:
-        connection.execute(
-            sa.update(tag_resource_table)
-            .where(tag_resource_table.c.id == sa.bindparam("id"))
-            .values(
-                resource_id=sa.bindparam("resource_id"),
-                resource_type=sa.bindparam("resource_type"),
-            ),
-            tag_resource_updates,
-        )
+    if tag_resource_insertions:
+        op.bulk_insert(tag_resource_table, tag_resource_insertions)
 
     # Step 3: Migrate non-hidden run templates to their source deployments
     # If there are multiple templates for the same source deployment, use the
@@ -238,11 +230,6 @@ def upgrade() -> None:
         )
 
     migrate_run_templates()
-
-    with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
-        batch_op.drop_column("template_id")
-
-    # op.drop_table("run_template")
 
 
 def downgrade() -> None:
