@@ -3429,10 +3429,13 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
+        name: Optional[str] = None,
+        named_only: Optional[bool] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
         template_id: Optional[Union[str, UUID]] = None,
+        tags: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineDeploymentResponse]:
         """List all deployments.
@@ -3447,10 +3450,14 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
+            name: Filter by name.
+            named_only: If `True`, only deployments with an assigned name will
+                be returned.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
             template_id: The ID of the template to filter by.
+            tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3467,10 +3474,13 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             project=project or self.active_project.id,
             user=user,
+            name=name,
+            named_only=named_only,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
             template_id=template_id,
+            tags=tags,
         )
         return self.zen_store.list_deployments(
             deployment_filter_model=deployment_filter_model,

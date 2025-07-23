@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field
@@ -30,6 +40,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    TaggableFilter,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
@@ -42,6 +53,14 @@ from zenml.models.v2.core.pipeline_build import (
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
 from zenml.models.v2.core.tag import TagResponse
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
 
 # ------------------ Request Model ------------------
 
@@ -439,9 +458,32 @@ class PipelineDeploymentResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineDeploymentFilter(ProjectScopedFilter):
-    """Model to enable advanced filtering of all pipeline deployments."""
+class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
+    """Model for filtering pipeline deployments."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "named_only",
+    ]
+    CUSTOM_SORTING_OPTIONS = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
+    ]
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the deployment.",
+        union_mode="left_to_right",
+    )
+    named_only: Optional[bool] = Field(
+        default=None,
+        description="Whether to only return deployments with a name.",
+    )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline associated with the deployment.",
@@ -467,3 +509,29 @@ class PipelineDeploymentFilter(ProjectScopedFilter):
         description="Template used as base for the deployment.",
         union_mode="left_to_right",
     )
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        from sqlmodel import col
+
+        from zenml.zen_stores.schemas import (
+            PipelineDeploymentSchema,
+        )
+
+        custom_filters = super().get_custom_filters(table)
+
+        if self.named_only:
+            custom_filters.append(
+                col(PipelineDeploymentSchema.name).is_not(None)
+            )
+
+        return custom_filters

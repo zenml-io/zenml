@@ -430,6 +430,12 @@ def deploy_pipeline(
 
     cli_utils.declare(f"Created pipeline deployment `{deployment.id}`.")
 
+    if not Client().zen_store.get_store_info().is_pro_server():
+        cli_utils.declare(
+            "Triggering deployments is only available for ZenML Pro servers."
+        )
+        return
+
     if deployment.runnable:
         cli_utils.declare(
             "You can now trigger this deployment from the dashboard or by "
@@ -438,8 +444,8 @@ def deploy_pipeline(
         )
     else:
         cli_utils.declare(
-            "This deployment can not be triggered because it is not associated "
-            "with remote Docker images."
+            "This deployment can not be triggered because the orchestrator "
+            "is not running remotely with Docker images."
         )
 
 
