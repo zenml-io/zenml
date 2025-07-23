@@ -141,27 +141,28 @@ def migrate_run_templates() -> None:
     # Step 3: Migrate non-hidden run templates to their source deployments
     # If there are multiple templates for the same source deployment, use the
     # name/description of the latest one.
+    latest_templates_subquery = (
+        sa.select(
+            run_template_table.c.source_deployment_id,
+            sa.func.max(run_template_table.c.created).label("created"),
+        )
+        .where(run_template_table.c.hidden.is_(False))
+        .where(run_template_table.c.source_deployment_id.is_not(None))
+        .group_by(run_template_table.c.source_deployment_id)
+        .subquery()
+    )
     latest_templates_query = sa.select(
         run_template_table.c.name,
         run_template_table.c.description,
         run_template_table.c.source_deployment_id,
-    ).where(
+    ).join(
+        latest_templates_subquery,
         sa.and_(
-            run_template_table.c.hidden.is_(False),
-            run_template_table.c.source_deployment_id.is_not(None),
+            latest_templates_subquery.c.source_deployment_id
+            == run_template_table.c.source_deployment_id,
             run_template_table.c.created
-            == (
-                sa.select(sa.func.max(run_template_table.c.created))
-                .where(
-                    sa.and_(
-                        run_template_table.c.source_deployment_id
-                        == run_template_table.c.source_deployment_id,
-                        run_template_table.c.hidden.is_(False),
-                    )
-                )
-                .scalar_subquery()
-            ),
-        )
+            == latest_templates_subquery.c.created,
+        ),
     )
 
     deployment_updates = [
