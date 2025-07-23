@@ -478,7 +478,6 @@ class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
     name: Optional[str] = Field(
         default=None,
         description="Name of the deployment.",
-        union_mode="left_to_right",
     )
     named_only: Optional[bool] = Field(
         default=None,

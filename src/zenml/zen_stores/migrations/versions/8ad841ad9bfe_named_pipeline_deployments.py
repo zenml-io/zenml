@@ -103,13 +103,13 @@ def migrate_run_templates() -> None:
     ).fetchall()
 
     deployment_updates = [
-        {"id": deployment_id, "source_deployment_id": source_deployment_id}
+        {"id_": deployment_id, "source_deployment_id": source_deployment_id}
         for deployment_id, source_deployment_id in deployment_template_mapping
     ]
     if deployment_updates:
         connection.execute(
             sa.update(pipeline_deployment_table)
-            .where(pipeline_deployment_table.c.id == sa.bindparam("id"))
+            .where(pipeline_deployment_table.c.id == sa.bindparam("id_"))
             .values(source_deployment_id=sa.bindparam("source_deployment_id")),
             deployment_updates,
         )
@@ -127,8 +127,13 @@ def migrate_run_templates() -> None:
         .where(tag_resource_table.c.resource_type == "run_template")
     ).fetchall()
 
+    now = utc_now()
+
     tag_resource_insertions = [
         {
+            "id": str(uuid.uuid4()).replace("-", ""),
+            "created": now,
+            "updated": now,
             "tag_id": tag_id,
             "resource_id": source_deployment_id,
             "resource_type": "pipeline_deployment",
@@ -167,7 +172,7 @@ def migrate_run_templates() -> None:
 
     deployment_updates = [
         {
-            "id": source_deployment_id,
+            "id_": source_deployment_id,
             "name": template_name,
             "description": template_description,
         }
@@ -178,7 +183,7 @@ def migrate_run_templates() -> None:
     if deployment_updates:
         connection.execute(
             sa.update(pipeline_deployment_table)
-            .where(pipeline_deployment_table.c.id == sa.bindparam("id"))
+            .where(pipeline_deployment_table.c.id == sa.bindparam("id_"))
             .values(
                 name=sa.bindparam("name"),
                 description=sa.bindparam("description"),
@@ -206,14 +211,14 @@ def upgrade() -> None:
                 nullable=True,
             )
         )
+        batch_op.drop_constraint(
+            "fk_pipeline_deployment_pipeline_id_pipeline", type_="foreignkey"
+        )
         batch_op.alter_column(
             "pipeline_id", existing_type=sa.CHAR(length=32), nullable=False
         )
         batch_op.create_unique_constraint(
             "unique_name_for_pipeline_id", ["pipeline_id", "name"]
-        )
-        batch_op.drop_constraint(
-            "fk_pipeline_deployment_pipeline_id_pipeline", type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_pipeline_deployment_pipeline_id_pipeline",
