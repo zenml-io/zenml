@@ -401,7 +401,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            name=self.name,
             runnable=runnable,
         )
         metadata = None
@@ -471,6 +470,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
         return PipelineDeploymentResponse(
             id=self.id,
+            name=self.name,
             body=body,
             metadata=metadata,
             resources=resources,

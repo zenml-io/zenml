@@ -182,11 +182,6 @@ class PipelineDeploymentUpdate(BaseUpdate):
 class PipelineDeploymentResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline deployments."""
 
-    name: Optional[str] = Field(
-        default=None,
-        title="The name of the deployment.",
-    )
-
     runnable: bool = Field(
         title="If a run can be started from the deployment.",
     )
@@ -281,6 +276,12 @@ class PipelineDeploymentResponse(
 ):
     """Response model for pipeline deployments."""
 
+    name: Optional[str] = Field(
+        default=None,
+        title="The name of the deployment.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
     def get_hydrated_version(self) -> "PipelineDeploymentResponse":
         """Return the hydrated version of this pipeline deployment.
 
@@ -292,15 +293,6 @@ class PipelineDeploymentResponse(
         return Client().zen_store.get_deployment(self.id)
 
     # Body and metadata properties
-    @property
-    def name(self) -> Optional[str]:
-        """The `name` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().name
-
     @property
     def runnable(self) -> bool:
         """The `runnable` property.
@@ -453,6 +445,24 @@ class PipelineDeploymentResponse(
             the value of the property.
         """
         return self.get_metadata().source_deployment_id
+
+    @property
+    def config_schema(self) -> Optional[Dict[str, Any]]:
+        """The `config_schema` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().config_schema
+
+    @property
+    def config_template(self) -> Optional[Dict[str, Any]]:
+        """The `config_template` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().config_template
 
 
 # ------------------ Filter Model ------------------
