@@ -46,7 +46,6 @@ class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
     deployment_id: UUID
-    template_id: UUID
     run_config: Optional[PipelineRunConfiguration] = None
 
 
