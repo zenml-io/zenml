@@ -408,7 +408,17 @@ def deploy_pipeline(
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
 ) -> None:
-    """Deploy a pipeline."""
+    """Deploy a pipeline.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        name: Name of the deployment.
+        description: Description of the deployment.
+        tags: Tags to add to the deployment.
+        config_path: Path to configuration file for the deployment.
+        stack_name_or_id: Name or ID of the stack for which the deployment
+            should be created.
+    """
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline deploy` command "

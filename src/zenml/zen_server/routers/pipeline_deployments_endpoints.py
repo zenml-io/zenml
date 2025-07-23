@@ -251,7 +251,6 @@ def update_deployment(
     """Update a deployment.
 
     Args:
-        request: The request object.
         deployment_id: ID of the deployment to update.
         deployment_update: The update to apply.
 
