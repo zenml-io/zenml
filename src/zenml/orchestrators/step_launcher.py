@@ -286,7 +286,7 @@ class StepLauncher:
                 logger.info(f"Step `{self._step_name}` has started.")
 
                 try:
-                    # here pass a forced save_to_file callable to be
+                    # here pass a forced flush_buffer callable to be
                     # used as a dump function to use before starting
                     # the external jobs in step operators
                     if isinstance(
@@ -294,7 +294,7 @@ class StepLauncher:
                         step_logging.PipelineLogsStorageContext,
                     ):
                         force_write_logs = partial(
-                            logs_context.storage.save_to_file,
+                            logs_context.storage.flush_buffer,
                             force=True,
                         )
                     else:
