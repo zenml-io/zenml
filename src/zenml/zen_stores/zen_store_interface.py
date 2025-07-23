@@ -1364,6 +1364,22 @@ class ZenStoreInterface(ABC):
             KeyError: If the deployment doesn't exist.
         """
 
+    @abstractmethod
+    def trigger_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Trigger a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to trigger.
+            run_configuration: Configuration for the run.
+
+        Returns:
+            Model of the pipeline run.
+        """
+
     # -------------------- Run templates --------------------
 
     @abstractmethod

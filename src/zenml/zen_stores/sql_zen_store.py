@@ -5017,6 +5017,24 @@ class SqlZenStore(BaseZenStore):
             session.delete(deployment)
             session.commit()
 
+    def trigger_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> NoReturn:
+        """Trigger a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to trigger.
+            run_configuration: Configuration for the run.
+
+        Raises:
+            NotImplementedError: Always.
+        """
+        raise NotImplementedError(
+            "Running a deployment is not possible with a local store."
+        )
+
     # -------------------- Run templates --------------------
 
     @track_decorator(AnalyticsEvent.CREATED_RUN_TEMPLATE)

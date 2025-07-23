@@ -1720,6 +1720,34 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_DEPLOYMENTS,
         )
 
+    def trigger_deployment(
+        self,
+        deployment_id: UUID,
+        run_configuration: Optional[PipelineRunConfiguration] = None,
+    ) -> PipelineRunResponse:
+        """Trigger a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to trigger.
+            run_configuration: Configuration for the run.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        run_configuration = run_configuration or PipelineRunConfiguration()
+
+        try:
+            response_body = self.post(
+                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
+                body=run_configuration,
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a deployment is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
+
     # -------------------- Run templates --------------------
 
     def create_run_template(
