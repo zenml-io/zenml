@@ -34,7 +34,7 @@ from zenml.models import (
 from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.template_execution.utils import run_template
+from zenml.zen_server.template_execution.utils import run_deployment
 from zenml.zen_server.utils import server_config
 
 logger = get_logger(__name__)
@@ -97,7 +97,7 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         template = zen_store().get_run_template(config.template_id)
         logger.debug("Running template:", template)
-        run_template(
+        run_deployment(
             template=template,
             run_config=config.run_config,
             auth_context=auth_context,

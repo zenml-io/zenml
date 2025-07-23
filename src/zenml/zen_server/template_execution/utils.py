@@ -38,7 +38,6 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRunResponse,
     PipelineRunUpdate,
-    RunTemplateResponse,
     StackResponse,
 )
 from zenml.pipelines.build_utils import compute_stack_checksum
@@ -125,37 +124,37 @@ class BoundedThreadPoolExecutor:
         self._executor.shutdown(**kwargs)
 
 
-def run_template(
-    template: RunTemplateResponse,
+def run_deployment(
+    deployment: PipelineDeploymentResponse,
     auth_context: AuthContext,
     run_config: Optional[PipelineRunConfiguration] = None,
     sync: bool = False,
 ) -> PipelineRunResponse:
-    """Run a pipeline from a template.
+    """Run a pipeline from a deployment.
 
     Args:
-        template: The template to run.
+        deployment: The deployment to run.
         auth_context: Authentication context.
         run_config: The run configuration.
-        sync: Whether to run the template synchronously.
+        sync: Whether to run the deployment synchronously.
 
     Raises:
-        ValueError: If the template can not be run.
+        ValueError: If the deployment can not be run.
         RuntimeError: If the server URL is not set in the server configuration.
         MaxConcurrentTasksError: If the maximum number of concurrent run
-            template tasks is reached.
+            deployment tasks is reached.
 
     Returns:
         ID of the new pipeline run.
     """
-    if not template.runnable:
+    if not deployment.runnable:
         raise ValueError(
-            "This template can not be run because its associated deployment, "
+            "This deployment can not be run because its associated "
             "stack or build have been deleted."
         )
 
     # Guaranteed by the `runnable` check above
-    build = template.build
+    build = deployment.build
     assert build
     stack = build.stack
     assert stack
@@ -165,18 +164,18 @@ def run_template(
     ):
         raise ValueError(
             f"The stack {stack.name} has been updated since it was used for "
-            "the run that is the base for this template. This means the Docker "
+            "the deployment. This means the Docker "
             "images associated with this template most likely do not contain "
-            "the necessary requirements. Please create a new template from a "
-            "recent run on this stack."
+            "the necessary requirements. Please create a new deployment with "
+            "the updated stack."
         )
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
     if run_config:
         validate_run_config_is_runnable_from_server(run_config)
 
-    deployment_request = deployment_request_from_template(
-        template=template,
+    deployment_request = deployment_request_from_source_deployment(
+        source_deployment=deployment,
         config=run_config or PipelineRunConfiguration(),
     )
 
@@ -294,7 +293,7 @@ def run_template(
             analytics_handler.metadata = get_pipeline_run_analytics_metadata(
                 deployment=new_deployment,
                 stack=stack,
-                template_id=template.id,
+                source_deployment_id=deployment.id,
                 run_id=placeholder_run.id,
             )
 
@@ -302,8 +301,8 @@ def run_template(
                 _task()
             except Exception:
                 logger.exception(
-                    "Failed to run template %s, run ID: %s",
-                    str(template.id),
+                    "Failed to run deployment %s, run ID: %s",
+                    str(deployment.id),
                     str(placeholder_run.id),
                 )
                 zen_store().update_run(
@@ -430,14 +429,15 @@ def generate_dockerfile(
     return "\n".join(lines)
 
 
-def deployment_request_from_template(
-    template: RunTemplateResponse,
+def deployment_request_from_source_deployment(
+    source_deployment: PipelineDeploymentResponse,
     config: PipelineRunConfiguration,
 ) -> "PipelineDeploymentRequest":
-    """Generate a deployment request from a template.
+    """Generate a deployment request from a source deployment.
 
     Args:
-        template: The template from which to create the deployment request.
+        source_deployment: The source deployment from which to create the
+            deployment request.
         config: The run configuration.
 
     Raises:
@@ -447,9 +447,6 @@ def deployment_request_from_template(
     Returns:
         The generated deployment request.
     """
-    deployment = template.source_deployment
-    assert deployment
-
     pipeline_update = config.model_dump(
         include=set(PipelineConfiguration.model_fields),
         exclude={"name", "parameters"},
@@ -457,11 +454,11 @@ def deployment_request_from_template(
         exclude_none=True,
     )
     pipeline_configuration = pydantic_utils.update_model(
-        deployment.pipeline_configuration, pipeline_update
+        source_deployment.pipeline_configuration, pipeline_update
     )
 
     steps = {}
-    for invocation_id, step in deployment.step_configurations.items():
+    for invocation_id, step in source_deployment.step_configurations.items():
         step_update = config.steps.get(
             invocation_id, StepConfigurationUpdate()
         ).model_dump(
@@ -502,18 +499,18 @@ def deployment_request_from_template(
         )
 
     code_reference_request = None
-    if deployment.code_reference:
+    if source_deployment.code_reference:
         code_reference_request = CodeReferenceRequest(
-            commit=deployment.code_reference.commit,
-            subdirectory=deployment.code_reference.subdirectory,
-            code_repository=deployment.code_reference.code_repository.id,
+            commit=source_deployment.code_reference.commit,
+            subdirectory=source_deployment.code_reference.subdirectory,
+            code_repository=source_deployment.code_reference.code_repository.id,
         )
 
     zenml_version = zen_store().get_store_info().version
-    assert deployment.stack
-    assert deployment.build
+    assert source_deployment.stack
+    assert source_deployment.build
     deployment_request = PipelineDeploymentRequest(
-        project=deployment.project_id,
+        project=source_deployment.project_id,
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
@@ -521,15 +518,17 @@ def deployment_request_from_template(
         client_environment={},
         client_version=zenml_version,
         server_version=zenml_version,
-        stack=deployment.stack.id,
-        pipeline=deployment.pipeline.id if deployment.pipeline else None,
-        build=deployment.build.id,
+        stack=source_deployment.stack.id,
+        pipeline=source_deployment.pipeline.id
+        if source_deployment.pipeline
+        else None,
+        build=source_deployment.build.id,
         schedule=None,
         code_reference=code_reference_request,
-        code_path=deployment.code_path,
-        source_deployment=template.id,
-        pipeline_version_hash=deployment.pipeline_version_hash,
-        pipeline_spec=deployment.pipeline_spec,
+        code_path=source_deployment.code_path,
+        source_deployment=source_deployment.id,
+        pipeline_version_hash=source_deployment.pipeline_version_hash,
+        pipeline_spec=source_deployment.pipeline_spec,
     )
 
     return deployment_request
@@ -538,7 +537,7 @@ def deployment_request_from_template(
 def get_pipeline_run_analytics_metadata(
     deployment: "PipelineDeploymentResponse",
     stack: StackResponse,
-    template_id: UUID,
+    source_deployment_id: UUID,
     run_id: UUID,
 ) -> Dict[str, Any]:
     """Get metadata for the pipeline run analytics event.
@@ -546,7 +545,8 @@ def get_pipeline_run_analytics_metadata(
     Args:
         deployment: The deployment of the run.
         stack: The stack on which the run will happen.
-        template_id: ID of the template from which the run was started.
+        source_deployment_id: ID of the source deployment from which the run
+            was started.
         run_id: ID of the run.
 
     Returns:
@@ -577,5 +577,5 @@ def get_pipeline_run_analytics_metadata(
         "custom_materializer": custom_materializer,
         "own_stack": own_stack,
         "pipeline_run_id": str(run_id),
-        "template_id": str(template_id),
+        "source_deployment_id": str(source_deployment_id),
     }

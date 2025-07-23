@@ -155,7 +155,7 @@ def migrate_run_templates() -> None:
         run_template_table.c.source_deployment_id,
     ).where(
         sa.and_(
-            run_template_table.c.hidden == False,
+            run_template_table.c.hidden.is_(False),
             run_template_table.c.source_deployment_id.is_not(None),
             run_template_table.c.created
             == (
@@ -164,7 +164,7 @@ def migrate_run_templates() -> None:
                     sa.and_(
                         run_template_table.c.source_deployment_id
                         == run_template_table.c.source_deployment_id,
-                        run_template_table.c.hidden == False,
+                        run_template_table.c.hidden.is_(False),
                     )
                 )
                 .scalar_subquery()
@@ -242,7 +242,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
         batch_op.drop_column("template_id")
 
-    op.drop_table("run_template")
+    # op.drop_table("run_template")
 
 
 def downgrade() -> None:

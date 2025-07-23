@@ -259,6 +259,33 @@ class PipelineDeploymentResponse(
 
     # Body and metadata properties
     @property
+    def name(self) -> Optional[str]:
+        """The `name` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().name
+
+    @property
+    def runnable(self) -> bool:
+        """The `runnable` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().runnable
+
+    @property
+    def description(self) -> Optional[str]:
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().description
+
+    @property
     def run_name_template(self) -> str:
         """The `run_name_template` property.
 

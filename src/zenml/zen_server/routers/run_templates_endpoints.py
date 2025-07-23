@@ -65,6 +65,7 @@ router = APIRouter(
     prefix=API + VERSION_1 + RUN_TEMPLATES,
     tags=["run_templates"],
     responses={401: error_response, 403: error_response},
+    deprecated=True,
 )
 
 
@@ -248,11 +249,14 @@ if server_config().workload_manager_enabled:
             config: Configuration for the pipeline run.
             auth_context: Authentication context.
 
+        Raises:
+            ValueError: If the template can not be run.
+
         Returns:
             The created pipeline run.
         """
         from zenml.zen_server.template_execution.utils import (
-            run_template,
+            run_deployment,
         )
 
         with track_handler(
@@ -279,8 +283,14 @@ if server_config().workload_manager_enabled:
             )
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
-            return run_template(
-                template=template,
+            if not template.source_deployment:
+                raise ValueError(
+                    "This template can not be run because it has no source "
+                    "deployment."
+                )
+
+            return run_deployment(
+                deployment=template.source_deployment,
                 auth_context=auth_context,
                 run_config=config,
             )
