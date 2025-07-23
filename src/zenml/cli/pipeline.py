@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import click
 
@@ -362,6 +362,85 @@ def create_run_template(
         template = pipeline_instance.create_run_template(name=name)
 
     cli_utils.declare(f"Created run template `{template.id}`.")
+
+
+@pipeline.command("deploy", help="Deploy a pipeline.")
+@click.argument("source")
+@click.option(
+    "--name", "-n", type=str, required=True, help="The name of the deployment."
+)
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="The description of the deployment.",
+)
+@click.option(
+    "--tags",
+    "-t",
+    type=str,
+    required=False,
+    multiple=True,
+    help="The tags to add to the deployment.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the deployment.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to use for the deployment.",
+)
+def deploy_pipeline(
+    source: str,
+    name: str,
+    description: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+) -> None:
+    """Deploy a pipeline."""
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline deploy` command "
+            "without a ZenML repository. Your current working directory will "
+            "be used as the source root relative to which the registered step "
+            "classes will be resolved. To silence this warning, run `zenml "
+            "init` at your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path
+        )
+        deployment = pipeline_instance.deploy(
+            name=name, description=description, tags=tags
+        )
+
+    cli_utils.declare(f"Created pipeline deployment `{deployment.id}`.")
+
+    if deployment.runnable:
+        cli_utils.declare(
+            "You can now trigger this deployment from the dashboard or by "
+            "calling `Client().trigger_deployment"
+            f"(deployment_id={deployment.id})`"
+        )
+    else:
+        cli_utils.declare(
+            "This deployment can not be triggered because it is not associated "
+            "with remote Docker images."
+        )
 
 
 @pipeline.command("list", help="List all registered pipelines.")

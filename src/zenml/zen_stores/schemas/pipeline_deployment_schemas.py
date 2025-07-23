@@ -322,6 +322,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             client_env = "{}"
 
         return cls(
+            name=request.name,
+            description=request.description,
             stack_id=request.stack,
             project_id=request.project,
             pipeline_id=request.pipeline,

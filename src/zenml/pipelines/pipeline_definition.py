@@ -575,7 +575,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             self._prepare_if_possible()
 
             compile_args = self._run_args.copy()
-            compile_args.pop("unlisted", None)
             compile_args.pop("prevent_build_reuse", None)
             if config_path:
                 compile_args["config_path"] = config_path
@@ -615,9 +614,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         ] = None,
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
-        unlisted: bool = False,
         prevent_build_reuse: bool = False,
         skip_schedule_registration: bool = False,
+        **deployment_request_kwargs: Any,
     ) -> PipelineDeploymentResponse:
         """Create a pipeline deployment.
 
@@ -642,11 +641,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
-            unlisted: Whether the pipeline run should be unlisted (not assigned
-                to any pipeline).
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
             skip_schedule_registration: Whether to skip schedule registration.
+            **deployment_request_kwargs: Additional keyword arguments to pass to
+                the deployment request.
 
         Returns:
             The pipeline deployment.
@@ -670,19 +669,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             extra=extra,
         )
 
-        skip_pipeline_registration = constants.handle_bool_env_var(
-            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
-            default=False,
-        )
-
-        register_pipeline = not (skip_pipeline_registration or unlisted)
-
-        pipeline_id = None
-        if register_pipeline:
-            pipeline_id = self._register().id
-        else:
-            logger.debug(f"Pipeline {self.name} is unlisted.")
-
+        pipeline_id = self._register().id
         stack = Client().active_stack
         stack.validate()
 
@@ -800,6 +787,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             code_reference=code_reference,
             code_path=code_path,
             **deployment.model_dump(),
+            **deployment_request_kwargs,
         )
         return Client().zen_store.create_deployment(deployment=request)
 
@@ -1405,8 +1393,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
-            unlisted: Whether the pipeline run should be unlisted (not assigned
-                to any pipeline).
+            unlisted: DEPRECATED. This option is no longer supported.
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
             **kwargs: Pipeline configuration options. These will be passed
@@ -1422,6 +1409,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "values passed using the `steps` keyword."
             )
 
+        if unlisted:
+            logger.warning(
+                "The `unlisted` option is deprecated and will be removed in a "
+                "future version. Every run will always be associated with a "
+                "pipeline."
+            )
+
         pipeline_copy = self.copy()
 
         pipeline_copy._reconfigure_from_file_with_overrides(
@@ -1435,7 +1429,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "build": build,
                 "step_configurations": step_configurations or steps,
                 "config_path": config_path,
-                "unlisted": unlisted,
                 "prevent_build_reuse": prevent_build_reuse,
             }
         )
@@ -1551,6 +1544,31 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         return Client().create_run_template(
             name=name, deployment_id=deployment.id, **kwargs
+        )
+
+    def deploy(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> PipelineDeploymentResponse:
+        """Deploy the pipeline.
+
+        Args:
+            name: The name of the deployment.
+            description: The description of the deployment.
+            tags: The tags to add to the deployment.
+
+        Returns:
+            The created deployment.
+        """
+        self._prepare_if_possible()
+        return self._create_deployment(
+            skip_schedule_registration=True,
+            name=name,
+            description=description,
+            tags=tags,
+            **self._run_args,
         )
 
     def _reconfigure_from_file_with_overrides(

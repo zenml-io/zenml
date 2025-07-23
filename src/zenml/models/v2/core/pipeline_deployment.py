@@ -94,6 +94,21 @@ class PipelineDeploymentBase(BaseZenModel):
 class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     """Request model for pipeline deployments."""
 
+    name: Optional[str] = Field(
+        default=None,
+        title="The name of the deployment.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the deployment.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags of the deployment.",
+    )
+
     stack: UUID = Field(title="The stack associated with the deployment.")
     pipeline: Optional[UUID] = Field(
         default=None, title="The pipeline associated with the deployment."

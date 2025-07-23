@@ -4885,6 +4885,12 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(step_configuration_schema)
             session.commit()
+
+            self._attach_tags_to_resources(
+                tags=deployment.tags,
+                resources=new_deployment,
+                session=session,
+            )
             session.refresh(new_deployment)
 
             return new_deployment.to_model(
