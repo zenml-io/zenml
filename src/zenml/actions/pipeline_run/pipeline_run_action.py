@@ -45,6 +45,7 @@ logger = get_logger(__name__)
 class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
+    deployment_id: UUID
     template_id: UUID
     run_config: Optional[PipelineRunConfiguration] = None
 
@@ -95,10 +96,10 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         assert isinstance(config, PipelineRunActionConfiguration)
 
-        template = zen_store().get_run_template(config.template_id)
-        logger.debug("Running template:", template)
+        deployment = zen_store().get_deployment(config.deployment_id)
+        logger.debug("Running deployment:", deployment)
         run_deployment(
-            template=template,
+            deployment=deployment,
             run_config=config.run_config,
             auth_context=auth_context,
             sync=True,
@@ -118,10 +119,10 @@ class PipelineRunActionHandler(BaseActionHandler):
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            zen_store.get_run_template(template_id=config.template_id)
+            zen_store.get_deployment(deployment_id=config.deployment_id)
         except KeyError:
             raise ValueError(
-                f"No template found with id {config.template_id}."
+                f"No deployment found with id {config.deployment_id}."
             )
 
     def _validate_action_request(
@@ -185,21 +186,21 @@ class PipelineRunActionHandler(BaseActionHandler):
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            template = zen_store.get_run_template(
-                template_id=action_config.template_id, hydrate=hydrate
+            deployment = zen_store.get_deployment(
+                deployment_id=action_config.deployment_id, hydrate=hydrate
             )
         except KeyError:
             raise ValueError(
-                f"No template found with id {action_config.template_id}."
+                f"No deployment found with id {action_config.deployment_id}."
             )
 
         resources: Dict[ResourceType, BaseResponse[Any, Any, Any]] = {
-            ResourceType.RUN_TEMPLATE: template
+            ResourceType.PIPELINE_DEPLOYMENT: deployment
         }
 
-        if template.pipeline is not None:
+        if deployment.pipeline is not None:
             pipeline = zen_store.get_pipeline(
-                pipeline_id=template.pipeline.id, hydrate=hydrate
+                pipeline_id=deployment.pipeline.id, hydrate=hydrate
             )
             resources[ResourceType.PIPELINE] = pipeline
 
