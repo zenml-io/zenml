@@ -66,13 +66,13 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "pipeline_id",
-            "name",
-            name="unique_name_for_pipeline_id",
+            "version",
+            name="unique_version_for_pipeline_id",
         ),
     )
 
     # Fields
-    name: Optional[str] = Field(nullable=True)
+    version: Optional[str] = Field(nullable=True)
     description: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -175,7 +175,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     )
     project: "ProjectSchema" = Relationship()
     stack: Optional["StackSchema"] = Relationship()
-    pipeline: Optional["PipelineSchema"] = Relationship()
+    pipeline: "PipelineSchema" = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship(
         sa_relationship_kwargs={
@@ -325,7 +325,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             client_env = "{}"
 
         return cls(
-            name=request.name,
+            version=request.version,
             description=request.description,
             stack_id=request.stack,
             project_id=request.project,
@@ -362,8 +362,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The updated schema.
         """
-        if update.name:
-            self.name = update.name
+        if update.version:
+            self.version = update.version
         if update.description:
             self.description = update.description
 
@@ -400,6 +400,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             runnable = True
 
         body = PipelineDeploymentResponseBody(
+            version=self.version,
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
@@ -491,7 +492,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
         return PipelineDeploymentResponse(
             id=self.id,
-            name=self.name,
             body=body,
             metadata=metadata,
             resources=resources,

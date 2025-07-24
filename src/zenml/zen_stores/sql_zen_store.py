@@ -4799,6 +4799,30 @@ class SqlZenStore(BaseZenStore):
         session.add(new_reference)
         return new_reference.id
 
+    def _deployment_version_exists(
+        self,
+        session: Session,
+        pipeline_id: UUID,
+        version: str,
+    ) -> bool:
+        """Check if a deployment with a certain version exists.
+
+        Args:
+            session: SQLAlchemy session.
+            pipeline_id: The pipeline ID of the deployment.
+            version: The version name.
+
+        Returns:
+            If a deployment with the given arguments exists.
+        """
+        query = select(PipelineDeploymentSchema.id).where(
+            col(PipelineDeploymentSchema.pipeline_id) == pipeline_id,
+            col(PipelineDeploymentSchema.version) == version,
+        )
+
+        with Session(self.engine) as session:
+            return session.exec(query).first() is not None
+
     def create_deployment(
         self,
         deployment: PipelineDeploymentRequest,
@@ -4880,8 +4904,22 @@ class SqlZenStore(BaseZenStore):
             new_deployment = PipelineDeploymentSchema.from_request(
                 deployment, code_reference_id=code_reference_id
             )
-            session.add(new_deployment)
-            session.commit()
+
+            try:
+                session.add(new_deployment)
+                session.commit()
+            except IntegrityError as e:
+                if deployment.version and self._deployment_version_exists(
+                    session=session,
+                    pipeline_id=deployment.pipeline,
+                    version=deployment.version,
+                ):
+                    raise EntityExistsError(
+                        f"Deployment version {deployment.version} already "
+                        f"exists for pipeline {deployment.pipeline}."
+                    )
+                else:
+                    raise RuntimeError("Deployment creation failed.") from e
 
             for index, (step_name, step_configuration) in enumerate(
                 deployment.step_configurations.items()
@@ -4998,8 +5036,25 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             deployment.update(deployment_update)
-            session.add(deployment)
-            session.commit()
+
+            try:
+                session.add(deployment)
+                session.commit()
+            except IntegrityError as e:
+                if (
+                    deployment_update.version
+                    and self._deployment_version_exists(
+                        session=session,
+                        pipeline_id=deployment.pipeline_id,
+                        version=deployment_update.version,
+                    )
+                ):
+                    raise EntityExistsError(
+                        f"Deployment version {deployment_update.version} "
+                        f"already exists for pipeline {deployment.pipeline_id}."
+                    )
+                else:
+                    raise RuntimeError("Deployment update failed.") from e
 
             self._attach_tags_to_resources(
                 tags=deployment_update.add_tags,

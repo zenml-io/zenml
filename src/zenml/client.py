@@ -3283,28 +3283,66 @@ class Client(metaclass=ClientMetaClass):
 
     def get_deployment(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> PipelineDeploymentResponse:
         """Get a deployment by name, id or prefix.
 
         Args:
-            name_id_or_prefix: The name, id or prefix of the deployment.
+            id_or_prefix: The id or prefix of the deployment.
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
+        Raises:
+            KeyError: If no deployment was found for the given id or prefix.
+            ZenKeyError: If multiple deployments were found that match the given
+                id or prefix.
+
         Returns:
             The deployment.
         """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_deployment,
-            list_method=self.list_deployments,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-            project=project,
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        # First interpret as full UUID
+        if is_valid_uuid(id_or_prefix):
+            id_ = (
+                UUID(id_or_prefix)
+                if isinstance(id_or_prefix, str)
+                else id_or_prefix
+            )
+            return self.zen_store.get_deployment(id_, hydrate=hydrate)
+
+        list_kwargs: Dict[str, Any] = dict(
+            id=f"startswith:{id_or_prefix}",
             hydrate=hydrate,
+        )
+        scope = ""
+        if project:
+            list_kwargs["project"] = project
+            scope = f" in project {project}"
+
+        entity = self.list_deployments(**list_kwargs)
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
+            raise KeyError(
+                f"No deployment have been found that have either an id or "
+                f"prefix that matches the provided string '{id_or_prefix}'{scope}."
+            )
+
+        raise ZenKeyError(
+            f"{entity.total} deployments have been found{scope} that have "
+            f"an ID that matches the provided "
+            f"string '{id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the deployments."
         )
 
     def list_deployments(
@@ -3318,8 +3356,8 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
-        name: Optional[str] = None,
-        named_only: Optional[bool] = None,
+        version: Optional[str] = None,
+        versioned_only: Optional[bool] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
@@ -3339,9 +3377,9 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
-            name: Filter by name.
-            named_only: If `True`, only deployments with an assigned name will
-                be returned.
+            version: Filter by version.
+            versioned_only: If `True`, only deployments with an assigned version
+                will be returned.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
@@ -3363,8 +3401,8 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             project=project or self.active_project.id,
             user=user,
-            name=name,
-            named_only=named_only,
+            version=version,
+            versioned_only=versioned_only,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
@@ -3380,7 +3418,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
+        version: Optional[str] = None,
         description: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
@@ -3390,7 +3428,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             id_or_prefix: The id or id prefix of the deployment.
             project: The project name/ID to filter by.
-            name: The new name of the deployment.
+            version: The new version of the deployment.
             description: The new description of the deployment.
             add_tags: Tags to add to the deployment.
             remove_tags: Tags to remove from the deployment.
@@ -3399,7 +3437,7 @@ class Client(metaclass=ClientMetaClass):
             The updated deployment.
         """
         deployment = self.get_deployment(
-            name_id_or_prefix=id_or_prefix,
+            id_or_prefix=id_or_prefix,
             project=project,
             hydrate=False,
         )
@@ -3407,7 +3445,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.update_deployment(
             deployment_id=deployment.id,
             deployment_update=PipelineDeploymentUpdate(
-                name=name,
+                version=version,
                 description=description,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
@@ -3426,7 +3464,7 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
         """
         deployment = self.get_deployment(
-            name_id_or_prefix=id_or_prefix,
+            id_or_prefix=id_or_prefix,
             project=project,
             hydrate=False,
         )

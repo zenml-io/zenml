@@ -114,9 +114,9 @@ class PipelineDeploymentBase(BaseZenModel):
 class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     """Request model for pipeline deployments."""
 
-    name: Optional[str] = Field(
+    version: Optional[str] = Field(
         default=None,
-        title="The name of the deployment.",
+        title="The version of the deployment.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
@@ -130,8 +130,8 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     )
 
     stack: UUID = Field(title="The stack associated with the deployment.")
-    pipeline: Optional[UUID] = Field(
-        default=None, title="The pipeline associated with the deployment."
+    pipeline: UUID = Field(
+        title="The pipeline associated with the deployment."
     )
     build: Optional[UUID] = Field(
         default=None, title="The build associated with the deployment."
@@ -164,9 +164,9 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
 class PipelineDeploymentUpdate(BaseUpdate):
     """Pipeline deployment update model."""
 
-    name: Optional[str] = Field(
+    version: Optional[str] = Field(
         default=None,
-        title="The name of the deployment.",
+        title="The version of the deployment.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
@@ -188,6 +188,11 @@ class PipelineDeploymentUpdate(BaseUpdate):
 class PipelineDeploymentResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline deployments."""
 
+    version: Optional[str] = Field(
+        default=None,
+        title="The version of the deployment.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     runnable: bool = Field(
         title="If a run can be started from the deployment.",
     )
@@ -287,12 +292,6 @@ class PipelineDeploymentResponse(
 ):
     """Response model for pipeline deployments."""
 
-    name: Optional[str] = Field(
-        default=None,
-        title="The name of the deployment.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-
     def get_hydrated_version(self) -> "PipelineDeploymentResponse":
         """Return the hydrated version of this pipeline deployment.
 
@@ -304,6 +303,16 @@ class PipelineDeploymentResponse(
         return Client().zen_store.get_deployment(self.id)
 
     # Body and metadata properties
+
+    @property
+    def version(self) -> Optional[str]:
+        """The `version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().version
+
     @property
     def runnable(self) -> bool:
         """The `runnable` property.
@@ -505,13 +514,13 @@ class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
-    name: Optional[str] = Field(
+    version: Optional[str] = Field(
         default=None,
-        description="Name of the deployment.",
+        description="Version of the deployment.",
     )
-    named_only: Optional[bool] = Field(
+    versioned_only: Optional[bool] = Field(
         default=None,
-        description="Whether to only return deployments with a name.",
+        description="Whether to only return deployments with a version name.",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -563,9 +572,9 @@ class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
 
         custom_filters = super().get_custom_filters(table)
 
-        if self.named_only:
+        if self.versioned_only:
             custom_filters.append(
-                col(PipelineDeploymentSchema.name).is_not(None)
+                col(PipelineDeploymentSchema.version).is_not(None)
             )
 
         return custom_filters

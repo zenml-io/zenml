@@ -210,7 +210,7 @@ def add_tags(
         pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
         run_template: The ID or the name of the run template.
-        deployment: The ID or the name of the deployment.
+        deployment: The ID of the deployment.
         artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
@@ -300,7 +300,7 @@ def add_tags(
             infer_artifact,
         ]
     ):
-        deployment_model = client.get_deployment(name_id_or_prefix=deployment)
+        deployment_model = client.get_deployment(id_or_prefix=deployment)
         resource_id = deployment_model.id
         resource_type = TaggableResourceTypes.PIPELINE_DEPLOYMENT
 
@@ -597,7 +597,7 @@ def remove_tags(
         pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
         run_template: The ID or the name of the run template.
-        deployment: The ID or the name of the deployment.
+        deployment: The ID of the deployment.
         artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
@@ -668,7 +668,7 @@ def remove_tags(
             infer_artifact,
         ]
     ):
-        deployment_model = client.get_deployment(name_id_or_prefix=deployment)
+        deployment_model = client.get_deployment(id_or_prefix=deployment)
         resource_id = deployment_model.id
         resource_type = TaggableResourceTypes.PIPELINE_DEPLOYMENT
 

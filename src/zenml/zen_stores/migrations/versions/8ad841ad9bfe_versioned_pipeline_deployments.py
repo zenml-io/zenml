@@ -1,4 +1,4 @@
-"""Named pipeline deployments [8ad841ad9bfe].
+"""Versioned pipeline deployments [8ad841ad9bfe].
 
 Revision ID: 8ad841ad9bfe
 Revises: 0.84.0
@@ -173,7 +173,7 @@ def migrate_run_templates() -> None:
     deployment_updates = [
         {
             "id_": source_deployment_id,
-            "name": template_name,
+            "version": template_name,
             "description": template_description,
         }
         for template_name, template_description, source_deployment_id in connection.execute(
@@ -185,7 +185,7 @@ def migrate_run_templates() -> None:
             sa.update(pipeline_deployment_table)
             .where(pipeline_deployment_table.c.id == sa.bindparam("id_"))
             .values(
-                name=sa.bindparam("name"),
+                version=sa.bindparam("version"),
                 description=sa.bindparam("description"),
             ),
             deployment_updates,
@@ -199,7 +199,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
-                "name", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+                "version", sqlmodel.sql.sqltypes.AutoString(), nullable=True
             )
         )
         batch_op.add_column(
@@ -218,7 +218,7 @@ def upgrade() -> None:
             "pipeline_id", existing_type=sa.CHAR(length=32), nullable=False
         )
         batch_op.create_unique_constraint(
-            "unique_name_for_pipeline_id", ["pipeline_id", "name"]
+            "unique_version_for_pipeline_id", ["pipeline_id", "version"]
         )
         batch_op.create_foreign_key(
             "fk_pipeline_deployment_pipeline_id_pipeline",
