@@ -5440,6 +5440,12 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.output_artifacts)),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.triggered_runs))
+                    .load_only(
+                        jl_arg(PipelineRunSchema.id),
+                        jl_arg(PipelineRunSchema.name),
+                    ),
                 ],
             )
             assert run.deployment is not None
@@ -5649,6 +5655,19 @@ class SqlZenStore(BaseZenStore):
                         regular_output_artifact_nodes[step_name][
                             substituted_output_name
                         ] = artifact_node
+
+                    for triggered_run in step_run.triggered_runs:
+                        triggered_run_node = helper.add_triggered_run_node(
+                            node_id=helper.get_triggered_run_node_id(
+                                name=triggered_run.name
+                            ),
+                            id=triggered_run.id,
+                            name=triggered_run.name,
+                        )
+                        helper.add_edge(
+                            source=step_node.node_id,
+                            target=triggered_run_node.node_id,
+                        )
                 else:
                     for input_name, input_config in step.spec.inputs.items():
                         # This node should always exist, as the step
