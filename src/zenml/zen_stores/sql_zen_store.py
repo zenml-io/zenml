@@ -9713,7 +9713,7 @@ class SqlZenStore(BaseZenStore):
                 analytics_handler.metadata = {
                     "project_id": pipeline_run.project_id,
                     "pipeline_run_id": pipeline_run_id,
-                    "template_id": pipeline_run.deployment.source_deployment_id,
+                    "source_deployment_id": pipeline_run.deployment.source_deployment_id,
                     "status": new_status,
                     "num_steps": num_steps,
                     "start_time": start_time_str,

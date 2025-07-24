@@ -248,7 +248,12 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     )
     template_id: Optional[UUID] = Field(
         default=None,
-        description="Template used for the pipeline run.",
+        description="DEPRECATED: Template used for the pipeline run.",
+        deprecated=True,
+    )
+    source_deployment_id: Optional[UUID] = Field(
+        default=None,
+        description="Source deployment used for the pipeline run.",
     )
     is_templatable: bool = Field(
         default=False,
@@ -513,6 +518,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_metadata().template_id
+
+    @property
+    def source_deployment_id(self) -> Optional[UUID]:
+        """The `source_deployment_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().source_deployment_id
 
     @property
     def is_templatable(self) -> bool:
