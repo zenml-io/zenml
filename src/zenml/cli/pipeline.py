@@ -18,7 +18,7 @@ import os
 from typing import Any, Dict, List, Optional, Union
 
 import click
-
+from uuid import UUID
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
@@ -462,6 +462,71 @@ def deploy_pipeline(
             "This deployment can not be triggered because the orchestrator "
             "is not running remotely with Docker images."
         )
+
+
+@pipeline.command("trigger-deployment", help="Trigger a deployment.")
+@click.option(
+    "--deployment",
+    "-d",
+    type=str,
+    required=False,
+    help="The ID of the deployment to trigger.",
+)
+@click.option(
+    "--pipeline",
+    "-p",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline to trigger.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+    help="The version of the deployment to trigger.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the run.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to use for the deployment.",
+)
+def trigger_deployment(
+    deployment_id: Optional[str] = None,
+    pipeline_name_or_id: Optional[str] = None,
+    version: Optional[str] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+) -> None:
+    """Trigger a deployment.
+
+    Args:
+        deployment_id: The ID of the deployment to trigger.
+        pipeline_name_or_id: The name or ID of the pipeline to trigger.
+        version: The version of the deployment to trigger.
+        config_path: Path to configuration file for the run.
+        stack_name_or_id: Name or ID of the stack for which the deployment
+            should be created.
+    """
+    run = Client().trigger_deployment(
+        deployment_id=UUID(deployment_id) if deployment_id else None,
+        pipeline_name_or_id=pipeline_name_or_id,
+        version=version,
+        config_path=config_path,
+        stack_name_or_id=stack_name_or_id,
+    )
+    cli_utils.declare(f"Triggered deployment run `{run.id}`.")
 
 
 @pipeline.command("list", help="List all registered pipelines.")

@@ -28,6 +28,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -3475,6 +3476,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         deployment_id: Optional[UUID] = None,
         pipeline_name_or_id: Union[str, UUID, None] = None,
+        version: Optional[str] = None,
         run_configuration: Union[
             PipelineRunConfiguration, Dict[str, Any], None
         ] = None,
@@ -3512,6 +3514,8 @@ class Client(metaclass=ClientMetaClass):
                 associated with the deployment is for a remote stack without any
                 custom flavor stack components). If not given, a deployment ID
                 that should be run needs to be specified.
+            version: Version of the deployment to trigger. If not given, the
+                latest runnable deployment for the pipeline will be used.
             run_configuration: Configuration for the run. Either this or a
                 path to a config file can be specified.
             config_path: Path to a YAML configuration file. This file will be
@@ -3526,6 +3530,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             RuntimeError: If triggering the deployment failed.
+            KeyError: If no deployment with the given version exists.
 
         Returns:
             Model of the pipeline run.
@@ -3564,48 +3569,73 @@ class Client(metaclass=ClientMetaClass):
                     "Deployment ID and stack specified, ignoring the stack and "
                     "using stack associated with the deployment instead."
                 )
+
+            if version:
+                logger.warning(
+                    "Deployment ID and version specified, ignoring the version."
+                )
         else:
             assert pipeline_name_or_id
-            pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
-
-            stack = None
-            if stack_name_or_id:
-                stack = self.get_stack(
-                    stack_name_or_id, allow_name_prefix_match=False
-                )
-                validate_stack_is_runnable_from_server(
-                    zen_store=self.zen_store, stack=stack
-                )
-
-            deployments = depaginate(
-                self.list_deployments,
-                pipeline_id=pipeline.id,
-                stack_id=stack.id if stack else None,
-                project=project or pipeline.project_id,
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id,
+                project=project,
             )
 
-            for deployment in deployments:
-                if not deployment.build:
-                    continue
+            if version:
+                deployments = self.list_deployments(
+                    version=f"equals:{version}",
+                    pipeline_id=pipeline.id,
+                    project=pipeline.project_id,
+                )
 
-                stack = deployment.build.stack
-                if not stack:
-                    continue
-
-                try:
+                if deployments.total == 0:
+                    raise KeyError(
+                        f"No deployment found for pipeline {pipeline.id} "
+                        f"with version {version}."
+                    )
+                else:
+                    deployment_id = deployments.items[0].id
+            else:
+                # No version or ID specified, find the latest runnable
+                # deployment for the pipeline (and stack if specified)
+                stack = None
+                if stack_name_or_id:
+                    stack = self.get_stack(
+                        stack_name_or_id, allow_name_prefix_match=False
+                    )
                     validate_stack_is_runnable_from_server(
                         zen_store=self.zen_store, stack=stack
                     )
-                except ValueError:
-                    continue
 
-                deployment_id = deployment.id
-                break
-            else:
-                raise RuntimeError(
-                    "Unable to find a runnable deployment for the given stack "
-                    "and pipeline."
+                all_deployments = depaginate(
+                    self.list_deployments,
+                    pipeline_id=pipeline.id,
+                    stack_id=stack.id if stack else None,
+                    project=pipeline.project_id,
                 )
+
+                for deployment in all_deployments:
+                    if not deployment.build:
+                        continue
+
+                    stack = deployment.build.stack
+                    if not stack:
+                        continue
+
+                    try:
+                        validate_stack_is_runnable_from_server(
+                            zen_store=self.zen_store, stack=stack
+                        )
+                    except ValueError:
+                        continue
+
+                    deployment_id = deployment.id
+                    break
+                else:
+                    raise RuntimeError(
+                        "Unable to find a runnable deployment for the given "
+                        "stack and pipeline."
+                    )
 
         step_run_id = None
         try:
