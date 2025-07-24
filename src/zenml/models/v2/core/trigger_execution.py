@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from zenml.models import (
     BaseIdentifiedResponse,
@@ -41,6 +41,23 @@ class TriggerExecutionRequest(BaseRequest):
     trigger: Optional[UUID] = None
     step_run: Optional[UUID] = None
     event_metadata: Dict[str, Any] = {}
+
+    @model_validator(mode="after")
+    def validate_trigger_or_step_run(self) -> "TriggerExecutionRequest":
+        """Validate that either trigger or step_run is set.
+
+        Raises:
+            ValueError: If either both or none of trigger and step_run are set.
+
+        Returns:
+            The validated request.
+        """
+        if not self.trigger and not self.step_run:
+            raise ValueError("Either trigger or step_run must be set.")
+        if self.trigger and self.step_run:
+            raise ValueError("Only one of trigger or step_run can be set.")
+
+        return self
 
 
 # ------------------ Update Model ------------------
