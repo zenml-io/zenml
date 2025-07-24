@@ -203,7 +203,6 @@ def trigger_deployment(
     if trigger_request.step_run:
         trigger_execution_request = TriggerExecutionRequest(
             project=deployment.project_id,
-            user=auth_context.user.id,
             step_run=trigger_request.step_run,
         )
         trigger_execution_id = (
