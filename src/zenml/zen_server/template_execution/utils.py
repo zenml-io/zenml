@@ -5,7 +5,7 @@ import os
 import sys
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
 from packaging import version
@@ -131,6 +131,7 @@ def trigger_deployment(
     auth_context: AuthContext,
     trigger_request: PipelineDeploymentTriggerRequest,
     sync: bool = False,
+    template_id: Optional[UUID] = None,
 ) -> PipelineRunResponse:
     """Run a pipeline from a deployment.
 
@@ -139,6 +140,8 @@ def trigger_deployment(
         auth_context: Authentication context.
         trigger_request: The trigger request.
         sync: Whether to run the deployment synchronously.
+        template_id: The ID of the template from which to create the deployment
+            request.
 
     Raises:
         ValueError: If the deployment can not be run.
@@ -181,6 +184,7 @@ def trigger_deployment(
     deployment_request = deployment_request_from_source_deployment(
         source_deployment=deployment,
         config=trigger_request.run_configuration or PipelineRunConfiguration(),
+        template_id=template_id,
     )
 
     ensure_async_orchestrator(deployment=deployment_request, stack=stack)
@@ -447,6 +451,7 @@ def generate_dockerfile(
 def deployment_request_from_source_deployment(
     source_deployment: PipelineDeploymentResponse,
     config: PipelineRunConfiguration,
+    template_id: Optional[UUID] = None,
 ) -> "PipelineDeploymentRequest":
     """Generate a deployment request from a source deployment.
 
@@ -454,6 +459,8 @@ def deployment_request_from_source_deployment(
         source_deployment: The source deployment from which to create the
             deployment request.
         config: The run configuration.
+        template_id: The ID of the template from which to create the deployment
+            request.
 
     Raises:
         ValueError: If there are missing/extra step parameters in the run
@@ -541,6 +548,7 @@ def deployment_request_from_source_deployment(
         schedule=None,
         code_reference=code_reference_request,
         code_path=source_deployment.code_path,
+        template=template_id,
         source_deployment=source_deployment.id,
         pipeline_version_hash=source_deployment.pipeline_version_hash,
         pipeline_spec=source_deployment.pipeline_spec,

@@ -333,6 +333,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             build_id=request.build,
             user_id=request.user,
             schedule_id=request.schedule,
+            template_id=request.template,
             source_deployment_id=request.source_deployment,
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
@@ -374,6 +375,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         include_python_packages: bool = False,
+        include_config_schema: Optional[bool] = None,
         step_configuration_filter: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> PipelineDeploymentResponse:
@@ -383,6 +385,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
+            include_config_schema: Whether the config schema will be filled.
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
@@ -424,14 +427,31 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             config_template = None
             config_schema = None
 
-            if self.build and self.build.stack_id:
+            if include_config_schema and self.build and self.build.stack_id:
                 from zenml.zen_stores import template_utils
 
+                if step_configuration_filter:
+                    # If only a subset of step configurations is requested,
+                    # we still need to get all of them to generate the config
+                    # template and schema
+                    all_step_configurations = {
+                        step_configuration.name: Step.from_dict(
+                            json.loads(step_configuration.config),
+                            pipeline_configuration,
+                        )
+                        for step_configuration in self.get_step_configurations()
+                    }
+                else:
+                    all_step_configurations = step_configurations
+
                 config_template = template_utils.generate_config_template(
-                    deployment=self
+                    deployment=self,
+                    pipeline_configuration=pipeline_configuration,
+                    step_configurations=all_step_configurations,
                 )
                 config_schema = template_utils.generate_config_schema(
-                    deployment=self
+                    deployment=self,
+                    step_configurations=all_step_configurations,
                 )
 
             metadata = PipelineDeploymentResponseMetadata(

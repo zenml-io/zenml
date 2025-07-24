@@ -1302,6 +1302,7 @@ class ZenStoreInterface(ABC):
         deployment_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -1312,6 +1313,7 @@ class ZenStoreInterface(ABC):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            include_config_schema: Whether the config schema will be filled.
 
         Returns:
             The deployment.

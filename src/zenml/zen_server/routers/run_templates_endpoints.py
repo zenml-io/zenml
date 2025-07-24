@@ -296,4 +296,5 @@ if server_config().workload_manager_enabled:
                 trigger_request=PipelineDeploymentTriggerRequest(
                     run_configuration=config,
                 ),
+                template_id=template_id,
             )

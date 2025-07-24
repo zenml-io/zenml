@@ -4916,6 +4916,7 @@ class SqlZenStore(BaseZenStore):
         deployment_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -4926,6 +4927,7 @@ class SqlZenStore(BaseZenStore):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            include_config_schema: Whether the config schema will be filled.
 
         Returns:
             The deployment.
@@ -4942,6 +4944,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate,
                 include_resources=True,
                 step_configuration_filter=step_configuration_filter,
+                include_config_schema=include_config_schema,
             )
 
     def list_deployments(
@@ -5083,6 +5086,13 @@ class SqlZenStore(BaseZenStore):
             template_utils.validate_deployment_is_templatable(deployment)
 
             template_schema = RunTemplateSchema.from_request(request=template)
+
+            if not template.hidden:
+                # Also update the name and description of the underlying
+                # deployment
+                deployment.name = template.name
+                deployment.description = template.description
+                session.add(deployment)
 
             session.add(template_schema)
             session.commit()

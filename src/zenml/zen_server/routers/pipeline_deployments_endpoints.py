@@ -217,6 +217,7 @@ def get_deployment(
     deployment_id: UUID,
     hydrate: bool = True,
     step_configuration_filter: Optional[List[str]] = Query(None),
+    include_config_schema: Optional[bool] = None,
     _: AuthContext = Security(authorize),
 ) -> Any:
     """Gets a specific deployment using its unique id.
@@ -229,6 +230,7 @@ def get_deployment(
         step_configuration_filter: List of step configurations to include in
             the response. If not given, all step configurations will be
             included.
+        include_config_schema: Whether the config schema will be filled.
 
     Returns:
         A specific deployment object.
@@ -238,6 +240,7 @@ def get_deployment(
         get_method=zen_store().get_deployment,
         hydrate=hydrate,
         step_configuration_filter=step_configuration_filter,
+        include_config_schema=include_config_schema,
     )
 
     exclude = None

@@ -1642,6 +1642,7 @@ class RestZenStore(BaseZenStore):
         deployment_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -1652,6 +1653,7 @@ class RestZenStore(BaseZenStore):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            include_config_schema: Whether the config schema will be filled.
 
         Returns:
             The deployment.
@@ -1663,6 +1665,7 @@ class RestZenStore(BaseZenStore):
             params={
                 "hydrate": hydrate,
                 "step_configuration_filter": step_configuration_filter,
+                "include_config_schema": include_config_schema,
             },
         )
 
