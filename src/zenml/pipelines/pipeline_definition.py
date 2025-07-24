@@ -1527,7 +1527,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def create_run_template(
         self, name: str, **kwargs: Any
     ) -> RunTemplateResponse:
-        """Create a run template for the pipeline.
+        """DEPRECATED: Create a run template for the pipeline.
 
         Args:
             name: The name of the run template.
@@ -1537,6 +1537,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The created run template.
         """
+        logger.warning(
+            "The `pipeline.create_run_template(...)` method is deprecated and "
+            "will be removed in a future version. Please use "
+            "`pipeline.deploy(..)` instead."
+        )
         self._prepare_if_possible()
         deployment = self._create_deployment(
             **self._run_args, skip_schedule_registration=True

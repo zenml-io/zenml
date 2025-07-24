@@ -335,7 +335,7 @@ def create_run_template(
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
 ) -> None:
-    """Create a run template for a pipeline.
+    """DEPRECATED: Create a run template for a pipeline.
 
     Args:
         source: Importable source resolving to a pipeline instance.
@@ -344,6 +344,11 @@ def create_run_template(
         stack_name_or_id: Name or ID of the stack for which the template should
             be created.
     """
+    cli_utils.warning(
+        "The `zenml pipeline create-run-template` command is deprecated and "
+        "will be removed in a future version. Please use `zenml pipeline "
+        "deploy` instead."
+    )
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline create-run-template` command "
