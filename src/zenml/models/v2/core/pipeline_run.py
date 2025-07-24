@@ -602,6 +602,7 @@ class PipelineRunFilter(
         "schedule_id",
         "stack_id",
         "template_id",
+        "source_deployment_id",
         "pipeline",
         "stack",
         "code_repository",
@@ -661,7 +662,13 @@ class PipelineRunFilter(
     )
     template_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Template used for the pipeline run.",
+        description="DEPRECATED: Template used for the pipeline run.",
+        union_mode="left_to_right",
+        deprecated=True,
+    )
+    source_deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Source deployment used for the pipeline run.",
         union_mode="left_to_right",
     )
     model_version_id: Optional[Union[UUID, str]] = Field(
@@ -790,10 +797,17 @@ class PipelineRunFilter(
         if self.template_id:
             run_template_filter = and_(
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.source_deployment_id
-                == self.template_id,
+                PipelineDeploymentSchema.template_id == self.template_id,
             )
             custom_filters.append(run_template_filter)
+
+        if self.source_deployment_id:
+            source_deployment_filter = and_(
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.source_deployment_id
+                == self.source_deployment_id,
+            )
+            custom_filters.append(source_deployment_filter)
 
         if self.pipeline:
             pipeline_filter = and_(

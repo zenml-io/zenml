@@ -456,6 +456,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 if self.pipeline_spec
                 else None,
                 code_path=self.code_path,
+                template_id=self.template_id,
                 source_deployment_id=self.source_deployment_id,
                 config_schema=config_schema,
                 config_template=config_template,

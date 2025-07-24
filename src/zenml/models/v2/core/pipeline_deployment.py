@@ -147,6 +147,11 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
+    template: Optional[UUID] = Field(
+        default=None,
+        description="DEPRECATED: Template used for the deployment.",
+        deprecated=True,
+    )
     source_deployment: Optional[UUID] = Field(
         default=None,
         description="Deployment that is the source of this deployment.",
@@ -247,6 +252,11 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
     code_reference: Optional[CodeReferenceResponse] = Field(
         default=None,
         title="The code reference associated with the deployment.",
+    )
+    template_id: Optional[UUID] = Field(
+        default=None,
+        description="Template from which this deployment was created.",
+        deprecated=True,
     )
     source_deployment_id: Optional[UUID] = Field(
         default=None,
@@ -439,6 +449,15 @@ class PipelineDeploymentResponse(
         return self.get_metadata().code_reference
 
     @property
+    def template_id(self) -> Optional[UUID]:
+        """The `template_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().template_id
+
+    @property
     def source_deployment_id(self) -> Optional[UUID]:
         """The `source_deployment_id` property.
 
@@ -517,6 +536,11 @@ class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
     template_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Template used as base for the deployment.",
+        union_mode="left_to_right",
+    )
+    source_deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Source deployment used for the deployment.",
         union_mode="left_to_right",
     )
 

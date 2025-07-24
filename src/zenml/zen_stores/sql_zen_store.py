@@ -4851,12 +4851,25 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            self._get_reference_schema_by_id(
+            run_template = self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=RunTemplateSchema,
+                reference_id=deployment.template,
+                session=session,
+            )
+
+            self._get_reference_schema_by_id(
+                resource=deployment,
+                reference_schema=PipelineDeploymentSchema,
                 reference_id=deployment.source_deployment,
                 session=session,
             )
+
+            if run_template and not deployment.source_deployment:
+                # TODO: remove this once we remove run templates entirely
+                deployment.source_deployment = (
+                    run_template.source_deployment_id
+                )
 
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
