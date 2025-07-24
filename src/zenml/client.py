@@ -2514,156 +2514,6 @@ class Client(metaclass=ClientMetaClass):
             project=project,
         )
 
-    @_fail_for_sql_zen_store
-    def trigger_deployment(
-        self,
-        deployment_id: Optional[UUID] = None,
-        pipeline_name_or_id: Union[str, UUID, None] = None,
-        run_configuration: Union[
-            PipelineRunConfiguration, Dict[str, Any], None
-        ] = None,
-        config_path: Optional[str] = None,
-        stack_name_or_id: Union[str, UUID, None] = None,
-        synchronous: bool = False,
-        project: Optional[Union[str, UUID]] = None,
-    ) -> PipelineRunResponse:
-        """Trigger a deployment.
-
-        Usage examples:
-        * Trigger a specific deployment by ID:
-        ```python
-        Client().trigger_deployment(deployment_id=<ID>)
-        ```
-        * Trigger the latest runnable deployment for a pipeline:
-        ```python
-        Client().trigger_deployment(pipeline_name_or_id=<NAME>)
-        ```
-        * Trigger the latest runnable deployment for a pipeline on a specific
-        stack:
-        ```python
-        Client().trigger_deployment(
-            pipeline_name_or_id=<NAME>,
-            stack_name_or_id=<STACK_NAME_OR_ID>
-        )
-        ```
-
-        Args:
-            deployment_id: ID of the deployment to trigger. Either this or a
-                pipeline can be specified.
-            pipeline_name_or_id: Name or ID of the pipeline. If this is
-                specified, the latest runnable deployment for this pipeline will
-                be used for the run (Runnable here means that the build
-                associated with the deployment is for a remote stack without any
-                custom flavor stack components). If not given, a deployment ID
-                that should be run needs to be specified.
-            run_configuration: Configuration for the run. Either this or a
-                path to a config file can be specified.
-            config_path: Path to a YAML configuration file. This file will be
-                parsed as a `PipelineRunConfiguration` object. Either this or
-                the configuration in code can be specified.
-            stack_name_or_id: Name or ID of the stack on which to run the
-                pipeline. If not specified, this method will try to find a
-                runnable deployment on any stack.
-            synchronous: If `True`, this method will wait until the triggered
-                run is finished.
-            project: The project name/ID to filter by.
-
-        Raises:
-            RuntimeError: If triggering the deployment failed.
-
-        Returns:
-            Model of the pipeline run.
-        """
-        from zenml.pipelines.run_utils import (
-            validate_run_config_is_runnable_from_server,
-            validate_stack_is_runnable_from_server,
-            wait_for_pipeline_run_to_finish,
-        )
-
-        if Counter([deployment_id, pipeline_name_or_id])[None] != 1:
-            raise RuntimeError(
-                "You need to specify exactly one of deployment or pipeline "
-                "to trigger."
-            )
-
-        if run_configuration and config_path:
-            raise RuntimeError(
-                "Only config path or runtime configuration can be specified."
-            )
-
-        if config_path:
-            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
-
-        if isinstance(run_configuration, Dict):
-            run_configuration = PipelineRunConfiguration.model_validate(
-                run_configuration
-            )
-
-        if run_configuration:
-            validate_run_config_is_runnable_from_server(run_configuration)
-
-        if deployment_id:
-            if stack_name_or_id:
-                logger.warning(
-                    "Deployment ID and stack specified, ignoring the stack and "
-                    "using stack associated with the deployment instead."
-                )
-
-            run = self.zen_store.trigger_deployment(
-                deployment_id=deployment_id,
-                run_configuration=run_configuration,
-            )
-        else:
-            assert pipeline_name_or_id
-            pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
-
-            stack = None
-            if stack_name_or_id:
-                stack = self.get_stack(
-                    stack_name_or_id, allow_name_prefix_match=False
-                )
-                validate_stack_is_runnable_from_server(
-                    zen_store=self.zen_store, stack=stack
-                )
-
-            deployments = depaginate(
-                self.list_deployments,
-                pipeline_id=pipeline.id,
-                stack_id=stack.id if stack else None,
-                project=project or pipeline.project_id,
-            )
-
-            for deployment in deployments:
-                if not deployment.build:
-                    continue
-
-                stack = deployment.build.stack
-                if not stack:
-                    continue
-
-                try:
-                    validate_stack_is_runnable_from_server(
-                        zen_store=self.zen_store, stack=stack
-                    )
-                except ValueError:
-                    continue
-
-                run = self.zen_store.trigger_deployment(
-                    deployment_id=deployment.id,
-                    run_configuration=run_configuration,
-                )
-                break
-            else:
-                raise RuntimeError(
-                    "Unable to find a runnable deployment for the given stack "
-                    "and pipeline."
-                )
-
-        if synchronous:
-            run = wait_for_pipeline_run_to_finish(run_id=run.id)
-
-        return run
-
     # -------------------------------- Builds ----------------------------------
 
     def get_build(
@@ -3577,6 +3427,156 @@ class Client(metaclass=ClientMetaClass):
             hydrate=False,
         )
         self.zen_store.delete_deployment(deployment_id=deployment.id)
+
+    @_fail_for_sql_zen_store
+    def trigger_deployment(
+        self,
+        deployment_id: Optional[UUID] = None,
+        pipeline_name_or_id: Union[str, UUID, None] = None,
+        run_configuration: Union[
+            PipelineRunConfiguration, Dict[str, Any], None
+        ] = None,
+        config_path: Optional[str] = None,
+        stack_name_or_id: Union[str, UUID, None] = None,
+        synchronous: bool = False,
+        project: Optional[Union[str, UUID]] = None,
+    ) -> PipelineRunResponse:
+        """Trigger a deployment.
+
+        Usage examples:
+        * Trigger a specific deployment by ID:
+        ```python
+        Client().trigger_deployment(deployment_id=<ID>)
+        ```
+        * Trigger the latest runnable deployment for a pipeline:
+        ```python
+        Client().trigger_deployment(pipeline_name_or_id=<NAME>)
+        ```
+        * Trigger the latest runnable deployment for a pipeline on a specific
+        stack:
+        ```python
+        Client().trigger_deployment(
+            pipeline_name_or_id=<NAME>,
+            stack_name_or_id=<STACK_NAME_OR_ID>
+        )
+        ```
+
+        Args:
+            deployment_id: ID of the deployment to trigger. Either this or a
+                pipeline can be specified.
+            pipeline_name_or_id: Name or ID of the pipeline. If this is
+                specified, the latest runnable deployment for this pipeline will
+                be used for the run (Runnable here means that the build
+                associated with the deployment is for a remote stack without any
+                custom flavor stack components). If not given, a deployment ID
+                that should be run needs to be specified.
+            run_configuration: Configuration for the run. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `PipelineRunConfiguration` object. Either this or
+                the configuration in code can be specified.
+            stack_name_or_id: Name or ID of the stack on which to run the
+                pipeline. If not specified, this method will try to find a
+                runnable deployment on any stack.
+            synchronous: If `True`, this method will wait until the triggered
+                run is finished.
+            project: The project name/ID to filter by.
+
+        Raises:
+            RuntimeError: If triggering the deployment failed.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        from zenml.pipelines.run_utils import (
+            validate_run_config_is_runnable_from_server,
+            validate_stack_is_runnable_from_server,
+            wait_for_pipeline_run_to_finish,
+        )
+
+        if Counter([deployment_id, pipeline_name_or_id])[None] != 1:
+            raise RuntimeError(
+                "You need to specify exactly one of deployment or pipeline "
+                "to trigger."
+            )
+
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if isinstance(run_configuration, Dict):
+            run_configuration = PipelineRunConfiguration.model_validate(
+                run_configuration
+            )
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
+        if deployment_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Deployment ID and stack specified, ignoring the stack and "
+                    "using stack associated with the deployment instead."
+                )
+
+            run = self.zen_store.trigger_deployment(
+                deployment_id=deployment_id,
+                run_configuration=run_configuration,
+            )
+        else:
+            assert pipeline_name_or_id
+            pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
+
+            stack = None
+            if stack_name_or_id:
+                stack = self.get_stack(
+                    stack_name_or_id, allow_name_prefix_match=False
+                )
+                validate_stack_is_runnable_from_server(
+                    zen_store=self.zen_store, stack=stack
+                )
+
+            deployments = depaginate(
+                self.list_deployments,
+                pipeline_id=pipeline.id,
+                stack_id=stack.id if stack else None,
+                project=project or pipeline.project_id,
+            )
+
+            for deployment in deployments:
+                if not deployment.build:
+                    continue
+
+                stack = deployment.build.stack
+                if not stack:
+                    continue
+
+                try:
+                    validate_stack_is_runnable_from_server(
+                        zen_store=self.zen_store, stack=stack
+                    )
+                except ValueError:
+                    continue
+
+                run = self.zen_store.trigger_deployment(
+                    deployment_id=deployment.id,
+                    run_configuration=run_configuration,
+                )
+                break
+            else:
+                raise RuntimeError(
+                    "Unable to find a runnable deployment for the given stack "
+                    "and pipeline."
+                )
+
+        if synchronous:
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
 
     # ------------------------------ Run templates -----------------------------
 
