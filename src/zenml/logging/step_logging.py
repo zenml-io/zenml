@@ -462,7 +462,7 @@ class PipelineLogsStorage:
 
             except BaseException as e:
                 logger.error("Error while writing buffer: %s", e)
-                
+
                 # If the current thread is blocked, remove it from the blocked threads
                 if threading.current_thread() in self.blocked_threads:
                     self.blocked_threads.remove(threading.current_thread())
