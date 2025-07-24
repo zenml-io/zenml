@@ -293,7 +293,28 @@ class TriggerExecutionSchema(BaseSchema, table=True):
     """SQL Model for trigger executions."""
 
     __tablename__ = "trigger_execution"
-
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project: "ProjectSchema" = Relationship(
+        back_populates="trigger_executions"
+    )
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="trigger_executions"
+    )
     trigger_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=TriggerSchema.__tablename__,
@@ -332,6 +353,8 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
+            project_id=request.project,
+            user_id=request.user,
             trigger_id=request.trigger,
             step_run_id=request.step_run,
             event_metadata=base64.b64encode(
@@ -357,6 +380,8 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             The converted model.
         """
         body = TriggerExecutionResponseBody(
+            project_id=self.project_id,
+            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
         )
@@ -372,6 +397,7 @@ class TriggerExecutionSchema(BaseSchema, table=True):
         resources = None
         if include_resources:
             resources = TriggerExecutionResponseResources(
+                user=self.user.to_model() if self.user else None,
                 trigger=self.trigger.to_model() if self.trigger else None,
             )
 

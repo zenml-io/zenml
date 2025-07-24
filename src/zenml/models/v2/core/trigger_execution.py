@@ -18,16 +18,14 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
-from zenml.models import (
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
+from zenml.models.v2.base.scoped import (
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseResponseResources,
-)
-from zenml.models.v2.base.scoped import ProjectScopedFilter
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.trigger import TriggerResponse
@@ -35,7 +33,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class TriggerExecutionRequest(BaseRequest):
+class TriggerExecutionRequest(ProjectScopedRequest):
     """Model for creating a new Trigger execution."""
 
     trigger: Optional[UUID] = None
@@ -66,17 +64,17 @@ class TriggerExecutionRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class TriggerExecutionResponseBody(BaseDatedResponseBody):
+class TriggerExecutionResponseBody(ProjectScopedResponseBody):
     """Response body for trigger executions."""
 
 
-class TriggerExecutionResponseMetadata(BaseResponseMetadata):
+class TriggerExecutionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for trigger executions."""
 
     event_metadata: Dict[str, Any] = {}
 
 
-class TriggerExecutionResponseResources(BaseResponseResources):
+class TriggerExecutionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
     trigger: Optional["TriggerResponse"] = Field(
@@ -86,7 +84,7 @@ class TriggerExecutionResponseResources(BaseResponseResources):
 
 
 class TriggerExecutionResponse(
-    BaseIdentifiedResponse[
+    ProjectScopedResponse[
         TriggerExecutionResponseBody,
         TriggerExecutionResponseMetadata,
         TriggerExecutionResponseResources,
@@ -134,5 +132,10 @@ class TriggerExecutionFilter(ProjectScopedFilter):
     trigger_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="ID of the trigger of the execution.",
+        union_mode="left_to_right",
+    )
+    step_run_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="ID of the step run of the execution.",
         union_mode="left_to_right",
     )

@@ -7146,7 +7146,8 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        trigger_id: Optional[UUID] = None,
+        trigger_id: Optional[Union[UUID, str]] = None,
+        step_run_id: Optional[Union[UUID, str]] = None,
         user: Optional[Union[UUID, str]] = None,
         project: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
@@ -7159,6 +7160,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages.
             logical_operator: Which logical operator to use [and, or].
             trigger_id: ID of the trigger to filter by.
+            step_run_id: ID of the step run to filter by.
             user: Filter by user name/ID.
             project: Filter by project name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -7169,6 +7171,7 @@ class Client(metaclass=ClientMetaClass):
         """
         filter_model = TriggerExecutionFilter(
             trigger_id=trigger_id,
+            step_run_id=step_run_id,
             sort_by=sort_by,
             page=page,
             size=size,
