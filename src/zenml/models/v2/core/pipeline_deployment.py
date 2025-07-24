@@ -29,6 +29,7 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -544,3 +545,20 @@ class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
             )
 
         return custom_filters
+
+
+# ------------------ Trigger Model ------------------
+
+
+class PipelineDeploymentTriggerRequest(BaseZenModel):
+    """Request model for triggering a pipeline deployment."""
+
+    run_configuration: Optional[PipelineRunConfiguration] = Field(
+        default=None,
+        title="The run configuration for the deployment.",
+    )
+
+    step_run: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the step run that triggered the deployment.",
+    )

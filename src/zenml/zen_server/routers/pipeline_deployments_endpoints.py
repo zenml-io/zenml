@@ -20,7 +20,6 @@ from fastapi import APIRouter, Depends, Query, Request, Security
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.constants import (
     API,
     PIPELINE_DEPLOYMENTS,
@@ -31,6 +30,7 @@ from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
+    PipelineDeploymentTriggerRequest,
     PipelineDeploymentUpdate,
     PipelineRunFilter,
     PipelineRunResponse,
@@ -383,21 +383,21 @@ if server_config().workload_manager_enabled:
     @async_fastapi_endpoint_wrapper
     def create_deployment_run(
         deployment_id: UUID,
-        config: Optional[PipelineRunConfiguration] = None,
+        trigger_request: PipelineDeploymentTriggerRequest,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
         """Run a pipeline from a deployment.
 
         Args:
             deployment_id: The ID of the deployment.
-            config: Configuration for the pipeline run.
+            trigger_request: Trigger request.
             auth_context: Authentication context.
 
         Returns:
             The created pipeline run.
         """
         from zenml.zen_server.template_execution.utils import (
-            run_deployment,
+            trigger_deployment,
         )
 
         with track_handler(
@@ -425,8 +425,8 @@ if server_config().workload_manager_enabled:
 
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
-            return run_deployment(
+            return trigger_deployment(
                 deployment=deployment,
                 auth_context=auth_context,
-                run_config=config,
+                trigger_request=trigger_request,
             )

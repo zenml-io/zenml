@@ -132,6 +132,7 @@ from zenml.models import (
     PipelineBuildResponse,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
+    PipelineDeploymentTriggerRequest,
     PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineResponse,
@@ -2500,9 +2501,12 @@ class Client(metaclass=ClientMetaClass):
                     "Template ID and stack specified, ignoring the stack and "
                     "using stack associated with the template instead."
                 )
-            deployment_id = self.get_run_template(
-                template_id
-            ).source_deployment.id
+            template = self.get_run_template(template_id)
+            if not template.source_deployment:
+                raise RuntimeError(
+                    "The template does not have a source deployment."
+                )
+            deployment_id = template.source_deployment.id
 
         return self.trigger_deployment(
             deployment_id=deployment_id,
@@ -3395,7 +3399,7 @@ class Client(metaclass=ClientMetaClass):
             The updated deployment.
         """
         deployment = self.get_deployment(
-            id_or_prefix=id_or_prefix,
+            name_id_or_prefix=id_or_prefix,
             project=project,
             hydrate=False,
         )
@@ -3422,7 +3426,7 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
         """
         deployment = self.get_deployment(
-            id_or_prefix=id_or_prefix,
+            name_id_or_prefix=id_or_prefix,
             project=project,
             hydrate=False,
         )
@@ -3522,11 +3526,6 @@ class Client(metaclass=ClientMetaClass):
                     "Deployment ID and stack specified, ignoring the stack and "
                     "using stack associated with the deployment instead."
                 )
-
-            run = self.zen_store.trigger_deployment(
-                deployment_id=deployment_id,
-                run_configuration=run_configuration,
-            )
         else:
             assert pipeline_name_or_id
             pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
@@ -3562,16 +3561,29 @@ class Client(metaclass=ClientMetaClass):
                 except ValueError:
                     continue
 
-                run = self.zen_store.trigger_deployment(
-                    deployment_id=deployment.id,
-                    run_configuration=run_configuration,
-                )
+                deployment_id = deployment.id
                 break
             else:
                 raise RuntimeError(
                     "Unable to find a runnable deployment for the given stack "
                     "and pipeline."
                 )
+
+        step_run_id = None
+        try:
+            from zenml.steps.step_context import get_step_context
+
+            step_run_id = get_step_context().step_run.id
+        except RuntimeError:
+            pass
+
+        run = self.zen_store.trigger_deployment(
+            deployment_id=deployment_id,
+            trigger_request=PipelineDeploymentTriggerRequest(
+                run_configuration=run_configuration,
+                step_run=step_run_id,
+            ),
+        )
 
         if synchronous:
             run = wait_for_pipeline_run_to_finish(run_id=run.id)

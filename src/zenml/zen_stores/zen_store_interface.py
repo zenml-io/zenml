@@ -82,6 +82,7 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentTriggerRequest,
     PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineRequest,
@@ -1368,13 +1369,13 @@ class ZenStoreInterface(ABC):
     def trigger_deployment(
         self,
         deployment_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
+        trigger_request: PipelineDeploymentTriggerRequest,
     ) -> PipelineRunResponse:
         """Trigger a deployment.
 
         Args:
             deployment_id: The ID of the deployment to trigger.
-            run_configuration: Configuration for the run.
+            trigger_request: Configuration for the trigger.
 
         Returns:
             Model of the pipeline run.

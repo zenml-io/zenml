@@ -235,6 +235,23 @@ def upgrade() -> None:
             )
         )
 
+    with op.batch_alter_table("trigger_execution", schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
+        )
+        batch_op.alter_column(
+            "trigger_id", existing_type=sa.CHAR(length=32), nullable=True
+        )
+        batch_op.create_foreign_key(
+            "fk_trigger_execution_step_run_id_step_run",
+            "step_run",
+            ["step_run_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
+
     migrate_run_templates()
 
 

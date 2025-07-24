@@ -33,6 +33,7 @@ from zenml.constants import (
 )
 from zenml.models import (
     Page,
+    PipelineDeploymentTriggerRequest,
     PipelineRunResponse,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -256,7 +257,7 @@ if server_config().workload_manager_enabled:
             The created pipeline run.
         """
         from zenml.zen_server.template_execution.utils import (
-            run_deployment,
+            trigger_deployment,
         )
 
         with track_handler(
@@ -289,8 +290,10 @@ if server_config().workload_manager_enabled:
                     "deployment."
                 )
 
-            return run_deployment(
+            return trigger_deployment(
                 deployment=template.source_deployment,
                 auth_context=auth_context,
-                run_config=config,
+                trigger_request=PipelineDeploymentTriggerRequest(
+                    run_configuration=config,
+                ),
             )

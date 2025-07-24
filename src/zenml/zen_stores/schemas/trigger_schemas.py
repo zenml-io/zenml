@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import Any, List, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -50,6 +50,9 @@ from zenml.zen_stores.schemas.utils import (
     get_page_from_list,
     jl_arg,
 )
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -291,15 +294,28 @@ class TriggerExecutionSchema(BaseSchema, table=True):
 
     __tablename__ = "trigger_execution"
 
-    trigger_id: UUID = build_foreign_key_field(
+    trigger_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=TriggerSchema.__tablename__,
         source_column="trigger_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
     )
-    trigger: TriggerSchema = Relationship(back_populates="executions")
+    trigger: Optional["TriggerSchema"] = Relationship(
+        back_populates="executions"
+    )
+    step_run_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="step_run",
+        source_column="step_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
+    )
+    step_run: Optional["StepRunSchema"] = Relationship(
+        back_populates="trigger_executions"
+    )
 
     event_metadata: Optional[bytes] = None
 
@@ -317,6 +333,7 @@ class TriggerExecutionSchema(BaseSchema, table=True):
         """
         return cls(
             trigger_id=request.trigger,
+            step_run_id=request.step_run,
             event_metadata=base64.b64encode(
                 json.dumps(request.event_metadata).encode("utf-8")
             ),
@@ -355,7 +372,7 @@ class TriggerExecutionSchema(BaseSchema, table=True):
         resources = None
         if include_resources:
             resources = TriggerExecutionResponseResources(
-                trigger=self.trigger.to_model(),
+                trigger=self.trigger.to_model() if self.trigger else None,
             )
 
         return TriggerExecutionResponse(

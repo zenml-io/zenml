@@ -38,7 +38,8 @@ if TYPE_CHECKING:
 class TriggerExecutionRequest(BaseRequest):
     """Model for creating a new Trigger execution."""
 
-    trigger: UUID
+    trigger: Optional[UUID] = None
+    step_run: Optional[UUID] = None
     event_metadata: Dict[str, Any] = {}
 
 
@@ -61,7 +62,8 @@ class TriggerExecutionResponseMetadata(BaseResponseMetadata):
 class TriggerExecutionResponseResources(BaseResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
-    trigger: "TriggerResponse" = Field(
+    trigger: Optional["TriggerResponse"] = Field(
+        default=None,
         title="The event source that activates this trigger.",
     )
 
@@ -88,7 +90,7 @@ class TriggerExecutionResponse(
     # Body and metadata properties
 
     @property
-    def trigger(self) -> "TriggerResponse":
+    def trigger(self) -> Optional["TriggerResponse"]:
         """The `trigger` property.
 
         Returns:

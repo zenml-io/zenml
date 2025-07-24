@@ -29,12 +29,13 @@ from zenml.models import (
     ActionRequest,
     ActionResponse,
     ActionUpdate,
+    PipelineDeploymentTriggerRequest,
     TriggerExecutionResponse,
 )
 from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.template_execution.utils import run_deployment
+from zenml.zen_server.template_execution.utils import trigger_deployment
 from zenml.zen_server.utils import server_config
 
 logger = get_logger(__name__)
@@ -97,9 +98,11 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         deployment = zen_store().get_deployment(config.deployment_id)
         logger.debug("Running deployment:", deployment)
-        run_deployment(
+        trigger_deployment(
             deployment=deployment,
-            run_config=config.run_config,
+            trigger_request=PipelineDeploymentTriggerRequest(
+                run_configuration=config.run_config,
+            ),
             auth_context=auth_context,
             sync=True,
         )

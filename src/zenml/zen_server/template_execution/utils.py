@@ -5,7 +5,7 @@ import os
 import sys
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 from uuid import UUID
 
 from packaging import version
@@ -36,9 +36,11 @@ from zenml.models import (
     FlavorFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentTriggerRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
     StackResponse,
+    TriggerExecutionRequest,
 )
 from zenml.pipelines.build_utils import compute_stack_checksum
 from zenml.pipelines.run_utils import (
@@ -124,10 +126,10 @@ class BoundedThreadPoolExecutor:
         self._executor.shutdown(**kwargs)
 
 
-def run_deployment(
+def trigger_deployment(
     deployment: PipelineDeploymentResponse,
     auth_context: AuthContext,
-    run_config: Optional[PipelineRunConfiguration] = None,
+    trigger_request: PipelineDeploymentTriggerRequest,
     sync: bool = False,
 ) -> PipelineRunResponse:
     """Run a pipeline from a deployment.
@@ -135,7 +137,7 @@ def run_deployment(
     Args:
         deployment: The deployment to run.
         auth_context: Authentication context.
-        run_config: The run configuration.
+        trigger_request: The trigger request.
         sync: Whether to run the deployment synchronously.
 
     Raises:
@@ -171,12 +173,14 @@ def run_deployment(
         )
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
-    if run_config:
-        validate_run_config_is_runnable_from_server(run_config)
+    if trigger_request.run_configuration:
+        validate_run_config_is_runnable_from_server(
+            trigger_request.run_configuration
+        )
 
     deployment_request = deployment_request_from_source_deployment(
         source_deployment=deployment,
-        config=run_config or PipelineRunConfiguration(),
+        config=trigger_request.run_configuration or PipelineRunConfiguration(),
     )
 
     ensure_async_orchestrator(deployment=deployment_request, stack=stack)
@@ -191,7 +195,18 @@ def run_deployment(
     assert build.zenml_version
     zenml_version = build.zenml_version
 
-    placeholder_run = create_placeholder_run(deployment=new_deployment)
+    trigger_execution_id = None
+    if trigger_request.step_run:
+        trigger_execution_request = TriggerExecutionRequest(
+            step_run=trigger_request.step_run,
+        )
+        trigger_execution_id = (
+            zen_store().create_trigger_execution(trigger_execution_request).id
+        )
+
+    placeholder_run = create_placeholder_run(
+        deployment=new_deployment, trigger_execution_id=trigger_execution_id
+    )
 
     report_usage(
         feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
