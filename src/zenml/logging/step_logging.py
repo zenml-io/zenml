@@ -612,7 +612,7 @@ class PipelineLogsStorage:
                 buffer_to_write = self.buffer.copy()
                 self.buffer = []
 
-            merge_needed = self._is_merge_needed
+            merge_needed = self._is_merge_needed or force
 
         except BaseException:
             # If an exception is raised, we need to release the locks
