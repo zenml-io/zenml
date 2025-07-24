@@ -16,9 +16,10 @@
 import json
 import os
 from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
 import click
-from uuid import UUID
+
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options

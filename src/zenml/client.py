@@ -28,7 +28,6 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -2480,9 +2479,18 @@ class Client(metaclass=ClientMetaClass):
                 run is finished.
             project: The project name/ID to filter by.
 
+        Raises:
+            RuntimeError: If triggering the pipeline failed.
+
         Returns:
             Model of the pipeline run.
         """
+        from zenml.pipelines.run_utils import (
+            validate_run_config_is_runnable_from_server,
+            validate_stack_is_runnable_from_server,
+            wait_for_pipeline_run_to_finish,
+        )
+
         logger.warning(
             "The `Client().trigger_pipeline(...)` method is deprecated and "
             "will be removed in a future version. Please use "
@@ -2495,29 +2503,83 @@ class Client(metaclass=ClientMetaClass):
                 "to trigger."
             )
 
-        deployment_id = None
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if isinstance(run_configuration, Dict):
+            run_configuration = PipelineRunConfiguration.model_validate(
+                run_configuration
+            )
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
         if template_id:
             if stack_name_or_id:
                 logger.warning(
                     "Template ID and stack specified, ignoring the stack and "
                     "using stack associated with the template instead."
                 )
-            template = self.get_run_template(template_id)
-            if not template.source_deployment:
-                raise RuntimeError(
-                    "The template does not have a source deployment."
-                )
-            deployment_id = template.source_deployment.id
 
-        return self.trigger_deployment(
-            deployment_id=deployment_id,
-            pipeline_name_or_id=pipeline_name_or_id,
-            run_configuration=run_configuration,
-            config_path=config_path,
-            stack_name_or_id=stack_name_or_id,
-            synchronous=synchronous,
-            project=project,
-        )
+            run = self.zen_store.run_template(
+                template_id=template_id,
+                run_configuration=run_configuration,
+            )
+        else:
+            assert pipeline_name_or_id
+            pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
+
+            stack = None
+            if stack_name_or_id:
+                stack = self.get_stack(
+                    stack_name_or_id, allow_name_prefix_match=False
+                )
+                validate_stack_is_runnable_from_server(
+                    zen_store=self.zen_store, stack=stack
+                )
+
+            templates = depaginate(
+                self.list_run_templates,
+                pipeline_id=pipeline.id,
+                stack_id=stack.id if stack else None,
+                project=project or pipeline.project_id,
+            )
+
+            for template in templates:
+                if not template.build:
+                    continue
+
+                stack = template.build.stack
+                if not stack:
+                    continue
+
+                try:
+                    validate_stack_is_runnable_from_server(
+                        zen_store=self.zen_store, stack=stack
+                    )
+                except ValueError:
+                    continue
+
+                run = self.zen_store.run_template(
+                    template_id=template.id,
+                    run_configuration=run_configuration,
+                )
+                break
+            else:
+                raise RuntimeError(
+                    "Unable to find a runnable template for the given stack "
+                    "and pipeline."
+                )
+
+        if synchronous:
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
 
     # -------------------------------- Builds ----------------------------------
 
