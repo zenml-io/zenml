@@ -300,8 +300,7 @@ def add_tags(
             infer_artifact,
         ]
     ):
-        # TODO: add support for names
-        deployment_model = client.get_deployment(id_or_prefix=deployment)
+        deployment_model = client.get_deployment(name_id_or_prefix=deployment)
         resource_id = deployment_model.id
         resource_type = TaggableResourceTypes.PIPELINE_DEPLOYMENT
 
@@ -669,8 +668,7 @@ def remove_tags(
             infer_artifact,
         ]
     ):
-        # TODO: add support for names
-        deployment_model = client.get_deployment(id_or_prefix=deployment)
+        deployment_model = client.get_deployment(name_id_or_prefix=deployment)
         resource_id = deployment_model.id
         resource_type = TaggableResourceTypes.PIPELINE_DEPLOYMENT
 

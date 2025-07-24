@@ -3429,66 +3429,28 @@ class Client(metaclass=ClientMetaClass):
 
     def get_deployment(
         self,
-        id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> PipelineDeploymentResponse:
-        """Get a deployment by id or prefix.
+        """Get a deployment by name, id or prefix.
 
         Args:
-            id_or_prefix: The id or id prefix of the deployment.
+            name_id_or_prefix: The name, id or prefix of the deployment.
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The deployment.
-
-        Raises:
-            KeyError: If no deployment was found for the given id or prefix.
-            ZenKeyError: If multiple deployments were found that match the given
-                id or prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
-
-        # First interpret as full UUID
-        if is_valid_uuid(id_or_prefix):
-            id_ = (
-                UUID(id_or_prefix)
-                if isinstance(id_or_prefix, str)
-                else id_or_prefix
-            )
-            return self.zen_store.get_deployment(id_, hydrate=hydrate)
-
-        list_kwargs: Dict[str, Any] = dict(
-            id=f"startswith:{id_or_prefix}",
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_deployment,
+            list_method=self.list_deployments,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=project,
             hydrate=hydrate,
-        )
-        scope = ""
-        if project:
-            list_kwargs["project"] = project
-            scope = f" in project {project}"
-
-        entity = self.list_deployments(**list_kwargs)
-
-        # If only a single entity is found, return it.
-        if entity.total == 1:
-            return entity.items[0]
-
-        # If no entity is found, raise an error.
-        if entity.total == 0:
-            raise KeyError(
-                f"No deployment have been found that have either an id or "
-                f"prefix that matches the provided string '{id_or_prefix}'{scope}."
-            )
-
-        raise ZenKeyError(
-            f"{entity.total} deployments have been found{scope} that have "
-            f"an ID that matches the provided "
-            f"string '{id_or_prefix}':\n"
-            f"{[entity.items]}.\n"
-            f"Please use the id to uniquely identify "
-            f"only one of the deployments."
         )
 
     def list_deployments(
