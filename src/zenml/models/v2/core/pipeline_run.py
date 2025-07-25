@@ -49,6 +49,7 @@ from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
 from zenml.utils import pagination_utils
 from zenml.utils.tag_utils import Tag
+from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -610,6 +611,7 @@ class PipelineRunFilter(
         "stack_component",
         "pipeline_name",
         "templatable",
+        "triggered_by_step_run_id",
     ]
     CLI_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -720,6 +722,11 @@ class PipelineRunFilter(
     templatable: Optional[bool] = Field(
         default=None, description="Whether the run is templatable."
     )
+    triggered_by_step_run_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="The ID of the step run that triggered this pipeline run.",
+        union_mode="left_to_right",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -751,6 +758,7 @@ class PipelineRunFilter(
             StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
+            TriggerExecutionSchema,
         )
 
         if self.unlisted is not None:
@@ -912,6 +920,19 @@ class PipelineRunFilter(
                 )
 
             custom_filters.append(templatable_filter)
+
+        if self.triggered_by_step_run_id:
+            trigger_filter = and_(
+                PipelineRunSchema.trigger_execution_id
+                == TriggerExecutionSchema.id,
+                TriggerExecutionSchema.step_run_id == StepRunSchema.id,
+                self.generate_custom_query_conditions_for_column(
+                    value=self.triggered_by_step_run_id,
+                    table=StepRunSchema,
+                    column="id",
+                ),
+            )
+            custom_filters.append(trigger_filter)
 
         return custom_filters
 

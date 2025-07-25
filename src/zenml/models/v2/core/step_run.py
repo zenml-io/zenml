@@ -275,10 +275,6 @@ class StepRunResponseResources(ProjectScopedResponseResources):
         title="The output artifact versions of the step run.",
         default_factory=dict,
     )
-    triggered_runs: List[UUID] = Field(
-        default=[],
-        title="The IDs of the runs triggered by this step run.",
-    )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -618,15 +614,6 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_resources().model_version
-
-    @property
-    def triggered_runs(self) -> List[UUID]:
-        """The `triggered_runs` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().triggered_runs
 
 
 # ------------------ Filter Model ------------------

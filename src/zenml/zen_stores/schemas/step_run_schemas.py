@@ -445,7 +445,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 model_version=model_version,
                 inputs=input_artifacts,
                 outputs=output_artifacts,
-                triggered_runs=[run.id for run in self.triggered_runs],
             )
 
         return StepRunResponse(
