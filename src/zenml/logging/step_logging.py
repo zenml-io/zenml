@@ -450,6 +450,7 @@ class PipelineLogsStorage:
                 if self._is_write_needed:
                     buffer_to_queue = self.buffer.copy()
                     self.buffer = []
+                    self.last_save_time = time.time()
 
                 # Queue the buffer for log storage thread processing if needed
                 if buffer_to_queue:
@@ -588,9 +589,6 @@ class PipelineLogsStorage:
                 self.artifact_store._remove_previous_file_versions(
                     self.logs_uri
                 )
-
-            # Update the last save time
-            self.last_save_time = time.time()
 
         finally:
             # Re-enable the logging lock
