@@ -16,6 +16,7 @@
 import asyncio
 import logging
 import os
+import queue
 import re
 import sys
 import threading
@@ -37,6 +38,8 @@ from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
+    LOGS_STORAGE_MAX_QUEUE_SIZE,
+    LOGS_STORAGE_QUEUE_TIMEOUT,
     handle_bool_env_var,
 )
 from zenml.exceptions import DoesNotExistException
@@ -235,7 +238,7 @@ def fetch_logs(
 
 
 class PipelineLogsStorage:
-    """Helper class which buffers and stores logs to a given URI."""
+    """Helper class which buffers and stores logs to a given URI using a background thread."""
 
     def __init__(
         self,
@@ -244,6 +247,8 @@ class PipelineLogsStorage:
         max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
         time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
         merge_files_interval: int = STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
+        max_queue_size: int = LOGS_STORAGE_MAX_QUEUE_SIZE,
+        queue_timeout: int = LOGS_STORAGE_QUEUE_TIMEOUT,
     ) -> None:
         """Initialization.
 
@@ -255,29 +260,154 @@ class PipelineLogsStorage:
                 automatically.
             merge_files_interval: the amount of seconds before the created files
                 get merged into a single file.
+            max_queue_size: maximum number of log batches to queue.
+            queue_timeout: timeout in seconds for putting items in queue when full.
+                - Positive value: Wait N seconds, then drop logs if queue still full
+                - Negative value: Block indefinitely until queue has space (never drop logs)
         """
         # Parameters
         self.logs_uri = logs_uri
         self.max_messages = max_messages
         self.time_interval = time_interval
         self.merge_files_interval = merge_files_interval
+        self.max_queue_size = max_queue_size
+        self.queue_timeout = queue_timeout
 
         # State
         self.buffer: List[str] = []
-        self.disabled_buffer: List[str] = []
         self.last_save_time = time.time()
-        self.disabled = False
         self.artifact_store = artifact_store
 
         # Immutable filesystems state
         self.last_merge_time = time.time()
 
-        # Blocked threads
-        self.blocked_threads = set()
+        # Queue and log storage thread for async processing
+        self.log_queue: queue.Queue[List[str]] = queue.Queue(
+            maxsize=max_queue_size
+        )
+        self.log_storage_thread: Optional[threading.Thread] = None
+        self.shutdown_event = threading.Event()
+        self.shutdown_requested = (
+            False  # Flag to prevent new queue items during shutdown
+        )
+        self.thread_exception: Optional[Exception] = None
 
-        # Two-lock system for improved concurrency
+        # Buffer lock for thread safety
         self.buffer_lock = threading.RLock()
-        self.io_lock = threading.RLock()
+
+        # Start the log storage thread
+        self._start_log_storage_thread()
+
+    def _start_log_storage_thread(self) -> None:
+        """Start the log storage thread for processing log queue."""
+        if (
+            self.log_storage_thread is None
+            or not self.log_storage_thread.is_alive()
+        ):
+            self.log_storage_thread = threading.Thread(
+                target=self._log_storage_worker,
+                name="LogsStorage-Worker",
+            )
+            self.log_storage_thread.start()
+
+    def _log_storage_worker(self) -> None:
+        """Log storage thread worker that processes the log queue."""
+        while not self.shutdown_event.is_set():
+            all_buffers = []
+            try:
+                # Wait for first item in queue or timeout to check shutdown
+                try:
+                    first_buffer = self.log_queue.get(timeout=1.0)
+                    all_buffers.append(first_buffer)
+                except queue.Empty:
+                    continue
+
+                # Collect all other available items without waiting
+                while True:
+                    try:
+                        additional_buffer = self.log_queue.get_nowait()
+                        all_buffers.append(additional_buffer)
+                    except queue.Empty:
+                        break
+
+                # Merge all buffers into one batch for efficient processing
+                merged_buffer = []
+                for buffer in all_buffers:
+                    merged_buffer.extend(buffer)
+
+                # Process the merged buffer (single file operation)
+                if merged_buffer:
+                    self.write_buffer(merged_buffer)
+
+                # Check if merge is needed after processing
+                if self._is_merge_needed:
+                    self.merge_log_files()
+
+            except Exception as e:
+                self.thread_exception = e
+                logger.error("Error in log storage thread: %s", e)
+            finally:
+                # Always mark all queue tasks as done
+                for _ in all_buffers:
+                    self.log_queue.task_done()
+
+        # Shutdown requested - drain remaining queue items in batches
+        while True:
+            all_buffers = []
+            try:
+                # Collect all remaining items without waiting
+                while True:
+                    try:
+                        buffer = self.log_queue.get_nowait()
+                        all_buffers.append(buffer)
+                    except queue.Empty:
+                        break
+
+                # If no items collected, we're done
+                if not all_buffers:
+                    break
+
+                # Merge and process all remaining items as one batch
+                merged_buffer = []
+                for buffer in all_buffers:
+                    merged_buffer.extend(buffer)
+
+                if merged_buffer:
+                    self.write_buffer(merged_buffer)
+
+            except Exception as e:
+                logger.error("Error during shutdown queue drain: %s", e)
+            finally:
+                # Mark all tasks as done
+                for _ in all_buffers:
+                    self.log_queue.task_done()
+
+        # Final merge of log files if needed (only for immutable filesystems)
+        try:
+            if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+                self.merge_log_files(merge_all_files=True)
+        except Exception as e:
+            logger.error("Error during final log file merge: %s", e)
+
+    def _shutdown_log_storage_thread(self, timeout: int = 5) -> None:
+        """Shutdown the log storage thread gracefully.
+
+        Args:
+            timeout: Maximum time to wait for thread shutdown.
+        """
+        if self.log_storage_thread and self.log_storage_thread.is_alive():
+            # First, prevent new items from being queued
+            self.shutdown_requested = True
+
+            # Then signal the worker to begin graceful shutdown
+            self.shutdown_event.set()
+
+            # Wait for thread to finish (it will drain the queue automatically)
+            self.log_storage_thread.join(timeout=timeout)
+            if self.log_storage_thread.is_alive():
+                # Thread didn't shutdown gracefully, but we can't do much more
+                # The non-daemon thread will still be waited for by Python
+                pass
 
     def write(self, text: str) -> None:
         """Main write method.
@@ -289,73 +419,65 @@ class PipelineLogsStorage:
         if text == "\n":
             return
 
+        # Check if log storage thread encountered an exception
+        if self.thread_exception:
+            return
+
+        # If the current thread is the log storage thread, do nothing
+        # to prevent recursion when the storage thread itself generates logs
+        if (
+            self.log_storage_thread
+            and threading.current_thread() == self.log_storage_thread
+        ):
+            return
+
+        # If the current thread is the fsspec IO thread, do nothing
+        if self._is_fsspec_io_thread:
+            return
+
         # Acquire the buffer lock
-        self.buffer_lock.acquire()
-
-        try:
-            merge_needed, write_needed = False, False
-
-            # Check if the current thread is blocked, else block it
-            if threading.current_thread() in self.blocked_threads:
-                return
-
-            # Block the current thread
-            self.blocked_threads.add(threading.current_thread())
-
-            # If the current thread is the fsspec IO thread, do nothing
-            if self._is_fsspec_io_thread:
-                return
-
-            # Format the message and add it to the buffer
-            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = (
-                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
-            )
-            self.buffer.append(formatted_message.rstrip())
-
-            # Check if the buffer needs to be written to file
-            buffer_to_write = []
-            if write_needed := self._is_write_needed:
-                buffer_to_write = self.buffer.copy()
-                self.buffer = []
-
-            # Check if the log files need to be merged
-            merge_needed = self._is_merge_needed
-
-            # If the current thread is blocked, remove it from the blocked threads
-            if threading.current_thread() in self.blocked_threads:
-                self.blocked_threads.remove(threading.current_thread())
-
-        except BaseException:
-            # If an exception is raised, we need to release the locks
-            merge_needed, write_needed = False, False
-
-            # If the current thread is blocked, remove it from the blocked threads
-            if threading.current_thread() in self.blocked_threads:
-                self.blocked_threads.remove(threading.current_thread())
-
-        finally:
-            # If merge or write is needed, acquire the I/O lock first
-            io_lock_acquired = False
-            if merge_needed or write_needed:
-                self.io_lock.acquire()
-                io_lock_acquired = True
-
-            # Release the buffer lock
-            self.buffer_lock.release()
-
-            # Write the buffer to file or merge the log files
+        with self.buffer_lock:
             try:
-                if write_needed:
-                    self.write_buffer(buffer_to_write)
-                if merge_needed:
-                    self.merge_log_files()
-            except BaseException as e:
-                logger.error("Error while writing/merging logs: %s", e)
-            finally:
-                if io_lock_acquired:
-                    # Release the I/O lock
-                    self.io_lock.release()
+                # Format the message and add it to the buffer
+                timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+                formatted_message = (
+                    f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
+                )
+                self.buffer.append(formatted_message.rstrip())
+
+                # Check if the buffer needs to be queued for processing
+                buffer_to_queue = None
+                if self._is_write_needed:
+                    buffer_to_queue = self.buffer.copy()
+                    self.buffer = []
+
+                # Queue the buffer for log storage thread processing if needed
+                if buffer_to_queue:
+                    # Don't queue new items if shutdown has been requested
+                    if self.shutdown_requested:
+                        # Shutdown in progress - drop this batch to prevent infinite drain
+                        pass
+                    else:
+                        try:
+                            if self.queue_timeout < 0:
+                                # Negative timeout = block indefinitely until queue has space
+                                # Guarantees no log loss but may hang application
+                                self.log_queue.put(buffer_to_queue)
+                            else:
+                                # Positive timeout = wait specified time then drop logs
+                                # Prevents application hanging but may lose logs
+                                self.log_queue.put(
+                                    buffer_to_queue, timeout=self.queue_timeout
+                                )
+                        except queue.Full:
+                            # This only happens with positive timeout
+                            # Queue is full - just skip this batch to avoid blocking
+                            # Better to drop logs than hang the application
+                            pass
+
+            except Exception:
+                # Silently ignore errors to prevent recursion
+                pass
 
     @property
     def _is_write_needed(self) -> bool:
@@ -418,124 +540,67 @@ class PipelineLogsStorage:
         return f"{time.time()}{suffix}{LOGS_EXTENSION}"
 
     def write_buffer(self, buffer_to_write: List[str]) -> None:
-        """Write the given buffer to file using the I/O lock.
+        """Write the given buffer to file. This runs in the log storage thread.
 
         Args:
             buffer_to_write: The buffer contents to write to file.
         """
-        # Acquire the I/O lock
-        with self.io_lock:
-            try:
-                # If the current thread is blocked, do nothing
-                if threading.current_thread() in self.blocked_threads:
-                    return
+        if not buffer_to_write:
+            return
 
-                # Block the current thread
-                self.blocked_threads.add(threading.current_thread())
+        # The configured logging handler uses a lock to ensure that
+        # logs generated by different threads are not interleaved.
+        # Given that most artifact stores are based on fsspec, which
+        # use a separate thread for async operations, it may happen that
+        # the fsspec library itself will log something, which will end
+        # up in a deadlock.
+        # To avoid this, we temporarily disable the lock in the logging
+        # handler while writing to the file.
+        logging_handler = None
+        logging_lock = None
+        try:
+            # Only try to access logging handler if it exists
+            root_logger = logging.getLogger()
+            if root_logger.handlers:
+                logging_handler = root_logger.handlers[0]
+                logging_lock = getattr(logging_handler, "lock", None)
+                if logging_lock:
+                    logging_handler.lock = None
 
-                # If the buffer is empty, do nothing
-                if not buffer_to_write:
-                    return
+            # If the artifact store is immutable, write the buffer to a new file
+            if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+                _logs_uri = self._get_timestamped_filename()
+                with self.artifact_store.open(
+                    os.path.join(
+                        self.logs_uri,
+                        _logs_uri,
+                    ),
+                    "w",
+                ) as file:
+                    for message in buffer_to_write:
+                        file.write(f"{message}\n")
 
-                # If the current thread is the fsspec IO thread, do nothing
-                if self._is_fsspec_io_thread:
-                    return
+            # If the artifact store is mutable, append the buffer to the existing file
+            else:
+                with self.artifact_store.open(self.logs_uri, "a") as file:
+                    for message in buffer_to_write:
+                        file.write(f"{message}\n")
+                self.artifact_store._remove_previous_file_versions(
+                    self.logs_uri
+                )
 
-                # The configured logging handler uses a lock to ensure that
-                # logs generated by different threads are not interleaved.
-                # Given that most artifact stores are based on fsspec, which
-                # use a separate thread for async operations, it may happen that
-                # the fsspec library itself will log something, which will end
-                # up in a deadlock.
-                # To avoid this, we temporarily disable the lock in the logging
-                # handler while writing to the file.
-                logging_handler = logging.getLogger().handlers[0]
-                logging_lock = logging_handler.lock
-                logging_handler.lock = None
+            # Update the last save time
+            self.last_save_time = time.time()
 
-                # Write the buffer to file
-                self._write_buffer(buffer_to_write)
-
-                # If the current thread is blocked, remove it from the blocked threads
-                if threading.current_thread() in self.blocked_threads:
-                    self.blocked_threads.remove(threading.current_thread())
-
-            except BaseException as e:
-                logger.error("Error while writing buffer: %s", e)
-
-                # If the current thread is blocked, remove it from the blocked threads
-                if threading.current_thread() in self.blocked_threads:
-                    self.blocked_threads.remove(threading.current_thread())
-
-            finally:
-                # Re-enable the logging lock
+        finally:
+            # Re-enable the logging lock
+            if logging_handler and logging_lock:
                 logging_handler.lock = logging_lock
-
-    def _write_buffer(self, buffer_to_write: List[str]) -> None:
-        """Write the given buffer to file using the I/O lock.
-
-        Args:
-            buffer_to_write: The buffer contents to write to file.
-        """
-        # If the artifact store is immutable, write the buffer to a new file
-        if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-            _logs_uri = self._get_timestamped_filename()
-            with self.artifact_store.open(
-                os.path.join(
-                    self.logs_uri,
-                    _logs_uri,
-                ),
-                "w",
-            ) as file:
-                for message in buffer_to_write:
-                    file.write(f"{message}\n")
-
-        # If the artifact store is mutable, append the buffer to the existing file
-        else:
-            with self.artifact_store.open(self.logs_uri, "a") as file:
-                for message in buffer_to_write:
-                    file.write(f"{message}\n")
-            self.artifact_store._remove_previous_file_versions(self.logs_uri)
-
-        # Update the last save time
-        self.last_save_time = time.time()
 
     def merge_log_files(self, merge_all_files: bool = False) -> None:
         """Merges all log files into one in the given URI.
 
         Called on the logging context exit.
-
-        Args:
-            merge_all_files: whether to merge all files or only raw files
-        """
-        with self.io_lock:
-            try:
-                # If the current thread is blocked, do nothing
-                if threading.current_thread() in self.blocked_threads:
-                    return
-
-                # Block the current thread
-                self.blocked_threads.add(threading.current_thread())
-
-                # If the current thread is the fsspec IO thread, do nothing
-                if self._is_fsspec_io_thread:
-                    return
-
-                # Merge the log files
-                self._merge_log_files(merge_all_files)
-
-                # If the current thread is blocked, remove it from the blocked threads
-                if threading.current_thread() in self.blocked_threads:
-                    self.blocked_threads.remove(threading.current_thread())
-
-            except BaseException as e:
-                logger.error("Error while merging log files: %s", e)
-                # If the current thread is blocked, remove it from the blocked threads
-                if threading.current_thread() in self.blocked_threads:
-                    self.blocked_threads.remove(threading.current_thread())
-
-    def _merge_log_files(self, merge_all_files: bool = False) -> None:
-        """Internal method to merge log files (uses I/O lock).
 
         Args:
             merge_all_files: whether to merge all files or only raw files
@@ -586,58 +651,76 @@ class PipelineLogsStorage:
             self.last_merge_time = time.time()
 
     def flush_buffer(self, force: bool = False) -> None:
-        """Flushes the buffer to the given URI.
+        """Flushes the buffer to the queue and waits for processing.
 
         Args:
-            force: whether to force a save even if the write conditions not met.
+            force: whether to force a flush even if the write conditions are not met.
         """
+        # If the current thread is the fsspec IO thread, do nothing
+        if self._is_fsspec_io_thread:
+            return
+
         # Acquire the buffer lock
-        self.buffer_lock.acquire()
-        try:
-            merge_needed, write_needed = False, False
-
-            # Check if the current thread is blocked or the fsspec IO thread
-            if (
-                threading.current_thread() in self.blocked_threads
-                or self._is_fsspec_io_thread
-            ):
-                return
-
-            self.blocked_threads.add(threading.current_thread())
-
-            # If the buffer needs to be written or the force flag is set,
-            # copy the buffer to a temporary variable
-            buffer_to_write = []
-            if self._is_write_needed or force:
-                buffer_to_write = self.buffer.copy()
-                self.buffer = []
-
-            merge_needed = self._is_merge_needed or force
-
-        except BaseException:
-            # If an exception is raised, we need to release the locks
-            merge_needed, write_needed = False, False
-
-        finally:
-            io_lock_acquired = False
-            if merge_needed or write_needed:
-                self.io_lock.acquire()
-                io_lock_acquired = True
-
-            if threading.current_thread() in self.blocked_threads:
-                self.blocked_threads.remove(threading.current_thread())
-
-            self.buffer_lock.release()
+        with self.buffer_lock:
             try:
-                if write_needed:
-                    self.write_buffer(buffer_to_write)
-                if merge_needed:
-                    self.merge_log_files(merge_all_files=True)
-            except BaseException as e:
-                logger.error("Error while flushing buffer: %s", e)
-            finally:
-                if io_lock_acquired:
-                    self.io_lock.release()
+                # If the buffer needs to be written or the force flag is set,
+                # queue the buffer for processing
+                buffer_to_queue = None
+                if self._is_write_needed or force:
+                    buffer_to_queue = self.buffer.copy()
+                    self.buffer = []
+
+                # Queue the buffer for log storage thread processing if needed
+                if buffer_to_queue:
+                    # Check if thread is alive, but don't restart it
+                    if (
+                        self.log_storage_thread
+                        and self.log_storage_thread.is_alive()
+                        and not self.shutdown_requested
+                    ):  # Don't queue during shutdown
+                        try:
+                            if self.queue_timeout < 0:
+                                # Negative timeout = block indefinitely until queue has space
+                                # Guarantees no log loss but may hang application
+                                self.log_queue.put(buffer_to_queue)
+                            else:
+                                # Positive timeout = wait specified time then drop logs
+                                # Prevents application hanging but may lose logs
+                                self.log_queue.put(
+                                    buffer_to_queue, timeout=self.queue_timeout
+                                )
+                        except queue.Full:
+                            # This only happens with positive timeout
+                            # Queue is full - just skip this batch to avoid blocking
+                            # Better to drop logs than hang the application
+                            pass
+                    else:
+                        # Thread is dead or shutdown requested - drop logs gracefully
+                        pass
+
+            except Exception:
+                # Cannot log here as it would cause infinite recursion
+                pass
+
+        # If force is true, wait for the queue to be processed
+        if force:
+            try:
+                # Only wait if thread is actually alive
+                if (
+                    self.log_storage_thread
+                    and self.log_storage_thread.is_alive()
+                    and not self.log_queue.empty()
+                ):
+                    # Wait briefly for queue to empty, but don't block forever
+                    start_time = time.time()
+                    while (
+                        not self.log_queue.empty()
+                        and time.time() - start_time < 2.0
+                    ):  # 2 second max wait
+                        time.sleep(0.1)
+            except Exception:
+                # Cannot log here as it would cause infinite recursion
+                pass
 
 
 class PipelineLogsStorageContext:
@@ -660,6 +743,11 @@ class PipelineLogsStorageContext:
             logs_uri=logs_uri, artifact_store=artifact_store
         )
         self.prepend_step_name = prepend_step_name
+        self._original_methods_saved = False
+
+        # Storage for original methods (only write methods, not flush)
+        self.stdout_write = None
+        self.stderr_write = None
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
@@ -670,17 +758,16 @@ class PipelineLogsStorageContext:
         Returns:
             self
         """
+        # Save original write methods (flush methods are not wrapped)
         self.stdout_write = getattr(sys.stdout, "write")
-        self.stdout_flush = getattr(sys.stdout, "flush")
-
         self.stderr_write = getattr(sys.stderr, "write")
-        self.stderr_flush = getattr(sys.stderr, "flush")
+        self._original_methods_saved = True
 
+        # Wrap stdout/stderr write methods only
+        # Note: We don't wrap flush() as it's unnecessary overhead and the
+        # background thread handles log flushing based on time/buffer size
         setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
-        setattr(sys.stdout, "flush", self._wrap_flush(self.stdout_flush))
-
         setattr(sys.stderr, "write", self._wrap_write(self.stderr_write))
-        setattr(sys.stderr, "flush", self._wrap_flush(self.stderr_flush))
 
         redirected.set(True)
         return self
@@ -700,20 +787,20 @@ class PipelineLogsStorageContext:
 
         Restores the `write` method of both stderr and stdout.
         """
-        self.storage.flush_buffer(force=True)
-
-        setattr(sys.stdout, "write", self.stdout_write)
-        setattr(sys.stdout, "flush", self.stdout_flush)
-
-        setattr(sys.stderr, "write", self.stderr_write)
-        setattr(sys.stderr, "flush", self.stderr_flush)
-
-        redirected.set(False)
-
+        # Step 1: Restore stdout/stderr FIRST to prevent logging during shutdown
         try:
-            self.storage.merge_log_files(merge_all_files=True)
-        except (OSError, IOError) as e:
-            logger.warning(f"Step logs roll-up failed: {e}")
+            if self._original_methods_saved:
+                setattr(sys.stdout, "write", self.stdout_write)
+                setattr(sys.stderr, "write", self.stderr_write)
+                redirected.set(False)
+        except Exception:
+            pass
+
+        # Step 2: Shutdown thread (it will automatically drain queue and merge files)
+        try:
+            self.storage._shutdown_log_storage_thread()
+        except Exception:
+            pass
 
     def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
         """Wrapper function that utilizes the storage object to store logs.
@@ -762,23 +849,6 @@ class PipelineLogsStorageContext:
             return output
 
         return wrapped_write
-
-    def _wrap_flush(self, method: Callable[..., Any]) -> Callable[..., Any]:
-        """Wrapper function that flushes the buffer of the storage object.
-
-        Args:
-            method: the original flush method
-
-        Returns:
-            the wrapped flush method.
-        """
-
-        def wrapped_flush(*args: Any, **kwargs: Any) -> Any:
-            output = method(*args, **kwargs)
-            self.storage.flush_buffer()
-            return output
-
-        return wrapped_flush
 
 
 def setup_orchestrator_logging(
