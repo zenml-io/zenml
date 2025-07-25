@@ -192,6 +192,38 @@ def migrate_run_templates() -> None:
         )
 
 
+def fill_trigger_execution_project_id() -> None:
+    """Fill the project_id of trigger_execution from the associated trigger."""
+    connection = op.get_bind()
+    meta = sa.MetaData()
+    meta.reflect(bind=connection, only=("trigger_execution", "trigger"))
+
+    trigger_execution_table = sa.Table("trigger_execution", meta)
+    trigger_table = sa.Table("trigger", meta)
+
+    trigger_executions = connection.execute(
+        sa.select(
+            trigger_execution_table.c.id,
+            trigger_table.c.project_id,
+        ).join(
+            trigger_table,
+            trigger_table.c.id == trigger_execution_table.c.trigger_id,
+        )
+    ).fetchall()
+
+    trigger_execution_updates = [
+        {"id_": trigger_execution_id, "project_id": project_id}
+        for trigger_execution_id, project_id in trigger_executions
+    ]
+    if trigger_execution_updates:
+        connection.execute(
+            sa.update(trigger_execution_table)
+            .where(trigger_execution_table.c.id == sa.bindparam("id_"))
+            .values(project_id=sa.bindparam("project_id")),
+            trigger_execution_updates,
+        )
+
+
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     add_unlisted_pipeline_if_necessary()
@@ -238,6 +270,14 @@ def upgrade() -> None:
     with op.batch_alter_table("trigger_execution", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
+                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
+        )
+        batch_op.add_column(
+            sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
+        )
+        batch_op.add_column(
+            sa.Column(
                 "step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
             )
         )
@@ -250,6 +290,29 @@ def upgrade() -> None:
             ["step_run_id"],
             ["id"],
             ondelete="CASCADE",
+        )
+        batch_op.create_foreign_key(
+            "fk_trigger_execution_project_id_project",
+            "project",
+            ["project_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
+        batch_op.create_foreign_key(
+            "fk_trigger_execution_user_id_user",
+            "user",
+            ["user_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+
+    fill_trigger_execution_project_id()
+
+    with op.batch_alter_table("trigger_execution", schema=None) as batch_op:
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
         )
 
     migrate_run_templates()
