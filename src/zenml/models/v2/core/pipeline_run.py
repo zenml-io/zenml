@@ -49,7 +49,6 @@ from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
 from zenml.utils import pagination_utils
 from zenml.utils.tag_utils import Tag
-from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -758,6 +757,7 @@ class PipelineRunFilter(
             StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
+            StepRunSchema,
             TriggerExecutionSchema,
         )
 
