@@ -25,7 +25,7 @@ def upgrade() -> None:
             sa.Column(
                 "exception_info",
                 sa.String(length=16777215).with_variant(
-                    mysql.MEDIUMTEXT(), "mysql"
+                    mysql.MEDIUMTEXT, "mysql"
                 ),
                 nullable=True,
             )

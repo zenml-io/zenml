@@ -212,6 +212,7 @@ class StepLauncher:
 
         Raises:
             RunStoppedException: If the pipeline run is stopped by the user.
+            BaseException: If the step preparation or execution fails.
         """
         publish_utils.step_exception_info.set(None)
         pipeline_run, run_was_created = self._create_or_reuse_run()
