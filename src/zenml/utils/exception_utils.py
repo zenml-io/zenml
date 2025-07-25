@@ -19,6 +19,7 @@ import re
 import traceback
 from typing import TYPE_CHECKING, Optional
 
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.models import (
     ExceptionInfo,
@@ -78,7 +79,12 @@ def collect_exception_information(
         # part of the traceback that is happening in the ZenML code.
         tb = tb[start_index:]
 
+    tb_bytes = "\n".join(tb).encode()
+    tb_bytes = tb_bytes[:MEDIUMTEXT_MAX_LENGTH]
+
     return ExceptionInfo(
-        traceback="\n".join(tb),
+        # Ignore errors when decoding in case we cut off in the middle of an
+        # encoded character.
+        traceback=tb_bytes.decode(errors="ignore"),
         step_code_line=line_number,
     )
