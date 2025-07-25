@@ -16,7 +16,6 @@
 import signal
 import time
 from contextlib import nullcontext
-from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
@@ -286,27 +285,10 @@ class StepLauncher:
                 logger.info(f"Step `{self._step_name}` has started.")
 
                 try:
-                    # here pass a forced flush_buffer callable to be
-                    # used as a dump function to use before starting
-                    # the external jobs in step operators
-                    if isinstance(
-                        logs_context,
-                        step_logging.PipelineLogsStorageContext,
-                    ):
-                        force_write_logs = partial(
-                            logs_context.storage.flush_buffer,
-                            force=True,
-                        )
-                    else:
-
-                        def _bypass() -> None:
-                            return None
-
-                        force_write_logs = _bypass
                     self._run_step(
                         pipeline_run=pipeline_run,
                         step_run=step_run,
-                        force_write_logs=force_write_logs,
+                        force_write_logs=lambda: None,
                     )
                 except RunStoppedException as e:
                     raise e
