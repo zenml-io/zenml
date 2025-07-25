@@ -21,7 +21,7 @@ from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload, object_session
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, asc, col, select
+from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
@@ -206,6 +206,45 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             overlaps="tags",
         ),
     )
+
+    @property
+    def latest_triggered_run(self) -> Optional["PipelineRunSchema"]:
+        """Fetch the latest triggered run for this deployment.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest triggered run for this deployment.
+        """
+        from zenml.zen_stores.schemas import (
+            PipelineDeploymentSchema,
+            PipelineRunSchema,
+        )
+
+        if session := object_session(self):
+            return (
+                session.execute(
+                    select(PipelineRunSchema)
+                    .join(
+                        PipelineDeploymentSchema,
+                        col(PipelineDeploymentSchema.id)
+                        == col(PipelineRunSchema.deployment_id),
+                    )
+                    .where(
+                        PipelineDeploymentSchema.source_deployment_id
+                        == self.id
+                    )
+                    .order_by(desc(PipelineRunSchema.created))
+                    .limit(1)
+                )
+                .scalars()
+                .one_or_none()
+            )
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest run for deployment."
+            )
 
     def get_step_configurations(
         self, include: Optional[List[str]] = None
@@ -485,9 +524,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
         resources = None
         if include_resources:
+            latest_run = self.latest_triggered_run
+
             resources = PipelineDeploymentResponseResources(
                 user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
+                latest_triggered_run_id=latest_run.id if latest_run else None,
+                latest_triggered_run_status=latest_run.status
+                if latest_run
+                else None,
             )
 
         return PipelineDeploymentResponse(

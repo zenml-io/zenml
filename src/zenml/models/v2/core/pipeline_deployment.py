@@ -33,6 +33,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -279,7 +280,15 @@ class PipelineDeploymentResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
 
     tags: List[TagResponse] = Field(
-        title="Tags associated with the run template.",
+        title="Tags associated with the deployment.",
+    )
+    latest_triggered_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the latest triggered run of the deployment.",
+    )
+    latest_triggered_run_status: Optional[ExecutionStatus] = Field(
+        default=None,
+        title="The status of the latest triggered run of the deployment.",
     )
 
 
@@ -492,6 +501,33 @@ class PipelineDeploymentResponse(
             the value of the property.
         """
         return self.get_metadata().config_template
+
+    @property
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().tags
+
+    @property
+    def latest_triggered_run_id(self) -> Optional[UUID]:
+        """The `latest_triggered_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().latest_triggered_run_id
+
+    @property
+    def latest_triggered_run_status(self) -> Optional[ExecutionStatus]:
+        """The `latest_triggered_run_status` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().latest_triggered_run_status
 
 
 # ------------------ Filter Model ------------------
