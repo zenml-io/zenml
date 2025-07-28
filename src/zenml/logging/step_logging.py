@@ -310,7 +310,7 @@ class PipelineLogsStorage:
 
             # Get first message (blocking with timeout)
             try:
-                first_message = self.log_queue.get(timeout=self.write_interval)
+                first_message = self.log_queue.get(timeout=1)
                 messages.append(first_message)
             except queue.Empty:
                 return
@@ -343,6 +343,9 @@ class PipelineLogsStorage:
             # Always mark all queue tasks as done
             for _ in messages:
                 self.log_queue.task_done()
+
+            if self.log_queue.qsize() > 1000:
+                time.sleep(self.write_interval)
 
     def _log_storage_worker(self) -> None:
         """Log storage thread worker that processes the log queue."""
