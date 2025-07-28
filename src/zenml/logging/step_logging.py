@@ -259,10 +259,6 @@ class PipelineLogsStorage:
                 get merged into a single file.
             write_interval: the amount of seconds before the created files
                 get written to the artifact store.
-            max_queue_size: maximum number of individual messages to queue.
-            queue_timeout: timeout in seconds for putting items in queue when full.
-                - Positive value: Wait N seconds, then drop logs if queue still full
-                - Negative value: Block indefinitely until queue has space (never drop logs)
         """
         # Parameters
         self.logs_uri = logs_uri
