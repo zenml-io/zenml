@@ -292,9 +292,8 @@ class StepLauncher:
                         logs_context,
                         step_logging.PipelineLogsStorageContext,
                     ):
-                        force_write_logs = partial(
-                            logs_context.storage.save_to_file,
-                            force=True,
+                        force_write_logs = (
+                            logs_context.storage.send_merge_event
                         )
                     else:
 
@@ -302,7 +301,6 @@ class StepLauncher:
                             return None
 
                         force_write_logs = _bypass
-
                     self._run_step(
                         pipeline_run=pipeline_run,
                         step_run=step_run,

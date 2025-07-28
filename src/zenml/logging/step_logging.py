@@ -282,6 +282,7 @@ class PipelineLogsStorage:
         self.log_queue: queue.Queue[str] = queue.Queue(maxsize=max_queue_size)
         self.log_storage_thread: Optional[threading.Thread] = None
         self.shutdown_event = threading.Event()
+        self.merge_event = threading.Event()
 
         # Start the log storage thread
         self._start_log_storage_thread()
@@ -327,7 +328,13 @@ class PipelineLogsStorage:
                 self.write_buffer(messages)
 
             # Merge the log files if needed
-            if self._is_merge_needed or force_merge:
+            if (
+                self._is_merge_needed
+                or self.merge_event.is_set()
+                or force_merge
+            ):
+                self.merge_event.clear()
+
                 self.merge_log_files(merge_all_files=force_merge)
 
         except Exception as e:
@@ -353,9 +360,6 @@ class PipelineLogsStorage:
             timeout: Maximum time to wait for thread shutdown.
         """
         if self.log_storage_thread and self.log_storage_thread.is_alive():
-            # First, flush the current buffer
-            self.flush()
-
             # Then signal the worker to begin graceful shutdown
             self.shutdown_event.set()
 
@@ -571,12 +575,9 @@ class PipelineLogsStorage:
             # Update the last merge time
             self.last_merge_time = time.time()
 
-    def flush(self) -> None:
-        """No-op since messages are sent directly to queue without buffering."""
-        # In the direct-to-queue approach, there's no buffer to flush
-        # since messages are immediately queued when written.
-        # The consumer-side batching handles grouping messages efficiently.
-        pass
+    def send_merge_event(self) -> None:
+        """Send a merge event to the log storage thread."""
+        self.merge_event.set()
 
 
 class PipelineLogsStorageContext:
@@ -708,7 +709,7 @@ class PipelineLogsStorageContext:
 
     def flush(self) -> None:
         """Manually flush the current buffer to the queue for immediate processing."""
-        self.storage.flush()
+        self.storage._process_log_queue(force_merge=True)
 
 
 def setup_orchestrator_logging(
