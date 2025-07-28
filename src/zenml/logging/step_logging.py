@@ -38,17 +38,14 @@ from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
+    LOGS_MERGE_INTERVAL_SECONDS,
     LOGS_STORAGE_MAX_QUEUE_SIZE,
     LOGS_STORAGE_QUEUE_TIMEOUT,
+    LOGS_WRITE_INTERVAL_SECONDS,
     handle_bool_env_var,
 )
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
-from zenml.logging import (
-    STEP_LOGS_STORAGE_INTERVAL_SECONDS,
-    STEP_LOGS_STORAGE_MAX_MESSAGES,
-    STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
-)
 from zenml.models import (
     LogsRequest,
     PipelineDeploymentResponse,
@@ -244,52 +241,47 @@ class PipelineLogsStorage:
         self,
         logs_uri: str,
         artifact_store: "BaseArtifactStore",
-        max_messages: int = STEP_LOGS_STORAGE_MAX_MESSAGES,
-        time_interval: int = STEP_LOGS_STORAGE_INTERVAL_SECONDS,
-        merge_files_interval: int = STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
         max_queue_size: int = LOGS_STORAGE_MAX_QUEUE_SIZE,
         queue_timeout: int = LOGS_STORAGE_QUEUE_TIMEOUT,
+        write_interval: int = LOGS_WRITE_INTERVAL_SECONDS,
+        merge_files_interval: int = LOGS_MERGE_INTERVAL_SECONDS,
     ) -> None:
         """Initialization.
 
         Args:
             logs_uri: the URI of the log file or folder.
             artifact_store: Artifact Store from the current step context
-            max_messages: the maximum number of messages to save in the buffer.
-            time_interval: the amount of seconds before the buffer gets saved
-                automatically.
-            merge_files_interval: the amount of seconds before the created files
-                get merged into a single file.
-            max_queue_size: maximum number of log batches to queue.
+            max_queue_size: maximum number of individual messages to queue.
             queue_timeout: timeout in seconds for putting items in queue when full.
                 - Positive value: Wait N seconds, then drop logs if queue still full
                 - Negative value: Block indefinitely until queue has space (never drop logs)
+            merge_files_interval: the amount of seconds before the created files
+                get merged into a single file.
+            write_interval: the amount of seconds before the created files
+                get written to the artifact store.
+            max_queue_size: maximum number of individual messages to queue.
+            queue_timeout: timeout in seconds for putting items in queue when full.
+                - Positive value: Wait N seconds, then drop logs if queue still full
+                - Negative value: Block indefinitely until queue has space (never drop logs)
+            batch_window_seconds: time window in seconds to collect messages before writing.
         """
         # Parameters
         self.logs_uri = logs_uri
-        self.max_messages = max_messages
-        self.time_interval = time_interval
-        self.merge_files_interval = merge_files_interval
         self.max_queue_size = max_queue_size
         self.queue_timeout = queue_timeout
+        self.write_interval = write_interval
+        self.merge_files_interval = merge_files_interval
 
         # State
-        self.buffer: List[str] = []
-        self.last_save_time = time.time()
         self.artifact_store = artifact_store
 
         # Immutable filesystems state
         self.last_merge_time = time.time()
 
         # Queue and log storage thread for async processing
-        self.log_queue: queue.Queue[List[str]] = queue.Queue(
-            maxsize=max_queue_size
-        )
+        self.log_queue: queue.Queue[str] = queue.Queue(maxsize=max_queue_size)
         self.log_storage_thread: Optional[threading.Thread] = None
         self.shutdown_event = threading.Event()
-
-        # Buffer lock for thread safety
-        self.buffer_lock = threading.RLock()
 
         # Start the log storage thread
         self._start_log_storage_thread()
@@ -307,41 +299,42 @@ class PipelineLogsStorage:
             self.log_storage_thread.start()
 
     def _process_log_queue(self, force_merge: bool = False) -> None:
-        """Write and merge logs to the artifact store.
+        """Write and merge logs to the artifact store using time-based batching.
 
         Args:
             force_merge: Whether to force merge the logs.
         """
         try:
-            all_buffers = []
+            messages = []
 
+            # Get first message (blocking with timeout)
             try:
-                first_buffer = self.log_queue.get(timeout=5.0)
-                all_buffers.append(first_buffer)
+                first_message = self.log_queue.get(timeout=self.write_interval)
+                messages.append(first_message)
             except queue.Empty:
                 return
 
+            # Get any remaining messages without waiting (drain quickly)
             while True:
                 try:
-                    additional_buffer = self.log_queue.get_nowait()
-                    all_buffers.append(additional_buffer)
+                    additional_message = self.log_queue.get_nowait()
+                    messages.append(additional_message)
                 except queue.Empty:
                     break
 
-            merged_buffer = []
-            for buffer in all_buffers:
-                merged_buffer.extend(buffer)
+            # Write the messages to the artifact store
+            if messages:
+                self.write_buffer(messages)
 
-            if merged_buffer:
-                self.write_buffer(merged_buffer)
-
+            # Merge the log files if needed
             if self._is_merge_needed or force_merge:
                 self.merge_log_files(merge_all_files=force_merge)
+
         except Exception as e:
             logger.error("Error in log storage thread: %s", e)
         finally:
             # Always mark all queue tasks as done
-            for _ in all_buffers:
+            for _ in messages:
                 self.log_queue.task_done()
 
     def _log_storage_worker(self) -> None:
@@ -369,9 +362,8 @@ class PipelineLogsStorage:
             # Wait for thread to finish (it will drain the queue automatically)
             self.log_storage_thread.join(timeout=timeout)
 
-
     def write(self, text: str) -> None:
-        """Main write method.
+        """Main write method that sends individual messages directly to queue.
 
         Args:
             text: the incoming string.
@@ -392,62 +384,36 @@ class PipelineLogsStorage:
         if self._is_fsspec_io_thread:
             return
 
-        # Acquire the buffer lock
-        with self.buffer_lock:
-            try:
-                # Format the message and add it to the buffer
-                timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-                formatted_message = (
-                    f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
-                )
-                self.buffer.append(formatted_message.rstrip())
+        try:
+            # Format the message with timestamp
+            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+            formatted_message = (
+                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
+            )
+            formatted_message = formatted_message.rstrip()
 
-                # Check if the buffer needs to be queued for processing
-                buffer_to_queue = None
-                if self._is_write_needed:
-                    buffer_to_queue = self.buffer.copy()
-                    self.buffer = []
-                    self.last_save_time = time.time()
-
-                # Queue the buffer for log storage thread processing if needed
-                if buffer_to_queue:
-                    # Don't queue new items if shutdown has been requested
-                    if self.shutdown_event.is_set():
-                        # Shutdown in progress - drop this batch to prevent infinite drain
-                        pass
+            # Send individual message directly to queue
+            if not self.shutdown_event.is_set():
+                try:
+                    if self.queue_timeout < 0:
+                        # Negative timeout = block indefinitely until queue has space
+                        # Guarantees no log loss but may hang application
+                        self.log_queue.put(formatted_message)
                     else:
-                        try:
-                            if self.queue_timeout < 0:
-                                # Negative timeout = block indefinitely until queue has space
-                                # Guarantees no log loss but may hang application
-                                self.log_queue.put(buffer_to_queue)
-                            else:
-                                # Positive timeout = wait specified time then drop logs
-                                # Prevents application hanging but may lose logs
-                                self.log_queue.put(
-                                    buffer_to_queue, timeout=self.queue_timeout
-                                )
-                        except queue.Full:
-                            # This only happens with positive timeout
-                            # Queue is full - just skip this batch to avoid blocking
-                            # Better to drop logs than hang the application
-                            pass
+                        # Positive timeout = wait specified time then drop logs
+                        # Prevents application hanging but may lose logs
+                        self.log_queue.put(
+                            formatted_message, timeout=self.queue_timeout
+                        )
+                except queue.Full:
+                    # This only happens with positive timeout
+                    # Queue is full - just skip this message to avoid blocking
+                    # Better to drop logs than hang the application
+                    pass
 
-            except Exception:
-                # Silently ignore errors to prevent recursion
-                pass
-
-    @property
-    def _is_write_needed(self) -> bool:
-        """Checks whether the buffer needs to be written to disk.
-
-        Returns:
-            whether the buffer needs to be written to disk.
-        """
-        return (
-            len(self.buffer) >= self.max_messages
-            or time.time() - self.last_save_time >= self.time_interval
-        )
+        except Exception:
+            # Silently ignore errors to prevent recursion
+            pass
 
     @property
     def _is_merge_needed(self) -> bool:
@@ -606,31 +572,11 @@ class PipelineLogsStorage:
             self.last_merge_time = time.time()
 
     def flush(self) -> None:
-        """Manually flush the current buffer to the queue for immediate processing."""
-        # Don't flush if shutdown has been requested
-        if self.shutdown_event.is_set():
-            return
-
-        # Acquire the buffer lock and flush current buffer
-        with self.buffer_lock:
-            if self.buffer:
-                buffer_to_queue = self.buffer.copy()
-                self.buffer = []
-                self.last_save_time = time.time()
-
-                # Queue the buffer for processing
-                try:
-                    if self.queue_timeout < 0:
-                        # Negative timeout = block indefinitely
-                        self.log_queue.put(buffer_to_queue)
-                    else:
-                        # Positive timeout = wait specified time then drop logs
-                        self.log_queue.put(
-                            buffer_to_queue, timeout=self.queue_timeout
-                        )
-                except queue.Full:
-                    # Queue is full - skip this batch to avoid blocking
-                    pass
+        """No-op since messages are sent directly to queue without buffering."""
+        # In the direct-to-queue approach, there's no buffer to flush
+        # since messages are immediately queued when written.
+        # The consumer-side batching handles grouping messages efficiently.
+        pass
 
 
 class PipelineLogsStorageContext:
