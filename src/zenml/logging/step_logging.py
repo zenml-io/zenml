@@ -263,7 +263,6 @@ class PipelineLogsStorage:
             queue_timeout: timeout in seconds for putting items in queue when full.
                 - Positive value: Wait N seconds, then drop logs if queue still full
                 - Negative value: Block indefinitely until queue has space (never drop logs)
-            batch_window_seconds: time window in seconds to collect messages before writing.
         """
         # Parameters
         self.logs_uri = logs_uri
