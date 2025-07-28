@@ -34,6 +34,7 @@ from zenml.enums import (
     StepRunInputArtifactType,
 )
 from zenml.models import (
+    ExceptionInfo,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
@@ -95,6 +96,14 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     is_retriable: bool = Field(nullable=False)
 
     step_configuration: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
+    exception_info: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -323,6 +332,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             source_code=request.source_code,
             version=version,
             is_retriable=is_retriable,
+            exception_info=json.dumps(request.exception_info)
+            if request.exception_info
+            else None,
         )
 
     def get_step_configuration(self) -> Step:
@@ -408,6 +420,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
+                exception_info=ExceptionInfo.model_validate_json(
+                    self.exception_info
+                )
+                if self.exception_info
+                else None,
                 logs=self.logs.to_model() if self.logs else None,
                 deployment_id=self.deployment_id,
                 pipeline_run_id=self.pipeline_run_id,
@@ -471,6 +488,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.status = value.value
             if key == "end_time":
                 self.end_time = value
+            if key == "exception_info":
+                self.exception_info = json.dumps(value)
 
         self.updated = utc_now()
 
