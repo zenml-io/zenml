@@ -92,16 +92,22 @@ class ServiceAccountUpdate(BaseUpdate):
         title="Whether the service account is active or not.",
         default=None,
     )
-    external_user_id: Optional[UUID] = Field(
-        default=None,
-        title="The external user ID associated with the account.",
-    )
+
     avatar_url: Optional[str] = Field(
         default=None,
         title="The avatar URL for the account.",
     )
 
     model_config = ConfigDict(validate_assignment=True)
+
+
+class ServiceAccountInternalUpdate(ServiceAccountUpdate):
+    """Internal update model for service accounts."""
+
+    external_user_id: Optional[UUID] = Field(
+        default=None,
+        title="The external user ID associated with the account.",
+    )
 
 
 # ------------------ Response Model ------------------

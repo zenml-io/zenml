@@ -65,7 +65,7 @@ from zenml.models import (
     OAuthTokenResponse,
     ServiceAccountFilter,
     ServiceAccountInternalRequest,
-    ServiceAccountUpdate,
+    ServiceAccountInternalUpdate,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -809,7 +809,7 @@ def authenticate_external_user(
             # Update the service account information
             user = store.update_service_account(
                 service_account_name_or_id=user.id,
-                service_account_update=ServiceAccountUpdate(
+                service_account_update=ServiceAccountInternalUpdate(
                     name=external_user.username,
                     external_user_id=external_user.id,
                     active=True,

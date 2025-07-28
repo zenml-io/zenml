@@ -284,6 +284,7 @@ from zenml.models.v2.core.service_account import (
     ServiceAccountUpdate,
     ServiceAccountRequest,
     ServiceAccountInternalRequest,
+    ServiceAccountInternalUpdate,
     ServiceAccountResponse,
 )
 from zenml.models.v2.core.service_connector import (
@@ -742,6 +743,7 @@ __all__ = [
     "ServiceAccountUpdate",
     "ServiceAccountRequest",
     "ServiceAccountInternalRequest",
+    "ServiceAccountInternalUpdate",
     "ServiceAccountResponse",
     "ServiceConnectorConfiguration",
     "ServiceConnectorRequest",
