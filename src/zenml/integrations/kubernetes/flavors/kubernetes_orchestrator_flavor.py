@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
 
@@ -130,6 +130,25 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "for the configured amount of times plus the margin, which increases "
         "the chance of the server receiving the maximum amount of retry "
         "requests.",
+    )
+    fail_on_container_waiting_reasons: Optional[List[str]] = Field(
+        default=[
+            "InvalidImageName",
+            "ErrImagePull",
+            "ImagePullBackOff",
+            "CreateContainerConfigError",
+        ],
+        description="List of container waiting reasons that should cause the "
+        "job to fail immediately. This should be set to a list of "
+        "nonrecoverable reasons, which if found in any "
+        "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
+        "should cause the job to fail immediately.",
+    )
+    job_monitoring_interval: int = Field(
+        default=3,
+        description="The interval in seconds to monitor the job. Each interval "
+        "is used to check for container issues and streaming logs for the "
+        "job pods.",
     )
     pod_failure_policy: Optional[Dict[str, Any]] = Field(
         default=None,
