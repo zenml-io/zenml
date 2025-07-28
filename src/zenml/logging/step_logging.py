@@ -255,10 +255,10 @@ class PipelineLogsStorage:
             queue_timeout: timeout in seconds for putting items in queue when full.
                 - Positive value: Wait N seconds, then drop logs if queue still full
                 - Negative value: Block indefinitely until queue has space (never drop logs)
-            merge_files_interval: the amount of seconds before the created files
-                get merged into a single file.
             write_interval: the amount of seconds before the created files
                 get written to the artifact store.
+            merge_files_interval: the amount of seconds before the created files
+                get merged into a single file.
         """
         # Parameters
         self.logs_uri = logs_uri
@@ -339,8 +339,7 @@ class PipelineLogsStorage:
             for _ in messages:
                 self.log_queue.task_done()
 
-            if self.log_queue.qsize() > 1000:
-                time.sleep(self.write_interval)
+            time.sleep(self.write_interval)
 
     def _log_storage_worker(self) -> None:
         """Log storage thread worker that processes the log queue."""
