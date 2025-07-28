@@ -353,8 +353,7 @@ class PipelineLogsStorage:
             self._process_log_queue()
 
         # Shutdown requested - drain remaining queue items and merge log files
-        while True:
-            self._process_log_queue(force_merge=True)
+        self._process_log_queue(force_merge=True)
 
     def _shutdown_log_storage_thread(self, timeout: int = 5) -> None:
         """Shutdown the log storage thread gracefully.
@@ -371,10 +370,7 @@ class PipelineLogsStorage:
 
             # Wait for thread to finish (it will drain the queue automatically)
             self.log_storage_thread.join(timeout=timeout)
-            if self.log_storage_thread.is_alive():
-                # Thread didn't shutdown gracefully, but we can't do much more
-                # The non-daemon thread will still be waited for by Python
-                pass
+
 
     def write(self, text: str) -> None:
         """Main write method.
