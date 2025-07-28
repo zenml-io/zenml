@@ -707,10 +707,6 @@ class PipelineLogsStorageContext:
 
         return wrapped_write
 
-    def flush(self) -> None:
-        """Manually flush the current buffer to the queue for immediate processing."""
-        self.storage._process_log_queue(force_merge=True)
-
 
 def setup_orchestrator_logging(
     run_id: str, deployment: "PipelineDeploymentResponse"
