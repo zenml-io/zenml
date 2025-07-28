@@ -57,8 +57,10 @@
   if (!isBotTraffic()) {
     analytics.page();
   } else {
-    // Optional: Log for debugging (remove in production)
-    console.log('Bot traffic detected, skipping Segment analytics');
+    // Optional: Log for debugging (only in non-production environments)
+    if (window.location.hostname === 'localhost' || window.location.hostname.includes('dev')) {
+      console.log('Bot traffic detected, skipping Segment analytics');
+    }
   }
   }}();
 </script>
