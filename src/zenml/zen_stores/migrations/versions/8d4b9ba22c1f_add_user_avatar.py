@@ -1,7 +1,7 @@
 """add user avatar [8d4b9ba22c1f].
 
 Revision ID: 8d4b9ba22c1f
-Revises: 0.84.0
+Revises: d4591f95ac07
 Create Date: 2025-07-18 17:13:54.513273
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8d4b9ba22c1f"
-down_revision = "0.84.0"
+down_revision = "d4591f95ac07"
 branch_labels = None
 depends_on = None
 
