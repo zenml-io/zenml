@@ -187,6 +187,9 @@ ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION = (
 ENV_ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES = (
     "ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES"
 )
+# Environment variable that indicates whether the current environment is running
+# a step operator.
+ENV_ZENML_STEP_OPERATOR = "ZENML_STEP_OPERATOR"
 
 # Materializer environment variables
 ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS = (
