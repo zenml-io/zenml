@@ -287,9 +287,6 @@ class PipelineLogsStorage:
         )
         self.log_storage_thread: Optional[threading.Thread] = None
         self.shutdown_event = threading.Event()
-        self.shutdown_requested = (
-            False  # Flag to prevent new queue items during shutdown
-        )
         self.thread_exception: Optional[Exception] = None
 
         # Buffer lock for thread safety
@@ -310,84 +307,54 @@ class PipelineLogsStorage:
             )
             self.log_storage_thread.start()
 
-    def _log_storage_worker(self) -> None:
-        """Log storage thread worker that processes the log queue."""
-        while not self.shutdown_event.is_set():
+    def _process_log_queue(self, force_merge: bool = False) -> None:
+        """Write and merge logs to the artifact store.
+
+        Args:
+            force_merge: Whether to force merge the logs.
+        """
+        try:
             all_buffers = []
+
             try:
-                # Wait for first item in queue or timeout to check shutdown
+                first_buffer = self.log_queue.get(timeout=1.0)
+                all_buffers.append(first_buffer)
+            except queue.Empty:
+                return
+
+            while True:
                 try:
-                    first_buffer = self.log_queue.get(timeout=1.0)
-                    all_buffers.append(first_buffer)
+                    additional_buffer = self.log_queue.get_nowait()
+                    all_buffers.append(additional_buffer)
                 except queue.Empty:
-                    continue
-
-                # Collect all other available items without waiting
-                while True:
-                    try:
-                        additional_buffer = self.log_queue.get_nowait()
-                        all_buffers.append(additional_buffer)
-                    except queue.Empty:
-                        break
-
-                # Merge all buffers into one batch for efficient processing
-                merged_buffer = []
-                for buffer in all_buffers:
-                    merged_buffer.extend(buffer)
-
-                # Process the merged buffer (single file operation)
-                if merged_buffer:
-                    self.write_buffer(merged_buffer)
-
-                # Check if merge is needed after processing
-                if self._is_merge_needed:
-                    self.merge_log_files()
-
-            except Exception as e:
-                self.thread_exception = e
-                logger.error("Error in log storage thread: %s", e)
-            finally:
-                # Always mark all queue tasks as done
-                for _ in all_buffers:
-                    self.log_queue.task_done()
-
-        # Shutdown requested - drain remaining queue items in batches
-        while True:
-            all_buffers = []
-            try:
-                # Collect all remaining items without waiting
-                while True:
-                    try:
-                        buffer = self.log_queue.get_nowait()
-                        all_buffers.append(buffer)
-                    except queue.Empty:
-                        break
-
-                # If no items collected, we're done
-                if not all_buffers:
                     break
 
-                # Merge and process all remaining items as one batch
-                merged_buffer = []
-                for buffer in all_buffers:
-                    merged_buffer.extend(buffer)
+            merged_buffer = []
+            for buffer in all_buffers:
+                merged_buffer.extend(buffer)
 
-                if merged_buffer:
-                    self.write_buffer(merged_buffer)
+            if merged_buffer:
+                self.write_buffer(merged_buffer)
 
-            except Exception as e:
-                logger.error("Error during shutdown queue drain: %s", e)
-            finally:
-                # Mark all tasks as done
-                for _ in all_buffers:
-                    self.log_queue.task_done()
-
-        # Final merge of log files if needed (only for immutable filesystems)
-        try:
-            if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-                self.merge_log_files(merge_all_files=True)
+            if self._is_merge_needed or force_merge:
+                self.merge_log_files(merge_all_files=force_merge)
         except Exception as e:
-            logger.error("Error during final log file merge: %s", e)
+            self.thread_exception = e
+            logger.error("Error in log storage thread: %s", e)
+        finally:
+            # Always mark all queue tasks as done
+            for _ in all_buffers:
+                self.log_queue.task_done()
+
+    def _log_storage_worker(self) -> None:
+        """Log storage thread worker that processes the log queue."""
+        # Process the log queue until shutdown is requested
+        while not self.shutdown_event.is_set():
+            self._process_log_queue()
+
+        # Shutdown requested - drain remaining queue items and merge log files
+        while True:
+            self._process_log_queue(force_merge=True)
 
     def _shutdown_log_storage_thread(self, timeout: int = 5) -> None:
         """Shutdown the log storage thread gracefully.
@@ -396,8 +363,8 @@ class PipelineLogsStorage:
             timeout: Maximum time to wait for thread shutdown.
         """
         if self.log_storage_thread and self.log_storage_thread.is_alive():
-            # First, prevent new items from being queued
-            self.shutdown_requested = True
+            # First, flush the current buffer
+            self.flush()
 
             # Then signal the worker to begin graceful shutdown
             self.shutdown_event.set()
@@ -455,7 +422,7 @@ class PipelineLogsStorage:
                 # Queue the buffer for log storage thread processing if needed
                 if buffer_to_queue:
                     # Don't queue new items if shutdown has been requested
-                    if self.shutdown_requested:
+                    if self.shutdown_event.is_set():
                         # Shutdown in progress - drop this batch to prevent infinite drain
                         pass
                     else:
@@ -648,6 +615,36 @@ class PipelineLogsStorage:
             # Update the last merge time
             self.last_merge_time = time.time()
 
+    def flush(self) -> None:
+        """Manually flush the current buffer to the queue for immediate processing."""
+        if self.thread_exception:
+            return
+
+        # Don't flush if shutdown has been requested
+        if self.shutdown_event.is_set():
+            return
+
+        # Acquire the buffer lock and flush current buffer
+        with self.buffer_lock:
+            if self.buffer:
+                buffer_to_queue = self.buffer.copy()
+                self.buffer = []
+                self.last_save_time = time.time()
+
+                # Queue the buffer for processing
+                try:
+                    if self.queue_timeout < 0:
+                        # Negative timeout = block indefinitely
+                        self.log_queue.put(buffer_to_queue)
+                    else:
+                        # Positive timeout = wait specified time then drop logs
+                        self.log_queue.put(
+                            buffer_to_queue, timeout=self.queue_timeout
+                        )
+                except queue.Full:
+                    # Queue is full - skip this batch to avoid blocking
+                    pass
+
 
 class PipelineLogsStorageContext:
     """Context manager which patches stdout and stderr during pipeline run execution."""
@@ -775,6 +772,10 @@ class PipelineLogsStorageContext:
             return output
 
         return wrapped_write
+
+    def flush(self) -> None:
+        """Manually flush the current buffer to the queue for immediate processing."""
+        self.storage.flush()
 
 
 def setup_orchestrator_logging(

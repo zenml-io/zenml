@@ -303,6 +303,8 @@ class SparkStepOperator(BaseStepOperator):
         # Add any additional configuration given by the user.
         self._additional_configuration(spark_config=conf, settings=settings)
 
+        info.force_write_logs()
+
         # Generate a spark-submit command given the configuration
         self._launch_spark_job(
             spark_config=conf,
