@@ -36,8 +36,9 @@
     if (navigator.userAgentData && navigator.userAgentData.brands) {
       const brands = navigator.userAgentData.brands;
       for (let brand of brands) {
+        // Check for specific bot signatures in brand names
         if (brand.brand === 'HeadlessChrome' || 
-            brand.brand === 'Not?A_Brand' ||
+            /^Not.?A_Brand$/i.test(brand.brand) || // Matches 'Not?A_Brand' and similar variations
             brand.brand.toLowerCase().includes('bot')) {
           return true;
         }
