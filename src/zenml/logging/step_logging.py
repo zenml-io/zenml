@@ -287,7 +287,6 @@ class PipelineLogsStorage:
         )
         self.log_storage_thread: Optional[threading.Thread] = None
         self.shutdown_event = threading.Event()
-        self.thread_exception: Optional[Exception] = None
 
         # Buffer lock for thread safety
         self.buffer_lock = threading.RLock()
@@ -317,7 +316,7 @@ class PipelineLogsStorage:
             all_buffers = []
 
             try:
-                first_buffer = self.log_queue.get(timeout=1.0)
+                first_buffer = self.log_queue.get(timeout=5.0)
                 all_buffers.append(first_buffer)
             except queue.Empty:
                 return
@@ -339,7 +338,6 @@ class PipelineLogsStorage:
             if self._is_merge_needed or force_merge:
                 self.merge_log_files(merge_all_files=force_merge)
         except Exception as e:
-            self.thread_exception = e
             logger.error("Error in log storage thread: %s", e)
         finally:
             # Always mark all queue tasks as done
@@ -380,10 +378,6 @@ class PipelineLogsStorage:
         """
         # Skip empty lines
         if text == "\n":
-            return
-
-        # Check if log storage thread encountered an exception
-        if self.thread_exception:
             return
 
         # If the current thread is the log storage thread, do nothing
@@ -613,9 +607,6 @@ class PipelineLogsStorage:
 
     def flush(self) -> None:
         """Manually flush the current buffer to the queue for immediate processing."""
-        if self.thread_exception:
-            return
-
         # Don't flush if shutdown has been requested
         if self.shutdown_event.is_set():
             return
