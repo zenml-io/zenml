@@ -773,6 +773,7 @@ def authenticate_external_user(
                 f"Found service account with ID {service_account.id} matching "
                 f"the external user ID {external_user.id}."
             )
+            user = service_account.to_user_model()
         else:
             logger.info(
                 f"Service account with external user ID {external_user.id} "
@@ -820,6 +821,7 @@ def authenticate_external_user(
                 service_account_name_or_id=user.id,
                 service_account_update=ServiceAccountInternalUpdate(
                     name=external_user.username,
+                    full_name=external_user.name or "",
                     external_user_id=external_user.id,
                     active=True,
                     avatar_url=external_user.avatar_url,
@@ -835,6 +837,7 @@ def authenticate_external_user(
             user = store.create_service_account(
                 service_account=ServiceAccountInternalRequest(
                     name=external_user.username,
+                    full_name=external_user.name or "",
                     external_user_id=external_user.id,
                     active=True,
                     avatar_url=external_user.avatar_url,

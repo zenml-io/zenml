@@ -160,8 +160,7 @@ class UserRequest(UserBase, BaseRequest):
     )
     full_name: str = Field(
         default="",
-        title="The full name for the account owner. Only relevant for user "
-        "accounts.",
+        title="The display name for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     is_admin: bool = Field(
@@ -190,8 +189,7 @@ class UserUpdate(UserBase, BaseUpdate):
     )
     full_name: Optional[str] = Field(
         default=None,
-        title="The full name for the account owner. Only relevant for user "
-        "accounts.",
+        title="The display name for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     is_admin: Optional[bool] = Field(
@@ -270,8 +268,7 @@ class UserResponseBody(BaseDatedResponseBody):
     )
     full_name: str = Field(
         default="",
-        title="The full name for the account owner. Only relevant for user "
-        "accounts.",
+        title="The display name for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     email_opted_in: Optional[bool] = Field(

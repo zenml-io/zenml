@@ -44,8 +44,13 @@ class ServiceAccountRequest(BaseRequest):
     ]
 
     name: str = Field(
-        title="The unique name for the service account.",
+        title="The unique username for the service account.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    full_name: str = Field(
+        default="",
+        max_length=STR_FIELD_MAX_LENGTH,
+        title="The display name of the service account.",
     )
     description: Optional[str] = Field(
         default=None,
@@ -83,6 +88,11 @@ class ServiceAccountUpdate(BaseUpdate):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
+    full_name: Optional[str] = Field(
+        title="The display name of the service account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
     description: Optional[str] = Field(
         title="A description of the service account.",
         max_length=TEXT_FIELD_MAX_LENGTH,
@@ -116,6 +126,10 @@ class ServiceAccountInternalUpdate(ServiceAccountUpdate):
 class ServiceAccountResponseBody(BaseDatedResponseBody):
     """Response body for service accounts."""
 
+    full_name: str = Field(
+        default="",
+        title="The display name of the service account.",
+    )
     active: bool = Field(default=False, title="Whether the account is active.")
     avatar_url: Optional[str] = Field(
         default=None,
@@ -199,6 +213,7 @@ class ServiceAccountResponse(
                 updated=self.updated,
                 is_admin=False,
                 avatar_url=self.avatar_url,
+                full_name=self.full_name,
             ),
             metadata=UserResponseMetadata(
                 description=self.description,
@@ -206,6 +221,15 @@ class ServiceAccountResponse(
         )
 
     # Body and metadata properties
+    @property
+    def full_name(self) -> str:
+        """The `full_name` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().full_name
+
     @property
     def active(self) -> bool:
         """The `active` property.

@@ -215,6 +215,7 @@ class UserSchema(NamedSchema, table=True):
         """
         return cls(
             name=model.name,
+            full_name=model.full_name,
             description=model.description or "",
             external_user_id=model.external_user_id
             if isinstance(model, ServiceAccountInternalRequest)
@@ -222,7 +223,6 @@ class UserSchema(NamedSchema, table=True):
             active=model.active,
             is_service_account=True,
             email_opted_in=False,
-            full_name="",
             is_admin=False,
             avatar_url=model.avatar_url,
         )
@@ -342,6 +342,7 @@ class UserSchema(NamedSchema, table=True):
             )
 
         body = ServiceAccountResponseBody(
+            full_name=self.full_name,
             created=self.created,
             updated=self.updated,
             active=self.active,
