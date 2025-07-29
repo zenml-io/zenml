@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """Modal sandbox executor for ZenML orchestration."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from uuid import UUID
 
 import modal
 
 from zenml.client import Client
-from zenml.config.constants import RESOURCE_SETTINGS_KEY
-from zenml.config.resource_settings import ResourceSettings
+from zenml.config.resource_settings import ByteUnit, ResourceSettings
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -31,11 +31,8 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator_entrypoint_config
 )
 from zenml.integrations.modal.utils import (
     generate_sandbox_tags,
-    get_gpu_values,
     get_modal_app_name,
     get_or_build_modal_image,
-    get_resource_settings_from_deployment,
-    get_resource_values,
 )
 from zenml.logger import get_logger
 
@@ -88,122 +85,58 @@ class ModalSandboxExecutor:
                 environment_name=settings.modal_environment,
             )
 
-    def _build_entrypoint_command(
-        self, base_command: List[str], args: List[str]
-    ) -> List[str]:
-        """Build the complete entrypoint command (without environment variables).
-
-        Environment variables are now passed via secrets parameter to sandbox.
-
-        Args:
-            base_command: Base command to execute.
-            args: Arguments for the command.
-
-        Returns:
-            Complete command without environment variables.
-        """
-        return base_command + args
-
     # ---------------------------------------------------------------------
     # Resource utilities
     # ---------------------------------------------------------------------
 
-    @staticmethod
-    def _to_resource_settings(data: Any | None) -> ResourceSettings:
-        """Convert arbitrary input to a ``ResourceSettings`` object.
-
-        This helper makes sure that we *always* return a properly validated
-        ``ResourceSettings`` instance. It gracefully handles different shapes
-        that may appear in historical deployments (actual instance, pydantic
-        model, plain dict, or even a generic object with ``__dict__``).
+    def _get_settings(
+        self, step_name: Optional[str] = None
+    ) -> ModalOrchestratorSettings:
+        """Get settings for a specific step or pipeline.
 
         Args:
-            data: Raw resource settings information.
+            step_name: Optional step name for which to fetch settings. If not
+                given, pipeline-level settings are returned.
 
         Returns:
-            A validated ``ResourceSettings`` instance (empty when no data).
+            Pipeline or step settings.
         """
-        # Already a ResourceSettings – just return
-        if isinstance(data, ResourceSettings):
-            return data
-
-        # Nothing configured – return an empty instance
-        if data is None:
-            return ResourceSettings()
-
-        # Convert pydantic/BaseSettings models to dict first
-        if hasattr(data, "model_dump"):
-            try:
-                data = data.model_dump()
-            except Exception:
-                # Fallback to __dict__ if model_dump fails for some reason
-                data = getattr(data, "__dict__", {})
-
-        # Convert mapping-like objects to dict
-        if not isinstance(data, dict):
-            try:
-                data = dict(data)
-            except Exception:
-                # If conversion fails, return empty settings instead of error
-                logger.warning(
-                    "Unable to interpret resource settings of type %s – falling back to default.",
-                    type(data),
-                )
-                return ResourceSettings()
-
-        # Finally validate
-        try:
-            return ResourceSettings.model_validate(data)
-        except Exception as e:
-            logger.warning(
-                "Failed to validate resource settings %s – %s. Using default.",
-                data,
-                e,
-            )
-            return ResourceSettings()
-
-    def _get_step_settings(self, step_name: str) -> ModalOrchestratorSettings:
-        """Get merged settings for a specific step.
-
-        Args:
-            step_name: Name of the step.
-
-        Returns:
-            Merged Modal orchestrator settings.
-        """
-        # Start with pipeline-level settings
-        pipeline_settings_dict = self.settings.model_dump()
-
-        # Get step-specific settings
-        if step_name in self.deployment.step_configurations:
-            step_config = self.deployment.step_configurations[step_name].config
-            step_settings = step_config.settings.get("orchestrator.modal")
-
-            if step_settings:
-                # Handle both dict and Pydantic model cases
-                if hasattr(step_settings, "model_dump"):
-                    step_settings_data = step_settings.model_dump()
-                else:
-                    step_settings_data = (
-                        dict(step_settings) if step_settings else {}
-                    )
-
-                step_modal_settings = ModalOrchestratorSettings.model_validate(
-                    step_settings_data
-                )
-                # Merge step settings over pipeline settings
-                step_settings_dict = step_modal_settings.model_dump(
-                    exclude_unset=True
-                )
-                for key, value in step_settings_dict.items():
-                    if value is not None:
-                        pipeline_settings_dict[key] = value
-
-        # Create merged settings from the combined dictionary
-        merged_settings = ModalOrchestratorSettings.model_validate(
-            pipeline_settings_dict
+        container = (
+            self.deployment.step_configurations[step_name]
+            if step_name
+            else self.deployment
         )
-        return merged_settings
+        return cast(
+            ModalOrchestratorSettings,
+            self.stack.orchestrator.get_settings(container),
+        )
+
+    def _get_resource_settings(
+        self, step_name: Optional[str] = None
+    ) -> ResourceSettings:
+        """Return validated resource settings for either pipeline or step.
+
+        Args:
+            step_name: Optional name of the step for which to fetch resource
+                settings. If ``None`` (default), pipeline-level settings are
+                returned.
+
+        Returns:
+            A validated ``ResourceSettings`` object (never ``None``).
+        """
+        if step_name:
+            return self.deployment.step_configurations[
+                step_name
+            ].config.resource_settings
+        else:
+            return self.deployment.pipeline_configuration.resource_settings
+
+        # TODO: Maybe use defaults?
+        # resource_settings = ResourceSettings(
+        #     cpu_count=1,
+        #     memory="1024MB",
+        #     gpu_count=0,
+        # )
 
     def _create_environment_secret(self) -> Optional[Any]:
         """Create a Modal secret containing environment variables.
@@ -222,58 +155,6 @@ class ModalSandboxExecutor:
         }
         return modal.Secret.from_dict(env_dict)
 
-    def _get_resource_settings(
-        self, step_name: Optional[str] = None
-    ) -> ResourceSettings:
-        """Return validated resource settings for either pipeline or step.
-
-        The helper always returns a *proper* :class:`~zenml.config.resource_settings.ResourceSettings`
-        instance.  For a step it checks the step-level settings first and
-        falls back to an empty configuration; for the pipeline it delegates
-        to :func:`zenml.integrations.modal.utils.get_resource_settings_from_deployment`.
-
-        Args:
-            step_name: Optional name of the step for which to fetch resource
-                settings. If ``None`` (default), pipeline-level settings are
-                returned.
-
-        Returns:
-            A validated ``ResourceSettings`` object (never ``None``).
-        """
-        if step_name:
-            step_cfg = self.deployment.step_configurations[step_name].config
-
-            # 1) direct attribute
-            res = self._to_resource_settings(step_cfg.resource_settings)
-            if not res.empty:
-                logger.debug(
-                    "Using direct resource settings for step %s", step_name
-                )
-                return res
-
-            # 2) settings["resources"] fallback
-            res = self._to_resource_settings(
-                step_cfg.settings.get(RESOURCE_SETTINGS_KEY)
-            )
-            if not res.empty:
-                logger.debug(
-                    "Using settings-key resource settings for step %s",
-                    step_name,
-                )
-                return res
-
-            logger.debug(
-                "No resource settings for step %s – defaulting", step_name
-            )
-            return ResourceSettings()
-
-        # Pipeline-level: delegate to existing util (already returns RS)
-        resource_settings = get_resource_settings_from_deployment(
-            self.deployment, RESOURCE_SETTINGS_KEY
-        )
-        logger.debug("Using pipeline-level resource settings")
-        return resource_settings
-
     def _get_resource_config(
         self, step_name: Optional[str] = None
     ) -> tuple[Optional[str], Optional[int], Optional[int]]:
@@ -285,40 +166,36 @@ class ModalSandboxExecutor:
         Returns:
             Tuple of (gpu_values, cpu_count, memory_mb) with validated values.
         """
-        # Get resource settings using robust extraction
+        settings = self._get_settings(step_name)
         resource_settings = self._get_resource_settings(step_name)
 
-        # Get GPU configuration (with default type if unspecified but gpu_count > 0)
-        gpu_type: Optional[str] = None
-        if step_name:
-            step_settings = self._get_step_settings(step_name)
-            gpu_type = step_settings.gpu
-        else:
-            gpu_type = self.settings.gpu
+        cpu_count: Optional[int] = None
+        if resource_settings.cpu_count is not None:
+            cpu_count = int(resource_settings.cpu_count)
 
-        # If gpu_type is missing but gpu_count > 0, default to T4
-        if (
-            gpu_type is None
-            and resource_settings.gpu_count
-            and resource_settings.gpu_count > 0
-        ):
+        memory_mb: Optional[int] = None
+        if resource_settings.memory:
+            memory_mb = int(resource_settings.get_memory(ByteUnit.MB))
+
+        gpu_value = None
+        gpu_type = settings.gpu
+        gpu_count = resource_settings.gpu_count
+
+        if not gpu_type and gpu_count is not None:
             gpu_type = "T4"
             logger.debug(
                 f"No GPU type specified for {'step ' + step_name if step_name else 'pipeline'}, "
-                f"but gpu_count={resource_settings.gpu_count}. Defaulting to {gpu_type}."
+                f"but gpu_count={gpu_count}. Defaulting to {gpu_type}."
             )
 
-        gpu_values = get_gpu_values(gpu_type, resource_settings)
-        # Get CPU and memory with validation
-        cpu_count, memory_mb = get_resource_values(resource_settings)
+        if gpu_count == 0:
+            gpu_value = None
+        elif gpu_count is None:
+            gpu_value = gpu_type
+        else:
+            gpu_value = f"{gpu_type}:{gpu_count}"
 
-        # Log resource configuration for debugging
-        logger.debug(
-            f"Resource config for {step_name or 'pipeline'}: "
-            f"GPU={gpu_values}, CPU={cpu_count}, Memory={memory_mb}MB"
-        )
-
-        return gpu_values, cpu_count, memory_mb
+        return gpu_value, cpu_count, memory_mb
 
     def _prepare_modal_api_params(
         self,
@@ -411,7 +288,7 @@ class ModalSandboxExecutor:
         entrypoint_command: List[str],
         mode: str,
         step_name: Optional[str] = None,
-        run_id: Optional[str] = None,
+        run_id: Optional[UUID] = None,
         synchronous: bool = True,
     ) -> None:
         """Execute a sandbox with the given command.
@@ -428,7 +305,7 @@ class ModalSandboxExecutor:
 
         # Get settings (step-specific for steps, pipeline-level for pipeline)
         if step_name:
-            step_settings = self._get_step_settings(step_name)
+            step_settings = self._get_settings(step_name)
             cloud = step_settings.cloud
             region = step_settings.region
             timeout = step_settings.timeout
@@ -524,27 +401,6 @@ class ModalSandboxExecutor:
         except Exception as e:
             logger.warning(f"Failed to store image ID: {e}")
 
-    def _get_image_name(self, step_name: Optional[str] = None) -> str:
-        """Get the image name for the pipeline or step.
-
-        Args:
-            step_name: Name of the step (None for pipeline-level).
-
-        Returns:
-            Image name to use.
-        """
-        # Import here to avoid circular imports
-        from zenml.integrations.modal.orchestrators.modal_orchestrator import (
-            ModalOrchestrator,
-        )
-
-        if step_name:
-            return ModalOrchestrator.get_image(
-                deployment=self.deployment, step_name=step_name
-            )
-        else:
-            return ModalOrchestrator.get_image(deployment=self.deployment)
-
     def _get_cached_or_build_image(
         self, step_name: Optional[str] = None
     ) -> Any:
@@ -564,7 +420,13 @@ class ModalSandboxExecutor:
             ValueError: If the deployment does not have an associated build
                 (required to identify the Docker image).
         """
-        image_name = self._get_image_name(step_name)
+        from zenml.integrations.modal.orchestrators.modal_orchestrator import (
+            ModalOrchestrator,
+        )
+
+        image_name = ModalOrchestrator.get_image(
+            deployment=self.deployment, step_name=step_name
+        )
 
         # Check shared cache first
         cache_key = self._get_image_cache_key(image_name, step_name)
@@ -621,7 +483,7 @@ class ModalSandboxExecutor:
 
     async def execute_pipeline(
         self,
-        run_id: Optional[str] = None,
+        run_id: Optional[UUID] = None,
         synchronous: bool = True,
     ) -> None:
         """Execute the entire pipeline in a single sandbox.
@@ -636,20 +498,14 @@ class ModalSandboxExecutor:
         command = (
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_command()
         )
-        from uuid import UUID
-
-        # Convert run_id to UUID if it's a string
-        run_id_uuid = None
-        if run_id is not None:
-            run_id_uuid = UUID(run_id) if isinstance(run_id, str) else run_id
 
         args = (
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 deployment_id=self.deployment.id,
-                run_id=run_id_uuid,
+                run_id=run_id,
             )
         )
-        entrypoint_command = self._build_entrypoint_command(command, args)
+        entrypoint_command = command + args
 
         # Execute pipeline sandbox
         await self._execute_sandbox(
@@ -672,7 +528,7 @@ class ModalSandboxExecutor:
         args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name, deployment_id=self.deployment.id
         )
-        entrypoint_command = self._build_entrypoint_command(command, args)
+        entrypoint_command = command + args
 
         # Execute step sandbox
         await self._execute_sandbox(

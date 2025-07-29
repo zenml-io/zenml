@@ -123,7 +123,7 @@ class TestModalSandboxExecutorResourceMerging:
         }
 
         executor = self._create_executor()
-        result = executor._get_step_settings(step_name)
+        result = executor._get_settings(step_name)
 
         # Step overrides should take precedence
         assert result.gpu == "V100"  # Step override
@@ -147,7 +147,7 @@ class TestModalSandboxExecutorResourceMerging:
         }
 
         executor = self._create_executor()
-        result = executor._get_step_settings(step_name)
+        result = executor._get_settings(step_name)
 
         assert result.gpu == "T4"  # Step override
         assert result.cloud == "aws"  # Pipeline default preserved
@@ -197,7 +197,7 @@ class TestModalSandboxExecutorResourceMerging:
         )
 
         # Test step settings
-        step_settings = executor._get_step_settings(step_name)
+        step_settings = executor._get_settings(step_name)
 
         # Assert step resources are used
         assert gpu_values == "A100:4"
@@ -237,7 +237,7 @@ class TestModalSandboxExecutorResourceMerging:
         assert step_resources.cpu_count is None
 
         # Should get pipeline Modal settings (fallback)
-        step_settings = executor._get_step_settings(step_name)
+        step_settings = executor._get_settings(step_name)
         assert step_settings.gpu == "A100"  # Pipeline setting
         assert step_settings.cloud == "aws"  # Pipeline setting
         assert step_settings.region == "us-east-1"  # Pipeline setting

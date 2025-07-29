@@ -27,8 +27,8 @@ from zenml.integrations.modal.flavors import (
 )
 from zenml.integrations.modal.utils import (
     build_modal_image,
-    create_modal_stack_validator,
     get_gpu_values,
+    get_modal_stack_validator,
     setup_modal_client,
 )
 from zenml.logger import get_logger
@@ -77,7 +77,7 @@ class ModalStepOperator(BaseStepOperator):
         Returns:
             The stack validator.
         """
-        return create_modal_stack_validator()
+        return get_modal_stack_validator()
 
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBase"

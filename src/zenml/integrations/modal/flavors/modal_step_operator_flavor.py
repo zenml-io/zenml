@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
@@ -50,31 +51,31 @@ class ModalStepOperatorSettings(BaseSettings):
         None,
         description="GPU type for step execution. Must be a valid Modal GPU type. "
         "Examples: 'T4' (cost-effective), 'A100' (high-performance), 'V100' (training workloads). "
-        "Use ResourceSettings.gpu_count to specify number of GPUs. If not specified, uses CPU-only execution"
+        "Use ResourceSettings.gpu_count to specify number of GPUs. If not specified, uses CPU-only execution",
     )
     region: Optional[str] = Field(
         None,
         description="Cloud region for step execution. Must be a valid region for the selected cloud provider. "
         "Examples: 'us-east-1', 'us-west-2', 'eu-west-1'. If not specified, Modal uses default region "
-        "based on cloud provider and availability"
+        "based on cloud provider and availability",
     )
     cloud: Optional[str] = Field(
         None,
         description="Cloud provider for step execution. Must be a valid Modal-supported cloud provider. "
         "Examples: 'aws', 'gcp'. If not specified, Modal uses default cloud provider "
-        "based on workspace configuration"
+        "based on workspace configuration",
     )
     modal_environment: Optional[str] = Field(
         None,
         description="Modal environment name for step execution. Must be a valid environment "
         "configured in your Modal workspace. Examples: 'main', 'staging', 'production'. "
-        "If not specified, uses the default environment for the workspace"
+        "If not specified, uses the default environment for the workspace",
     )
     timeout: int = Field(
         86400,
         description="Maximum execution time in seconds for step completion. Must be between 1 and 86400 seconds. "
         "Examples: 3600 (1 hour), 7200 (2 hours), 86400 (24 hours maximum). "
-        "Step execution will be terminated if it exceeds this timeout"
+        "Step execution will be terminated if it exceeds this timeout",
     )
 
 
@@ -98,19 +99,19 @@ class ModalStepOperatorConfig(
         default=None,
         description="Modal API token ID for authentication. Must be in format 'ak-xxxxx' as provided by Modal. "
         "Example: 'ak-1234567890abcdef'. If not provided, falls back to Modal's default authentication "
-        "from ~/.modal.toml file. Required for programmatic access to Modal API"
+        "from ~/.modal.toml file. Required for programmatic access to Modal API",
     )
     token_secret: Optional[str] = SecretField(
         default=None,
         description="Modal API token secret for authentication. Must be in format 'as-xxxxx' as provided by Modal. "
         "Example: 'as-abcdef1234567890'. Used together with token_id for API authentication. "
-        "If not provided, falls back to Modal's default authentication from ~/.modal.toml file"
+        "If not provided, falls back to Modal's default authentication from ~/.modal.toml file",
     )
     workspace: Optional[str] = Field(
         None,
         description="Modal workspace name for step execution. Must be a valid workspace name "
         "you have access to. Examples: 'my-company', 'ml-team', 'personal-workspace'. "
-        "If not specified, uses the default workspace from Modal configuration"
+        "If not specified, uses the default workspace from Modal configuration",
     )
 
     @property

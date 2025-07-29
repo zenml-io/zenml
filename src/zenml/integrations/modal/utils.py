@@ -14,12 +14,12 @@
 """Shared utilities for Modal integration components."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from uuid import UUID
 
 import modal
 
 from zenml.config import ResourceSettings
-from zenml.config.resource_settings import ByteUnit
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -32,34 +32,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-# Common environment variable for Modal orchestrator run ID
 ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID = "ZENML_MODAL_ORCHESTRATOR_RUN_ID"
-
-
-class ModalAuthenticationError(Exception):
-    """Exception raised for Modal authentication issues with helpful guidance."""
-
-    def __init__(self, message: str, suggestions: Optional[List[str]] = None):
-        """Initialize the authentication error with message and optional suggestions.
-
-        Args:
-            message: The error message.
-            suggestions: Optional list of suggestions for fixing the issue.
-        """
-        super().__init__(message)
-        self.suggestions = suggestions or []
-
-    def __str__(self) -> str:
-        """Return formatted error message with suggestions.
-
-        Returns:
-            Formatted error message, optionally with suggestions.
-        """
-        base_message = super().__str__()
-        if self.suggestions:
-            suggestions_text = "\n".join(f"  • {s}" for s in self.suggestions)
-            return f"{base_message}\n\nSuggestions:\n{suggestions_text}"
-        return base_message
 
 
 def setup_modal_client(
@@ -149,14 +122,11 @@ def setup_modal_client(
         os.environ["MODAL_ENVIRONMENT"] = environment
 
 
+# TODO: refactor step operator and remove this
 def get_gpu_values(
     gpu_type: Optional[str], resource_settings: ResourceSettings
 ) -> Optional[str]:
     """Get the GPU values for Modal components.
-
-    This function unifies GPU configuration from both Modal orchestrator settings
-    and ResourceSettings. It prioritizes explicit GPU type from Modal settings,
-    but falls back to ResourceSettings for GPU count and type.
 
     Args:
         gpu_type: The GPU type from Modal settings (e.g., "T4", "A100").
@@ -164,81 +134,20 @@ def get_gpu_values(
 
     Returns:
         The GPU string for Modal API, or None if no GPU requested.
-        Format: "GPU_TYPE" or "GPU_TYPE:COUNT"
     """
-    # Check if GPU is requested via ResourceSettings
-    gpu_count = resource_settings.gpu_count
-
-    # No GPU requested if no type specified
     if not gpu_type:
         return None
 
-    # No GPU requested if count is explicitly 0
+    gpu_count = resource_settings.gpu_count
     if gpu_count == 0:
         return None
-
-    # GPU type specified but no count, return just the type
-    if gpu_count is None:
+    elif gpu_count is None:
         return gpu_type
-
-    # Both type and count specified
-    return f"{gpu_type}:{gpu_count}"
-
-
-def get_resource_values(
-    resource_settings: ResourceSettings,
-) -> Tuple[Optional[int], Optional[int]]:
-    """Get CPU and memory values from resource settings with validation.
-
-    Args:
-        resource_settings: The resource settings.
-
-    Returns:
-        Tuple of (cpu_count, memory_mb) with validated values.
-    """
-    # Get CPU count with validation
-    cpu_count: Optional[int] = None
-    if resource_settings.cpu_count is not None:
-        cpu_count = int(resource_settings.cpu_count)
-        # Validate CPU count is reasonable
-        if cpu_count <= 0:
-            logger.warning(f"Invalid CPU count {cpu_count}, ignoring.")
-            cpu_count = None
-        elif cpu_count > 96:  # Modal's typical max
-            logger.warning(
-                f"CPU count {cpu_count} is very high. "
-                "Consider if this is intentional."
-            )
-
-    # Convert memory to MB if needed with validation
-    memory_mb: Optional[int] = None
-    if resource_settings.memory:
-        try:
-            memory_value = resource_settings.get_memory(ByteUnit.MB)
-            if memory_value is not None:
-                memory_mb = int(memory_value)
-                # Validate memory is reasonable
-                if memory_mb <= 0:
-                    logger.warning(f"Invalid memory {memory_mb}MB, ignoring.")
-                    memory_mb = None
-                elif memory_mb < 128:  # Less than 128MB seems too low
-                    logger.warning(
-                        f"Memory {memory_mb}MB is very low. "
-                        "Consider if this is intentional."
-                    )
-                elif memory_mb > 1024 * 1024:  # More than 1TB seems high
-                    logger.warning(
-                        f"Memory {memory_mb}MB is very high. "
-                        "Consider if this is intentional."
-                    )
-        except Exception as e:
-            logger.warning(f"Failed to parse memory setting: {e}")
-            memory_mb = None
-
-    return cpu_count, memory_mb
+    else:
+        return f"{gpu_type}:{gpu_count}"
 
 
-def _build_modal_image_from_registry(
+def build_modal_image(
     image_name: str,
     stack: "Stack",
     environment: Optional[Dict[str, str]] = None,
@@ -339,7 +248,7 @@ def get_or_build_modal_image(
         pass
 
     # Build new image using shared helper
-    zenml_image = _build_modal_image_from_registry(
+    zenml_image = build_modal_image(
         image_name=image_name,
         stack=stack,
         environment=None,  # No environment variables for cached images
@@ -351,35 +260,12 @@ def get_or_build_modal_image(
     return zenml_image
 
 
-def build_modal_image(
-    image_name: str,
-    stack: "Stack",
-    environment: Optional[Dict[str, str]] = None,
-) -> Any:
-    """Build a Modal image from a ZenML-built Docker image.
-
-    Args:
-        image_name: The name of the Docker image to use as base.
-        stack: The ZenML stack containing container registry.
-        environment: The environment variables to pass to the image.
-
-    Returns:
-        The configured Modal image.
-    """
-    # Use shared helper for image building
-    return _build_modal_image_from_registry(
-        image_name=image_name,
-        stack=stack,
-        environment=environment,
-    )
-
-
 def generate_sandbox_tags(
     pipeline_name: str,
     deployment_id: str,
     execution_mode: str,
     step_name: Optional[str] = None,
-    run_id: Optional[str] = None,
+    run_id: Optional[UUID] = None,
 ) -> Dict[str, str]:
     """Generate tags for Modal sandboxes.
 
@@ -404,16 +290,19 @@ def generate_sandbox_tags(
         tags["zenml_step"] = step_name
 
     if run_id:
-        tags["zenml_run_id"] = run_id
+        tags["zenml_run_id"] = str(run_id)
 
     return tags
 
 
-def create_modal_stack_validator() -> StackValidator:
-    """Create a stack validator for Modal components.
+def get_modal_stack_validator() -> StackValidator:
+    """Get a stack validator for Modal components.
+
+    The validator ensures that the stack contains a remote artifact store and
+    container registry.
 
     Returns:
-        A StackValidator that ensures remote artifact store and container registry.
+        A stack validator for modal components.
     """
 
     def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
@@ -449,51 +338,6 @@ def create_modal_stack_validator() -> StackValidator:
         },
         custom_validation_function=_validate_remote_components,
     )
-
-
-def get_resource_settings_from_deployment(
-    deployment: Any,
-    resource_settings_key: str = "resources",
-) -> ResourceSettings:
-    """Extract resource settings from pipeline deployment.
-
-    Args:
-        deployment: The pipeline deployment.
-        resource_settings_key: Key to look for resource settings.
-
-    Returns:
-        ResourceSettings object with the configuration.
-    """
-    pipeline_resource_settings: Union[Dict[str, Any], Any] = (
-        deployment.pipeline_configuration.settings.get(
-            resource_settings_key, {}
-        )
-    )
-    if pipeline_resource_settings:
-        # Convert to dict if it's a BaseSettings instance
-        if hasattr(pipeline_resource_settings, "model_dump"):
-            pipeline_resource_dict = pipeline_resource_settings.model_dump()
-        else:
-            pipeline_resource_dict = pipeline_resource_settings
-        resource_settings = ResourceSettings.model_validate(
-            pipeline_resource_dict
-        )
-    else:
-        # No explicit pipeline resources: use sane defaults (ignore step-level)
-        # As per user request: for pipeline mode, do not fallback to max(step resources)
-        resource_settings = ResourceSettings(
-            cpu_count=1,
-            memory="1024MB",
-            gpu_count=0,
-        )
-        logger.debug(
-            "No explicit pipeline-level resource settings found. "
-            "Using sane defaults: %s CPU, %s memory, %s GPU",
-            resource_settings.cpu_count,
-            resource_settings.memory,
-            resource_settings.gpu_count,
-        )
-    return resource_settings
 
 
 def get_modal_app_name(

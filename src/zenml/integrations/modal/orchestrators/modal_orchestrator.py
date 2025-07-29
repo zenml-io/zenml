@@ -35,7 +35,7 @@ from zenml.integrations.modal.orchestrators.modal_sandbox_executor import (
 )
 from zenml.integrations.modal.utils import (
     ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID,
-    create_modal_stack_validator,
+    get_modal_stack_validator,
     setup_modal_client,
 )
 from zenml.logger import get_logger
@@ -57,11 +57,7 @@ logger = get_logger(__name__)
 
 
 class ModalOrchestrator(ContainerizedOrchestrator):
-    """Orchestrator responsible for running entire pipelines on Modal.
-
-    This orchestrator runs complete pipelines using Modal sandboxes
-    for maximum flexibility and efficiency with persistent app architecture.
-    """
+    """Orchestrator responsible for running entire pipelines on Modal."""
 
     @property
     def config(self) -> "ModalOrchestratorConfig":
@@ -143,7 +139,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         Returns:
             A `StackValidator` instance.
         """
-        return create_modal_stack_validator()
+        return get_modal_stack_validator()
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -186,13 +182,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         Returns:
             Optional submission result with wait function if synchronous.
         """
-        # Setup Modal authentication
         self._setup_modal_client()
 
-        # Pass pipeline run ID for proper isolation
         if placeholder_run:
             environment["ZENML_PIPELINE_RUN_ID"] = str(placeholder_run.id)
-            logger.debug(f"Pipeline run ID: {placeholder_run.id}")
 
         # Get settings from pipeline configuration
         settings = cast(
@@ -211,25 +204,16 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             settings=settings,
         )
 
-        # Determine if we should wait for completion
-        synchronous = (
-            settings.synchronous
-            if hasattr(settings, "synchronous")
-            else self.config.synchronous
-        )
+        run_id = placeholder_run.id if placeholder_run else None
 
-        # Submit the pipeline
-        run_id = str(placeholder_run.id) if placeholder_run else None
+        if settings.synchronous:
 
-        # Execute the pipeline based on synchronous setting
-        if synchronous:
-            # Return a wait function that will execute the pipeline when called
             def _wait_for_completion() -> None:
                 async def _execute_pipeline() -> None:
                     try:
                         await executor.execute_pipeline(
                             run_id=run_id,
-                            synchronous=True,  # Wait for completion
+                            synchronous=True,
                         )
                         logger.info(
                             "✅ Pipeline execution completed successfully"
@@ -242,12 +226,12 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
             return SubmissionResult(wait_for_completion=_wait_for_completion)
         else:
-            # Fire and forget - execute the pipeline asynchronously
+
             async def _execute_pipeline() -> None:
                 try:
                     await executor.execute_pipeline(
                         run_id=run_id,
-                        synchronous=False,  # Don't wait for completion
+                        synchronous=False,
                     )
                     logger.info("✅ Pipeline submitted successfully")
                 except Exception as e:
