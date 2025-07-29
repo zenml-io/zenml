@@ -311,14 +311,11 @@ class ModalSandboxExecutor:
             region = self.settings.region
             timeout = self.settings.timeout
 
-        # Get or build Modal image (with shared cache support)
-        zenml_image = self._get_cached_or_build_image(step_name)
+        modal_image = self._get_cached_or_build_image(step_name)
 
-        # Create environment secret
         env_secret = self._create_environment_secret()
         secrets = [env_secret] if env_secret else []
 
-        # Generate tags
         tags = generate_sandbox_tags(
             pipeline_name=self.deployment.pipeline_configuration.name,
             deployment_id=str(self.deployment.id),
@@ -327,13 +324,9 @@ class ModalSandboxExecutor:
             run_id=run_id,
         )
 
-        logger.debug(f"Creating sandbox for {mode.lower()} execution")
-        logger.debug(f"Sandbox tags: {tags}")
-
-        # Validate and prepare Modal API parameters
         modal_params = self._prepare_modal_api_params(
             entrypoint_command=entrypoint_command,
-            image=zenml_image,
+            image=modal_image,
             gpu=gpu_values,
             cpu=cpu_count,
             memory=memory_mb,
@@ -345,57 +338,17 @@ class ModalSandboxExecutor:
         )
 
         with modal.enable_output():
-            # Create sandbox with validated parameters
-            # Pass entrypoint command as positional args and others as kwargs
             sb = await modal.Sandbox.create.aio(
                 *entrypoint_command, **modal_params
             )
-
-            # Set tags
             sb.set_tags(tags)
 
             if synchronous:
-                # Stream output for better user experience
                 async for line in sb.stdout:
                     print(line, end="")
                 await sb.wait.aio()
             else:
-                logger.debug("Sandbox started asynchronously")
-
-            # Store the image ID for future caching after sandbox creation
-            # The image should be hydrated after being used in sandbox creation
-            await self._store_image_id(zenml_image)
-
-    async def _store_image_id(self, modal_image: modal.Image) -> None:
-        """Store the image ID for future caching after sandbox creation.
-
-        Args:
-            modal_image: The Modal image that was used.
-        """
-        try:
-            modal_image.hydrate()
-            if hasattr(modal_image, "object_id") and modal_image.object_id:
-                if self.deployment.build is not None:
-                    image_name_key = f"zenml_image_{self.deployment.build.id}"
-
-                    # Store the image ID in Modal's persistent storage
-                    pipeline_name = self.deployment.pipeline_configuration.name
-                    stored_id = modal.Dict.from_name(
-                        f"zenml-image-cache-{pipeline_name}",
-                        create_if_missing=True,
-                    )
-                    stored_id[image_name_key] = modal_image.object_id
-                    logger.debug(
-                        f"Stored Modal image ID for build {self.deployment.build.id}"
-                    )
-                else:
-                    logger.warning(
-                        "Deployment build is None, cannot store image ID"
-                    )
-            else:
-                logger.warning("Image not hydrated after sandbox creation")
-        except Exception as e:
-            logger.warning(f"Failed to store image ID: {e}")
+                logger.debug("Sandbox started asynchronously.")
 
     def _get_cached_or_build_image(
         self, step_name: Optional[str] = None

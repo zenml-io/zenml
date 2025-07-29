@@ -221,11 +221,11 @@ def get_or_build_modal_image(
         build_item.settings_checksum or f"{build_id}-{build_item.image}"
     )
 
-    try:
-        remote_image_cache = modal.Dict.from_name(
-            f"zenml-image-cache-{pipeline_name}"
-        )
+    remote_image_cache = modal.Dict.from_name(
+        f"zenml-image-cache-{pipeline_name}", create_if_missing=True
+    )
 
+    try:
         if modal_image_id := remote_image_cache.get(cache_key):
             existing_image = modal.Image.from_id(modal_image_id)
             logger.debug(
@@ -235,11 +235,18 @@ def get_or_build_modal_image(
     except (modal.exception.NotFoundError, KeyError):
         pass
 
-    return build_modal_image(
+    new_image = build_modal_image(
         image_name=build_item.image,
         stack=stack,
     )
-    # TODO: we should cache this here immediately?
+
+    new_image.hydrate()
+    try:
+        remote_image_cache[cache_key] = new_image.object_id
+    except Exception as e:
+        logger.warning(f"Failed to cache image: {e}")
+
+    return new_image
 
 
 def generate_sandbox_tags(
