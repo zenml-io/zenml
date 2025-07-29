@@ -659,6 +659,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-t",
+    "--trace_collector",
+    "trace_collector",
+    help="Name of the trace collector for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name_or_id: Optional[str] = None,
     artifact_store: Optional[str] = None,
@@ -673,6 +681,7 @@ def update_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     model_registry: Optional[str] = None,
+    trace_collector: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -691,6 +700,7 @@ def update_stack(
         data_validator: Name of the new data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         model_registry: Name of the new model registry for this stack.
+        trace_collector: Name of the new trace collector for this stack.
     """
     client = Client()
 
@@ -718,6 +728,8 @@ def update_stack(
             updates[StackComponentType.MODEL_REGISTRY] = [model_registry]
         if image_builder:
             updates[StackComponentType.IMAGE_BUILDER] = [image_builder]
+        if trace_collector:
+            updates[StackComponentType.TRACE_COLLECTOR] = [trace_collector]
         if model_deployer:
             updates[StackComponentType.MODEL_DEPLOYER] = [model_deployer]
         if orchestrator:

@@ -143,6 +143,7 @@ class StackComponentType(StrEnum):
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
+    TRACE_COLLECTOR = "trace_collector"
 
     @property
     def plural(self) -> str:
