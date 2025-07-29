@@ -153,6 +153,9 @@ doesn't actually get to the point of running the step. That means the server wil
 which in turn causes other inconsistencies like wrong step statuses. To mitigate this, this attribute allows to add a margin to the
 backoff limit. This means that the job will retry the pod startup for the configured amount of times plus the margin, which increases
 the chance of the server receiving the maximum amount of retry requests.
+- **`fail_on_container_waiting_reasons`**: List of container waiting reasons that should cause the job to fail immediately. This should be set to a list of nonrecoverable reasons, which if found in any
+`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, should cause the job to fail immediately.
+- **`job_monitoring_interval`** (default 3): The interval in seconds to monitor the job. Each interval is used to check for container issues and streaming logs for the job pods.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
@@ -405,51 +408,20 @@ To view your scheduled jobs and their status:
 ```shell
 # List all CronJobs
 kubectl get cronjobs -n zenml
-
-# Check Jobs created by the CronJob
-kubectl get jobs -n zenml
-
-# View logs of a running job
-kubectl logs job/<job-name> -n zenml
 ```
 
-To update a scheduled pipeline, you need to:
-
-1. Delete the existing CronJob from Kubernetes
-2. Create a new pipeline with the updated schedule
-
-```shell
-# Delete the existing CronJob
-kubectl delete cronjob <cronjob-name> -n zenml
-```
-
-```python
-# Create a new schedule
-new_schedule = Schedule(cron_expression="0 4 * * *")  # Now runs at 4 AM
-updated_pipeline = my_kubernetes_pipeline.with_options(schedule=new_schedule)
-updated_pipeline()
-```
+To update a schedule, use the following command:
+```bash
+# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
+zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='0 4 * * *'
 
 #### Deleting a scheduled pipeline
 
-When you no longer need a scheduled pipeline, you must delete both the ZenML schedule and the Kubernetes CronJob:
-
-1. Delete the schedule from ZenML:
-```python
-from zenml.client import Client
-
-client = Client()
-client.delete_schedule("<schedule-name>")
+When you no longer need a scheduled pipeline, you can delete the schedule as follows:
+```bash
+# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
 ```
-
-2. Delete the CronJob from Kubernetes:
-```shell
-kubectl delete cronjob <cronjob-name> -n zenml
-```
-
-{% hint style="warning" %}
-Deleting just the ZenML schedule will not stop the recurring executions. You must delete the Kubernetes CronJob as well.
-{% endhint %}
 
 #### Troubleshooting
 

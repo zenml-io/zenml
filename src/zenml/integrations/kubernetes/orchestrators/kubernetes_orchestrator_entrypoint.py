@@ -367,12 +367,38 @@ def main() -> None:
                     core_api=core_api,
                     namespace=namespace,
                     job_name=job_name,
+                    fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                     stream_logs=pipeline_settings.stream_step_logs,
+                    backoff_interval=settings.job_monitoring_interval,
                 )
 
                 logger.info(f"Job for step `{step_name}` completed.")
             except Exception:
-                logger.error(f"Job for step `{step_name}` failed.")
+                reason = "Unknown"
+                try:
+                    pods = core_api.list_namespaced_pod(
+                        label_selector=f"job-name={job_name}",
+                        namespace=namespace,
+                    ).items
+                    # Sort pods by creation timestamp, oldest first
+                    pods.sort(
+                        key=lambda pod: pod.metadata.creation_timestamp,
+                    )
+                    if pods:
+                        if (
+                            termination_reason
+                            := kube_utils.get_container_termination_reason(
+                                pods[-1], "main"
+                            )
+                        ):
+                            exit_code, reason = termination_reason
+                            if exit_code != 0:
+                                reason = f"{reason} (exit_code={exit_code})"
+                except Exception:
+                    pass
+                logger.error(
+                    f"Job for step `{step_name}` failed. Reason: {reason}"
+                )
 
                 raise
 
