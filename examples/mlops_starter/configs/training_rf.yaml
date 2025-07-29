@@ -7,7 +7,6 @@ settings:
     requirements:
       - pyarrow
 
-
 # configuration of the Model Control Plane
 model:
   name: breast_cancer_classifier
