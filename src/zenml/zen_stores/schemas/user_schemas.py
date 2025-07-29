@@ -52,6 +52,7 @@ if TYPE_CHECKING:
         PipelineDeploymentSchema,
         PipelineRunSchema,
         PipelineSchema,
+        PromptTemplateSchema,
         RunMetadataSchema,
         RunTemplateSchema,
         ScheduleSchema,
@@ -113,6 +114,9 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
+    prompt_templates: List["PromptTemplateSchema"] = Relationship(
+        back_populates="user",
+    )
     run_templates: List["RunTemplateSchema"] = Relationship(
         back_populates="user",
     )

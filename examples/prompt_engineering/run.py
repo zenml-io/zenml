@@ -23,10 +23,11 @@ def check_api_keys():
     keys_found = []
     keys_missing = []
 
-    if os.getenv("OPENAI_API_KEY"):
-        keys_found.append("OpenAI")
+    # Check for Azure OpenAI configuration
+    if os.getenv("AZURE_OPENAI_API_KEY"):
+        keys_found.append("Azure OpenAI")
     else:
-        keys_missing.append("OPENAI_API_KEY")
+        keys_missing.append("AZURE_OPENAI_API_KEY")
 
     if os.getenv("ANTHROPIC_API_KEY"):
         keys_found.append("Anthropic")
@@ -36,9 +37,12 @@ def check_api_keys():
     if keys_found:
         logger.info(f"API keys found for: {', '.join(keys_found)}")
 
-    if "OPENAI_API_KEY" in keys_missing:
-        logger.error("OPENAI_API_KEY is required but not set!")
-        logger.info("Please set it with: export OPENAI_API_KEY='your-key'")
+    if "AZURE_OPENAI_API_KEY" in keys_missing:
+        logger.error("AZURE_OPENAI_API_KEY is required but not set!")
+        logger.info(
+            "Please set it with: export AZURE_OPENAI_API_KEY='your-key'"
+        )
+        logger.info("Also ensure AZURE_OPENAI_ENDPOINT is set")
         return False
 
     return True
@@ -53,16 +57,31 @@ def run_basic_pipeline(args):
         or "You are a helpful assistant. Answer this question concisely: {question}"
     )
 
-    pipeline_instance = prompt_development_pipeline(
+    pipeline_run = prompt_development_pipeline(
         template=template,
         prompt_type=args.prompt_type,
         task=args.task,
         model=args.model,
     )
 
-    prompt, results, evaluation = pipeline_instance
+    # Access artifacts from the pipeline run
+    prompt = (
+        pipeline_run.steps["create_prompt_step"]
+        .outputs["created_prompt"][0]
+        .load()
+    )
+    results = (
+        pipeline_run.steps["test_prompt_with_llm_step"]
+        .outputs["test_results"][0]
+        .load()
+    )
+    evaluation = (
+        pipeline_run.steps["evaluate_prompt_step"]
+        .outputs["evaluation_metrics"][0]
+        .load()
+    )
 
-    logger.info(f"Pipeline completed!")
+    logger.info("Pipeline completed!")
     logger.info(f"Prompt ID: {prompt.prompt_id}")
     logger.info(f"Success rate: {evaluation['success_rate']:.2%}")
 
@@ -77,30 +96,89 @@ def run_comparison_pipeline(args):
         args.base_template or "Answer the following question: {question}"
     )
 
-    variant_templates = args.variant_templates or [
-        "You are an expert. Please answer this question: {question}",
-        "Think step by step and answer the following question: {question}",
-        "As a knowledgeable assistant, provide a detailed answer to: {question}",
-    ]
+    # For simplified version, use default variants or take first two from command line
+    variant_1 = "You are an expert. Please answer this question: {question}"
+    variant_2 = (
+        "Think step by step and answer the following question: {question}"
+    )
 
-    pipeline_instance = prompt_comparison_pipeline(
+    if args.variant_templates and len(args.variant_templates) >= 1:
+        variant_1 = args.variant_templates[0]
+    if args.variant_templates and len(args.variant_templates) >= 2:
+        variant_2 = args.variant_templates[1]
+
+    pipeline_run = prompt_comparison_pipeline(
         base_template=base_template,
-        variant_templates=variant_templates,
+        variant_template_1=variant_1,
+        variant_template_2=variant_2,
         model=args.model,
         dataset_name=args.dataset,
     )
 
-    best_prompt, comparison = pipeline_instance
+    # Access artifacts from the pipeline run
+    base_prompt = (
+        pipeline_run.steps["create_prompt_step"]
+        .outputs["created_prompt"][0]
+        .load()
+    )
+    variant_1_prompt = (
+        pipeline_run.steps["create_prompt_step_2"]
+        .outputs["created_prompt"][0]
+        .load()
+    )
+    variant_2_prompt = (
+        pipeline_run.steps["create_prompt_step_3"]
+        .outputs["created_prompt"][0]
+        .load()
+    )
 
-    logger.info(f"Pipeline completed!")
-    logger.info(f"Best prompt ID: {best_prompt.prompt_id}")
-    logger.info(f"Rankings:")
-    for rank in comparison["rankings"]:
+    base_eval = (
+        pipeline_run.steps["evaluate_prompt_step"]
+        .outputs["evaluation_metrics"][0]
+        .load()
+    )
+    variant_1_eval = (
+        pipeline_run.steps["evaluate_prompt_step_2"]
+        .outputs["evaluation_metrics"][0]
+        .load()
+    )
+    variant_2_eval = (
+        pipeline_run.steps["evaluate_prompt_step_3"]
+        .outputs["evaluation_metrics"][0]
+        .load()
+    )
+
+    logger.info("Pipeline completed!")
+
+    # Compare and show results
+    evaluations = [
+        {"prompt": base_prompt, "eval": base_eval, "name": "Base"},
+        {
+            "prompt": variant_1_prompt,
+            "eval": variant_1_eval,
+            "name": "Variant 1",
+        },
+        {
+            "prompt": variant_2_prompt,
+            "eval": variant_2_eval,
+            "name": "Variant 2",
+        },
+    ]
+
+    # Sort by success rate
+    evaluations.sort(key=lambda x: x["eval"]["success_rate"], reverse=True)
+
+    logger.info("Results (ranked by success rate):")
+    for i, item in enumerate(evaluations):
         logger.info(
-            f"  Rank {rank['rank']}: {rank['prompt_id'][:8]}... (success rate: {rank['success_rate']:.2%})"
+            f"  {i + 1}. {item['name']}: {item['eval']['success_rate']:.2%} success rate"
         )
+        logger.info(f"     Template: {item['prompt'].template[:50]}...")
 
-    return best_prompt, comparison
+    best_prompt = evaluations[0]["prompt"]
+    logger.info(f"\nBest performing prompt: {best_prompt.prompt_id}")
+
+    return best_prompt, evaluations
 
 
 def run_experimentation_pipeline(args):
@@ -127,15 +205,31 @@ def run_experimentation_pipeline(args):
         },
     ]
 
-    pipeline_instance = prompt_experimentation_pipeline(
+    pipeline_run = prompt_experimentation_pipeline(
         prompt_configs=prompt_configs,
         judge_model=args.judge_model,
         test_model=args.model,
     )
 
-    best_prompt, comparison, evaluations = pipeline_instance
+    # Access artifacts from the pipeline run
+    best_prompt = (
+        pipeline_run.steps["select_best_prompt_step"]
+        .outputs["best_prompt"][0]
+        .load()
+    )
+    comparison = (
+        pipeline_run.steps["compare_prompts_step"]
+        .outputs["prompt_comparison"][0]
+        .load()
+    )
+    evaluations = [
+        pipeline_run.steps[f"llm_judge_evaluate_step_{i}"]
+        .outputs["llm_evaluation"][0]
+        .load()
+        for i in range(len(prompt_configs))
+    ]
 
-    logger.info(f"Pipeline completed!")
+    logger.info("Pipeline completed!")
     logger.info(f"Best prompt ID: {best_prompt.prompt_id}")
 
     # Show LLM judge scores
@@ -188,15 +282,25 @@ Answer:"""
         ],
     ]
 
-    pipeline_instance = few_shot_prompt_pipeline(
+    pipeline_run = few_shot_prompt_pipeline(
         base_template=base_template,
         examples_list=examples_list,
         model=args.model,
     )
 
-    best_prompt, comparison = pipeline_instance
+    # Access artifacts from the pipeline run
+    best_prompt = (
+        pipeline_run.steps["select_best_prompt_step"]
+        .outputs["best_prompt"][0]
+        .load()
+    )
+    comparison = (
+        pipeline_run.steps["compare_prompts_step"]
+        .outputs["prompt_comparison"][0]
+        .load()
+    )
 
-    logger.info(f"Pipeline completed!")
+    logger.info("Pipeline completed!")
     logger.info(f"Best prompt configuration: {best_prompt.version}")
     logger.info("\nComparison results:")
     for rank in comparison["rankings"]:
@@ -223,7 +327,7 @@ def view_results(args):
         logger.info("No pipeline runs found.")
         return
 
-    logger.info(f"\nRecent pipeline runs:")
+    logger.info("\nRecent pipeline runs:")
     for i, run in enumerate(runs):
         logger.info(f"\n{i + 1}. Pipeline: {run.pipeline.name}")
         logger.info(f"   Status: {run.status}")
@@ -263,7 +367,7 @@ def main():
         "--task", type=str, help="Task type (e.g., qa, summarization)"
     )
     basic_parser.add_argument(
-        "--model", type=str, default="gpt-3.5-turbo", help="Model to use"
+        "--model", type=str, default="gpt-4.1-mini", help="Model to use"
     )
 
     # Comparison pipeline
@@ -280,7 +384,7 @@ def main():
         help="Variant templates to test",
     )
     comparison_parser.add_argument(
-        "--model", type=str, default="gpt-3.5-turbo", help="Model to use"
+        "--model", type=str, default="gpt-4.1-mini", help="Model to use"
     )
     comparison_parser.add_argument(
         "--dataset",
@@ -296,7 +400,7 @@ def main():
     exp_parser.add_argument(
         "--model",
         type=str,
-        default="gpt-3.5-turbo",
+        default="gpt-4.1-mini",
         help="Model to test prompts with",
     )
     exp_parser.add_argument(
@@ -321,7 +425,7 @@ def main():
         help="Base template for few-shot prompting",
     )
     few_shot_parser.add_argument(
-        "--model", type=str, default="gpt-3.5-turbo", help="Model to use"
+        "--model", type=str, default="gpt-4.1-mini", help="Model to use"
     )
 
     # View results

@@ -352,6 +352,7 @@ class TaggableResourceTypes(StrEnum):
     MODEL_VERSION = "model_version"
     PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
+    PROMPT_TEMPLATE = "prompt_template"
     RUN_TEMPLATE = "run_template"
 
 

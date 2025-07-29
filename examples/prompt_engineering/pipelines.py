@@ -1,11 +1,9 @@
-"""Pipeline definitions for prompt engineering."""
+"""Simplified pipeline definitions for prompt engineering."""
 
-from typing import Optional, Tuple
+from typing import List, Tuple
 
 from steps import (
-    compare_prompts_step,
     create_prompt_step,
-    create_variant_step,
     evaluate_prompt_step,
     llm_judge_evaluate_step,
     load_test_dataset_step,
@@ -13,23 +11,14 @@ from steps import (
     test_prompt_with_llm_step,
 )
 
-from zenml import Prompt, pipeline
-from zenml.config import DockerSettings
+from zenml import pipeline
+from zenml.prompts import Prompt
 
 
-@pipeline(
-    enable_cache=False,  # Disable caching for fresh LLM calls
-    settings={
-        "docker": DockerSettings(
-            required_integrations=["numpy", "pandas"],
-            requirements=["openai>=1.0.0", "anthropic>=0.18.0"],
-        )
-    },
-)
+@pipeline(enable_cache=False)
 def prompt_development_pipeline(
-    template: str,
+    template: str = "Answer the question: {question}",
     prompt_type: str = "user",
-    task: Optional[str] = None,
     model: str = "gpt-3.5-turbo",
 ) -> Tuple[Prompt, dict, dict]:
     """Basic pipeline for prompt development and testing.
@@ -40,7 +29,6 @@ def prompt_development_pipeline(
     Args:
         template: The prompt template string
         prompt_type: Type of prompt (system, user, assistant)
-        task: Task the prompt is designed for
         model: LLM model to use for testing
 
     Returns:
@@ -50,8 +38,6 @@ def prompt_development_pipeline(
     prompt = create_prompt_step(
         template=template,
         prompt_type=prompt_type,
-        task=task,
-        instructions="Be helpful, accurate, and concise.",
     )
 
     # Load test dataset
@@ -72,217 +58,143 @@ def prompt_development_pipeline(
     return prompt, test_results, evaluation
 
 
-@pipeline(
-    enable_cache=False,
-    settings={
-        "docker": DockerSettings(
-            required_integrations=["numpy", "pandas"],
-            requirements=["openai>=1.0.0", "anthropic>=0.18.0"],
-        )
-    },
-)
+@pipeline(enable_cache=False)
 def prompt_comparison_pipeline(
-    base_template: str,
-    variant_templates: list,
+    base_template: str = "Answer the question: {question}",
+    variant_templates: List[str] = None,
     model: str = "gpt-3.5-turbo",
-    dataset_name: str = "default",
-) -> Tuple[Prompt, dict]:
-    """Pipeline for comparing multiple prompt variants.
-
-    This pipeline creates multiple prompt variants, tests them all,
-    and selects the best performing one based on evaluation metrics.
+) -> Prompt:
+    """Pipeline for comparing prompt variants and selecting the best.
 
     Args:
         base_template: The base prompt template
-        variant_templates: List of variant templates to test
+        variant_templates: List of variant templates to compare
         model: LLM model to use for testing
-        dataset_name: Name of test dataset to use
 
     Returns:
-        Tuple of (best_prompt, comparison_results)
+        The best performing prompt
     """
-    # Create base prompt
-    base_prompt = create_prompt_step(
-        template=base_template,
-        prompt_type="user",
-        task="question_answering",
-        version="1.0.0",
-    )
+    if variant_templates is None:
+        variant_templates = [
+            "You are an expert. Please answer this question: {question}",
+            "Think step by step and answer the following question: {question}",
+            "Provide a detailed answer to this question: {question}",
+        ]
 
-    # Create variants
-    variants = []
-    for i, variant_template in enumerate(variant_templates):
-        variant = create_variant_step(
-            base_prompt=base_prompt,
-            variant_name=f"variant_{i + 1}",
-            template=variant_template,
-            version=f"1.{i + 1}.0",
-        )
-        variants.append(variant)
-
-    # Load test dataset
-    test_dataset = load_test_dataset_step(dataset_name=dataset_name)
-
-    # Test all prompts (base + variants)
-    all_prompts = [base_prompt] + variants
-    all_results = []
-
-    for prompt in all_prompts:
-        results = test_prompt_with_llm_step(
-            prompt=prompt,
-            test_cases=test_dataset,
-            model=model,
-            temperature=0.7,
-            max_tokens=300,
-        )
-        all_results.append(results)
-
-    # Compare all prompts
-    comparison = compare_prompts_step(prompts=all_prompts, results=all_results)
-
-    # Select the best prompt
-    best_prompt = select_best_prompt_step(
-        comparison_results=comparison, prompts=all_prompts
-    )
-
-    return best_prompt, comparison
-
-
-@pipeline(
-    enable_cache=False,
-    settings={
-        "docker": DockerSettings(
-            required_integrations=["numpy", "pandas"],
-            requirements=["openai>=1.0.0", "anthropic>=0.18.0"],
-        )
-    },
-)
-def prompt_experimentation_pipeline(
-    prompt_configs: list,
-    judge_model: str = "gpt-4",
-    test_model: str = "gpt-3.5-turbo",
-) -> Tuple[Prompt, dict, dict]:
-    """Advanced pipeline using LLM-as-Judge for evaluation.
-
-    This pipeline demonstrates advanced prompt evaluation using
-    another LLM as a judge to assess output quality.
-
-    Args:
-        prompt_configs: List of prompt configurations to test
-        judge_model: Model to use for evaluation (should be powerful)
-        test_model: Model to test the prompts with
-
-    Returns:
-        Tuple of (best_prompt, comparison_results, llm_evaluations)
-    """
-    # Create prompts from configs
+    # Create all prompt variants
+    all_templates = [base_template] + variant_templates
     prompts = []
-    for config in prompt_configs:
-        prompt = create_prompt_step(**config)
+
+    for template in all_templates:
+        prompt = create_prompt_step(template=template)
         prompts.append(prompt)
 
     # Load test dataset
-    test_dataset = load_test_dataset_step(dataset_name="qa_hard")
+    test_cases = load_test_dataset_step(dataset_name="default")
 
     # Test all prompts
-    all_results = []
-    all_evaluations = []
-
+    evaluations = []
     for prompt in prompts:
-        # Test with LLM
-        results = test_prompt_with_llm_step(
+        test_results = test_prompt_with_llm_step(
             prompt=prompt,
-            test_cases=test_dataset,
-            model=test_model,
-            temperature=0.7,
-            max_tokens=500,
+            test_cases=test_cases,
+            model=model,
         )
-        all_results.append(results)
 
-        # Evaluate with LLM judge
-        llm_eval = llm_judge_evaluate_step(
-            prompt=prompt, test_results=results, judge_model=judge_model
+        evaluation = evaluate_prompt_step(
+            prompt=prompt,
+            test_results=test_results,
         )
-        all_evaluations.append(llm_eval)
+        evaluations.append(evaluation)
 
-    # Compare based on LLM evaluations
-    comparison = compare_prompts_step(prompts=prompts, results=all_results)
-
-    # Select best based on LLM judge scores
+    # Select the best prompt
     best_prompt = select_best_prompt_step(
-        comparison_results=comparison, prompts=prompts
+        prompts=prompts,
+        evaluations=evaluations,
+        metric="accuracy",
     )
 
-    return best_prompt, comparison, all_evaluations
+    return best_prompt
 
 
-@pipeline(
-    enable_cache=False,
-    settings={
-        "docker": DockerSettings(
-            required_integrations=["numpy", "pandas"],
-            requirements=["openai>=1.0.0", "anthropic>=0.18.0"],
-        )
-    },
-)
-def few_shot_prompt_pipeline(
-    base_template: str,
-    examples_list: list,
-    model: str = "gpt-3.5-turbo",
-) -> Tuple[Prompt, dict]:
-    """Pipeline for testing few-shot prompting strategies.
-
-    This pipeline compares zero-shot vs few-shot prompting by
-    testing the same template with different numbers of examples.
+@pipeline(enable_cache=False)
+def llm_judge_pipeline(
+    template: str = "Answer the question: {question}",
+    judge_model: str = "gpt-4",
+    test_model: str = "gpt-3.5-turbo",
+) -> dict:
+    """Pipeline using LLM as judge for evaluation.
 
     Args:
-        base_template: The base prompt template
-        examples_list: List of example sets to test
+        template: The prompt template to evaluate
+        judge_model: Model to use as judge
+        test_model: Model to test the prompt with
+
+    Returns:
+        Judge evaluation results
+    """
+    # Create prompt
+    prompt = create_prompt_step(template=template)
+
+    # Load test dataset
+    test_cases = load_test_dataset_step(dataset_name="default")
+
+    # Test with LLM
+    test_results = test_prompt_with_llm_step(
+        prompt=prompt,
+        test_cases=test_cases,
+        model=test_model,
+    )
+
+    # Evaluate with LLM judge
+    judge_evaluation = llm_judge_evaluate_step(
+        prompt=prompt,
+        test_results=test_results,
+        judge_model=judge_model,
+    )
+
+    return judge_evaluation
+
+
+@pipeline(enable_cache=False)
+def prompt_optimization_pipeline(
+    base_template: str = "Answer the question: {question}",
+    optimization_rounds: int = 3,
+    model: str = "gpt-3.5-turbo",
+) -> Prompt:
+    """Pipeline for iterative prompt optimization.
+
+    Args:
+        base_template: Starting template
+        optimization_rounds: Number of optimization rounds
         model: LLM model to use
 
     Returns:
-        Tuple of (best_prompt, comparison_results)
+        Optimized prompt
     """
-    # Create zero-shot baseline
-    zero_shot = create_prompt_step(
-        template=base_template,
-        prompt_type="user",
-        task="question_answering",
-        examples=None,
+    # Start with base prompt
+    current_prompt = create_prompt_step(template=base_template)
+
+    # Load test dataset
+    test_cases = load_test_dataset_step(dataset_name="default")
+
+    # Initial evaluation
+    test_results = test_prompt_with_llm_step(
+        prompt=current_prompt,
+        test_cases=test_cases,
+        model=model,
     )
 
-    # Create few-shot variants
-    few_shot_prompts = []
-    for i, examples in enumerate(examples_list):
-        few_shot = create_prompt_step(
-            template=base_template,
-            prompt_type="user",
-            task="question_answering",
-            examples=examples,
-            version=f"few_shot_{len(examples)}_examples",
-        )
-        few_shot_prompts.append(few_shot)
-
-    # Test all variants
-    test_dataset = load_test_dataset_step(dataset_name="default")
-    all_prompts = [zero_shot] + few_shot_prompts
-    all_results = []
-
-    for prompt in all_prompts:
-        results = test_prompt_with_llm_step(
-            prompt=prompt,
-            test_cases=test_dataset,
-            model=model,
-            temperature=0.5,  # Lower temperature for more consistent results
-            max_tokens=300,
-        )
-        all_results.append(results)
-
-    # Compare and select best
-    comparison = compare_prompts_step(prompts=all_prompts, results=all_results)
-
-    best_prompt = select_best_prompt_step(
-        comparison_results=comparison, prompts=all_prompts
+    evaluate_prompt_step(
+        prompt=current_prompt,
+        test_results=test_results,
     )
 
-    return best_prompt, comparison
+    # For now, return the current prompt
+    # In a real implementation, you would:
+    # 1. Generate variations based on performance
+    # 2. Test variations
+    # 3. Select best performing variation
+    # 4. Repeat for optimization_rounds
+
+    return current_prompt

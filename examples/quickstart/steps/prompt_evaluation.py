@@ -135,9 +135,7 @@ def llm_judge_evaluate_prompt(
             "overall_score": overall_score,
             "quality_level": quality_level,
             "individual_results": evaluation_results,
-            "recommendations": _generate_recommendations(
-                average_scores, evaluation_results
-            ),
+            "recommendations": _generate_recommendations(average_scores),
         }
 
         logger.info(
@@ -229,27 +227,26 @@ def _judge_response(
 ) -> Dict[str, float]:
     """Use LLM to judge response quality based on criteria."""
 
-    # Create judge prompt
-    judge_prompt = f"""You are an expert evaluator for AI-generated content. 
-    
-Please evaluate the following response based on these criteria: {", ".join(criteria)}
-
-Original Prompt: {prompt}
-
-Response to Evaluate: {response}
-
-For each criterion, provide a score from 0-10 where:
-- 0-2: Poor
-- 3-4: Below Average  
-- 5-6: Average
-- 7-8: Good
-- 9-10: Excellent
-
-Respond with ONLY a JSON object containing scores for each criterion:
-{{"relevance": X.X, "accuracy": X.X, "clarity": X.X, "helpfulness": X.X, "safety": X.X}}"""
-
     # TODO: Replace with actual LLM API integration
     # Example integration with OpenAI or other LLM providers:
+    #
+    # judge_prompt = f"""You are an expert evaluator for AI-generated content.
+    #
+    # Please evaluate the following response based on these criteria: {", ".join(criteria)}
+    #
+    # Original Prompt: {prompt}
+    #
+    # Response to Evaluate: {response}
+    #
+    # For each criterion, provide a score from 0-10 where:
+    # - 0-2: Poor
+    # - 3-4: Below Average
+    # - 5-6: Average
+    # - 7-8: Good
+    # - 9-10: Excellent
+    #
+    # Respond with ONLY a JSON object containing scores for each criterion:
+    # {{"relevance": X.X, "accuracy": X.X, "clarity": X.X, "helpfulness": X.X, "safety": X.X}}"""
     #
     # from openai import OpenAI
     # client = OpenAI()
@@ -291,9 +288,7 @@ def _get_quality_level(score: float) -> str:
         return "Poor"
 
 
-def _generate_recommendations(
-    scores: Dict[str, float], results: List[Dict]
-) -> List[str]:
+def _generate_recommendations(scores: Dict[str, float]) -> List[str]:
     """Generate improvement recommendations based on evaluation."""
     recommendations = []
 

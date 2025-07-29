@@ -11,23 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML Prompt Abstraction Package."""
+"""Simple prompt artifact and materializer for ZenML."""
 
 from zenml.prompts.prompt import Prompt
-from zenml.prompts.prompt_comparison import PromptComparison, compare_prompts
-from zenml.prompts.prompt_utils import (
-    create_prompt_variant,
-    load_prompt_from_file,
-    save_prompt_to_file,
-    find_best_prompt,
+from zenml.prompts.prompt_comparison import (
+    PromptComparisonResult,
+    compare_prompts,
+    run_prompt_comparison_pipeline,
 )
+from zenml.prompts.prompt_materializer import PromptMaterializer
 
 __all__ = [
     "Prompt",
-    "PromptComparison", 
-    "create_prompt_variant",
-    "load_prompt_from_file",
-    "save_prompt_to_file",
+    "PromptMaterializer", 
+    "PromptComparisonResult",
     "compare_prompts",
-    "find_best_prompt",
+    "run_prompt_comparison_pipeline",
 ]
