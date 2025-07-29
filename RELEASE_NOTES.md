@@ -2,6 +2,28 @@
 
 # 0.84.1
 
+The `0.84.1` release delivers important **stability improvements** and **feature enhancements** that strengthen ZenML's orchestration capabilities and developer experience. This release focuses on enhanced Kubernetes orchestrator management with schedule support and better error handling, improved step exception collection for debugging, external service account support, dynamic fan-out/fan-in patterns for run templates, and critical fixes for Vertex step operators and logging reliability.
+
+## 🚀 Improvements
+
+- **Step Exception Handling**: Improved collection of step run exception information for better debugging
+- **External Service Accounts**: Added support for external service accounts for improved flexibility
+
+## Kubernetes Orchestrator
+- **Enhanced Schedule Management**: Added schedule management capabilities (updating and deleting) for the Kubernetes orchestrator
+- **Better Error Handling**: Added explicit Kubernetes failure reasons to logs and improved pod monitoring
+- **Secret Cleanup**: Fixed cleanup of Kubernetes secrets when orchestrator pods fail to start
+
+## 🛠️ Fixes
+- **Vertex step operator credential refresh**: Fixed retry logic and credential refresh for the Vertex step operator
+- **Logging Fixes**: Resolved race conditions in logging for better reliability
+
+## 🛠️ Documentation & Examples
+- **Agent Examples**: Updated README and added comprehensive agent examples
+- **Template Updates**: Bumped LLM template version for latest improvements
+- **Deprecation Cleanup**: Removed deprecation warnings in quickstart for cleaner user experience
+- **Dynamic Fan-out/Fan-in**: Added support for dynamic fan-out/fan-in patterns with run templates for more flexible pipeline architectures
+
 ## What's Changed
 * Add version 0.83.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3828
 * Add dynamic fan-out/fan-in with run templates by @htahir1 in https://github.com/zenml-io/zenml/pull/3826
