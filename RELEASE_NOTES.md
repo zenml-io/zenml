@@ -1,5 +1,32 @@
 <!-- markdown-link-check-disable -->
 
+# 0.84.1
+
+## What's Changed
+* Add version 0.83.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3828
+* Add dynamic fan-out/fan-in with run templates by @htahir1 in https://github.com/zenml-io/zenml/pull/3826
+* Add version 0.84.0 to DB migration script by @schustmi in https://github.com/zenml-io/zenml/pull/3833
+* Bump LLM template by @schustmi in https://github.com/zenml-io/zenml/pull/3837
+* Update README and add agent example by @htahir1 in https://github.com/zenml-io/zenml/pull/3815
+* Remove deprecation warning in quickstart by @schustmi in https://github.com/zenml-io/zenml/pull/3834
+* Fix appending to DB migrations in release action by @schustmi in https://github.com/zenml-io/zenml/pull/3836
+* Add intermediate cleanup in CLI profiling CI by @schustmi in https://github.com/zenml-io/zenml/pull/3835
+* Purge unused/inactive local docker services by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3768
+* Fix the retry logic and credential refresh for the Vertex step operator by @stefannica in https://github.com/zenml-io/zenml/pull/3853
+* Schedule management for the Kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/3847
+* Cleanup Kubernetes secret if orchestrator pod fails to start by @schustmi in https://github.com/zenml-io/zenml/pull/3846
+* Enable schedule RBAC by @schustmi in https://github.com/zenml-io/zenml/pull/3848
+* Add explicit k8s failure reasons to logs by @avishniakov in https://github.com/zenml-io/zenml/pull/3854
+* Collect step run exception info by @schustmi in https://github.com/zenml-io/zenml/pull/3838
+* Block bot traffic from Segment analytics to prevent MTU quota exhaustion by @strickvl in https://github.com/zenml-io/zenml/pull/3858
+* Fail on certain container waiting reasons during job monitoring by @schustmi in https://github.com/zenml-io/zenml/pull/3851
+* Add support for external service accounts by @stefannica in https://github.com/zenml-io/zenml/pull/3793
+* Solving the race conditions for logging by @bcdurak in https://github.com/zenml-io/zenml/pull/3855
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.84.0...0.84.1
+
+
 # 0.84.0
 
 The `0.84.0` release delivers significant **architectural improvements** and **orchestration enhancements** that boost ZenML's reliability, performance, and developer experience. This release focuses on pipeline execution resilience with step retries and early stopping capabilities, enhanced Kubernetes orchestrator features, and improved server-side processing for better scalability.
