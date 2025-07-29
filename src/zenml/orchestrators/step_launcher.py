@@ -16,7 +16,6 @@
 import signal
 import time
 from contextlib import nullcontext
-from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
@@ -299,9 +298,8 @@ class StepLauncher:
                         logs_context,
                         step_logging.PipelineLogsStorageContext,
                     ):
-                        force_write_logs = partial(
-                            logs_context.storage.save_to_file,
-                            force=True,
+                        force_write_logs = (
+                            logs_context.storage.send_merge_event
                         )
                     else:
 
