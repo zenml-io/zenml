@@ -98,8 +98,9 @@ class ArtifactStoreHandler(logging.Handler):
         try:
             # Format for storage with timestamp, level, and message
             timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+            formatted_message = remove_ansi_escape_codes(record.getMessage()).rstrip()
             message = (
-                f"[{timestamp} UTC] [{record.levelname}] {record.getMessage()}"
+                f"[{timestamp} UTC] [{record.levelname}] {formatted_message}"
             )
 
             # Include exception information if present
@@ -495,26 +496,17 @@ class PipelineLogsStorage:
             return
 
         try:
-            # Format the message with timestamp
-            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = (
-                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
-            )
-            formatted_message = formatted_message.rstrip()
-
             # Send individual message directly to queue
             if not self.shutdown_event.is_set():
                 try:
                     if self.queue_timeout < 0:
                         # Negative timeout = block indefinitely until queue has space
                         # Guarantees no log loss but may hang application
-                        self.log_queue.put(formatted_message)
+                        self.log_queue.put(text)
                     else:
                         # Positive timeout = wait specified time then drop logs
                         # Prevents application hanging but may lose logs
-                        self.log_queue.put(
-                            formatted_message, timeout=self.queue_timeout
-                        )
+                        self.log_queue.put(text, timeout=self.queue_timeout)
                 except queue.Full:
                     # This only happens with positive timeout
                     # Queue is full - just skip this message to avoid blocking
@@ -702,30 +694,28 @@ class PipelineLogsStorageContext:
             artifact_store: Artifact Store from the current pipeline run context.
             prepend_step_name: Whether to prepend the step name to the logs.
         """
+        # Create the storage object
         self.storage = PipelineLogsStorage(
             logs_uri=logs_uri, artifact_store=artifact_store
         )
-        self.artifact_store_handler: Optional[ArtifactStoreHandler] = None
+
+        # Create the handler object
+        self.artifact_store_handler: ArtifactStoreHandler = ArtifactStoreHandler(self.storage)
+        self.artifact_store_handler.setFormatter(logging.Formatter(
+            "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
+        ))
+
+        # Additional configuration
         self.prepend_step_name = prepend_step_name
-        self._original_methods_saved = False
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
 
-        Creates and registers an ArtifactStoreHandler for log storage.
+        Registers an ArtifactStoreHandler for log storage.
 
         Returns:
             self
         """
-        # Create storage handler
-        self.artifact_store_handler = ArtifactStoreHandler(self.storage)
-
-        # Set formatter for storage handler
-        storage_formatter = logging.Formatter(
-            "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
-        )
-        self.artifact_store_handler.setFormatter(storage_formatter)
-
         # Add handler to root logger
         root_logger = logging.getLogger()
         root_logger.addHandler(self.artifact_store_handler)
@@ -784,9 +774,9 @@ class PipelineLogsStorageContext:
                     level=logging.ERROR,
                     pathname="",
                     lineno=0,
-                    msg="Exception occurred during execution.",
+                    msg="An exception has occurred.",
                     args=(),
-                    exc_info=(exc_type, exc_val, exc_tb),
+                    exc_info=(exc_type, exc_val, exc_tb) if exc_val else None,
                 )
             )
 
@@ -806,23 +796,7 @@ class PipelineLogsStorageContext:
             handlers.remove(self.artifact_store_handler)
         logging_handlers.set(handlers)
 
-        # Force save any remaining logs
-        self.storage.save_to_file(force=True)
-
-        # Clean up handler reference
-        self.artifact_store_handler = None
-
-        redirected.set(False)
-
-        try:
-            if self._original_methods_saved:
-                setattr(sys.stdout, "write", self.stdout_write)
-                setattr(sys.stderr, "write", self.stderr_write)
-                redirected.set(False)
-        except Exception:
-            pass
-
-        # Step 2: Shutdown thread (it will automatically drain queue and merge files)
+        # Shutdown thread (it will automatically drain queue and merge files)
         try:
             self.storage._shutdown_log_storage_thread()
         except Exception:
