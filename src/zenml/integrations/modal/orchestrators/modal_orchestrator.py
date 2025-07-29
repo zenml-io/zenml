@@ -209,6 +209,8 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         if settings.synchronous:
 
             def _wait_for_completion() -> None:
+                # TODO: separate this into creating the sandbox, and
+                # monitoring/log streaming.
                 async def _execute_pipeline() -> None:
                     try:
                         await executor.execute_pipeline(
