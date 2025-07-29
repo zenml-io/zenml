@@ -74,6 +74,39 @@ LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
 
 
+def _add_step_name_to_message(message: str) -> str:
+    """Adds the step name to the message.
+
+    Args:
+        message: The message to add the step name to.
+
+    Returns:
+        The message with the step name added.
+    """
+    try:
+        # Import here to avoid circular imports
+        from zenml.logging.step_logging import step_names_in_console
+
+        if step_names_in_console.get():
+            from zenml.steps import get_step_context
+
+            step_context = get_step_context()
+
+            if step_context and message not in ["\n", ""]:
+                # For progress bar updates (with \r), inject the step name after the \r
+                if "\r" in message:
+                    message = message.replace(
+                        "\r", f"\r[{step_context.step_name}] "
+                    )
+                else:
+                    message = f"[{step_context.step_name}] {message}"
+    except Exception:
+        # If we can't get step context, just use the original message
+        pass
+
+    return message
+
+
 class ArtifactStoreHandler(logging.Handler):
     """Handler that writes log messages to artifact store storage."""
 
@@ -98,7 +131,9 @@ class ArtifactStoreHandler(logging.Handler):
         try:
             # Format for storage with timestamp, level, and message
             timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = remove_ansi_escape_codes(record.getMessage()).rstrip()
+            formatted_message = remove_ansi_escape_codes(
+                record.getMessage()
+            ).rstrip()
             message = (
                 f"[{timestamp} UTC] [{record.levelname}] {formatted_message}"
             )
@@ -168,8 +203,11 @@ def setup_global_print_wrapping() -> None:
                     # Don't let handler errors break print
                     pass
 
+        if step_names_in_console.get():
+            message = _add_step_name_to_message(message)
+
         # Then call original print for console display
-        return original_print(*args, **kwargs)
+        return original_print(message, *args[1:], **kwargs)
 
     # Store original and replace print
     setattr(builtins, "_zenml_original_print", original_print)
@@ -700,10 +738,14 @@ class PipelineLogsStorageContext:
         )
 
         # Create the handler object
-        self.artifact_store_handler: ArtifactStoreHandler = ArtifactStoreHandler(self.storage)
-        self.artifact_store_handler.setFormatter(logging.Formatter(
-            "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
-        ))
+        self.artifact_store_handler: ArtifactStoreHandler = (
+            ArtifactStoreHandler(self.storage)
+        )
+        self.artifact_store_handler.setFormatter(
+            logging.Formatter(
+                "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
+            )
+        )
 
         # Additional configuration
         self.prepend_step_name = prepend_step_name
