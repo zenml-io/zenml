@@ -70,3 +70,18 @@ def test_docs_url():
     assert AriaOrchestratorFlavor().docs_url == (
         "https://docs.zenml.io/stack-components/orchestrators/aria"
     )
+
+
+def test_integration_sdk_docs_url():
+    """Tests that integration SDK Docs URLs point to specific config classes."""
+    from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
+        KubernetesOrchestratorFlavor,
+    )
+
+    flavor = KubernetesOrchestratorFlavor()
+    expected_url = (
+        f"https://sdkdocs.zenml.io/{zenml_version}/integration_code_docs"
+        f"/integrations-kubernetes"
+        f"#zenml.integrations.kubernetes.flavors.KubernetesOrchestratorConfig"
+    )
+    assert flavor.sdk_docs_url == expected_url

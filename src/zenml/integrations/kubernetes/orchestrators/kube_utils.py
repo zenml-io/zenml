@@ -32,9 +32,12 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 """
 
 import enum
+import functools
+import json
 import re
 import time
-from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
+from collections import defaultdict
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -50,6 +53,8 @@ from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
+
+R = TypeVar("R")
 
 
 class PodPhase(enum.Enum):
@@ -512,9 +517,19 @@ def create_and_wait_for_pod_to_start(
             retries += 1
             if retries < startup_max_retries:
                 logger.debug(f"The {pod_display_name} failed to start: {e}")
+                message = ""
+                try:
+                    if isinstance(e, ApiException) and e.body:
+                        exception_body = json.loads(e.body)
+                        message = exception_body.get("message", "")
+                except Exception:
+                    pass
                 logger.error(
                     f"Failed to create {pod_display_name}. "
                     f"Retrying in {startup_failure_delay} seconds..."
+                    "\nReason: " + message
+                    if message
+                    else ""
                 )
                 time.sleep(startup_failure_delay)
                 startup_failure_delay *= startup_failure_backoff
@@ -581,3 +596,248 @@ def get_pod_owner_references(
     return cast(
         List[k8s_client.V1OwnerReference], pod.metadata.owner_references
     )
+
+
+def retry_on_api_exception(
+    func: Callable[..., R],
+    max_retries: int = 3,
+    delay: float = 1,
+    backoff: float = 1,
+) -> Callable[..., R]:
+    """Retry a function on API exceptions.
+
+    Args:
+        func: The function to retry.
+        max_retries: The maximum number of retries.
+        delay: The delay between retries.
+        backoff: The backoff factor.
+
+    Returns:
+        The wrapped function with retry logic.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> R:
+        _delay = delay
+        retries = 0
+        while retries <= max_retries:
+            try:
+                return func(*args, **kwargs)
+            except ApiException as e:
+                retries += 1
+                if retries <= max_retries:
+                    logger.warning("Error calling %s: %s.", func.__name__, e)
+                    time.sleep(_delay)
+                    _delay *= backoff
+                else:
+                    raise
+
+        raise RuntimeError(
+            f"Failed to call {func.__name__} after {max_retries} retries."
+        )
+
+    return wrapper
+
+
+def create_job(
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_manifest: k8s_client.V1Job,
+) -> None:
+    """Create a Kubernetes job.
+
+    Args:
+        batch_api: Kubernetes batch api.
+        namespace: Kubernetes namespace.
+        job_manifest: The manifest of the job to create.
+    """
+    retry_on_api_exception(batch_api.create_namespaced_job)(
+        namespace=namespace,
+        body=job_manifest,
+    )
+
+
+def get_container_status(
+    pod: k8s_client.V1Pod, container_name: str
+) -> Optional[k8s_client.V1ContainerState]:
+    """Get the status of a container.
+
+    Args:
+        pod: The pod to get the container status for.
+        container_name: The container name.
+
+    Returns:
+        The container status.
+    """
+    if not pod.status or not pod.status.container_statuses:
+        return None
+
+    for container_status in pod.status.container_statuses:
+        if container_status.name == container_name:
+            return container_status.state
+
+    return None
+
+
+def get_container_termination_reason(
+    pod: k8s_client.V1Pod, container_name: str
+) -> Optional[Tuple[int, str]]:
+    """Get the termination reason for a container.
+
+    Args:
+        pod: The pod to get the termination reason for.
+        container_name: The container name.
+
+    Returns:
+        The exit code and termination reason for the container.
+    """
+    container_state = get_container_status(pod, container_name)
+    if not container_state or not container_state.terminated:
+        return None
+
+    return (
+        container_state.terminated.exit_code,
+        container_state.terminated.reason or "Unknown",
+    )
+
+
+def wait_for_job_to_finish(
+    batch_api: k8s_client.BatchV1Api,
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    job_name: str,
+    backoff_interval: float = 1,
+    maximum_backoff: float = 32,
+    exponential_backoff: bool = False,
+    fail_on_container_waiting_reasons: Optional[List[str]] = None,
+    stream_logs: bool = True,
+    container_name: Optional[str] = None,
+) -> None:
+    """Wait for a job to finish.
+
+    Args:
+        batch_api: Kubernetes BatchV1Api client.
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
+        job_name: Name of the job for which to wait.
+        backoff_interval: The interval to wait between polling the job status.
+        maximum_backoff: The maximum interval to wait between polling the job
+            status.
+        exponential_backoff: Whether to use exponential backoff.
+        fail_on_container_waiting_reasons: List of container waiting reasons
+            that will cause the job to fail.
+        stream_logs: Whether to stream the job logs.
+        container_name: Name of the container to stream logs from.
+
+    Raises:
+        RuntimeError: If the job failed or timed out.
+    """
+    logged_lines_per_pod: Dict[str, int] = defaultdict(int)
+    finished_pods = set()
+
+    while True:
+        job: k8s_client.V1Job = retry_on_api_exception(
+            batch_api.read_namespaced_job
+        )(name=job_name, namespace=namespace)
+
+        if job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return
+                if condition.type == "Failed" and condition.status == "True":
+                    raise RuntimeError(
+                        f"Job `{namespace}:{job_name}` failed: "
+                        f"{condition.message}"
+                    )
+
+        if fail_on_container_waiting_reasons:
+            pod_list: k8s_client.V1PodList = retry_on_api_exception(
+                core_api.list_namespaced_pod
+            )(
+                namespace=namespace,
+                label_selector=f"job-name={job_name}",
+                field_selector="status.phase=Pending",
+            )
+            for pod in pod_list.items:
+                container_state = get_container_status(
+                    pod, container_name or "main"
+                )
+
+                if (
+                    container_state
+                    and (waiting_state := container_state.waiting)
+                    and waiting_state.reason
+                    in fail_on_container_waiting_reasons
+                ):
+                    retry_on_api_exception(batch_api.delete_namespaced_job)(
+                        name=job_name,
+                        namespace=namespace,
+                        propagation_policy="Foreground",
+                    )
+                    raise RuntimeError(
+                        f"Job `{namespace}:{job_name}` failed: "
+                        f"Detected container in state "
+                        f"{waiting_state.reason}"
+                    )
+
+        if stream_logs:
+            try:
+                pod_list = core_api.list_namespaced_pod(
+                    namespace=namespace,
+                    label_selector=f"job-name={job_name}",
+                )
+            except ApiException as e:
+                logger.error("Error fetching pods: %s.", e)
+                pod_list = []
+            else:
+                # Sort pods by creation timestamp, oldest first
+                pod_list.items.sort(
+                    key=lambda pod: pod.metadata.creation_timestamp,
+                )
+
+            for pod in pod_list.items:
+                pod_name = pod.metadata.name
+                pod_status = pod.status.phase
+
+                if pod_name in finished_pods:
+                    # We've already streamed all logs for this pod, so we can
+                    # skip it.
+                    continue
+
+                if pod_status == PodPhase.PENDING.value:
+                    # The pod is still pending, so we can't stream logs for it
+                    # yet.
+                    continue
+
+                if pod_status in [
+                    PodPhase.SUCCEEDED.value,
+                    PodPhase.FAILED.value,
+                ]:
+                    finished_pods.add(pod_name)
+
+                containers = pod.spec.containers
+                if not container_name:
+                    container_name = containers[0].name
+
+                try:
+                    response = core_api.read_namespaced_pod_log(
+                        name=pod_name,
+                        namespace=namespace,
+                        container=container_name,
+                        _preload_content=False,
+                    )
+                except ApiException as e:
+                    logger.error("Error reading pod logs: %s.", e)
+                else:
+                    raw_data = response.data
+                    decoded_log = raw_data.decode("utf-8", errors="replace")
+                    logs = decoded_log.splitlines()
+                    logged_lines = logged_lines_per_pod[pod_name]
+                    if len(logs) > logged_lines:
+                        for line in logs[logged_lines:]:
+                            logger.info(line)
+                        logged_lines_per_pod[pod_name] = len(logs)
+
+        time.sleep(backoff_interval)
+        if exponential_backoff and backoff_interval < maximum_backoff:
+            backoff_interval *= 2

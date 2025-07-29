@@ -411,3 +411,25 @@ def _process_stream(stream: Iterable[bytes]) -> List[Dict[str, Any]]:
                 )
 
     return auxiliary_info
+
+
+def sanitize_tag(tag: str) -> str:
+    """Sanitize a Docker tag.
+
+    Args:
+        tag: The tag to sanitize.
+
+    Raises:
+        ValueError: If the tag is empty.
+
+    Returns:
+        The sanitized tag.
+    """
+    tag = re.sub(r"[^a-zA-Z0-9_.\-]", "", tag)
+    # Tags can not start with a dot or a dash
+    tag = re.sub(r"^[-.]", "_", tag)
+
+    if not tag:
+        raise ValueError("Docker image tag cannot be empty.")
+
+    return tag[:128]

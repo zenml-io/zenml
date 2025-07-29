@@ -148,6 +148,7 @@ from zenml.models import (
     RunTemplateUpdate,
     ScheduleFilter,
     ScheduleResponse,
+    ScheduleUpdate,
     SecretFilter,
     SecretRequest,
     SecretResponse,
@@ -201,6 +202,7 @@ from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+    from zenml.orchestrators import BaseOrchestrator
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.services.service import ServiceConfig
     from zenml.stack import Stack
@@ -3806,6 +3808,74 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
+    def _get_orchestrator_for_schedule(
+        self, schedule: ScheduleResponse
+    ) -> Optional["BaseOrchestrator"]:
+        """Get the orchestrator for a schedule.
+
+        Args:
+            schedule: The schedule to get the orchestrator for.
+
+        Returns:
+            The orchestrator for the schedule.
+        """
+        from zenml.orchestrators import BaseOrchestrator
+
+        if not schedule.orchestrator_id:
+            return None
+
+        try:
+            orchestrator_model = self.get_stack_component(
+                component_type=StackComponentType.ORCHESTRATOR,
+                name_id_or_prefix=schedule.orchestrator_id,
+            )
+        except KeyError:
+            return None
+
+        return cast(
+            BaseOrchestrator, BaseOrchestrator.from_model(orchestrator_model)
+        )
+
+    def update_schedule(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        cron_expression: Optional[str] = None,
+    ) -> ScheduleResponse:
+        """Update a schedule.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the schedule to update.
+            cron_expression: The new cron expression for the schedule.
+
+        Returns:
+            The updated schedule.
+        """
+        schedule = self.get_schedule(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=self.active_project.id,
+        )
+
+        orchestrator = self._get_orchestrator_for_schedule(schedule)
+        if not orchestrator:
+            logger.warning(
+                "Unable to find orchestrator for schedule, skipping update."
+            )
+            return schedule
+        elif not orchestrator.supports_schedule_updates:
+            logger.warning(
+                "Orchestrator does not support schedule updates, skipping "
+                "update."
+            )
+            return schedule
+
+        update = ScheduleUpdate(cron_expression=cron_expression)
+        orchestrator.update_schedule(schedule, update)
+        return self.zen_store.update_schedule(
+            schedule_id=schedule.id,
+            schedule_update=update,
+        )
+
     def delete_schedule(
         self,
         name_id_or_prefix: Union[str, UUID],
@@ -3823,11 +3893,21 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
             project=project,
         )
-        logger.warning(
-            f"Deleting schedule '{name_id_or_prefix}'... This will only delete "
-            "the reference of the schedule from ZenML. Please make sure to "
-            "manually stop/delete this schedule in your orchestrator as well!"
-        )
+
+        orchestrator = self._get_orchestrator_for_schedule(schedule)
+        if not orchestrator:
+            logger.warning(
+                "Unable to find orchestrator for schedule. Will only delete "
+                "the schedule reference from ZenML."
+            )
+        elif not orchestrator.supports_schedule_deletion:
+            logger.warning(
+                "Orchestrator does not support schedule deletion. Will only "
+                "delete the schedule reference from ZenML."
+            )
+        else:
+            orchestrator.delete_schedule(schedule)
+
         self.zen_store.delete_schedule(schedule_id=schedule.id)
 
     # ----------------------------- Pipeline runs ------------------------------
@@ -4051,6 +4131,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_id: Optional[Union[str, UUID]] = None,
         model: Optional[Union[UUID, str]] = None,
         run_metadata: Optional[List[str]] = None,
+        exclude_retried: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -4077,6 +4158,7 @@ class Client(metaclass=ClientMetaClass):
             code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
             run_metadata: Filter by run metadata.
+            exclude_retried: Whether to exclude retried step runs.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4105,6 +4187,7 @@ class Client(metaclass=ClientMetaClass):
             model_version_id=model_version_id,
             model=model,
             run_metadata=run_metadata,
+            exclude_retried=exclude_retried,
         )
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,
@@ -4352,7 +4435,7 @@ class Client(metaclass=ClientMetaClass):
         version: Optional[Union[str, int]] = None,
         version_number: Optional[int] = None,
         artifact_store_id: Optional[Union[str, UUID]] = None,
-        type: Optional[ArtifactType] = None,
+        type: Optional[Union[ArtifactType, str]] = None,
         data_type: Optional[str] = None,
         uri: Optional[str] = None,
         materializer: Optional[str] = None,
@@ -7256,19 +7339,24 @@ class Client(metaclass=ClientMetaClass):
     def create_service_account(
         self,
         name: str,
+        full_name: Optional[str] = None,
         description: str = "",
     ) -> ServiceAccountResponse:
         """Create a new service account.
 
         Args:
             name: The name of the service account.
+            full_name: The display name of the service account.
             description: The description of the service account.
 
         Returns:
             The created service account.
         """
         service_account = ServiceAccountRequest(
-            name=name, description=description, active=True
+            name=name,
+            full_name=full_name or "",
+            description=description,
+            active=True,
         )
         created_service_account = self.zen_store.create_service_account(
             service_account=service_account

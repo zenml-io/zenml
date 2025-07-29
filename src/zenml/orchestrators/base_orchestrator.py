@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base orchestrator class."""
 
+import time
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -21,6 +22,7 @@ from typing import (
     Dict,
     Iterator,
     Optional,
+    Tuple,
     Type,
     cast,
 )
@@ -33,7 +35,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import RunMonitoringError
+from zenml.exceptions import RunMonitoringError, RunStoppedException
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
@@ -48,7 +50,12 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import (
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+        ScheduleResponse,
+        ScheduleUpdate,
+    )
 
 logger = get_logger(__name__)
 
@@ -126,6 +133,15 @@ class BaseOrchestratorConfig(StackComponentConfig):
             Whether the orchestrator supports client side caching.
         """
         return True
+
+    @property
+    def handles_step_retries(self) -> bool:
+        """Whether the orchestrator handles step retries.
+
+        Returns:
+            Whether the orchestrator handles step retries.
+        """
+        return False
 
 
 class BaseOrchestrator(StackComponent, ABC):
@@ -346,14 +362,59 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Args:
             step: The step to run.
+
+        Raises:
+            RunStoppedException: If the run was stopped.
+            BaseException: If the step failed all retries.
         """
-        assert self._active_deployment
-        launcher = StepLauncher(
-            deployment=self._active_deployment,
-            step=step,
-            orchestrator_run_id=self.get_orchestrator_run_id(),
-        )
-        launcher.launch()
+
+        def _launch_step() -> None:
+            assert self._active_deployment
+
+            launcher = StepLauncher(
+                deployment=self._active_deployment,
+                step=step,
+                orchestrator_run_id=self.get_orchestrator_run_id(),
+            )
+            launcher.launch()
+
+        if self.config.handles_step_retries:
+            _launch_step()
+        else:
+            # The orchestrator subclass doesn't handle step retries, so we
+            # handle it in-process instead
+            retries = 0
+            retry_config = step.config.retry
+            max_retries = retry_config.max_retries if retry_config else 0
+            delay = retry_config.delay if retry_config else 0
+            backoff = retry_config.backoff if retry_config else 1
+
+            while retries <= max_retries:
+                try:
+                    _launch_step()
+                except RunStoppedException:
+                    # Don't retry if the run was stopped
+                    raise
+                except BaseException:
+                    retries += 1
+                    if retries <= max_retries:
+                        logger.info(
+                            "Sleeping for %d seconds before retrying step `%s`.",
+                            delay,
+                            step.config.name,
+                        )
+                        time.sleep(delay)
+                        delay *= backoff
+                    else:
+                        if max_retries > 0:
+                            logger.error(
+                                "Failed to run step `%s` after %d retries.",
+                                step.config.name,
+                                max_retries,
+                            )
+                        raise
+                else:
+                    break
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
@@ -388,11 +449,16 @@ class BaseOrchestrator(StackComponent, ABC):
         """Cleans up the active run."""
         self._active_deployment = None
 
-    def fetch_status(self, run: "PipelineRunResponse") -> ExecutionStatus:
+    def fetch_status(
+        self, run: "PipelineRunResponse", include_steps: bool = False
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
         """Refreshes the status of a specific pipeline run.
 
         Args:
             run: A pipeline run response to fetch its status.
+            include_steps: If True, also fetch the status of individual steps.
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
@@ -458,6 +524,61 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         raise NotImplementedError(
             "The stop run functionality is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
+
+    @property
+    def supports_schedule_updates(self) -> bool:
+        """Whether the orchestrator supports updating schedules.
+
+        Returns:
+            Whether the orchestrator supports updating schedules.
+        """
+        return (
+            getattr(self.update_schedule, "__func__", None)
+            is not BaseOrchestrator.update_schedule
+        )
+
+    @property
+    def supports_schedule_deletion(self) -> bool:
+        """Whether the orchestrator supports deleting schedules.
+
+        Returns:
+            Whether the orchestrator supports deleting schedules.
+        """
+        return (
+            getattr(self.delete_schedule, "__func__", None)
+            is not BaseOrchestrator.delete_schedule
+        )
+
+    def update_schedule(
+        self, schedule: "ScheduleResponse", update: "ScheduleUpdate"
+    ) -> None:
+        """Updates a schedule.
+
+        Args:
+            schedule: The schedule to update.
+            update: The update to apply to the schedule.
+
+        Raises:
+            NotImplementedError: If the functionality is not implemented.
+        """
+        raise NotImplementedError(
+            "Schedule updating is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
+
+    def delete_schedule(self, schedule: "ScheduleResponse") -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule: The schedule to delete.
+
+        Raises:
+            NotImplementedError: If the functionality is not implemented.
+        """
+        raise NotImplementedError(
+            "Schedule deletion is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."
         )
 
