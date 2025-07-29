@@ -7339,19 +7339,24 @@ class Client(metaclass=ClientMetaClass):
     def create_service_account(
         self,
         name: str,
+        full_name: Optional[str] = None,
         description: str = "",
     ) -> ServiceAccountResponse:
         """Create a new service account.
 
         Args:
             name: The name of the service account.
+            full_name: The display name of the service account.
             description: The description of the service account.
 
         Returns:
             The created service account.
         """
         service_account = ServiceAccountRequest(
-            name=name, description=description, active=True
+            name=name,
+            full_name=full_name or "",
+            description=description,
+            active=True,
         )
         created_service_account = self.zen_store.create_service_account(
             service_account=service_account
