@@ -379,7 +379,7 @@ class ModalSandboxExecutor:
             return cached_image
 
         build_item = self.deployment.build._get_item(
-            component_key="ORCHESTRATOR", step=step_name
+            component_key="orchestrator", step=step_name
         )
 
         return get_or_build_modal_image(
