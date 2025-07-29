@@ -807,7 +807,6 @@ class PipelineLogsStorageContext:
 
         Removes the handler from loggers and context variables.
         """
-        # Write about the exception if it exists
         if exc_type is not None:
             # Write the exception and its traceback to the logs
             self.artifact_store_handler.emit(
