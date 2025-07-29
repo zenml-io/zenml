@@ -644,28 +644,28 @@ if __name__ == "__main__":
     )
 
     # Demonstrate key features
-    print(f"\n🎯 Prompt Summary:")
+    print("\n🎯 Prompt Summary:")
     print(f"   {demo_prompt}")
 
-    print(f"\n📊 Detailed Summary:")
+    print("\n📊 Detailed Summary:")
     for key, value in demo_prompt.get_summary().items():
         print(f"   {key}: {value}")
 
-    print(f"\n✏️ Formatted Prompt:")
+    print("\n✏️ Formatted Prompt:")
     print(f"   {demo_prompt.format()}")
 
-    print(f"\n🔧 Model Compatibility:")
+    print("\n🔧 Model Compatibility:")
     print(f"   GPT-4: {demo_prompt.is_compatible_with_model('gpt-4')}")
     print(f"   Claude: {demo_prompt.is_compatible_with_model('claude-3')}")
 
-    print(f"\n📈 Token Estimation:")
+    print("\n📈 Token Estimation:")
     print(f"   Estimated tokens: {demo_prompt.estimate_tokens()}")
 
     # Demonstrate variants and evolution
     variant = demo_prompt.for_task("evaluation").with_model_config(
         temperature=0.1
     )
-    print(f"\n🧬 Created Variant:")
+    print("\n🧬 Created Variant:")
     print(f"   Task: {variant.task}")
     print(f"   Temperature: {variant.model_config_params.get('temperature')}")
 

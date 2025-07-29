@@ -110,7 +110,6 @@ __all__ = [
     "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
-    "PromptTemplateSchema",
     "RunTemplateSchema",
     "TagSchema",
     "TagResourceSchema",

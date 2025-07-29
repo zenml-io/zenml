@@ -49,7 +49,7 @@ def main():
         .load()
     )
 
-    print(f"✅ Basic Pipeline Results:")
+    print("✅ Basic Pipeline Results:")
     print(f"   • Prompt ID: {prompt.prompt_id}")
     print(f"   • Success Rate: {evaluation['success_rate']:.1%}")
     print(
@@ -99,7 +99,7 @@ def main():
         .load()
     )
 
-    print(f"✅ Comparison Pipeline Results:")
+    print("✅ Comparison Pipeline Results:")
     print(f"   • Base Template: {base_eval['success_rate']:.1%} success rate")
     print(
         f"   • Expert Variant: {variant_1_eval['success_rate']:.1%} success rate"

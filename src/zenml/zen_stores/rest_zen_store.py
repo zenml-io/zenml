@@ -211,10 +211,6 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
-    PromptTemplateFilter,
-    PromptTemplateRequest,
-    PromptTemplateResponse,
-    PromptTemplateUpdate,
     RunMetadataRequest,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -1829,93 +1825,8 @@ class RestZenStore(BaseZenStore):
 
         return PipelineRunResponse.model_validate(response_body)
 
-    # -------------------- Prompt Templates --------------------
-
-    def create_prompt_template(
-        self, template: PromptTemplateRequest
-    ) -> PromptTemplateResponse:
-        """Create a new prompt template.
-
-        Args:
-            template: The prompt template to create.
-
-        Returns:
-            The newly created prompt template.
-        """
-        response_body = self.post(PROMPT_TEMPLATES, body=template)
-        return PromptTemplateResponse.model_validate(response_body)
-
-    def get_prompt_template(
-        self, template_id: UUID, hydrate: bool = True
-    ) -> PromptTemplateResponse:
-        """Get a prompt template with a given ID.
-
-        Args:
-            template_id: ID of the prompt template.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The prompt template.
-        """
-        response_body = self.get(
-            f"{PROMPT_TEMPLATES}/{template_id}",
-            params={"hydrate": hydrate},
-        )
-        return PromptTemplateResponse.model_validate(response_body)
-
-    def list_prompt_templates(
-        self,
-        template_filter_model: PromptTemplateFilter,
-        hydrate: bool = False,
-    ) -> Page[PromptTemplateResponse]:
-        """List all prompt templates matching the given filter criteria.
-
-        Args:
-            template_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all prompt templates matching the filter criteria.
-        """
-        response_body = self.get(
-            PROMPT_TEMPLATES,
-            params={
-                **template_filter_model.model_dump(mode="json"),
-                "hydrate": hydrate,
-            },
-        )
-        return Page[PromptTemplateResponse].model_validate(response_body)
-
-    def update_prompt_template(
-        self,
-        template_id: UUID,
-        template_update: PromptTemplateUpdate,
-    ) -> PromptTemplateResponse:
-        """Updates a prompt template.
-
-        Args:
-            template_id: The ID of the prompt template to update.
-            template_update: The update to apply.
-
-        Returns:
-            The updated prompt template.
-        """
-        response_body = self.put(
-            f"{PROMPT_TEMPLATES}/{template_id}",
-            body=template_update,
-        )
-        return PromptTemplateResponse.model_validate(response_body)
-
-    def delete_prompt_template(self, template_id: UUID) -> None:
-        """Delete a prompt template.
-
-        Args:
-            template_id: The ID of the prompt template to delete.
-        """
-        self.delete(f"{PROMPT_TEMPLATES}/{template_id}")
+    # -------------------- Prompt Templates (Removed) --------------------
+    # Prompts are now simple artifacts, not managed entities
 
     # -------------------- Event Sources  --------------------
 

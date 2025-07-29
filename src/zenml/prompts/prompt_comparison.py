@@ -38,8 +38,8 @@ def compare_prompts(
     prompt_a: Prompt,
     prompt_b: Prompt,
     test_cases: List[Dict[str, Any]],
-    llm_function: Callable,
-    metric_functions: Dict[str, Callable],
+    llm_function: Callable[..., Any],
+    metric_functions: Dict[str, Callable[..., Any]],
 ) -> PromptComparisonResult:
     """Compare two prompts using provided test cases and metrics.
 
@@ -163,7 +163,7 @@ def compare_prompts(
 
 
 def run_prompt_comparison_pipeline(
-    pipeline_func: Callable,
+    pipeline_func: Callable[..., Any],
     prompts: List[Prompt],
     pipeline_args: Optional[Dict[str, Any]] = None,
 ) -> List[Tuple[str, Any]]:

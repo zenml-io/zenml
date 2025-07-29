@@ -239,10 +239,6 @@ from zenml.models import (
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
-    PromptTemplateFilter,
-    PromptTemplateRequest,
-    PromptTemplateResponse,
-    PromptTemplateUpdate,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -357,7 +353,6 @@ from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     PipelineSchema,
     ProjectSchema,
-    PromptTemplateSchema,
     RunMetadataResourceSchema,
     RunMetadataSchema,
     RunTemplateSchema,
@@ -5168,134 +5163,8 @@ class SqlZenStore(BaseZenStore):
             "Running a template is not possible with a local store."
         )
 
-    # -------------------- Prompt Templates --------------------
-
-    def create_prompt_template(
-        self, template: PromptTemplateRequest
-    ) -> PromptTemplateResponse:
-        """Create a new prompt template.
-
-        Args:
-            template: The prompt template to create.
-
-        Returns:
-            The newly created prompt template.
-        """
-        with Session(self.engine) as session:
-            self._set_request_user_id(request_model=template, session=session)
-
-            self._verify_name_uniqueness(
-                resource=template,
-                schema=PromptTemplateSchema,
-                session=session,
-            )
-
-            new_template = PromptTemplateSchema.from_request(template)
-            session.add(new_template)
-            session.commit()
-            session.refresh(new_template)
-
-            return new_template.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def get_prompt_template(
-        self, template_id: UUID, hydrate: bool = True
-    ) -> PromptTemplateResponse:
-        """Get a prompt template with a given ID.
-
-        Args:
-            template_id: ID of the prompt template.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The prompt template.
-        """
-        with Session(self.engine) as session:
-            template = self._get_schema_by_id(
-                resource_id=template_id,
-                schema_class=PromptTemplateSchema,
-                session=session,
-            )
-            return template.to_model(
-                include_metadata=hydrate, include_resources=True
-            )
-
-    def list_prompt_templates(
-        self,
-        template_filter_model: PromptTemplateFilter,
-        hydrate: bool = False,
-    ) -> Page[PromptTemplateResponse]:
-        """List all prompt templates matching the given filter criteria.
-
-        Args:
-            template_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all prompt templates matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=template_filter_model,
-                session=session,
-            )
-            query = select(PromptTemplateSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PromptTemplateSchema,
-                filter_model=template_filter_model,
-                hydrate=hydrate,
-            )
-
-    def update_prompt_template(
-        self,
-        template_id: UUID,
-        template_update: PromptTemplateUpdate,
-    ) -> PromptTemplateResponse:
-        """Updates a prompt template.
-
-        Args:
-            template_id: The ID of the prompt template to update.
-            template_update: The update to apply.
-
-        Returns:
-            The updated prompt template.
-        """
-        with Session(self.engine) as session:
-            template = self._get_schema_by_id(
-                resource_id=template_id,
-                schema_class=PromptTemplateSchema,
-                session=session,
-            )
-
-            template.update(template_update)
-            session.add(template)
-            session.commit()
-            session.refresh(template)
-
-            return template.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def delete_prompt_template(self, template_id: UUID) -> None:
-        """Delete a prompt template.
-
-        Args:
-            template_id: The ID of the prompt template to delete.
-        """
-        with Session(self.engine) as session:
-            template = self._get_schema_by_id(
-                resource_id=template_id,
-                schema_class=PromptTemplateSchema,
-                session=session,
-            )
-            session.delete(template)
-            session.commit()
+    # -------------------- Prompt Templates (Removed) --------------------
+    # Prompts are now simple artifacts, not managed entities
 
     # -------------------- Event Sources  --------------------
 
@@ -12556,7 +12425,7 @@ class SqlZenStore(BaseZenStore):
             ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
             PipelineSchema: TaggableResourceTypes.PIPELINE,
             PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
-            PromptTemplateSchema: TaggableResourceTypes.PROMPT_TEMPLATE,
+            # PromptTemplateSchema: TaggableResourceTypes.PROMPT_TEMPLATE, # Removed
             RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
         }
         if type(resource) not in resource_types:
@@ -12585,8 +12454,7 @@ class SqlZenStore(BaseZenStore):
             ModelVersionSchema,
             PipelineRunSchema,
             PipelineSchema,
-            PromptTemplateSchema,
-            RunTemplateSchema,
+                    RunTemplateSchema,
         )
 
         resource_type_to_schema_mapping: Dict[
@@ -12598,7 +12466,7 @@ class SqlZenStore(BaseZenStore):
             TaggableResourceTypes.MODEL_VERSION: ModelVersionSchema,
             TaggableResourceTypes.PIPELINE: PipelineSchema,
             TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
-            TaggableResourceTypes.PROMPT_TEMPLATE: PromptTemplateSchema,
+            # TaggableResourceTypes.PROMPT_TEMPLATE: PromptTemplateSchema, # Removed
             TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
         }
 

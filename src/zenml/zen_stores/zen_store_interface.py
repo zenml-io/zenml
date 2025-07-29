@@ -94,10 +94,6 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
-    PromptTemplateFilter,
-    PromptTemplateRequest,
-    PromptTemplateResponse,
-    PromptTemplateUpdate,
     RunMetadataRequest,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -1452,90 +1448,8 @@ class ZenStoreInterface(ABC):
             Model of the pipeline run.
         """
 
-    # -------------------- Prompt Templates --------------------
-
-    @abstractmethod
-    def create_prompt_template(
-        self,
-        template: "PromptTemplateRequest",
-    ) -> "PromptTemplateResponse":
-        """Create a new prompt template.
-
-        Args:
-            template: The prompt template to create.
-
-        Returns:
-            The newly created prompt template.
-
-        Raises:
-            EntityExistsError: If a template with the same name already exists.
-        """
-
-    @abstractmethod
-    def get_prompt_template(
-        self, template_id: UUID, hydrate: bool = True
-    ) -> "PromptTemplateResponse":
-        """Get a prompt template with a given ID.
-
-        Args:
-            template_id: ID of the prompt template.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The prompt template.
-
-        Raises:
-            KeyError: If the prompt template does not exist.
-        """
-
-    @abstractmethod
-    def list_prompt_templates(
-        self,
-        template_filter_model: "PromptTemplateFilter",
-        hydrate: bool = False,
-    ) -> "Page[PromptTemplateResponse]":
-        """List all prompt templates matching the given filter criteria.
-
-        Args:
-            template_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all prompt templates matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_prompt_template(
-        self,
-        template_id: UUID,
-        template_update: "PromptTemplateUpdate",
-    ) -> "PromptTemplateResponse":
-        """Updates a prompt template.
-
-        Args:
-            template_id: The ID of the prompt template to update.
-            template_update: The update to apply.
-
-        Returns:
-            The updated prompt template.
-
-        Raises:
-            KeyError: If the prompt template does not exist.
-        """
-
-    @abstractmethod
-    def delete_prompt_template(self, template_id: UUID) -> None:
-        """Delete a prompt template.
-
-        Args:
-            template_id: The ID of the prompt template to delete.
-
-        Raises:
-            KeyError: If the prompt template does not exist.
-        """
+    # -------------------- Prompt Templates (Removed) --------------------
+    # Prompts are now simple artifacts, not managed entities
 
     # -------------------- Event Sources  --------------------
 
