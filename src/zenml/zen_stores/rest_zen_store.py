@@ -84,7 +84,6 @@ from zenml.constants import (
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
     PROJECTS,
-    PROMPT_TEMPLATES,
     RUN_METADATA,
     RUN_TEMPLATES,
     RUNS,

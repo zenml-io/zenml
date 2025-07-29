@@ -12454,7 +12454,7 @@ class SqlZenStore(BaseZenStore):
             ModelVersionSchema,
             PipelineRunSchema,
             PipelineSchema,
-                    RunTemplateSchema,
+            RunTemplateSchema,
         )
 
         resource_type_to_schema_mapping: Dict[
