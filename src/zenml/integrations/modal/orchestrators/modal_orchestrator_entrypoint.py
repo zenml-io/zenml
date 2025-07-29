@@ -92,8 +92,7 @@ def run_step_on_modal(
 async def prepare_shared_image_cache(
     deployment: "PipelineDeploymentResponse",
     stack: "Stack",
-    settings: ModalOrchestratorSettings,
-) -> tuple[Dict[str, Any], Any]:
+) -> Dict[str, modal.Image]:
     """Pre-build all required images for pipeline steps and create shared Modal app.
 
     This function analyzes all steps in the deployment, identifies unique images
@@ -105,31 +104,15 @@ async def prepare_shared_image_cache(
         settings: Modal orchestrator settings.
 
     Returns:
-        Tuple of (shared_image_cache, shared_modal_app).
+        The shared image cache.
 
     Raises:
         ValueError: If the deployment has no associated build information.
         Exception: For any unexpected error while building images.
     """
-    from zenml.integrations.modal.orchestrators.modal_orchestrator import (
-        ModalOrchestrator,
-    )
     from zenml.integrations.modal.utils import get_or_build_modal_image
 
     logger.info("🔧 Preparing images for step execution")
-
-    # Create shared Modal app
-    app_name = get_modal_app_name(settings, deployment)
-    shared_app = modal.App.lookup(
-        app_name,
-        create_if_missing=True,
-        environment_name=settings.modal_environment,
-    )
-
-    image_cache: Dict[str, Any] = {}
-
-    # Collect all unique images needed across all steps
-    unique_images: Dict[str, str] = {}  # cache_key -> image_name
 
     # Check if deployment has a build
     if deployment.build is None:
@@ -137,43 +120,23 @@ async def prepare_shared_image_cache(
             "Deployment build is None, cannot prepare image cache"
         )
 
-    # Add pipeline-level image if needed
-    pipeline_image = ModalOrchestrator.get_image(deployment=deployment)
-    build_id = str(deployment.build.id)
-    pipeline_cache_key = (
-        f"{build_id}_pipeline_{str(hash(pipeline_image))[-8:]}"
-    )
-    unique_images[pipeline_cache_key] = pipeline_image
+    image_cache: Dict[str, modal.Image] = {}
 
-    # Add step-specific images
-    for step_name in deployment.step_configurations:
-        step_image = ModalOrchestrator.get_image(
-            deployment=deployment, step_name=step_name
-        )
-        image_hash = str(hash(step_image))[-8:]
-        step_cache_key = f"{build_id}_{step_name}_{image_hash}"
-        unique_images[step_cache_key] = step_image
-
-    # Build all unique images
-    logger.debug(f"Building {len(unique_images)} unique images for pipeline")
-    for cache_key, image_name in unique_images.items():
-        logger.debug(f"Building image: {cache_key} from {image_name}")
+    for build_item in deployment.build.images.values():
         try:
-            built_image = get_or_build_modal_image(
-                image_name=image_name,
+            cached_image = get_or_build_modal_image(
                 stack=stack,
                 pipeline_name=deployment.pipeline_configuration.name,
-                build_id=build_id,
-                app=shared_app,
+                build_item=build_item,
+                build_id=deployment.build.id,
             )
-            image_cache[cache_key] = built_image
-            logger.debug(f"Successfully cached image: {cache_key}")
+            image_cache[build_item.image] = cached_image
         except Exception as e:
-            logger.error(f"Failed to build image {cache_key}: {e}")
+            logger.error(f"Failed to build image {build_item.image}: {e}")
             raise
 
     logger.info(f"✅ Prepared {len(image_cache)} container images")
-    return image_cache, shared_app
+    return image_cache
 
 
 def execute_pipeline_mode(args: argparse.Namespace) -> None:
@@ -182,7 +145,7 @@ def execute_pipeline_mode(args: argparse.Namespace) -> None:
     Args:
         args: Parsed command line arguments.
     """
-    logger.debug("Executing entire pipeline in single sandbox")
+    logger.debug("Executing pipeline sequentially in this sandbox")
     entrypoint_args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
         deployment_id=args.deployment_id
     )
@@ -209,11 +172,17 @@ def execute_per_step_mode(
         orchestrator_run_id: The orchestrator run ID.
     """
     logger.debug("Executing pipeline with per-step sandboxes")
-    shared_image_cache, shared_app = asyncio.run(
+
+    app = modal.App.lookup(
+        get_modal_app_name(pipeline_settings, deployment),
+        create_if_missing=True,
+        environment_name=pipeline_settings.modal_environment,
+    )
+
+    shared_image_cache = asyncio.run(
         prepare_shared_image_cache(
             deployment=deployment,
             stack=active_stack,
-            settings=pipeline_settings,
         )
     )
 
@@ -224,7 +193,7 @@ def execute_per_step_mode(
         environment=environment,
         settings=pipeline_settings,
         shared_image_cache=shared_image_cache,
-        shared_app=shared_app,
+        shared_app=app,
     )
 
     def run_step_wrapper(step_name: str) -> None:
@@ -350,7 +319,6 @@ def main() -> None:
         orchestrator.get_settings(deployment),
     )
 
-    # Setup Modal client
     setup_modal_client(
         token_id=orchestrator.config.token_id,
         token_secret=orchestrator.config.token_secret,
@@ -358,17 +326,15 @@ def main() -> None:
         environment=orchestrator.config.modal_environment,
     )
 
-    environment = get_config_environment_vars()
-    environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
-
-    # Check execution mode
-    mode = pipeline_settings.mode
-
     try:
-        # Execute pipeline based on execution mode
-        if mode == ModalExecutionMode.PIPELINE:
+        if pipeline_settings.mode == ModalExecutionMode.PIPELINE:
             execute_pipeline_mode(args)
         else:
+            environment = get_config_environment_vars()
+            environment[ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID] = (
+                orchestrator_run_id
+            )
+
             execute_per_step_mode(
                 deployment,
                 active_stack,

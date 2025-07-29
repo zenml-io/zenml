@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Modal sandbox executor for ZenML orchestration."""
+"""Modal sandbox executor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 import modal
@@ -37,6 +37,7 @@ from zenml.integrations.modal.utils import (
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from zenml.config.step_configurations import Step
     from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
 
@@ -52,8 +53,8 @@ class ModalSandboxExecutor:
         stack: "Stack",
         environment: Dict[str, str],
         settings: ModalOrchestratorSettings,
-        shared_image_cache: Optional[Dict[str, Any]] = None,
-        shared_app: Optional[Any] = None,
+        shared_image_cache: Optional[Dict[str, modal.Image]] = None,
+        shared_app: Optional[modal.App] = None,
     ):
         """Initialize the Modal sandbox executor.
 
@@ -101,7 +102,7 @@ class ModalSandboxExecutor:
         Returns:
             Pipeline or step settings.
         """
-        container = (
+        container: Union["PipelineDeploymentResponse", "Step"] = (
             self.deployment.step_configurations[step_name]
             if step_name
             else self.deployment
@@ -138,7 +139,7 @@ class ModalSandboxExecutor:
         #     gpu_count=0,
         # )
 
-    def _create_environment_secret(self) -> Optional[Any]:
+    def _create_environment_secret(self) -> Optional[modal.Secret]:
         """Create a Modal secret containing environment variables.
 
         Returns:
@@ -147,13 +148,9 @@ class ModalSandboxExecutor:
         if not self.environment:
             return None
 
-        # Create secret from environment variables
-        # Modal handles efficiency internally
-        # Cast to Dict[str, str | None] to match Modal's expected type
-        env_dict: Dict[str, Optional[str]] = {
-            k: v for k, v in self.environment.items()
-        }
-        return modal.Secret.from_dict(env_dict)
+        return modal.Secret.from_dict(
+            cast(Dict[str, Optional[str]], self.environment)
+        )
 
     def _get_resource_config(
         self, step_name: Optional[str] = None
@@ -174,8 +171,8 @@ class ModalSandboxExecutor:
             cpu_count = int(resource_settings.cpu_count)
 
         memory_mb: Optional[int] = None
-        if resource_settings.memory:
-            memory_mb = int(resource_settings.get_memory(ByteUnit.MB))
+        if memory_float := resource_settings.get_memory(ByteUnit.MB):
+            memory_mb = int(memory_float)
 
         gpu_value = None
         gpu_type = settings.gpu
@@ -208,7 +205,7 @@ class ModalSandboxExecutor:
         region: Optional[str],
         app: Any,
         timeout: int,
-        secrets: List[Any],
+        secrets: List[modal.Secret],
     ) -> Dict[str, Any]:
         """Prepare and validate Modal API parameters.
 
@@ -369,16 +366,15 @@ class ModalSandboxExecutor:
             # The image should be hydrated after being used in sandbox creation
             await self._store_image_id(zenml_image)
 
-    async def _store_image_id(self, zenml_image: Any) -> None:
+    async def _store_image_id(self, modal_image: modal.Image) -> None:
         """Store the image ID for future caching after sandbox creation.
 
         Args:
-            zenml_image: The Modal image that was used.
+            modal_image: The Modal image that was used.
         """
         try:
-            # After sandbox creation, the image should be hydrated
-            zenml_image.hydrate()
-            if hasattr(zenml_image, "object_id") and zenml_image.object_id:
+            modal_image.hydrate()
+            if hasattr(modal_image, "object_id") and modal_image.object_id:
                 if self.deployment.build is not None:
                     image_name_key = f"zenml_image_{self.deployment.build.id}"
 
@@ -388,7 +384,7 @@ class ModalSandboxExecutor:
                         f"zenml-image-cache-{pipeline_name}",
                         create_if_missing=True,
                     )
-                    stored_id[image_name_key] = zenml_image.object_id
+                    stored_id[image_name_key] = modal_image.object_id
                     logger.debug(
                         f"Stored Modal image ID for build {self.deployment.build.id}"
                     )
@@ -403,7 +399,7 @@ class ModalSandboxExecutor:
 
     def _get_cached_or_build_image(
         self, step_name: Optional[str] = None
-    ) -> Any:
+    ) -> modal.Image:
         """Get cached Modal image or build new one if not in cache.
 
         This method first checks the shared image cache for an existing image.
@@ -414,41 +410,30 @@ class ModalSandboxExecutor:
             step_name: Name of the step (None for pipeline-level).
 
         Returns:
-            Modal image (either cached or newly built).
-
-        Raises:
-            ValueError: If the deployment does not have an associated build
-                (required to identify the Docker image).
+            The modal image.
         """
         from zenml.integrations.modal.orchestrators.modal_orchestrator import (
             ModalOrchestrator,
         )
 
+        assert self.deployment.build
+
         image_name = ModalOrchestrator.get_image(
             deployment=self.deployment, step_name=step_name
         )
 
-        # Check shared cache first
-        cache_key = self._get_image_cache_key(image_name, step_name)
-        if cache_key in self.shared_image_cache:
-            logger.debug(
-                f"Using cached Modal image for {step_name or 'pipeline'}: {cache_key}"
-            )
-            return self.shared_image_cache[cache_key]
+        if cached_image := self.shared_image_cache.get(image_name):
+            return cached_image
 
-        # Fallback to existing image building logic
-        logger.debug(
-            f"Building new Modal image for {step_name or 'pipeline'}: {image_name}"
+        build_item = self.deployment.build._get_item(
+            component_key="ORCHESTRATOR", step=step_name
         )
-        if self.deployment.build is None:
-            raise ValueError("Deployment build is None, cannot build image")
 
         return get_or_build_modal_image(
-            image_name=image_name,
             stack=self.stack,
             pipeline_name=self.deployment.pipeline_configuration.name,
-            build_id=str(self.deployment.build.id),
-            app=self.app,
+            build_item=build_item,
+            build_id=self.deployment.build.id,
         )
 
     def _get_image_cache_key(
@@ -494,22 +479,18 @@ class ModalSandboxExecutor:
         """
         logger.debug("Executing entire pipeline in single sandbox")
 
-        # Build entrypoint command
         command = (
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_command()
         )
-
         args = (
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 deployment_id=self.deployment.id,
                 run_id=run_id,
             )
         )
-        entrypoint_command = command + args
 
-        # Execute pipeline sandbox
         await self._execute_sandbox(
-            entrypoint_command=entrypoint_command,
+            entrypoint_command=command + args,
             mode="PIPELINE",
             run_id=run_id,
             synchronous=synchronous,
@@ -523,17 +504,14 @@ class ModalSandboxExecutor:
         """
         logger.debug(f"Executing step '{step_name}' in separate sandbox")
 
-        # Build step entrypoint command
         command = StepEntrypointConfiguration.get_entrypoint_command()
         args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name, deployment_id=self.deployment.id
         )
-        entrypoint_command = command + args
 
-        # Execute step sandbox
         await self._execute_sandbox(
-            entrypoint_command=entrypoint_command,
+            entrypoint_command=command + args,
             mode="PER_STEP",
             step_name=step_name,
-            synchronous=True,  # Steps are always synchronous
+            synchronous=True,
         )

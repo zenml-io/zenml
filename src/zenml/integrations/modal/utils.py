@@ -14,7 +14,7 @@
 """Shared utilities for Modal integration components."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from uuid import UUID
 
 import modal
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
         ModalOrchestratorSettings,
     )
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import BuildItem, PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 
@@ -151,7 +151,7 @@ def build_modal_image(
     image_name: str,
     stack: "Stack",
     environment: Optional[Dict[str, str]] = None,
-) -> Any:
+) -> modal.Image:
     """Build a Modal image from a Docker registry with authentication.
 
     This helper function centralizes the shared logic for building Modal images
@@ -168,17 +168,13 @@ def build_modal_image(
 
     Raises:
         RuntimeError: If no Docker credentials are found.
-        ValueError: If no container registry is found.
     """
     if not stack.container_registry:
-        raise ValueError(
+        raise RuntimeError(
             "No Container registry found in the stack. "
             "Please add a container registry and ensure "
             "it is correctly configured."
         )
-
-    logger.debug("Building new Modal image")
-    logger.debug(f"Base image: {image_name}")
 
     if docker_creds := stack.container_registry.credentials:
         docker_username, docker_password = docker_creds
@@ -187,7 +183,6 @@ def build_modal_image(
             "No Docker credentials found for the container registry."
         )
 
-    # Create Modal secret for registry authentication
     registry_secret = modal.Secret.from_dict(
         {
             "REGISTRY_USERNAME": docker_username,
@@ -195,69 +190,56 @@ def build_modal_image(
         }
     )
 
-    # Build Modal image from the ZenML-built image
-    logger.debug(f"Building Modal image from base: {image_name}")
-    logger.debug(f"Creating Modal image from base: {image_name}")
-    zenml_image = (
-        modal.Image.from_registry(
-            image_name, secret=registry_secret
-        ).pip_install("modal")  # Install Modal in the container
-    )
+    modal_image = modal.Image.from_registry(
+        image_name, secret=registry_secret
+    ).pip_install("modal")
 
-    # Apply environment variables if provided
     if environment:
-        zenml_image = zenml_image.env(environment)
+        modal_image = modal_image.env(environment)
 
-    return zenml_image
+    return modal_image
 
 
 def get_or_build_modal_image(
-    image_name: str,
     stack: "Stack",
     pipeline_name: str,
-    build_id: str,
-    app: Any,
-) -> Any:
+    build_item: "BuildItem",
+    build_id: UUID,
+) -> modal.Image:
     """Get existing Modal image or build new one based on pipeline name and build ID.
 
     Args:
-        image_name: The name of the Docker image to use as base.
         stack: The ZenML stack containing container registry.
         pipeline_name: The pipeline name for caching.
+        build_item: The build item to use for the image.
         build_id: The build ID for the image key.
-        app: The Modal app to store/retrieve images.
 
     Returns:
         The configured Modal image.
     """
-    # Try to get existing image from the app
-    image_name_key = f"zenml_image_{build_id}"
-
-    try:
-        # Try to get stored image ID
-        stored_id = modal.Dict.from_name(f"zenml-image-cache-{pipeline_name}")
-        if image_name_key in stored_id:
-            image_id = stored_id[image_name_key]
-            existing_image = modal.Image.from_id(image_id)
-            logger.debug(
-                f"Using cached Modal image for build {build_id} in pipeline {pipeline_name}"
-            )
-            return existing_image
-    except (modal.exceptions.NotFoundError, KeyError):
-        # Dict doesn't exist or image not found, will build new one
-        pass
-
-    # Build new image using shared helper
-    zenml_image = build_modal_image(
-        image_name=image_name,
-        stack=stack,
-        environment=None,  # No environment variables for cached images
+    cache_key = (
+        build_item.settings_checksum or f"{build_id}-{build_item.image}"
     )
 
-    # Store the image in the app for future use
-    setattr(app, image_name_key, zenml_image)
+    try:
+        remote_image_cache = modal.Dict.from_name(
+            f"zenml-image-cache-{pipeline_name}"
+        )
 
-    return zenml_image
+        if modal_image_id := remote_image_cache.get(cache_key):
+            existing_image = modal.Image.from_id(modal_image_id)
+            logger.debug(
+                f"Using cached Modal image for image {build_item.image} with cache key {cache_key}"
+            )
+            return existing_image
+    except (modal.exception.NotFoundError, KeyError):
+        pass
+
+    return build_modal_image(
+        image_name=build_item.image,
+        stack=stack,
+    )
+    # TODO: we should cache this here immediately?
 
 
 def generate_sandbox_tags(
