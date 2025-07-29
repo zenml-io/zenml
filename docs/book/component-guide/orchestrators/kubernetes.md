@@ -135,6 +135,7 @@ The following configuration options can be set either through the orchestrator c
 
 - **`synchronous`** (default: True): If `True`, the client waits for all steps to finish; if `False`, the pipeline runs asynchronously.
 - **`timeout`** (default: 0): How many seconds to wait for synchronous runs. `0` means to wait indefinitely.
+- **`stream_step_logs`** (default: True): If `True`, the orchestrator pod will stream the logs of the step pods.
 - **`service_account_name`**: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
 - **`step_pod_service_account_name`**: Name of the service account to use for the step pods.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
@@ -145,6 +146,16 @@ The following configuration options can be set either through the orchestrator c
 - **`pod_failure_max_retries`** (default: 3): The maximum number of retries to create a step pod that fails to start.
 - **`pod_failure_retry_delay`** (default: 10): The delay (in seconds) between retries to create a step pod that fails to start.
 - **`pod_failure_backoff`** (default: 1.0): The backoff factor for pod failure retries and pod startup retries.
+- **`backoff_limit_margin`** (default 0): The value to add to the backoff limit in addition to the [step retries](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries). The retry configuration defined on
+the step defines the maximum number of retries that the server will accept for a step. For this orchestrator, this controls how often the
+job running the step will try to start the step pod. There are some circumstances however where the job will start the pod, but the pod
+doesn't actually get to the point of running the step. That means the server will not receive the maximum amount of retry requests,
+which in turn causes other inconsistencies like wrong step statuses. To mitigate this, this attribute allows to add a margin to the
+backoff limit. This means that the job will retry the pod startup for the configured amount of times plus the margin, which increases
+the chance of the server receiving the maximum amount of retry requests.
+- **`fail_on_container_waiting_reasons`**: List of container waiting reasons that should cause the job to fail immediately. This should be set to a list of nonrecoverable reasons, which if found in any
+`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, should cause the job to fail immediately.
+- **`job_monitoring_interval`** (default 3): The interval in seconds to monitor the job. Each interval is used to check for container issues and streaming logs for the job pods.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
@@ -397,51 +408,20 @@ To view your scheduled jobs and their status:
 ```shell
 # List all CronJobs
 kubectl get cronjobs -n zenml
-
-# Check Jobs created by the CronJob
-kubectl get jobs -n zenml
-
-# View logs of a running job
-kubectl logs job/<job-name> -n zenml
 ```
 
-To update a scheduled pipeline, you need to:
-
-1. Delete the existing CronJob from Kubernetes
-2. Create a new pipeline with the updated schedule
-
-```shell
-# Delete the existing CronJob
-kubectl delete cronjob <cronjob-name> -n zenml
-```
-
-```python
-# Create a new schedule
-new_schedule = Schedule(cron_expression="0 4 * * *")  # Now runs at 4 AM
-updated_pipeline = my_kubernetes_pipeline.with_options(schedule=new_schedule)
-updated_pipeline()
-```
+To update a schedule, use the following command:
+```bash
+# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
+zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='0 4 * * *'
 
 #### Deleting a scheduled pipeline
 
-When you no longer need a scheduled pipeline, you must delete both the ZenML schedule and the Kubernetes CronJob:
-
-1. Delete the schedule from ZenML:
-```python
-from zenml.client import Client
-
-client = Client()
-client.delete_schedule("<schedule-name>")
+When you no longer need a scheduled pipeline, you can delete the schedule as follows:
+```bash
+# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
 ```
-
-2. Delete the CronJob from Kubernetes:
-```shell
-kubectl delete cronjob <cronjob-name> -n zenml
-```
-
-{% hint style="warning" %}
-Deleting just the ZenML schedule will not stop the recurring executions. You must delete the Kubernetes CronJob as well.
-{% endhint %}
 
 #### Troubleshooting
 
@@ -468,5 +448,13 @@ For a tutorial on how to work with schedules in ZenML, check out our ['Managing
 Scheduled
 Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 docs page.
+
+## Best practices for highly parallel pipelines
+
+If you're trying to run pipelines with multiple parallel steps, there are some configuration options that you can tweak to ensure the best possible performance:
+- Ensure you enable [retries for your steps](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries) in case something doesn't work
+- Add a `backoff_limit_margin` to deal with unexpected Kubernetes evictions/preemptions
+- Limit the amount of maximum parallel steps using the `max_parallelism` setting
+- Disable streaming step logs using the `stream_step_logs` setting. All steps will have their logs tracked individually, so streaming them to the orchestrator pod is often unnecessary and can slow things down if your steps are logging a lot.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

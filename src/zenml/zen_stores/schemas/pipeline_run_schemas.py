@@ -25,6 +25,7 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.step_configurations import Step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
@@ -158,9 +159,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             overlaps="run_metadata",
         ),
     )
-    logs: Optional["LogsSchema"] = Relationship(
+    logs: List["LogsSchema"] = Relationship(
         back_populates="pipeline_run",
-        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
@@ -345,17 +346,45 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The pipeline configuration.
         """
         if self.deployment:
-            return PipelineConfiguration.model_validate_json(
+            pipeline_config = PipelineConfiguration.model_validate_json(
                 self.deployment.pipeline_configuration
             )
         elif self.pipeline_configuration:
-            return PipelineConfiguration.model_validate_json(
+            pipeline_config = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )
         else:
             raise RuntimeError(
                 "Pipeline run has no deployment and no pipeline configuration."
             )
+
+        pipeline_config.finalize_substitutions(
+            start_time=self.start_time, inplace=True
+        )
+        return pipeline_config
+
+    def get_step_configuration(self, step_name: str) -> Step:
+        """Get the step configuration for the pipeline run.
+
+        Args:
+            step_name: The name of the step to get the configuration for.
+
+        Raises:
+            RuntimeError: If the pipeline run has no deployment.
+
+        Returns:
+            The step configuration.
+        """
+        if self.deployment:
+            pipeline_configuration = self.get_pipeline_configuration()
+            return Step.from_dict(
+                data=json.loads(
+                    self.deployment.get_step_configuration(step_name).config
+                ),
+                pipeline_configuration=pipeline_configuration,
+            )
+        else:
+            raise RuntimeError("Pipeline run has no deployment.")
 
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
@@ -531,13 +560,22 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         resources = None
         if include_resources:
+            # Add the client logs as "logs" if they exist, for backwards compatibility
+            # TODO: This will be safe to remove in future releases (>0.84.0).
+            client_logs = [
+                log_entry
+                for log_entry in self.logs
+                if log_entry.source == "client"
+            ]
+
             resources = PipelineRunResponseResources(
                 user=self.user.to_model() if self.user else None,
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
                 tags=[tag.to_model() for tag in self.tags],
-                logs=self.logs.to_model() if self.logs else None,
+                logs=client_logs[0].to_model() if client_logs else None,
+                log_collection=[log.to_model() for log in self.logs],
             )
 
         return PipelineRunResponse(

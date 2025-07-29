@@ -23,7 +23,7 @@ from typing import (
     cast,
 )
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -40,19 +40,24 @@ if TYPE_CHECKING:
 
 
 class WandbExperimentTrackerSettings(BaseSettings):
-    """Settings for the Wandb experiment tracker.
+    """Settings for the Wandb experiment tracker."""
 
-    Attributes:
-        run_name: The Wandb run name.
-        tags: Tags for the Wandb run.
-        settings: Settings for the Wandb run.
-        enable_weave: Whether to enable Weave integration.
-    """
-
-    run_name: Optional[str] = None
-    tags: List[str] = []
-    settings: Dict[str, Any] = {}
-    enable_weave: bool = False
+    run_name: Optional[str] = Field(
+        None,
+        description="The Wandb run name to use for tracking experiments."
+    )
+    tags: List[str] = Field(
+        default_factory=list,
+        description="Tags to attach to the Wandb run for categorization and filtering."
+    )
+    settings: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional settings for the Wandb run configuration."
+    )
+    enable_weave: bool = Field(
+        False,
+        description="Whether to enable Weave integration for enhanced experiment tracking."
+    )
 
     @field_validator("settings", mode="before")
     @classmethod
@@ -89,18 +94,22 @@ class WandbExperimentTrackerSettings(BaseSettings):
 class WandbExperimentTrackerConfig(
     BaseExperimentTrackerConfig, WandbExperimentTrackerSettings
 ):
-    """Config for the Wandb experiment tracker.
+    """Config for the Wandb experiment tracker."""
 
-    Attributes:
-        entity: Name of an existing wandb entity.
-        project_name: Name of an existing wandb project to log to.
-        api_key: API key to should be authorized to log to the configured wandb
-            entity and project.
-    """
-
-    api_key: str = SecretField()
-    entity: Optional[str] = None
-    project_name: Optional[str] = None
+    api_key: str = SecretField(
+        description="API key that should be authorized to log to the configured "
+        "Wandb entity and project. Required for authentication."
+    )
+    entity: Optional[str] = Field(
+        None,
+        description="Name of an existing Wandb entity (team or user account) "
+        "to log experiments to."
+    )
+    project_name: Optional[str] = Field(
+        None,
+        description="Name of an existing Wandb project to log experiments to. "
+        "If not specified, a default project will be used."
+    )
 
 
 class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):

@@ -64,7 +64,7 @@ from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
 )
-from sqlalchemy.orm import Mapped, noload, selectinload
+from sqlalchemy.orm import Mapped, load_only, noload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
 from sqlmodel import Session as SqlModelSession
@@ -264,6 +264,7 @@ from zenml.models import (
     ServerSettingsResponse,
     ServerSettingsUpdate,
     ServiceAccountFilter,
+    ServiceAccountInternalRequest,
     ServiceAccountRequest,
     ServiceAccountResponse,
     ServiceAccountUpdate,
@@ -5469,7 +5470,14 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.deployment)
                     ).load_only(
-                        jl_arg(PipelineDeploymentSchema.pipeline_configuration)
+                        jl_arg(
+                            PipelineDeploymentSchema.pipeline_configuration
+                        ),
+                    ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.deployment)
+                    ).selectinload(
+                        jl_arg(PipelineDeploymentSchema.step_configurations)
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
@@ -5481,7 +5489,11 @@ class SqlZenStore(BaseZenStore):
             )
             assert run.deployment is not None
             deployment = run.deployment
-            step_runs = {step.name: step for step in run.step_runs}
+            step_runs = {
+                step.name: step
+                for step in run.step_runs
+                if step.status != ExecutionStatus.RETRIED.value
+            }
 
             pipeline_configuration = PipelineConfiguration.model_validate_json(
                 deployment.pipeline_configuration
@@ -5495,7 +5507,7 @@ class SqlZenStore(BaseZenStore):
                     json.loads(config_table.config),
                     pipeline_configuration=pipeline_configuration,
                 )
-                for config_table in deployment.get_step_configurations()
+                for config_table in deployment.step_configurations
             }
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
@@ -5811,7 +5823,9 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
-            EntityExistsError: If a run with the same name already exists.
+            EntityExistsError: If a run with the same name already exists or
+                a log entry with the same source already exists within the
+                scope of the same pipeline run.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
         self._get_reference_schema_by_id(
@@ -5831,23 +5845,6 @@ class SqlZenStore(BaseZenStore):
         new_run = PipelineRunSchema.from_request(pipeline_run)
 
         session.add(new_run)
-
-        # Add logs entry for the run if exists
-        if pipeline_run.logs is not None:
-            self._get_reference_schema_by_id(
-                resource=pipeline_run,
-                reference_schema=StackComponentSchema,
-                reference_id=pipeline_run.logs.artifact_store_id,
-                session=session,
-                reference_type="logs artifact store",
-            )
-
-            log_entry = LogsSchema(
-                uri=pipeline_run.logs.uri,
-                pipeline_run_id=new_run.id,
-                artifact_store_id=pipeline_run.logs.artifact_store_id,
-            )
-            session.add(log_entry)
 
         try:
             session.commit()
@@ -5869,6 +5866,35 @@ class SqlZenStore(BaseZenStore):
                 "the same deployment_id and orchestrator_run_id "
                 "already exists."
             )
+
+        # Add logs entry for the run if exists
+        if pipeline_run.logs is not None:
+            self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=StackComponentSchema,
+                reference_id=pipeline_run.logs.artifact_store_id,
+                session=session,
+                reference_type="logs artifact store",
+            )
+
+            log_entry = LogsSchema(
+                uri=pipeline_run.logs.uri,
+                # TODO: Remove fallback when not supporting
+                # clients <0.84.0 anymore
+                source=pipeline_run.logs.source or "client",
+                pipeline_run_id=new_run.id,
+                artifact_store_id=pipeline_run.logs.artifact_store_id,
+            )
+            try:
+                session.add(log_entry)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                raise EntityExistsError(
+                    "Unable to create log entry: A log entry with this "
+                    f"source '{pipeline_run.logs.source}' already exists "
+                    f"within the scope of the same pipeline run '{new_run.id}'."
+                )
 
         if model_version_id := self._get_or_create_model_version_for_run(
             new_run
@@ -6229,6 +6255,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated pipeline run.
+
+        Raises:
+            EntityExistsError: If a log entry with the same source already
+                exists within the scope of the same pipeline run.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
@@ -6243,6 +6273,41 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_run)
 
+            # Add logs if specified
+            if run_update.add_logs:
+                try:
+                    for log_request in run_update.add_logs:
+                        # Validate the artifact store exists
+                        self._get_reference_schema_by_id(
+                            resource=log_request,
+                            reference_schema=StackComponentSchema,
+                            reference_id=log_request.artifact_store_id,
+                            session=session,
+                            reference_type="logs artifact store",
+                        )
+
+                        # Create the log entry
+                        log_entry = LogsSchema(
+                            uri=log_request.uri,
+                            # TODO: Remove fallback when not supporting
+                            # clients <0.84.0 anymore
+                            source=log_request.source or "orchestrator",
+                            pipeline_run_id=existing_run.id,
+                            artifact_store_id=log_request.artifact_store_id,
+                        )
+                        session.add(log_entry)
+
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+                    raise EntityExistsError(
+                        "Unable to create log entry: One of the provided sources "
+                        f"({', '.join(log.source for log in run_update.add_logs)}) "
+                        "already exists within the scope of the same pipeline run "
+                        f"'{existing_run.id}'. Existing entry sources: "
+                        f"{', '.join(log.source for log in existing_run.logs)}"
+                    )
+
             self._attach_tags_to_resources(
                 tags=run_update.add_tags,
                 resources=existing_run,
@@ -6253,7 +6318,14 @@ class SqlZenStore(BaseZenStore):
                 resources=existing_run,
                 session=session,
             )
+
+            if run_update.status is not None:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=run_id,
+                    session=session,
+                )
             session.refresh(existing_run)
+
             return existing_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -7359,7 +7431,10 @@ class SqlZenStore(BaseZenStore):
 
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
     def create_service_account(
-        self, service_account: ServiceAccountRequest
+        self,
+        service_account: Union[
+            ServiceAccountRequest, ServiceAccountInternalRequest
+        ],
     ) -> ServiceAccountResponse:
         """Creates a new service account.
 
@@ -8957,8 +9032,20 @@ class SqlZenStore(BaseZenStore):
             The created step run.
 
         Raises:
-            EntityExistsError: if the step run already exists.
+            ValueError: If trying to create a step run with a retried status.
+            EntityExistsError: if the step run already exists or a log entry
+                with the same source already exists within the scope of the
+                same step.
+            IllegalOperationError: if the pipeline run is stopped or stopping.
         """
+        if step_run.status in {
+            ExecutionStatus.RETRIED,
+            ExecutionStatus.RETRYING,
+        }:
+            raise ValueError(
+                "Retrying/retried status can not be set manually."
+            )
+
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
 
@@ -8969,6 +9056,16 @@ class SqlZenStore(BaseZenStore):
                 reference_id=step_run.pipeline_run_id,
                 session=session,
             )
+
+            # Validate pipeline status before creating step
+            if run.status in [
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+            ]:
+                raise IllegalOperationError(
+                    f"Cannot create step '{step_run.name}' for pipeline in "
+                    f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
+                )
             self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,
@@ -8976,17 +9073,98 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
+            step_config = run.get_step_configuration(step_name=step_run.name)
+
+            # Release the read locks of the previous two queries before we
+            # try to acquire more exclusive locks
+            session.commit()
+
+            # Acquire exclusive lock on the pipeline run to prevent deadlocks
+            # during insertion
+            session.exec(
+                select(PipelineRunSchema.id)
+                .with_for_update()
+                .where(PipelineRunSchema.id == step_run.pipeline_run_id)
+            )
+
+            existing_step_runs = session.exec(
+                select(StepRunSchema)
+                .options(
+                    load_only(
+                        jl_arg(StepRunSchema.status),
+                        jl_arg(StepRunSchema.model_version_id),
+                    )
+                )
+                .where(
+                    col(StepRunSchema.pipeline_run_id)
+                    == step_run.pipeline_run_id
+                )
+                .where(col(StepRunSchema.name) == step_run.name)
+                .order_by(desc(StepRunSchema.version))
+            ).all()
+
+            if any(
+                ExecutionStatus(sr.status).is_successful
+                for sr in existing_step_runs
+            ):
+                # This step already completed successfully
+                raise EntityExistsError(
+                    f"Unable to create step `{step_run.name}`: A successful "
+                    f"step with this name already exists in the pipeline run "
+                    f"with ID '{step_run.pipeline_run_id}'."
+                )
+
+            retry_config = step_config.config.retry
+            max_retries = retry_config.max_retries if retry_config else 0
+
+            if len(existing_step_runs) > max_retries:
+                raise EntityExistsError(
+                    f"Unable to create step `{step_run.name}`: The step has "
+                    f"exceeded the maximum number of retries."
+                )
+
+            if existing_step_runs:
+                # Update all existing step runs to retried.
+                # TODO: Once we have the health check, this should probably also
+                # cancel the existing step runs in case they're still running?
+                session.execute(
+                    update(StepRunSchema)
+                    .where(
+                        col(StepRunSchema.pipeline_run_id)
+                        == step_run.pipeline_run_id
+                    )
+                    .where(col(StepRunSchema.name) == step_run.name)
+                    .values(
+                        status=ExecutionStatus.RETRIED.value,
+                        end_time=func.coalesce(
+                            StepRunSchema.end_time,
+                            func.now(),
+                        ),
+                    )
+                )
+
+            is_retriable = len(existing_step_runs) < max_retries
+            if is_retriable and step_run.status == ExecutionStatus.FAILED:
+                # This step will be retried by the orchestrator, so we
+                # set its status accordingly.
+                step_run.status = ExecutionStatus.RETRYING
 
             step_schema = StepRunSchema.from_request(
-                step_run, deployment_id=run.deployment_id
+                step_run,
+                deployment_id=run.deployment_id,
+                version=len(existing_step_runs) + 1,
+                # TODO: This isn't actually guaranteed to be correct, how
+                # do we handle these cases? E.g. if the step on kubernetes
+                # is retried during startup, it will not actually create X
+                # step runs. Or if it doesn't reach the point in code where
+                # the step run is created.
+                is_retriable=is_retriable,
             )
+
             session.add(step_schema)
             try:
                 session.commit()
             except IntegrityError:
-                # We have to rollback the failed session first in order
-                # to continue using it
-                session.rollback()
                 raise EntityExistsError(
                     f"Unable to create step `{step_run.name}`: A step with "
                     f"this name already exists in the pipeline run with ID "
@@ -9005,11 +9183,22 @@ class SqlZenStore(BaseZenStore):
 
                 log_entry = LogsSchema(
                     uri=step_run.logs.uri,
+                    # TODO: Remove fallback when not supporting
+                    # clients <0.84.0 anymore
+                    source=step_run.logs.source or "execution",
                     step_run_id=step_schema.id,
                     artifact_store_id=step_run.logs.artifact_store_id,
                 )
-                session.add(log_entry)
-
+                try:
+                    session.add(log_entry)
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+                    raise EntityExistsError(
+                        "Unable to create log entry: A log entry with this "
+                        f"source '{step_run.logs.source}' already exists "
+                        f"within the scope of the same step '{step_schema.id}'."
+                    )
             # If cached, attach metadata of the original step
             if (
                 step_run.status == ExecutionStatus.CACHED
@@ -9079,9 +9268,8 @@ class SqlZenStore(BaseZenStore):
                     )
 
             session.commit()
-            step_model = step_schema.to_model(include_metadata=True)
 
-            for upstream_step in step_model.spec.upstream_steps:
+            for upstream_step in step_config.spec.upstream_steps:
                 self._set_run_step_parent_step(
                     child_step_run=step_schema,
                     parent_step_name=upstream_step,
@@ -9109,8 +9297,8 @@ class SqlZenStore(BaseZenStore):
                         # are defined in the step config.
                         input_type = self._get_step_run_input_type_from_config(
                             input_name=input_name,
-                            step_config=step_model.config,
-                            step_spec=step_model.spec,
+                            step_config=step_config.config,
+                            step_spec=step_config.spec,
                         )
                     self._set_run_step_input_artifact(
                         step_run=step_schema,
@@ -9130,6 +9318,8 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
+            session.commit()
+
             if step_run.status != ExecutionStatus.RUNNING:
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
@@ -9140,9 +9330,14 @@ class SqlZenStore(BaseZenStore):
                 step_schema, ["input_artifacts", "output_artifacts"]
             )
 
-            if model_version_id := self._get_or_create_model_version_for_run(
-                step_schema
-            ):
+            if existing_step_runs:
+                model_version_id = existing_step_runs[-1].model_version_id
+            else:
+                model_version_id = self._get_or_create_model_version_for_run(
+                    step_schema
+                )
+
+            if model_version_id:
                 step_schema.model_version_id = model_version_id
                 session.add(step_schema)
                 session.commit()
@@ -9227,9 +9422,20 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
 
+        Raises:
+            ValueError: If trying to update the step status to retried.
+
         Returns:
             The updated step run.
         """
+        if step_run_update.status in {
+            ExecutionStatus.RETRYING,
+            ExecutionStatus.RETRIED,
+        }:
+            raise ValueError(
+                "Retrying/retried status can not be set manually."
+            )
+
         with Session(self.engine) as session:
             # Check if the step exists
             existing_step_run = self._get_schema_by_id(
@@ -9237,6 +9443,22 @@ class SqlZenStore(BaseZenStore):
                 schema_class=StepRunSchema,
                 session=session,
             )
+
+            if (
+                existing_step_run.status == ExecutionStatus.RETRIED.value
+                and step_run_update.status == ExecutionStatus.FAILED
+            ):
+                raise ValueError(
+                    "The status of retried step runs can not be updated."
+                )
+
+            if (
+                existing_step_run.is_retriable
+                and step_run_update.status == ExecutionStatus.FAILED
+            ):
+                # This step will be retried by the orchestrator, so we
+                # set its status accordingly.
+                step_run_update.status = ExecutionStatus.RETRYING
 
             # Update the step
             existing_step_run.update(step_run_update)
@@ -9264,14 +9486,13 @@ class SqlZenStore(BaseZenStore):
                     input_type=StepRunInputArtifactType.MANUAL,
                     session=session,
                 )
+            session.commit()
+            session.refresh(existing_step_run)
 
             self._update_pipeline_run_status(
                 pipeline_run_id=existing_step_run.pipeline_run_id,
                 session=session,
             )
-
-            session.commit()
-            session.refresh(existing_step_run)
 
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
@@ -9500,15 +9721,16 @@ class SqlZenStore(BaseZenStore):
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
         step_run_statuses = session.exec(
-            select(StepRunSchema.status).where(
-                StepRunSchema.pipeline_run_id == pipeline_run_id
-            )
+            select(StepRunSchema.status)
+            .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
+            .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
         ).all()
 
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
         num_steps = pipeline_run.deployment.step_count
         new_status = get_pipeline_run_status(
+            run_status=ExecutionStatus(pipeline_run.status),
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
             ],
@@ -9575,7 +9797,7 @@ class SqlZenStore(BaseZenStore):
 
             completed_onboarding_steps: Set[str] = {
                 OnboardingStep.PIPELINE_RUN,
-                OnboardingStep.STARTER_SETUP_COMPLETED,
+                OnboardingStep.OSS_ONBOARDING_COMPLETED,
             }
             if stack_metadata["orchestrator"] not in {
                 "local",
@@ -9590,21 +9812,9 @@ class SqlZenStore(BaseZenStore):
                 completed_onboarding_steps.update(
                     {
                         OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
-                        OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                        OnboardingStep.PRO_ONBOARDING_COMPLETED,
                     }
                 )
-            if OnboardingStep.THIRD_PIPELINE_RUN not in (
-                self._cached_onboarding_state or {}
-            ):
-                onboarding_state = self.get_onboarding_state()
-                if OnboardingStep.PIPELINE_RUN in onboarding_state:
-                    completed_onboarding_steps.add(
-                        OnboardingStep.SECOND_PIPELINE_RUN
-                    )
-                if OnboardingStep.SECOND_PIPELINE_RUN in onboarding_state:
-                    completed_onboarding_steps.add(
-                        OnboardingStep.THIRD_PIPELINE_RUN
-                    )
 
             self._update_onboarding_state(
                 completed_steps=completed_onboarding_steps, session=session

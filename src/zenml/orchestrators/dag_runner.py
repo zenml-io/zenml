@@ -56,6 +56,7 @@ class NodeStatus(Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class ThreadedDagRunner:
@@ -76,6 +77,7 @@ class ThreadedDagRunner:
         finalize_fn: Optional[Callable[[Dict[str, NodeStatus]], None]] = None,
         parallel_node_startup_waiting_period: float = 0.0,
         max_parallelism: Optional[int] = None,
+        continue_fn: Optional[Callable[[], bool]] = None,
     ) -> None:
         """Define attributes and initialize all nodes in waiting state.
 
@@ -92,6 +94,9 @@ class ThreadedDagRunner:
             parallel_node_startup_waiting_period: Delay in seconds to wait in
                 between starting parallel nodes.
             max_parallelism: Maximum number of nodes to run in parallel
+            continue_fn: A function that returns True if the run should continue
+                after each step execution, False if it should stop (e.g., due
+                to cancellation). If None, execution continues normally.
 
         Raises:
             ValueError: If max_parallelism is not greater than 0.
@@ -108,11 +113,14 @@ class ThreadedDagRunner:
         self.run_fn = run_fn
         self.preparation_fn = preparation_fn
         self.finalize_fn = finalize_fn
+        self.continue_fn = continue_fn
         self.nodes = dag.keys()
         self.node_states = {
             node: NodeStatus.NOT_STARTED for node in self.nodes
         }
         self._lock = threading.Lock()
+
+        self._stop_requested = False
 
     def _can_run(self, node: str) -> bool:
         """Determine whether a node is ready to be run.
@@ -173,6 +181,15 @@ class ThreadedDagRunner:
         """
         self._prepare_node_run(node)
 
+        # Check if execution should continue (e.g., check for cancellation)
+        if self.continue_fn:
+            self._stop_requested = (
+                self._stop_requested or not self.continue_fn()
+            )
+            if self._stop_requested:
+                self._finish_node(node, cancelled=True)
+                return
+
         if self.preparation_fn:
             run_required = self.preparation_fn(node)
             if not run_required:
@@ -200,28 +217,32 @@ class ThreadedDagRunner:
             self.node_states[node] = NodeStatus.PENDING
 
         # Run node in new thread.
-        thread = threading.Thread(target=self._run_node, args=(node,))
+        thread = threading.Thread(
+            name=node, target=self._run_node, args=(node,)
+        )
         thread.start()
         return thread
 
-    def _finish_node(self, node: str, failed: bool = False) -> None:
-        """Finish a node run.
-
-        First updates the node status to completed.
-        Then starts all other nodes that can now be run and waits for them.
+    def _finish_node(
+        self, node: str, failed: bool = False, cancelled: bool = False
+    ) -> None:
+        """Mark a node as finished and potentially start new nodes.
 
         Args:
-            node: The node.
+            node: The node to mark as finished.
             failed: Whether the node failed.
+            cancelled: Whether the node was cancelled.
         """
         with self._lock:
             if failed:
                 self.node_states[node] = NodeStatus.FAILED
+            elif cancelled:
+                self.node_states[node] = NodeStatus.CANCELLED
             else:
                 self.node_states[node] = NodeStatus.COMPLETED
 
-        if failed:
-            # If the node failed, we don't need to run any downstream nodes.
+        if failed or cancelled:
+            # If the node failed or was cancelled, we don't need to run any downstream nodes.
             return
 
         # Run downstream nodes.

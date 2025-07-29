@@ -283,6 +283,8 @@ from zenml.models.v2.core.service_account import (
     ServiceAccountResponseMetadata,
     ServiceAccountUpdate,
     ServiceAccountRequest,
+    ServiceAccountInternalRequest,
+    ServiceAccountInternalUpdate,
     ServiceAccountResponse,
 )
 from zenml.models.v2.core.service_connector import (
@@ -436,6 +438,7 @@ from zenml.models.v2.misc.info_models import (
     ServiceConnectorResourcesInfo,
     ResourcesInfo,
 )
+from zenml.models.v2.misc.exception_info import ExceptionInfo
 
 # ----------------------------- Forward References -----------------------------
 
@@ -740,6 +743,8 @@ __all__ = [
     "ServiceAccountResponseMetadata",
     "ServiceAccountUpdate",
     "ServiceAccountRequest",
+    "ServiceAccountInternalRequest",
+    "ServiceAccountInternalUpdate",
     "ServiceAccountResponse",
     "ServiceConnectorConfiguration",
     "ServiceConnectorRequest",
@@ -842,4 +847,5 @@ __all__ = [
     "RunMetadataResource",
     "ProjectStatistics",
     "PipelineRunDAG",
+    "ExceptionInfo",
 ]

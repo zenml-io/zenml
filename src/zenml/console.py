@@ -18,11 +18,14 @@ from rich.style import Style
 from rich.theme import Theme
 
 zenml_style_defaults = {
-    "info": Style(color="cyan", dim=True),
+    "info": Style(color="white", dim=True),
     "warning": Style(color="yellow"),
     "danger": Style(color="red", bold=True),
     "title": Style(color="cyan", bold=True, underline=True),
     "error": Style(color="red"),
+    "success": Style(color="green"),
+    "repr.str": Style(color="white", dim=False),
+    "repr.uuid": Style(color="magenta", dim=False),
 }
 
 zenml_custom_theme = Theme(zenml_style_defaults)

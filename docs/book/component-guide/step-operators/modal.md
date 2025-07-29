@@ -50,7 +50,7 @@ Once you added the step operator to your active stack, you can use it to execute
 from zenml import step
 
 
-@step(step_operator=<NAME>)
+@step(step_operator=True)
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in Modal.
@@ -76,7 +76,7 @@ resource_settings = ResourceSettings(
 )
 
 @step(
-    step_operator="modal", # or whatever name you used when registering the step operator
+    step_operator=True,
     settings={
         "step_operator": modal_settings,
         "resources": resource_settings

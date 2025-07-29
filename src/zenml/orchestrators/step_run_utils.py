@@ -59,6 +59,22 @@ class StepRunRequestFactory:
         self.pipeline_run = pipeline_run
         self.stack = stack
 
+    def has_caching_enabled(self, invocation_id: str) -> bool:
+        """Check if the step has caching enabled.
+
+        Args:
+            invocation_id: The invocation ID for which to check if caching is
+                enabled.
+
+        Returns:
+            Whether the step has caching enabled.
+        """
+        step = self.deployment.step_configurations[invocation_id]
+        return utils.is_setting_enabled(
+            is_enabled_on_step=step.config.enable_cache,
+            is_enabled_on_pipeline=self.deployment.pipeline_configuration.enable_cache,
+        )
+
     def create_request(self, invocation_id: str) -> StepRunRequest:
         """Create a step run request.
 
