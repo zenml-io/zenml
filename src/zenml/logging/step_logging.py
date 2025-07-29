@@ -599,10 +599,6 @@ class PipelineLogsStorageContext:
         self.prepend_step_name = prepend_step_name
         self._original_methods_saved = False
 
-        # Storage for original methods (only write methods, not flush)
-        self.stdout_write = None
-        self.stderr_write = None
-
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
 
