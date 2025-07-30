@@ -178,10 +178,17 @@ def main() -> None:
         "job-name", orchestrator_pod_name
     )
 
+    existing_logs_response = None
+
     if existing_state := load_state(core_api, namespace, config_map_name):
         orchestrator_run_id = existing_state.orchestrator_run_id
         nodes = existing_state.nodes
         pipeline_run = client.get_pipeline_run(existing_state.run_id)
+
+        for log_response in pipeline_run.log_collection:
+            if log_response.source == "orchestrator":
+                existing_logs_response = log_response
+                break
     else:
         orchestrator_run_id = orchestrator_pod_name
         nodes = [
@@ -206,9 +213,10 @@ def main() -> None:
             config_map_name,
         )
 
-    # TODO: Fetch this from existing run first if it exists
     logs_context = setup_orchestrator_logging(
-        run_id=str(pipeline_run.id), deployment=deployment
+        run_id=pipeline_run.id,
+        deployment=deployment,
+        logs_response=existing_logs_response,
     )
 
     with logs_context:
