@@ -16,10 +16,12 @@
 import argparse
 import random
 import socket
-from typing import Callable, Dict, Optional, cast
+from typing import Dict, List, Optional, cast
+from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
+from pydantic import BaseModel
 
 from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
@@ -41,10 +43,16 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
     pod_template_manifest_from_pod,
 )
+from zenml.integrations.kubernetes.orchestrators.new_dag_runner import (
+    DagRunner,
+    Node,
+    NodeStatus,
+)
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
 from zenml.orchestrators import publish_utils
-from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
+
+# from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
     fetch_step_runs_by_names,
@@ -57,6 +65,62 @@ from zenml.orchestrators.utils import (
 from zenml.pipelines.run_utils import create_placeholder_run
 
 logger = get_logger(__name__)
+
+
+class OrchestratorPodState(BaseModel):
+    run_id: UUID
+    orchestrator_run_id: str
+    nodes: List[Node]
+
+
+def load_state(
+    core_api: k8s_client.CoreV1Api, namespace: str, config_map_name: str
+) -> Optional[OrchestratorPodState]:
+    """Load the state of the orchestrator.
+
+    Returns:
+        The state of the orchestrator.
+    """
+    try:
+        configmap = kube_utils.get_config_map(
+            core_api=core_api,
+            namespace=namespace,
+            name=config_map_name,
+        )
+    except ApiException:
+        return None
+
+    logger.info("Configmap: %s", configmap)
+    state = configmap.data["state"]
+    return OrchestratorPodState.model_validate_json(state)
+
+
+def store_state(
+    state: OrchestratorPodState,
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    config_map_name,
+) -> None:
+    """Store the state of the orchestrator.
+
+    Args:
+        state: The state to store.
+    """
+    try:
+        kube_utils.update_config_map(
+            core_api=core_api,
+            namespace=namespace,
+            name=config_map_name,
+            data={"state": state.model_dump_json()},
+        )
+    except ApiException as e:
+        if e.status == 404:
+            kube_utils.create_config_map(
+                core_api=core_api,
+                namespace=namespace,
+                name=config_map_name,
+                data={"state": state.model_dump_json()},
+            )
 
 
 def parse_args() -> argparse.Namespace:
@@ -82,50 +146,77 @@ def main() -> None:
 
     client = Client()
     deployment = client.get_deployment(args.deployment_id)
+    active_stack = client.active_stack
+    orchestrator = active_stack.orchestrator
+    assert isinstance(orchestrator, KubernetesOrchestrator)
+    namespace = orchestrator.config.kubernetes_namespace
 
-    if args.run_id:
-        pipeline_run = client.get_pipeline_run(args.run_id)
+    pipeline_settings = cast(
+        KubernetesOrchestratorSettings,
+        orchestrator.get_settings(deployment),
+    )
+
+    # Get a Kubernetes client from the active Kubernetes orchestrator, but
+    # override the `incluster` setting to `True` since we are running inside
+    # the Kubernetes cluster.
+    api_client_config = orchestrator.get_kube_client(
+        incluster=True
+    ).configuration
+    api_client_config.connection_pool_maxsize = (
+        pipeline_settings.max_parallelism
+    )
+    kube_client = k8s_client.ApiClient(api_client_config)
+    core_api = k8s_client.CoreV1Api(kube_client)
+    batch_api = k8s_client.BatchV1Api(kube_client)
+
+    pod = kube_utils.get_pod(
+        core_api, pod_name=orchestrator_pod_name, namespace=namespace
+    )
+    # We use the orchestrator pod name as fallback, but the job name should
+    # always be set anyway.
+    config_map_name = pod.metadata.labels.get(
+        "job-name", orchestrator_pod_name
+    )
+
+    if existing_state := load_state(core_api, namespace, config_map_name):
+        orchestrator_run_id = existing_state.orchestrator_run_id
+        nodes = existing_state.nodes
+        pipeline_run = client.get_pipeline_run(existing_state.run_id)
     else:
-        pipeline_run = create_placeholder_run(
-            deployment=deployment,
-            orchestrator_run_id=orchestrator_pod_name,
+        orchestrator_run_id = orchestrator_pod_name
+        nodes = [
+            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+            for step_name, step in deployment.step_configurations.items()
+        ]
+        if args.run_id:
+            pipeline_run = client.get_pipeline_run(args.run_id)
+        else:
+            pipeline_run = create_placeholder_run(
+                deployment=deployment,
+                orchestrator_run_id=orchestrator_run_id,
+            )
+        store_state(
+            OrchestratorPodState(
+                run_id=pipeline_run.id,
+                orchestrator_run_id=orchestrator_run_id,
+                nodes=nodes,
+            ),
+            core_api,
+            namespace,
+            config_map_name,
         )
 
+    # TODO: Fetch this from existing run first if it exists
     logs_context = setup_orchestrator_logging(
         run_id=str(pipeline_run.id), deployment=deployment
     )
 
     with logs_context:
-        active_stack = client.active_stack
-        orchestrator = active_stack.orchestrator
-        assert isinstance(orchestrator, KubernetesOrchestrator)
-        namespace = orchestrator.config.kubernetes_namespace
-
-        pipeline_settings = cast(
-            KubernetesOrchestratorSettings,
-            orchestrator.get_settings(deployment),
-        )
-
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
-
         mount_local_stores = active_stack.orchestrator.config.is_local
 
-        # Get a Kubernetes client from the active Kubernetes orchestrator, but
-        # override the `incluster` setting to `True` since we are running inside
-        # the Kubernetes cluster.
-
-        api_client_config = orchestrator.get_kube_client(
-            incluster=True
-        ).configuration
-        api_client_config.connection_pool_maxsize = (
-            pipeline_settings.max_parallelism
-        )
-        kube_client = k8s_client.ApiClient(api_client_config)
-        core_api = k8s_client.CoreV1Api(kube_client)
-        batch_api = k8s_client.BatchV1Api(kube_client)
-
         env = get_config_environment_vars()
-        env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_pod_name
+        env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
         try:
             owner_references = kube_utils.get_pod_owner_references(
@@ -142,50 +233,12 @@ def main() -> None:
             for owner_reference in owner_references:
                 owner_reference.controller = False
 
-        pre_step_run: Optional[Callable[[str], bool]] = None
-
-        if not pipeline_settings.prevent_orchestrator_pod_caching:
-            step_run_request_factory = StepRunRequestFactory(
-                deployment=deployment,
-                pipeline_run=pipeline_run,
-                stack=active_stack,
-            )
-            step_runs = {}
-
-            def pre_step_run(step_name: str) -> bool:
-                """Pre-step run.
-
-                Args:
-                    step_name: Name of the step.
-
-                Returns:
-                    Whether the step node needs to be run.
-                """
-                if not step_run_request_factory.has_caching_enabled(step_name):
-                    return True
-
-                step_run_request = step_run_request_factory.create_request(
-                    step_name
-                )
-                try:
-                    step_run_request_factory.populate_request(step_run_request)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to populate step run request for step {step_name}: {e}"
-                    )
-                    return True
-
-                if step_run_request.status == ExecutionStatus.CACHED:
-                    step_run = publish_cached_step_run(
-                        step_run_request, pipeline_run
-                    )
-                    step_runs[step_name] = step_run
-                    logger.info(
-                        "Using cached version of step `%s`.", step_name
-                    )
-                    return False
-
-                return True
+        step_run_request_factory = StepRunRequestFactory(
+            deployment=deployment,
+            pipeline_run=pipeline_run,
+            stack=active_stack,
+        )
+        step_runs = {}
 
         base_labels = {
             "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
@@ -195,7 +248,33 @@ def main() -> None:
             ),
         }
 
-        def run_step_on_kubernetes(step_name: str) -> None:
+        def _try_to_cache_step_run(step_name: str) -> bool:
+            """Try to cache a step run."""
+            if not step_run_request_factory.has_caching_enabled(step_name):
+                return False
+
+            step_run_request = step_run_request_factory.create_request(
+                step_name
+            )
+            try:
+                step_run_request_factory.populate_request(step_run_request)
+            except Exception as e:
+                logger.error(
+                    f"Failed to populate step run request for step {step_name}: {e}"
+                )
+                return False
+
+            if step_run_request.status == ExecutionStatus.CACHED:
+                step_run = publish_cached_step_run(
+                    step_run_request, pipeline_run
+                )
+                step_runs[step_name] = step_run
+                logger.info("Using cached version of step `%s`.", step_name)
+                return True
+
+            return False
+
+        def start_step_job(node: Node) -> NodeStatus:
             """Run a pipeline step in a separate Kubernetes pod.
 
             Args:
@@ -204,6 +283,7 @@ def main() -> None:
             Raises:
                 Exception: If the pod fails to start.
             """
+            step_name = node.id
             step_config = deployment.step_configurations[step_name].config
             settings = step_config.settings.get(
                 "orchestrator.kubernetes", None
@@ -211,6 +291,11 @@ def main() -> None:
             settings = KubernetesOrchestratorSettings.model_validate(
                 settings.model_dump() if settings else {}
             )
+            if not pipeline_settings.prevent_orchestrator_pod_caching:
+                # TODO: This currently waits for max_parallelism, is that
+                # what we want?
+                if _try_to_cache_step_run(step_name):
+                    return NodeStatus.COMPLETED
 
             if (
                 settings.pod_name_prefix
@@ -234,7 +319,6 @@ def main() -> None:
                 pod_name, namespace=namespace
             )
 
-            # Add step name to labels so both pod and job have consistent labeling
             step_labels = base_labels.copy()
             step_labels["step_name"] = kube_utils.sanitize_label(step_name)
 
@@ -272,7 +356,6 @@ def main() -> None:
                     }
                 )
 
-            # Define Kubernetes pod manifest.
             pod_manifest = build_pod_manifest(
                 pod_name=pod_name,
                 image_name=image,
@@ -292,21 +375,6 @@ def main() -> None:
             backoff_limit = (
                 retry_config.max_retries if retry_config else 0
             ) + settings.backoff_limit_margin
-
-            # This is to fix a bug in the kubernetes client which has some wrong
-            # client-side validations that means the `on_exit_codes` field is
-            # unusable. See https://github.com/kubernetes-client/python/issues/2056
-            class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: ignore[misc]
-                @property
-                def on_pod_conditions(self):  # type: ignore[no-untyped-def]
-                    return self._on_pod_conditions
-
-                @on_pod_conditions.setter
-                def on_pod_conditions(self, on_pod_conditions):  # type: ignore[no-untyped-def]
-                    self._on_pod_conditions = on_pod_conditions
-
-            k8s_client.V1PodFailurePolicyRule = PatchedFailurePolicyRule
-            k8s_client.models.V1PodFailurePolicyRule = PatchedFailurePolicyRule
 
             pod_failure_policy = settings.pod_failure_policy or {
                 # These rules are applied sequentially. This means any failure in
@@ -336,7 +404,7 @@ def main() -> None:
                 ]
             }
 
-            job_name = settings.pod_name_prefix or ""
+            job_name = settings.job_name_prefix or ""
             random_prefix = "".join(random.choices("0123456789abcdef", k=8))
             job_name += f"-{random_prefix}-{step_name}-{deployment.pipeline_configuration.name}"
             # The job name will be used as a label on the pods, so we need to make
@@ -360,9 +428,22 @@ def main() -> None:
                 job_manifest=job_manifest,
             )
 
-            logger.info(f"Waiting for job of step `{step_name}` to finish...")
+            node.metadata["job_name"] = job_name
+
+            return NodeStatus.RUNNING
+
+        def check_job_status(node: Node) -> NodeStatus:
+            step_name = node.id
+            job_name = node.metadata["job_name"]
+            step_config = deployment.step_configurations[step_name].config
+            settings = step_config.settings.get(
+                "orchestrator.kubernetes", None
+            )
+            settings = KubernetesOrchestratorSettings.model_validate(
+                settings.model_dump() if settings else {}
+            )
             try:
-                kube_utils.wait_for_job_to_finish(
+                finished = kube_utils.check_job_status(
                     batch_api=batch_api,
                     core_api=core_api,
                     namespace=namespace,
@@ -371,8 +452,10 @@ def main() -> None:
                     stream_logs=pipeline_settings.stream_step_logs,
                     backoff_interval=settings.job_monitoring_interval,
                 )
-
-                logger.info(f"Job for step `{step_name}` completed.")
+                if finished:
+                    return NodeStatus.COMPLETED
+                else:
+                    return NodeStatus.RUNNING
             except Exception:
                 reason = "Unknown"
                 try:
@@ -450,11 +533,11 @@ def main() -> None:
                 # as the pipeline run status will already have been published.
                 pass
 
-        def check_pipeline_cancellation() -> bool:
-            """Check if the pipeline should continue execution.
+        def should_interrupt_execution() -> bool:
+            """Check if the DAG execution should be interrupted.
 
             Returns:
-                True if execution should continue, False if it should stop.
+                If the DAG execution should be interrupted.
             """
             try:
                 run = client.get_pipeline_run(
@@ -471,9 +554,9 @@ def main() -> None:
                     logger.info(
                         f"Pipeline run is in {run.status} state, stopping execution"
                     )
-                    return False
+                    return True
 
-                return True
+                return False
 
             except Exception as e:
                 # If we can't check the status, assume we should continue
@@ -482,25 +565,31 @@ def main() -> None:
                 )
                 return True
 
-        parallel_node_startup_waiting_period = (
-            orchestrator.config.parallel_step_startup_waiting_period or 0.0
-        )
+        def state_update_callback(nodes: List[Node]) -> None:
+            """Update the state of the nodes.
 
-        pipeline_dag = {
-            step_name: step.spec.upstream_steps
-            for step_name, step in deployment.step_configurations.items()
-        }
+            Args:
+                nodes: The nodes.
+            """
+            state = OrchestratorPodState(
+                run_id=pipeline_run.id,
+                orchestrator_run_id=orchestrator_run_id,
+                nodes=nodes,
+            )
+            store_state(state, core_api, namespace, config_map_name)
+
         try:
-            ThreadedDagRunner(
-                dag=pipeline_dag,
-                run_fn=run_step_on_kubernetes,
-                preparation_fn=pre_step_run,
-                finalize_fn=finalize_run,
-                continue_fn=check_pipeline_cancellation,
-                parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
+            nodes_statuses = DagRunner(
+                nodes=nodes,
+                startup_function=start_step_job,
+                monitoring_function=check_job_status,
+                monitoring_interval=1,
                 max_parallelism=pipeline_settings.max_parallelism,
+                # startup_interval=orchestrator.config.parallel_step_startup_waiting_period,
+                startup_interval=0.5,
+                interrupt_function=should_interrupt_execution,
+                state_update_callback=state_update_callback,
             ).run()
-            logger.info("Orchestration pod completed.")
         finally:
             if (
                 orchestrator.config.pass_zenml_token_as_secret
@@ -517,6 +606,19 @@ def main() -> None:
                     logger.error(
                         f"Error cleaning up secret {secret_name}: {e}"
                     )
+
+            try:
+                kube_utils.delete_config_map(
+                    core_api=core_api,
+                    namespace=namespace,
+                    name=config_map_name,
+                )
+            except ApiException as e:
+                logger.error(
+                    f"Error cleaning up config map {config_map_name}: {e}"
+                )
+
+        finalize_run(nodes_statuses)
 
 
 if __name__ == "__main__":

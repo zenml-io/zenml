@@ -31,6 +31,7 @@
 """Kubernetes-native orchestrator."""
 
 import os
+import random
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -60,7 +61,10 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypo
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_cron_job_manifest,
+    build_job_manifest,
     build_pod_manifest,
+    job_template_manifest_from_job,
+    pod_template_manifest_from_pod,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
@@ -553,6 +557,72 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 str(placeholder_run.name)
             )
 
+        pod_manifest = build_pod_manifest(
+            pod_name=pod_name,
+            image_name=image,
+            command=command,
+            args=args,
+            privileged=False,
+            pod_settings=orchestrator_pod_settings,
+            service_account_name=service_account_name,
+            env=environment,
+            labels=orchestrator_pod_labels,
+            mount_local_stores=self.config.is_local,
+            termination_grace_period_seconds=settings.pod_stop_grace_period,
+        )
+
+        # backoff_limit = (
+        #     retry_config.max_retries if retry_config else 0
+        # ) + settings.backoff_limit_margin
+        backoff_limit = 3
+
+        pod_failure_policy = settings.pod_failure_policy or {
+            # These rules are applied sequentially. This means any failure in
+            # the main container will count towards the max retries. Any other
+            # disruption will not count towards the max retries.
+            "rules": [
+                # If the main container fails, we count it towards the max
+                # retries.
+                {
+                    "action": "Count",
+                    "onExitCodes": {
+                        "containerName": "main",
+                        "operator": "NotIn",
+                        "values": [0],
+                    },
+                },
+                # If the pod is interrupted at any other time, we don't count
+                # it as a retry
+                {
+                    "action": "Ignore",
+                    "onPodConditions": [
+                        {
+                            "type": "DisruptionTarget",
+                        }
+                    ],
+                },
+            ]
+        }
+
+        job_name = settings.job_name_prefix or ""
+        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        job_name += (
+            f"-{random_prefix}-{deployment.pipeline_configuration.name}"
+        )
+        # The job name will be used as a label on the pods, so we need to make
+        # sure it doesn't exceed the label length limit
+        job_name = kube_utils.sanitize_label(job_name)
+
+        job_manifest = build_job_manifest(
+            job_name=job_name,
+            pod_template=pod_template_manifest_from_pod(pod_manifest),
+            backoff_limit=backoff_limit,
+            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+            active_deadline_seconds=settings.active_deadline_seconds,
+            pod_failure_policy=pod_failure_policy,
+            labels=orchestrator_pod_labels,
+        )
+
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
             if not deployment.schedule.cron_expression:
@@ -564,20 +634,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             cron_expression = deployment.schedule.cron_expression
             cron_job_manifest = build_cron_job_manifest(
                 cron_expression=cron_expression,
-                pod_name=pod_name,
-                image_name=image,
-                command=command,
-                args=args,
-                service_account_name=service_account_name,
-                privileged=False,
-                pod_settings=orchestrator_pod_settings,
-                env=environment,
-                mount_local_stores=self.config.is_local,
+                job_template=job_template_manifest_from_job(job_manifest),
                 successful_jobs_history_limit=settings.successful_jobs_history_limit,
                 failed_jobs_history_limit=settings.failed_jobs_history_limit,
-                ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
-                termination_grace_period_seconds=settings.pod_stop_grace_period,
-                labels=orchestrator_pod_labels,
             )
 
             cron_job = self._k8s_batch_api.create_namespaced_cron_job(
@@ -594,32 +653,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 }
             )
         else:
-            # Create and run the orchestrator pod.
-            pod_manifest = build_pod_manifest(
-                pod_name=pod_name,
-                image_name=image,
-                command=command,
-                args=args,
-                privileged=False,
-                pod_settings=orchestrator_pod_settings,
-                service_account_name=service_account_name,
-                env=environment,
-                labels=orchestrator_pod_labels,
-                mount_local_stores=self.config.is_local,
-                termination_grace_period_seconds=settings.pod_stop_grace_period,
-            )
-
             try:
-                kube_utils.create_and_wait_for_pod_to_start(
-                    core_api=self._k8s_core_api,
-                    pod_display_name="Kubernetes orchestrator pod",
-                    pod_name=pod_name,
-                    pod_manifest=pod_manifest,
+                kube_utils.create_job(
+                    batch_api=self._k8s_batch_api,
                     namespace=self.config.kubernetes_namespace,
-                    startup_max_retries=settings.pod_failure_max_retries,
-                    startup_failure_delay=settings.pod_failure_retry_delay,
-                    startup_failure_backoff=settings.pod_failure_backoff,
-                    startup_timeout=settings.pod_startup_timeout,
+                    job_manifest=job_manifest,
                 )
             except Exception as e:
                 if self.config.pass_zenml_token_as_secret:
@@ -649,12 +687,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     logger.info(
                         "Waiting for Kubernetes orchestrator pod to finish..."
                     )
-                    kube_utils.wait_pod(
-                        kube_client_fn=self.get_kube_client,
-                        pod_name=pod_name,
+                    kube_utils.wait_for_job_to_finish(
+                        batch_api=self._k8s_batch_api,
+                        core_api=self._k8s_core_api,
                         namespace=self.config.kubernetes_namespace,
-                        exit_condition_lambda=kube_utils.pod_is_done,
-                        timeout_sec=settings.timeout,
+                        job_name=job_name,
+                        backoff_interval=settings.job_monitoring_interval,
                         stream_logs=True,
                     )
 

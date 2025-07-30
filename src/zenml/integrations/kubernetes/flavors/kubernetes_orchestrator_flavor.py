@@ -78,21 +78,28 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=None,
         description="Custom prefix for generated pod names. Helps identify pods in the cluster.",
     )
+    job_name_prefix: Optional[str] = Field(
+        default=None, description="Prefix for the job name."
+    )
     pod_startup_timeout: int = Field(
         default=600,
-        description="Maximum seconds to wait for step pods to start. Default is 10 minutes.",
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
     )
     pod_failure_max_retries: int = Field(
         default=3,
-        description="Maximum retry attempts when step pods fail to start.",
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
     )
     pod_failure_retry_delay: int = Field(
         default=10,
-        description="Delay in seconds between pod failure retry attempts.",
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
     )
     pod_failure_backoff: float = Field(
         default=1.0,
-        description="Exponential backoff factor for retry delays. Values > 1.0 increase delay with each retry.",
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
     )
     max_parallelism: Optional[PositiveInt] = Field(
         default=None,
@@ -100,19 +107,20 @@ class KubernetesOrchestratorSettings(BaseSettings):
     )
     successful_jobs_history_limit: Optional[NonNegativeInt] = Field(
         default=None,
-        description="Number of successful scheduled jobs to retain in cluster history.",
+        description="Number of successful scheduled jobs to retain in history.",
     )
     failed_jobs_history_limit: Optional[NonNegativeInt] = Field(
         default=None,
-        description="Number of failed scheduled jobs to retain in cluster history.",
+        description="Number of failed scheduled jobs to retain in history.",
     )
     ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
         default=None,
-        description="Seconds to keep finished scheduled jobs before automatic cleanup.",
+        description="Seconds to keep finished jobs before automatic cleanup.",
     )
     active_deadline_seconds: Optional[NonNegativeInt] = Field(
         default=None,
-        description="Deadline in seconds for the active pod. If the pod is inactive for this many seconds, it will be terminated.",
+        description="Job deadline in seconds. If the job doesn't finish "
+        "within this time, it will be terminated.",
     )
     backoff_limit_margin: NonNegativeInt = Field(
         default=0,

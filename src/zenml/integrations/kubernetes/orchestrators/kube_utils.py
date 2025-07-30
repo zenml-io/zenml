@@ -57,6 +57,23 @@ logger = get_logger(__name__)
 R = TypeVar("R")
 
 
+# This is to fix a bug in the kubernetes client which has some wrong
+# client-side validations that means the `on_exit_codes` field is
+# unusable. See https://github.com/kubernetes-client/python/issues/2056
+class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: ignore[misc]
+    @property
+    def on_pod_conditions(self):  # type: ignore[no-untyped-def]
+        return self._on_pod_conditions
+
+    @on_pod_conditions.setter
+    def on_pod_conditions(self, on_pod_conditions):  # type: ignore[no-untyped-def]
+        self._on_pod_conditions = on_pod_conditions
+
+
+k8s_client.V1PodFailurePolicyRule = PatchedFailurePolicyRule
+k8s_client.models.V1PodFailurePolicyRule = PatchedFailurePolicyRule
+
+
 class PodPhase(enum.Enum):
     """Phase of the Kubernetes pod.
 
@@ -841,3 +858,158 @@ def wait_for_job_to_finish(
         time.sleep(backoff_interval)
         if exponential_backoff and backoff_interval < maximum_backoff:
             backoff_interval *= 2
+
+
+def check_job_status(
+    batch_api: k8s_client.BatchV1Api,
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    job_name: str,
+    backoff_interval: float = 1,
+    maximum_backoff: float = 32,
+    exponential_backoff: bool = False,
+    fail_on_container_waiting_reasons: Optional[List[str]] = None,
+    stream_logs: bool = True,
+    container_name: Optional[str] = None,
+) -> bool:
+    """Wait for a job to finish.
+
+    Args:
+        batch_api: Kubernetes BatchV1Api client.
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
+        job_name: Name of the job for which to wait.
+        backoff_interval: The interval to wait between polling the job status.
+        maximum_backoff: The maximum interval to wait between polling the job
+            status.
+        exponential_backoff: Whether to use exponential backoff.
+        fail_on_container_waiting_reasons: List of container waiting reasons
+            that will cause the job to fail.
+        stream_logs: Whether to stream the job logs.
+        container_name: Name of the container to stream logs from.
+
+    Raises:
+        RuntimeError: If the job failed or timed out.
+    """
+    job: k8s_client.V1Job = retry_on_api_exception(
+        batch_api.read_namespaced_job
+    )(name=job_name, namespace=namespace)
+
+    if job.status.conditions:
+        for condition in job.status.conditions:
+            if condition.type == "Complete" and condition.status == "True":
+                return True
+            if condition.type == "Failed" and condition.status == "True":
+                raise RuntimeError(
+                    f"Job `{namespace}:{job_name}` failed: {condition.message}"
+                )
+
+    if fail_on_container_waiting_reasons:
+        pod_list: k8s_client.V1PodList = retry_on_api_exception(
+            core_api.list_namespaced_pod
+        )(
+            namespace=namespace,
+            label_selector=f"job-name={job_name}",
+            field_selector="status.phase=Pending",
+        )
+        for pod in pod_list.items:
+            container_state = get_container_status(
+                pod, container_name or "main"
+            )
+
+            if (
+                container_state
+                and (waiting_state := container_state.waiting)
+                and waiting_state.reason in fail_on_container_waiting_reasons
+            ):
+                retry_on_api_exception(batch_api.delete_namespaced_job)(
+                    name=job_name,
+                    namespace=namespace,
+                    propagation_policy="Foreground",
+                )
+                raise RuntimeError(
+                    f"Job `{namespace}:{job_name}` failed: "
+                    f"Detected container in state "
+                    f"{waiting_state.reason}"
+                )
+
+    # TODO: log streaming
+
+    return False
+
+
+def create_config_map(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    name: str,
+    data: Dict[str, str],
+) -> None:
+    """Create a Kubernetes config map.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
+        name: Name of the config map to create.
+        data: Data to store in the config map.
+    """
+    retry_on_api_exception(core_api.create_namespaced_config_map)(
+        namespace=namespace,
+        body=k8s_client.V1ConfigMap(metadata={"name": name}, data=data),
+    )
+
+
+def update_config_map(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    name: str,
+    data: Dict[str, str],
+) -> None:
+    """Update a Kubernetes config map.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
+        name: Name of the config map to update.
+        data: Data to store in the config map.
+    """
+    retry_on_api_exception(core_api.patch_namespaced_config_map)(
+        namespace=namespace,
+        name=name,
+        body=k8s_client.V1ConfigMap(data=data),
+    )
+
+
+def get_config_map(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    name: str,
+) -> k8s_client.V1ConfigMap:
+    """Get a Kubernetes config map.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
+        name: Name of the config map to get.
+    """
+    return retry_on_api_exception(core_api.read_namespaced_config_map)(
+        namespace=namespace,
+        name=name,
+    )
+
+
+def delete_config_map(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    name: str,
+) -> None:
+    """Delete a Kubernetes config map.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
+        name: Name of the config map to delete.
+    """
+    retry_on_api_exception(core_api.delete_namespaced_config_map)(
+        namespace=namespace,
+        name=name,
+    )
