@@ -139,6 +139,10 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "the chance of the server receiving the maximum amount of retry "
         "requests.",
     )
+    orchestrator_job_backoff_limit: NonNegativeInt = Field(
+        default=3,
+        description="The backoff limit for the orchestrator job.",
+    )
     fail_on_container_waiting_reasons: Optional[List[str]] = Field(
         default=[
             "InvalidImageName",

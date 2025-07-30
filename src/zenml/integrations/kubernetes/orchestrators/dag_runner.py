@@ -15,6 +15,7 @@
 import queue
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
@@ -28,8 +29,9 @@ logger = get_logger(__name__)
 class NodeStatus(StrEnum):
     """Status of a DAG node."""
 
-    NOT_STARTED = "not_started"
-    PENDING = "pending"
+    NOT_READY = "not_ready"  # Can not be started yet
+    READY = "ready"  # Can be started but is still waiting in the queue
+    STARTING = "starting"  # Is being started, but not yet running
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -39,7 +41,7 @@ class NodeStatus(StrEnum):
 
 class Node(BaseModel):
     id: str
-    status: NodeStatus = NodeStatus.NOT_STARTED
+    status: NodeStatus = NodeStatus.NOT_READY
     upstream_nodes: List[str] = []
     metadata: Dict[str, Any] = {}
 
@@ -83,6 +85,7 @@ class DagRunner:
         self.startup_interval = startup_interval
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
+        self.startup_executor = ThreadPoolExecutor(max_workers=10)
 
     @property
     def running_nodes(self) -> List[Node]:
@@ -92,9 +95,17 @@ class DagRunner:
             if node.status == NodeStatus.RUNNING
         ]
 
+    @property
+    def active_nodes(self) -> List[Node]:
+        return [
+            node
+            for node in self.nodes.values()
+            if node.status in {NodeStatus.RUNNING, NodeStatus.STARTING}
+        ]
+
     def _initialize_startup_queue(self) -> None:
         for node in self.nodes.values():
-            if node.status == NodeStatus.PENDING:
+            if node.status in {NodeStatus.READY, NodeStatus.STARTING}:
                 self.startup_queue.put(node)
 
     def _update_state(self) -> None:
@@ -115,19 +126,26 @@ class DagRunner:
         )
 
     def _start_node(self, node: Node) -> None:
-        try:
-            node.status = self.startup_function(node)
-        except Exception:
-            node.status = NodeStatus.FAILED
-            logger.exception("Node `%s` failed to start.", node.id)
-        else:
-            logger.info("Node `%s` started (Status: %s)", node.id, node.status)
+        node.status = NodeStatus.STARTING
+
+        def _start_node_task():
+            try:
+                node.status = self.startup_function(node)
+            except Exception:
+                node.status = NodeStatus.FAILED
+                logger.exception("Node `%s` failed to start.", node.id)
+            else:
+                logger.info(
+                    "Node `%s` started (Status: %s)", node.id, node.status
+                )
+
+        self.startup_executor.submit(_start_node_task)
 
     def _process_nodes(self) -> bool:
         finished = True
 
         for node in self.nodes.values():
-            if node.status == NodeStatus.NOT_STARTED:
+            if node.status == NodeStatus.NOT_READY:
                 if self._should_skip_node(node):
                     node.status = NodeStatus.SKIPPED
                     logger.warning(
@@ -135,7 +153,7 @@ class DagRunner:
                         node.id,
                     )
                 elif self._can_start_node(node):
-                    node.status = NodeStatus.PENDING
+                    node.status = NodeStatus.READY
                     self.startup_queue.put(node)
 
             if not node.is_finished:
@@ -151,7 +169,7 @@ class DagRunner:
                     node.status = self.monitoring_function(node)
                 except Exception:
                     node.status = NodeStatus.FAILED
-                    logger.exception("Node `%s` monitoring failed.", node.id)
+                    logger.exception("Node `%s` failed.", node.id)
                 else:
                     logger.debug(
                         "Node `%s` status updated: %s", node.id, node.status
@@ -168,7 +186,7 @@ class DagRunner:
     def _startup_loop(self) -> None:
         while not self.shutdown_event.is_set():
             if self.max_parallelism is not None:
-                if len(self.running_nodes) >= self.max_parallelism:
+                if len(self.active_nodes) >= self.max_parallelism:
                     # Sleep for 0.5 seconds or exit immediately if the shutdown
                     # event was set
                     logger.debug(
@@ -184,6 +202,7 @@ class DagRunner:
             except queue.Empty:
                 pass
             else:
+                self.startup_queue.task_done()
                 self._start_node(node)
                 if self.startup_interval is not None:
                     # Delay the next node startup by the startup interval

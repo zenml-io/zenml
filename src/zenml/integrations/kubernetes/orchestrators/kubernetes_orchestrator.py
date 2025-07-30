@@ -589,7 +589,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         job_manifest = build_job_manifest(
             job_name=job_name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
-            backoff_limit=settings.backoff_limit_margin,
+            backoff_limit=settings.orchestrator_job_backoff_limit,
             ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
             active_deadline_seconds=settings.active_deadline_seconds,
             pod_failure_policy=pod_failure_policy,
