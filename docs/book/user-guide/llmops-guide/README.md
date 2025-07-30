@@ -7,6 +7,8 @@ icon: robot
 
 Welcome to the ZenML LLMOps Guide, where we dive into the exciting world of Large Language Models (LLMs) and how to integrate them seamlessly into your MLOps pipelines using ZenML. This guide is designed for ML practitioners and MLOps engineers looking to harness the potential of LLMs while maintaining the robustness and scalability of their workflows.
 
+From foundational prompt engineering practices to advanced RAG implementations, we cover the essential techniques for building production-ready LLM applications with ZenML's streamlined approach.
+
 <figure><img src="../../.gitbook/assets/rag-overview.png" alt=""><figcaption><p>ZenML simplifies the development and deployment of LLM-powered MLOps pipelines.</p></figcaption></figure>
 
 In this guide, we'll explore various aspects of working with LLMs in ZenML, including:
@@ -23,6 +25,13 @@ In this guide, we'll explore various aspects of working with LLMs in ZenML, incl
   * [Retrieval evaluation](evaluation/retrieval.md)
   * [Generation evaluation](evaluation/generation.md)
   * [Evaluation in practice](evaluation/evaluation-in-practice.md)
+* [Prompt engineering](prompt-engineering/)
+  * [Prompt engineering in 30 lines](prompt-engineering/prompt-engineering-30-loc.md)
+  * [Understanding prompt management](prompt-engineering/understanding-prompt-management.md)
+  * [Basic prompt workflows](prompt-engineering/basic-prompt-workflows.md)
+  * [Version control and A/B testing](prompt-engineering/version-control-and-testing.md)
+  * [Dashboard integration](prompt-engineering/dashboard-integration.md)
+  * [Best practices](prompt-engineering/best-practices.md)
 * [Reranking for better retrieval](reranking/)
   * [Understanding reranking](reranking/understanding-reranking.md)
   * [Implementing reranking in ZenML](reranking/implementing-reranking.md)
