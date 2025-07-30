@@ -29,6 +29,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER,
+    ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS,
     ENV_ZENML_SERVER_AUTH_SCHEME,
     ENV_ZENML_SERVER_AUTO_ACTIVATE,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
@@ -164,6 +165,7 @@ class DaemonZenServer(LocalDaemonService):
 
         cmd, env = super()._get_daemon_cmd()
         env[ENV_ZENML_SERVER] = "true"
+        env[ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS] = "true"
         env[ENV_ZENML_CONFIG_PATH] = self._global_config_path
         env[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
         env[ENV_ZENML_USER_ID] = str(gc.user_id)
@@ -208,6 +210,7 @@ class DaemonZenServer(LocalDaemonService):
             Client._reset_instance()
             original_config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
             os.environ[ENV_ZENML_SERVER] = "true"
+            os.environ[ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS] = "true"
             os.environ[ENV_ZENML_CONFIG_PATH] = self._global_config_path
             os.environ[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
             os.environ[ENV_ZENML_USER_ID] = str(gc.user_id)
@@ -222,6 +225,7 @@ class DaemonZenServer(LocalDaemonService):
             finally:
                 # Restore the original client environment variables
                 del os.environ[ENV_ZENML_SERVER]
+                del os.environ[ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS]
                 if original_config_path:
                     os.environ[ENV_ZENML_CONFIG_PATH] = original_config_path
                 else:

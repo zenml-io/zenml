@@ -107,6 +107,15 @@ class ExecutionStatus(StrEnum):
         """
         return self in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
 
+    @property
+    def is_failed(self) -> bool:
+        """Whether the execution status refers to a failed execution.
+
+        Returns:
+            Whether the execution status refers to a failed execution.
+        """
+        return self in {ExecutionStatus.FAILED}
+
 
 class LoggingLevels(Enum):
     """Enum for logging levels."""
@@ -424,9 +433,6 @@ class OnboardingStep(StrEnum):
     DEVICE_VERIFIED = "device_verified"
     PROJECT_CREATED = "project_created"
     PIPELINE_RUN = "pipeline_run"
-    SECOND_PIPELINE_RUN = "second_pipeline_run"
-    THIRD_PIPELINE_RUN = "third_pipeline_run"
-    STARTER_SETUP_COMPLETED = "starter_setup_completed"
     STACK_WITH_REMOTE_ORCHESTRATOR_CREATED = (
         "stack_with_remote_orchestrator_created"
     )
@@ -439,7 +445,7 @@ class OnboardingStep(StrEnum):
     PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE = (
         "pipeline_run_with_remote_artifact_store"
     )
-    PRODUCTION_SETUP_COMPLETED = "production_setup_completed"
+    OSS_ONBOARDING_COMPLETED = "oss_onboarding_completed"
     PRO_ONBOARDING_COMPLETED = "pro_onboarding_completed"
 
 

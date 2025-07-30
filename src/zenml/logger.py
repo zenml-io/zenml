@@ -84,27 +84,20 @@ class CustomFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
+        # Import here to avoid circular imports
+        from zenml.logging.step_logging import (
+            _add_step_name_to_message,
+            step_names_in_console,
+        )
+
+        # Get the template
         format_template = self._get_format_template(record)
 
         # Apply step name prepending if enabled (for console display)
         message = record.getMessage()
         try:
-            # Import here to avoid circular imports
-            from zenml.logging.step_logging import step_names_in_console
-
             if step_names_in_console.get():
-                from zenml.steps import get_step_context
-
-                step_context = get_step_context()
-
-                if step_context and message not in ["\n", ""]:
-                    # For progress bar updates (with \r), inject the step name after the \r
-                    if "\r" in message:
-                        message = message.replace(
-                            "\r", f"\r[{step_context.step_name}] "
-                        )
-                    else:
-                        message = f"[{step_context.step_name}] {message}"
+                message = _add_step_name_to_message(message)
         except Exception:
             # If we can't get step context, just use the original message
             pass
@@ -179,6 +172,9 @@ def get_storage_log_level() -> LoggingLevels:
 
     Returns:
         The storage logging level, defaulting to INFO if invalid.
+
+    Raises:
+        KeyError: If the storage logging level is not found.
     """
     verbosity = ZENML_STORAGE_LOGGING_VERBOSITY.upper()
     if verbosity not in LoggingLevels.__members__:

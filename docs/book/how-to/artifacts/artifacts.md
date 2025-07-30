@@ -38,6 +38,18 @@ def create_data() -> pd.DataFrame:
         "feature_2": [4, 5, 6],
         "target": [10, 20, 30]
     })
+
+@step
+def create_prompt_template() -> str:
+    """Creates a prompt template that becomes an artifact."""
+    return """
+    You are a helpful customer service agent. 
+    
+    Customer Query: {query}
+    Previous Context: {context}
+    
+    Please provide a helpful response following our company guidelines.
+    """
 ```
 
 ### Consuming Artifacts (Step Inputs)
@@ -51,11 +63,27 @@ def process_data(df: pd.DataFrame) -> pd.DataFrame:
     df["feature_3"] = df["feature_1"] * df["feature_2"]
     return df
 
+@step
+def test_agent_response(prompt_template: str, test_query: str) -> dict:
+    """Uses a prompt template artifact to test agent responses."""
+    filled_prompt = prompt_template.format(
+        query=test_query, 
+        context="Previous customer complained about delayed shipping"
+    )
+    # Your agent logic here
+    response = call_llm_agent(filled_prompt)
+    return {"query": test_query, "response": response, "prompt_used": filled_prompt}
+
 @pipeline
 def simple_pipeline():
     """Pipeline that creates and processes artifacts."""
+    # Traditional ML artifacts
     data = create_data()  # Produces an artifact
     processed_data = process_data(data)  # Uses and produces artifacts
+    
+    # AI agent artifacts
+    prompt = create_prompt_template()  # Produces a prompt artifact
+    agent_test = test_agent_response(prompt, "Where is my order?")  # Uses prompt artifact
 ```
 
 ### Artifacts vs. Parameters
@@ -498,7 +526,9 @@ Artifacts are a central part of ZenML's approach to ML pipelines. They provide:
 * Visualization capabilities
 * Cross-pipeline data sharing
 
-By understanding how artifacts work, you can build more effective, maintainable, and reproducible ML pipelines.
+Whether you're working with traditional ML models, prompt templates, agent configurations, or evaluation datasets, ZenML's artifact system treats them all uniformly. This enables you to apply the same MLOps principles across your entire AI stack - from classical ML to complex multi-agent systems.
+
+By understanding how artifacts work, you can build more effective, maintainable, and reproducible ML pipelines and AI workflows.
 
 For more information on specific aspects of artifacts, see:
 

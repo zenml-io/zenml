@@ -260,6 +260,7 @@ from zenml.models import (
     ServerSettingsResponse,
     ServerSettingsUpdate,
     ServiceAccountFilter,
+    ServiceAccountInternalRequest,
     ServiceAccountRequest,
     ServiceAccountResponse,
     ServiceAccountUpdate,
@@ -5744,7 +5745,9 @@ class SqlZenStore(BaseZenStore):
 
             log_entry = LogsSchema(
                 uri=pipeline_run.logs.uri,
-                source=pipeline_run.logs.source,
+                # TODO: Remove fallback when not supporting
+                # clients <0.84.0 anymore
+                source=pipeline_run.logs.source or "client",
                 pipeline_run_id=new_run.id,
                 artifact_store_id=pipeline_run.logs.artifact_store_id,
             )
@@ -6152,7 +6155,9 @@ class SqlZenStore(BaseZenStore):
                         # Create the log entry
                         log_entry = LogsSchema(
                             uri=log_request.uri,
-                            source=log_request.source,
+                            # TODO: Remove fallback when not supporting
+                            # clients <0.84.0 anymore
+                            source=log_request.source or "orchestrator",
                             pipeline_run_id=existing_run.id,
                             artifact_store_id=log_request.artifact_store_id,
                         )
@@ -7292,7 +7297,10 @@ class SqlZenStore(BaseZenStore):
 
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
     def create_service_account(
-        self, service_account: ServiceAccountRequest
+        self,
+        service_account: Union[
+            ServiceAccountRequest, ServiceAccountInternalRequest
+        ],
     ) -> ServiceAccountResponse:
         """Creates a new service account.
 
@@ -9041,7 +9049,9 @@ class SqlZenStore(BaseZenStore):
 
                 log_entry = LogsSchema(
                     uri=step_run.logs.uri,
-                    source=step_run.logs.source,
+                    # TODO: Remove fallback when not supporting
+                    # clients <0.84.0 anymore
+                    source=step_run.logs.source or "execution",
                     step_run_id=step_schema.id,
                     artifact_store_id=step_run.logs.artifact_store_id,
                 )
@@ -9653,7 +9663,7 @@ class SqlZenStore(BaseZenStore):
 
             completed_onboarding_steps: Set[str] = {
                 OnboardingStep.PIPELINE_RUN,
-                OnboardingStep.STARTER_SETUP_COMPLETED,
+                OnboardingStep.OSS_ONBOARDING_COMPLETED,
             }
             if stack_metadata["orchestrator"] not in {
                 "local",
@@ -9668,21 +9678,9 @@ class SqlZenStore(BaseZenStore):
                 completed_onboarding_steps.update(
                     {
                         OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
-                        OnboardingStep.PRODUCTION_SETUP_COMPLETED,
+                        OnboardingStep.PRO_ONBOARDING_COMPLETED,
                     }
                 )
-            if OnboardingStep.THIRD_PIPELINE_RUN not in (
-                self._cached_onboarding_state or {}
-            ):
-                onboarding_state = self.get_onboarding_state()
-                if OnboardingStep.PIPELINE_RUN in onboarding_state:
-                    completed_onboarding_steps.add(
-                        OnboardingStep.SECOND_PIPELINE_RUN
-                    )
-                if OnboardingStep.SECOND_PIPELINE_RUN in onboarding_state:
-                    completed_onboarding_steps.add(
-                        OnboardingStep.THIRD_PIPELINE_RUN
-                    )
 
             self._update_onboarding_state(
                 completed_steps=completed_onboarding_steps, session=session

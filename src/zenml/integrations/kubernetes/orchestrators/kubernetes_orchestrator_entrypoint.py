@@ -187,7 +187,7 @@ def main() -> None:
 
                 return True
 
-        step_pod_labels = {
+        base_labels = {
             "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
             "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
             "pipeline": kube_utils.sanitize_label(
@@ -233,6 +233,10 @@ def main() -> None:
             pod_name = kube_utils.sanitize_pod_name(
                 pod_name, namespace=namespace
             )
+
+            # Add step name to labels so both pod and job have consistent labeling
+            step_labels = base_labels.copy()
+            step_labels["step_name"] = kube_utils.sanitize_label(step_name)
 
             image = KubernetesOrchestrator.get_image(
                 deployment=deployment, step_name=step_name
@@ -281,7 +285,7 @@ def main() -> None:
                 or settings.service_account_name,
                 mount_local_stores=mount_local_stores,
                 termination_grace_period_seconds=settings.pod_stop_grace_period,
-                labels=step_pod_labels,
+                labels=step_labels,
             )
 
             retry_config = step_config.retry
@@ -347,7 +351,7 @@ def main() -> None:
                 active_deadline_seconds=settings.active_deadline_seconds,
                 pod_failure_policy=pod_failure_policy,
                 owner_references=owner_references,
-                labels=step_pod_labels,
+                labels=step_labels,
             )
 
             kube_utils.create_job(
@@ -363,12 +367,38 @@ def main() -> None:
                     core_api=core_api,
                     namespace=namespace,
                     job_name=job_name,
+                    fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                     stream_logs=pipeline_settings.stream_step_logs,
+                    backoff_interval=settings.job_monitoring_interval,
                 )
 
                 logger.info(f"Job for step `{step_name}` completed.")
             except Exception:
-                logger.error(f"Job for step `{step_name}` failed.")
+                reason = "Unknown"
+                try:
+                    pods = core_api.list_namespaced_pod(
+                        label_selector=f"job-name={job_name}",
+                        namespace=namespace,
+                    ).items
+                    # Sort pods by creation timestamp, oldest first
+                    pods.sort(
+                        key=lambda pod: pod.metadata.creation_timestamp,
+                    )
+                    if pods:
+                        if (
+                            termination_reason
+                            := kube_utils.get_container_termination_reason(
+                                pods[-1], "main"
+                            )
+                        ):
+                            exit_code, reason = termination_reason
+                            if exit_code != 0:
+                                reason = f"{reason} (exit_code={exit_code})"
+                except Exception:
+                    pass
+                logger.error(
+                    f"Job for step `{step_name}` failed. Reason: {reason}"
+                )
 
                 raise
 

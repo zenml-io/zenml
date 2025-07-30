@@ -63,7 +63,11 @@ from zenml.models import (
     OAuthDeviceInternalResponse,
     OAuthDeviceInternalUpdate,
     OAuthTokenResponse,
+    ServiceAccountFilter,
+    ServiceAccountInternalRequest,
+    ServiceAccountInternalUpdate,
     UserAuthModel,
+    UserFilter,
     UserRequest,
     UserResponse,
     UserUpdate,
@@ -109,7 +113,8 @@ def _fetch_and_verify_api_key(
     Raises:
         CredentialsNotValid: If the API key could not be found, is not
             active, if it could not be verified against the supplied key value
-            or if the associated service account is not active.
+            or if the associated service account is not active or is an
+            external service account.
     """
     store = zen_store()
 
@@ -125,6 +130,14 @@ def _fetch_and_verify_api_key(
             f"Authentication error: service account "
             f"{api_key.service_account.name} "
             f"associated with API key {api_key.name} is not active"
+        )
+        logger.exception(error)
+        raise CredentialsNotValid(error)
+
+    if api_key.service_account.external_user_id:
+        error = (
+            "Authentication error: cannot use an API key associated with an "
+            "external service account to authenticate to the ZenML server"
         )
         logger.exception(error)
         raise CredentialsNotValid(error)
@@ -714,37 +727,135 @@ def authenticate_external_user(
 
     # Check if the external user already exists in the ZenML server database
     # If not, create a new user. If yes, update the existing user.
-    try:
-        user = store.get_external_user(user_id=external_user.id)
-
-        # Update the user information
-        user = store.update_user(
-            user_id=user.id,
-            user_update=UserUpdate(
-                name=external_user.email,
-                full_name=external_user.name or "",
-                email_opted_in=True,
-                active=True,
-                email=external_user.email,
-                is_admin=external_user.is_admin,
+    user: Optional[UserResponse] = None
+    if not external_user.is_service_account:
+        users = store.list_users(
+            UserFilter(
+                external_user_id=external_user.id,
             ),
         )
-    except KeyError:
-        logger.info(
-            f"External user with ID {external_user.id} not found in ZenML "
-            f"server database. Creating a new user."
-        )
-        user = store.create_user(
-            UserRequest(
-                name=external_user.email,
-                full_name=external_user.name or "",
+        if users.items:
+            user = users.items[0]
+            logger.info(
+                f"Found user with ID {user.id} matching the external user ID "
+                f"{external_user.id}."
+            )
+        else:
+            logger.info(
+                f"User with external user ID {external_user.id} not found."
+            )
+            # Try finding a user or service account with the same username.
+            # This is to handle migration of accounts from ZenML OSS to ZenML
+            # Pro: if the server contains an internal account with the same
+            # username as the ZenML Pro account, we adopt the existing
+            # user/service account.
+            users = store.list_users(
+                UserFilter(
+                    name=external_user.username,
+                )
+            )
+            if users.items:
+                user = users.items[0]
+                logger.info(
+                    f"Adopting existing user with username {user.name} and "
+                    f"internal ID {user.id} as external user with ID "
+                    f"{external_user.id}."
+                )
+    else:
+        service_accounts = store.list_service_accounts(
+            ServiceAccountFilter(
                 external_user_id=external_user.id,
-                email_opted_in=True,
-                active=True,
-                email=external_user.email,
-                is_admin=external_user.is_admin,
             )
         )
+        if service_accounts.items:
+            service_account = service_accounts.items[0]
+            logger.info(
+                f"Found service account with ID {service_account.id} matching "
+                f"the external user ID {external_user.id}."
+            )
+            user = service_account.to_user_model()
+        else:
+            logger.info(
+                f"Service account with external user ID {external_user.id} "
+                f"not found."
+            )
+            # Try finding a service account with the same username.
+            # This is to handle migration of accounts from ZenML OSS to ZenML
+            # Pro: if the server contains an internal service account with the
+            # same username as the ZenML Pro service account, we adopt the
+            # existing service account.
+            service_accounts = store.list_service_accounts(
+                ServiceAccountFilter(
+                    name=external_user.username,
+                )
+            )
+            if service_accounts.items:
+                service_account = service_accounts.items[0]
+                logger.info(
+                    f"Adopting existing service account with username "
+                    f"{service_account.name} and internal ID "
+                    f"{service_account.id} as external service account with "
+                    f"ID {external_user.id}."
+                )
+                user = service_account.to_user_model()
+
+    if user is not None:
+        if not user.is_service_account:
+            # Update the user information
+            user = store.update_user(
+                user_id=user.id,
+                user_update=UserUpdate(
+                    name=external_user.username,
+                    full_name=external_user.name or "",
+                    email_opted_in=True,
+                    active=True,
+                    email=external_user.email,
+                    is_admin=external_user.is_admin,
+                    avatar_url=external_user.avatar_url,
+                    external_user_id=external_user.id,
+                ),
+            )
+        else:
+            # Update the service account information
+            user = store.update_service_account(
+                service_account_name_or_id=user.id,
+                service_account_update=ServiceAccountInternalUpdate(
+                    name=external_user.username,
+                    full_name=external_user.name or "",
+                    external_user_id=external_user.id,
+                    active=True,
+                    avatar_url=external_user.avatar_url,
+                ),
+            ).to_user_model()
+    else:
+        logger.info(
+            f"External account with ID {external_user.id} or name "
+            f"{external_user.username} not found in ZenML server database. "
+            f"Creating a new account."
+        )
+        if external_user.is_service_account:
+            user = store.create_service_account(
+                service_account=ServiceAccountInternalRequest(
+                    name=external_user.username,
+                    full_name=external_user.name or "",
+                    external_user_id=external_user.id,
+                    active=True,
+                    avatar_url=external_user.avatar_url,
+                ),
+            ).to_user_model()
+        else:
+            user = store.create_user(
+                UserRequest(
+                    name=external_user.username,
+                    full_name=external_user.name or "",
+                    external_user_id=external_user.id,
+                    email_opted_in=True,
+                    active=True,
+                    email=external_user.email,
+                    is_admin=external_user.is_admin,
+                    avatar_url=external_user.avatar_url,
+                )
+            )
 
         with AnalyticsContext() as context:
             context.user_id = user.id
@@ -766,7 +877,6 @@ def authenticate_external_user(
         store.update_onboarding_state(
             completed_steps={
                 OnboardingStep.DEVICE_VERIFIED,
-                OnboardingStep.PRO_ONBOARDING_COMPLETED,
             }
         )
 
