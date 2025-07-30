@@ -16,7 +16,7 @@
 import argparse
 import random
 import socket
-from typing import Dict, List, Optional, cast
+from typing import List, Optional, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -33,6 +33,11 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes.orchestrators.dag_runner import (
+    DagRunner,
+    Node,
+    NodeStatus,
+)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
@@ -42,11 +47,6 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_job_manifest,
     build_pod_manifest,
     pod_template_manifest_from_pod,
-)
-from zenml.integrations.kubernetes.orchestrators.new_dag_runner import (
-    DagRunner,
-    Node,
-    NodeStatus,
 )
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
@@ -71,56 +71,6 @@ class OrchestratorPodState(BaseModel):
     run_id: UUID
     orchestrator_run_id: str
     nodes: List[Node]
-
-
-def load_state(
-    core_api: k8s_client.CoreV1Api, namespace: str, config_map_name: str
-) -> Optional[OrchestratorPodState]:
-    """Load the state of the orchestrator.
-
-    Returns:
-        The state of the orchestrator.
-    """
-    try:
-        configmap = kube_utils.get_config_map(
-            core_api=core_api,
-            namespace=namespace,
-            name=config_map_name,
-        )
-    except ApiException:
-        return None
-
-    logger.info("Configmap: %s", configmap)
-    state = configmap.data["state"]
-    return OrchestratorPodState.model_validate_json(state)
-
-
-def store_state(
-    state: OrchestratorPodState,
-    core_api: k8s_client.CoreV1Api,
-    namespace: str,
-    config_map_name,
-) -> None:
-    """Store the state of the orchestrator.
-
-    Args:
-        state: The state to store.
-    """
-    try:
-        kube_utils.update_config_map(
-            core_api=core_api,
-            namespace=namespace,
-            name=config_map_name,
-            data={"state": state.model_dump_json()},
-        )
-    except ApiException as e:
-        if e.status == 404:
-            kube_utils.create_config_map(
-                core_api=core_api,
-                namespace=namespace,
-                name=config_map_name,
-                data={"state": state.model_dump_json()},
-            )
 
 
 def parse_args() -> argparse.Namespace:
@@ -177,9 +127,55 @@ def main() -> None:
         "job-name", orchestrator_pod_name
     )
 
+    def _load_state() -> Optional[OrchestratorPodState]:
+        """Load the state of the orchestrator.
+
+        Returns:
+            The state of the orchestrator.
+        """
+        try:
+            configmap = kube_utils.get_config_map(
+                core_api=core_api,
+                namespace=namespace,
+                name=config_map_name,
+            )
+        except ApiException as e:
+            if e.status == 404:
+                return None
+            raise
+
+        logger.info("Configmap: %s", configmap)
+        state = configmap.data["state"]
+        return OrchestratorPodState.model_validate_json(state)
+
+    def _store_state(state: OrchestratorPodState) -> None:
+        """Store the state of the orchestrator.
+
+        Args:
+            state: The state to store.
+        """
+        data = {"state": state.model_dump_json()}
+        try:
+            kube_utils.update_config_map(
+                core_api=core_api,
+                namespace=namespace,
+                name=config_map_name,
+                data=data,
+            )
+        except ApiException as e:
+            if e.status == 404:
+                kube_utils.create_config_map(
+                    core_api=core_api,
+                    namespace=namespace,
+                    name=config_map_name,
+                    data=data,
+                )
+            else:
+                raise
+
     existing_logs_response = None
 
-    if existing_state := load_state(core_api, namespace, config_map_name):
+    if existing_state := _load_state():
         logger.info("Continuing existing run %s", existing_state.run_id)
         orchestrator_run_id = existing_state.orchestrator_run_id
         nodes = existing_state.nodes
@@ -202,15 +198,12 @@ def main() -> None:
                 deployment=deployment,
                 orchestrator_run_id=orchestrator_run_id,
             )
-        store_state(
+        _store_state(
             OrchestratorPodState(
                 run_id=pipeline_run.id,
                 orchestrator_run_id=orchestrator_run_id,
                 nodes=nodes,
-            ),
-            core_api,
-            namespace,
-            config_map_name,
+            )
         )
 
     logs_context = setup_orchestrator_logging(
@@ -256,7 +249,7 @@ def main() -> None:
             ),
         }
 
-        def _try_to_cache_step_run(step_name: str) -> bool:
+        def _cache_step_run_if_possible(step_name: str) -> bool:
             """Try to cache a step run."""
             if not step_run_request_factory.has_caching_enabled(step_name):
                 return False
@@ -302,7 +295,7 @@ def main() -> None:
             if not pipeline_settings.prevent_orchestrator_pod_caching:
                 # TODO: This currently waits for max_parallelism, is that
                 # what we want?
-                if _try_to_cache_step_run(step_name):
+                if _cache_step_run_if_possible(step_name):
                     return NodeStatus.COMPLETED
 
             if (
@@ -494,54 +487,6 @@ def main() -> None:
 
                 raise
 
-        def finalize_run(node_states: Dict[str, NodeStatus]) -> None:
-            """Finalize the run.
-
-            Args:
-                node_states: The states of the nodes.
-            """
-            try:
-                # Some steps may have failed because the pods could not be created.
-                # We need to check for this and mark the step run as failed if so.
-                pipeline_failed = False
-                failed_step_names = [
-                    step_name
-                    for step_name, node_state in node_states.items()
-                    if node_state == NodeStatus.FAILED
-                ]
-                step_runs = fetch_step_runs_by_names(
-                    step_run_names=failed_step_names, pipeline_run=pipeline_run
-                )
-
-                for step_name, node_state in node_states.items():
-                    if node_state != NodeStatus.FAILED:
-                        continue
-
-                    pipeline_failed = True
-
-                    if step_run := step_runs.get(step_name, None):
-                        # Try to update the step run status, if it exists and is in
-                        # a transient state.
-                        if step_run and step_run.status in {
-                            ExecutionStatus.INITIALIZING,
-                            ExecutionStatus.RUNNING,
-                        }:
-                            publish_utils.publish_failed_step_run(step_run.id)
-
-                # If any steps failed and the pipeline run is still in a transient
-                # state, we need to mark it as failed.
-                if pipeline_failed and pipeline_run.status in {
-                    ExecutionStatus.INITIALIZING,
-                    ExecutionStatus.RUNNING,
-                }:
-                    publish_utils.publish_failed_pipeline_run(pipeline_run.id)
-            except AuthorizationException:
-                # If a step of the pipeline failed or all of them completed
-                # successfully, the pipeline run will be finished and the API token
-                # will be invalidated. We catch this exception and do nothing here,
-                # as the pipeline run status will already have been published.
-                pass
-
         def should_interrupt_execution() -> bool:
             """Check if the DAG execution should be interrupted.
 
@@ -585,7 +530,7 @@ def main() -> None:
                 orchestrator_run_id=orchestrator_run_id,
                 nodes=nodes,
             )
-            store_state(state, core_api, namespace, config_map_name)
+            _store_state(state)
 
         try:
             nodes_statuses = DagRunner(
@@ -626,7 +571,63 @@ def main() -> None:
                     f"Error cleaning up config map {config_map_name}: {e}"
                 )
 
-        finalize_run(nodes_statuses)
+        try:
+            pipeline_failed = False
+            failed_step_names = [
+                step_name
+                for step_name, node_state in nodes_statuses.items()
+                if node_state == NodeStatus.FAILED
+            ]
+            skipped_step_names = [
+                step_name
+                for step_name, node_state in nodes_statuses.items()
+                if node_state == NodeStatus.SKIPPED
+            ]
+
+            if failed_step_names:
+                logger.error(
+                    "The following steps failed: %s",
+                    ", ".join(failed_step_names),
+                )
+            if skipped_step_names:
+                logger.error(
+                    "The following steps were skipped because some of their "
+                    "upstream steps failed: %s",
+                    ", ".join(skipped_step_names),
+                )
+
+            step_runs = fetch_step_runs_by_names(
+                step_run_names=failed_step_names, pipeline_run=pipeline_run
+            )
+
+            for step_name, node_state in nodes_statuses.items():
+                if node_state != NodeStatus.FAILED:
+                    continue
+
+                pipeline_failed = True
+
+                if step_run := step_runs.get(step_name, None):
+                    # Try to update the step run status, if it exists and is in
+                    # a transient state.
+                    if step_run and step_run.status in {
+                        ExecutionStatus.INITIALIZING,
+                        ExecutionStatus.RUNNING,
+                    }:
+                        publish_utils.publish_failed_step_run(step_run.id)
+
+            # If any steps failed and the pipeline run is still in a transient
+            # state, we need to mark it as failed.
+            if pipeline_failed and pipeline_run.status in {
+                ExecutionStatus.INITIALIZING,
+                ExecutionStatus.RUNNING,
+            }:
+                publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+        except AuthorizationException:
+            # If a step of the pipeline failed or all of them completed
+            # successfully, the pipeline run will be finished and the API token
+            # will be invalidated. We catch this exception and do nothing here,
+            # as the pipeline run status will already have been published.
+            pass
 
 
 if __name__ == "__main__":

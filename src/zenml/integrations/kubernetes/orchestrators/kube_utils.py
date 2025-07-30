@@ -620,6 +620,7 @@ def retry_on_api_exception(
     max_retries: int = 3,
     delay: float = 1,
     backoff: float = 1,
+    fail_on_status_codes: Tuple[int, ...] = (404),
 ) -> Callable[..., R]:
     """Retry a function on API exceptions.
 
@@ -628,6 +629,7 @@ def retry_on_api_exception(
         max_retries: The maximum number of retries.
         delay: The delay between retries.
         backoff: The backoff factor.
+        fail_on_status_codes: The status codes to fail on immediately.
 
     Returns:
         The wrapped function with retry logic.
@@ -641,6 +643,9 @@ def retry_on_api_exception(
             try:
                 return func(*args, **kwargs)
             except ApiException as e:
+                if e.status in fail_on_status_codes:
+                    raise
+
                 retries += 1
                 if retries <= max_retries:
                     logger.warning("Error calling %s: %s.", func.__name__, e)

@@ -60,16 +60,17 @@ class DagRunner:
         startup_function: Callable[[Node], NodeStatus],
         monitoring_function: Callable[[Node], NodeStatus],
         interrupt_function: Optional[Callable[[], None]] = None,
+        state_update_callback: Optional[Callable[[List[Node]], None]] = None,
         monitoring_interval: float = 1.0,
         startup_interval: Optional[float] = None,
         max_parallelism: Optional[int] = None,
-        state_update_callback: Optional[Callable[[List[Node]], None]] = None,
     ) -> None:
-        self.startup_queue = queue.Queue()
         self.nodes = {node.id: node for node in nodes}
+        self.startup_queue = queue.Queue()
         self.startup_function = startup_function
         self.monitoring_function = monitoring_function
         self.interrupt_function = interrupt_function
+        self.state_update_callback = state_update_callback
         self.startup_thread = threading.Thread(
             name="DagRunner-Startup", target=self._startup_loop, daemon=True
         )
@@ -82,7 +83,6 @@ class DagRunner:
         self.startup_interval = startup_interval
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
-        self.state_update_callback = state_update_callback
 
     @property
     def running_nodes(self) -> List[Node]:
