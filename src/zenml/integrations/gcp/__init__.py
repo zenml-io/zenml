@@ -43,9 +43,12 @@ class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""
 
     NAME = GCP
+    # Adding the gcsfs<=2024.12.0 for now to solve the issue with the 
+    # increased number of list calls. This is a temporary fix and should be
+    # removed once the issue is resolved.
     REQUIREMENTS = [
         "kfp>=2.6.0",
-        "gcsfs!=2025.5.0,!=2025.5.0.post1",
+        "gcsfs!=2025.5.0,!=2025.5.0.post1,<=2024.12.0",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
         "google-cloud-artifact-registry>=1.11.3",
