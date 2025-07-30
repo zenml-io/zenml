@@ -22,9 +22,8 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
+    enhanced_list_options,
     is_sorted_or_filtered,
-    list_options,
-    print_page_info,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -37,6 +36,40 @@ from zenml.models import (
     ServiceConnectorResponse,
 )
 from zenml.utils.time_utils import seconds_to_human_readable, utc_now
+
+
+def _service_connector_to_print(
+    connector: ServiceConnectorResponse,
+) -> Dict[str, Any]:
+    """Convert a service connector response to a dictionary for table display.
+
+    For table output, keep it compact with essential connector information.
+    Full details are available in JSON/YAML output formats.
+    """
+    # Safely extract connector type name and resource types
+    connector_type = getattr(connector, "connector_type", None)
+    type_name = connector_type.name if connector_type else "Unknown"
+
+    # Get resource types from the connector type
+    resource_types = []
+    if connector_type and hasattr(connector_type, "resource_types"):
+        resource_types = [
+            rt.resource_type for rt in connector_type.resource_types[:2]
+        ]  # Limit to first 2
+
+    return {
+        "name": connector.name,
+        "type": type_name,
+        "resources": ", ".join(resource_types) if resource_types else "",
+        "created": connector.created.strftime("%Y-%m-%d"),
+    }
+
+
+def _service_connector_to_print_full(
+    connector: ServiceConnectorResponse,
+) -> Dict[str, Any]:
+    """Convert service connector response to complete dictionary for JSON/YAML."""
+    return connector.model_dump(mode="json")
 
 
 # Service connectors
@@ -964,7 +997,7 @@ def register_service_connector(
     help="""List available service connectors.
 """,
 )
-@list_options(ServiceConnectorFilter)
+@enhanced_list_options(ServiceConnectorFilter)
 @click.option(
     "--label",
     "-l",
@@ -984,6 +1017,9 @@ def list_service_connectors(
         labels: Labels to filter by.
         kwargs: Keyword arguments to filter the components.
     """
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
     client = Client()
 
     if labels:
@@ -996,12 +1032,27 @@ def list_service_connectors(
         cli_utils.declare("No service connectors found for the given filters.")
         return
 
-    cli_utils.print_service_connectors_table(
-        client=client,
-        connectors=connectors.items,
-        show_active=not is_sorted_or_filtered(ctx),
+    # Prepare data based on output format
+    output_format = (
+        table_kwargs.get("output") or cli_utils.get_default_output_format()
     )
-    print_page_info(connectors)
+    connector_data = []
+
+    for connector in connectors.items:
+        if output_format == "table":
+            # Use compact format for table display
+            connector_data.append(_service_connector_to_print(connector))
+        else:
+            # Use full format for JSON/YAML/TSV output
+            connector_data.append(_service_connector_to_print_full(connector))
+
+    # Handle table output with enhanced system
+    cli_utils.handle_table_output(
+        data=connector_data,
+        page=connectors,
+        show_active=not is_sorted_or_filtered(ctx),
+        **table_kwargs,
+    )
 
 
 @service_connector.command(

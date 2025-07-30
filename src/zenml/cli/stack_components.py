@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 from uuid import UUID
 
 import click
@@ -29,10 +29,9 @@ from zenml.cli.model_registry import register_model_registry_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
-    is_sorted_or_filtered,
-    list_options,
+    enhanced_list_options,
+    prepare_list_data,
     print_model_url,
-    print_page_info,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -45,6 +44,57 @@ from zenml.models import (
 )
 from zenml.utils import source_utils
 from zenml.utils.dashboard_utils import get_component_url
+
+
+def _stack_component_to_print(component: Any) -> Dict[str, Any]:
+    """Convert a stack component response to a dictionary for table display.
+
+    For table output, keep it compact with essential component information.
+    Full details are available in JSON/YAML output formats.
+    """
+    # Get user/author information
+    author = "Unknown"
+    if hasattr(component, "user") and component.user:
+        author = component.user.name
+    elif (
+        hasattr(component, "resources")
+        and component.resources
+        and component.resources.user
+    ):
+        author = component.resources.user.name
+
+    return {
+        "name": component.name,
+        "author": author,
+        "flavor": component.flavor_name,
+        "created": component.created.strftime("%Y-%m-%d"),
+    }
+
+
+def _stack_component_to_print_full(component: Any) -> Dict[str, Any]:
+    """Convert stack component response to complete dictionary for JSON/YAML."""
+    return component.model_dump(mode="json")
+
+
+def _flavor_to_print(flavor: Any) -> Dict[str, Any]:
+    """Convert a flavor response to a dictionary suitable for table display.
+
+    For table output, keep it compact with essential flavor information.
+    Full details are available in JSON/YAML output formats.
+    """
+    return {
+        "name": flavor.name,
+        "integration": flavor.integration,
+        "connector_type": flavor.connector_type or "",
+        "created": flavor.created.strftime("%Y-%m-%d")
+        if hasattr(flavor, "created") and flavor.created
+        else "",
+    }
+
+
+def _flavor_to_print_full(flavor: Any) -> Dict[str, Any]:
+    """Convert flavor response to complete dictionary for JSON/YAML."""
+    return flavor.model_dump(mode="json")
 
 
 def generate_stack_component_get_command(
@@ -152,7 +202,7 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    @list_options(ComponentFilter)
+    @enhanced_list_options(ComponentFilter)
     @click.pass_context
     def list_stack_components_command(
         ctx: click.Context, /, **kwargs: Any
@@ -163,21 +213,37 @@ def generate_stack_component_list_command(
             ctx: The click context object
             kwargs: Keyword arguments to filter the components.
         """
+        # Extract table options from kwargs
+        table_kwargs = cli_utils.extract_table_options(kwargs)
+
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type
             components = client.list_stack_components(**kwargs)
-            if not components:
-                cli_utils.declare("No components found for the given filters.")
-                return
 
-            cli_utils.print_components_table(
-                client=client,
-                component_type=component_type,
-                components=components.items,
-                show_active=not is_sorted_or_filtered(ctx),
-            )
-            print_page_info(components)
+        if not components:
+            cli_utils.declare("No components found.")
+            return
+
+        # Prepare data based on output format
+        output_format = (
+            table_kwargs.get("output") or cli_utils.get_default_output_format()
+        )
+
+        # Use centralized data preparation
+        component_data = prepare_list_data(
+            components.items,
+            output_format,
+            _stack_component_to_print,
+            _stack_component_to_print_full,
+        )
+
+        # Handle table output with enhanced system
+        cli_utils.handle_table_output(
+            data=component_data,
+            page=components,
+            **table_kwargs,
+        )
 
     return list_stack_components_command
 
@@ -714,11 +780,20 @@ def generate_stack_component_flavor_list_command(
         """Lists the flavors for a single type of stack component."""
         client = Client()
 
-        with console.status(f"Listing {display_name} flavors`...\n"):
+        with console.status(f"Listing {display_name} flavors..."):
             flavors = client.get_flavors_by_type(component_type=component_type)
 
-            cli_utils.print_flavor_list(flavors=flavors)
-            cli_utils.print_page_info(flavors)
+        if not flavors.items:
+            cli_utils.declare("No flavors found.")
+            return
+
+        # Use centralized data preparation
+        flavor_data = prepare_list_data(
+            flavors.items, "table", _flavor_to_print, _flavor_to_print_full
+        )
+
+        # Handle table output with pagination
+        cli_utils.handle_table_output(data=flavor_data, page=flavors)
 
     return list_stack_component_flavor_command
 

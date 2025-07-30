@@ -14,22 +14,23 @@
 """Functionality to generate stack component CLI commands."""
 
 import getpass
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 
+from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
     convert_structured_str_to_dict,
     declare,
+    enhanced_list_options,
     error,
     expand_argument_value_from_file,
-    list_options,
+    format_date_for_table,
     parse_name_and_extra_arguments,
+    prepare_list_data,
     pretty_print_secret,
-    print_page_info,
-    print_table,
     validate_keys,
     warning,
 )
@@ -44,6 +45,15 @@ from zenml.logger import get_logger
 from zenml.models import SecretFilter, SecretResponse
 
 logger = get_logger(__name__)
+
+
+def _secret_to_print(secret: SecretResponse) -> Dict[str, Any]:
+    """Convert a secret response to a dictionary for table display."""
+    return {
+        "name": secret.name,
+        "scope": "private" if secret.private else "public",
+        "created": format_date_for_table(secret.created),
+    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -165,13 +175,16 @@ def create_secret(
 @secret.command(
     "list", help="List all registered secrets that match the filter criteria."
 )
-@list_options(SecretFilter)
+@enhanced_list_options(SecretFilter)
 def list_secrets(**kwargs: Any) -> None:
     """List all secrets that fulfill the filter criteria.
 
     Args:
         kwargs: Keyword arguments to filter the secrets.
     """
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
     client = Client()
     with console.status("Listing secrets..."):
         try:
@@ -179,19 +192,23 @@ def list_secrets(**kwargs: Any) -> None:
         except NotImplementedError as e:
             error(f"Centralized secrets management is disabled: {str(e)}")
         if not secrets.items:
-            warning("No secrets found for the given filters.")
+            cli_utils.declare("No secrets found.")
             return
 
-        secret_rows = [
-            dict(
-                name=secret.name,
-                id=str(secret.id),
-                private=secret.private,
-            )
-            for secret in secrets.items
-        ]
-        print_table(secret_rows)
-        print_page_info(secrets)
+        # Prepare data based on output format
+        output_format = (
+            table_kwargs.get("output") or cli_utils.get_default_output_format()
+        )
+
+        # Use centralized data preparation
+        secret_data = prepare_list_data(
+            secrets.items, output_format, _secret_to_print
+        )
+
+        # Handle table output with enhanced system and pagination
+        cli_utils.handle_table_output(
+            data=secret_data, page=secrets, **table_kwargs
+        )
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")

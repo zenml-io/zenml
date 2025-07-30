@@ -13,13 +13,18 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with API keys."""
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import (
+    enhanced_list_options,
+    format_boolean_indicator,
+    format_date_for_table,
+    prepare_list_data,
+)
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
@@ -28,6 +33,26 @@ from zenml.logger import get_logger
 from zenml.models import APIKeyFilter, ServiceAccountFilter
 
 logger = get_logger(__name__)
+
+
+def _service_account_to_print(service_account: Any) -> Dict[str, Any]:
+    """Convert a service account response to a dictionary for table display."""
+    return {
+        "name": service_account.name,
+        "description": service_account.description or "",
+        "active": format_boolean_indicator(service_account.active),
+        "created": format_date_for_table(service_account.created),
+    }
+
+
+def _api_key_to_print(api_key: Any) -> Dict[str, Any]:
+    """Convert an API key response to a dictionary suitable for table display."""
+    return {
+        "name": api_key.name,
+        "description": api_key.description or "",
+        "active": format_boolean_indicator(api_key.active),
+        "created": format_date_for_table(api_key.created),
+    }
 
 
 def _create_api_key(
@@ -185,30 +210,47 @@ def describe_service_account(service_account_name_or_id: str) -> None:
 
 
 @service_account.command("list")
-@list_options(ServiceAccountFilter)
+@enhanced_list_options(ServiceAccountFilter)
 @click.pass_context
 def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
-    """List all users.
+    """List all service accounts.
 
     Args:
         ctx: The click context object
-        kwargs: Keyword arguments to filter the list of users.
+        kwargs: Keyword arguments to filter the list of service accounts.
     """
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
     client = Client()
-    with console.status("Listing service accounts...\n"):
+    with console.status("Listing service accounts..."):
         service_accounts = client.list_service_accounts(**kwargs)
         if not service_accounts:
-            cli_utils.declare(
-                "No service accounts found for the given filters."
-            )
+            cli_utils.declare("No service accounts found.")
             return
 
-        cli_utils.print_pydantic_models(
-            service_accounts,
-            exclude_columns=[
-                "created",
-                "updated",
-            ],
+        # Prepare data based on output format
+        output_format = (
+            table_kwargs.get("output") or cli_utils.get_default_output_format()
+        )
+
+        # Handle both paginated and non-paginated responses
+        account_list = (
+            service_accounts.items
+            if hasattr(service_accounts, "items")
+            else service_accounts
+        )
+
+        # Use centralized data preparation
+        service_account_data = prepare_list_data(
+            account_list, output_format, _service_account_to_print
+        )
+
+        # Handle table output with enhanced system
+        cli_utils.handle_table_output(
+            data=service_account_data,
+            page=service_accounts,
+            **table_kwargs,
         )
 
 
@@ -382,7 +424,7 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
 
 
 @api_key.command("list", help="List all API keys.")
-@list_options(APIKeyFilter)
+@enhanced_list_options(APIKeyFilter)
 @click.pass_obj
 def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
     """List all API keys.
@@ -392,7 +434,10 @@ def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
             which to list the API keys.
         **kwargs: Keyword arguments to filter API keys.
     """
-    with console.status("Listing API keys...\n"):
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
+    with console.status("Listing API keys..."):
         try:
             api_keys = Client().list_api_keys(
                 service_account_name_id_or_prefix=service_account_name_or_id,
@@ -402,17 +447,24 @@ def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
             cli_utils.error(str(e))
 
         if not api_keys.items:
-            cli_utils.declare("No API keys found for this filter.")
+            cli_utils.declare("No API keys found.")
             return
 
-        cli_utils.print_pydantic_models(
-            api_keys,
-            exclude_columns=[
-                "created",
-                "updated",
-                "key",
-                "retain_period_minutes",
-            ],
+        # Prepare data based on output format
+        output_format = (
+            table_kwargs.get("output") or cli_utils.get_default_output_format()
+        )
+
+        # Use centralized data preparation
+        api_key_data = prepare_list_data(
+            api_keys.items, output_format, _api_key_to_print
+        )
+
+        # Handle table output with enhanced system
+        cli_utils.handle_table_output(
+            data=api_key_data,
+            page=api_keys,
+            **table_kwargs,
         )
 
 

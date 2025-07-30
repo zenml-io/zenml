@@ -21,7 +21,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import enhanced_list_options, prepare_list_data
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
@@ -30,6 +30,7 @@ from zenml.models import (
     PipelineBuildBase,
     PipelineBuildFilter,
     PipelineFilter,
+    PipelineResponse,
     PipelineRunFilter,
     ScheduleFilter,
 )
@@ -38,6 +39,110 @@ from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
+
+
+def _schedule_to_print(schedule: Any) -> Dict[str, Any]:
+    """Convert a schedule response to a dictionary for table display.
+
+    For table output, keep it compact with essential schedule information.
+    Full details are available in JSON/YAML output formats.
+    """
+    return {
+        "name": schedule.name,
+        "active": "✓" if schedule.active else "✗",
+        "cron_expression": schedule.cron_expression or "",
+        "created": schedule.created.strftime("%Y-%m-%d"),
+    }
+
+
+def _schedule_to_print_full(schedule: Any) -> Dict[str, Any]:
+    """Convert schedule response to complete dictionary for JSON/YAML."""
+    return schedule.model_dump(mode="json")
+
+
+def _pipeline_run_to_print(run: Any) -> Dict[str, Any]:
+    """Convert a pipeline run response to a dictionary for table display.
+
+    For table output, keep it compact with essential run information.
+    Full details are available in JSON/YAML output formats.
+    """
+    return {
+        "name": run.name,
+        "pipeline_name": run.pipeline.name
+        if hasattr(run, "pipeline") and run.pipeline
+        else "Unknown",
+        "status": run.status.value
+        if hasattr(run.status, "value")
+        else str(run.status),
+        "created": run.created.strftime("%Y-%m-%d"),
+    }
+
+
+def _pipeline_run_to_print_full(run: Any) -> Dict[str, Any]:
+    """Convert pipeline run response to complete dictionary for JSON/YAML."""
+    return run.model_dump(mode="json")
+
+
+def _pipeline_build_to_print(build: Any) -> Dict[str, Any]:
+    """Convert a pipeline build response to a dictionary for table display.
+
+    For table output, keep it compact with essential build information.
+    Full details are available in JSON/YAML output formats.
+    """
+    return {
+        "pipeline_name": build.pipeline.name
+        if hasattr(build, "pipeline") and build.pipeline
+        else "Unknown",
+        "zenml_version": build.zenml_version or "",
+        "stack_name": build.stack.name
+        if hasattr(build, "stack") and build.stack
+        else "Unknown",
+        "created": build.created.strftime("%Y-%m-%d"),
+    }
+
+
+def _pipeline_build_to_print_full(build: Any) -> Dict[str, Any]:
+    """Convert pipeline build response to complete dictionary for JSON/YAML."""
+    return build.model_dump(mode="json")
+
+
+def _pipeline_to_print(pipeline: PipelineResponse) -> Dict[str, Any]:
+    """Convert a pipeline response to a dictionary suitable for table display.
+
+    Args:
+        pipeline: The pipeline response object to convert.
+
+    Returns:
+        A dictionary with pipeline information formatted for table display.
+    """
+    # Get the latest run information from resources
+    latest_run_status = None
+    latest_run_user = None
+    if pipeline.latest_run_status:
+        latest_run_status = pipeline.latest_run_status.value
+    if (
+        hasattr(pipeline, "get_resources")
+        and pipeline.get_resources().latest_run_user
+    ):
+        user = pipeline.get_resources().latest_run_user
+        if user:
+            latest_run_user = user.name
+
+    return {
+        "name": pipeline.name,
+        "latest_run_status": latest_run_status or "",
+        "latest_run_user": latest_run_user or "",
+        "tags": [t.name for t in pipeline.tags] if pipeline.tags else [],
+        "description": pipeline.get_metadata().description or ""
+        if pipeline.metadata
+        else "",
+        "created": pipeline.created.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def _pipeline_to_print_full(pipeline: PipelineResponse) -> Dict[str, Any]:
+    """Convert pipeline response to complete dictionary for JSON/YAML."""
+    return pipeline.model_dump(mode="json")
 
 
 def _import_pipeline(source: str) -> Pipeline:
@@ -365,25 +470,42 @@ def create_run_template(
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-@list_options(PipelineFilter)
+@enhanced_list_options(PipelineFilter)
 def list_pipelines(**kwargs: Any) -> None:
     """List all registered pipelines.
 
     Args:
         **kwargs: Keyword arguments to filter pipelines.
     """
-    client = Client()
-    with console.status("Listing pipelines...\n"):
-        pipelines = client.list_pipelines(**kwargs)
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
 
-        if not pipelines.items:
-            cli_utils.declare("No pipelines found for this filter.")
-            return
+    with console.status("Listing pipelines..."):
+        pipelines = Client().list_pipelines(**kwargs)
 
-        cli_utils.print_pydantic_models(
-            pipelines,
-            exclude_columns=["id", "created", "updated", "user", "project"],
-        )
+    if not pipelines.items:
+        cli_utils.declare("No pipelines found.")
+        return
+
+    # Prepare data based on output format
+    output_format = (
+        table_kwargs.get("output") or cli_utils.get_default_output_format()
+    )
+
+    # Use centralized data preparation
+    pipeline_data = prepare_list_data(
+        pipelines.items,
+        output_format,
+        _pipeline_to_print,
+        _pipeline_to_print_full,
+    )
+
+    # Handle table output with enhanced system and pagination
+    cli_utils.handle_table_output(
+        pipeline_data,
+        page=pipelines,
+        **table_kwargs,
+    )
 
 
 @pipeline.command("delete")
@@ -430,24 +552,52 @@ def schedule() -> None:
 
 
 @schedule.command("list", help="List all pipeline schedules.")
-@list_options(ScheduleFilter)
+@enhanced_list_options(ScheduleFilter)
 def list_schedules(**kwargs: Any) -> None:
     """List all pipeline schedules.
 
     Args:
         **kwargs: Keyword arguments to filter schedules.
     """
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
     client = Client()
 
-    schedules = client.list_schedules(**kwargs)
+    with console.status("Listing schedules..."):
+        schedules = client.list_schedules(**kwargs)
 
     if not schedules:
-        cli_utils.declare("No schedules found for this filter.")
+        cli_utils.declare("No schedules found.")
         return
 
-    cli_utils.print_pydantic_models(
-        schedules,
-        exclude_columns=["id", "created", "updated", "user", "project"],
+    # Prepare data based on output format
+    output_format = (
+        table_kwargs.get("output") or cli_utils.get_default_output_format()
+    )
+    schedule_data = []
+
+    # Handle both paginated and non-paginated responses
+    if hasattr(schedules, "items"):
+        schedule_list = schedules.items
+        page = schedules  # schedules is a Page object
+    else:
+        schedule_list = schedules
+        page = None  # schedules is just a list, no pagination
+
+    for schedule in schedule_list:
+        if output_format == "table":
+            # Use compact format for table display
+            schedule_data.append(_schedule_to_print(schedule))
+        else:
+            # Use full format for JSON/YAML/TSV output
+            schedule_data.append(_schedule_to_print_full(schedule))
+
+    # Handle table output with enhanced system and pagination
+    cli_utils.handle_table_output(
+        data=schedule_data,
+        page=page,
+        **table_kwargs,
     )
 
 
@@ -489,26 +639,46 @@ def runs() -> None:
 
 
 @runs.command("list", help="List all registered pipeline runs.")
-@list_options(PipelineRunFilter)
+@enhanced_list_options(PipelineRunFilter)
 def list_pipeline_runs(**kwargs: Any) -> None:
     """List all registered pipeline runs for the filter.
 
     Args:
         **kwargs: Keyword arguments to filter pipeline runs.
     """
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
     client = Client()
     try:
-        with console.status("Listing pipeline runs...\n"):
+        with console.status("Listing pipeline runs..."):
             pipeline_runs = client.list_pipeline_runs(**kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
         if not pipeline_runs.items:
-            cli_utils.declare("No pipeline runs found for this filter.")
+            cli_utils.declare("No pipeline runs found.")
             return
 
-        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs.items)
-        cli_utils.print_page_info(pipeline_runs)
+        # Prepare data based on output format
+        output_format = (
+            table_kwargs.get("output") or cli_utils.get_default_output_format()
+        )
+
+        # Use centralized data preparation
+        pipeline_run_data = prepare_list_data(
+            pipeline_runs.items,
+            output_format,
+            _pipeline_run_to_print,
+            _pipeline_run_to_print_full,
+        )
+
+        # Handle table output with enhanced system and pagination
+        cli_utils.handle_table_output(
+            data=pipeline_run_data,
+            page=pipeline_runs,
+            **table_kwargs,
+        )
 
 
 @runs.command("stop")
@@ -640,34 +810,45 @@ def builds() -> None:
 
 
 @builds.command("list", help="List all pipeline builds.")
-@list_options(PipelineBuildFilter)
+@enhanced_list_options(PipelineBuildFilter)
 def list_pipeline_builds(**kwargs: Any) -> None:
     """List all pipeline builds for the filter.
 
     Args:
         **kwargs: Keyword arguments to filter pipeline builds.
     """
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
     client = Client()
     try:
-        with console.status("Listing pipeline builds...\n"):
+        with console.status("Listing pipeline builds..."):
             pipeline_builds = client.list_builds(hydrate=True, **kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
         if not pipeline_builds.items:
-            cli_utils.declare("No pipeline builds found for this filter.")
+            cli_utils.declare("No pipeline builds found.")
             return
 
-        cli_utils.print_pydantic_models(
-            pipeline_builds,
-            exclude_columns=[
-                "created",
-                "updated",
-                "user",
-                "project",
-                "images",
-                "stack_checksum",
-            ],
+        # Prepare data based on output format
+        output_format = (
+            table_kwargs.get("output") or cli_utils.get_default_output_format()
+        )
+
+        # Use centralized data preparation
+        pipeline_build_data = prepare_list_data(
+            pipeline_builds.items,
+            output_format,
+            _pipeline_build_to_print,
+            _pipeline_build_to_print_full,
+        )
+
+        # Handle table output with enhanced system and pagination
+        cli_utils.handle_table_output(
+            data=pipeline_build_data,
+            page=pipeline_builds,
+            **table_kwargs,
         )
 
 

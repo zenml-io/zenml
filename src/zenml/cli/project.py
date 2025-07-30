@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import click
 
@@ -21,13 +21,24 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     check_zenml_pro_project_availability,
+    enhanced_list_options,
+    format_date_for_table,
     is_sorted_or_filtered,
-    list_options,
+    prepare_list_data,
 )
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.models import ProjectFilter
+
+
+def _project_to_print(project: Any) -> Dict[str, Any]:
+    """Convert a project response to a dictionary suitable for table display."""
+    return {
+        "name": project.name,
+        "description": project.description or "",
+        "created": format_date_for_table(project.created),
+    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -36,7 +47,7 @@ def project() -> None:
 
 
 @project.command("list")
-@list_options(ProjectFilter)
+@enhanced_list_options(ProjectFilter)
 @click.pass_context
 def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all projects.
@@ -46,22 +57,45 @@ def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
         **kwargs: Keyword arguments to filter the list of projects.
     """
     check_zenml_pro_project_availability()
+
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
     client = Client()
-    with console.status("Listing projects...\n"):
+    with console.status("Listing projects..."):
         projects = client.list_projects(**kwargs)
         if projects:
             try:
                 active_project = [client.active_project]
             except Exception:
                 active_project = []
-            cli_utils.print_pydantic_models(
-                projects,
-                exclude_columns=["id", "created", "updated"],
+
+            # Prepare data based on output format
+            output_format = (
+                table_kwargs.get("output")
+                or cli_utils.get_default_output_format()
+            )
+
+            # Handle both paginated and non-paginated responses
+            project_list = (
+                projects.items if hasattr(projects, "items") else projects
+            )
+
+            # Use centralized data preparation
+            project_data = prepare_list_data(
+                project_list, output_format, _project_to_print
+            )
+
+            # Handle table output with enhanced system
+            cli_utils.handle_table_output(
+                data=project_data,
+                page=projects,
                 active_models=active_project,
                 show_active=not is_sorted_or_filtered(ctx),
+                **table_kwargs,
             )
         else:
-            cli_utils.declare("No projects found for the given filter.")
+            cli_utils.declare("No projects found.")
 
 
 @project.command("register")

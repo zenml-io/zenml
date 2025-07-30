@@ -53,6 +53,7 @@ from rich.style import Style
 from rich.table import Table
 
 from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
@@ -295,8 +296,9 @@ def print_table(
                         value = escape(value)
                 values.append(value)
         rich_table.add_row(*values)
-    if len(rich_table.columns) > 1:
-        rich_table.columns[0].justify = "center"
+    # Consistent left alignment for all columns
+    for column in rich_table.columns:
+        column.justify = "left"
     console.print(rich_table)
 
 
@@ -2314,14 +2316,11 @@ def check_zenml_pro_project_availability() -> None:
 
 
 def print_page_info(page: Page[T]) -> None:
-    """Print all page information showing the number of items and pages.
-
-    Args:
-        page: The page to print the information for.
-    """
-    declare(
+    """Print all page information showing the number of items and pages."""
+    console.print(
         f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
-        f"found for the applied filters."
+        f"found for the applied filters.",
+        style=zenml_style_defaults["repr.str"],
     )
 
 
@@ -2503,6 +2502,234 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
         return wrapper(func)
 
     return inner_decorator
+
+
+def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
+    """Enhanced decorator that adds both filter options and table formatting options.
+
+    This decorator extends the functionality of `list_options` by adding
+    comprehensive table formatting and output options following ZenML CLI
+    table guidelines.
+
+    Args:
+        filter_model: The filter model based on which to decorate the function.
+
+    Returns:
+        The inner decorator that adds both filter and table options.
+    """
+
+    def inner_decorator(func: F) -> F:
+        # First apply the existing list_options
+        func = list_options(filter_model)(func)
+
+        # Add table formatting options in reverse order
+        # (Click applies decorators in reverse order)
+        table_options = [
+            click.option(
+                "--interactive",
+                is_flag=True,
+                default=False,
+                help="Interactive column selection prompt.",
+            ),
+            click.option(
+                "--query",
+                type=str,
+                help="JMESPath query to filter data before rendering.",
+            ),
+            click.option(
+                "--no-color",
+                is_flag=True,
+                default=False,
+                help="Disable colored output.",
+            ),
+            click.option(
+                "--no-truncate",
+                is_flag=True,
+                default=False,
+                help="Disable truncation of long values.",
+            ),
+            click.option(
+                "--reverse",
+                is_flag=True,
+                default=False,
+                help="Reverse the sort order.",
+            ),
+            click.option(
+                "--sort",
+                type=str,
+                help="Sort by specified field.",
+            ),
+            click.option(
+                "--columns",
+                type=str,
+                help="Comma-separated list of columns to display.",
+            ),
+            click.option(
+                "--output",
+                "-o",
+                type=click.Choice(["table", "json", "yaml", "tsv", "none"]),
+                default=get_default_output_format(),
+                help="Output format for the list.",
+            ),
+        ]
+
+        # Apply table options
+        for option in table_options:
+            func = option(func)
+
+        # Enhance docstring with table options information
+        table_help = (
+            "\n\n**Table Output Options:**\n\n"
+            "This command supports multiple output formats and table customization:\n\n"
+            "- **--output/-o**: Choose from 'table' (default), 'json', 'yaml', 'tsv', or 'none'\n"
+            "- **--columns**: Select specific columns to display (comma-separated)\n"
+            "- **--sort**: Sort by any field (combine with --reverse for descending)\n"
+            "- **--no-truncate**: Show full values without truncation\n"
+            "- **--no-color**: Disable colored output\n"
+            "- **--query**: Apply JMESPath query for advanced filtering\n"
+            "- **--interactive**: Use interactive column selection (first time only)\n\n"
+            "Examples:\n"
+            "  zenml <resource> list --output json\n"
+            "  zenml <resource> list --columns id,name,status --sort name\n"
+            "  zenml <resource> list --query \"[?status=='RUNNING']\"\n"
+        )
+
+        if func.__doc__:
+            func.__doc__ = func.__doc__ + table_help
+        else:
+            func.__doc__ = (
+                "List resources with enhanced table options." + table_help
+            )
+
+        return func
+
+    return inner_decorator
+
+
+def get_default_output_format() -> str:
+    """Get the default output format from GlobalConfiguration.
+
+    Returns:
+        The default output format, falling back to "table" if not configured.
+    """
+    try:
+        gc = GlobalConfiguration()
+        return gc.default_output
+    except Exception:
+        # If configuration is not available, fall back to "table"
+        return "table"
+
+
+def extract_table_options(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract table-specific options from kwargs dictionary.
+
+    This function separates table formatting options from other CLI options
+    for use with handle_table_output function.
+
+    Args:
+        kwargs: Dictionary of CLI options including table formatting options
+
+    Returns:
+        Dictionary containing only table formatting options
+    """
+    table_option_keys = [
+        "output",
+        "columns",
+        "sort",
+        "reverse",
+        "no_truncate",
+        "no_color",
+        "query",
+        "interactive",
+    ]
+
+    table_kwargs = {}
+    for key in table_option_keys:
+        if key in kwargs:
+            table_kwargs[key] = kwargs.pop(key)
+
+    return table_kwargs
+
+
+def handle_table_output(
+    data: List[Dict[str, Any]],
+    output: Optional[str] = None,
+    columns: Optional[str] = None,
+    sort: Optional[str] = None,
+    reverse: bool = False,
+    no_truncate: bool = False,
+    no_color: bool = False,
+    query: Optional[str] = None,
+    interactive: bool = False,
+    page: Optional["Page[Any]"] = None,
+    **kwargs: Any,
+) -> None:
+    """Handle table output formatting for CLI commands.
+
+    This function processes the table formatting parameters from CLI options
+    and calls the appropriate table rendering function.
+
+    Args:
+        data: List of dictionaries to render
+        output: Output format (table, json, yaml, tsv, none). If None, uses default.
+        columns: Comma-separated column names
+        sort: Column to sort by
+        reverse: Whether to reverse sort order
+        no_truncate: Whether to disable truncation
+        no_color: Whether to disable colored output
+        query: JMESPath query for filtering
+        interactive: Whether to use interactive column selection
+        page: Optional Page object for pagination metadata in JSON/YAML output
+        **kwargs: Additional formatting options
+    """
+    from zenml.utils.table_utils import zenml_table
+
+    # Use default output format if not specified
+    if output is None:
+        output = get_default_output_format()
+
+    # Parse columns from comma-separated string
+    column_list = None
+    if columns:
+        column_list = [
+            col.strip() for col in columns.split(",") if col.strip()
+        ]
+
+    # TODO: Implement JMESPath query filtering when needed
+    if query:
+        warning("JMESPath query filtering is not yet implemented.")
+
+    # TODO: Implement interactive column selection when needed
+    if interactive:
+        warning("Interactive column selection is not yet implemented.")
+
+    # Handle pagination for JSON/YAML output formats
+    pagination_info = None
+    if page is not None and output in ["json", "yaml"]:
+        pagination_info = {
+            "index": page.index,
+            "max_size": page.max_size,
+            "total_pages": page.total_pages,
+            "total": page.total,
+        }
+
+    # Call the table utility
+    zenml_table(
+        data=data,
+        output_format=output,
+        columns=column_list,
+        sort_by=sort,
+        reverse=reverse,
+        no_truncate=no_truncate,
+        no_color=no_color,
+        pagination=pagination_info,
+        **kwargs,
+    )
+
+    # Show pagination info for table format
+    if page is not None and output == "table":
+        print_page_info(page)
+        print()  # Add empty line after pagination for better spacing
 
 
 @contextlib.contextmanager
@@ -2708,3 +2935,149 @@ def requires_mac_env_var_warning() -> bool:
             "OBJC_DISABLE_INITIALIZE_FORK_SAFETY"
         ) and mac_version_tuple >= (10, 13)
     return False
+
+
+def _prepare_stack_table_data(
+    client: "Client",
+    stacks: List["StackResponse"],
+    show_active: bool = False,
+) -> List[Dict[str, Any]]:
+    """Convert stack data to table-friendly format.
+
+    Args:
+        client: ZenML client instance
+        stacks: List of stack responses
+        show_active: Whether to show active stack indicator
+
+    Returns:
+        List of dictionaries suitable for table rendering
+    """
+    stack_data = []
+
+    # Reorder stacks to show active stack first if requested
+    stacks = list(stacks)
+    active_stack = client.active_stack_model
+    if show_active:
+        if active_stack.id not in [s.id for s in stacks]:
+            stacks.append(active_stack)
+
+        stacks = [s for s in stacks if s.id == active_stack.id] + [
+            s for s in stacks if s.id != active_stack.id
+        ]
+
+    active_stack_model_id = client.active_stack_model.id
+    for stack in stacks:
+        is_active = stack.id == active_stack_model_id
+
+        if stack.user:
+            user_name = stack.user.name
+        else:
+            user_name = "-"
+
+        # Create stack name with active indicator
+        stack_name = stack.name
+        if is_active:
+            stack_name = f"[bold]{stack.name} (active)[/bold]"
+
+        # Create improved stack data structure
+        stack_info = {
+            "name": stack_name,
+            "owner": user_name,
+            "components": len(stack.components),
+        }
+
+        # Add component details (keeping the most important ones)
+        if StackComponentType.ORCHESTRATOR in stack.components:
+            stack_info["orchestrator"] = stack.components[
+                StackComponentType.ORCHESTRATOR
+            ][0].name
+        if StackComponentType.ARTIFACT_STORE in stack.components:
+            stack_info["artifact_store"] = stack.components[
+                StackComponentType.ARTIFACT_STORE
+            ][0].name
+
+        stack_data.append(stack_info)
+
+    return stack_data
+
+
+# CLI Formatting Utilities
+# -------------------------
+# Centralized utilities to reduce code duplication in CLI list commands
+
+
+def to_print_full(model: Any) -> Dict[str, Any]:
+    """Generic function to convert any model to full format for JSON/YAML output.
+
+    This replaces the repetitive _*_to_print_full functions across CLI files.
+
+    Args:
+        model: Any Pydantic model instance
+
+    Returns:
+        Dictionary with properly serialized data for JSON/YAML output
+    """
+    return model.model_dump(mode="json")
+
+
+def prepare_list_data(
+    items: List[Any],
+    output_format: str,
+    table_formatter: Callable[[Any], Dict[str, Any]],
+    full_formatter: Optional[Callable[[Any], Dict[str, Any]]] = None,
+) -> List[Dict[str, Any]]:
+    """Prepare list data based on output format.
+
+    This centralizes the format-aware data preparation logic used across
+    all CLI list commands.
+
+    Args:
+        items: List of model instances to format
+        output_format: The desired output format ("table", "json", "yaml", "tsv", etc.)
+        table_formatter: Function to format items for table and TSV display
+        full_formatter: Optional function to format items for full output (JSON/YAML).
+                       If None, uses to_print_full.
+
+    Returns:
+        List of formatted dictionaries ready for output
+    """
+    if not items:
+        return []
+
+    if full_formatter is None:
+        full_formatter = to_print_full
+
+    formatted_data = []
+    for item in items:
+        if output_format in ("table", "tsv"):
+            formatted_data.append(table_formatter(item))
+        else:
+            formatted_data.append(full_formatter(item))
+
+    return formatted_data
+
+
+def format_date_for_table(date_obj: Any) -> str:
+    """Standard date formatting for table display.
+
+    Args:
+        date_obj: DateTime object to format
+
+    Returns:
+        Formatted date string (YYYY-MM-DD)
+    """
+    if hasattr(date_obj, "strftime"):
+        return date_obj.strftime("%Y-%m-%d")
+    return str(date_obj) if date_obj else ""
+
+
+def format_boolean_indicator(value: bool) -> str:
+    """Standard boolean formatting for table display.
+
+    Args:
+        value: Boolean value to format
+
+    Returns:
+        Unicode checkmark or X
+    """
+    return "✓" if value else "✗"

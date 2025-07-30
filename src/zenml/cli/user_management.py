@@ -13,13 +13,18 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import is_sorted_or_filtered, list_options
+from zenml.cli.utils import (
+    enhanced_list_options,
+    format_boolean_indicator,
+    format_date_for_table,
+    prepare_list_data,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
@@ -29,7 +34,38 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.models import UserFilter
+from zenml.models import UserFilter, UserResponse
+
+
+def _user_to_print(user: UserResponse) -> Dict[str, Any]:
+    """Convert a user response to a dictionary suitable for table display.
+
+    For table output, keep it compact with essential user information.
+    Full details are available in JSON/YAML output formats.
+    """
+    # For many users, the name field contains the email and email field is null
+    display_name = user.name
+    display_email = user.email or ""
+
+    # If name looks like an email and email is empty, separate them nicely
+    if "@" in user.name and not user.email:
+        display_name = user.full_name or user.name.split("@")[0]
+        display_email = user.name
+
+    return {
+        "name": display_name,
+        "email": display_email,
+        "role": "admin" if user.is_admin else "user",
+        "active": format_boolean_indicator(user.active),
+        "created": format_date_for_table(user.created),
+        # Internal field for active user formatting (will be set during processing)
+        "__is_active__": False,
+    }
+
+
+def _user_to_print_full(user: UserResponse) -> Dict[str, Any]:
+    """Convert user response to complete dictionary for JSON/YAML."""
+    return user.model_dump(mode="json")
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -77,34 +113,47 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-@list_options(UserFilter)
-@click.pass_context
-def list_users(ctx: click.Context, /, **kwargs: Any) -> None:
+@enhanced_list_options(UserFilter)
+def list_users(**kwargs: Any) -> None:
     """List all users.
 
     Args:
-        ctx: The click context object
         kwargs: Keyword arguments to filter the list of users.
     """
-    client = Client()
-    with console.status("Listing stacks...\n"):
-        users = client.list_users(**kwargs)
-        if not users:
-            cli_utils.declare("No users found for the given filters.")
-            return
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
 
-        cli_utils.print_pydantic_models(
-            users,
-            exclude_columns=[
-                "created",
-                "updated",
-                "email",
-                "email_opted_in",
-                "activation_token",
-            ],
-            active_models=[Client().active_user],
-            show_active=not is_sorted_or_filtered(ctx),
-        )
+    client = Client()
+    with console.status("Listing users..."):
+        users = client.list_users(**kwargs)
+
+    if not users:
+        cli_utils.declare("No users found.")
+        return
+
+    # Prepare data based on output format
+    output_format = (
+        table_kwargs.get("output") or cli_utils.get_default_output_format()
+    )
+    user_data = []
+
+    # Handle both paginated and non-paginated responses
+    user_list = users.items if hasattr(users, "items") else users
+    active_user_id = client.active_user.id
+
+    # Create a custom table formatter that includes active user indicator
+    def user_table_formatter(user):
+        user_dict = _user_to_print(user)
+        user_dict["__is_active__"] = user.id == active_user_id
+        return user_dict
+
+    # Use centralized data preparation with custom formatter
+    user_data = prepare_list_data(
+        user_list, output_format, user_table_formatter, _user_to_print_full
+    )
+
+    # Handle table output with enhanced system and pagination
+    cli_utils.handle_table_output(user_data, page=users, **table_kwargs)
 
 
 @user.command(

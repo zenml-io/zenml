@@ -19,7 +19,13 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import (
+    enhanced_list_options,
+    format_date_for_table,
+    prepare_list_data,
+)
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import ArtifactFilter, ArtifactVersionFilter
@@ -35,7 +41,7 @@ def artifact() -> None:
     """Commands for interacting with artifacts."""
 
 
-@cli_utils.list_options(ArtifactFilter)
+@enhanced_list_options(ArtifactFilter)
 @artifact.command("list", help="List all artifacts.")
 def list_artifacts(**kwargs: Any) -> None:
     """List all artifacts.
@@ -43,17 +49,31 @@ def list_artifacts(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter artifacts by.
     """
-    artifacts = Client().list_artifacts(**kwargs)
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
+    with console.status("Listing artifacts..."):
+        artifacts = Client().list_artifacts(**kwargs)
 
     if not artifacts:
         cli_utils.declare("No artifacts found.")
         return
 
-    to_print = []
-    for artifact in artifacts:
-        to_print.append(_artifact_to_print(artifact))
+    # Prepare data based on output format
+    output_format = (
+        table_kwargs.get("output") or cli_utils.get_default_output_format()
+    )
+    artifact_data = []
 
-    cli_utils.print_table(to_print)
+    # Use centralized data preparation
+    artifact_data = prepare_list_data(
+        artifacts, output_format, _artifact_to_print
+    )
+
+    # Handle table output with enhanced system and pagination
+    cli_utils.handle_table_output(
+        artifact_data, page=artifacts, **table_kwargs
+    )
 
 
 @artifact.command("update", help="Update an artifact.")
@@ -115,7 +135,7 @@ def version() -> None:
     """Commands for interacting with artifact versions."""
 
 
-@cli_utils.list_options(ArtifactVersionFilter)
+@enhanced_list_options(ArtifactVersionFilter)
 @version.command("list", help="List all artifact versions.")
 def list_artifact_versions(**kwargs: Any) -> None:
     """List all artifact versions.
@@ -123,17 +143,31 @@ def list_artifact_versions(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter artifact versions by.
     """
-    artifact_versions = Client().list_artifact_versions(**kwargs)
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
+    with console.status("Listing artifact versions..."):
+        artifact_versions = Client().list_artifact_versions(**kwargs)
 
     if not artifact_versions:
         cli_utils.declare("No artifact versions found.")
         return
 
-    to_print = []
-    for artifact_version in artifact_versions:
-        to_print.append(_artifact_version_to_print(artifact_version))
+    # Prepare data based on output format
+    output_format = (
+        table_kwargs.get("output") or cli_utils.get_default_output_format()
+    )
+    artifact_version_data = []
 
-    cli_utils.print_table(to_print)
+    # Use centralized data preparation
+    artifact_version_data = prepare_list_data(
+        artifact_versions, output_format, _artifact_version_to_print
+    )
+
+    # Handle table output with enhanced system and pagination
+    cli_utils.handle_table_output(
+        artifact_version_data, page=artifact_versions, **table_kwargs
+    )
 
 
 @version.command("update", help="Update an artifact version.")
@@ -296,26 +330,45 @@ def prune_artifacts(
     cli_utils.declare("All unused artifacts and artifact versions deleted.")
 
 
+def _artifact_to_print(artifact: ArtifactResponse) -> Dict[str, Any]:
+    """Convert an artifact response to a dictionary suitable for table display.
+
+    For table output, keep it compact with essential artifact information.
+    Full details are available in JSON/YAML output formats.
+    """
+    return {
+        "name": artifact.name,
+        "tags": [t.name for t in artifact.tags] if artifact.tags else [],
+        "created": format_date_for_table(artifact.created),
+    }
+
+
+def _artifact_to_print_full(artifact: ArtifactResponse) -> Dict[str, Any]:
+    """Convert artifact response to complete dictionary for JSON/YAML."""
+    return artifact.model_dump(mode="json")
+
+
 def _artifact_version_to_print(
     artifact_version: ArtifactVersionResponse,
 ) -> Dict[str, Any]:
+    """Convert artifact version response to dictionary for table display.
+
+    For table output, keep it compact with essential version information.
+    Full details are available in JSON/YAML output formats.
+    """
     return {
-        "id": artifact_version.id,
         "name": artifact_version.artifact.name,
         "version": artifact_version.version,
-        "uri": artifact_version.uri,
         "type": artifact_version.type,
-        "materializer": artifact_version.materializer,
-        "data_type": artifact_version.data_type,
-        "tags": [t.name for t in artifact_version.tags],
+        "tags": [t.name for t in artifact_version.tags]
+        if artifact_version.tags
+        else [],
+        "created": format_date_for_table(artifact_version.created),
     }
 
 
-def _artifact_to_print(
-    artifact_version: ArtifactResponse,
+def _artifact_version_to_print_full(
+    artifact_version: ArtifactVersionResponse,
 ) -> Dict[str, Any]:
-    return {
-        "id": artifact_version.id,
-        "name": artifact_version.name,
-        "tags": [t.name for t in artifact_version.tags],
-    }
+    """Convert artifact version response to complete dictionary for JSON/YAML."""
+    return artifact_version.model_dump(mode="json")

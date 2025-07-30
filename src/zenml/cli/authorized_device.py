@@ -13,13 +13,17 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with authorized devices."""
 
-from typing import Any
+from typing import Any, Dict
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import (
+    format_date_for_table,
+    list_options,
+    prepare_list_data,
+)
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
@@ -27,6 +31,19 @@ from zenml.logger import get_logger
 from zenml.models import OAuthDeviceFilter
 
 logger = get_logger(__name__)
+
+
+def _authorized_device_to_print(device: Any) -> Dict[str, Any]:
+    """Convert an authorized device response to a dictionary for table display."""
+    return {
+        "status": device.status.value
+        if hasattr(device.status, "value")
+        else str(device.status),
+        "ip_address": device.ip_address or "",
+        "hostname": device.hostname or "",
+        "os": device.os or "",
+        "created": format_date_for_table(device.created),
+    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -66,16 +83,31 @@ def list_authorized_devices(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter authorized devices.
     """
-    with console.status("Listing authorized devices...\n"):
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
+    with console.status("Listing authorized devices..."):
         devices = Client().list_authorized_devices(**kwargs)
 
         if not devices.items:
-            cli_utils.declare("No authorized devices found for this filter.")
+            cli_utils.declare("No authorized devices found.")
             return
 
-        cli_utils.print_pydantic_models(
-            devices,
-            columns=["id", "status", "ip_address", "hostname", "os"],
+        # Prepare data based on output format
+        output_format = (
+            table_kwargs.get("output") or cli_utils.get_default_output_format()
+        )
+
+        # Use centralized data preparation
+        device_data = prepare_list_data(
+            devices.items, output_format, _authorized_device_to_print
+        )
+
+        # Handle table output with enhanced system and pagination
+        cli_utils.handle_table_output(
+            data=device_data,
+            page=devices,
+            **table_kwargs,
         )
 
 

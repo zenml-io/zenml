@@ -114,6 +114,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         store: Store configuration.
         active_stack_id: The ID of the active stack.
         active_project_id: The ID of the active project.
+        default_output: Default output format for CLI table commands.
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -124,6 +125,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     store: Optional[SerializeAsAny[StoreConfiguration]] = None
     active_stack_id: Optional[uuid.UUID] = None
     active_project_id: Optional[uuid.UUID] = None
+    default_output: str = "table"
 
     _zen_store: Optional["BaseZenStore"] = None
     _active_project: Optional["ProjectResponse"] = None

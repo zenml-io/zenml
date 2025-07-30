@@ -13,14 +13,16 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with tags."""
 
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import enhanced_list_options, prepare_list_data
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, ColorVariants
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -32,12 +34,32 @@ from zenml.utils.dict_utils import remove_none_values
 logger = get_logger(__name__)
 
 
+def _tag_to_print(tag: Any) -> Dict[str, Any]:
+    """Convert a tag response to a dictionary suitable for table display.
+
+    For table output, keep it compact with essential tag information.
+    Full details are available in JSON/YAML output formats.
+    """
+    return {
+        "name": tag.name,
+        "color": tag.color,
+        "exclusive": "Yes" if tag.exclusive else "No",
+        "username": tag.user.name if tag.user else "",
+        "created": tag.created.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def _tag_to_print_full(tag: Any) -> Dict[str, Any]:
+    """Convert tag response to complete dictionary for JSON/YAML."""
+    return tag.model_dump(mode="json")
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def tag() -> None:
     """Interact with tags."""
 
 
-@cli_utils.list_options(TagFilter)
+@enhanced_list_options(TagFilter)
 @tag.command("list", help="List tags with filter.")
 def list_tags(**kwargs: Any) -> None:
     """List tags with filter.
@@ -45,16 +67,31 @@ def list_tags(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter models.
     """
-    tags = Client().list_tags(**kwargs)
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
+    with console.status("Listing tags..."):
+        tags = Client().list_tags(**kwargs)
 
     if not tags:
         cli_utils.declare("No tags found.")
         return
 
-    cli_utils.print_pydantic_models(
-        tags,
-        exclude_columns=["created"],
+    # Prepare data based on output format
+    output_format = (
+        table_kwargs.get("output") or cli_utils.get_default_output_format()
     )
+
+    # Handle both paginated and non-paginated responses
+    tag_list = tags.items if hasattr(tags, "items") else tags
+
+    # Use centralized data preparation
+    tag_data = prepare_list_data(
+        tag_list, output_format, _tag_to_print, _tag_to_print_full
+    )
+
+    # Handle table output with enhanced system and pagination
+    cli_utils.handle_table_output(data=tag_data, page=tags, **table_kwargs)
 
 
 @tag.command("register", help="Register a new tag.")

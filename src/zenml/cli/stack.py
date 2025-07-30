@@ -44,10 +44,7 @@ from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
     _component_display_name,
     is_sorted_or_filtered,
-    list_options,
     print_model_url,
-    print_page_info,
-    print_stacks_table,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -83,6 +80,70 @@ if TYPE_CHECKING:
     from zenml.models import StackResponse
 
 logger = get_logger(__name__)
+
+
+def _prepare_stack_table_data(
+    client: "Client",
+    stacks: List["StackResponse"],
+    show_active: bool = False,
+) -> List[Dict[str, Any]]:
+    """Convert stack data to table-friendly format.
+
+    Args:
+        client: ZenML client instance
+        stacks: List of stack responses
+        show_active: Whether to show active stack indicator
+
+    Returns:
+        List of dictionaries suitable for table rendering
+    """
+    stack_data = []
+
+    # Always reorder stacks to show active stack first
+    stacks = list(stacks)
+    active_stack = client.active_stack_model
+
+    # Ensure active stack is in the list
+    if active_stack.id not in [s.id for s in stacks]:
+        stacks.append(active_stack)
+
+    # Always put active stack first
+    stacks = [s for s in stacks if s.id == active_stack.id] + [
+        s for s in stacks if s.id != active_stack.id
+    ]
+
+    active_stack_model_id = client.active_stack_model.id
+    for stack in stacks:
+        is_active = stack.id == active_stack_model_id
+
+        if stack.user:
+            user_name = stack.user.name
+        else:
+            user_name = "-"
+
+        # Create clean data structure with consistent field ordering
+        stack_info = {
+            "name": stack.name,
+            "owner": user_name,
+            "components": len(stack.components),
+        }
+
+        # Add component details (keeping the most important ones)
+        if StackComponentType.ORCHESTRATOR in stack.components:
+            stack_info["orchestrator"] = stack.components[
+                StackComponentType.ORCHESTRATOR
+            ][0].name
+        if StackComponentType.ARTIFACT_STORE in stack.components:
+            stack_info["artifact_store"] = stack.components[
+                StackComponentType.ARTIFACT_STORE
+            ][0].name
+
+        # Store active status separately for table formatting (not in JSON/YAML)
+        stack_info["__is_active__"] = is_active
+
+        stack_data.append(stack_info)
+
+    return stack_data
 
 
 # Stacks
@@ -935,7 +996,7 @@ def rename_stack(
 
 
 @stack.command("list")
-@list_options(StackFilter)
+@cli_utils.enhanced_list_options(StackFilter)
 @click.pass_context
 def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements.
@@ -945,17 +1006,26 @@ def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
         kwargs: Keyword arguments to filter the stacks.
     """
     client = Client()
-    with console.status("Listing stacks...\n"):
+
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
+    with console.status("Listing stacks..."):
         stacks = client.list_stacks(**kwargs)
-        if not stacks:
-            cli_utils.declare("No stacks found for the given filters.")
-            return
-        print_stacks_table(
-            client=client,
-            stacks=stacks.items,
-            show_active=not is_sorted_or_filtered(ctx),
-        )
-        print_page_info(stacks)
+
+    if not stacks:
+        cli_utils.declare("No stacks found.")
+        return
+
+    # Convert stacks to table-friendly format
+    stack_data = _prepare_stack_table_data(
+        client=client,
+        stacks=stacks.items,
+        show_active=not is_sorted_or_filtered(ctx),
+    )
+
+    # Use centralized table output with pagination
+    cli_utils.handle_table_output(stack_data, page=stacks, **table_kwargs)
 
 
 @stack.command(

@@ -13,13 +13,17 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with code repositories."""
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import (
+    enhanced_list_options,
+    format_date_for_table,
+    prepare_list_data,
+)
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
 from zenml.config.source import Source
@@ -30,6 +34,22 @@ from zenml.models import CodeRepositoryFilter
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
+
+
+def _code_repository_to_print(repo: Any) -> Dict[str, Any]:
+    """Convert a code repository response to a dictionary for table display."""
+    return {
+        "name": repo.name,
+        "type": repo.source.type
+        if hasattr(repo, "source") and repo.source
+        else "Unknown",
+        "url": repo.source.url
+        if hasattr(repo, "source")
+        and repo.source
+        and hasattr(repo.source, "url")
+        else "",
+        "created": format_date_for_table(repo.created),
+    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -189,23 +209,39 @@ def describe_code_repository(name_id_or_prefix: str) -> None:
 
 
 @code_repository.command("list", help="List all connected code repositories.")
-@list_options(CodeRepositoryFilter)
+@enhanced_list_options(CodeRepositoryFilter)
 def list_code_repositories(**kwargs: Any) -> None:
     """List all connected code repositories.
 
     Args:
         **kwargs: Keyword arguments to filter code repositories.
     """
-    with console.status("Listing code repositories...\n"):
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
+    with console.status("Listing code repositories..."):
         repos = Client().list_code_repositories(**kwargs)
 
         if not repos.items:
-            cli_utils.declare("No code repositories found for this filter.")
+            cli_utils.declare("No code repositories found.")
             return
 
-        cli_utils.print_pydantic_models(
-            repos,
-            exclude_columns=["created", "updated", "user", "project"],
+        # Prepare data based on output format
+        output_format = (
+            table_kwargs.get("output") or cli_utils.get_default_output_format()
+        )
+        repo_data = []
+
+        # Use centralized data preparation
+        repo_data = prepare_list_data(
+            repos.items, output_format, _code_repository_to_print
+        )
+
+        # Handle table output with enhanced system
+        cli_utils.handle_table_output(
+            data=repo_data,
+            page=repos,
+            **table_kwargs,
         )
 
 
