@@ -137,8 +137,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     """Entrypoint of the k8s master/orchestrator pod."""
-    # Log to the container's stdout so it can be streamed by the client.
-    logger.info("Kubernetes orchestrator pod started.")
+    logger.info("Orchestrator pod started.")
 
     args = parse_args()
 
@@ -181,6 +180,7 @@ def main() -> None:
     existing_logs_response = None
 
     if existing_state := load_state(core_api, namespace, config_map_name):
+        logger.info("Continuing existing run %s", existing_state.run_id)
         orchestrator_run_id = existing_state.orchestrator_run_id
         nodes = existing_state.nodes
         pipeline_run = client.get_pipeline_run(existing_state.run_id)
@@ -450,6 +450,7 @@ def main() -> None:
             settings = KubernetesOrchestratorSettings.model_validate(
                 settings.model_dump() if settings else {}
             )
+            log_status = node.metadata.setdefault("log_status", {})
             try:
                 finished = kube_utils.check_job_status(
                     batch_api=batch_api,
@@ -458,7 +459,7 @@ def main() -> None:
                     job_name=job_name,
                     fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                     stream_logs=pipeline_settings.stream_step_logs,
-                    backoff_interval=settings.job_monitoring_interval,
+                    log_status=log_status,
                 )
                 if finished:
                     return NodeStatus.COMPLETED
@@ -593,8 +594,7 @@ def main() -> None:
                 monitoring_function=check_job_status,
                 monitoring_interval=1,
                 max_parallelism=pipeline_settings.max_parallelism,
-                # startup_interval=orchestrator.config.parallel_step_startup_waiting_period,
-                startup_interval=0.5,
+                startup_interval=orchestrator.config.parallel_step_startup_waiting_period,
                 interrupt_function=should_interrupt_execution,
                 state_update_callback=state_update_callback,
             ).run()
