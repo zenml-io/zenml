@@ -328,8 +328,9 @@ _csp_connect_src_urls = [
     "https://raw.githubusercontent.com",
 ]
 _csp_img_src_urls = [
-    "https://public-flavor-logos.s3.eu-central-1.amazonaws.com",
-    "https://avatar.vercel.sh",
+    "*"
+    # "https://public-flavor-logos.s3.eu-central-1.amazonaws.com",
+    # "https://avatar.vercel.sh",
 ]
 _csp_frame_src_urls = [
     "https://zenml.hellonext.co",
