@@ -16,6 +16,8 @@
 import argparse
 import random
 import socket
+import threading
+import time
 from typing import List, Optional, cast
 from uuid import UUID
 
@@ -271,6 +273,9 @@ def main() -> None:
 
             return False
 
+        startup_lock = threading.Lock()
+        last_startup_time: float = 0.0
+
         def start_step_job(node: Node) -> NodeStatus:
             """Run a pipeline step in a separate Kubernetes pod.
 
@@ -397,6 +402,24 @@ def main() -> None:
                 labels=step_labels,
             )
 
+            if (
+                startup_interval
+                := pipeline_settings.parallel_step_startup_waiting_period
+            ):
+                nonlocal last_startup_time
+
+                with startup_lock:
+                    now = time.time()
+                    time_since_last_startup = now - last_startup_time
+                    sleep_time = startup_interval - time_since_last_startup
+                    if sleep_time > 0:
+                        logger.debug(
+                            f"Sleeping for {sleep_time} seconds before "
+                            f"starting job for step {step_name}."
+                        )
+                        time.sleep(sleep_time)
+                    last_startup_time = now
+
             kube_utils.create_job(
                 batch_api=batch_api,
                 namespace=namespace,
@@ -513,7 +536,6 @@ def main() -> None:
                 monitoring_function=check_job_status,
                 monitoring_interval=1,
                 max_parallelism=pipeline_settings.max_parallelism,
-                startup_interval=orchestrator.config.parallel_step_startup_waiting_period,
                 interrupt_function=should_interrupt_execution,
                 state_update_callback=state_update_callback,
             ).run()

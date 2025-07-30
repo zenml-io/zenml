@@ -64,7 +64,6 @@ class DagRunner:
         interrupt_function: Optional[Callable[[], None]] = None,
         state_update_callback: Optional[Callable[[List[Node]], None]] = None,
         monitoring_interval: float = 1.0,
-        startup_interval: Optional[float] = None,
         max_parallelism: Optional[int] = None,
     ) -> None:
         self.nodes = {node.id: node for node in nodes}
@@ -82,7 +81,6 @@ class DagRunner:
             daemon=True,
         )
         self.monitoring_interval = monitoring_interval
-        self.startup_interval = startup_interval
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
         self.startup_executor = ThreadPoolExecutor(max_workers=10)
@@ -204,13 +202,6 @@ class DagRunner:
             else:
                 self.startup_queue.task_done()
                 self._start_node(node)
-                if self.startup_interval is not None:
-                    # Delay the next node startup by the startup interval
-                    logger.debug(
-                        "Waiting for %s seconds before starting next node.",
-                        self.startup_interval,
-                    )
-                    time.sleep(self.startup_interval)
 
     def run(self) -> Dict[str, NodeStatus]:
         self._initialize_startup_queue()
