@@ -95,7 +95,7 @@ def add_local_stores_mount(
 
 
 def build_pod_manifest(
-    pod_name: str,
+    pod_name: Optional[str],
     image_name: str,
     command: List[str],
     args: List[str],

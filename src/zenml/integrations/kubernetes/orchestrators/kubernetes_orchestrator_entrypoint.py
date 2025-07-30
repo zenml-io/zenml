@@ -51,8 +51,6 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
 from zenml.orchestrators import publish_utils
-
-# from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
     fetch_step_runs_by_names,
@@ -60,7 +58,6 @@ from zenml.orchestrators.step_run_utils import (
 )
 from zenml.orchestrators.utils import (
     get_config_environment_vars,
-    get_orchestrator_run_name,
 )
 from zenml.pipelines.run_utils import create_placeholder_run
 
@@ -144,7 +141,6 @@ def main() -> None:
                 return None
             raise
 
-        logger.info("Configmap: %s", configmap)
         state = configmap.data["state"]
         return OrchestratorPodState.model_validate_json(state)
 
@@ -176,7 +172,7 @@ def main() -> None:
     existing_logs_response = None
 
     if existing_state := _load_state():
-        logger.info("Continuing existing run %s", existing_state.run_id)
+        logger.info("Continuing existing run `%s`.", existing_state.run_id)
         orchestrator_run_id = existing_state.orchestrator_run_id
         nodes = existing_state.nodes
         pipeline_run = client.get_pipeline_run(existing_state.run_id)
@@ -298,28 +294,6 @@ def main() -> None:
                 if _cache_step_run_if_possible(step_name):
                     return NodeStatus.COMPLETED
 
-            if (
-                settings.pod_name_prefix
-                and not orchestrator_pod_name.startswith(
-                    settings.pod_name_prefix
-                )
-            ):
-                max_length = (
-                    kube_utils.calculate_max_pod_name_length_for_namespace(
-                        namespace=namespace
-                    )
-                )
-                pod_name_prefix = get_orchestrator_run_name(
-                    settings.pod_name_prefix, max_length=max_length
-                )
-                pod_name = f"{pod_name_prefix}-{step_name}"
-            else:
-                pod_name = f"{orchestrator_pod_name}-{step_name}"
-
-            pod_name = kube_utils.sanitize_pod_name(
-                pod_name, namespace=namespace
-            )
-
             step_labels = base_labels.copy()
             step_labels["step_name"] = kube_utils.sanitize_label(step_name)
 
@@ -358,7 +332,7 @@ def main() -> None:
                 )
 
             pod_manifest = build_pod_manifest(
-                pod_name=pod_name,
+                pod_name=None,
                 image_name=image,
                 command=step_command,
                 args=step_args,
@@ -628,6 +602,8 @@ def main() -> None:
             # will be invalidated. We catch this exception and do nothing here,
             # as the pipeline run status will already have been published.
             pass
+
+        logger.info("Orchestrator pod finished.")
 
 
 if __name__ == "__main__":

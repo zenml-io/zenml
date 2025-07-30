@@ -71,7 +71,6 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.core.schedule import ScheduleUpdate
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
-from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
@@ -467,27 +466,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             KubernetesOrchestratorSettings, self.get_settings(deployment)
         )
 
-        # We already make sure the orchestrator run name has the correct length
-        # to make sure we don't cut off the randomized suffix later when
-        # sanitizing the pod name. This avoids any pod naming collisions.
-        max_length = kube_utils.calculate_max_pod_name_length_for_namespace(
-            namespace=self.config.kubernetes_namespace
-        )
-        orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name, max_length=max_length
-        )
-
-        if settings.pod_name_prefix:
-            pod_name = get_orchestrator_run_name(
-                settings.pod_name_prefix, max_length=max_length
-            )
-        else:
-            pod_name = orchestrator_run_name
-
-        pod_name = kube_utils.sanitize_pod_name(
-            pod_name, namespace=self.config.kubernetes_namespace
-        )
-
         assert stack.container_registry
 
         # Get Docker image for the orchestrator pod
@@ -554,11 +532,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 str(placeholder_run.id)
             )
             orchestrator_pod_labels["run_name"] = kube_utils.sanitize_label(
-                str(placeholder_run.name)
+                placeholder_run.name
             )
 
         pod_manifest = build_pod_manifest(
-            pod_name=pod_name,
+            pod_name=None,
             image_name=image,
             command=command,
             args=args,
@@ -570,11 +548,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             mount_local_stores=self.config.is_local,
             termination_grace_period_seconds=settings.pod_stop_grace_period,
         )
-
-        # backoff_limit = (
-        #     retry_config.max_retries if retry_config else 0
-        # ) + settings.backoff_limit_margin
-        backoff_limit = 3
 
         pod_failure_policy = settings.pod_failure_policy or {
             # These rules are applied sequentially. This means any failure in
@@ -616,14 +589,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         job_manifest = build_job_manifest(
             job_name=job_name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
-            backoff_limit=backoff_limit,
+            backoff_limit=settings.backoff_limit_margin,
             ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
             active_deadline_seconds=settings.active_deadline_seconds,
             pod_failure_policy=pod_failure_policy,
             labels=orchestrator_pod_labels,
         )
 
-        # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
             if not deployment.schedule.cron_expression:
                 raise RuntimeError(
@@ -644,8 +616,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 namespace=self.config.kubernetes_namespace,
             )
             logger.info(
-                f"Scheduling Kubernetes run `{pod_name}` with CRON expression "
-                f'`"{cron_expression}"`.'
+                f"Created Kubernetes CronJob `{cron_job.metadata.name}` "
+                f"with CRON expression `{cron_expression}`."
             )
             return SubmissionResult(
                 metadata={
@@ -676,40 +648,31 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         )
                 raise e
 
-            metadata: Dict[str, MetadataType] = {
-                METADATA_ORCHESTRATOR_RUN_ID: pod_name,
-            }
-
-            # Wait for the orchestrator pod to finish and stream logs.
             if settings.synchronous:
 
                 def _wait_for_run_to_finish() -> None:
-                    logger.info(
-                        "Waiting for Kubernetes orchestrator pod to finish..."
-                    )
+                    logger.info("Waiting for orchestrator job to finish...")
                     kube_utils.wait_for_job_to_finish(
                         batch_api=self._k8s_batch_api,
                         core_api=self._k8s_core_api,
                         namespace=self.config.kubernetes_namespace,
                         job_name=job_name,
                         backoff_interval=settings.job_monitoring_interval,
+                        fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                         stream_logs=True,
                     )
 
                 return SubmissionResult(
-                    metadata=metadata,
                     wait_for_completion=_wait_for_run_to_finish,
                 )
             else:
                 logger.info(
-                    f"Orchestration started asynchronously in pod "
-                    f"`{self.config.kubernetes_namespace}:{pod_name}`. "
+                    f"Orchestrator job `{job_name}` started. "
                     f"Run the following command to inspect the logs: "
-                    f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
+                    f"`kubectl -n {self.config.kubernetes_namespace} logs "
+                    f"job/{job_name}`"
                 )
-                return SubmissionResult(
-                    metadata=metadata,
-                )
+                return None
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings

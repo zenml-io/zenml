@@ -620,7 +620,7 @@ def retry_on_api_exception(
     max_retries: int = 3,
     delay: float = 1,
     backoff: float = 1,
-    fail_on_status_codes: Tuple[int, ...] = (404),
+    fail_on_status_codes: Tuple[int, ...] = (404,),
 ) -> Callable[..., R]:
     """Retry a function on API exceptions.
 
@@ -965,12 +965,6 @@ def check_job_status(
                 # yet.
                 continue
 
-            if pod_status in [
-                PodPhase.SUCCEEDED.value,
-                PodPhase.FAILED.value,
-            ]:
-                log_status[pod_name] = -1
-
             containers = pod.spec.containers
             if not container_name:
                 container_name = containers[0].name
@@ -993,6 +987,12 @@ def check_job_status(
                     for line in logs[logged_lines:]:
                         logger.info(line)
                     log_status[pod_name] = len(logs)
+
+            if pod_status in [
+                PodPhase.SUCCEEDED.value,
+                PodPhase.FAILED.value,
+            ]:
+                log_status[pod_name] = -1
 
     return False
 

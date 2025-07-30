@@ -15,17 +15,17 @@
 import queue
 import threading
 import time
-from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from zenml.enums import StrEnum
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class NodeStatus(Enum):
+class NodeStatus(StrEnum):
     """Status of a DAG node."""
 
     NOT_STARTED = "not_started"
@@ -171,6 +171,11 @@ class DagRunner:
                 if len(self.running_nodes) >= self.max_parallelism:
                     # Sleep for 0.5 seconds or exit immediately if the shutdown
                     # event was set
+                    logger.debug(
+                        "Maximum amount of nodes running (%s), waiting for 0.5 "
+                        "seconds.",
+                        self.max_parallelism,
+                    )
                     self.shutdown_event.wait(timeout=0.5)
                     continue
 
@@ -182,6 +187,10 @@ class DagRunner:
                 self._start_node(node)
                 if self.startup_interval is not None:
                     # Delay the next node startup by the startup interval
+                    logger.debug(
+                        "Waiting for %s seconds before starting next node.",
+                        self.startup_interval,
+                    )
                     time.sleep(self.startup_interval)
 
     def run(self) -> Dict[str, NodeStatus]:
