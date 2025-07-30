@@ -54,7 +54,7 @@ Internal Field Conventions:
 import json
 import os
 import shutil
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import yaml
 from rich import box
@@ -433,6 +433,7 @@ def _render_table(
         header_display = header.upper()
 
         # Determine best overflow behavior for CLI
+        overflow: Literal["fold", "crop", "ellipsis", "ignore"]
         if no_truncate:
             # Show full content, allow wrapping
             overflow = "fold"
