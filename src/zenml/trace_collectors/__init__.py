@@ -33,6 +33,11 @@ from zenml.trace_collectors.models import (
     TraceAnnotation,
     TraceUsage,
 )
+from zenml.trace_collectors.utils import (
+    get_trace_collector,
+    get_trace_id_from_step_context,
+    get_trace_url_from_step_context,
+)
 
 __all__ = [
     "BaseTraceCollector",
@@ -46,4 +51,7 @@ __all__ = [
     "Trace",
     "TraceAnnotation",
     "TraceUsage",
+    "get_trace_collector",
+    "get_trace_id_from_step_context",
+    "get_trace_url_from_step_context",
 ]

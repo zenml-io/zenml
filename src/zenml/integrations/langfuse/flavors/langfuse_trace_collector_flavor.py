@@ -15,15 +15,19 @@
 
 from typing import Optional, Type
 
-from pydantic import Field
+from pydantic import Field, SecretStr, validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.langfuse import LANGFUSE
+from zenml.logger import get_logger
 from zenml.stack import StackComponent
 from zenml.trace_collectors.base_trace_collector import (
     BaseTraceCollectorConfig,
     BaseTraceCollectorFlavor,
 )
+from zenml.utils.secret_utils import SecretField
+
+logger = get_logger(__name__)
 
 
 class LangFuseTraceCollectorConfig(BaseTraceCollectorConfig):
@@ -45,13 +49,13 @@ class LangFuseTraceCollectorConfig(BaseTraceCollectorConfig):
         "Must be a valid HTTP/HTTPS URL accessible with provided credentials",
     )
 
-    public_key: str = Field(
+    public_key: str = SecretField(
         description="LangFuse public key for API authentication. Obtained from "
         "the LangFuse dashboard under project settings. Required for all API "
         "operations including trace collection and querying"
     )
 
-    secret_key: str = Field(
+    secret_key: str = SecretField(
         description="LangFuse secret key for API authentication. Obtained from "
         "the LangFuse dashboard under project settings. Keep this secure as it "
         "provides full access to the LangFuse project"
@@ -86,6 +90,54 @@ class LangFuseTraceCollectorConfig(BaseTraceCollectorConfig):
         "pipeline-level trace with steps as spans within that trace. "
         "Pipeline-level tracing provides better correlation between steps",
     )
+
+    auto_configure_litellm: bool = Field(
+        default=True,
+        description="Controls whether to automatically configure LiteLLM "
+        "callbacks for Langfuse integration. If True, sets up environment "
+        "variables and callbacks for seamless LLM tracing integration",
+    )
+
+    fail_on_init_error: bool = Field(
+        default=False,
+        description="Controls behavior when trace initialization fails. If True, "
+        "raises exceptions on initialization errors. If False, logs warnings "
+        "and continues with fallback behavior. Useful for debugging",
+    )
+
+    @validator("host")
+    def validate_host_url(cls, v: str) -> str:
+        """Validate that host is a properly formatted URL.
+
+        Args:
+            v: The host URL to validate.
+
+        Returns:
+            The validated and normalized host URL.
+
+        Raises:
+            ValueError: If the host is not a valid HTTP/HTTPS URL.
+        """
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("Host must be a valid HTTP/HTTPS URL")
+        return v.rstrip("/")
+
+    @validator("project_id")
+    def validate_project_id(cls, v: Optional[str]) -> Optional[str]:
+        """Validate project ID format.
+
+        Args:
+            v: The project ID to validate.
+
+        Returns:
+            The validated project ID.
+        """
+        if v and not v.startswith("cl"):
+            logger.warning(
+                f"Project ID '{v}' does not start with 'cl'. "
+                "Langfuse project IDs typically start with 'cl'."
+            )
+        return v
 
 
 class LangFuseTraceCollectorSettings(BaseSettings):

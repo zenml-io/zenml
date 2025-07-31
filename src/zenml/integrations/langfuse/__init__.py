@@ -28,7 +28,7 @@ class LangFuseIntegration(Integration):
     """Definition of LangFuse integration for ZenML."""
 
     NAME = LANGFUSE
-    REQUIREMENTS = ["langfuse>=2.0.0"]
+    REQUIREMENTS = ["langfuse>=3.2.0"]
 
     @classmethod
     def flavors(cls) -> List[Type["Flavor"]]:
