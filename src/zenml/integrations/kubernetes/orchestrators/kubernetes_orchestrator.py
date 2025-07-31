@@ -56,6 +56,12 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes.orchestrators.constants import (
+    ENV_ZENML_KUBERNETES_RUN_ID,
+    KUBERNETES_CRON_JOB_METADATA_KEY,
+    KUBERNETES_SECRET_TOKEN_KEY_NAME,
+    STEP_NAME_ANNOTATION_KEY,
+)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
     KubernetesOrchestratorEntrypointConfiguration,
 )
@@ -83,11 +89,6 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
-
-ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
-KUBERNETES_SECRET_TOKEN_KEY_NAME = "zenml_api_token"
-KUBERNETES_CRON_JOB_METADATA_KEY = "cron_job_name"
-STEP_NAME_ANNOTATION_KEY = "zenml.io/step_name"
 
 
 class KubernetesOrchestrator(ContainerizedOrchestrator):
@@ -757,7 +758,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
 
         for job in job_list.items:
-            # TODO: exclude orchestrator job, as that stops by itself
+            if not kube_utils.is_step_job(job):
+                # This is the orchestrator job which stops by itself
+                continue
+
             if job.status and job.status.conditions:
                 # Don't delete completed/failed jobs
                 for condition in job.status.conditions:

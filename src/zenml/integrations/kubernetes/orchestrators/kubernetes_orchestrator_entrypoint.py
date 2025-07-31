@@ -18,12 +18,11 @@ import random
 import socket
 import threading
 import time
-from typing import List, Optional, cast
+from typing import List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
-from pydantic import BaseModel
 
 from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
@@ -35,15 +34,19 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes.orchestrators.constants import (
+    ENV_ZENML_KUBERNETES_RUN_ID,
+    KUBERNETES_SECRET_TOKEN_KEY_NAME,
+    ORCHESTRATOR_RUN_ID_ANNOTATION_KEY,
+    RUN_ID_ANNOTATION_KEY,
+    STEP_NAME_ANNOTATION_KEY,
+)
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     DagRunner,
     Node,
     NodeStatus,
 )
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
-    ENV_ZENML_KUBERNETES_RUN_ID,
-    KUBERNETES_SECRET_TOKEN_KEY_NAME,
-    STEP_NAME_ANNOTATION_KEY,
     KubernetesOrchestrator,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
@@ -68,11 +71,6 @@ from zenml.pipelines.run_utils import create_placeholder_run
 logger = get_logger(__name__)
 
 
-class OrchestratorPodState(BaseModel):
-    run_id: UUID
-    orchestrator_run_id: str
-
-
 def parse_args() -> argparse.Namespace:
     """Parse entrypoint arguments.
 
@@ -83,6 +81,39 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--deployment_id", type=str, required=True)
     parser.add_argument("--run_id", type=str, required=False)
     return parser.parse_args()
+
+
+def _get_orchestrator_job_state(
+    batch_api: k8s_client.BatchV1Api, namespace: str, job_name: str
+) -> Tuple[Optional[UUID], Optional[str]]:
+    """Get the existing status of the orchestrator job.
+
+    Args:
+        batch_api: The batch api.
+        namespace: The namespace.
+        job_name: The name of the orchestrator job.
+
+    Returns:
+        The run id and orchestrator run id.
+    """
+    run_id = None
+    orchestrator_run_id = None
+
+    job = kube_utils.get_job(
+        batch_api=batch_api,
+        namespace=namespace,
+        job_name=job_name,
+    )
+
+    if job.metadata and job.metadata.annotations:
+        annotations = job.metadata.annotations
+
+        run_id = annotations.get(RUN_ID_ANNOTATION_KEY, None)
+        orchestrator_run_id = annotations.get(
+            ORCHESTRATOR_RUN_ID_ANNOTATION_KEY, None
+        )
+
+    return UUID(run_id) if run_id else None, orchestrator_run_id
 
 
 def _reconstruct_nodes(
@@ -155,7 +186,11 @@ def _reconstruct_nodes(
 
 
 def main() -> None:
-    """Entrypoint of the k8s master/orchestrator pod."""
+    """Entrypoint of the k8s master/orchestrator pod.
+
+    Raises:
+        RuntimeError: If the orchestrator pod is not associated with a job.
+    """
     logger.info("Orchestrator pod started.")
 
     args = parse_args()
@@ -187,72 +222,24 @@ def main() -> None:
     core_api = k8s_client.CoreV1Api(kube_client)
     batch_api = k8s_client.BatchV1Api(kube_client)
 
-    pod = kube_utils.get_pod(
-        core_api, pod_name=orchestrator_pod_name, namespace=namespace
+    job_name = kube_utils.get_parent_job_name(
+        core_api=core_api,
+        pod_name=orchestrator_pod_name,
+        namespace=namespace,
     )
-    # We use the orchestrator pod name as fallback, but the job name should
-    # always be set anyway.
-    # TODO: maybe store this as annotations on the parent job?
-    config_map_name = orchestrator_pod_name
-    if (
-        pod
-        and pod.metadata
-        and pod.metadata.labels
-        and (job_name := pod.metadata.labels.get("job-name", None))
-    ):
-        config_map_name = job_name
+    if not job_name:
+        raise RuntimeError("Failed to fetch job name for orchestrator pod.")
 
-    def _load_state() -> Optional[OrchestratorPodState]:
-        """Load the state of the orchestrator.
-
-        Returns:
-            The state of the orchestrator.
-        """
-        try:
-            configmap = kube_utils.get_config_map(
-                core_api=core_api,
-                namespace=namespace,
-                name=config_map_name,
-            )
-        except ApiException as e:
-            if e.status == 404:
-                return None
-            raise
-
-        state = configmap.data["state"]
-        return OrchestratorPodState.model_validate_json(state)
-
-    def _store_state(state: OrchestratorPodState) -> None:
-        """Store the state of the orchestrator.
-
-        Args:
-            state: The state to store.
-        """
-        data = {"state": state.model_dump_json()}
-        try:
-            kube_utils.update_config_map(
-                core_api=core_api,
-                namespace=namespace,
-                name=config_map_name,
-                data=data,
-            )
-        except ApiException as e:
-            if e.status == 404:
-                kube_utils.create_config_map(
-                    core_api=core_api,
-                    namespace=namespace,
-                    name=config_map_name,
-                    data=data,
-                )
-            else:
-                raise
-
+    run_id, orchestrator_run_id = _get_orchestrator_job_state(
+        batch_api=batch_api,
+        namespace=namespace,
+        job_name=job_name,
+    )
     existing_logs_response = None
 
-    if existing_state := _load_state():
-        logger.info("Continuing existing run `%s`.", existing_state.run_id)
-        orchestrator_run_id = existing_state.orchestrator_run_id
-        pipeline_run = client.get_pipeline_run(existing_state.run_id)
+    if run_id and orchestrator_run_id:
+        logger.info("Continuing existing run `%s`.", run_id)
+        pipeline_run = client.get_pipeline_run(run_id)
         nodes = _reconstruct_nodes(
             deployment=deployment,
             pipeline_run=pipeline_run,
@@ -260,6 +247,7 @@ def main() -> None:
             batch_api=batch_api,
         )
 
+        # Continue logging to the same log file if it exists
         for log_response in pipeline_run.log_collection or []:
             if log_response.source == "orchestrator":
                 existing_logs_response = log_response
@@ -273,11 +261,17 @@ def main() -> None:
                 deployment=deployment,
                 orchestrator_run_id=orchestrator_run_id,
             )
-        _store_state(
-            OrchestratorPodState(
-                run_id=pipeline_run.id,
-                orchestrator_run_id=orchestrator_run_id,
-            )
+
+        # Store in the job annotations so we can continue the run if the pod
+        # is restarted
+        kube_utils.update_job(
+            batch_api=batch_api,
+            namespace=namespace,
+            job_name=job_name,
+            annotations={
+                RUN_ID_ANNOTATION_KEY: str(pipeline_run.id),
+                ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
+            },
         )
         nodes = [
             Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
@@ -622,17 +616,6 @@ def main() -> None:
                     logger.error(
                         f"Error cleaning up secret {secret_name}: {e}"
                     )
-
-            try:
-                kube_utils.delete_config_map(
-                    core_api=core_api,
-                    namespace=namespace,
-                    name=config_map_name,
-                )
-            except ApiException as e:
-                logger.error(
-                    f"Error cleaning up config map {config_map_name}: {e}"
-                )
 
         try:
             pipeline_failed = False

@@ -43,6 +43,9 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
+from zenml.integrations.kubernetes.orchestrators.constants import (
+    STEP_NAME_ANNOTATION_KEY,
+)
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_namespace_manifest,
     build_role_binding_manifest_for_service_account,
@@ -228,7 +231,9 @@ def get_pod(
         The found pod object. None if it's not found.
     """
     try:
-        return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
+        return retry_on_api_exception(core_api.read_namespaced_pod)(
+            name=pod_name, namespace=namespace
+        )
     except k8s_client.rest.ApiException as e:
         if e.status == 404:
             return None
@@ -679,6 +684,26 @@ def create_job(
     )
 
 
+def get_job(
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_name: str,
+) -> k8s_client.V1Job:
+    """Get a job by name.
+
+    Args:
+        batch_api: Kubernetes batch api.
+        namespace: Kubernetes namespace.
+        job_name: The name of the job to get.
+
+    Returns:
+        The job.
+    """
+    return retry_on_api_exception(batch_api.read_namespaced_job)(
+        name=job_name, namespace=namespace
+    )
+
+
 def list_jobs(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
@@ -695,6 +720,42 @@ def list_jobs(
         namespace=namespace,
         label_selector=label_selector,
     )
+
+
+def update_job(
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_name: str,
+    annotations: Dict[str, str],
+) -> k8s_client.V1Job:
+    """Update a job.
+
+    Args:
+        batch_api: Kubernetes batch api.
+        namespace: Kubernetes namespace.
+        job_name: The name of the job to update.
+        annotations: The annotations to update.
+
+    Returns:
+        The updated job.
+    """
+    return retry_on_api_exception(batch_api.patch_namespaced_job)(
+        name=job_name,
+        namespace=namespace,
+        body={"metadata": {"annotations": annotations}},
+    )
+
+
+def is_step_job(job: k8s_client.V1Job) -> bool:
+    """Check if a job is a step job.
+
+    Args:
+        job: The job to check.
+    """
+    if not job.metadata or not job.metadata.annotations:
+        return False
+
+    return STEP_NAME_ANNOTATION_KEY in job.metadata.annotations
 
 
 def get_container_status(
@@ -1028,3 +1089,31 @@ def delete_config_map(
         namespace=namespace,
         name=name,
     )
+
+
+def get_parent_job_name(
+    core_api: k8s_client.CoreV1Api,
+    pod_name: str,
+    namespace: str,
+) -> Optional[str]:
+    """Get the name of the job that created a pod.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        pod_name: Name of the pod.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        The name of the job that created the pod, or None if the pod is not
+        associated with a job.
+    """
+    pod = get_pod(core_api, pod_name=pod_name, namespace=namespace)
+    if (
+        pod
+        and pod.metadata
+        and pod.metadata.labels
+        and (job_name := pod.metadata.labels.get("job-name", None))
+    ):
+        return cast(str, job_name)
+
+    return None
