@@ -23,6 +23,7 @@ from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.orchestrators import (
@@ -41,16 +42,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=True,
         description="Whether to wait for all pipeline steps to complete. "
         "When `False`, the client returns immediately and execution continues asynchronously.",
-    )
-    timeout: int = Field(
-        default=0,
-        deprecated=True,
-        description="DEPRECATED/UNUSED.",
-    )
-    stream_step_logs: bool = Field(
-        default=True,
-        deprecated=True,
-        description="DEPRECATED/UNUSED.",
     )
     service_account_name: Optional[str] = Field(
         default=None,
@@ -74,34 +65,9 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=None,
         description="Pod configuration for the orchestrator container that launches step pods.",
     )
-    pod_name_prefix: Optional[str] = Field(
-        default=None,
-        deprecated=True,
-        description="DEPRECATED/UNUSED.",
-    )
     job_name_prefix: Optional[str] = Field(
         default=None,
         description="Prefix for the job name.",
-    )
-    pod_startup_timeout: int = Field(
-        default=600,
-        description="DEPRECATED/UNUSED.",
-        deprecated=True,
-    )
-    pod_failure_max_retries: int = Field(
-        default=3,
-        description="DEPRECATED/UNUSED.",
-        deprecated=True,
-    )
-    pod_failure_retry_delay: int = Field(
-        default=10,
-        description="DEPRECATED/UNUSED.",
-        deprecated=True,
-    )
-    pod_failure_backoff: float = Field(
-        default=1.0,
-        description="DEPRECATED/UNUSED.",
-        deprecated=True,
     )
     max_parallelism: Optional[PositiveInt] = Field(
         default=None,
@@ -180,6 +146,52 @@ class KubernetesOrchestratorSettings(BaseSettings):
     pod_stop_grace_period: PositiveInt = Field(
         default=30,
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
+    )
+
+    timeout: int = Field(
+        default=0,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+    stream_step_logs: bool = Field(
+        default=True,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+    pod_startup_timeout: int = Field(
+        default=600,
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
+    )
+    pod_failure_max_retries: int = Field(
+        default=3,
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
+    )
+    pod_failure_retry_delay: int = Field(
+        default=10,
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
+    )
+    pod_failure_backoff: float = Field(
+        default=1.0,
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
+    )
+    pod_name_prefix: Optional[str] = Field(
+        default=None,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "timeout",
+        "stream_step_logs",
+        "pod_startup_timeout",
+        "pod_failure_max_retries",
+        "pod_failure_retry_delay",
+        "pod_failure_backoff",
+        "pod_name_prefix",
     )
 
     @field_validator("pod_failure_policy", mode="before")
