@@ -64,12 +64,24 @@ R = TypeVar("R")
 # client-side validations that means the `on_exit_codes` field is
 # unusable. See https://github.com/kubernetes-client/python/issues/2056
 class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: ignore[misc]
+    """Patched failure policy rule."""
+
     @property
     def on_pod_conditions(self):  # type: ignore[no-untyped-def]
+        """On pod conditions.
+
+        Returns:
+            On pod conditions.
+        """
         return self._on_pod_conditions
 
     @on_pod_conditions.setter
     def on_pod_conditions(self, on_pod_conditions):  # type: ignore[no-untyped-def]
+        """On pod conditions.
+
+        Args:
+            on_pod_conditions: On pod conditions.
+        """
         self._on_pod_conditions = on_pod_conditions
 
 
@@ -715,6 +727,9 @@ def list_jobs(
         batch_api: Kubernetes batch api.
         namespace: Kubernetes namespace.
         label_selector: The label selector to use.
+
+    Returns:
+        The job list.
     """
     return retry_on_api_exception(batch_api.list_namespaced_job)(
         namespace=namespace,
@@ -751,6 +766,9 @@ def is_step_job(job: k8s_client.V1Job) -> bool:
 
     Args:
         job: The job to check.
+
+    Returns:
+        Whether the job is a step job.
     """
     if not job.metadata or not job.metadata.annotations:
         return False
@@ -1066,6 +1084,9 @@ def get_config_map(
         core_api: Kubernetes CoreV1Api client.
         namespace: Kubernetes namespace.
         name: Name of the config map to get.
+
+    Returns:
+        The config map.
     """
     return retry_on_api_exception(core_api.read_namespaced_config_map)(
         namespace=namespace,

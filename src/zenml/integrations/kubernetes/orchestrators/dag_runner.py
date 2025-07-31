@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""DAG runner."""
 
 import queue
 import threading
@@ -39,6 +40,8 @@ class NodeStatus(StrEnum):
 
 
 class Node(BaseModel):
+    """DAG node."""
+
     id: str
     status: NodeStatus = NodeStatus.NOT_READY
     upstream_nodes: List[str] = []
@@ -46,6 +49,11 @@ class Node(BaseModel):
 
     @property
     def is_finished(self) -> bool:
+        """Whether the node is finished.
+
+        Returns:
+            Whether the node is finished.
+        """
         return self.status in {
             NodeStatus.COMPLETED,
             NodeStatus.FAILED,
@@ -54,6 +62,8 @@ class Node(BaseModel):
 
 
 class DagRunner:
+    """DAG runner."""
+
     def __init__(
         self,
         nodes: List[Node],
@@ -63,6 +73,17 @@ class DagRunner:
         monitoring_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
     ) -> None:
+        """Initialize the DAG runner.
+
+        Args:
+            nodes: The nodes of the DAG.
+            startup_function: The function to start a node.
+            monitoring_function: The function to monitor a node.
+            interrupt_function: Will be periodically called to check if the
+                DAG should be interrupted.
+            monitoring_interval: The interval in which the nodes are monitored.
+            max_parallelism: The maximum number of nodes to run in parallel.
+        """
         self.nodes = {node.id: node for node in nodes}
         self.startup_queue: queue.Queue[Node] = queue.Queue()
         self.startup_function = startup_function
@@ -83,6 +104,11 @@ class DagRunner:
 
     @property
     def running_nodes(self) -> List[Node]:
+        """Running nodes.
+
+        Returns:
+            Running nodes.
+        """
         return [
             node
             for node in self.nodes.values()
@@ -91,6 +117,13 @@ class DagRunner:
 
     @property
     def active_nodes(self) -> List[Node]:
+        """Active nodes.
+
+        Active nodes are nodes that are either running or starting.
+
+        Returns:
+            Active nodes.
+        """
         return [
             node
             for node in self.nodes.values()
@@ -98,17 +131,37 @@ class DagRunner:
         ]
 
     def _initialize_startup_queue(self) -> None:
+        """Initialize the startup queue.
+
+        The startup queue contains all nodes that are ready to be started.
+        """
         for node in self.nodes.values():
             if node.status in {NodeStatus.READY, NodeStatus.STARTING}:
                 self.startup_queue.put(node)
 
     def _can_start_node(self, node: Node) -> bool:
+        """Check if a node can be started.
+
+        Args:
+            node: The node to check.
+
+        Returns:
+            Whether the node can be started.
+        """
         return all(
             self.nodes[upstream_node_id].status == NodeStatus.COMPLETED
             for upstream_node_id in node.upstream_nodes
         )
 
     def _should_skip_node(self, node: Node) -> bool:
+        """Check if a node should be skipped.
+
+        Args:
+            node: The node to check.
+
+        Returns:
+            Whether the node should be skipped.
+        """
         return any(
             self.nodes[upstream_node_id].status
             in {NodeStatus.FAILED, NodeStatus.SKIPPED}
@@ -116,6 +169,13 @@ class DagRunner:
         )
 
     def _start_node(self, node: Node) -> None:
+        """Start a node.
+
+        This will start of a thread that will run the startup function.
+
+        Args:
+            node: The node to start.
+        """
         node.status = NodeStatus.STARTING
 
         def _start_node_task() -> None:
@@ -132,6 +192,14 @@ class DagRunner:
         self.startup_executor.submit(_start_node_task)
 
     def _process_nodes(self) -> bool:
+        """Process the nodes.
+
+        This method will check if any nodes should be skipped or are ready to
+        run, in which case the node will be added to the startup queue.
+
+        Returns:
+            Whether the DAG is finished.
+        """
         finished = True
 
         for node in self.nodes.values():
@@ -152,6 +220,10 @@ class DagRunner:
         return finished
 
     def _monitoring_loop(self) -> None:
+        """Monitoring loop.
+
+        This should run in a separate thread and monitors the running nodes.
+        """
         while not self.shutdown_event.is_set():
             start_time = time.time()
             for node in self.running_nodes:
@@ -174,6 +246,11 @@ class DagRunner:
             self.shutdown_event.wait(timeout=time_to_sleep)
 
     def _startup_loop(self) -> None:
+        """Startup loop.
+
+        This should run in a separate thread and starts nodes that are ready to
+        run.
+        """
         while not self.shutdown_event.is_set():
             if self.max_parallelism is not None:
                 if len(self.active_nodes) >= self.max_parallelism:
@@ -196,6 +273,11 @@ class DagRunner:
                 self._start_node(node)
 
     def run(self) -> Dict[str, NodeStatus]:
+        """Run the DAG.
+
+        Returns:
+            The final node states.
+        """
         self._initialize_startup_queue()
 
         self.startup_thread.start()

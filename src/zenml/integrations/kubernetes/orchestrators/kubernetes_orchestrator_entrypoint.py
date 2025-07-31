@@ -323,7 +323,6 @@ def main() -> None:
         }
 
         def _cache_step_run_if_possible(step_name: str) -> bool:
-            """Try to cache a step run."""
             if not step_run_request_factory.has_caching_enabled(step_name):
                 return False
 
@@ -355,10 +354,10 @@ def main() -> None:
             """Run a pipeline step in a separate Kubernetes pod.
 
             Args:
-                step_name: Name of the step.
+                node: The node to start.
 
-            Raises:
-                Exception: If the pod fails to start.
+            Returns:
+                The status of the node.
             """
             step_name = node.id
             step_config = deployment.step_configurations[step_name].config
@@ -510,6 +509,17 @@ def main() -> None:
             return NodeStatus.RUNNING
 
         def check_job_status(node: Node) -> NodeStatus:
+            """Check the status of a job.
+
+            Args:
+                node: The node to check.
+
+            Raises:
+                Exception: If the job status cannot be checked.
+
+            Returns:
+                The status of the node.
+            """
             step_name = node.id
             job_name = node.metadata["job_name"]
             step_config = deployment.step_configurations[step_name].config

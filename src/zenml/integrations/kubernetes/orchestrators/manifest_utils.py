@@ -436,10 +436,10 @@ def job_template_manifest_from_job(
     """Build a Kubernetes job template manifest from a job.
 
     Args:
-        pod: The pod manifest to build the template from.
+        job: The job manifest to build the template from.
 
     Returns:
-        The pod template manifest.
+        The job template manifest.
     """
     return k8s_client.V1JobTemplateSpec(
         metadata=job.metadata,
@@ -448,11 +448,22 @@ def job_template_manifest_from_job(
 
 
 def build_cron_job_manifest(
-    cron_expression: str,
     job_template: k8s_client.V1JobTemplateSpec,
+    cron_expression: str,
     successful_jobs_history_limit: Optional[int] = None,
     failed_jobs_history_limit: Optional[int] = None,
 ) -> k8s_client.V1CronJob:
+    """Build a Kubernetes cron job manifest.
+
+    Args:
+        job_template: The job template to use for the cron job.
+        cron_expression: The cron expression to use for the cron job.
+        successful_jobs_history_limit: The number of successful jobs to keep.
+        failed_jobs_history_limit: The number of failed jobs to keep.
+
+    Returns:
+        The Kubernetes cron job manifest.
+    """
     spec = k8s_client.V1CronJobSpec(
         schedule=cron_expression,
         successful_jobs_history_limit=successful_jobs_history_limit,
