@@ -679,6 +679,24 @@ def create_job(
     )
 
 
+def list_jobs(
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    label_selector: Optional[str] = None,
+) -> k8s_client.V1JobList:
+    """List jobs in a namespace.
+
+    Args:
+        batch_api: Kubernetes batch api.
+        namespace: Kubernetes namespace.
+        label_selector: The label selector to use.
+    """
+    return retry_on_api_exception(batch_api.list_namespaced_job)(
+        namespace=namespace,
+        label_selector=label_selector,
+    )
+
+
 def get_container_status(
     pod: k8s_client.V1Pod, container_name: str
 ) -> Optional[k8s_client.V1ContainerState]:

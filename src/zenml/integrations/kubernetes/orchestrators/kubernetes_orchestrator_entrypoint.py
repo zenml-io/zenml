@@ -18,7 +18,7 @@ import random
 import socket
 import threading
 import time
-from typing import Optional, cast
+from typing import List, Optional, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -52,6 +52,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
+from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
@@ -64,6 +65,8 @@ from zenml.orchestrators.utils import (
 from zenml.pipelines.run_utils import create_placeholder_run
 
 logger = get_logger(__name__)
+
+STEP_NAME_ANNOTATION_KEY = "zenml.io/step_name"
 
 
 class OrchestratorPodState(BaseModel):
@@ -81,6 +84,75 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--deployment_id", type=str, required=True)
     parser.add_argument("--run_id", type=str, required=False)
     return parser.parse_args()
+
+
+def _reconstruct_nodes(
+    deployment: PipelineDeploymentResponse,
+    pipeline_run: PipelineRunResponse,
+    namespace: str,
+    batch_api: k8s_client.BatchV1Api,
+) -> List[Node]:
+    """Reconstruct the nodes from the pipeline run.
+
+    Args:
+        deployment: The deployment.
+        pipeline_run: The pipeline run.
+        namespace: The namespace.
+        batch_api: The batch api.
+
+    Returns:
+        The reconstructed nodes.
+    """
+    nodes = {
+        step_name: Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+        for step_name, step in deployment.step_configurations.items()
+    }
+
+    for step_name, existing_step_run in pipeline_run.steps.items():
+        node = nodes[step_name]
+        if existing_step_run.status.is_successful:
+            node.status = NodeStatus.COMPLETED
+        elif existing_step_run.status.is_finished:
+            node.status = NodeStatus.FAILED
+
+    jobs = kube_utils.list_jobs(
+        batch_api=batch_api,
+        namespace=namespace,
+        label_selector=f"run_id={pipeline_run.id}",
+    )
+    for job in jobs.items:
+        annotations = job.metadata.annotations or {}
+        if step_name := annotations.get(STEP_NAME_ANNOTATION_KEY, None):
+            node = nodes[step_name]
+            node.metadata["job_name"] = job.metadata.name
+
+            if node.status == NodeStatus.NOT_READY:
+                # The step is not finished in the ZenML database, so we base it
+                # on the job status.
+                node_status = NodeStatus.RUNNING
+                if job.status.conditions:
+                    for condition in job.status.conditions:
+                        if (
+                            condition.type == "Complete"
+                            and condition.status == "True"
+                        ):
+                            node_status = NodeStatus.COMPLETED
+                            break
+                        elif (
+                            condition.type == "Failed"
+                            and condition.status == "True"
+                        ):
+                            node_status = NodeStatus.FAILED
+                            break
+
+                node.status = node_status
+                logger.debug(
+                    "Existing job for step `%s` status: %s.",
+                    step_name,
+                    node_status,
+                )
+
+    return list(nodes.values())
 
 
 def main() -> None:
@@ -121,9 +193,15 @@ def main() -> None:
     )
     # We use the orchestrator pod name as fallback, but the job name should
     # always be set anyway.
-    config_map_name = pod.metadata.labels.get(
-        "job-name", orchestrator_pod_name
-    )
+    # TODO: maybe store this as annotations on the parent job?
+    config_map_name = orchestrator_pod_name
+    if (
+        pod
+        and pod.metadata
+        and pod.metadata.labels
+        and (job_name := pod.metadata.labels.get("job-name", None))
+    ):
+        config_map_name = job_name
 
     def _load_state() -> Optional[OrchestratorPodState]:
         """Load the state of the orchestrator.
@@ -172,51 +250,16 @@ def main() -> None:
 
     existing_logs_response = None
 
-    nodes_statuses = {}
-    node_metadatas = {}
-
     if existing_state := _load_state():
         logger.info("Continuing existing run `%s`.", existing_state.run_id)
         orchestrator_run_id = existing_state.orchestrator_run_id
         pipeline_run = client.get_pipeline_run(existing_state.run_id)
-        for step_name, existing_step_run in pipeline_run.steps.items():
-            if existing_step_run.status.is_successful:
-                nodes_statuses[step_name] = NodeStatus.COMPLETED
-            elif existing_step_run.status.is_finished:
-                nodes_statuses[step_name] = NodeStatus.FAILED
-
-        jobs = batch_api.list_namespaced_job(
+        nodes = _reconstruct_nodes(
+            deployment=deployment,
+            pipeline_run=pipeline_run,
             namespace=namespace,
-            label_selector=f"run_id={existing_state.run_id}",
+            batch_api=batch_api,
         )
-        for job in jobs.items:
-            if step_name := (job.metadata.annotations or {}).get(
-                "zenml.io/step_name", None
-            ):
-                node_metadatas[step_name] = {"job_name": job.metadata.name}
-
-                node_status = NodeStatus.RUNNING
-                if job.status.conditions:
-                    for condition in job.status.conditions:
-                        if (
-                            condition.type == "Complete"
-                            and condition.status == "True"
-                        ):
-                            node_status = NodeStatus.COMPLETED
-                            break
-                        elif (
-                            condition.type == "Failed"
-                            and condition.status == "True"
-                        ):
-                            node_status = NodeStatus.FAILED
-                            break
-
-                logger.debug(
-                    "Existing job for step `%s` status: %s.",
-                    step_name,
-                    node_status,
-                )
-                nodes_statuses.setdefault(step_name, node_status)
 
         for log_response in pipeline_run.log_collection or []:
             if log_response.source == "orchestrator":
@@ -237,17 +280,10 @@ def main() -> None:
                 orchestrator_run_id=orchestrator_run_id,
             )
         )
-
-    logger.debug("Recovered node statuses: %s", nodes_statuses)
-    nodes = [
-        Node(
-            id=step_name,
-            upstream_nodes=step.spec.upstream_steps,
-            status=nodes_statuses.get(step_name, NodeStatus.NOT_READY),
-            metadata=node_metadatas.get(step_name, {}),
-        )
-        for step_name, step in deployment.step_configurations.items()
-    ]
+        nodes = [
+            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+            for step_name, step in deployment.step_configurations.items()
+        ]
 
     logs_context = setup_orchestrator_logging(
         run_id=pipeline_run.id,
@@ -347,7 +383,7 @@ def main() -> None:
             step_labels = base_labels.copy()
             step_labels["step_name"] = kube_utils.sanitize_label(step_name)
             step_annotations = {
-                "zenml.io/step_name": step_name,
+                STEP_NAME_ANNOTATION_KEY: step_name,
             }
 
             image = KubernetesOrchestrator.get_image(
