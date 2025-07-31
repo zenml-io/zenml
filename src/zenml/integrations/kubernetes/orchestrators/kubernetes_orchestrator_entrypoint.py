@@ -43,6 +43,7 @@ from zenml.integrations.kubernetes.orchestrators.dag_runner import (
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
+    STEP_NAME_ANNOTATION_KEY,
     KubernetesOrchestrator,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
@@ -65,8 +66,6 @@ from zenml.orchestrators.utils import (
 from zenml.pipelines.run_utils import create_placeholder_run
 
 logger = get_logger(__name__)
-
-STEP_NAME_ANNOTATION_KEY = "zenml.io/step_name"
 
 
 class OrchestratorPodState(BaseModel):
