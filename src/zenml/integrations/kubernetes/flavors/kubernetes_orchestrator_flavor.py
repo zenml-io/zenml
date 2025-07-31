@@ -148,33 +148,33 @@ class KubernetesOrchestratorSettings(BaseSettings):
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
     )
 
-    timeout: int = Field(
-        default=0,
+    timeout: Optional[int] = Field(
+        default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
     )
-    stream_step_logs: bool = Field(
-        default=True,
+    stream_step_logs: Optional[bool] = Field(
+        default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
     )
-    pod_startup_timeout: int = Field(
-        default=600,
+    pod_startup_timeout: Optional[int] = Field(
+        default=None,
         description="DEPRECATED/UNUSED.",
         deprecated=True,
     )
-    pod_failure_max_retries: int = Field(
-        default=3,
+    pod_failure_max_retries: Optional[int] = Field(
+        default=None,
         description="DEPRECATED/UNUSED.",
         deprecated=True,
     )
-    pod_failure_retry_delay: int = Field(
-        default=10,
+    pod_failure_retry_delay: Optional[int] = Field(
+        default=None,
         description="DEPRECATED/UNUSED.",
         deprecated=True,
     )
-    pod_failure_backoff: float = Field(
-        default=1.0,
+    pod_failure_backoff: Optional[float] = Field(
+        default=None,
         description="DEPRECATED/UNUSED.",
         deprecated=True,
     )
@@ -191,7 +191,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "pod_failure_max_retries",
         "pod_failure_retry_delay",
         "pod_failure_backoff",
-        "pod_name_prefix",
+        ("pod_name_prefix", "job_name_prefix"),
     )
 
     @field_validator("pod_failure_policy", mode="before")
