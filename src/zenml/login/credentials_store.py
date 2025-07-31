@@ -54,12 +54,15 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         1. when the user runs `zenml login` to authenticate to a ZenML Pro
         server, the ZenML Pro API token fetched from the web login flow is
         stored in the Credentials Store.
-        2. when the user runs `zenml login` to authenticate to a regular ZenML
+        2. when the user runs `zenml login` to authenticate to a ZenML Pro
+        server using an API key, the ZenML Pro API key is stored in the
+        Credentials Store.
+        3. when the user runs `zenml login` to authenticate to a regular ZenML
         server with the web login flow, the ZenML server API token fetched
         through the web login flow is stored in the Credentials Store
-        3. when the user runs `zenml login` to authenticate to any ZenML server
+        4. when the user runs `zenml login` to authenticate to any ZenML server
         using an API key, the API key is stored in the Credentials Store
-        4. when the REST zen store is initialized, it starts up not yet
+        5. when the REST zen store is initialized, it starts up not yet
         authenticated. Then, if/when it needs to authenticate or re-authenticate
         to the remote server, it will use whatever form of credentials it finds
         in the Credentials Store, in order of priority:
@@ -71,8 +74,12 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             * for ZenML servers that use an API key to authenticate, it will use
             that to fetch a short-lived ZenML Pro server API token that it also
             stores in the Credentials Store
-            * for ZenML Pro servers, it exchanges the longer-lived ZenML Pro API
-            token into a short lived ZenML Pro server API token
+            * for ZenML Pro servers:
+                * if a valid ZenML Pro API token is found, it exchanges it into
+                a short lived ZenML Pro server API token
+                * otherwise, if a ZenML Pro API key is found, it will use that
+                to fetch a short-lived ZenML Pro server API token that it also
+                stores in the Credentials Store
 
     Alongside credentials, the Credentials Store is also used to store
     additional server information:
@@ -290,6 +297,33 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         self.check_and_reload_from_file()
         return self.credentials.get(server_url)
 
+    def has_valid_credentials(self, server_url: str) -> bool:
+        """Check if valid credentials exist for a specific server URL.
+
+        Args:
+            server_url: The server URL for which to check the authentication.
+        """
+        credentials = self.get_credentials(server_url)
+        if credentials and (
+            credentials.has_valid_token or credentials.can_refresh_token
+        ):
+            return True
+        return False
+
+    def get_pro_api_key(self, pro_api_url: str) -> Optional[str]:
+        """Retrieve an API key from the credentials store for a ZenML Pro API server.
+
+        Args:
+            pro_api_url: The URL of the ZenML Pro API server.
+
+        Returns:
+            The stored API key if it exists, None otherwise.
+        """
+        credential = self.get_pro_credentials(pro_api_url)
+        if credential and credential.api_key:
+            return credential.api_key
+        return None
+
     def get_pro_token(
         self, pro_api_url: str, allow_expired: bool = False
     ) -> Optional[APIToken]:
@@ -304,34 +338,41 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Returns:
             The stored token if it exists and is not expired, None otherwise.
         """
-        credential = self.get_pro_credentials(pro_api_url, allow_expired)
+        credential = self.get_pro_credentials(pro_api_url)
         if credential:
-            return credential.api_token
+            token = credential.api_token
+            if token and (not token.expired or allow_expired):
+                return token
         return None
 
     def get_pro_credentials(
-        self, pro_api_url: str, allow_expired: bool = False
+        self, pro_api_url: str
     ) -> Optional[ServerCredentials]:
-        """Retrieve a valid token from the credentials store for a ZenML Pro API server.
+        """Retrieve valid credentials from the credentials store for a ZenML Pro API server.
 
         Args:
             pro_api_url: The URL of the ZenML Pro API server.
-            allow_expired: Whether to allow expired tokens to be returned. The
-                default behavior is to return None if a token does exist but is
-                expired.
 
         Returns:
-            The stored credentials if they exist and are not expired, None otherwise.
+            The stored credentials if they exist, None otherwise.
         """
         credential = self.get_credentials(pro_api_url)
-        if (
-            credential
-            and credential.type == ServerType.PRO_API
-            and credential.api_token
-            and (not credential.api_token.expired or allow_expired)
-        ):
+        if credential and credential.type == ServerType.PRO_API:
             return credential
         return None
+
+    def has_valid_pro_credentials(self, pro_api_url: str) -> bool:
+        """Check if valid credentials exist for a ZenML Pro API server.
+
+        Args:
+            pro_api_url: The URL of the ZenML Pro API server.
+        """
+        credentials = self.get_pro_credentials(pro_api_url)
+        if credentials and (
+            credentials.has_valid_token or credentials.can_refresh_token
+        ):
+            return True
+        return False
 
     def clear_pro_credentials(self, pro_api_url: str) -> None:
         """Delete the token from the store for a ZenML Pro API server.
@@ -365,38 +406,6 @@ class CredentialsStore(metaclass=SingletonMetaClass):
                 credentials_to_clear.append(server)
         return credentials_to_clear
 
-    def has_valid_authentication(self, url: str) -> bool:
-        """Check if a valid authentication credential for the given server URL is stored.
-
-        Args:
-            url: The server URL for which to check the authentication.
-
-        Returns:
-            bool: True if a valid token or API key is stored, False otherwise.
-        """
-        self.check_and_reload_from_file()
-        credential = self.credentials.get(url)
-
-        if not credential:
-            return False
-        if credential.api_key or (
-            credential.username and credential.password is not None
-        ):
-            return True
-        token = credential.api_token
-        return token is not None and not token.expired
-
-    def has_valid_pro_authentication(self, pro_api_url: str) -> bool:
-        """Check if a valid token for a ZenML Pro API server is stored.
-
-        Args:
-            pro_api_url: The URL of the ZenML Pro API server.
-
-        Returns:
-            bool: True if a valid token is stored, False otherwise.
-        """
-        return self.get_pro_token(pro_api_url) is not None
-
     def can_login(self, server_url: str) -> bool:
         """Check if credentials to login to the given server exist.
 
@@ -407,22 +416,20 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             True if the credentials store contains credentials that can be used
             to login to the given server URL, False otherwise.
         """
-        self.check_and_reload_from_file()
         credentials = self.get_credentials(server_url)
         if not credentials:
             return False
 
-        if credentials.api_key is not None:
+        if credentials.can_refresh_token:
             return True
-        elif (
-            credentials.username is not None
-            and credentials.password is not None
-        ):
-            return True
-        elif credentials.type == ServerType.PRO:
+
+        if credentials.type == ServerType.PRO:
             pro_api_url = credentials.pro_api_url or ZENML_PRO_API_URL
-            pro_token = self.get_pro_token(pro_api_url, allow_expired=False)
-            if pro_token:
+            pro_credentials = self.get_pro_credentials(pro_api_url)
+            if pro_credentials and (
+                pro_credentials.has_valid_token
+                or pro_credentials.can_refresh_token
+            ):
                 return True
 
         return False
