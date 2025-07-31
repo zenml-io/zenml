@@ -835,51 +835,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             If include_steps is True, step_statuses will be a dict (possibly empty).
         """
         pipeline_status = None
-        step_statuses = None
+        include_run_status = not run.status.is_finished
 
-        if not run.status.is_finished:
-            # Only update the run status if it's not finished yet
-            pipeline_status = self._fetch_run_status(run)
-
-        if include_steps:
-            step_statuses = self._fetch_step_statuses(run)
-
-        return pipeline_status, step_statuses
-
-    def _map_job_status_to_execution_status(
-        self, job: k8s_client.V1Job
-    ) -> Optional[ExecutionStatus]:
-        """Map Kubernetes job status to ZenML execution status.
-
-        Args:
-            job: The Kubernetes job.
-
-        Returns:
-            The corresponding ZenML execution status, or None if no clear status.
-        """
-        # Check job conditions first
-        if job.status and job.status.conditions:
-            for condition in job.status.conditions:
-                if condition.type == "Complete" and condition.status == "True":
-                    return ExecutionStatus.COMPLETED
-                elif condition.type == "Failed" and condition.status == "True":
-                    return ExecutionStatus.FAILED
-
-        # Return None if no clear status - don't update
-        return None
-
-    # TODO: combine with the step one, to avoid fetching the same data twice
-    def _fetch_run_status(
-        self, run: "PipelineRunResponse"
-    ) -> Optional[ExecutionStatus]:
-        """Fetch the status of a pipeline run.
-
-        Args:
-            run: The pipeline run response.
-
-        Returns:
-            The execution status of the run, or None if no clear status.
-        """
         label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
         try:
             job_list = kube_utils.list_jobs(
@@ -889,49 +846,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
         except Exception as e:
             logger.warning(f"Failed to list jobs for run {run.id}: {e}")
-            return None
+            return None, None
 
-        for job in job_list.items:
-            if not job.metadata or not job.metadata.annotations:
-                continue
-
-            step_name = job.metadata.annotations.get(
-                STEP_NAME_ANNOTATION_KEY, None
-            )
-            if step_name:
-                # This is a step job, but we want to find the orchestrator job
-                continue
-
-            execution_status = self._map_job_status_to_execution_status(job)
-            return execution_status
-
-        return None
-
-    def _fetch_step_statuses(
-        self, run: "PipelineRunResponse"
-    ) -> Dict[str, ExecutionStatus]:
-        """Fetch the statuses of individual pipeline steps.
-
-        Args:
-            run: The pipeline run response.
-
-        Returns:
-            A dictionary mapping step names to their execution statuses.
-        """
         step_statuses = {}
-
-        label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
-        try:
-            job_list = kube_utils.list_jobs(
-                batch_api=self._k8s_batch_api,
-                namespace=self.config.kubernetes_namespace,
-                label_selector=label_selector,
-            )
-        except Exception as e:
-            logger.warning(f"Failed to list jobs for run {run.id}: {e}")
-            return {}
-
-        steps_dict = run.steps
+        # Only fetch steps if we really need them
+        steps_dict = run.steps if include_steps else {}
 
         for job in job_list.items:
             if not job.metadata or not job.metadata.annotations:
@@ -941,6 +860,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 STEP_NAME_ANNOTATION_KEY, None
             )
             if not step_name:
+                if include_run_status:
+                    # This is the orchestrator job
+                    pipeline_status = self._map_job_status_to_execution_status(
+                        job
+                    )
+                continue
+
+            if not include_steps:
+                # If we don't need to fetch step statuses, we can skip the rest
                 continue
 
             step_response = steps_dict.get(step_name, None)
@@ -956,7 +884,28 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             if execution_status is not None:
                 step_statuses[step_name] = execution_status
 
-        return step_statuses
+        return pipeline_status, step_statuses
+
+    def _map_job_status_to_execution_status(
+        self, job: k8s_client.V1Job
+    ) -> Optional[ExecutionStatus]:
+        """Map Kubernetes job status to ZenML execution status.
+
+        Args:
+            job: The Kubernetes job.
+
+        Returns:
+            The corresponding ZenML execution status, or None if no clear status.
+        """
+        if job.status and job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return ExecutionStatus.COMPLETED
+                elif condition.type == "Failed" and condition.status == "True":
+                    return ExecutionStatus.FAILED
+
+        # Return None if no clear status - don't update
+        return None
 
     def get_pipeline_run_metadata(
         self, run_id: UUID

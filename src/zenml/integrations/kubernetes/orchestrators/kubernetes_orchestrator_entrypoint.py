@@ -145,12 +145,12 @@ def _reconstruct_nodes(
         elif existing_step_run.status.is_finished:
             node.status = NodeStatus.FAILED
 
-    jobs = kube_utils.list_jobs(
+    job_list = kube_utils.list_jobs(
         batch_api=batch_api,
         namespace=namespace,
         label_selector=f"run_id={pipeline_run.id}",
     )
-    for job in jobs.items:
+    for job in job_list.items:
         annotations = job.metadata.annotations or {}
         if step_name := annotations.get(STEP_NAME_ANNOTATION_KEY, None):
             node = nodes[step_name]
@@ -246,6 +246,7 @@ def main() -> None:
             namespace=namespace,
             batch_api=batch_api,
         )
+        logger.debug("Reconstructed nodes: %s", nodes)
 
         # Continue logging to the same log file if it exists
         for log_response in pipeline_run.log_collection or []:
