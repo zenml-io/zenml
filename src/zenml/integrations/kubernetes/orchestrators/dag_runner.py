@@ -20,8 +20,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from zenml.enums import StrEnum
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
@@ -35,7 +35,6 @@ class NodeStatus(StrEnum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
-    CANCELLED = "cancelled"
     SKIPPED = "skipped"
 
 
@@ -50,7 +49,6 @@ class Node(BaseModel):
         return self.status in {
             NodeStatus.COMPLETED,
             NodeStatus.FAILED,
-            NodeStatus.CANCELLED,
             NodeStatus.SKIPPED,
         }
 
@@ -61,17 +59,15 @@ class DagRunner:
         nodes: List[Node],
         startup_function: Callable[[Node], NodeStatus],
         monitoring_function: Callable[[Node], NodeStatus],
-        interrupt_function: Optional[Callable[[], None]] = None,
-        state_update_callback: Optional[Callable[[List[Node]], None]] = None,
+        interrupt_function: Optional[Callable[[], bool]] = None,
         monitoring_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
     ) -> None:
         self.nodes = {node.id: node for node in nodes}
-        self.startup_queue = queue.Queue()
+        self.startup_queue: queue.Queue[Node] = queue.Queue()
         self.startup_function = startup_function
         self.monitoring_function = monitoring_function
         self.interrupt_function = interrupt_function
-        self.state_update_callback = state_update_callback
         self.startup_thread = threading.Thread(
             name="DagRunner-Startup", target=self._startup_loop, daemon=True
         )
@@ -106,10 +102,6 @@ class DagRunner:
             if node.status in {NodeStatus.READY, NodeStatus.STARTING}:
                 self.startup_queue.put(node)
 
-    def _update_state(self) -> None:
-        if self.state_update_callback is not None:
-            self.state_update_callback(self.nodes.values())
-
     def _can_start_node(self, node: Node) -> bool:
         return all(
             self.nodes[upstream_node_id].status == NodeStatus.COMPLETED
@@ -119,14 +111,14 @@ class DagRunner:
     def _should_skip_node(self, node: Node) -> bool:
         return any(
             self.nodes[upstream_node_id].status
-            in {NodeStatus.FAILED, NodeStatus.CANCELLED, NodeStatus.SKIPPED}
+            in {NodeStatus.FAILED, NodeStatus.SKIPPED}
             for upstream_node_id in node.upstream_nodes
         )
 
     def _start_node(self, node: Node) -> None:
         node.status = NodeStatus.STARTING
 
-        def _start_node_task():
+        def _start_node_task() -> None:
             try:
                 node.status = self.startup_function(node)
             except Exception:
@@ -218,10 +210,7 @@ class DagRunner:
             if is_finished:
                 break
 
-            self._update_state()
             time.sleep(0.5)
-
-        self._update_state()
 
         self.shutdown_event.set()
 

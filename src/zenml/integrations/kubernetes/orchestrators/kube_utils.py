@@ -871,9 +871,7 @@ def check_job_status(
     namespace: str,
     job_name: str,
     fail_on_container_waiting_reasons: Optional[List[str]] = None,
-    stream_logs: bool = True,
     container_name: Optional[str] = None,
-    log_status: Dict[str, int] = None,
 ) -> bool:
     """Wait for a job to finish.
 
@@ -882,17 +880,15 @@ def check_job_status(
         core_api: Kubernetes CoreV1Api client.
         namespace: Kubernetes namespace.
         job_name: Name of the job for which to wait.
-        backoff_interval: The interval to wait between polling the job status.
-        maximum_backoff: The maximum interval to wait between polling the job
-            status.
-        exponential_backoff: Whether to use exponential backoff.
         fail_on_container_waiting_reasons: List of container waiting reasons
             that will cause the job to fail.
-        stream_logs: Whether to stream the job logs.
-        container_name: Name of the container to stream logs from.
+        container_name: Name of the container.
 
     Raises:
         RuntimeError: If the job failed or timed out.
+
+    Returns:
+        True if the job is complete, False otherwise.
     """
     job: k8s_client.V1Job = retry_on_api_exception(
         batch_api.read_namespaced_job
@@ -935,64 +931,6 @@ def check_job_status(
                     f"Detected container in state "
                     f"{waiting_state.reason}"
                 )
-
-    if stream_logs:
-        try:
-            pod_list = core_api.list_namespaced_pod(
-                namespace=namespace,
-                label_selector=f"job-name={job_name}",
-            )
-        except ApiException as e:
-            logger.error("Error fetching pods: %s.", e)
-            pod_list = []
-        else:
-            # Sort pods by creation timestamp, oldest first
-            pod_list.items.sort(
-                key=lambda pod: pod.metadata.creation_timestamp,
-            )
-
-        for pod in pod_list.items:
-            pod_name = pod.metadata.name
-            pod_status = pod.status.phase
-
-            if log_status.get(pod_name, 0) == -1:
-                # -1 means we've already streamed all logs for this pod,
-                # so we can skip it.
-                continue
-
-            if pod_status == PodPhase.PENDING.value:
-                # The pod is still pending, so we can't stream logs for it
-                # yet.
-                continue
-
-            containers = pod.spec.containers
-            if not container_name:
-                container_name = containers[0].name
-
-            try:
-                response = core_api.read_namespaced_pod_log(
-                    name=pod_name,
-                    namespace=namespace,
-                    container=container_name,
-                    _preload_content=False,
-                )
-            except ApiException as e:
-                logger.error("Error reading pod logs: %s.", e)
-            else:
-                raw_data = response.data
-                decoded_log = raw_data.decode("utf-8", errors="replace")
-                logs = decoded_log.splitlines()
-                logged_lines = log_status.get(pod_name, 0)
-                if len(logs) > logged_lines:
-                    for line in logs[logged_lines:]:
-                        logger.info(line)
-                    log_status[pod_name] = len(logs)
-
-            if pod_status in [
-                PodPhase.SUCCEEDED.value,
-                PodPhase.FAILED.value,
-            ]:
-                log_status[pod_name] = -1
 
     return False
 

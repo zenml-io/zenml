@@ -18,7 +18,7 @@ import random
 import socket
 import threading
 import time
-from typing import List, Optional, cast
+from typing import Optional, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -69,7 +69,6 @@ logger = get_logger(__name__)
 class OrchestratorPodState(BaseModel):
     run_id: UUID
     orchestrator_run_id: str
-    nodes: List[Node]
 
 
 def parse_args() -> argparse.Namespace:
@@ -173,22 +172,58 @@ def main() -> None:
 
     existing_logs_response = None
 
+    nodes_statuses = {}
+    node_metadatas = {}
+
     if existing_state := _load_state():
         logger.info("Continuing existing run `%s`.", existing_state.run_id)
         orchestrator_run_id = existing_state.orchestrator_run_id
-        nodes = existing_state.nodes
         pipeline_run = client.get_pipeline_run(existing_state.run_id)
+        for step_name, existing_step_run in pipeline_run.steps.items():
+            if existing_step_run.status.is_successful:
+                nodes_statuses[step_name] = NodeStatus.COMPLETED
+            elif existing_step_run.status.is_finished:
+                nodes_statuses[step_name] = NodeStatus.FAILED
 
-        for log_response in pipeline_run.log_collection:
+        jobs = batch_api.list_namespaced_job(
+            namespace=namespace,
+            label_selector=f"run_id={existing_state.run_id}",
+        )
+        for job in jobs.items:
+            if step_name := (job.metadata.annotations or {}).get(
+                "zenml.io/step_name", None
+            ):
+                node_metadatas[step_name] = {"job_name": job.metadata.name}
+
+                node_status = NodeStatus.RUNNING
+                if job.status.conditions:
+                    for condition in job.status.conditions:
+                        if (
+                            condition.type == "Complete"
+                            and condition.status == "True"
+                        ):
+                            node_status = NodeStatus.COMPLETED
+                            break
+                        elif (
+                            condition.type == "Failed"
+                            and condition.status == "True"
+                        ):
+                            node_status = NodeStatus.FAILED
+                            break
+
+                logger.debug(
+                    "Existing job for step `%s` status: %s.",
+                    step_name,
+                    node_status,
+                )
+                nodes_statuses.setdefault(step_name, node_status)
+
+        for log_response in pipeline_run.log_collection or []:
             if log_response.source == "orchestrator":
                 existing_logs_response = log_response
                 break
     else:
         orchestrator_run_id = orchestrator_pod_name
-        nodes = [
-            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
-            for step_name, step in deployment.step_configurations.items()
-        ]
         if args.run_id:
             pipeline_run = client.get_pipeline_run(args.run_id)
         else:
@@ -200,9 +235,19 @@ def main() -> None:
             OrchestratorPodState(
                 run_id=pipeline_run.id,
                 orchestrator_run_id=orchestrator_run_id,
-                nodes=nodes,
             )
         )
+
+    logger.debug("Recovered node statuses: %s", nodes_statuses)
+    nodes = [
+        Node(
+            id=step_name,
+            upstream_nodes=step.spec.upstream_steps,
+            status=nodes_statuses.get(step_name, NodeStatus.NOT_READY),
+            metadata=node_metadatas.get(step_name, {}),
+        )
+        for step_name, step in deployment.step_configurations.items()
+    ]
 
     logs_context = setup_orchestrator_logging(
         run_id=pipeline_run.id,
@@ -301,6 +346,9 @@ def main() -> None:
 
             step_labels = base_labels.copy()
             step_labels["step_name"] = kube_utils.sanitize_label(step_name)
+            step_annotations = {
+                "zenml.io/step_name": step_name,
+            }
 
             image = KubernetesOrchestrator.get_image(
                 deployment=deployment, step_name=step_name
@@ -400,11 +448,12 @@ def main() -> None:
                 pod_failure_policy=pod_failure_policy,
                 owner_references=owner_references,
                 labels=step_labels,
+                annotations=step_annotations,
             )
 
             if (
                 startup_interval
-                := pipeline_settings.parallel_step_startup_waiting_period
+                := orchestrator.config.parallel_step_startup_waiting_period
             ):
                 nonlocal last_startup_time
 
@@ -440,7 +489,6 @@ def main() -> None:
             settings = KubernetesOrchestratorSettings.model_validate(
                 settings.model_dump() if settings else {}
             )
-            log_status = node.metadata.setdefault("log_status", {})
             try:
                 finished = kube_utils.check_job_status(
                     batch_api=batch_api,
@@ -448,8 +496,6 @@ def main() -> None:
                     namespace=namespace,
                     job_name=job_name,
                     fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
-                    stream_logs=pipeline_settings.stream_step_logs,
-                    log_status=log_status,
                 )
                 if finished:
                     return NodeStatus.COMPLETED
@@ -516,19 +562,6 @@ def main() -> None:
                 )
                 return True
 
-        def state_update_callback(nodes: List[Node]) -> None:
-            """Update the state of the nodes.
-
-            Args:
-                nodes: The nodes.
-            """
-            state = OrchestratorPodState(
-                run_id=pipeline_run.id,
-                orchestrator_run_id=orchestrator_run_id,
-                nodes=nodes,
-            )
-            _store_state(state)
-
         try:
             nodes_statuses = DagRunner(
                 nodes=nodes,
@@ -537,7 +570,6 @@ def main() -> None:
                 monitoring_interval=1,
                 max_parallelism=pipeline_settings.max_parallelism,
                 interrupt_function=should_interrupt_execution,
-                state_update_callback=state_update_callback,
             ).run()
         finally:
             if (

@@ -44,13 +44,13 @@ class KubernetesOrchestratorSettings(BaseSettings):
     )
     timeout: int = Field(
         default=0,
-        description="Maximum seconds to wait for synchronous runs. Set to `0` for unlimited duration.",
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
     )
     stream_step_logs: bool = Field(
         default=True,
-        description="If `True`, the orchestrator pod will stream the logs "
-        "of the step pods. This only has an effect if specified on the "
-        "pipeline, not on individual steps.",
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
     )
     service_account_name: Optional[str] = Field(
         default=None,
@@ -76,10 +76,12 @@ class KubernetesOrchestratorSettings(BaseSettings):
     )
     pod_name_prefix: Optional[str] = Field(
         default=None,
-        description="Custom prefix for generated pod names. Helps identify pods in the cluster.",
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
     )
     job_name_prefix: Optional[str] = Field(
-        default=None, description="Prefix for the job name."
+        default=None,
+        description="Prefix for the job name.",
     )
     pod_startup_timeout: int = Field(
         default=600,
@@ -159,8 +161,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     job_monitoring_interval: int = Field(
         default=3,
         description="The interval in seconds to monitor the job. Each interval "
-        "is used to check for container issues and streaming logs for the "
-        "job pods.",
+        "is used to check for container issues for the job pods.",
     )
     pod_failure_policy: Optional[Dict[str, Any]] = Field(
         default=None,

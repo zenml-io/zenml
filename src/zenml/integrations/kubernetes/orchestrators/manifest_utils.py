@@ -391,6 +391,7 @@ def build_job_manifest(
     backoff_limit: Optional[int] = None,
     ttl_seconds_after_finished: Optional[int] = None,
     labels: Optional[Dict[str, str]] = None,
+    annotations: Optional[Dict[str, str]] = None,
     active_deadline_seconds: Optional[int] = None,
     pod_failure_policy: Optional[Dict[str, Any]] = None,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
@@ -403,6 +404,7 @@ def build_job_manifest(
         backoff_limit: The backoff limit for the job.
         ttl_seconds_after_finished: The TTL seconds after finished for the job.
         labels: The labels to use for the job.
+        annotations: The annotations to use for the job.
         active_deadline_seconds: The active deadline seconds for the job.
         pod_failure_policy: The pod failure policy for the job.
         owner_references: The owner references for the job.
@@ -421,6 +423,7 @@ def build_job_manifest(
     job_metadata = k8s_client.V1ObjectMeta(
         name=job_name,
         labels=labels,
+        annotations=annotations,
         owner_references=owner_references,
     )
 
