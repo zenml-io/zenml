@@ -103,6 +103,14 @@ class PodPhase(enum.Enum):
     UNKNOWN = "Unknown"
 
 
+class JobStatus(enum.Enum):
+    """Status of a Kubernetes job."""
+
+    RUNNING = "Running"
+    SUCCEEDED = "Succeeded"
+    FAILED = "Failed"
+
+
 def is_inside_kubernetes() -> bool:
     """Check whether we are inside a Kubernetes cluster or on a remote host.
 
@@ -969,8 +977,8 @@ def check_job_status(
     job_name: str,
     fail_on_container_waiting_reasons: Optional[List[str]] = None,
     container_name: Optional[str] = None,
-) -> bool:
-    """Wait for a job to finish.
+) -> Tuple[JobStatus, Optional[str]]:
+    """Check the status of a job.
 
     Args:
         batch_api: Kubernetes BatchV1Api client.
@@ -982,10 +990,10 @@ def check_job_status(
         container_name: Name of the container.
 
     Raises:
-        RuntimeError: If the job failed or timed out.
+        RuntimeError: ....
 
     Returns:
-        True if the job is complete, False otherwise.
+        The status of the job and an error message if the job failed.
     """
     job: k8s_client.V1Job = retry_on_api_exception(
         batch_api.read_namespaced_job
@@ -994,11 +1002,36 @@ def check_job_status(
     if job.status.conditions:
         for condition in job.status.conditions:
             if condition.type == "Complete" and condition.status == "True":
-                return True
+                return JobStatus.SUCCEEDED, None
             if condition.type == "Failed" and condition.status == "True":
-                raise RuntimeError(
-                    f"Job `{namespace}:{job_name}` failed: {condition.message}"
-                )
+                container_failure_reason = None
+                try:
+                    pods = core_api.list_namespaced_pod(
+                        label_selector=f"job-name={job_name}",
+                        namespace=namespace,
+                    ).items
+                    # Sort pods by creation timestamp, oldest first
+                    pods.sort(
+                        key=lambda pod: pod.metadata.creation_timestamp,
+                    )
+                    if pods:
+                        if (
+                            termination_reason
+                            := get_container_termination_reason(
+                                pods[-1], "main"
+                            )
+                        ):
+                            exit_code, reason = termination_reason
+                            if exit_code != 0:
+                                container_failure_reason = (
+                                    f"{reason}, exit_code={exit_code}"
+                                )
+                except Exception:
+                    pass
+                error_message = condition.message or "Unknown"
+                if container_failure_reason:
+                    error_message += f" (container failure reason: {container_failure_reason})"
+                return JobStatus.FAILED, error_message
 
     if fail_on_container_waiting_reasons:
         pod_list: k8s_client.V1PodList = retry_on_api_exception(
@@ -1023,13 +1056,12 @@ def check_job_status(
                     namespace=namespace,
                     propagation_policy="Foreground",
                 )
-                raise RuntimeError(
-                    f"Job `{namespace}:{job_name}` failed: "
-                    f"Detected container in state "
-                    f"{waiting_state.reason}"
+                error_message = (
+                    f"Detected container in state `{waiting_state.reason}`"
                 )
+                return JobStatus.FAILED, error_message
 
-    return False
+    return JobStatus.RUNNING, None
 
 
 def create_config_map(

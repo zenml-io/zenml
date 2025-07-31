@@ -529,46 +529,24 @@ def main() -> None:
             settings = KubernetesOrchestratorSettings.model_validate(
                 settings.model_dump() if settings else {}
             )
-            try:
-                finished = kube_utils.check_job_status(
-                    batch_api=batch_api,
-                    core_api=core_api,
-                    namespace=namespace,
-                    job_name=job_name,
-                    fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
-                )
-                if finished:
-                    return NodeStatus.COMPLETED
-                else:
-                    return NodeStatus.RUNNING
-            except Exception:
-                reason = "Unknown"
-                try:
-                    pods = core_api.list_namespaced_pod(
-                        label_selector=f"job-name={job_name}",
-                        namespace=namespace,
-                    ).items
-                    # Sort pods by creation timestamp, oldest first
-                    pods.sort(
-                        key=lambda pod: pod.metadata.creation_timestamp,
-                    )
-                    if pods:
-                        if (
-                            termination_reason
-                            := kube_utils.get_container_termination_reason(
-                                pods[-1], "main"
-                            )
-                        ):
-                            exit_code, reason = termination_reason
-                            if exit_code != 0:
-                                reason = f"{reason} (exit_code={exit_code})"
-                except Exception:
-                    pass
+            status, error_message = kube_utils.check_job_status(
+                batch_api=batch_api,
+                core_api=core_api,
+                namespace=namespace,
+                job_name=job_name,
+                fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
+            )
+            if status == kube_utils.JobStatus.SUCCEEDED:
+                return NodeStatus.COMPLETED
+            elif status == kube_utils.JobStatus.FAILED:
                 logger.error(
-                    f"Job for step `{step_name}` failed. Reason: {reason}"
+                    "Job for step `%s` failed: %s",
+                    step_name,
+                    error_message,
                 )
-
-                raise
+                return NodeStatus.FAILED
+            else:
+                return NodeStatus.RUNNING
 
         def should_interrupt_execution() -> bool:
             """Check if the DAG execution should be interrupted.

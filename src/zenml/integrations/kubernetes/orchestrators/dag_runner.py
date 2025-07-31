@@ -186,7 +186,7 @@ class DagRunner:
                 logger.exception("Node `%s` failed to start.", node.id)
             else:
                 logger.info(
-                    "Node `%s` started (Status: %s)", node.id, node.status
+                    "Node `%s` started (status: %s)", node.id, node.status
                 )
 
         self.startup_executor.submit(_start_node_task)
@@ -234,7 +234,9 @@ class DagRunner:
                     logger.exception("Node `%s` failed.", node.id)
                 else:
                     logger.debug(
-                        "Node `%s` status updated: %s", node.id, node.status
+                        "Node `%s` status updated to `%s`",
+                        node.id,
+                        node.status,
                     )
                     if node.status == NodeStatus.FAILED:
                         logger.error("Node `%s` failed.", node.id)
