@@ -335,6 +335,12 @@ def _artifact_to_print(artifact: ArtifactResponse) -> Dict[str, Any]:
 
     For table output, keep it compact with essential artifact information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        artifact: Artifact response object
+
+    Returns:
+        Dictionary containing formatted artifact data for table display
     """
     return {
         "name": artifact.name,
@@ -344,7 +350,14 @@ def _artifact_to_print(artifact: ArtifactResponse) -> Dict[str, Any]:
 
 
 def _artifact_to_print_full(artifact: ArtifactResponse) -> Dict[str, Any]:
-    """Convert artifact response to complete dictionary for JSON/YAML."""
+    """Convert artifact response to complete dictionary for JSON/YAML.
+
+    Args:
+        artifact: Artifact response object
+
+    Returns:
+        Complete dictionary containing all artifact data
+    """
     return artifact.model_dump(mode="json")
 
 

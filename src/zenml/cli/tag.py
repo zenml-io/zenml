@@ -39,6 +39,12 @@ def _tag_to_print(tag: Any) -> Dict[str, Any]:
 
     For table output, keep it compact with essential tag information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        tag: Tag response object
+
+    Returns:
+        Dictionary containing formatted tag data for table display
     """
     return {
         "name": tag.name,
@@ -50,7 +56,14 @@ def _tag_to_print(tag: Any) -> Dict[str, Any]:
 
 
 def _tag_to_print_full(tag: Any) -> Dict[str, Any]:
-    """Convert tag response to complete dictionary for JSON/YAML."""
+    """Convert tag response to complete dictionary for JSON/YAML.
+
+    Args:
+        tag: Tag response object
+
+    Returns:
+        Complete dictionary containing all tag data
+    """
     return tag.model_dump(mode="json")
 
 

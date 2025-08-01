@@ -34,7 +34,14 @@ logger = get_logger(__name__)
 
 
 def _authorized_device_to_print(device: Any) -> Dict[str, Any]:
-    """Convert an authorized device response to a dictionary for table display."""
+    """Convert an authorized device response to a dictionary for table display.
+
+    Args:
+        device: Authorized device response object
+
+    Returns:
+        Dictionary containing formatted device data for table display
+    """
     return {
         "status": device.status.value
         if hasattr(device.status, "value")

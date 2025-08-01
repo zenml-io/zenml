@@ -91,6 +91,9 @@ def zenml_table(
         max_width: Maximum table width (default: use terminal width)
         pagination: Optional pagination metadata for JSON/YAML output
         **kwargs: Additional formatting options
+
+    Raises:
+        ValueError: If an unsupported output format is provided
     """
     if not data:
         return
@@ -120,6 +123,12 @@ def _apply_stack_formatting(
     This function detects stack data and applies visual formatting for active
     stacks. Only applies formatting for table output - JSON/YAML output
     remains clean.
+
+    Args:
+        data: List of data dictionaries to format
+
+    Returns:
+        List of formatted data dictionaries with stack formatting applied
     """
     if not data or not isinstance(data, list):
         return data
@@ -169,6 +178,12 @@ def _apply_model_version_formatting(
     - Production: Green dot and bold text
     - Staging: Orange dot and text
     Only applies formatting for table output - JSON/YAML output remains clean.
+
+    Args:
+        data: List of data dictionaries to format
+
+    Returns:
+        List of formatted data dictionaries with model version formatting applied
     """
     if not data or not isinstance(data, list):
         return data
@@ -302,7 +317,15 @@ def _render_json(
     reverse: bool = False,
     pagination: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Render data as JSON."""
+    """Render data as JSON.
+
+    Args:
+        data: List of data dictionaries to render
+        columns: Optional list of column names to include
+        sort_by: Column to sort by
+        reverse: Whether to reverse sort order
+        pagination: Optional pagination metadata
+    """
     prepared_data = _prepare_data(
         data, columns, sort_by, reverse, clean_internal_fields=True
     )
@@ -322,7 +345,15 @@ def _render_yaml(
     reverse: bool = False,
     pagination: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Render data as YAML."""
+    """Render data as YAML.
+
+    Args:
+        data: List of data dictionaries to render
+        columns: Optional list of column names to include
+        sort_by: Column to sort by
+        reverse: Whether to reverse sort order
+        pagination: Optional pagination metadata
+    """
     prepared_data = _prepare_data(
         data, columns, sort_by, reverse, clean_internal_fields=True
     )
@@ -341,7 +372,14 @@ def _render_tsv(
     sort_by: Optional[str] = None,
     reverse: bool = False,
 ) -> None:
-    """Render data as TSV (Tab-Separated Values)."""
+    """Render data as TSV (Tab-Separated Values).
+
+    Args:
+        data: List of data dictionaries to render
+        columns: Optional list of column names to include
+        sort_by: Column to sort by
+        reverse: Whether to reverse sort order
+    """
     prepared_data = _prepare_data(
         data, columns, sort_by, reverse, clean_internal_fields=True
     )
@@ -377,7 +415,17 @@ def _render_table(
     no_color: bool = False,
     max_width: Optional[int] = None,
 ) -> None:
-    """Render data as a formatted table following ZenML guidelines."""
+    """Render data as a formatted table following ZenML guidelines.
+
+    Args:
+        data: List of data dictionaries to render
+        columns: Optional list of column names to include
+        sort_by: Column to sort by
+        reverse: Whether to reverse sort order
+        no_truncate: Whether to disable truncation
+        no_color: Whether to disable colored output
+        max_width: Maximum table width
+    """
     prepared_data = _prepare_data(data, columns, sort_by, reverse)
 
     if not prepared_data:
@@ -563,7 +611,11 @@ def _render_table(
 
 
 def _get_terminal_width() -> Optional[int]:
-    """Get terminal width from environment or shutil."""
+    """Get terminal width from environment or shutil.
+
+    Returns:
+        Terminal width in characters, or None if cannot be determined
+    """
     # Check COLUMNS environment variable first
     columns_env = os.getenv("COLUMNS")
     if columns_env:
@@ -583,7 +635,15 @@ def _get_terminal_width() -> Optional[int]:
 
 
 def _colorize_value(column: str, value: str) -> str:
-    """Apply colorization to values based on column type and content."""
+    """Apply colorization to values based on column type and content.
+
+    Args:
+        column: Column name to determine colorization rules
+        value: Value to potentially colorize
+
+    Returns:
+        Potentially colorized value with Rich markup
+    """
     # Status-like columns get color coding
     if any(
         keyword in column.lower() for keyword in ["status", "state", "health"]

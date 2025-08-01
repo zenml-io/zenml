@@ -36,7 +36,14 @@ logger = get_logger(__name__)
 
 
 def _service_account_to_print(service_account: Any) -> Dict[str, Any]:
-    """Convert a service account response to a dictionary for table display."""
+    """Convert a service account response to a dictionary for table display.
+
+    Args:
+        service_account: Service account response object
+
+    Returns:
+        Dictionary containing formatted service account data for table display
+    """
     return {
         "name": service_account.name,
         "description": service_account.description or "",
@@ -46,7 +53,14 @@ def _service_account_to_print(service_account: Any) -> Dict[str, Any]:
 
 
 def _api_key_to_print(api_key: Any) -> Dict[str, Any]:
-    """Convert an API key response to a dictionary suitable for table display."""
+    """Convert an API key response to a dictionary suitable for table display.
+
+    Args:
+        api_key: API key response object
+
+    Returns:
+        Dictionary containing formatted API key data for table display
+    """
     return {
         "name": api_key.name,
         "description": api_key.description or "",

@@ -151,6 +151,9 @@ def _service_connector_to_print(
     Args:
         connector: Service connector response
         active_connector_ids: List of active connector IDs for marking active status
+
+    Returns:
+        Dictionary containing formatted connector data for table display
     """
     # Safely extract connector type information
     connector_type = getattr(connector, "connector_type", None)
@@ -285,7 +288,14 @@ def _service_connector_to_print(
 def _service_connector_to_print_full(
     connector: ServiceConnectorResponse,
 ) -> Dict[str, Any]:
-    """Convert service connector response to complete dictionary for JSON/YAML."""
+    """Convert service connector response to complete dictionary for JSON/YAML.
+
+    Args:
+        connector: Service connector response
+
+    Returns:
+        Complete dictionary containing all connector data
+    """
     return connector.model_dump(mode="json")
 
 

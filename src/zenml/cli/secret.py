@@ -48,7 +48,14 @@ logger = get_logger(__name__)
 
 
 def _secret_to_print(secret: SecretResponse) -> Dict[str, Any]:
-    """Convert a secret response to a dictionary for table display."""
+    """Convert a secret response to a dictionary for table display.
+
+    Args:
+        secret: Secret response object
+
+    Returns:
+        Dictionary containing formatted secret data for table display
+    """
     return {
         "name": secret.name,
         "scope": "private" if secret.private else "public",

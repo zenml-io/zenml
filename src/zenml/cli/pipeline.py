@@ -46,6 +46,12 @@ def _schedule_to_print(schedule: Any) -> Dict[str, Any]:
 
     For table output, keep it compact with essential schedule information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        schedule: Schedule response object
+
+    Returns:
+        Dictionary containing formatted schedule data for table display
     """
     return {
         "name": schedule.name,
@@ -56,7 +62,14 @@ def _schedule_to_print(schedule: Any) -> Dict[str, Any]:
 
 
 def _schedule_to_print_full(schedule: Any) -> Dict[str, Any]:
-    """Convert schedule response to complete dictionary for JSON/YAML."""
+    """Convert schedule response to complete dictionary for JSON/YAML.
+
+    Args:
+        schedule: Schedule response object
+
+    Returns:
+        Complete dictionary containing all schedule data
+    """
     return schedule.model_dump(mode="json")
 
 
@@ -65,6 +78,12 @@ def _pipeline_run_to_print(run: Any) -> Dict[str, Any]:
 
     For table output, keep it compact with essential run information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        run: Pipeline run response object
+
+    Returns:
+        Dictionary containing formatted run data for table display
     """
     return {
         "name": run.name,
@@ -79,7 +98,14 @@ def _pipeline_run_to_print(run: Any) -> Dict[str, Any]:
 
 
 def _pipeline_run_to_print_full(run: Any) -> Dict[str, Any]:
-    """Convert pipeline run response to complete dictionary for JSON/YAML."""
+    """Convert pipeline run response to complete dictionary for JSON/YAML.
+
+    Args:
+        run: Pipeline run response object
+
+    Returns:
+        Complete dictionary containing all run data
+    """
     return run.model_dump(mode="json")
 
 
@@ -88,6 +114,12 @@ def _pipeline_build_to_print(build: Any) -> Dict[str, Any]:
 
     For table output, keep it compact with essential build information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        build: Pipeline build response object
+
+    Returns:
+        Dictionary containing formatted build data for table display
     """
     return {
         "pipeline_name": build.pipeline.name
@@ -102,7 +134,14 @@ def _pipeline_build_to_print(build: Any) -> Dict[str, Any]:
 
 
 def _pipeline_build_to_print_full(build: Any) -> Dict[str, Any]:
-    """Convert pipeline build response to complete dictionary for JSON/YAML."""
+    """Convert pipeline build response to complete dictionary for JSON/YAML.
+
+    Args:
+        build: Pipeline build response object
+
+    Returns:
+        Complete dictionary containing all build data
+    """
     return build.model_dump(mode="json")
 
 
@@ -141,7 +180,14 @@ def _pipeline_to_print(pipeline: PipelineResponse) -> Dict[str, Any]:
 
 
 def _pipeline_to_print_full(pipeline: PipelineResponse) -> Dict[str, Any]:
-    """Convert pipeline response to complete dictionary for JSON/YAML."""
+    """Convert pipeline response to complete dictionary for JSON/YAML.
+
+    Args:
+        pipeline: Pipeline response object
+
+    Returns:
+        Complete dictionary containing all pipeline data
+    """
     return pipeline.model_dump(mode="json")
 
 

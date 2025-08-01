@@ -51,6 +51,12 @@ def _stack_component_to_print(component: Any) -> Dict[str, Any]:
 
     For table output, keep it compact with essential component information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        component: Stack component response object
+
+    Returns:
+        Dictionary containing formatted component data for table display
     """
     # Get user/author information
     author = "Unknown"
@@ -72,7 +78,14 @@ def _stack_component_to_print(component: Any) -> Dict[str, Any]:
 
 
 def _stack_component_to_print_full(component: Any) -> Dict[str, Any]:
-    """Convert stack component response to complete dictionary for JSON/YAML."""
+    """Convert stack component response to complete dictionary for JSON/YAML.
+
+    Args:
+        component: Stack component response object
+
+    Returns:
+        Complete dictionary containing all component data
+    """
     return component.model_dump(mode="json")
 
 

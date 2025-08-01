@@ -48,6 +48,12 @@ def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
     For table output, keep it ultra-compact with only core information.
     Full details including tags and description are available in JSON/YAML
     output formats.
+
+    Args:
+        model: Model response object
+
+    Returns:
+        Dictionary containing formatted model data for table display
     """
     return {
         "name": model.name,
@@ -57,7 +63,14 @@ def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
 
 
 def _model_to_print_full(model: ModelResponse) -> Dict[str, Any]:
-    """Convert model response to complete dictionary for JSON/YAML."""
+    """Convert model response to complete dictionary for JSON/YAML.
+
+    Args:
+        model: Model response object
+
+    Returns:
+        Complete dictionary containing all model data
+    """
     return model.model_dump(mode="json")
 
 
@@ -69,6 +82,12 @@ def _model_version_to_print(
     For table output, keep it compact with essential information and visual
     stage indicators. Full details including ID, description, and run_metadata
     are available in JSON/YAML output formats.
+
+    Args:
+        model_version: Model version response object
+
+    Returns:
+        Dictionary containing formatted model version data for table display
     """
     return {
         "model": model_version.model.name,
@@ -86,7 +105,14 @@ def _model_version_to_print(
 def _model_version_to_print_full(
     model_version: ModelVersionResponse,
 ) -> Dict[str, Any]:
-    """Convert model version response to complete dictionary for JSON/YAML."""
+    """Convert model version response to complete dictionary for JSON/YAML.
+
+    Args:
+        model_version: Model version response object
+
+    Returns:
+        Complete dictionary containing all model version data
+    """
     return model_version.model_dump(mode="json")
 
 
