@@ -3021,7 +3021,7 @@ def to_print_full(model: Any) -> Dict[str, Any]:
     Returns:
         Dictionary with properly serialized data for JSON/YAML output
     """
-    return model.model_dump(mode="json")
+    return model.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def prepare_list_data(
@@ -3071,7 +3071,7 @@ def format_date_for_table(date_obj: Any) -> str:
         Formatted date string (YYYY-MM-DD)
     """
     if hasattr(date_obj, "strftime"):
-        return date_obj.strftime("%Y-%m-%d")
+        return date_obj.strftime("%Y-%m-%d")  # type: ignore[no-any-return]
     return str(date_obj) if date_obj else ""
 
 

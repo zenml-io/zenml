@@ -86,7 +86,7 @@ def _stack_component_to_print_full(component: Any) -> Dict[str, Any]:
     Returns:
         Complete dictionary containing all component data
     """
-    return component.model_dump(mode="json")
+    return component.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def _flavor_to_print(flavor: Any) -> Dict[str, Any]:
@@ -120,7 +120,7 @@ def _flavor_to_print_full(flavor: Any) -> Dict[str, Any]:
     Returns:
         Complete dictionary containing all flavor data
     """
-    return flavor.model_dump(mode="json")
+    return flavor.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def generate_stack_component_get_command(

@@ -147,7 +147,7 @@ def list_models(**kwargs: Any) -> None:
 
     # Use centralized data preparation
     model_data = prepare_list_data(
-        models, output_format, _model_to_print, _model_to_print_full
+        models.items, output_format, _model_to_print, _model_to_print_full
     )
 
     # Handle table output with enhanced system and pagination
@@ -474,7 +474,7 @@ def list_model_versions(**kwargs: Any) -> None:
 
     # Use centralized data preparation
     model_version_data = prepare_list_data(
-        model_versions,
+        model_versions.items,
         output_format,
         _model_version_to_print,
         _model_version_to_print_full,
@@ -671,7 +671,7 @@ def _artifact_link_to_print_full(link: Any) -> Dict[str, Any]:
     Returns:
         Complete dictionary containing all artifact link data
     """
-    return link.model_dump(mode="json")
+    return link.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def _pipeline_run_link_to_print(link: Any) -> Dict[str, Any]:
@@ -721,7 +721,7 @@ def _pipeline_run_link_to_print_full(link: Any) -> Dict[str, Any]:
     Returns:
         Complete dictionary containing all pipeline run link data
     """
-    return link.model_dump(mode="json")
+    return link.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def _print_artifacts_links_generic(
@@ -780,7 +780,7 @@ def _print_artifacts_links_generic(
 
     # Use centralized data preparation
     link_data = prepare_list_data(
-        link_list,
+        link_list,  # type: ignore[arg-type]
         output_format,
         _artifact_link_to_print,
         _artifact_link_to_print_full,

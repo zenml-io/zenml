@@ -155,14 +155,15 @@ def list_users(**kwargs: Any) -> None:
     active_user_id = client.active_user.id
 
     # Create a custom table formatter that includes active user indicator
-    def user_table_formatter(user):
+    def user_table_formatter(user: Any) -> Dict[str, Any]:
         user_dict = _user_to_print(user)
         user_dict["__is_active__"] = user.id == active_user_id
         return user_dict
 
     # Use centralized data preparation with custom formatter
     user_data = prepare_list_data(
-        user_list, output_format, user_table_formatter, _user_to_print_full
+        user_list,  # type: ignore[arg-type]
+        output_format, user_table_formatter, _user_to_print_full
     )
 
     # Handle table output with enhanced system and pagination

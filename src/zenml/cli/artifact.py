@@ -67,7 +67,7 @@ def list_artifacts(**kwargs: Any) -> None:
 
     # Use centralized data preparation
     artifact_data = prepare_list_data(
-        artifacts, output_format, _artifact_to_print
+        artifacts.items, output_format, _artifact_to_print
     )
 
     # Handle table output with enhanced system and pagination
@@ -161,7 +161,7 @@ def list_artifact_versions(**kwargs: Any) -> None:
 
     # Use centralized data preparation
     artifact_version_data = prepare_list_data(
-        artifact_versions, output_format, _artifact_version_to_print
+        artifact_versions.items, output_format, _artifact_version_to_print
     )
 
     # Handle table output with enhanced system and pagination

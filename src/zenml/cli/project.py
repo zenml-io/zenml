@@ -90,7 +90,8 @@ def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
 
             # Use centralized data preparation
             project_data = prepare_list_data(
-                project_list, output_format, _project_to_print
+                project_list,  # type: ignore[arg-type]
+                output_format, _project_to_print
             )
 
             # Handle table output with enhanced system

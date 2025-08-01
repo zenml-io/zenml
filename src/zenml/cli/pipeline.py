@@ -70,7 +70,7 @@ def _schedule_to_print_full(schedule: Any) -> Dict[str, Any]:
     Returns:
         Complete dictionary containing all schedule data
     """
-    return schedule.model_dump(mode="json")
+    return schedule.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def _pipeline_run_to_print(run: Any) -> Dict[str, Any]:
@@ -106,7 +106,7 @@ def _pipeline_run_to_print_full(run: Any) -> Dict[str, Any]:
     Returns:
         Complete dictionary containing all run data
     """
-    return run.model_dump(mode="json")
+    return run.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def _pipeline_build_to_print(build: Any) -> Dict[str, Any]:
@@ -142,7 +142,7 @@ def _pipeline_build_to_print_full(build: Any) -> Dict[str, Any]:
     Returns:
         Complete dictionary containing all build data
     """
-    return build.model_dump(mode="json")
+    return build.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def _pipeline_to_print(pipeline: PipelineResponse) -> Dict[str, Any]:
@@ -628,7 +628,7 @@ def list_schedules(**kwargs: Any) -> None:
         schedule_list = schedules.items
         page = schedules  # schedules is a Page object
     else:
-        schedule_list = schedules
+        schedule_list = schedules  # type: ignore[assignment]
         page = None  # schedules is just a list, no pagination
 
     for schedule in schedule_list:

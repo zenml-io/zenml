@@ -64,7 +64,7 @@ def _tag_to_print_full(tag: Any) -> Dict[str, Any]:
     Returns:
         Complete dictionary containing all tag data
     """
-    return tag.model_dump(mode="json")
+    return tag.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -100,7 +100,8 @@ def list_tags(**kwargs: Any) -> None:
 
     # Use centralized data preparation
     tag_data = prepare_list_data(
-        tag_list, output_format, _tag_to_print, _tag_to_print_full
+        tag_list,  # type: ignore[arg-type]
+        output_format, _tag_to_print, _tag_to_print_full
     )
 
     # Handle table output with enhanced system and pagination
