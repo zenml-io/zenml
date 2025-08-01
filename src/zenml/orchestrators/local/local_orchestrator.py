@@ -17,6 +17,7 @@ import time
 from typing import TYPE_CHECKING, Dict, Optional, Type
 from uuid import uuid4
 
+from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     BaseOrchestrator,
@@ -76,8 +77,26 @@ class LocalOrchestrator(BaseOrchestrator):
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()
 
+        # Get execution mode for failure handling
+        execution_mode = deployment.pipeline_configuration.execution_mode
+
+        if execution_mode is None:
+            execution_mode = ExecutionMode.CONTINUE_ON_FAILURE
+
+        # Track failed steps
+        failed_steps = []
+
         # Run each step
         for step_name, step in deployment.step_configurations.items():
+            if any(fs in step.spec.upstream_steps for fs in failed_steps):
+                continue
+
+            if (
+                execution_mode == ExecutionMode.STOP_ON_FAILURE
+                and len(failed_steps) > 0
+            ):
+                continue
+
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
@@ -86,9 +105,13 @@ class LocalOrchestrator(BaseOrchestrator):
                     step_name,
                 )
 
-            self.run_step(
-                step=step,
-            )
+            try:
+                self.run_step(step=step)
+            except Exception as e:
+                failed_steps.append(step_name)
+
+                if execution_mode == ExecutionMode.FAIL_FAST:
+                    raise e
 
         run_duration = time.time() - start_time
         logger.info(
@@ -192,3 +215,19 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
             The implementation class for this flavor.
         """
         return LocalOrchestrator
+
+    @property
+    def supported_execution_modes(self):
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        from zenml.enums import ExecutionMode
+
+        # Local orchestrator supports all execution modes
+        return (
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        )

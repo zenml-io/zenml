@@ -34,7 +34,7 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.exceptions import RunMonitoringError, RunStoppedException
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
@@ -444,10 +444,29 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment: The deployment to prepare.
         """
         self._active_deployment = deployment
+        self._validate_execution_mode()
 
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
         self._active_deployment = None
+
+    def _validate_execution_mode(self) -> None:
+        """Validate that the requested execution mode is supported.
+
+        This base implementation logs the execution mode being used.
+        Individual orchestrator implementations can override this method
+        to add specific validation.
+        """
+        if not self._active_deployment:
+            return
+
+        execution_mode = (
+            self._active_deployment.pipeline_configuration.execution_mode
+        )
+        if execution_mode is None:
+            logger.debug("No execution mode specified, using default behavior")
+        else:
+            logger.info(f"Using execution mode: {execution_mode}")
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
@@ -603,6 +622,15 @@ class BaseOrchestratorFlavor(Flavor):
             The config class.
         """
         return BaseOrchestratorConfig
+
+    @property
+    def supported_execution_modes(self) -> Tuple[ExecutionMode, ...]:
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        return (ExecutionMode.CONTINUE_ON_FAIL,)
 
     @property
     @abstractmethod
