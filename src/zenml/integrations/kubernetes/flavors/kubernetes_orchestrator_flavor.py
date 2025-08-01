@@ -148,6 +148,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
     )
 
+    # Deprecated fields
     timeout: Optional[int] = Field(
         default=None,
         deprecated=True,

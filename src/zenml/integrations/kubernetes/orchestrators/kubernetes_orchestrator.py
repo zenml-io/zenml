@@ -72,7 +72,6 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     job_template_manifest_from_job,
     pod_template_manifest_from_pod,
 )
-from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.core.schedule import ScheduleUpdate
@@ -369,45 +368,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate_local_requirements,
         )
 
-    @classmethod
-    def apply_default_resource_requests(
-        cls,
-        memory: str,
-        cpu: Optional[str] = None,
-        pod_settings: Optional[KubernetesPodSettings] = None,
-    ) -> KubernetesPodSettings:
-        """Applies default resource requests to a pod settings object.
-
-        Args:
-            memory: The memory resource request.
-            cpu: The CPU resource request.
-            pod_settings: The pod settings to update. A new one will be created
-                if not provided.
-
-        Returns:
-            The new or updated pod settings.
-        """
-        resources = {
-            "requests": {"memory": memory},
-        }
-        if cpu:
-            resources["requests"]["cpu"] = cpu
-        if not pod_settings:
-            pod_settings = KubernetesPodSettings(resources=resources)
-        elif not pod_settings.resources:
-            # We can't update the pod settings in place (because it's a frozen
-            # pydantic model), so we have to create a new one.
-            pod_settings = KubernetesPodSettings(
-                **pod_settings.model_dump(exclude_unset=True),
-                resources=resources,
-            )
-        else:
-            set_requests = pod_settings.resources.get("requests", {})
-            resources["requests"].update(set_requests)
-            pod_settings.resources["requests"] = resources["requests"]
-
-        return pod_settings
-
     def get_token_secret_name(self, deployment_id: UUID) -> str:
         """Returns the name of the secret that contains the ZenML token.
 
@@ -498,7 +458,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # takes up some memory resources itself and, if not specified, the pod
         # will be scheduled on any node regardless of available memory and risk
         # negatively impacting or even crashing the node due to memory pressure.
-        orchestrator_pod_settings = self.apply_default_resource_requests(
+        orchestrator_pod_settings = kube_utils.apply_default_resource_requests(
             memory="400Mi",
             cpu="100m",
             pod_settings=settings.orchestrator_pod_settings,

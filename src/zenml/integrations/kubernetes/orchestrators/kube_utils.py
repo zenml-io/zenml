@@ -52,6 +52,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_secret_manifest,
     build_service_account_manifest,
 )
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
@@ -1169,3 +1170,41 @@ def get_parent_job_name(
         return cast(str, job_name)
 
     return None
+
+
+def apply_default_resource_requests(
+    memory: str,
+    cpu: Optional[str] = None,
+    pod_settings: Optional[KubernetesPodSettings] = None,
+) -> KubernetesPodSettings:
+    """Applies default resource requests to a pod settings object.
+
+    Args:
+        memory: The memory resource request.
+        cpu: The CPU resource request.
+        pod_settings: The pod settings to update. A new one will be created
+            if not provided.
+
+    Returns:
+        The new or updated pod settings.
+    """
+    resources = {
+        "requests": {"memory": memory},
+    }
+    if cpu:
+        resources["requests"]["cpu"] = cpu
+    if not pod_settings:
+        pod_settings = KubernetesPodSettings(resources=resources)
+    elif not pod_settings.resources:
+        # We can't update the pod settings in place (because it's a frozen
+        # pydantic model), so we have to create a new one.
+        pod_settings = KubernetesPodSettings(
+            **pod_settings.model_dump(exclude_unset=True),
+            resources=resources,
+        )
+    else:
+        set_requests = pod_settings.resources.get("requests", {})
+        resources["requests"].update(set_requests)
+        pod_settings.resources["requests"] = resources["requests"]
+
+    return pod_settings

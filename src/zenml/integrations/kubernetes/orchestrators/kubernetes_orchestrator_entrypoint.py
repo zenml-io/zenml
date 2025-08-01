@@ -389,11 +389,9 @@ def main() -> None:
             # some memory resources itself and, if not specified, the pod will be
             # scheduled on any node regardless of available memory and risk
             # negatively impacting or even crashing the node due to memory pressure.
-            pod_settings = (
-                KubernetesOrchestrator.apply_default_resource_requests(
-                    memory="400Mi",
-                    pod_settings=settings.pod_settings,
-                )
+            pod_settings = kube_utils.apply_default_resource_requests(
+                memory="400Mi",
+                pod_settings=settings.pod_settings,
             )
 
             if orchestrator.config.pass_zenml_token_as_secret:
