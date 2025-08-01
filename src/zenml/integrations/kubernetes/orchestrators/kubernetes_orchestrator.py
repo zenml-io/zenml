@@ -60,6 +60,7 @@ from zenml.integrations.kubernetes.orchestrators.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_CRON_JOB_METADATA_KEY,
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
+    ORCHESTRATOR_ANNOTATION_KEY,
     STEP_NAME_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
@@ -556,6 +557,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             active_deadline_seconds=settings.active_deadline_seconds,
             pod_failure_policy=pod_failure_policy,
             labels=orchestrator_pod_labels,
+            annotations={
+                ORCHESTRATOR_ANNOTATION_KEY: str(self.id),
+            },
         )
 
         if deployment.schedule:
@@ -816,19 +820,20 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             if not job.metadata or not job.metadata.annotations:
                 continue
 
-            step_name = job.metadata.annotations.get(
-                STEP_NAME_ANNOTATION_KEY, None
+            is_orchestrator_job = (
+                ORCHESTRATOR_ANNOTATION_KEY in job.metadata.annotations
             )
-            if not step_name:
+            if is_orchestrator_job:
                 if include_run_status:
-                    # This is the orchestrator job
                     pipeline_status = self._map_job_status_to_execution_status(
                         job
                     )
                 continue
 
-            if not include_steps:
-                # If we don't need to fetch step statuses, we can skip the rest
+            step_name = job.metadata.annotations.get(
+                STEP_NAME_ANNOTATION_KEY, None
+            )
+            if not include_steps or not step_name:
                 continue
 
             step_response = steps_dict.get(step_name, None)

@@ -33,6 +33,7 @@ from zenml.integrations.kubernetes.orchestrators import (
 )
 from zenml.integrations.kubernetes.orchestrators.constants import (
     STEP_NAME_ANNOTATION_KEY,
+    STEP_OPERATOR_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_job_manifest,
@@ -225,6 +226,7 @@ class KubernetesStepOperator(BaseStepOperator):
         }
         step_annotations = {
             STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
+            STEP_OPERATOR_ANNOTATION_KEY: str(self.id),
         }
 
         # We set some default minimum memory resource requests for the step pod
