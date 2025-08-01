@@ -512,9 +512,6 @@ def main() -> None:
             Args:
                 node: The node to check.
 
-            Raises:
-                Exception: If the job status cannot be checked.
-
             Returns:
                 The status of the node.
             """
