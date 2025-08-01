@@ -302,19 +302,23 @@ class RunTemplateSchema(NamedSchema, table=True):
             if self.source_deployment:
                 from zenml.zen_stores import template_utils
 
-                pipeline_spec = self.source_deployment.to_model(
-                    include_metadata=True, include_resources=True
-                ).pipeline_spec
+                source_deployment_model = self.source_deployment.to_model(
+                    include_metadata=True
+                )
+                pipeline_spec = source_deployment_model.pipeline_spec
 
                 if (
                     self.source_deployment.build
                     and self.source_deployment.build.stack_id
                 ):
                     config_template = template_utils.generate_config_template(
-                        deployment=self.source_deployment
+                        deployment=self.source_deployment,
+                        pipeline_configuration=source_deployment_model.pipeline_configuration,
+                        step_configurations=source_deployment_model.step_configurations,
                     )
                     config_schema = template_utils.generate_config_schema(
-                        deployment=self.source_deployment
+                        deployment=self.source_deployment,
+                        step_configurations=source_deployment_model.step_configurations,
                     )
 
             metadata = RunTemplateResponseMetadata(

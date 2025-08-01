@@ -21,12 +21,13 @@ from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload, object_session
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, asc, col, select
+from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.enums import TaggableResourceTypes
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineDeploymentRequest,
@@ -34,7 +35,9 @@ from zenml.models import (
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
     PipelineDeploymentResponseResources,
+    PipelineDeploymentUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -45,6 +48,7 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
@@ -59,8 +63,25 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     """SQL Model for pipeline deployments."""
 
     __tablename__ = "pipeline_deployment"
+    __table_args__ = (
+        UniqueConstraint(
+            "pipeline_id",
+            "version",
+            name="unique_version_for_pipeline_id",
+        ),
+    )
 
     # Fields
+    version: Optional[str] = Field(nullable=True)
+    description: Optional[str] = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
+
     pipeline_configuration: str = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -109,13 +130,13 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    pipeline_id: Optional[UUID] = build_foreign_key_field(
+    pipeline_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSchema.__tablename__,
         source_column="pipeline_id",
         target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
+        ondelete="CASCADE",
+        nullable=False,
     )
     schedule_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -143,6 +164,9 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     )
     # This is not a foreign key to remove a cycle which messes with our DB
     # backup process
+    source_deployment_id: Optional[UUID] = None
+
+    # Deprecated, remove once we remove run templates entirely
     template_id: Optional[UUID] = None
 
     # SQLModel Relationships
@@ -151,7 +175,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     )
     project: "ProjectSchema" = Relationship()
     stack: Optional["StackSchema"] = Relationship()
-    pipeline: Optional["PipelineSchema"] = Relationship()
+    pipeline: "PipelineSchema" = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship(
         sa_relationship_kwargs={
@@ -173,6 +197,54 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         }
     )
     step_count: int
+    tags: List["TagSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE_DEPLOYMENT.value}', foreign(TagResourceSchema.resource_id)==PipelineDeploymentSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
+            overlaps="tags",
+        ),
+    )
+
+    @property
+    def latest_triggered_run(self) -> Optional["PipelineRunSchema"]:
+        """Fetch the latest triggered run for this deployment.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest triggered run for this deployment.
+        """
+        from zenml.zen_stores.schemas import (
+            PipelineDeploymentSchema,
+            PipelineRunSchema,
+        )
+
+        if session := object_session(self):
+            return (
+                session.execute(
+                    select(PipelineRunSchema)
+                    .join(
+                        PipelineDeploymentSchema,
+                        col(PipelineDeploymentSchema.id)
+                        == col(PipelineRunSchema.deployment_id),
+                    )
+                    .where(
+                        PipelineDeploymentSchema.source_deployment_id
+                        == self.id
+                    )
+                    .order_by(desc(PipelineRunSchema.created))
+                    .limit(1)
+                )
+                .scalars()
+                .one_or_none()
+            )
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest run for deployment."
+            )
 
     def get_step_configurations(
         self, include: Optional[List[str]] = None
@@ -292,6 +364,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             client_env = "{}"
 
         return cls(
+            version=request.version,
+            description=request.description,
             stack_id=request.stack,
             project_id=request.project,
             pipeline_id=request.pipeline,
@@ -299,6 +373,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             user_id=request.user,
             schedule_id=request.schedule,
             template_id=request.template,
+            source_deployment_id=request.source_deployment,
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
@@ -315,11 +390,31 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             code_path=request.code_path,
         )
 
+    def update(
+        self, update: PipelineDeploymentUpdate
+    ) -> "PipelineDeploymentSchema":
+        """Update the deployment schema.
+
+        Args:
+            update: The update to apply.
+
+        Returns:
+            The updated schema.
+        """
+        if update.version:
+            self.version = update.version
+        if update.description:
+            self.description = update.description
+
+        self.updated = utc_now()
+        return self
+
     def to_model(
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
         include_python_packages: bool = False,
+        include_config_schema: Optional[bool] = None,
         step_configuration_filter: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> PipelineDeploymentResponse:
@@ -329,6 +424,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
+            include_config_schema: Whether the config schema will be filled.
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
@@ -338,11 +434,17 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentResponse`.
         """
+        runnable = False
+        if self.build and not self.build.is_local and self.build.stack_id:
+            runnable = True
+
         body = PipelineDeploymentResponseBody(
+            version=self.version,
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
+            runnable=runnable,
         )
         metadata = None
         if include_metadata:
@@ -362,7 +464,38 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             if not include_python_packages:
                 client_environment.pop("python_packages", None)
 
+            config_template = None
+            config_schema = None
+
+            if include_config_schema and self.build and self.build.stack_id:
+                from zenml.zen_stores import template_utils
+
+                if step_configuration_filter:
+                    # If only a subset of step configurations is requested,
+                    # we still need to get all of them to generate the config
+                    # template and schema
+                    all_step_configurations = {
+                        step_configuration.name: Step.from_dict(
+                            json.loads(step_configuration.config),
+                            pipeline_configuration,
+                        )
+                        for step_configuration in self.get_step_configurations()
+                    }
+                else:
+                    all_step_configurations = step_configurations
+
+                config_template = template_utils.generate_config_template(
+                    deployment=self,
+                    pipeline_configuration=pipeline_configuration,
+                    step_configurations=all_step_configurations,
+                )
+                config_schema = template_utils.generate_config_schema(
+                    deployment=self,
+                    step_configurations=all_step_configurations,
+                )
+
             metadata = PipelineDeploymentResponseMetadata(
+                description=self.description,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
@@ -384,13 +517,24 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 else None,
                 code_path=self.code_path,
                 template_id=self.template_id,
+                source_deployment_id=self.source_deployment_id,
+                config_schema=config_schema,
+                config_template=config_template,
             )
 
         resources = None
         if include_resources:
+            latest_run = self.latest_triggered_run
+
             resources = PipelineDeploymentResponseResources(
                 user=self.user.to_model() if self.user else None,
+                tags=[tag.to_model() for tag in self.tags],
+                latest_triggered_run_id=latest_run.id if latest_run else None,
+                latest_triggered_run_status=latest_run.status
+                if latest_run
+                else None,
             )
+
         return PipelineDeploymentResponse(
             id=self.id,
             body=body,

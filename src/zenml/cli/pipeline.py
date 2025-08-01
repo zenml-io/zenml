@@ -15,7 +15,8 @@
 
 import json
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
 import click
 
@@ -335,7 +336,7 @@ def create_run_template(
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
 ) -> None:
-    """Create a run template for a pipeline.
+    """DEPRECATED: Create a run template for a pipeline.
 
     Args:
         source: Importable source resolving to a pipeline instance.
@@ -344,6 +345,11 @@ def create_run_template(
         stack_name_or_id: Name or ID of the stack for which the template should
             be created.
     """
+    cli_utils.warning(
+        "The `zenml pipeline create-run-template` command is deprecated and "
+        "will be removed in a future version. Please use `zenml pipeline "
+        "deploy` instead."
+    )
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline create-run-template` command "
@@ -362,6 +368,166 @@ def create_run_template(
         template = pipeline_instance.create_run_template(name=name)
 
     cli_utils.declare(f"Created run template `{template.id}`.")
+
+
+@pipeline.command("deploy", help="Deploy a pipeline.")
+@click.argument("source")
+@click.option(
+    "--name", "-n", type=str, required=True, help="The name of the deployment."
+)
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="The description of the deployment.",
+)
+@click.option(
+    "--tags",
+    "-t",
+    type=str,
+    required=False,
+    multiple=True,
+    help="The tags to add to the deployment.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the deployment.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to use for the deployment.",
+)
+def deploy_pipeline(
+    source: str,
+    name: str,
+    description: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+) -> None:
+    """Deploy a pipeline.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        name: Name of the deployment.
+        description: Description of the deployment.
+        tags: Tags to add to the deployment.
+        config_path: Path to configuration file for the deployment.
+        stack_name_or_id: Name or ID of the stack for which the deployment
+            should be created.
+    """
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline deploy` command "
+            "without a ZenML repository. Your current working directory will "
+            "be used as the source root relative to which the registered step "
+            "classes will be resolved. To silence this warning, run `zenml "
+            "init` at your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path
+        )
+        deployment = pipeline_instance.deploy(
+            name=name, description=description, tags=tags
+        )
+
+    cli_utils.declare(f"Created pipeline deployment `{deployment.id}`.")
+
+    if not Client().zen_store.get_store_info().is_pro_server():
+        cli_utils.declare(
+            "Triggering deployments is only available for ZenML Pro servers."
+        )
+        return
+
+    if deployment.runnable:
+        cli_utils.declare(
+            "You can now trigger this deployment from the dashboard or by "
+            "calling `Client().trigger_deployment"
+            f"(deployment_id={deployment.id})`"
+        )
+    else:
+        cli_utils.declare(
+            "This deployment can not be triggered because the orchestrator "
+            "is not running remotely with Docker images."
+        )
+
+
+@pipeline.command("trigger-deployment", help="Trigger a deployment.")
+@click.option(
+    "--deployment",
+    "-d",
+    type=str,
+    required=False,
+    help="The ID of the deployment to trigger.",
+)
+@click.option(
+    "--pipeline",
+    "-p",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline to trigger.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+    help="The version of the deployment to trigger.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the run.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to use for the deployment.",
+)
+def trigger_deployment(
+    deployment_id: Optional[str] = None,
+    pipeline_name_or_id: Optional[str] = None,
+    version: Optional[str] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+) -> None:
+    """Trigger a deployment.
+
+    Args:
+        deployment_id: The ID of the deployment to trigger.
+        pipeline_name_or_id: The name or ID of the pipeline to trigger.
+        version: The version of the deployment to trigger.
+        config_path: Path to configuration file for the run.
+        stack_name_or_id: Name or ID of the stack for which the deployment
+            should be created.
+    """
+    run = Client().trigger_deployment(
+        deployment_id=UUID(deployment_id) if deployment_id else None,
+        pipeline_name_or_id=pipeline_name_or_id,
+        version=version,
+        config_path=config_path,
+        stack_name_or_id=stack_name_or_id,
+    )
+    cli_utils.declare(f"Triggered deployment run `{run.id}`.")
 
 
 @pipeline.command("list", help="List all registered pipelines.")
@@ -407,8 +573,8 @@ def delete_pipeline(
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline "
-            f"`{pipeline_name_or_id}`? This will change all "
-            "existing runs of this pipeline to become unlisted."
+            f"`{pipeline_name_or_id}`? This will delete all "
+            "runs and deployments of this pipeline."
         )
         if not confirmation:
             cli_utils.declare("Pipeline deletion canceled.")

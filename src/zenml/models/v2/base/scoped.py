@@ -557,6 +557,7 @@ class TaggableFilter(BaseFilter):
                 ArtifactVersionSchema,
                 ModelSchema,
                 ModelVersionSchema,
+                PipelineDeploymentSchema,
                 PipelineRunSchema,
                 PipelineSchema,
                 RunTemplateSchema,
@@ -572,6 +573,7 @@ class TaggableFilter(BaseFilter):
                 PipelineSchema: TaggableResourceTypes.PIPELINE,
                 PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
                 RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
+                PipelineDeploymentSchema: TaggableResourceTypes.PIPELINE_DEPLOYMENT,
             }
 
             sorted_tags = (

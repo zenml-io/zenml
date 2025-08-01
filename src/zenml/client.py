@@ -132,6 +132,8 @@ from zenml.models import (
     PipelineBuildResponse,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
+    PipelineDeploymentTriggerRequest,
+    PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineResponse,
     PipelineRunFilter,
@@ -2454,24 +2456,7 @@ class Client(metaclass=ClientMetaClass):
         synchronous: bool = False,
         project: Optional[Union[str, UUID]] = None,
     ) -> PipelineRunResponse:
-        """Trigger a pipeline from the server.
-
-        Usage examples:
-        * Run the latest runnable template for a pipeline:
-        ```python
-        Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
-        ```
-        * Run the latest runnable template for a pipeline on a specific stack:
-        ```python
-        Client().trigger_pipeline(
-            pipeline_name_or_id=<NAME>,
-            stack_name_or_id=<STACK_NAME_OR_ID>
-        )
-        ```
-        * Run a specific template:
-        ```python
-        Client().trigger_pipeline(template_id=<ID>)
-        ```
+        """DEPRECATED: Trigger a pipeline from the server.
 
         Args:
             pipeline_name_or_id: Name or ID of the pipeline. If this is
@@ -2504,6 +2489,12 @@ class Client(metaclass=ClientMetaClass):
             validate_run_config_is_runnable_from_server,
             validate_stack_is_runnable_from_server,
             wait_for_pipeline_run_to_finish,
+        )
+
+        logger.warning(
+            "The `Client().trigger_pipeline(...)` method is deprecated and "
+            "will be removed in a future version. Please use "
+            "`Client().trigger_deployment(...)` instead."
         )
 
         if Counter([template_id, pipeline_name_or_id])[None] != 1:
@@ -3359,21 +3350,21 @@ class Client(metaclass=ClientMetaClass):
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> PipelineDeploymentResponse:
-        """Get a deployment by id or prefix.
+        """Get a deployment by name, id or prefix.
 
         Args:
-            id_or_prefix: The id or id prefix of the deployment.
+            id_or_prefix: The id or prefix of the deployment.
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-
-        Returns:
-            The deployment.
 
         Raises:
             KeyError: If no deployment was found for the given id or prefix.
             ZenKeyError: If multiple deployments were found that match the given
                 id or prefix.
+
+        Returns:
+            The deployment.
         """
         from zenml.utils.uuid_utils import is_valid_uuid
 
@@ -3428,10 +3419,13 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
+        version: Optional[str] = None,
+        versioned_only: Optional[bool] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
         template_id: Optional[Union[str, UUID]] = None,
+        tags: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineDeploymentResponse]:
         """List all deployments.
@@ -3446,10 +3440,14 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
+            version: Filter by version.
+            versioned_only: If `True`, only deployments with an assigned version
+                will be returned.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
             template_id: The ID of the template to filter by.
+            tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3466,14 +3464,55 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             project=project or self.active_project.id,
             user=user,
+            version=version,
+            versioned_only=versioned_only,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
             template_id=template_id,
+            tags=tags,
         )
         return self.zen_store.list_deployments(
             deployment_filter_model=deployment_filter_model,
             hydrate=hydrate,
+        )
+
+    def update_deployment(
+        self,
+        id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        version: Optional[str] = None,
+        description: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> PipelineDeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            id_or_prefix: The id or id prefix of the deployment.
+            project: The project name/ID to filter by.
+            version: The new version of the deployment.
+            description: The new description of the deployment.
+            add_tags: Tags to add to the deployment.
+            remove_tags: Tags to remove from the deployment.
+
+        Returns:
+            The updated deployment.
+        """
+        deployment = self.get_deployment(
+            id_or_prefix=id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+
+        return self.zen_store.update_deployment(
+            deployment_id=deployment.id,
+            deployment_update=PipelineDeploymentUpdate(
+                version=version,
+                description=description,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
+            ),
         )
 
     def delete_deployment(
@@ -3493,6 +3532,193 @@ class Client(metaclass=ClientMetaClass):
             hydrate=False,
         )
         self.zen_store.delete_deployment(deployment_id=deployment.id)
+
+    @_fail_for_sql_zen_store
+    def trigger_deployment(
+        self,
+        deployment_id: Optional[UUID] = None,
+        pipeline_name_or_id: Union[str, UUID, None] = None,
+        version: Optional[str] = None,
+        run_configuration: Union[
+            PipelineRunConfiguration, Dict[str, Any], None
+        ] = None,
+        config_path: Optional[str] = None,
+        stack_name_or_id: Union[str, UUID, None] = None,
+        synchronous: bool = False,
+        project: Optional[Union[str, UUID]] = None,
+    ) -> PipelineRunResponse:
+        """Trigger a deployment.
+
+        Usage examples:
+        * Trigger a specific deployment by ID:
+        ```python
+        Client().trigger_deployment(deployment_id=<ID>)
+        ```
+        * Trigger the latest runnable deployment for a pipeline:
+        ```python
+        Client().trigger_deployment(pipeline_name_or_id=<NAME>)
+        ```
+        * Trigger the latest runnable deployment for a pipeline on a specific
+        stack:
+        ```python
+        Client().trigger_deployment(
+            pipeline_name_or_id=<NAME>,
+            stack_name_or_id=<STACK_NAME_OR_ID>
+        )
+        ```
+
+        Args:
+            deployment_id: ID of the deployment to trigger. Either this or a
+                pipeline can be specified.
+            pipeline_name_or_id: Name or ID of the pipeline. If this is
+                specified, the latest runnable deployment for this pipeline will
+                be used for the run (Runnable here means that the build
+                associated with the deployment is for a remote stack without any
+                custom flavor stack components). If not given, a deployment ID
+                that should be run needs to be specified.
+            version: Version of the deployment to trigger. If not given, the
+                latest runnable deployment for the pipeline will be used.
+            run_configuration: Configuration for the run. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `PipelineRunConfiguration` object. Either this or
+                the configuration in code can be specified.
+            stack_name_or_id: Name or ID of the stack on which to run the
+                pipeline. If not specified, this method will try to find a
+                runnable deployment on any stack.
+            synchronous: If `True`, this method will wait until the triggered
+                run is finished.
+            project: The project name/ID to filter by.
+
+        Raises:
+            RuntimeError: If triggering the deployment failed.
+            KeyError: If no deployment with the given version exists.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        from zenml.pipelines.run_utils import (
+            validate_run_config_is_runnable_from_server,
+            validate_stack_is_runnable_from_server,
+            wait_for_pipeline_run_to_finish,
+        )
+
+        if Counter([deployment_id, pipeline_name_or_id])[None] != 1:
+            raise RuntimeError(
+                "You need to specify exactly one of deployment or pipeline "
+                "to trigger."
+            )
+
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if isinstance(run_configuration, Dict):
+            run_configuration = PipelineRunConfiguration.model_validate(
+                run_configuration
+            )
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
+        if deployment_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Deployment ID and stack specified, ignoring the stack and "
+                    "using stack associated with the deployment instead."
+                )
+
+            if version:
+                logger.warning(
+                    "Deployment ID and version specified, ignoring the version."
+                )
+        else:
+            assert pipeline_name_or_id
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id,
+                project=project,
+            )
+
+            if version:
+                deployments = self.list_deployments(
+                    version=f"equals:{version}",
+                    pipeline_id=pipeline.id,
+                    project=pipeline.project_id,
+                )
+
+                if deployments.total == 0:
+                    raise KeyError(
+                        f"No deployment found for pipeline {pipeline.id} "
+                        f"with version {version}."
+                    )
+                else:
+                    deployment_id = deployments.items[0].id
+            else:
+                # No version or ID specified, find the latest runnable
+                # deployment for the pipeline (and stack if specified)
+                stack = None
+                if stack_name_or_id:
+                    stack = self.get_stack(
+                        stack_name_or_id, allow_name_prefix_match=False
+                    )
+                    validate_stack_is_runnable_from_server(
+                        zen_store=self.zen_store, stack=stack
+                    )
+
+                all_deployments = depaginate(
+                    self.list_deployments,
+                    pipeline_id=pipeline.id,
+                    stack_id=stack.id if stack else None,
+                    project=pipeline.project_id,
+                )
+
+                for deployment in all_deployments:
+                    if not deployment.build:
+                        continue
+
+                    stack = deployment.build.stack
+                    if not stack:
+                        continue
+
+                    try:
+                        validate_stack_is_runnable_from_server(
+                            zen_store=self.zen_store, stack=stack
+                        )
+                    except ValueError:
+                        continue
+
+                    deployment_id = deployment.id
+                    break
+                else:
+                    raise RuntimeError(
+                        "Unable to find a runnable deployment for the given "
+                        "stack and pipeline."
+                    )
+
+        step_run_id = None
+        try:
+            from zenml.steps.step_context import get_step_context
+
+            step_run_id = get_step_context().step_run.id
+        except RuntimeError:
+            pass
+
+        run = self.zen_store.trigger_deployment(
+            deployment_id=deployment_id,
+            trigger_request=PipelineDeploymentTriggerRequest(
+                run_configuration=run_configuration,
+                step_run=step_run_id,
+            ),
+        )
+
+        if synchronous:
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
 
     # ------------------------------ Run templates -----------------------------
 
@@ -7050,7 +7276,8 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        trigger_id: Optional[UUID] = None,
+        trigger_id: Optional[Union[UUID, str]] = None,
+        step_run_id: Optional[Union[UUID, str]] = None,
         user: Optional[Union[UUID, str]] = None,
         project: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
@@ -7063,6 +7290,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages.
             logical_operator: Which logical operator to use [and, or].
             trigger_id: ID of the trigger to filter by.
+            step_run_id: ID of the step run to filter by.
             user: Filter by user name/ID.
             project: Filter by project name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -7073,6 +7301,7 @@ class Client(metaclass=ClientMetaClass):
         """
         filter_model = TriggerExecutionFilter(
             trigger_id=trigger_id,
+            step_run_id=step_run_id,
             sort_by=sort_by,
             page=page,
             size=size,

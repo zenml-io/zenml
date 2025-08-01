@@ -67,6 +67,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 
 
 class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -197,6 +198,18 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="step_runs",
     )
+    trigger_executions: List["TriggerExecutionSchema"] = Relationship(
+        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    triggered_runs: List["PipelineRunSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "viewonly": True,
+            "secondary": "trigger_execution",
+            "primaryjoin": "foreign(TriggerExecutionSchema.step_run_id) == StepRunSchema.id",
+            "secondaryjoin": "PipelineRunSchema.trigger_execution_id == foreign(TriggerExecutionSchema.id)",
+        },
+    )
+
     original_step_run: Optional["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"remote_side": "StepRunSchema.id"}
     )

@@ -198,6 +198,8 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentTriggerRequest,
+    PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1640,6 +1642,7 @@ class RestZenStore(BaseZenStore):
         deployment_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -1650,6 +1653,7 @@ class RestZenStore(BaseZenStore):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            include_config_schema: Whether the config schema will be filled.
 
         Returns:
             The deployment.
@@ -1661,6 +1665,7 @@ class RestZenStore(BaseZenStore):
             params={
                 "hydrate": hydrate,
                 "step_configuration_filter": step_configuration_filter,
+                "include_config_schema": include_config_schema,
             },
         )
 
@@ -1687,6 +1692,27 @@ class RestZenStore(BaseZenStore):
             params={"hydrate": hydrate},
         )
 
+    def update_deployment(
+        self,
+        deployment_id: UUID,
+        deployment_update: PipelineDeploymentUpdate,
+    ) -> PipelineDeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+        """
+        return self._update_resource(
+            resource_id=deployment_id,
+            resource_update=deployment_update,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponse,
+        )
+
     def delete_deployment(self, deployment_id: UUID) -> None:
         """Deletes a deployment.
 
@@ -1697,6 +1723,32 @@ class RestZenStore(BaseZenStore):
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
         )
+
+    def trigger_deployment(
+        self,
+        deployment_id: UUID,
+        trigger_request: PipelineDeploymentTriggerRequest,
+    ) -> PipelineRunResponse:
+        """Trigger a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to trigger.
+            trigger_request: Configuration for the trigger.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        try:
+            response_body = self.post(
+                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
+                body=trigger_request,
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a deployment is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------- Run templates --------------------
 
