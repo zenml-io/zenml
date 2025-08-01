@@ -100,7 +100,7 @@ class ThreadedDagRunner:
             continue_fn: A function that returns True if the run should continue
                 after each step execution, False if it should stop (e.g., due
                 to cancellation). If None, execution continues normally.
-            execution_mode: The execution mode that determines how failures 
+            execution_mode: The execution mode that determines how failures
                 are handled. Defaults to STOP_ON_FAILURE.
             stop_fn: A function `stop_fn(node)` that can stop a running node.
                 Required for FAIL_FAST mode to work properly.
@@ -154,14 +154,16 @@ class ThreadedDagRunner:
             return False
 
         # In FAIL_FAST mode, if any node has failed globally, don't start new nodes
-        if (self.execution_mode == ExecutionMode.FAIL_FAST and 
-            self._global_failure):
+        if (
+            self.execution_mode == ExecutionMode.FAIL_FAST
+            and self._global_failure
+        ):
             return False
 
         # Check that all upstream nodes of this node have finished.
         for upstream_node in self.dag[node]:
             upstream_status = self.node_states[upstream_node]
-            
+
             # In all modes, nodes cannot run if direct upstream dependencies failed
             if upstream_status != NodeStatus.COMPLETED:
                 return False
@@ -215,8 +217,10 @@ class ThreadedDagRunner:
                 return
 
         # In FAIL_FAST mode, check for global failure before running
-        if (self.execution_mode == ExecutionMode.FAIL_FAST and 
-            self._global_failure):
+        if (
+            self.execution_mode == ExecutionMode.FAIL_FAST
+            and self._global_failure
+        ):
             self._finish_node(node, cancelled=True)
             return
 
@@ -255,7 +259,7 @@ class ThreadedDagRunner:
 
     def _stop_all_running_nodes(self) -> None:
         """Stop all currently running nodes.
-        
+
         This is used in FAIL_FAST mode to immediately stop all running nodes
         when a failure occurs.
         """
@@ -265,13 +269,14 @@ class ThreadedDagRunner:
                 "running nodes. Running nodes will continue to completion."
             )
             return
-            
+
         with self._lock:
             running_nodes = [
-                node for node, status in self.node_states.items()
+                node
+                for node, status in self.node_states.items()
                 if status == NodeStatus.RUNNING
             ]
-        
+
         for node in running_nodes:
             try:
                 logger.info(f"Stopping node {node} due to failure elsewhere")
@@ -311,7 +316,7 @@ class ThreadedDagRunner:
                 # Don't run any downstream nodes, but let running nodes continue
                 return
             # For CONTINUE_ON_FAILURE, we fall through to start downstream nodes
-        
+
         # Handle cancellation - always stop processing downstream for cancelled nodes
         if cancelled:
             return

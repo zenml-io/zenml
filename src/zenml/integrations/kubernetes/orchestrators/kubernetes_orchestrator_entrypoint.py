@@ -413,14 +413,16 @@ def main() -> None:
                 f"run_id={kube_utils.sanitize_label(str(pipeline_run.id))},"
                 f"step_name={kube_utils.sanitize_label(step_name)}"
             )
-    
+
             try:
                 jobs = batch_api.list_namespaced_job(
                     namespace=namespace,
                     label_selector=label_selector,
                 )
             except Exception as e:
-                logger.warning(f"Failed to find jobs for step {step_name}: {e}")
+                logger.warning(
+                    f"Failed to find jobs for step {step_name}: {e}"
+                )
                 return
 
             if not jobs.items:
@@ -433,12 +435,12 @@ def main() -> None:
                 if job.status.conditions:
                     for condition in job.status.conditions:
                         if (
-                            condition.type in ["Complete", "Failed"] 
+                            condition.type in ["Complete", "Failed"]
                             and condition.status == "True"
                         ):
                             job_finished = True
                             break
-                
+
                 if job_finished:
                     logger.debug(
                         f"Job {job.metadata.name} for step {step_name} already finished, skipping deletion"
@@ -456,9 +458,10 @@ def main() -> None:
                         f"Successfully stopped step job: {job.metadata.name}"
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to stop step job {job.metadata.name}: {e}")
+                    logger.warning(
+                        f"Failed to stop step job {job.metadata.name}: {e}"
+                    )
 
-            
         def finalize_run(node_states: Dict[str, NodeStatus]) -> None:
             """Finalize the run.
 
