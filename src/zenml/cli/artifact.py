@@ -368,6 +368,12 @@ def _artifact_version_to_print(
 
     For table output, keep it compact with essential version information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        artifact_version: Artifact version response object
+
+    Returns:
+        Dictionary containing formatted artifact version data for table display
     """
     return {
         "name": artifact_version.artifact.name,
@@ -383,5 +389,12 @@ def _artifact_version_to_print(
 def _artifact_version_to_print_full(
     artifact_version: ArtifactVersionResponse,
 ) -> Dict[str, Any]:
-    """Convert artifact version response to complete dictionary for JSON/YAML."""
+    """Convert artifact version response to complete dictionary for JSON/YAML.
+
+    Args:
+        artifact_version: Artifact version response object
+
+    Returns:
+        Complete dictionary containing all artifact version data
+    """
     return artifact_version.model_dump(mode="json")
