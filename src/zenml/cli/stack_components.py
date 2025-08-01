@@ -94,6 +94,12 @@ def _flavor_to_print(flavor: Any) -> Dict[str, Any]:
 
     For table output, keep it compact with essential flavor information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        flavor: Flavor response object
+
+    Returns:
+        Dictionary containing formatted flavor data for table display
     """
     return {
         "name": flavor.name,
@@ -106,7 +112,14 @@ def _flavor_to_print(flavor: Any) -> Dict[str, Any]:
 
 
 def _flavor_to_print_full(flavor: Any) -> Dict[str, Any]:
-    """Convert flavor response to complete dictionary for JSON/YAML."""
+    """Convert flavor response to complete dictionary for JSON/YAML.
+
+    Args:
+        flavor: Flavor response object
+
+    Returns:
+        Complete dictionary containing all flavor data
+    """
     return flavor.model_dump(mode="json")
 
 

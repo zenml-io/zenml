@@ -37,7 +37,14 @@ logger = get_logger(__name__)
 
 
 def _code_repository_to_print(repo: Any) -> Dict[str, Any]:
-    """Convert a code repository response to a dictionary for table display."""
+    """Convert a code repository response to a dictionary for table display.
+
+    Args:
+        repo: Code repository response object
+
+    Returns:
+        Dictionary containing formatted repository data for table display
+    """
     return {
         "name": repo.name,
         "type": repo.source.type

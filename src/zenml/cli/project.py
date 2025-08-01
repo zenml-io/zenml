@@ -33,7 +33,14 @@ from zenml.models import ProjectFilter
 
 
 def _project_to_print(project: Any) -> Dict[str, Any]:
-    """Convert a project response to a dictionary suitable for table display."""
+    """Convert a project response to a dictionary suitable for table display.
+
+    Args:
+        project: Project response object
+
+    Returns:
+        Dictionary containing formatted project data for table display
+    """
     return {
         "name": project.name,
         "description": project.description or "",

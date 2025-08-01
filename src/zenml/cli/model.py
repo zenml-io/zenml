@@ -645,6 +645,12 @@ def _artifact_link_to_print(link: Any) -> Dict[str, Any]:
 
     For table output, keep it compact with essential link information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        link: Artifact link response object
+
+    Returns:
+        Dictionary containing formatted artifact link data for table display
     """
     return {
         "artifact_version": link.artifact_version.name
@@ -657,7 +663,14 @@ def _artifact_link_to_print(link: Any) -> Dict[str, Any]:
 
 
 def _artifact_link_to_print_full(link: Any) -> Dict[str, Any]:
-    """Convert artifact link response to complete dictionary for JSON/YAML."""
+    """Convert artifact link response to complete dictionary for JSON/YAML.
+
+    Args:
+        link: Artifact link response object
+
+    Returns:
+        Complete dictionary containing all artifact link data
+    """
     return link.model_dump(mode="json")
 
 
@@ -666,6 +679,12 @@ def _pipeline_run_link_to_print(link: Any) -> Dict[str, Any]:
 
     For table output, keep it compact with essential link information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        link: Pipeline run link response object
+
+    Returns:
+        Dictionary containing formatted pipeline run link data for table display
     """
     return {
         "name": link.pipeline_run.name
@@ -694,7 +713,14 @@ def _pipeline_run_link_to_print(link: Any) -> Dict[str, Any]:
 
 
 def _pipeline_run_link_to_print_full(link: Any) -> Dict[str, Any]:
-    """Convert pipeline run link response to complete dictionary for JSON/YAML."""
+    """Convert pipeline run link response to complete dictionary for JSON/YAML.
+
+    Args:
+        link: Pipeline run link response object
+
+    Returns:
+        Complete dictionary containing all pipeline run link data
+    """
     return link.model_dump(mode="json")
 
 

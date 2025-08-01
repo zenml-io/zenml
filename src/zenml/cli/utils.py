@@ -2316,7 +2316,11 @@ def check_zenml_pro_project_availability() -> None:
 
 
 def print_page_info(page: Page[T]) -> None:
-    """Print all page information showing the number of items and pages."""
+    """Print all page information showing the number of items and pages.
+
+    Args:
+        page: Page object containing pagination information
+    """
     console.print(
         f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters.",

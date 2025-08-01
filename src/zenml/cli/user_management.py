@@ -42,6 +42,12 @@ def _user_to_print(user: UserResponse) -> Dict[str, Any]:
 
     For table output, keep it compact with essential user information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        user: User response object
+
+    Returns:
+        Dictionary containing formatted user data for table display
     """
     # For many users, the name field contains the email and email field is null
     display_name = user.name
@@ -64,7 +70,14 @@ def _user_to_print(user: UserResponse) -> Dict[str, Any]:
 
 
 def _user_to_print_full(user: UserResponse) -> Dict[str, Any]:
-    """Convert user response to complete dictionary for JSON/YAML."""
+    """Convert user response to complete dictionary for JSON/YAML.
+
+    Args:
+        user: User response object
+
+    Returns:
+        Complete dictionary containing all user data
+    """
     return user.model_dump(mode="json")
 
 
