@@ -114,7 +114,7 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a failed execution.
         """
-        return self in {ExecutionStatus.FAILED}
+        return self in {ExecutionStatus.FAILED, ExecutionStatus.FAILING}
 
 
 class LoggingLevels(Enum):
@@ -126,6 +126,14 @@ class LoggingLevels(Enum):
     INFO = logging.INFO
     DEBUG = logging.DEBUG
     CRITICAL = logging.CRITICAL
+
+
+class ExecutionMode(StrEnum):
+    """Enum that represents the execution mode of a pipeline run."""
+
+    FAIL_FAST = "fail_fast"
+    STOP_ON_FAILURE = "stop_on_failure"
+    CONTINUE_ON_FAILURE = "continue_on_failure"
 
 
 class StackComponentType(StrEnum):

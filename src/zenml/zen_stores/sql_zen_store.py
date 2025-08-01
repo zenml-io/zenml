@@ -123,6 +123,7 @@ from zenml.enums import (
     ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
+    ExecutionMode,
     ExecutionStatus,
     LoggingLevels,
     MetadataResourceTypes,
@@ -8932,6 +8933,30 @@ class SqlZenStore(BaseZenStore):
                     f"Cannot create step '{step_run.name}' for pipeline in "
                     f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
                 )
+
+            # Handle FAILED status based on execution mode
+            if run.status == ExecutionStatus.FAILED:
+                # Get execution mode from pipeline configuration
+                pipeline_configuration = (
+                    PipelineConfiguration.model_validate_json(
+                        run.deployment.pipeline_configuration
+                    )
+                )
+
+                if pipeline_configuration.execution_mode is None:
+                    execution_mode = ExecutionMode.CONTINUE_ON_FAILURE
+
+                # Only CONTINUE_ON_FAILURE allows new steps when pipeline is FAILED
+                if (
+                    pipeline_configuration.execution_mode
+                    != ExecutionMode.CONTINUE_ON_FAILURE
+                ):
+                    raise IllegalOperationError(
+                        f"Cannot create step '{step_run.name}' for pipeline in "
+                        f"FAILED state with execution mode {execution_mode}. "
+                        f"Pipeline run ID: {step_run.pipeline_run_id}"
+                    )
+
             self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,

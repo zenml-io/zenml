@@ -376,3 +376,19 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
         )
 
         return KubernetesOrchestrator
+
+    @property
+    def supported_execution_modes(self):
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        from zenml.enums import ExecutionMode
+
+        # Kubernetes orchestrator supports all execution modes
+        return (
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        )

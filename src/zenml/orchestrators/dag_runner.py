@@ -19,6 +19,7 @@ from collections import defaultdict
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
+from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -78,6 +79,8 @@ class ThreadedDagRunner:
         parallel_node_startup_waiting_period: float = 0.0,
         max_parallelism: Optional[int] = None,
         continue_fn: Optional[Callable[[], bool]] = None,
+        execution_mode: ExecutionMode = ExecutionMode.STOP_ON_FAILURE,
+        stop_fn: Optional[Callable[[str], None]] = None,
     ) -> None:
         """Define attributes and initialize all nodes in waiting state.
 
@@ -97,12 +100,23 @@ class ThreadedDagRunner:
             continue_fn: A function that returns True if the run should continue
                 after each step execution, False if it should stop (e.g., due
                 to cancellation). If None, execution continues normally.
+            execution_mode: The execution mode that determines how failures 
+                are handled. Defaults to STOP_ON_FAILURE.
+            stop_fn: A function `stop_fn(node)` that can stop a running node.
+                Required for FAIL_FAST mode to work properly.
 
         Raises:
             ValueError: If max_parallelism is not greater than 0.
         """
         if max_parallelism is not None and max_parallelism <= 0:
             raise ValueError("max_parallelism must be greater than 0")
+
+        if execution_mode == ExecutionMode.FAIL_FAST and stop_fn is None:
+            logger.warning(
+                "FAIL_FAST execution mode specified but no stop_fn provided. "
+                "Running nodes cannot be stopped on failure and will continue "
+                "to completion."
+            )
 
         self.parallel_node_startup_waiting_period = (
             parallel_node_startup_waiting_period
@@ -114,6 +128,8 @@ class ThreadedDagRunner:
         self.preparation_fn = preparation_fn
         self.finalize_fn = finalize_fn
         self.continue_fn = continue_fn
+        self.execution_mode = execution_mode
+        self.stop_fn = stop_fn
         self.nodes = dag.keys()
         self.node_states = {
             node: NodeStatus.NOT_STARTED for node in self.nodes
@@ -121,12 +137,12 @@ class ThreadedDagRunner:
         self._lock = threading.Lock()
 
         self._stop_requested = False
+        self._global_failure = False
 
     def _can_run(self, node: str) -> bool:
         """Determine whether a node is ready to be run.
 
-        This is the case if the node has not run yet and all of its upstream
-        node have already completed.
+        Failed upstream dependencies always prevent downstream nodes from running.
 
         Args:
             node: The node.
@@ -137,9 +153,17 @@ class ThreadedDagRunner:
         if not self.node_states[node] == NodeStatus.NOT_STARTED:
             return False
 
-        # Check that all upstream nodes of this node have already completed.
+        # In FAIL_FAST mode, if any node has failed globally, don't start new nodes
+        if (self.execution_mode == ExecutionMode.FAIL_FAST and 
+            self._global_failure):
+            return False
+
+        # Check that all upstream nodes of this node have finished.
         for upstream_node in self.dag[node]:
-            if not self.node_states[upstream_node] == NodeStatus.COMPLETED:
+            upstream_status = self.node_states[upstream_node]
+            
+            # In all modes, nodes cannot run if direct upstream dependencies failed
+            if upstream_status != NodeStatus.COMPLETED:
                 return False
 
         return True
@@ -190,6 +214,12 @@ class ThreadedDagRunner:
                 self._finish_node(node, cancelled=True)
                 return
 
+        # In FAIL_FAST mode, check for global failure before running
+        if (self.execution_mode == ExecutionMode.FAIL_FAST and 
+            self._global_failure):
+            self._finish_node(node, cancelled=True)
+            return
+
         if self.preparation_fn:
             run_required = self.preparation_fn(node)
             if not run_required:
@@ -223,6 +253,34 @@ class ThreadedDagRunner:
         thread.start()
         return thread
 
+    def _stop_all_running_nodes(self) -> None:
+        """Stop all currently running nodes.
+        
+        This is used in FAIL_FAST mode to immediately stop all running nodes
+        when a failure occurs.
+        """
+        if not self.stop_fn:
+            logger.warning(
+                "stop_fn not provided but FAIL_FAST mode requires it to stop "
+                "running nodes. Running nodes will continue to completion."
+            )
+            return
+            
+        with self._lock:
+            running_nodes = [
+                node for node, status in self.node_states.items()
+                if status == NodeStatus.RUNNING
+            ]
+        
+        for node in running_nodes:
+            try:
+                logger.info(f"Stopping node {node} due to failure elsewhere")
+                self.stop_fn(node)
+                with self._lock:
+                    self.node_states[node] = NodeStatus.CANCELLED
+            except Exception as e:
+                logger.warning(f"Failed to stop node {node}: {e}")
+
     def _finish_node(
         self, node: str, failed: bool = False, cancelled: bool = False
     ) -> None:
@@ -241,8 +299,21 @@ class ThreadedDagRunner:
             else:
                 self.node_states[node] = NodeStatus.COMPLETED
 
-        if failed or cancelled:
-            # If the node failed or was cancelled, we don't need to run any downstream nodes.
+        # Handle different execution modes when a node fails
+        if failed:
+            if self.execution_mode == ExecutionMode.FAIL_FAST:
+                # Set global failure flag and stop all running nodes
+                with self._lock:
+                    self._global_failure = True
+                self._stop_all_running_nodes()
+                return
+            elif self.execution_mode == ExecutionMode.STOP_ON_FAILURE:
+                # Don't run any downstream nodes, but let running nodes continue
+                return
+            # For CONTINUE_ON_FAILURE, we fall through to start downstream nodes
+        
+        # Handle cancellation - always stop processing downstream for cancelled nodes
+        if cancelled:
             return
 
         # Run downstream nodes.

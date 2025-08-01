@@ -24,6 +24,7 @@ from zenml.config.schedule import Schedule
 from zenml.config.source import SourceWithValidator
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.models import PipelineBuildBase
 from zenml.utils import pydantic_utils
@@ -41,6 +42,7 @@ class PipelineRunConfiguration(
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     enable_pipeline_logs: Optional[bool] = None
+    execution_mode: Optional[ExecutionMode] = None
     schedule: Optional[Schedule] = None
     build: Union[PipelineBuildBase, UUID, None] = Field(
         default=None, union_mode="left_to_right"

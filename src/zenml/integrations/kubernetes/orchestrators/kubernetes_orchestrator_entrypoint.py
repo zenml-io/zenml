@@ -402,6 +402,63 @@ def main() -> None:
 
                 raise
 
+        def stop_step(step_name: str) -> None:
+            """Stop a step.
+
+            Args:
+                step_name: Name of the step.
+            """
+            # Use both run_id and step_name for precise targeting
+            label_selector = (
+                f"run_id={kube_utils.sanitize_label(str(pipeline_run.id))},"
+                f"step_name={kube_utils.sanitize_label(step_name)}"
+            )
+    
+            try:
+                jobs = batch_api.list_namespaced_job(
+                    namespace=namespace,
+                    label_selector=label_selector,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to find jobs for step {step_name}: {e}")
+                return
+
+            if not jobs.items:
+                logger.debug(f"No jobs found for step {step_name}")
+                return
+
+            for job in jobs.items:
+                # Check if job is already completed or failed - skip deletion
+                job_finished = False
+                if job.status.conditions:
+                    for condition in job.status.conditions:
+                        if (
+                            condition.type in ["Complete", "Failed"] 
+                            and condition.status == "True"
+                        ):
+                            job_finished = True
+                            break
+                
+                if job_finished:
+                    logger.debug(
+                        f"Job {job.metadata.name} for step {step_name} already finished, skipping deletion"
+                    )
+                    continue
+
+                # Delete the running/pending job
+                try:
+                    batch_api.delete_namespaced_job(
+                        name=job.metadata.name,
+                        namespace=namespace,
+                        propagation_policy="Foreground",
+                    )
+                    logger.info(
+                        f"Successfully stopped step job: {job.metadata.name}"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to stop step job {job.metadata.name}: {e}")
+
+            
         def finalize_run(node_states: Dict[str, NodeStatus]) -> None:
             """Finalize the run.
 
@@ -499,6 +556,7 @@ def main() -> None:
                 continue_fn=check_pipeline_cancellation,
                 parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
                 max_parallelism=pipeline_settings.max_parallelism,
+                stop_fn=stop_step,
             ).run()
             logger.info("Orchestration pod completed.")
         finally:
