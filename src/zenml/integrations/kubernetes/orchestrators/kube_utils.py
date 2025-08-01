@@ -987,10 +987,7 @@ def check_job_status(
         job_name: Name of the job for which to wait.
         fail_on_container_waiting_reasons: List of container waiting reasons
             that will cause the job to fail.
-        container_name: Name of the container.
-
-    Raises:
-        RuntimeError: ....
+        container_name: Name of the container to check for failure.
 
     Returns:
         The status of the job and an error message if the job failed.
@@ -1004,6 +1001,7 @@ def check_job_status(
             if condition.type == "Complete" and condition.status == "True":
                 return JobStatus.SUCCEEDED, None
             if condition.type == "Failed" and condition.status == "True":
+                error_message = condition.message or "Unknown"
                 container_failure_reason = None
                 try:
                     pods = core_api.list_namespaced_pod(
@@ -1018,7 +1016,7 @@ def check_job_status(
                         if (
                             termination_reason
                             := get_container_termination_reason(
-                                pods[-1], "main"
+                                pods[-1], container_name or "main"
                             )
                         ):
                             exit_code, reason = termination_reason
@@ -1028,9 +1026,10 @@ def check_job_status(
                                 )
                 except Exception:
                     pass
-                error_message = condition.message or "Unknown"
+
                 if container_failure_reason:
                     error_message += f" (container failure reason: {container_failure_reason})"
+
                 return JobStatus.FAILED, error_message
 
     if fail_on_container_waiting_reasons:

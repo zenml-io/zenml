@@ -585,9 +585,9 @@ def main() -> None:
                 nodes=nodes,
                 startup_function=start_step_job,
                 monitoring_function=check_job_status,
-                monitoring_interval=1,
-                max_parallelism=pipeline_settings.max_parallelism,
                 interrupt_function=should_interrupt_execution,
+                monitoring_interval=pipeline_settings.job_monitoring_interval,
+                max_parallelism=pipeline_settings.max_parallelism,
             ).run()
         finally:
             if (
