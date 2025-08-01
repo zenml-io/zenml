@@ -519,7 +519,13 @@ def main() -> None:
                 The status of the node.
             """
             step_name = node.id
-            job_name = node.metadata["job_name"]
+            job_name = node.metadata.get("job_name", None)
+            if not job_name:
+                logger.error(
+                    "Missing job name to monitor step `%s`.", step_name
+                )
+                return NodeStatus.FAILED
+
             step_config = deployment.step_configurations[step_name].config
             settings = step_config.settings.get(
                 "orchestrator.kubernetes", None
@@ -559,24 +565,22 @@ def main() -> None:
                     hydrate=False,  # We only need status, not full hydration
                 )
 
-                # If the run is STOPPING or STOPPED, we should stop the execution
                 if run.status in [
                     ExecutionStatus.STOPPING,
                     ExecutionStatus.STOPPED,
                 ]:
                     logger.info(
-                        f"Pipeline run is in {run.status} state, stopping execution"
+                        "Stopping DAG execution because pipeline run is in "
+                        "`%s` state.",
+                        run.status,
                     )
                     return True
-
-                return False
-
             except Exception as e:
-                # If we can't check the status, assume we should continue
                 logger.warning(
-                    f"Failed to check pipeline cancellation status: {e}"
+                    "Failed to check pipeline cancellation status: %s", e
                 )
-                return True
+
+            return False
 
         try:
             nodes_statuses = DagRunner(

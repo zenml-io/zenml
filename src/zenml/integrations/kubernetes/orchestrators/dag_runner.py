@@ -292,6 +292,7 @@ class DagRunner:
         while True:
             if self.interrupt_function is not None:
                 if self.interrupt_function():
+                    logger.warning("DAG execution interrupted.")
                     break
 
             is_finished = self._process_nodes()
