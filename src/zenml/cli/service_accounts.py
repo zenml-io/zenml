@@ -258,7 +258,8 @@ def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
         # Use centralized data preparation
         service_account_data = prepare_list_data(
             account_list,  # type: ignore[arg-type]
-            output_format, _service_account_to_print
+            output_format,
+            _service_account_to_print,
         )
 
         # Handle table output with enhanced system

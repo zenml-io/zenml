@@ -101,7 +101,9 @@ def list_tags(**kwargs: Any) -> None:
     # Use centralized data preparation
     tag_data = prepare_list_data(
         tag_list,  # type: ignore[arg-type]
-        output_format, _tag_to_print, _tag_to_print_full
+        output_format,
+        _tag_to_print,
+        _tag_to_print_full,
     )
 
     # Handle table output with enhanced system and pagination

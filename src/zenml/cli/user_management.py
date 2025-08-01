@@ -163,7 +163,9 @@ def list_users(**kwargs: Any) -> None:
     # Use centralized data preparation with custom formatter
     user_data = prepare_list_data(
         user_list,  # type: ignore[arg-type]
-        output_format, user_table_formatter, _user_to_print_full
+        output_format,
+        user_table_formatter,
+        _user_to_print_full,
     )
 
     # Handle table output with enhanced system and pagination
