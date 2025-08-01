@@ -114,7 +114,7 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a failed execution.
         """
-        return self in {ExecutionStatus.FAILED, ExecutionStatus.FAILING}
+        return self in {ExecutionStatus.FAILED}
 
 
 class LoggingLevels(Enum):
