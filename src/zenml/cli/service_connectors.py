@@ -38,30 +38,247 @@ from zenml.models import (
 from zenml.utils.time_utils import seconds_to_human_readable, utc_now
 
 
+def _get_connector_type_emoji_and_short_name(
+    connector_type_id: str,
+) -> tuple[str, str]:
+    """Get emoji and short name for connector type.
+
+    Args:
+        connector_type_id: The connector type identifier (e.g., 'aws', 'gcp')
+
+    Returns:
+        Tuple of (emoji, short_name)
+    """
+    connector_mappings = {
+        "aws": ("🔶", "aws"),  # Orange diamond/rhomboid
+        "aws-generic": (
+            "🔶",
+            "aws",
+        ),  # Orange diamond/rhomboid - same as main AWS
+        "gcp": ("🔵", "gcp"),  # Blue dot
+        "gcp-generic": ("🔵", "gcp"),  # Blue dot - same as main GCP
+        "google-cloud": ("🔵", "gcp"),  # Blue dot
+        "azure": ("🔷", "azure"),
+        "azure-generic": ("🔷", "azure"),  # Blue diamond - same as main Azure
+        "kubernetes": ("🌀", "k8s"),  # Blue spiral
+        "kubernetes-generic": (
+            "🌀",
+            "k8s",
+        ),  # Blue spiral - same as main Kubernetes
+        "docker": ("🐳", "docker"),
+        "docker-generic": ("🐳", "docker"),  # Whale - same as main Docker
+        "github": ("🐙", "github"),
+        "gitlab": ("🦊", "gitlab"),
+        "hyperai": ("🚀", "hyperai"),
+        "slack": ("💬", "slack"),
+        "discord": ("🎮", "discord"),
+        "teams": ("👥", "teams"),
+    }
+
+    return connector_mappings.get(
+        connector_type_id.lower(), ("🔗", connector_type_id)
+    )
+
+
+def _format_resource_types_with_emojis(
+    resource_types: List[str], connector_type: str = ""
+) -> str:
+    """Format resource types with emojis, each on a separate line.
+
+    Args:
+        resource_types: List of resource type identifiers
+        connector_type: The connector type to determine generic resource emoji
+
+    Returns:
+        Formatted string with emojis and resource types, one per line
+    """
+    resource_emojis = {
+        "s3-bucket": "📦",  # Box
+        "gcs-bucket": "📦",  # Box
+        "kubernetes-cluster": "🌀",  # Blue spiral
+        "docker-registry": "🐳",
+        "azure-blob": "💾",
+        "ecr-registry": "📦",
+        "gcr-registry": "📦",
+        "acr-registry": "📦",
+    }
+
+    # Service-specific emojis for generic resources
+    generic_service_emojis = {
+        "aws": "🔶",
+        "gcp": "🔵",
+        "azure": "🔷",
+        "kubernetes": "🌀",
+        "docker": "🐳",
+        "github": "🐙",
+        "gitlab": "🦊",
+        "hyperai": "🚀",
+        "slack": "💬",
+        "discord": "🎮",
+    }
+
+    if not resource_types:
+        return ""
+
+    # Determine default emoji for generic resources based on connector type
+    default_emoji = generic_service_emojis.get(connector_type.lower(), "📋")
+
+    # Limit to first 5 resource types to avoid overly tall cells
+    display_types = resource_types[:5]
+    formatted = []
+
+    for rt in display_types:
+        emoji = resource_emojis.get(rt, default_emoji)
+        formatted.append(f"{emoji} {rt}")
+
+    # Join with newlines for multi-line display
+    result = "\n".join(formatted)
+    if len(resource_types) > 5:
+        result += f"\n+{len(resource_types) - 5} more"
+
+    return result
+
+
 def _service_connector_to_print(
     connector: ServiceConnectorResponse,
+    active_connector_ids: Optional[List[UUID]] = None,
 ) -> Dict[str, Any]:
     """Convert a service connector response to a dictionary for table display.
 
     For table output, keep it compact with essential connector information.
     Full details are available in JSON/YAML output formats.
+
+    Args:
+        connector: Service connector response
+        active_connector_ids: List of active connector IDs for marking active status
     """
-    # Safely extract connector type name and resource types
+    # Safely extract connector type information
     connector_type = getattr(connector, "connector_type", None)
-    type_name = connector_type.name if connector_type else "Unknown"
+
+    # Get connector type ID for mapping
+    if isinstance(connector_type, str):
+        connector_type_id = connector_type
+    elif connector_type and hasattr(connector_type, "connector_type"):
+        connector_type_id = connector_type.connector_type
+    else:
+        connector_type_id = "unknown"
+
+    # Get emoji and short name
+    emoji, short_name = _get_connector_type_emoji_and_short_name(
+        connector_type_id
+    )
 
     # Get resource types from the connector type
     resource_types = []
     if connector_type and hasattr(connector_type, "resource_types"):
         resource_types = [
-            rt.resource_type for rt in connector_type.resource_types[:2]
-        ]  # Limit to first 2
+            rt.resource_type for rt in connector_type.resource_types
+        ]
+
+    # Format resources with emojis
+    resources_display = _format_resource_types_with_emojis(
+        resource_types, connector_type_id
+    )
+
+    # Check if connector is active
+    is_active = (
+        active_connector_ids is not None
+        and connector.id in active_connector_ids
+    )
+
+    # Get resource name information
+    resource_name = ""
+
+    # First, try the resource_id field directly
+    if hasattr(connector, "resource_id") and connector.resource_id:
+        resource_name = connector.resource_id
+
+    # If no resource_id, try to extract from configuration
+    if (
+        not resource_name
+        and hasattr(connector, "configuration")
+        and connector.configuration
+    ):
+        config = connector.configuration
+
+        # Handle different configuration object types
+        if hasattr(config, "model_dump"):
+            # Pydantic model - convert to dict
+            config_dict = config.model_dump()
+        elif hasattr(config, "dict"):
+            # Pydantic v1 model
+            config_dict = config.dict()
+        elif hasattr(config, "__dict__"):
+            # Regular object
+            config_dict = config.__dict__
+        elif isinstance(config, dict):
+            # Already a dictionary
+            config_dict = config
+        else:
+            config_dict = {}
+
+        # Check common resource name fields in order of preference
+        potential_fields = [
+            "resource_name",
+            "resource_id",
+            "name",
+            "cluster_name",
+            "bucket_name",
+            "registry_name",
+            "instance_name",
+            "database_name",
+            "queue_name",
+            "topic_name",
+            "function_name",
+            "service_name",
+        ]
+
+        for field in potential_fields:
+            if field in config_dict and config_dict[field]:
+                resource_name = str(config_dict[field])
+                break
+
+    # If still no resource name found, check if this is a multi-resource connector
+    if not resource_name:
+        # For multi-resource connectors, we might show "Multiple" or resource count
+        if resource_types and len(resource_types) > 1:
+            resource_name = f"Multiple ({len(resource_types)})"
+        elif resource_types and len(resource_types) == 1:
+            resource_name = (
+                "Any " + resource_types[0].replace("-", " ").title()
+            )
+
+    # Get owner information
+    owner = ""
+    if hasattr(connector, "user") and connector.user:
+        owner = (
+            connector.user.name
+            if hasattr(connector.user, "name")
+            else str(connector.user)
+        )
+
+    # Get expiration information
+    expiration = ""
+    if hasattr(connector, "expires_at") and connector.expires_at:
+        expiration = connector.expires_at.strftime("%Y-%m-%d")
+
+    # Get labels information
+    labels = ""
+    if hasattr(connector, "labels") and connector.labels:
+        # Format labels as key=value pairs, one per line
+        label_items = list(connector.labels.items())
+        formatted_labels = [f"{k}={v}" for k, v in label_items]
+        labels = "\n".join(formatted_labels)
 
     return {
         "name": connector.name,
-        "type": type_name,
-        "resources": ", ".join(resource_types) if resource_types else "",
-        "created": connector.created.strftime("%Y-%m-%d"),
+        "type": f"{emoji} {short_name}",
+        "resource types": resources_display,
+        "resource name": resource_name,
+        "owner": owner,
+        "expires": expiration,
+        "labels": labels,
+        "__is_active__": is_active,  # Internal field for active formatting
     }
 
 
@@ -1036,15 +1253,34 @@ def list_service_connectors(
     output_format = (
         table_kwargs.get("output") or cli_utils.get_default_output_format()
     )
+
+    # Get active connector IDs from current stack for table display
+    active_connector_ids: List[UUID] = []
+    if output_format == "table":
+        active_stack = client.active_stack_model
+        for components in active_stack.components.values():
+            active_connector_ids.extend(
+                [
+                    component.connector.id
+                    for component in components
+                    if component.connector
+                ]
+            )
     connector_data = []
 
     for connector in connectors.items:
         if output_format == "table":
-            # Use compact format for table display
-            connector_data.append(_service_connector_to_print(connector))
+            # Use compact format for table display with active connector info
+            connector_data.append(
+                _service_connector_to_print(connector, active_connector_ids)
+            )
         else:
             # Use full format for JSON/YAML/TSV output
             connector_data.append(_service_connector_to_print_full(connector))
+
+    # Sort connectors to show active ones first (only for table format)
+    if output_format == "table":
+        connector_data.sort(key=lambda x: not x.get("__is_active__", False))
 
     # Handle table output with enhanced system
     cli_utils.handle_table_output(

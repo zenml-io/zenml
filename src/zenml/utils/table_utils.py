@@ -416,11 +416,35 @@ def _render_table(
         table_width = available_width
         expand_table = True
 
+    # Detect if this is a service connectors table by checking for specific columns
+    is_service_connectors_table = (
+        headers
+        and "resource types" in [h.lower() for h in headers]
+        and "type" in [h.lower() for h in headers]
+        and len(
+            [
+                h
+                for h in headers
+                if h.lower()
+                in [
+                    "name",
+                    "resource types",
+                    "type",
+                    "resource name",
+                    "owner",
+                    "expires",
+                    "labels",
+                ]
+            ]
+        )
+        >= 3
+    )
+
     # Create Rich table following ZenML guidelines
     rich_table = Table(
         box=box.SIMPLE_HEAD,  # Simple line below header only
         show_header=True,
-        show_lines=False,  # Don't show lines between rows, just header
+        show_lines=False,  # Keep lines off by default
         pad_edge=False,
         collapse_padding=False,  # Increase spacing between columns
         expand=expand_table,  # Only expand to full width when needed
@@ -434,7 +458,20 @@ def _render_table(
 
         # Determine best overflow behavior for CLI
         overflow: Literal["fold", "crop", "ellipsis", "ignore"]
-        if no_truncate:
+
+        # Special handling for resource types, labels, resource name, and name columns to allow multi-line content
+        is_resources_column = header.lower() == "resource types"
+        is_labels_column = header.lower() == "labels"
+        is_resource_name_column = header.lower() == "resource name"
+        is_name_column = header.lower() == "name"
+
+        if (
+            no_truncate
+            or is_resources_column
+            or is_labels_column
+            or is_resource_name_column
+            or is_name_column
+        ):
             # Show full content, allow wrapping
             overflow = "fold"
             no_wrap = False
@@ -445,8 +482,39 @@ def _render_table(
 
         # Calculate appropriate column width based on content
         col_width = _calculate_column_width(
-            prepared_data, header, available_width, len(headers), no_truncate
+            prepared_data,
+            header,
+            available_width,
+            len(headers),
+            no_truncate
+            or is_resources_column
+            or is_labels_column
+            or is_resource_name_column
+            or is_name_column,
         )
+
+        # Special width adjustments for service connector table columns
+        if is_service_connectors_table:
+            if header.lower() == "type":
+                # Ensure type column has enough width for emoji + short name
+                col_width = max(
+                    col_width or 0, 12
+                )  # Minimum 12 chars for type column
+            elif header.lower() == "resource types":
+                # Give resource types column more space for multi-line content
+                col_width = max(
+                    col_width or 0, 25
+                )  # Minimum 25 chars for resource types column
+            elif header.lower() == "resource name":
+                # Resource name column should have reasonable width
+                col_width = max(
+                    col_width or 0, 15
+                )  # Minimum 15 chars for resource name column
+            elif header.lower() == "labels":
+                # Labels column should have enough space for key=value pairs
+                col_width = max(
+                    col_width or 0, 20
+                )  # Minimum 20 chars for labels column
 
         rich_table.add_column(
             header_display,
@@ -458,7 +526,7 @@ def _render_table(
         )
 
     # Add data rows
-    for row in prepared_data:
+    for i, row in enumerate(prepared_data):
         values = []
         for header in headers:
             value = row.get(header, "")
@@ -475,6 +543,12 @@ def _render_table(
             values.append(value)
 
         rich_table.add_row(*values)
+
+        # Add spacing row after each service connector row (except the last one)
+        if is_service_connectors_table and i < len(prepared_data) - 1:
+            # Add an empty row with a single space for spacing
+            spacing_values = [" " for _ in headers]
+            rich_table.add_row(*spacing_values)
 
     # Use console with appropriate width
     console_width = table_width if table_width else available_width
@@ -569,7 +643,14 @@ def _calculate_content_width(
             value = str(row.get(header, ""))
             # Remove Rich markup for width calculation
             clean_value = _strip_rich_markup(value)
-            max_content_width = max(max_content_width, len(clean_value))
+
+            # Handle multi-line content - get the width of the longest line
+            if "\n" in clean_value:
+                lines = clean_value.split("\n")
+                line_width = max(len(line) for line in lines) if lines else 0
+                max_content_width = max(max_content_width, line_width)
+            else:
+                max_content_width = max(max_content_width, len(clean_value))
 
         # Column width is max of header and content, with reasonable limits
         col_width = max(header_width, max_content_width, 6)  # Min 6 chars
@@ -613,7 +694,14 @@ def _calculate_column_width(
     for row in data:
         value = str(row.get(header, ""))
         clean_value = _strip_rich_markup(value)
-        max_content_width = max(max_content_width, len(clean_value))
+
+        # Handle multi-line content - get the width of the longest line
+        if "\n" in clean_value:
+            lines = clean_value.split("\n")
+            line_width = max(len(line) for line in lines) if lines else 0
+            max_content_width = max(max_content_width, line_width)
+        else:
+            max_content_width = max(max_content_width, len(clean_value))
 
     natural_width = max(header_width, max_content_width, 6)
 
