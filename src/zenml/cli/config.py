@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+from typing import Optional
+
 import click
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -87,3 +89,63 @@ def set_logging_verbosity(verbosity: str) -> None:
             f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
         )
     cli_utils.declare(f"Set verbosity to: {verbosity}")
+
+
+# Config
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+def config() -> None:
+    """Configuration management for ZenML."""
+
+
+@config.command("set")
+@click.argument("key", type=str)
+@click.argument("value", type=str)
+def set_config(key: str, value: str) -> None:
+    """Set a configuration value.
+
+    Args:
+        key: Configuration key in the format 'section.key' (e.g., 'core.output')
+        value: Configuration value to set
+
+    Examples:
+        zenml config set core.output json
+        zenml config set core.output table
+    """
+    gc = GlobalConfiguration()
+
+    # Parse key to handle nested configuration
+    if key == "core.output":
+        valid_formats = ["table", "json", "yaml", "tsv", "none"]
+        if value not in valid_formats:
+            cli_utils.error(
+                f"Invalid output format '{value}'. Must be one of: {', '.join(valid_formats)}"
+            )
+            return
+        gc.default_output = value
+        cli_utils.declare(f"Set default output format to: {value}")
+    else:
+        cli_utils.error(f"Unknown configuration key: {key}")
+
+
+@config.command("get")
+@click.argument("key", type=str, required=False)
+def get_config(key: Optional[str] = None) -> None:
+    """Get configuration value(s).
+
+    Args:
+        key: Configuration key to get (optional). If not provided, shows all config.
+
+    Examples:
+        zenml config get core.output
+        zenml config get
+    """
+    gc = GlobalConfiguration()
+
+    if key is None:
+        # Show all relevant configuration
+        cli_utils.declare("Current configuration:")
+        cli_utils.declare(f"  core.output: {gc.default_output}")
+    elif key == "core.output":
+        cli_utils.declare(f"Default output format: {gc.default_output}")
+    else:
+        cli_utils.error(f"Unknown configuration key: {key}")

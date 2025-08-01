@@ -15,6 +15,7 @@
 
 import os
 import re
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
@@ -280,6 +281,38 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
+
+def _get_session_warning_file() -> Path:
+    """Get the path to the session warning tracking file.
+
+    Returns:
+        Path to the session warning tracking file.
+    """
+    # Use process ID to create a session-specific file
+    pid = os.getpid()
+    return Path(tempfile.gettempdir()) / f"zenml_version_warning_{pid}.tmp"
+
+
+def _has_warning_been_shown() -> bool:
+    """Check if the version mismatch warning has been shown in this session.
+
+    Returns:
+        True if the warning has been shown, False otherwise.
+    """
+    warning_file = _get_session_warning_file()
+    return warning_file.exists()
+
+
+def _mark_warning_as_shown() -> None:
+    """Mark the version mismatch warning as shown in this session."""
+    warning_file = _get_session_warning_file()
+    try:
+        warning_file.touch()
+    except Exception:
+        # If we can't create the file, fall back to showing the warning
+        pass
+
+
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
@@ -507,15 +540,17 @@ class RestZenStore(BaseZenStore):
         if not DISABLE_CLIENT_SERVER_MISMATCH_WARNING and (
             server_version != client_version
         ):
-            logger.warning(
-                "Your ZenML client version (%s) does not match the server "
-                "version (%s). This version mismatch might lead to errors or "
-                "unexpected behavior. \nTo disable this warning message, set "
-                "the environment variable `%s=True`",
-                client_version,
-                server_version,
-                ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
-            )
+            if not _has_warning_been_shown():
+                logger.warning(
+                    "Your ZenML client version (%s) does not match the server "
+                    "version (%s). This version mismatch might lead to errors or "
+                    "unexpected behavior. \nTo disable this warning message, set "
+                    "the environment variable `%s=True`",
+                    client_version,
+                    server_version,
+                    ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+                )
+                _mark_warning_as_shown()
 
     @property
     def server_info(self) -> ServerModel:
