@@ -368,8 +368,6 @@ def main() -> None:
                 settings.model_dump() if settings else {}
             )
             if not pipeline_settings.prevent_orchestrator_pod_caching:
-                # TODO: This currently waits for max_parallelism, is that
-                # what we want?
                 if _cache_step_run_if_possible(step_name):
                     return NodeStatus.COMPLETED
 

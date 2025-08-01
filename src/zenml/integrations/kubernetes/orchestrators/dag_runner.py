@@ -90,17 +90,21 @@ class DagRunner:
         self.monitoring_function = monitoring_function
         self.interrupt_function = interrupt_function
         self.startup_thread = threading.Thread(
-            name="DagRunner-Startup", target=self._startup_loop, daemon=True
+            name="DagRunner-Startup-Loop",
+            target=self._startup_loop,
+            daemon=True,
         )
         self.monitoring_thread = threading.Thread(
-            name="DagRunner-Monitoring",
+            name="DagRunner-Monitoring-Loop",
             target=self._monitoring_loop,
             daemon=True,
         )
         self.monitoring_interval = monitoring_interval
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
-        self.startup_executor = ThreadPoolExecutor(max_workers=10)
+        self.startup_executor = ThreadPoolExecutor(
+            max_workers=10, thread_name_prefix="DagRunner-Startup-Worker"
+        )
 
     @property
     def running_nodes(self) -> List[Node]:
