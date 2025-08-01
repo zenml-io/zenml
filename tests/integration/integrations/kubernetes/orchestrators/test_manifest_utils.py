@@ -15,8 +15,6 @@
 
 import pytest
 from kubernetes.client import (
-    V1CronJob,
-    V1CronJobSpec,
     V1ObjectMeta,
     V1Pod,
     V1PodSpec,
@@ -24,7 +22,6 @@ from kubernetes.client import (
 )
 
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-    build_cron_job_manifest,
     build_pod_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
@@ -113,32 +110,3 @@ def test_build_pod_manifest_pod_settings(
     assert manifest.spec.tolerations[0]["key"] == "node.kubernetes.io/name"
     assert manifest.spec.containers[0].resources["requests"]["memory"] == "2G"
     assert manifest.spec.containers[0].security_context.privileged is False
-
-
-def test_build_cron_job_manifest_pod_settings(
-    kubernetes_pod_settings: KubernetesPodSettings,
-):
-    """Test that the pod settings are correctly set in the manifest."""
-    manifest: V1CronJob = build_cron_job_manifest(
-        cron_expression="* * * * *",
-        pod_name="test_name",
-        image_name="test_image",
-        command=["test", "command"],
-        args=["test", "args"],
-        privileged=False,
-        pod_settings=kubernetes_pod_settings,
-        service_account_name="test_sa",
-    )
-    assert isinstance(manifest, V1CronJob)
-    assert isinstance(manifest.spec, V1CronJobSpec)
-    job_pod_spec = manifest.spec.job_template.spec.template.spec
-    assert (
-        job_pod_spec.affinity["nodeAffinity"][
-            "requiredDuringSchedulingIgnoredDuringExecution"
-        ]["nodeSelectorTerms"][0]["matchExpressions"][0]["key"]
-        == "node.kubernetes.io/name"
-    )
-    assert job_pod_spec.tolerations[0]["key"] == "node.kubernetes.io/name"
-    assert job_pod_spec.containers[0].resources["requests"]["memory"] == "2G"
-    assert job_pod_spec.containers[0].security_context.privileged is False
-    assert job_pod_spec.service_account_name == "test_sa"
