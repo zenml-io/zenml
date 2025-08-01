@@ -15,6 +15,9 @@
 
 from typing import TYPE_CHECKING, Callable, Union
 
+# Import the enhanced Prompt class from the new prompts module
+from zenml.prompts.prompt import Prompt
+
 if TYPE_CHECKING:
     from types import FunctionType
 
@@ -37,3 +40,12 @@ class CSVString(str):
 
 class JSONString(str):
     """Special string class to indicate a JSON string."""
+
+
+__all__ = [
+    "HTMLString",
+    "MarkdownString",
+    "CSVString",
+    "JSONString",
+    "Prompt",
+]

@@ -546,9 +546,10 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             if producer_run_ids := self.producer_run_ids:
                 # TODO: Why was the producer_pipeline_run_id only set for one
                 # of the cases before?
-                producer_step_run_id, producer_pipeline_run_id = (
-                    producer_run_ids
-                )
+                (
+                    producer_step_run_id,
+                    producer_pipeline_run_id,
+                ) = producer_run_ids
 
             resources = ArtifactVersionResponseResources(
                 user=self.user.to_model() if self.user else None,

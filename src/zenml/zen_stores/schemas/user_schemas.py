@@ -115,6 +115,7 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
+    # prompt_templates: Removed - prompts are now simple artifacts
     run_templates: List["RunTemplateSchema"] = Relationship(
         back_populates="user",
     )

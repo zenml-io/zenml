@@ -5163,6 +5163,9 @@ class SqlZenStore(BaseZenStore):
             "Running a template is not possible with a local store."
         )
 
+    # -------------------- Prompt Templates (Removed) --------------------
+    # Prompts are now simple artifacts, not managed entities
+
     # -------------------- Event Sources  --------------------
 
     def create_event_source(
@@ -12422,6 +12425,7 @@ class SqlZenStore(BaseZenStore):
             ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
             PipelineSchema: TaggableResourceTypes.PIPELINE,
             PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
+            # PromptTemplateSchema: TaggableResourceTypes.PROMPT_TEMPLATE, # Removed
             RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
         }
         if type(resource) not in resource_types:
@@ -12462,6 +12466,7 @@ class SqlZenStore(BaseZenStore):
             TaggableResourceTypes.MODEL_VERSION: ModelVersionSchema,
             TaggableResourceTypes.PIPELINE: PipelineSchema,
             TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
+            # TaggableResourceTypes.PROMPT_TEMPLATE: PromptTemplateSchema, # Removed
             TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
         }
 
