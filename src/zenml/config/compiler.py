@@ -454,9 +454,9 @@ class Compiler:
         Returns:
             The compiled step.
         """
-        # Copy the invocation (including its referenced step) before we apply
-        # the step configuration which is exclusive to this invocation.
-        invocation = copy.deepcopy(invocation)
+        # Copy the step before we apply the step configuration which is
+        # exclusive to this invocation.
+        invocation.step = copy.deepcopy(invocation.step)
 
         step = invocation.step
         if step_config:
