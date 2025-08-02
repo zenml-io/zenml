@@ -19,6 +19,7 @@
   * [Skypilot VM Orchestrator](orchestrators/skypilot-vm.md)
   * [HyperAI Orchestrator](orchestrators/hyperai.md)
   * [Lightning AI Orchestrator](orchestrators/lightning.md)
+  * [Modal Orchestrator](orchestrators/modal.md)
   * [Develop a custom orchestrator](orchestrators/custom.md)
 * [Artifact Stores](artifact-stores/README.md)
   * [Local Artifact Store](artifact-stores/local.md)
