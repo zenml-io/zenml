@@ -524,7 +524,7 @@ from functools import lru_cache
 
 @lru_cache(maxsize=1000)
 def get_cached_formatted_prompt(template: str, **kwargs) -> str:
-    """Cache frequently used prompt formattings."""
+    """Cache frequently used prompt formatting."""
     prompt = Prompt(template=template, version="1.0.0")
     return prompt.format(**kwargs)
 

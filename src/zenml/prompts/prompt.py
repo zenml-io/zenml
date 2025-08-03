@@ -132,7 +132,11 @@ class Prompt(BaseModel):
         return list(template_vars - provided_vars)
 
     def __str__(self) -> str:
-        """String representation of the prompt."""
+        """String representation of the prompt.
+
+        Returns:
+            String representation of the prompt
+        """
         var_count = len(self.variables)
         return (
             f"Prompt(type='{self.prompt_type}', "
@@ -142,7 +146,11 @@ class Prompt(BaseModel):
         )
 
     def __repr__(self) -> str:
-        """Detailed representation of the prompt."""
+        """Detailed representation of the prompt.
+
+        Returns:
+            Detailed representation of the prompt
+        """
         template_preview = (
             self.template[:50] + "..."
             if len(self.template) > 50
