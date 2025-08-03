@@ -1,6 +1,7 @@
 """Utility functions for prompt engineering workflows."""
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from zenml.prompts import Prompt
 
 
@@ -94,7 +95,7 @@ def validate_prompt_template(template: str) -> Dict[str, Any]:
     
     # Check for variables
     import re
-    variables = re.findall(r'\{([^}]+)\}', template)
+    variables = re.findall(r"\{([^}]+)\}", template)
     
     if not variables:
         issues.append("No variables found in template")
