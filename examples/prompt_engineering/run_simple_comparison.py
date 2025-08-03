@@ -1,22 +1,3 @@
-#!/usr/bin/env python3
-"""
-Simple prompt comparison example - demonstrates the core ZenML prompt features.
-
-This example shows:
-1. Simple versioning (Git-like v1.0, v2.0)
-2. A/B comparison testing  
-3. Dashboard visualization (automatic)
-
-Run this to see prompt engineering in action.
-"""
-
-import sys
-from pathlib import Path
-
-# Add the current directory to Python path for local imports
-current_dir = Path(__file__).parent
-sys.path.insert(0, str(current_dir))
-
 from pipelines.simple_comparison import simple_prompt_comparison
 from utils.helpers import format_comparison_results
 
