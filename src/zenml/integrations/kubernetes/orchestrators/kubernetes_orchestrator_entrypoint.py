@@ -25,7 +25,7 @@ from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
@@ -560,6 +560,8 @@ def main() -> None:
                 parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
                 max_parallelism=pipeline_settings.max_parallelism,
                 stop_fn=stop_step,
+                execution_mode=deployment.pipeline_configuration.execution_mode
+                or ExecutionMode.CONTINUE_ON_FAILURE,
             ).run()
             logger.info("Orchestration pod completed.")
         finally:

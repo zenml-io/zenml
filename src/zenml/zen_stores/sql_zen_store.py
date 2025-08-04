@@ -123,6 +123,7 @@ from zenml.enums import (
     ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
+    ExecutionMode,
     ExecutionStatus,
     LoggingLevels,
     MetadataResourceTypes,
@@ -8932,7 +8933,6 @@ class SqlZenStore(BaseZenStore):
                     f"Cannot create step '{step_run.name}' for pipeline in "
                     f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
                 )
-
             self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,
@@ -9327,6 +9327,13 @@ class SqlZenStore(BaseZenStore):
                 # set its status accordingly.
                 step_run_update.status = ExecutionStatus.RETRYING
 
+            # If the step is stopping and fails, we need to set its status to stopped.
+            if (
+                existing_step_run.status == ExecutionStatus.STOPPING.value
+                and step_run_update.status == ExecutionStatus.FAILED
+            ):
+                step_run_update.status = ExecutionStatus.STOPPED
+
             # Update the step
             existing_step_run.update(step_run_update)
             session.add(existing_step_run)
@@ -9340,6 +9347,25 @@ class SqlZenStore(BaseZenStore):
                         name=name,
                         session=session,
                     )
+
+            # If the step failed, we need to stop all other steps in the pipeline.
+            # This is only relevant in FAIL_FAST mode.
+            if step_run_update.status == ExecutionStatus.FAILED:
+                execution_mode = None
+                if deployment := existing_step_run.deployment:
+                    config = PipelineConfiguration.model_validate_json(
+                        deployment.pipeline_configuration
+                    )
+                    execution_mode = config.execution_mode
+
+                if execution_mode == ExecutionMode.FAIL_FAST:
+                    for step in existing_step_run.pipeline_run.step_runs:
+                        if (
+                            step.id != existing_step_run.id
+                            and not ExecutionStatus(step.status).is_finished
+                        ):
+                            step.status = ExecutionStatus.STOPPING.value
+                            session.add(step)
 
             # Update loaded artifacts.
             for (

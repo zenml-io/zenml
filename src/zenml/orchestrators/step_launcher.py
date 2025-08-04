@@ -182,7 +182,15 @@ class StepLauncher:
                             status=ExecutionStatus.STOPPED,
                             end_time=utc_now(),
                         )
-                    raise RunStoppedException("Pipeline run in stopped.")
+                    raise RunStoppedException("Pipeline run is stopped.")
+                elif step_run := pipeline_run.steps.get(self._step_name, None):
+                    if step_run.status in ExecutionStatus.STOPPING:
+                        publish_utils.publish_step_run_status_update(
+                            step_run_id=step_run.id,
+                            status=ExecutionStatus.STOPPED,
+                            end_time=utc_now(),
+                        )
+                    raise RunStoppedException("Pipeline run is stopped.")
                 else:
                     raise RunInterruptedException(
                         "The execution was interrupted."

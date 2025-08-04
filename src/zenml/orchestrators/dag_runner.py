@@ -153,9 +153,9 @@ class ThreadedDagRunner:
         if not self.node_states[node] == NodeStatus.NOT_STARTED:
             return False
 
-        # In FAIL_FAST mode, if any node has failed globally, don't start new nodes
+        # In STOP_ON_FAILURE mode, if any node has failed globally, don't start new nodes
         if (
-            self.execution_mode == ExecutionMode.FAIL_FAST
+            self.execution_mode == ExecutionMode.STOP_ON_FAILURE
             and self._global_failure
         ):
             return False
@@ -216,10 +216,11 @@ class ThreadedDagRunner:
                 self._finish_node(node, cancelled=True)
                 return
 
-        # In FAIL_FAST mode, check for global failure before running
+        # Check whether there was a failure in a different node
+        # (only relevant in STOP_ON_FAILURE mode)
         if (
-            self.execution_mode == ExecutionMode.FAIL_FAST
-            and self._global_failure
+            self._global_failure
+            and self.execution_mode == ExecutionMode.STOP_ON_FAILURE
         ):
             self._finish_node(node, cancelled=True)
             return
@@ -270,6 +271,11 @@ class ThreadedDagRunner:
             )
             return
 
+        logger.info(
+            "Stopping all running nodes due to failure "
+            f"in {self.execution_mode} mode"
+        )
+
         with self._lock:
             running_nodes = [
                 node
@@ -280,9 +286,8 @@ class ThreadedDagRunner:
         for node in running_nodes:
             try:
                 logger.info(f"Stopping node {node} due to failure elsewhere")
+                self._finish_node(node, cancelled=True)
                 self.stop_fn(node)
-                with self._lock:
-                    self.node_states[node] = NodeStatus.CANCELLED
             except Exception as e:
                 logger.warning(f"Failed to stop node {node}: {e}")
 
@@ -306,16 +311,13 @@ class ThreadedDagRunner:
 
         # Handle different execution modes when a node fails
         if failed:
+            self._global_failure = True
+
             if self.execution_mode == ExecutionMode.FAIL_FAST:
-                # Set global failure flag and stop all running nodes
-                with self._lock:
-                    self._global_failure = True
                 self._stop_all_running_nodes()
+
+            if self.execution_mode == ExecutionMode.STOP_ON_FAILURE:
                 return
-            elif self.execution_mode == ExecutionMode.STOP_ON_FAILURE:
-                # Don't run any downstream nodes, but let running nodes continue
-                return
-            # For CONTINUE_ON_FAILURE, we fall through to start downstream nodes
 
         # Handle cancellation - always stop processing downstream for cancelled nodes
         if cancelled:
