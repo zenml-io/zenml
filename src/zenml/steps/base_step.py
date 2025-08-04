@@ -106,6 +106,7 @@ class BaseStep:
         enable_step_logs: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
+        trace_collector: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -130,6 +131,7 @@ class BaseStep:
             enable_step_logs: Enable step logs for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
+            trace_collector: The trace collector to use for this step.
             parameters: Function parameters for this step
             output_materializers: Output materializers for this step. If
                 given as a dict, the keys must be a subset of the output names
@@ -198,6 +200,7 @@ class BaseStep:
         self.configure(
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
+            trace_collector=trace_collector,
             output_materializers=output_materializers,
             parameters=parameters,
             settings=settings,
@@ -596,6 +599,7 @@ class BaseStep:
         enable_step_logs: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
+        trace_collector: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -707,6 +711,7 @@ class BaseStep:
                 "enable_step_logs": enable_step_logs,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
+                "trace_collector": trace_collector,
                 "parameters": parameters,
                 "settings": settings,
                 "outputs": outputs or None,

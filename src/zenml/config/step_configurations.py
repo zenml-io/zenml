@@ -147,6 +147,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     enable_step_logs: Optional[bool] = None
     step_operator: Optional[Union[bool, str]] = None
     experiment_tracker: Optional[Union[bool, str]] = None
+    trace_collector: Optional[Union[bool, str]] = None
     parameters: Dict[str, Any] = {}
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
@@ -187,6 +188,22 @@ class StepConfigurationUpdate(StrictBaseModel):
             return True
         elif isinstance(self.experiment_tracker, str):
             return self.experiment_tracker == name
+        else:
+            return False
+
+    def uses_trace_collector(self, name: str) -> bool:
+        """Checks if the step configuration uses the given trace collector.
+
+        Args:
+            name: The name of the trace collector.
+
+        Returns:
+            If the step configuration uses the given trace collector.
+        """
+        if self.trace_collector is True:
+            return True
+        elif isinstance(self.trace_collector, str):
+            return self.trace_collector == name
         else:
             return False
 

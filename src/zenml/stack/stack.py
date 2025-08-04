@@ -72,6 +72,9 @@ if TYPE_CHECKING:
     from zenml.orchestrators import BaseOrchestrator
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
+    from zenml.trace_collectors.base_trace_collector import (
+        BaseTraceCollector,
+    )
     from zenml.utils import secret_utils
 
 
@@ -102,6 +105,7 @@ class Stack:
         feature_store: Optional["BaseFeatureStore"] = None,
         model_deployer: Optional["BaseModelDeployer"] = None,
         experiment_tracker: Optional["BaseExperimentTracker"] = None,
+        trace_collector: Optional["BaseTraceCollector"] = None,
         alerter: Optional["BaseAlerter"] = None,
         annotator: Optional["BaseAnnotator"] = None,
         data_validator: Optional["BaseDataValidator"] = None,
@@ -120,6 +124,7 @@ class Stack:
             feature_store: Feature store component of the stack.
             model_deployer: Model deployer component of the stack.
             experiment_tracker: Experiment tracker component of the stack.
+            trace_collector: Trace collector component of the stack.
             alerter: Alerter component of the stack.
             annotator: Annotator component of the stack.
             data_validator: Data validator component of the stack.
@@ -135,6 +140,7 @@ class Stack:
         self._feature_store = feature_store
         self._model_deployer = model_deployer
         self._experiment_tracker = experiment_tracker
+        self._trace_collector = trace_collector
         self._alerter = alerter
         self._annotator = annotator
         self._data_validator = data_validator
@@ -221,6 +227,7 @@ class Stack:
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
         from zenml.step_operators import BaseStepOperator
+        from zenml.trace_collectors import BaseTraceCollector
 
         def _raise_type_error(
             component: Optional["StackComponent"], expected_class: Type[Any]
@@ -282,6 +289,12 @@ class Stack:
         ):
             _raise_type_error(experiment_tracker, BaseExperimentTracker)
 
+        trace_collector = components.get(StackComponentType.TRACE_COLLECTOR)
+        if trace_collector is not None and not isinstance(
+            trace_collector, BaseTraceCollector
+        ):
+            _raise_type_error(trace_collector, BaseTraceCollector)
+
         alerter = components.get(StackComponentType.ALERTER)
         if alerter is not None and not isinstance(alerter, BaseAlerter):
             _raise_type_error(alerter, BaseAlerter)
@@ -318,6 +331,7 @@ class Stack:
             feature_store=feature_store,
             model_deployer=model_deployer,
             experiment_tracker=experiment_tracker,
+            trace_collector=trace_collector,
             alerter=alerter,
             annotator=annotator,
             data_validator=data_validator,
@@ -342,6 +356,7 @@ class Stack:
                 self.feature_store,
                 self.model_deployer,
                 self.experiment_tracker,
+                self.trace_collector,
                 self.alerter,
                 self.annotator,
                 self.data_validator,
@@ -432,6 +447,15 @@ class Stack:
             The experiment tracker of the stack.
         """
         return self._experiment_tracker
+
+    @property
+    def trace_collector(self) -> Optional["BaseTraceCollector"]:
+        """The trace collector of the stack.
+
+        Returns:
+            The trace collector of the stack.
+        """
+        return self._trace_collector
 
     @property
     def alerter(self) -> Optional["BaseAlerter"]:
@@ -853,6 +877,9 @@ class Stack:
 
             if component.type == StackComponentType.EXPERIMENT_TRACKER:
                 return step_config.uses_experiment_tracker(component.name)
+
+            if component.type == StackComponentType.TRACE_COLLECTOR:
+                return step_config.uses_trace_collector(component.name)
 
             return True
 

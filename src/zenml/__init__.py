@@ -59,6 +59,7 @@ from zenml.model.model import Model
 from zenml.pipelines import get_pipeline_context, pipeline
 from zenml.steps import step, get_step_context
 from zenml.steps.utils import log_step_metadata
+from zenml.trace_collectors.utils import get_trace_collector
 from zenml.utils.metadata_utils import log_metadata
 from zenml.utils.tag_utils import Tag, add_tags, remove_tags
 
@@ -71,6 +72,7 @@ __all__ = [
     "ExternalArtifact",
     "get_pipeline_context",
     "get_step_context",
+    "get_trace_collector",
     "load_artifact",
     "log_metadata",
     "log_artifact_metadata",
