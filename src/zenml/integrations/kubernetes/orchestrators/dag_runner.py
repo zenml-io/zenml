@@ -37,6 +37,14 @@ class NodeStatus(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
     SKIPPED = "skipped"
+    CANCELLED = "cancelled"
+
+
+class InterruptMode(StrEnum):
+    """Interrupt mode."""
+
+    GRACEFUL = "graceful"
+    FORCE = "force"
 
 
 class Node(BaseModel):
@@ -58,6 +66,7 @@ class Node(BaseModel):
             NodeStatus.COMPLETED,
             NodeStatus.FAILED,
             NodeStatus.SKIPPED,
+            NodeStatus.CANCELLED,
         }
 
 
@@ -67,9 +76,12 @@ class DagRunner:
     def __init__(
         self,
         nodes: List[Node],
-        startup_function: Callable[[Node], NodeStatus],
-        monitoring_function: Callable[[Node], NodeStatus],
-        interrupt_function: Optional[Callable[[], bool]] = None,
+        node_startup_function: Callable[[Node], NodeStatus],
+        node_monitoring_function: Callable[[Node], NodeStatus],
+        node_stop_function: Optional[Callable[[Node], None]] = None,
+        interrupt_function: Optional[
+            Callable[[], Optional[InterruptMode]]
+        ] = None,
         monitoring_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
     ) -> None:
@@ -77,8 +89,9 @@ class DagRunner:
 
         Args:
             nodes: The nodes of the DAG.
-            startup_function: The function to start a node.
-            monitoring_function: The function to monitor a node.
+            node_startup_function: The function to start a node.
+            node_monitoring_function: The function to monitor a node.
+            node_stop_function: The function to stop a node.
             interrupt_function: Will be periodically called to check if the
                 DAG should be interrupted.
             monitoring_interval: The interval in which the nodes are monitored.
@@ -86,8 +99,9 @@ class DagRunner:
         """
         self.nodes = {node.id: node for node in nodes}
         self.startup_queue: queue.Queue[Node] = queue.Queue()
-        self.startup_function = startup_function
-        self.monitoring_function = monitoring_function
+        self.node_startup_function = node_startup_function
+        self.node_monitoring_function = node_monitoring_function
+        self.node_stop_function = node_stop_function
         self.interrupt_function = interrupt_function
         self.startup_thread = threading.Thread(
             name="DagRunner-Startup-Loop",
@@ -168,7 +182,7 @@ class DagRunner:
         """
         return any(
             self.nodes[upstream_node_id].status
-            in {NodeStatus.FAILED, NodeStatus.SKIPPED}
+            in {NodeStatus.FAILED, NodeStatus.SKIPPED, NodeStatus.CANCELLED}
             for upstream_node_id in node.upstream_nodes
         )
 
@@ -183,8 +197,16 @@ class DagRunner:
         node.status = NodeStatus.STARTING
 
         def _start_node_task() -> None:
+            if self.shutdown_event.is_set():
+                logger.debug(
+                    "Cancelling startup of node `%s` because shutdown was "
+                    "requested.",
+                    node.id,
+                )
+                return
+
             try:
-                node.status = self.startup_function(node)
+                node.status = self.node_startup_function(node)
             except Exception:
                 node.status = NodeStatus.FAILED
                 logger.exception("Node `%s` failed to start.", node.id)
@@ -194,6 +216,26 @@ class DagRunner:
                 )
 
         self.startup_executor.submit(_start_node_task)
+
+    def _stop_node(self, node: Node) -> None:
+        """Stop a node.
+
+        Args:
+            node: The node to stop.
+
+        Raises:
+            RuntimeError: If the node stop function is not set.
+        """
+        if not self.node_stop_function:
+            raise RuntimeError("Node stop function is not set.")
+
+        self.node_stop_function(node)
+
+    def _stop_all_nodes(self) -> None:
+        """Stop all running nodes."""
+        for node in self.running_nodes:
+            self._stop_node(node)
+            node.status = NodeStatus.CANCELLED
 
     def _process_nodes(self) -> bool:
         """Process the nodes.
@@ -232,7 +274,7 @@ class DagRunner:
             start_time = time.time()
             for node in self.running_nodes:
                 try:
-                    node.status = self.monitoring_function(node)
+                    node.status = self.node_monitoring_function(node)
                 except Exception:
                     node.status = NodeStatus.FAILED
                     logger.exception("Node `%s` failed.", node.id)
@@ -289,9 +331,11 @@ class DagRunner:
         self.startup_thread.start()
         self.monitoring_thread.start()
 
+        interrupt_mode = None
+
         while True:
             if self.interrupt_function is not None:
-                if self.interrupt_function():
+                if interrupt_mode := self.interrupt_function():
                     logger.warning("DAG execution interrupted.")
                     break
 
@@ -302,6 +346,9 @@ class DagRunner:
             time.sleep(0.5)
 
         self.shutdown_event.set()
+        if interrupt_mode == InterruptMode.FORCE:
+            # If a force interrupt was requested, we stop all running nodes.
+            self._stop_all_nodes()
 
         self.startup_thread.join()
         self.monitoring_thread.join()

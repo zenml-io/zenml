@@ -580,8 +580,8 @@ def main() -> None:
         try:
             nodes_statuses = DagRunner(
                 nodes=nodes,
-                startup_function=start_step_job,
-                monitoring_function=check_job_status,
+                node_startup_function=start_step_job,
+                node_monitoring_function=check_job_status,
                 interrupt_function=should_interrupt_execution,
                 monitoring_interval=pipeline_settings.job_monitoring_interval,
                 max_parallelism=pipeline_settings.max_parallelism,
