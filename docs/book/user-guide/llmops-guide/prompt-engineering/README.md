@@ -42,6 +42,37 @@ print(f"Winner: {result['winner']}")
 
 User research shows teams with millions of daily requests use **simple Git-based versioning**, not complex management systems. This approach focuses on what actually works in production.
 
+
+## ZenML's Philosophy: Embrace Simplicity
+
+Based on our research, ZenML's prompt management follows three principles:
+
+### 1. **Prompts Are Versioned Artifacts**
+
+```python
+# Simple, clear, version-controlled
+prompt = Prompt(
+    template="Answer: {question}",
+    version="2.0"  # Git-like versioning
+)
+```
+
+Prompts integrate naturally with ZenML's artifact system. No special management layer required.
+
+### 2. **Forward-Looking Experimentation Over Backward-Looking Management**
+
+```python
+# Focus on comparing forward
+result = compare_prompts(
+    prompt_a=new_prompt,
+    prompt_b=current_prompt,
+    test_cases=real_scenarios
+)
+```
+
+Instead of complex version trees, focus on "Does this new prompt work better?"
+
+
 ## Documentation
 
 * [Quick Start](quick-start.md) - Working example walkthrough

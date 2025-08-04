@@ -14,9 +14,18 @@
 """Simple prompt abstraction for LLMOps workflows in ZenML."""
 
 import re
+from enum import Enum
 from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
+
+
+class PromptType(str, Enum):
+    """Enum for different types of prompts."""
+    
+    SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "assistant"
 
 
 class Prompt(BaseModel):
@@ -44,7 +53,7 @@ class Prompt(BaseModel):
         # System prompt
         prompt = Prompt(
             template="You are a helpful assistant.",
-            prompt_type="system"
+            prompt_type=PromptType.SYSTEM
         )
 
         # Versioned prompt for tracking changes
@@ -66,9 +75,9 @@ class Prompt(BaseModel):
     )
 
     # Basic classification
-    prompt_type: str = Field(
-        default="user",
-        description="Type of prompt: 'system', 'user', 'assistant'",
+    prompt_type: PromptType = Field(
+        default=PromptType.USER,
+        description="Type of prompt: system, user, or assistant",
     )
 
     def format(self, **kwargs: Any) -> str:
