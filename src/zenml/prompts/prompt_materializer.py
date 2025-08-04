@@ -37,7 +37,7 @@ class PromptMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES: ClassVar[tuple[Type[Any], ...]] = (Prompt,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Prompt]) -> Prompt:
+    def load(self, data_type: Type[Prompt]) -> Prompt:  # noqa: ARG002
         """Load a Prompt object from storage.
 
         Args:
@@ -78,7 +78,6 @@ class PromptMaterializer(BaseMaterializer):
         """
         metadata = {
             "prompt_type": data.prompt_type,
-            "version": data.version,
             "template_length": len(data.template),
             "variable_count": len(data.variables),
             "variable_names": data.get_variable_names(),
@@ -86,9 +85,7 @@ class PromptMaterializer(BaseMaterializer):
             "variables_complete": data.validate_variables(),
         }
 
-        logger.info(
-            f"Extracted metadata for prompt: {data.prompt_type} v{data.version}"
-        )
+        logger.info(f"Extracted metadata for prompt: {data.prompt_type}")
         return metadata
 
     def save_visualizations(
@@ -164,7 +161,6 @@ class PromptMaterializer(BaseMaterializer):
             <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin: 10px 0;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span><strong>Type:</strong> {prompt.prompt_type}</span>
-                    <span><strong>Version:</strong> {prompt.version}</span>
                 </div>
                 <div style="background-color: white; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap;">
                     {template_escaped}
@@ -239,8 +235,7 @@ class PromptMaterializer(BaseMaterializer):
 
         markdown = f"""# Prompt Template
 
-**Type:** {prompt.prompt_type}  
-**Version:** {prompt.version}
+**Type:** {prompt.prompt_type}
 
 ## Template
 

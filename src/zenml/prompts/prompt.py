@@ -71,12 +71,6 @@ class Prompt(BaseModel):
         description="Type of prompt: 'system', 'user', 'assistant'",
     )
 
-    # Version for Git-like tracking
-    version: str = Field(
-        default="1.0.0",
-        description="Version of the prompt for tracking changes",
-    )
-
     def format(self, **kwargs: Any) -> str:
         """Format the prompt template with provided variables.
 
@@ -140,7 +134,6 @@ class Prompt(BaseModel):
         var_count = len(self.variables)
         return (
             f"Prompt(type='{self.prompt_type}', "
-            f"version='{self.version}', "
             f"template_length={len(self.template)}, "
             f"variables={var_count})"
         )
@@ -159,6 +152,5 @@ class Prompt(BaseModel):
         return (
             f"Prompt(template='{template_preview}', "
             f"type='{self.prompt_type}', "
-            f"version='{self.version}', "
             f"variables={self.variables})"
         )

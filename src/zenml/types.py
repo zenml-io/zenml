@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, Callable, Union
 
-# Import the enhanced Prompt class from the new prompts module
 from zenml.prompts.prompt import Prompt
 
 if TYPE_CHECKING:

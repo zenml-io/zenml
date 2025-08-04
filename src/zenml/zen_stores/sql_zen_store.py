@@ -5163,9 +5163,6 @@ class SqlZenStore(BaseZenStore):
             "Running a template is not possible with a local store."
         )
 
-    # -------------------- Prompt Templates (Removed) --------------------
-    # Prompts are now simple artifacts, not managed entities
-
     # -------------------- Event Sources  --------------------
 
     def create_event_source(

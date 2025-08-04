@@ -1448,9 +1448,6 @@ class ZenStoreInterface(ABC):
             Model of the pipeline run.
         """
 
-    # -------------------- Prompt Templates (Removed) --------------------
-    # Prompts are now simple artifacts, not managed entities
-
     # -------------------- Event Sources  --------------------
 
     @abstractmethod

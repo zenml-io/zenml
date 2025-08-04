@@ -27,8 +27,6 @@ from zenml.materializers.cloudpickle_materializer import (
     CloudpickleMaterializer,
 )
 from zenml.materializers.path_materializer import PathMaterializer
-# NOTE: PromptMaterializer is now located in zenml.prompts.prompt_materializer
-# and is not imported here to avoid circular imports
 from zenml.materializers.pydantic_materializer import PydanticMaterializer
 from zenml.materializers.service_materializer import ServiceMaterializer
 from zenml.materializers.structured_string_materializer import (
@@ -41,7 +39,6 @@ __all__ = [
     "BuiltInMaterializer",
     "BytesMaterializer",
     "CloudpickleMaterializer",
-    # "PromptMaterializer", # Moved to zenml.prompts.prompt_materializer
     "StructuredStringMaterializer",
     "PydanticMaterializer",
     "ServiceMaterializer",

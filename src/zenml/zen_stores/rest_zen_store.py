@@ -1824,9 +1824,6 @@ class RestZenStore(BaseZenStore):
 
         return PipelineRunResponse.model_validate(response_body)
 
-    # -------------------- Prompt Templates (Removed) --------------------
-    # Prompts are now simple artifacts, not managed entities
-
     # -------------------- Event Sources  --------------------
 
     def create_event_source(

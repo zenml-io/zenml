@@ -12,15 +12,11 @@ We conducted extensive interviews with production teams running LLM workloads at
 
 ### Key Finding #1: Most Teams Use Git
 
-> **"Prompt versioning is just in git. We hard coded our prompts inside our code base"** - Production ML Team
-
 The majority of teams we interviewed store prompts as code, not in specialized management systems. They version prompts the same way they version everything else - with Git.
 
 ### Key Finding #2: Backward-Looking Versioning Rarely Matters
 
 The most striking insight came from a team handling **2-6 million requests per day**:
-
-> **"There was not one time where someone was like, hey man, I feel like the previous prompt was working so much better"** - NoUnity Team
 
 Instead of looking backward at old prompts, production teams focus on **forward-looking A/B experiments** to improve performance.
 
@@ -74,16 +70,6 @@ result = compare_prompts(
 
 Instead of complex version trees, focus on "Does this new prompt work better?"
 
-### 3. **Dashboard Integration, Not Management**
-
-Teams want to **see** prompt performance in their workflows, not **manage** prompts as separate entities.
-
-- ✅ Rich visualization in pipeline runs
-- ✅ Version tracking across experiments  
-- ✅ Comparison results in dashboard
-- ❌ Separate prompt management interface
-- ❌ Complex CRUD operations
-- ❌ Sophisticated versioning trees
 
 ## When Complex Systems Make Sense
 
@@ -112,25 +98,6 @@ ZenML's approach covers **80% of what teams need** with **20% of the complexity*
 - Advanced user management
 - Enterprise audit trails
 - Multi-tenant isolation
-
-## Real-World Validation
-
-This approach has been validated by teams at scale:
-
-### **Startup to Scale-up**
-- **Simple Git versioning** works from first prototype to production
-- **A/B testing focus** drives continuous improvement
-- **Dashboard integration** provides needed visibility
-
-### **Enterprise Teams**
-- **Familiar workflows** reduce onboarding time
-- **Standard tooling** fits existing MLOps practices  
-- **Clear ownership** through code-based management
-
-### **Production Scale**
-- **Millions of requests** handled with simple versioning
-- **A/B experiments** drive measurable improvements
-- **Zero management overhead** for operations teams
 
 ## Comparing Approaches
 

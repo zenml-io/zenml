@@ -1,7 +1,9 @@
 """Pipelines for prompt engineering workflows."""
 
-from .simple_comparison import simple_prompt_comparison
+from .text_summarization import text_summarization_pipeline
+from .prompt_comparison import prompt_version_comparison
 
 __all__ = [
-    "simple_prompt_comparison"
+    "text_summarization_pipeline",
+    "prompt_version_comparison"
 ]
