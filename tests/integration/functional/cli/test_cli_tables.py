@@ -22,7 +22,7 @@ import yaml
 from click.testing import CliRunner
 
 from zenml.cli.cli import cli
-
+import logging
 
 class TestCLITableIntegration:
     """Integration tests for CLI commands using the new table system."""
@@ -124,10 +124,7 @@ class TestCLITableIntegration:
         assert result.exit_code == 0
         # Check for reasonable output (may be empty if no pipelines)
         if "NAME" in result.output:
-            assert (
-                "LATEST_RUN_STATUS" in result.output
-                or "STATUS" in result.output
-            )
+            assert "TAGS" in result.output or "DESCRIPTION" in result.output
 
     def test_model_list_table_format(self, runner):
         """Test model list command with table format."""
