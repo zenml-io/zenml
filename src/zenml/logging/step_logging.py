@@ -21,6 +21,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
@@ -52,7 +53,6 @@ from zenml.models import (
     PipelineRunUpdate,
 )
 from zenml.utils.io_utils import sanitize_remote_path
-from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -130,24 +130,16 @@ class ArtifactStoreHandler(logging.Handler):
         """
         try:
             # Format for storage with timestamp, level, and message
-            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = remove_ansi_escape_codes(
-                record.getMessage()
-            ).rstrip()
-            message = (
-                f"[{timestamp} UTC] [{record.levelname}] {formatted_message}"
-            )
+            message = remove_ansi_escape_codes(record.getMessage()).rstrip()
 
             # Include exception information if present
             if record.exc_info:
-                import traceback
-
                 exception_text = "".join(
                     traceback.format_exception(*record.exc_info)
                 )
                 message = f"{message}\n{exception_text.rstrip()}"
 
-            self.storage.write(message)
+            self.storage.write(self.format(record))
         except Exception:
             # Don't let storage errors break logging
             pass
@@ -742,9 +734,7 @@ class PipelineLogsStorageContext:
             ArtifactStoreHandler(self.storage)
         )
         self.artifact_store_handler.setFormatter(
-            logging.Formatter(
-                "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
-            )
+            logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
         )
 
         # Additional configuration
