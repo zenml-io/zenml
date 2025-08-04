@@ -14,12 +14,10 @@
 """Kubernetes step operator implementation."""
 
 import random
-import socket
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
 
-from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
@@ -32,7 +30,6 @@ from zenml.integrations.kubernetes.flavors import (
     KubernetesStepOperatorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import (
-    KubernetesOrchestrator,
     kube_utils,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
@@ -253,36 +250,10 @@ class KubernetesStepOperator(BaseStepOperator):
 
         job_name = settings.job_name_prefix or ""
         random_prefix = "".join(random.choices("0123456789abcdef", k=8))
-        job_name += (
-            f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}"
-        )
+        job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
         # The job name will be used as a label on the pods, so we need to make
         # sure it doesn't exceed the label length limit
         job_name = kube_utils.sanitize_label(job_name)
-
-        owner_references = []
-        orchestrator = Client().active_stack.orchestrator
-        if isinstance(orchestrator, KubernetesOrchestrator):
-            # If we're running with a kubernetes orchestrator, we try to fetch
-            # the owner references of the step pod. This is useful to ensure
-            # that our job is deleted when the step pod is deleted.
-            try:
-                kube_client = orchestrator.get_kube_client(incluster=True)
-                core_api = k8s_client.CoreV1Api(kube_client)
-                current_pod_name = socket.gethostname()
-                owner_references = kube_utils.get_pod_owner_references(
-                    core_api=core_api,
-                    pod_name=current_pod_name,
-                    namespace=orchestrator.config.kubernetes_namespace,
-                )
-            except Exception as e:
-                logger.warning(f"Failed to get pod owner references: {str(e)}")
-            else:
-                # Make sure None of the owner references are marked as
-                # controllers of the created job, which messes with the
-                # garbage collection logic.
-                for owner_reference in owner_references:
-                    owner_reference.controller = False
 
         job_manifest = build_job_manifest(
             job_name=job_name,
@@ -292,7 +263,6 @@ class KubernetesStepOperator(BaseStepOperator):
             backoff_limit=0,
             ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
             active_deadline_seconds=settings.active_deadline_seconds,
-            owner_references=owner_references,
             labels=step_labels,
             annotations=step_annotations,
         )
