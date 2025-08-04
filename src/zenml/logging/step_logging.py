@@ -335,11 +335,11 @@ class PipelineLogsStorage:
         except Exception as e:
             logger.error("Error in log storage thread: %s", e)
         finally:
-            # Always mark all queue tasks as done
             for _ in messages:
                 self.log_queue.task_done()
 
-            time.sleep(self.write_interval)
+            # Wait for the next write interval or until shutdown is requested
+            self.shutdown_event.wait(timeout=self.write_interval)
 
     def _log_storage_worker(self) -> None:
         """Log storage thread worker that processes the log queue."""
