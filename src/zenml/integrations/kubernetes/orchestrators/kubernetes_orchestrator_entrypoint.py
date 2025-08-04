@@ -43,6 +43,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     DagRunner,
+    InterruptMode,
     Node,
     NodeStatus,
 )
@@ -547,7 +548,7 @@ def main() -> None:
             else:
                 return NodeStatus.RUNNING
 
-        def should_interrupt_execution() -> bool:
+        def should_interrupt_execution() -> Optional[InterruptMode]:
             """Check if the DAG execution should be interrupted.
 
             Returns:
@@ -569,13 +570,13 @@ def main() -> None:
                         "`%s` state.",
                         run.status,
                     )
-                    return True
+                    return InterruptMode.GRACEFUL
             except Exception as e:
                 logger.warning(
                     "Failed to check pipeline cancellation status: %s", e
                 )
 
-            return False
+            return None
 
         try:
             nodes_statuses = DagRunner(

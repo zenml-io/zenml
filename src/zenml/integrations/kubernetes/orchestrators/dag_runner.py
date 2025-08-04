@@ -103,11 +103,6 @@ class DagRunner:
         self.node_monitoring_function = node_monitoring_function
         self.node_stop_function = node_stop_function
         self.interrupt_function = interrupt_function
-        self.startup_thread = threading.Thread(
-            name="DagRunner-Startup-Loop",
-            target=self._startup_loop,
-            daemon=True,
-        )
         self.monitoring_thread = threading.Thread(
             name="DagRunner-Monitoring-Loop",
             target=self._monitoring_loop,
@@ -117,7 +112,7 @@ class DagRunner:
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
         self.startup_executor = ThreadPoolExecutor(
-            max_workers=10, thread_name_prefix="DagRunner-Startup-Worker"
+            max_workers=10, thread_name_prefix="DagRunner-Startup"
         )
 
     @property
@@ -263,6 +258,17 @@ class DagRunner:
             if not node.is_finished:
                 finished = False
 
+        # Start nodes until we reach the maximum configured parallelism
+        max_parallelism = self.max_parallelism or len(self.nodes)
+        while len(self.active_nodes) < max_parallelism:
+            try:
+                node = self.startup_queue.get_nowait()
+            except queue.Empty:
+                break
+            else:
+                self.startup_queue.task_done()
+                self._start_node(node)
+
         return finished
 
     def _monitoring_loop(self) -> None:
@@ -293,33 +299,6 @@ class DagRunner:
             time_to_sleep = max(0, self.monitoring_interval - duration)
             self.shutdown_event.wait(timeout=time_to_sleep)
 
-    def _startup_loop(self) -> None:
-        """Startup loop.
-
-        This should run in a separate thread and starts nodes that are ready to
-        run.
-        """
-        while not self.shutdown_event.is_set():
-            if self.max_parallelism is not None:
-                if len(self.active_nodes) >= self.max_parallelism:
-                    # Sleep for 0.5 seconds or exit immediately if the shutdown
-                    # event was set
-                    logger.debug(
-                        "Maximum amount of nodes running (%s), waiting for 0.5 "
-                        "seconds.",
-                        self.max_parallelism,
-                    )
-                    self.shutdown_event.wait(timeout=0.5)
-                    continue
-
-            try:
-                node = self.startup_queue.get(timeout=0.5)
-            except queue.Empty:
-                pass
-            else:
-                self.startup_queue.task_done()
-                self._start_node(node)
-
     def run(self) -> Dict[str, NodeStatus]:
         """Run the DAG.
 
@@ -328,7 +307,6 @@ class DagRunner:
         """
         self._initialize_startup_queue()
 
-        self.startup_thread.start()
         self.monitoring_thread.start()
 
         interrupt_mode = None
@@ -350,7 +328,6 @@ class DagRunner:
             # If a force interrupt was requested, we stop all running nodes.
             self._stop_all_nodes()
 
-        self.startup_thread.join()
         self.monitoring_thread.join()
 
         node_statuses = {
