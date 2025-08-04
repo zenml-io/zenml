@@ -83,6 +83,8 @@ class DagRunner:
             Callable[[], Optional[InterruptMode]]
         ] = None,
         monitoring_interval: float = 1.0,
+        monitoring_delay: float = 0.0,
+        interrupt_check_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
     ) -> None:
         """Initialize the DAG runner.
@@ -95,6 +97,10 @@ class DagRunner:
             interrupt_function: Will be periodically called to check if the
                 DAG should be interrupted.
             monitoring_interval: The interval in which the nodes are monitored.
+            monitoring_delay: The delay in seconds to wait between monitoring
+                different nodes.
+            interrupt_check_interval: The interval in which the interrupt
+                function is called.
             max_parallelism: The maximum number of nodes to run in parallel.
         """
         self.nodes = {node.id: node for node in nodes}
@@ -109,6 +115,8 @@ class DagRunner:
             daemon=True,
         )
         self.monitoring_interval = monitoring_interval
+        self.monitoring_delay = monitoring_delay
+        self.interrupt_check_interval = interrupt_check_interval
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
         self.startup_executor = ThreadPoolExecutor(
@@ -295,6 +303,8 @@ class DagRunner:
                     elif node.status == NodeStatus.COMPLETED:
                         logger.info("Node `%s` completed.", node.id)
 
+                time.sleep(self.monitoring_delay)
+
             duration = time.time() - start_time
             time_to_sleep = max(0, self.monitoring_interval - duration)
             self.shutdown_event.wait(timeout=time_to_sleep)
@@ -310,12 +320,18 @@ class DagRunner:
         self.monitoring_thread.start()
 
         interrupt_mode = None
+        last_interrupt_check = time.time()
 
         while True:
             if self.interrupt_function is not None:
-                if interrupt_mode := self.interrupt_function():
-                    logger.warning("DAG execution interrupted.")
-                    break
+                if (
+                    time.time() - last_interrupt_check
+                    >= self.interrupt_check_interval
+                ):
+                    if interrupt_mode := self.interrupt_function():
+                        logger.warning("DAG execution interrupted.")
+                        break
+                    last_interrupt_check = time.time()
 
             is_finished = self._process_nodes()
             if is_finished:

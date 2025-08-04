@@ -15,7 +15,13 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
+from pydantic import (
+    Field,
+    NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
+    field_validator,
+)
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -124,10 +130,21 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
         "should cause the job to fail immediately.",
     )
-    job_monitoring_interval: PositiveInt = Field(
+    job_monitoring_interval: PositiveFloat = Field(
         default=3,
         description="The interval in seconds to monitor the job. Each interval "
         "is used to check for container issues for the job pods.",
+    )
+    job_monitoring_delay: PositiveFloat = Field(
+        default=0.0,
+        description="The delay in seconds to wait between monitoring active "
+        "step jobs. This can be used to reduce load on the Kubernetes API "
+        "server.",
+    )
+    interrupt_check_interval: PositiveFloat = Field(
+        default=1.0,
+        description="The interval in seconds to check for run interruptions.",
+        ge=0.5,
     )
     pod_failure_policy: Optional[Dict[str, Any]] = Field(
         default=None,
