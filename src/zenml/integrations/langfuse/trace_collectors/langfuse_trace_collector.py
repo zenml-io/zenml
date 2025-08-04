@@ -55,6 +55,9 @@ class LangFuseTraceCollector(BaseTraceCollector):
         super().__init__(*args, **kwargs)
         self._tracer = None
         self._current_step_span = None
+        self._context_token = None
+        self._current_trace_id = None
+        self._current_span_id = None
 
     @property
     def config(self) -> LangFuseTraceCollectorConfig:
@@ -86,19 +89,19 @@ class LangFuseTraceCollector(BaseTraceCollector):
             
             # Configure OTLP exporter for Langfuse
             otlp_exporter = OTLPSpanExporter(
-                endpoint=f"{self.config.host.rstrip('/')}/api/public/ingestion/v1/traces",
+                endpoint=f"{self.config.host.rstrip('/')}/api/public/otel/v1/traces",
                 headers={
                     "Authorization": f"Basic {self._get_auth_header()}",
                     "Content-Type": "application/json",
                 }
             )
             
-            # Set up tracer provider
+            # Set up tracer provider - always use our provider with Langfuse exporter
             provider = TracerProvider()
             processor = BatchSpanProcessor(otlp_exporter)
             provider.add_span_processor(processor)
             
-            # Set as global provider and get tracer
+            # Always set our TracerProvider to ensure Langfuse export works
             trace.set_tracer_provider(provider)
             self._tracer = trace.get_tracer("zenml.langfuse")
             
@@ -131,27 +134,14 @@ class LangFuseTraceCollector(BaseTraceCollector):
             deployment: The pipeline deployment being prepared.
             stack: The stack being used for deployment.
         """
-        if not self.config.enabled:
-            return
-
-        try:
-            # Set environment variables for LiteLLM and other integrations
-            os.environ["LANGFUSE_PUBLIC_KEY"] = self.config.public_key
-            os.environ["LANGFUSE_SECRET_KEY"] = self.config.secret_key
-            os.environ["LANGFUSE_HOST"] = self.config.host
-            if self.config.debug:
-                os.environ["LANGFUSE_DEBUG"] = "true"
-            
-            logger.info(f"Configured Langfuse environment for pipeline {deployment.pipeline_configuration.name}")
-
-        except Exception as e:
-            logger.warning(f"Failed to configure Langfuse environment: {e}")
+        return
 
     def prepare_step_run(self, info: "StepRunInfo") -> None:
-        """Sets up OpenTelemetry span for the step execution.
+        """Sets up OpenTelemetry span and context for the step execution.
 
-        This method creates a new span for the step that will be automatically
-        exported to Langfuse via OTLP. The span tracks the entire step execution.
+        This method creates a new span for the step and properly manages the
+        OpenTelemetry context so that other libraries (like LiteLLM) can create
+        child spans. Uses proper token-based context management.
 
         Args:
             info: Information about the step that will be executed.
@@ -160,19 +150,25 @@ class LangFuseTraceCollector(BaseTraceCollector):
             return
 
         try:
-            from opentelemetry import trace
+            from opentelemetry import trace, context
             
-            # Ensure OpenTelemetry environment is set up
+            # Ensure OpenTelemetry environment is set up for both ZenML and LiteLLM
             os.environ["LANGFUSE_PUBLIC_KEY"] = self.config.public_key
             os.environ["LANGFUSE_SECRET_KEY"] = self.config.secret_key
             os.environ["LANGFUSE_HOST"] = self.config.host
             
+            # Configure OTEL environment for LiteLLM to use our existing setup
+            os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = f"{self.config.host.rstrip('/')}/api/public/otel"
+            os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"Authorization=Basic {self._get_auth_header()}"
+            os.environ["OTEL_SERVICE_NAME"] = "zenml-pipeline"
+            os.environ["OTEL_TRACER_NAME"] = "zenml.langfuse"
+
             # Create span for this step
             step_name = info.config.name
-            pipeline_name = getattr(info.pipeline_run, 'name', 'unknown_pipeline')
+            pipeline_name = info.run_name
             
-            # Start span as current span - this makes it available to trace.get_current_span()
-            self._current_step_span = self.tracer.start_as_current_span(
+            # 1. Create span using proper start_span method (not context manager)
+            self._current_step_span = self.tracer.start_span(
                 name=f"{pipeline_name}.{step_name}",
                 attributes={
                     "zenml.step.name": step_name,
@@ -182,16 +178,30 @@ class LangFuseTraceCollector(BaseTraceCollector):
                 }
             )
             
-            # The span is now active and will be inherited by any OpenTelemetry-instrumented libraries
-            logger.info(f"Started OpenTelemetry span for step '{step_name}'")
+            # 2. Create context with this span as the current span
+            span_context = trace.set_span_in_context(self._current_step_span)
+            
+            # 3. Attach context and store token for proper cleanup
+            self._context_token = context.attach(span_context)
+
+            # 4. Store trace and span IDs for metadata generation
+            if self._current_step_span:
+                otel_span_context = self._current_step_span.get_span_context()
+                self._current_trace_id = format(otel_span_context.trace_id, '032x')
+                self._current_span_id = format(otel_span_context.span_id, '016x')
+                logger.info(f"Started OpenTelemetry span for step '{step_name}' with trace ID: {self._current_trace_id}")
+            else:
+                logger.warning(f"OpenTelemetry span for step '{step_name}' is not recording")
 
         except Exception as e:
-            logger.warning(
-                f"Failed to start OpenTelemetry span for step '{info.config.name}': {e}"
-            )
+            logger.warning(f"Failed to start OpenTelemetry span for step '{info.config.name}': {e}")
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
-        """Cleans up the OpenTelemetry span after step execution.
+        """Properly cleans up OpenTelemetry span and context after step execution.
+
+        This method sets the final span status, ends the span, and detaches the
+        context to restore the previous context state. Uses proper token-based
+        context cleanup.
 
         Args:
             info: Information about the step that was executed.
@@ -201,28 +211,41 @@ class LangFuseTraceCollector(BaseTraceCollector):
             return
 
         try:
-            if self._current_step_span:
+            # 1. Set span status and attributes before ending
+            if self._current_step_span and self._current_step_span.is_recording():
                 from opentelemetry.trace import Status, StatusCode
                 
-                # Set span status based on step outcome
-                if step_failed:
-                    self._current_step_span.set_status(Status(StatusCode.ERROR))
-                    self._current_step_span.set_attribute("zenml.step.status", "failed")
-                else:
-                    self._current_step_span.set_status(Status(StatusCode.OK))
-                    self._current_step_span.set_attribute("zenml.step.status", "completed")
+                status = StatusCode.ERROR if step_failed else StatusCode.OK
+                self._current_step_span.set_status(Status(status))
+                self._current_step_span.set_attribute(
+                    "zenml.step.status", "failed" if step_failed else "completed"
+                )
                 
-                # End the span
-                self._current_step_span.__exit__(None, None, None)
-                self._current_step_span = None
-                
+                # 2. End the span properly
+                self._current_step_span.end()
                 logger.debug(f"Ended OpenTelemetry span for step '{info.config.name}'")
+            
+            # 3. Detach context to restore previous context
+            if self._context_token is not None:
+                from opentelemetry import context
+                context.detach(self._context_token)
+                logger.debug(f"Detached OpenTelemetry context for step '{info.config.name}'")
 
         except Exception as e:
-            logger.warning(f"Error ending OpenTelemetry span: {e}")
+            logger.warning(f"Error during OpenTelemetry cleanup: {e}")
+        finally:
+            # 4. Clean up all references
+            self._current_step_span = None
+            self._context_token = None
+            self._current_trace_id = None
+            self._current_span_id = None
 
     def get_step_run_metadata(self, info: "StepRunInfo") -> Dict[str, "MetadataType"]:
         """Get step-specific metadata including trace information.
+
+        This method retrieves trace metadata that was captured during span creation.
+        Since metadata collection happens before cleanup, the stored trace IDs
+        should be available and reliable.
 
         Args:
             info: Information about the step run.
@@ -236,26 +259,44 @@ class LangFuseTraceCollector(BaseTraceCollector):
         metadata: Dict[str, Any] = {}
 
         try:
-            from opentelemetry import trace
-            
-            # Get current span if available
-            current_span = trace.get_current_span()
-            if current_span and current_span.is_recording():
-                # Get trace ID for URL generation
-                trace_id = format(current_span.get_span_context().trace_id, '032x')
-                span_id = format(current_span.get_span_context().span_id, '016x')
+            # Use stored trace IDs (most reliable approach)
+            if self._current_trace_id and self._current_span_id:
+                trace_id = self._current_trace_id
+                span_id = self._current_span_id
+                logger.info(f"Using stored trace ID: {trace_id}")
                 
-                # Generate Langfuse trace URL
+                # Generate Langfuse trace URL and add metadata
                 trace_url = self._get_langfuse_trace_url(trace_id)
-                
                 metadata.update({
                     "langfuse_trace_id": trace_id,
                     "langfuse_span_id": span_id,
-                    "langfuse_trace_url": Uri(trace_url),
+                    "langfuse_trace_url": Uri(trace_url),  
                     "langfuse_host": self.config.host,
                 })
                 
-                logger.debug(f"Generated step metadata with trace ID: {trace_id}")
+                logger.info(f"Generated step metadata with trace ID: {trace_id} and URL: {trace_url}")
+                
+            else:
+                # Fallback: try to get from current span if stored IDs aren't available
+                from opentelemetry import trace
+                current_span = trace.get_current_span()
+                
+                if current_span and current_span.is_recording():
+                    otel_span_context = current_span.get_span_context()
+                    trace_id = format(otel_span_context.trace_id, '032x')
+                    span_id = format(otel_span_context.span_id, '016x')
+                    
+                    trace_url = self._get_langfuse_trace_url(trace_id)
+                    metadata.update({
+                        "langfuse_trace_id": trace_id,
+                        "langfuse_span_id": span_id,
+                        "langfuse_trace_url": Uri(trace_url),  
+                        "langfuse_host": self.config.host,
+                    })
+                    
+                    logger.info(f"Generated step metadata from current span with trace ID: {trace_id}")
+                else:
+                    logger.warning("No stored trace IDs and no active OpenTelemetry span found for metadata generation")
 
         except Exception as e:
             logger.warning(f"Failed to generate step metadata: {e}")
