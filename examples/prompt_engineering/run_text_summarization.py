@@ -25,10 +25,10 @@ def display_results(results: dict):
     for i, result in enumerate(results["results"][:2]):  # Show first 2
         print(f"\n--- Article {result['article_id']} ---")
         print(f"Original: {result['original_word_count']} words")
-        print(f"Formatted Prompt Preview:")
+        print("Formatted Prompt Preview:")
         print(result["formatted_prompt"])
 
-    print(f"\n📈 Metrics:")
+    print("\n📈 Metrics:")
     metrics = results["metrics"]
     print(
         f"  Average original length: {metrics['average_original_length']:.1f} words"
