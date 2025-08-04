@@ -11,19 +11,19 @@ from zenml.logging.step_logging import fetch_logs
 
 logger = get_logger(__name__)
 
-_STEP_LOGS_STORAGE_MAX_MESSAGES = 5
+_LOGS_STORAGE_MAX_QUEUE_SIZE = 5
 
 
 @step(enable_cache=False)
 def steps_writing_above_the_count_limit(multi=2):
-    for i in range(_STEP_LOGS_STORAGE_MAX_MESSAGES * multi):
+    for i in range(_LOGS_STORAGE_MAX_QUEUE_SIZE * multi):
         logger.info(f"step 1 - {i}")
         time.sleep(0.01)
 
 
 @step(enable_cache=False)
 def step_writing_above_the_time_limit():
-    for i in range(_STEP_LOGS_STORAGE_MAX_MESSAGES):
+    for i in range(_LOGS_STORAGE_MAX_QUEUE_SIZE):
         logger.info(f"step 1 - {i}")
         time.sleep(0.01)
 
@@ -32,7 +32,7 @@ def step_writing_above_the_time_limit():
     "zenml.artifact_stores.base_artifact_store.BaseArtifactStoreConfig.IS_IMMUTABLE_FILESYSTEM",
     True,
 )
-def test_that_save_to_file_called_multiple_times_on_exceeding_limits():
+def test_that_write_buffer_called_multiple_times_on_exceeding_limits():
     @pipeline
     def _inner_1():
         steps_writing_above_the_count_limit()
@@ -42,26 +42,26 @@ def test_that_save_to_file_called_multiple_times_on_exceeding_limits():
         step_writing_above_the_time_limit()
 
     with patch(
-        "zenml.logging.step_logging.STEP_LOGS_STORAGE_MAX_MESSAGES",
-        _STEP_LOGS_STORAGE_MAX_MESSAGES,
+        "zenml.logging.step_logging.LOGS_STORAGE_MAX_QUEUE_SIZE",
+        _LOGS_STORAGE_MAX_QUEUE_SIZE,
     ):
         with patch(
-            "zenml.logging.step_logging.PipelineLogsStorage.save_to_file"
-        ) as mock_save_to_file:
+            "zenml.logging.step_logging.PipelineLogsStorage.write_buffer"
+        ) as mock_write_buffer:
             run_1 = _inner_1()
-            assert mock_save_to_file.call_count > 1
+            assert mock_write_buffer.call_count > 1
 
         Client().delete_pipeline(run_1.pipeline.id)
 
         with patch(
-            "zenml.logging.step_logging.PipelineLogsStorage.save_to_file"
-        ) as mock_save_to_file:
+            "zenml.logging.step_logging.PipelineLogsStorage.write_buffer"
+        ) as mock_write_buffer:
             with patch(
-                "zenml.logging.step_logging.STEP_LOGS_STORAGE_INTERVAL_SECONDS",
+                "zenml.logging.step_logging.LOGS_WRITE_INTERVAL_SECONDS",
                 0.001,
             ):
                 run_2 = _inner_2()
-                assert mock_save_to_file.call_count > 1
+                assert mock_write_buffer.call_count > 1
         Client().delete_pipeline(run_2.pipeline.id)
 
 
@@ -75,8 +75,8 @@ def test_that_small_files_are_merged_together():
         steps_writing_above_the_count_limit(multi=10)
 
     with patch(
-        "zenml.logging.step_logging.STEP_LOGS_STORAGE_MAX_MESSAGES",
-        _STEP_LOGS_STORAGE_MAX_MESSAGES,
+        "zenml.logging.step_logging.LOGS_STORAGE_MAX_QUEUE_SIZE",
+        _LOGS_STORAGE_MAX_QUEUE_SIZE,
     ):
         ret = _inner_1()  # this run will produce 2+ logs files as it go, proven by previous test
 
@@ -97,7 +97,7 @@ def test_that_small_files_are_merged_together():
     ).split("\n")
 
     content_pointer = 0
-    for i in range(_STEP_LOGS_STORAGE_MAX_MESSAGES * 10):
+    for i in range(_LOGS_STORAGE_MAX_QUEUE_SIZE * 10):
         while f"step 1 - {i}" not in content[content_pointer]:
             content_pointer += 1
 
