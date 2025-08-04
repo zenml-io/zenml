@@ -29,6 +29,7 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.retry_config import StepRetryConfig
     from zenml.model.model import Model
     from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.types import HookSpecification
@@ -57,6 +58,7 @@ def pipeline(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
+    retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
@@ -75,6 +77,7 @@ def pipeline(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
+    retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
@@ -97,6 +100,7 @@ def pipeline(
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
+        retry: Retry configuration for the pipeline steps.
         substitutions: Extra placeholders to use in the name templates.
 
     Returns:
@@ -108,6 +112,7 @@ def pipeline(
 
         p = Pipeline(
             name=name or func.__name__,
+            entrypoint=func,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_step_logs=enable_step_logs,
@@ -118,7 +123,7 @@ def pipeline(
             on_failure=on_failure,
             on_success=on_success,
             model=model,
-            entrypoint=func,
+            retry=retry,
             substitutions=substitutions,
         )
 

@@ -14,6 +14,7 @@
 """Entrypoint of the Kubernetes master/orchestrator pod."""
 
 import argparse
+import random
 import socket
 from typing import Callable, Dict, Optional, cast
 
@@ -36,7 +37,9 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import 
     KubernetesOrchestrator,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+    build_job_manifest,
     build_pod_manifest,
+    pod_template_manifest_from_pod,
 )
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
@@ -110,8 +113,16 @@ def main() -> None:
         # Get a Kubernetes client from the active Kubernetes orchestrator, but
         # override the `incluster` setting to `True` since we are running inside
         # the Kubernetes cluster.
-        kube_client = orchestrator.get_kube_client(incluster=True)
+
+        api_client_config = orchestrator.get_kube_client(
+            incluster=True
+        ).configuration
+        api_client_config.connection_pool_maxsize = (
+            pipeline_settings.max_parallelism
+        )
+        kube_client = k8s_client.ApiClient(api_client_config)
         core_api = k8s_client.CoreV1Api(kube_client)
+        batch_api = k8s_client.BatchV1Api(kube_client)
 
         env = get_config_environment_vars()
         env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_pod_name
@@ -150,6 +161,9 @@ def main() -> None:
                 Returns:
                     Whether the step node needs to be run.
                 """
+                if not step_run_request_factory.has_caching_enabled(step_name):
+                    return True
+
                 step_run_request = step_run_request_factory.create_request(
                     step_name
                 )
@@ -173,7 +187,7 @@ def main() -> None:
 
                 return True
 
-        step_pod_labels = {
+        base_labels = {
             "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
             "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
             "pipeline": kube_utils.sanitize_label(
@@ -219,6 +233,10 @@ def main() -> None:
             pod_name = kube_utils.sanitize_pod_name(
                 pod_name, namespace=namespace
             )
+
+            # Add step name to labels so both pod and job have consistent labeling
+            step_labels = base_labels.copy()
+            step_labels["step_name"] = kube_utils.sanitize_label(step_name)
 
             image = KubernetesOrchestrator.get_image(
                 deployment=deployment, step_name=step_name
@@ -266,39 +284,121 @@ def main() -> None:
                 service_account_name=settings.step_pod_service_account_name
                 or settings.service_account_name,
                 mount_local_stores=mount_local_stores,
-                owner_references=owner_references,
                 termination_grace_period_seconds=settings.pod_stop_grace_period,
-                labels=step_pod_labels,
+                labels=step_labels,
             )
 
-            kube_utils.create_and_wait_for_pod_to_start(
-                core_api=core_api,
-                pod_display_name=f"pod for step `{step_name}`",
-                pod_name=pod_name,
-                pod_manifest=pod_manifest,
+            retry_config = step_config.retry
+            backoff_limit = (
+                retry_config.max_retries if retry_config else 0
+            ) + settings.backoff_limit_margin
+
+            # This is to fix a bug in the kubernetes client which has some wrong
+            # client-side validations that means the `on_exit_codes` field is
+            # unusable. See https://github.com/kubernetes-client/python/issues/2056
+            class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: ignore[misc]
+                @property
+                def on_pod_conditions(self):  # type: ignore[no-untyped-def]
+                    return self._on_pod_conditions
+
+                @on_pod_conditions.setter
+                def on_pod_conditions(self, on_pod_conditions):  # type: ignore[no-untyped-def]
+                    self._on_pod_conditions = on_pod_conditions
+
+            k8s_client.V1PodFailurePolicyRule = PatchedFailurePolicyRule
+            k8s_client.models.V1PodFailurePolicyRule = PatchedFailurePolicyRule
+
+            pod_failure_policy = settings.pod_failure_policy or {
+                # These rules are applied sequentially. This means any failure in
+                # the main container will count towards the max retries. Any other
+                # disruption will not count towards the max retries.
+                "rules": [
+                    # If the main container fails, we count it towards the max
+                    # retries.
+                    {
+                        "action": "Count",
+                        "onExitCodes": {
+                            "containerName": "main",
+                            "operator": "NotIn",
+                            "values": [0],
+                        },
+                    },
+                    # If the pod is interrupted at any other time, we don't count
+                    # it as a retry
+                    {
+                        "action": "Ignore",
+                        "onPodConditions": [
+                            {
+                                "type": "DisruptionTarget",
+                            }
+                        ],
+                    },
+                ]
+            }
+
+            job_name = settings.pod_name_prefix or ""
+            random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+            job_name += f"-{random_prefix}-{step_name}-{deployment.pipeline_configuration.name}"
+            # The job name will be used as a label on the pods, so we need to make
+            # sure it doesn't exceed the label length limit
+            job_name = kube_utils.sanitize_label(job_name)
+
+            job_manifest = build_job_manifest(
+                job_name=job_name,
+                pod_template=pod_template_manifest_from_pod(pod_manifest),
+                backoff_limit=backoff_limit,
+                ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+                active_deadline_seconds=settings.active_deadline_seconds,
+                pod_failure_policy=pod_failure_policy,
+                owner_references=owner_references,
+                labels=step_labels,
+            )
+
+            kube_utils.create_job(
+                batch_api=batch_api,
                 namespace=namespace,
-                startup_max_retries=settings.pod_failure_max_retries,
-                startup_failure_delay=settings.pod_failure_retry_delay,
-                startup_failure_backoff=settings.pod_failure_backoff,
-                startup_timeout=settings.pod_startup_timeout,
+                job_manifest=job_manifest,
             )
 
-            # Wait for pod to finish.
-            logger.info(f"Waiting for pod of step `{step_name}` to finish...")
+            logger.info(f"Waiting for job of step `{step_name}` to finish...")
             try:
-                kube_utils.wait_pod(
-                    kube_client_fn=lambda: orchestrator.get_kube_client(
-                        incluster=True
-                    ),
-                    pod_name=pod_name,
+                kube_utils.wait_for_job_to_finish(
+                    batch_api=batch_api,
+                    core_api=core_api,
                     namespace=namespace,
-                    exit_condition_lambda=kube_utils.pod_is_done,
-                    stream_logs=True,
+                    job_name=job_name,
+                    fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
+                    stream_logs=pipeline_settings.stream_step_logs,
+                    backoff_interval=settings.job_monitoring_interval,
                 )
 
-                logger.info(f"Pod for step `{step_name}` completed.")
+                logger.info(f"Job for step `{step_name}` completed.")
             except Exception:
-                logger.error(f"Pod for step `{step_name}` failed.")
+                reason = "Unknown"
+                try:
+                    pods = core_api.list_namespaced_pod(
+                        label_selector=f"job-name={job_name}",
+                        namespace=namespace,
+                    ).items
+                    # Sort pods by creation timestamp, oldest first
+                    pods.sort(
+                        key=lambda pod: pod.metadata.creation_timestamp,
+                    )
+                    if pods:
+                        if (
+                            termination_reason
+                            := kube_utils.get_container_termination_reason(
+                                pods[-1], "main"
+                            )
+                        ):
+                            exit_code, reason = termination_reason
+                            if exit_code != 0:
+                                reason = f"{reason} (exit_code={exit_code})"
+                except Exception:
+                    pass
+                logger.error(
+                    f"Job for step `{step_name}` failed. Reason: {reason}"
+                )
 
                 raise
 

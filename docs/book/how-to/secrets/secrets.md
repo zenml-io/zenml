@@ -5,7 +5,7 @@ icon: user-secret
 
 # Secrets
 
-ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks.
+ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks. Secrets are essential for both traditional ML workflows (database credentials, model registry access) and AI agent development (LLM API keys, third-party service credentials).
 
 ## How to create a secret
 
@@ -21,6 +21,20 @@ zenml secret create <SECRET_NAME> \
 # Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
 zenml secret create <SECRET_NAME> \
     --values='{"key1":"value2","key2":"value2"}'
+
+# Example: Create secrets for LLM API keys
+zenml secret create openai_secret \
+    --api_key=sk-proj-... \
+    --organization_id=org-...
+
+zenml secret create anthropic_secret \
+    --api_key=sk-ant-api03-...
+
+# Example: Create secrets for multi-agent system credentials
+zenml secret create agent_tools_secret \
+    --google_search_api_key=AIza... \
+    --weather_api_key=abc123 \
+    --database_url=postgresql://user:pass@host/db
 ```
 
 Alternatively, you can create the secret in an interactive session (in which ZenML will query you for the secret keys and values) by passing the `--interactive/-i` parameter:
@@ -64,6 +78,15 @@ client.create_secret(
     values={
         "username": "admin",
         "password": "abc123"
+    }
+)
+
+# Example: Create LLM API secrets programmatically
+client.create_secret(
+    name="openai_secret",
+    values={
+        "api_key": "sk-proj-...",
+        "organization_id": "org-..."
     }
 )
 ```
@@ -134,7 +157,7 @@ If you are using [centralized secrets management](secrets.md), you can access se
 ```python
 from zenml import step
 from zenml.client import Client
-
+import openai
 
 @step
 def secret_loader() -> None:
@@ -149,6 +172,39 @@ def secret_loader() -> None:
         password=secret.secret_values["password"],
     )
     ...
+
+@step
+def run_llm_agent(prompt: str, query: str) -> str:
+    """Execute an LLM agent using securely stored API keys."""
+    # Fetch LLM API credentials from ZenML secrets
+    openai_secret = Client().get_secret("openai_secret")
+    
+    # Use the API key to initialize the LLM client
+@step
+def run_llm_agent(prompt: str, query: str) -> str:
+    """Execute an LLM agent using securely stored API keys."""
+    # Fetch LLM API credentials from ZenML secrets
+    openai_secret = Client().get_secret("openai_secret")
+    
+    # Initialize the OpenAI client with credentials
+    from openai import OpenAI
+    
+    client = OpenAI(
+        api_key=openai_secret.secret_values["api_key"],
+        organization=openai_secret.secret_values["organization_id"]
+    )
+    
+    # Execute the agent
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": query}
+        ]
+    )
+    
+    return response.choices[0].message.content
+    return response.choices[0].message.content
 ```
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
