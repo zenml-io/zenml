@@ -43,7 +43,7 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
-from zenml.integrations.kubernetes.orchestrators.constants import (
+from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (

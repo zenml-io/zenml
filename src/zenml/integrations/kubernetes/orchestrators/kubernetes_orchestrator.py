@@ -51,18 +51,18 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
-    KubernetesOrchestratorConfig,
-    KubernetesOrchestratorSettings,
-)
-from zenml.integrations.kubernetes.orchestrators import kube_utils
-from zenml.integrations.kubernetes.orchestrators.constants import (
+from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_CRON_JOB_METADATA_KEY,
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
     ORCHESTRATOR_ANNOTATION_KEY,
     STEP_NAME_ANNOTATION_KEY,
 )
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
+    KubernetesOrchestratorConfig,
+    KubernetesOrchestratorSettings,
+)
+from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
     KubernetesOrchestratorEntrypointConfiguration,
 )

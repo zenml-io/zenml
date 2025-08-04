@@ -30,17 +30,17 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
-    KubernetesOrchestratorSettings,
-)
-from zenml.integrations.kubernetes.orchestrators import kube_utils
-from zenml.integrations.kubernetes.orchestrators.constants import (
+from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
     ORCHESTRATOR_RUN_ID_ANNOTATION_KEY,
     RUN_ID_ANNOTATION_KEY,
     STEP_NAME_ANNOTATION_KEY,
 )
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
+    KubernetesOrchestratorSettings,
+)
+from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     DagRunner,
     Node,

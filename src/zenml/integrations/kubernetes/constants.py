@@ -19,8 +19,9 @@
 ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
 KUBERNETES_SECRET_TOKEN_KEY_NAME = "zenml_api_token"
 KUBERNETES_CRON_JOB_METADATA_KEY = "cron_job_name"
+# Annotation keys
+ORCHESTRATOR_ANNOTATION_KEY = "zenml.io/orchestrator"
+RUN_ID_ANNOTATION_KEY = "zenml.io/run-id"
+ORCHESTRATOR_RUN_ID_ANNOTATION_KEY = "zenml.io/orchestrator-run-id"
 STEP_NAME_ANNOTATION_KEY = "zenml.io/step-name"
 STEP_OPERATOR_ANNOTATION_KEY = "zenml.io/step-operator"
-ORCHESTRATOR_ANNOTATION_KEY = "zenml.io/orchestrator"
-ORCHESTRATOR_RUN_ID_ANNOTATION_KEY = "zenml.io/orchestrator-run-id"
-RUN_ID_ANNOTATION_KEY = "zenml.io/run-id"
