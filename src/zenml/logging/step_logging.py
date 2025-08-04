@@ -739,6 +739,7 @@ class PipelineLogsStorageContext:
 
         # Additional configuration
         self.prepend_step_name = prepend_step_name
+        self.original_step_names_in_console: Optional[bool] = None
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
@@ -766,6 +767,9 @@ class PipelineLogsStorageContext:
         handlers = logging_handlers.get().copy()
         handlers.append(self.artifact_store_handler)
         logging_handlers.set(handlers)
+
+        # Save the current step names context variable state
+        self.original_step_names_in_console = step_names_in_console.get()
 
         # Set the step names context variable
         step_names_disabled = handle_bool_env_var(
@@ -833,8 +837,9 @@ class PipelineLogsStorageContext:
         except Exception:
             pass
 
-        # Reset the step names context to default
-        step_names_in_console.set(False)
+        # Restore the original step names context variable state
+        if self.original_step_names_in_console is not None:
+            step_names_in_console.set(self.original_step_names_in_console)
 
 
 def setup_orchestrator_logging(
