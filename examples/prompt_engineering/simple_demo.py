@@ -13,23 +13,23 @@ zenml_src = current_dir.parent.parent / "src"
 sys.path.insert(0, str(zenml_src))
 
 try:
-    from zenml.prompts.prompt import Prompt
+    from zenml.prompts import Prompt, PromptType, format_diff_for_console
 
     def main():
         print("🚀 ZenML Prompt Engineering - Simple Demo")
         print("=" * 50)
 
-        # 1. Create versioned prompts
-        print("1️⃣ Creating versioned prompts...")
+        # 1. Create different prompts
+        print("1️⃣ Creating different prompts...")
         prompt_v1 = Prompt(
             template="Please summarize the following text in 2-3 sentences: {article}",
-            version="1.0",
+            prompt_type=PromptType.USER,
             variables={"article": ""},
         )
 
         prompt_v2 = Prompt(
             template="You are an expert summarizer. Please provide a concise summary of the following text, highlighting the key concepts in exactly 2 sentences: {article}",
-            version="2.0",
+            prompt_type=PromptType.USER,
             variables={"article": ""},
         )
 
@@ -54,10 +54,27 @@ try:
         print(f"V2.0 Output ({len(result_v2)} chars):")
         print(f"  {result_v2[:100]}...")
 
-        # 3. Simple comparison
-        print("\n3️⃣ Simple A/B comparison...")
-        winner = "v2.0" if len(result_v2) > len(result_v1) else "v1.0"
-        print(f"🏆 Winner: Prompt {winner} (more detailed instruction)")
+        # 3. GitHub-style diff comparison using ZenML core functionality
+        print("\n3️⃣ ZenML diff comparison...")
+        diff_result = prompt_v1.diff(prompt_v2, "V1", "V2")
+
+        print(
+            f"Template similarity: {diff_result['template_diff']['stats']['similarity_ratio']:.1%}"
+        )
+        print(
+            f"Total changes: {diff_result['template_diff']['stats']['total_changes']} lines"
+        )
+
+        # Show colored diff
+        colored_diff = format_diff_for_console(
+            diff_result["template_diff"], color=True
+        )
+        print("Changes:")
+        print(
+            colored_diff[:200] + "..."
+            if len(colored_diff) > 200
+            else colored_diff
+        )
 
         # 4. Show prompt features
         print("\n4️⃣ Prompt features...")
@@ -67,11 +84,12 @@ try:
         print(f"V2.0 complete: {prompt_v2.validate_variables()}")
 
         print("\n✅ Demo completed!")
-        print("💡 In ZenML pipelines, these prompts become artifacts with:")
-        print("   • Rich dashboard visualizations")
-        print("   • Automatic version tracking")
-        print("   • Metadata extraction")
-        print("   • Pipeline integration")
+        print("💡 ZenML prompt features demonstrated:")
+        print("   • Core diff functionality with GitHub-style comparisons")
+        print("   • Template variable extraction and validation")
+        print("   • Rich dashboard visualizations (when used as artifacts)")
+        print("   • Automatic ZenML artifact versioning in pipelines")
+        print("   • Available everywhere: pipelines, UI, notebooks, scripts")
 
     if __name__ == "__main__":
         main()

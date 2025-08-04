@@ -13,18 +13,22 @@
 #  permissions and limitations under the License.
 """Simple prompt artifact and materializer for ZenML."""
 
-from zenml.prompts.prompt import Prompt
-from zenml.prompts.prompt_comparison import (
-    PromptComparisonResult,
+from zenml.prompts.diff_utils import (
     compare_prompts,
-    run_prompt_comparison_pipeline,
+    compare_text_outputs,
+    create_text_diff,
+    format_diff_for_console,
 )
+from zenml.prompts.prompt import Prompt, PromptType
 from zenml.prompts.prompt_materializer import PromptMaterializer
 
 __all__ = [
     "Prompt",
-    "PromptMaterializer", 
-    "PromptComparisonResult",
-    "compare_prompts",
-    "run_prompt_comparison_pipeline",
+    "PromptType",
+    "PromptMaterializer",
+    # Diff utilities - core functionality
+    "create_text_diff",
+    "compare_prompts", 
+    "compare_text_outputs",
+    "format_diff_for_console",
 ]

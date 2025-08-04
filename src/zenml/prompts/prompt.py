@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 
 class PromptType(str, Enum):
     """Enum for different types of prompts."""
-    
+
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
@@ -133,6 +133,32 @@ class Prompt(BaseModel):
         template_vars = set(self.get_variable_names())
         provided_vars = set(self.variables.keys())
         return list(template_vars - provided_vars)
+
+    def diff(
+        self, other: "Prompt", name1: str = "Current", name2: str = "Other"
+    ) -> Dict[str, Any]:
+        """Compare this prompt with another prompt using GitHub-style diff.
+
+        Args:
+            other: The other prompt to compare with
+            name1: Name for this prompt in the diff (default: "Current")
+            name2: Name for the other prompt in the diff (default: "Other")
+
+        Returns:
+            Comprehensive diff analysis including template, variables, and metadata changes
+
+        Example:
+            ```python
+            prompt1 = Prompt(template="Hello {name}")
+            prompt2 = Prompt(template="Hi {name}!")
+
+            diff_result = prompt1.diff(prompt2)
+            print(diff_result["template_diff"]["unified_diff"])
+            ```
+        """
+        from zenml.prompts.diff_utils import compare_prompts
+
+        return compare_prompts(self, other, name1, name2)
 
     def __str__(self) -> str:
         """String representation of the prompt.
