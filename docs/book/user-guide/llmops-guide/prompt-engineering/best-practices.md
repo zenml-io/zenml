@@ -8,32 +8,45 @@ This page compiles lessons learned from production teams using ZenML's prompt en
 
 ## Version Management
 
-### Semantic Versioning Strategy
+### Automatic Versioning with ZenML
 
-Use meaningful version numbers that communicate the scope of changes:
+ZenML automatically handles prompt versioning through its artifact system. Focus on meaningful changes rather than manual version management:
 
 ```python
-# ✅ Good: Semantic versioning with clear meaning
-prompt_v1_0_0 = Prompt(
-    template="Answer: {question}",
-    version="1.0.0"  # Major: Fundamental approach
-)
+# ✅ Good: Let ZenML handle versioning automatically
+@step
+def create_prompt_v1() -> Prompt:
+    """Version 1: Basic approach."""
+    return Prompt(template="Answer: {question}")
 
-prompt_v1_1_0 = Prompt(
-    template="Answer this question: {question}",
-    version="1.1.0"  # Minor: Enhanced wording
-)
+@step  
+def create_prompt_v2() -> Prompt:
+    """Version 2: Enhanced wording."""
+    return Prompt(template="Answer this question: {question}")
 
-prompt_v1_1_1 = Prompt(
-    template="Answer this question clearly: {question}",
-    version="1.1.1"  # Patch: Small refinement
-)
+@step
+def create_prompt_v3() -> Prompt:
+    """Version 3: Clear instructions."""
+    return Prompt(template="Answer this question clearly: {question}")
 
-# ❌ Avoid: Arbitrary or cryptic versions
-prompt_bad = Prompt(
-    template="Answer: {question}",
-    version="prompt_tuesday_v3"  # Unclear what changed
-)
+# ZenML automatically versions these as artifacts: 1, 2, 3...
+```
+
+### Manual Version Tracking (Optional)
+
+For documentation purposes, you can track versions in step names or docstrings:
+
+```python
+# ✅ Good: Clear step naming for version tracking
+@step
+def create_customer_prompt_basic() -> Prompt:
+    """Basic customer service prompt - handles simple queries."""
+    return Prompt(template="Help with: {query}")
+
+@step
+def create_customer_prompt_enhanced() -> Prompt:
+    """Enhanced customer service prompt - more empathetic."""
+    return Prompt(template="I'm here to help with: {query}")
 ```
 
 ### Git Integration Patterns
@@ -48,7 +61,7 @@ class CustomerServicePrompts:
     """Centralized prompt definitions."""
     
     @staticmethod
-    def basic_response(version: str = "2.1.0") -> Prompt:
+    def basic_response() -> Prompt:
         """Standard customer response prompt."""
         return Prompt(
             template="""You are a friendly customer service representative for {company}.
@@ -59,12 +72,11 @@ Please provide a helpful response that:
 - Addresses their specific concern
 - Offers concrete next steps
 - Maintains a professional but warm tone""",
-            version=version,
             variables={"company": "our company"}
         )
     
     @staticmethod
-    def escalation_response(version: str = "1.3.0") -> Prompt:
+    def escalation_response() -> Prompt:
         """Prompt for escalated customer issues."""
         return Prompt(
             template="""You are a senior customer service specialist handling an escalated issue.
@@ -77,26 +89,101 @@ Provide a comprehensive resolution plan that:
 - Acknowledges the customer's frustration
 - Takes ownership of the issue
 - Provides a clear path to resolution
-- Includes compensation if appropriate""",
-            version=version
+- Includes compensation if appropriate"""
         )
+```
+
+## Prompt Comparison Best Practices
+
+### Use Built-in Diff Functionality
+
+ZenML provides GitHub-style diff comparison as core functionality:
+
+```python
+# ✅ Good: Use built-in diff methods
+@step
+def analyze_prompt_changes(old_prompt: Prompt, new_prompt: Prompt) -> dict:
+    """Analyze changes between prompt versions."""
+    diff_result = old_prompt.diff(new_prompt, "Current", "Proposed")
+    
+    return {
+        "similarity": diff_result['template_diff']['stats']['similarity_ratio'],
+        "changes": diff_result['template_diff']['stats']['total_changes'],
+        "identical": diff_result['summary']['identical'],
+        "recommendation": "deploy" if diff_result['template_diff']['stats']['similarity_ratio'] > 0.8 else "review"
+    }
+
+# ❌ Avoid: Custom diff implementations
+def custom_diff_logic(prompt1, prompt2):
+    # Don't reinvent the wheel - use ZenML's core functionality
+    pass
+```
+
+### Compare Outputs, Not Just Templates
+
+```python
+@step
+def compare_prompt_effectiveness(
+    prompt1: Prompt, 
+    prompt2: Prompt, 
+    test_data: list
+) -> dict:
+    """Compare actual prompt outputs for effectiveness."""
+    
+    # Generate outputs
+    outputs1 = [prompt1.format(**data) for data in test_data]
+    outputs2 = [prompt2.format(**data) for data in test_data]
+    
+    # Use ZenML's output comparison
+    from zenml.prompts import compare_text_outputs
+    comparison = compare_text_outputs(outputs1, outputs2)
+    
+    return {
+        "avg_similarity": comparison['aggregate_stats']['average_similarity'],
+        "changed_outputs": comparison['aggregate_stats']['changed_outputs'],
+        "recommendation": "significant_change" if comparison['aggregate_stats']['average_similarity'] < 0.7 else "minor_change"
+    }
 ```
 
 ### Change Documentation
 
-Document what changed and why in your commit messages:
+Document what changed and why using ZenML's diff functionality:
+
+```python
+# ✅ Good: Use diff analysis for change documentation
+@step
+def document_prompt_changes(old_prompt: Prompt, new_prompt: Prompt) -> dict:
+    """Document prompt changes for review."""
+    diff_result = old_prompt.diff(new_prompt)
+    
+    return {
+        "change_summary": {
+            "similarity": f"{diff_result['template_diff']['stats']['similarity_ratio']:.1%}",
+            "lines_added": diff_result['template_diff']['stats']['added_lines'],
+            "lines_removed": diff_result['template_diff']['stats']['removed_lines'],
+            "variables_changed": diff_result['summary']['variables_changed']
+        },
+        "unified_diff": diff_result['template_diff']['unified_diff'],
+        "change_reason": "Improved clarity and response quality",
+        "tested_on": "1000 customer interactions",
+        "performance_impact": "15% improvement in satisfaction"
+    }
+```
+
+Good commit messages with ZenML:
 
 ```bash
 # ✅ Good commit messages
-git commit -m "prompts: improve customer service response clarity (v2.1.0)
+git commit -m "prompts: improve customer service response clarity
 
-- Added specific instruction for concrete next steps
+- Added specific instruction for concrete next steps  
 - Clarified tone expectations (professional but warm)
-- A/B tested with 1000 customer interactions, 15% improvement in satisfaction"
+- ZenML diff shows 85% similarity with focused improvements
+- A/B tested with 1000 interactions, 15% satisfaction increase"
 
 # ❌ Poor commit messages  
 git commit -m "update prompt"
-git commit -m "prompt v3"
+git commit -m "prompt v3" 
 git commit -m "fix"
 ```
 

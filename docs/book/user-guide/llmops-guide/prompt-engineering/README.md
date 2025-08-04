@@ -1,73 +1,89 @@
 ---
-description: Simple prompt engineering with ZenML - version control, A/B testing, and dashboard visualization.
+description: Simple prompt engineering with ZenML - automatic versioning, GitHub-style diffs, and dashboard visualization.
 icon: edit
 ---
 
 # Prompt Engineering
 
-ZenML's prompt engineering focuses on the three things teams actually need: **simple versioning**, **A/B testing**, and **dashboard visualization**.
+ZenML's prompt engineering focuses on the three things teams actually need: **automatic versioning**, **GitHub-style comparisons**, and **dashboard visualization**.
 
 ## Quick Start
 
 1. **Run the example**:
    ```bash
    cd examples/prompt_engineering
-   python run_simple_comparison.py
+   python demo_diff.py
    ```
 
 2. **Check your dashboard** to see prompt artifacts with rich visualizations
 
 ## Core Features
 
-### Git-like Versioning
+### Automatic Versioning
 ```python
-prompt_v1 = Prompt(template="Answer: {question}", version="1.0")
-prompt_v2 = Prompt(template="Detailed answer: {question}", version="2.0") 
+prompt_v1 = Prompt(template="Answer: {question}")
+prompt_v2 = Prompt(template="Detailed answer: {question}")
+# ZenML automatically versions these as artifacts: version 1, 2, 3...
+```
+
+### GitHub-Style Diff Comparison
+```python
+# Built-in diff functionality
+diff_result = prompt_v1.diff(prompt_v2)
+print(diff_result["template_diff"]["unified_diff"])
+
+# Console output with colors
+from zenml.prompts import format_diff_for_console
+colored_diff = format_diff_for_console(diff_result["template_diff"])
 ```
 
 ### A/B Testing
 ```python
-# Pipeline automatically compares versions and determines winner
-result = simple_prompt_comparison()
-print(f"Winner: {result['winner']}")
+# Compare actual outputs from different prompts
+from zenml.prompts import compare_text_outputs
+comparison = compare_text_outputs(v1_outputs, v2_outputs)
+print(f"Similarity: {comparison['aggregate_stats']['average_similarity']:.1%}")
 ```
 
 ### Dashboard Integration
-- Syntax-highlighted templates
+- Syntax-highlighted templates with HTML diffs
 - Variable tables and validation
-- Version tracking across runs
-- Side-by-side comparisons
+- Automatic version tracking via ZenML artifacts
+- GitHub-style side-by-side comparisons
 
 ## Why This Approach?
 
-User research shows teams with millions of daily requests use **simple Git-based versioning**, not complex management systems. This approach focuses on what actually works in production.
-
+User research shows teams with millions of daily requests use **simple artifact-based versioning**, not complex management systems. ZenML leverages its existing artifact infrastructure for automatic versioning.
 
 ## ZenML's Philosophy: Embrace Simplicity
 
 Based on our research, ZenML's prompt management follows three principles:
 
-### 1. **Prompts Are Versioned Artifacts**
+### 1. **Prompts Are Auto-Versioned Artifacts**
 
 ```python
-# Simple, clear, version-controlled
-prompt = Prompt(
-    template="Answer: {question}",
-    version="2.0"  # Git-like versioning
-)
+# Simple, clear, automatically versioned
+prompt = Prompt(template="Answer: {question}")
+# ZenML handles versioning automatically when used in pipelines
 ```
 
-Prompts integrate naturally with ZenML's artifact system. No special management layer required.
+Prompts integrate naturally with ZenML's artifact system. No manual version management required.
 
-### 2. **Forward-Looking Experimentation Over Backward-Looking Management**
+### 2. **Built-in Diff Functionality**
 
 ```python
-# Focus on comparing forward
-result = compare_prompts(
-    prompt_a=new_prompt,
-    prompt_b=current_prompt,
-    test_cases=real_scenarios
-)
+# Core ZenML functionality for comparison
+diff_result = prompt1.diff(prompt2)
+# Get unified diffs, HTML diffs, statistics, and more
+```
+
+GitHub-style diffs are built into the core Prompt class, available everywhere.
+
+### 3. **Forward-Looking Experimentation**
+
+```python
+# Focus on comparing what works better
+output_comparison = compare_text_outputs(v1_results, v2_results)
 ```
 
 Instead of complex version trees, focus on "Does this new prompt work better?"
