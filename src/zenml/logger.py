@@ -17,12 +17,14 @@ import logging
 import os
 import re
 import sys
-from typing import Any, Dict
+from contextvars import ContextVar
+from typing import Any, Dict, List
 
 from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_CAPTURE_PRINTS,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SUPPRESS_LOGS,
@@ -35,6 +37,45 @@ from zenml.enums import LoggingLevels
 ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
     ENV_ZENML_LOGGING_COLORS_DISABLED, False
 )
+
+
+step_names_in_console: ContextVar[bool] = ContextVar(
+    "step_names_in_console", default=False
+)
+
+logging_handlers: ContextVar[List[logging.Handler]] = ContextVar(
+    "logging_handlers", default=[]
+)
+
+
+def _add_step_name_to_message(message: str) -> str:
+    """Adds the step name to the message.
+
+    Args:
+        message: The message to add the step name to.
+
+    Returns:
+        The message with the step name added.
+    """
+    try:
+        if step_names_in_console.get():
+            from zenml.steps import get_step_context
+
+            step_context = get_step_context()
+
+            if step_context and message not in ["\n", ""]:
+                # For progress bar updates (with \r), inject the step name after the \r
+                if "\r" in message:
+                    message = message.replace(
+                        "\r", f"\r[{step_context.step_name}] "
+                    )
+                else:
+                    message = f"[{step_context.step_name}] {message}"
+    except Exception:
+        # If we can't get step context, just use the original message
+        pass
+
+    return message
 
 
 class CustomFormatter(logging.Formatter):
@@ -84,11 +125,6 @@ class CustomFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
-        # Import here to avoid circular imports
-        from zenml.logging.step_logging import (
-            _add_step_name_to_message,
-            step_names_in_console,
-        )
 
         # Get the template
         format_template = self._get_format_template(record)
@@ -201,6 +237,67 @@ def set_root_verbosity() -> None:
         get_logger(__name__).debug("Logging NOTSET")
 
 
+def setup_global_print_wrapping() -> None:
+    """Set up global print() wrapping with context-aware handlers."""
+    # Check if we should capture prints
+    capture_prints = handle_bool_env_var(
+        ENV_ZENML_CAPTURE_PRINTS, default=True
+    )
+
+    if not capture_prints:
+        return
+
+    # Check if already wrapped to avoid double wrapping
+    if hasattr(__builtins__, "_zenml_original_print"):
+        return
+
+    import builtins
+
+    original_print = builtins.print
+
+    def wrapped_print(*args: Any, **kwargs: Any) -> None:
+        # Convert print arguments to message
+        message = " ".join(str(arg) for arg in args)
+
+        # Determine if this should go to stderr or stdout based on file argument
+        file_arg = kwargs.get("file", sys.stdout)
+
+        # Call active handlers first (for storage)
+        if message.strip():
+            handlers = logging_handlers.get()
+
+            for handler in handlers:
+                try:
+                    # Create a LogRecord for the handler
+                    record = logging.LogRecord(
+                        name="print",
+                        level=logging.ERROR
+                        if file_arg == sys.stderr
+                        else logging.INFO,
+                        pathname="",
+                        lineno=0,
+                        msg=message,
+                        args=(),
+                        exc_info=None,
+                    )
+                    # Check if handler's level would accept this record
+                    if record.levelno >= handler.level:
+                        handler.emit(record)
+                except Exception:
+                    # Don't let handler errors break print
+                    pass
+
+        if step_names_in_console.get():
+            message = _add_step_name_to_message(message)
+
+        # Then call original print for console display
+        return original_print(message, *args[1:], **kwargs)
+
+    # Store original and replace print
+    setattr(builtins, "_zenml_original_print", original_print)
+    setattr(builtins, "print", wrapped_print)
+
+
 def get_formatter() -> logging.Formatter:
     """Get a configured logging formatter.
 
@@ -235,8 +332,7 @@ def get_logger(logger_name: str) -> logging.Logger:
     Returns:
         A logger object.
     """
-    logger = logging.getLogger(logger_name)
-    return logger
+    return logging.getLogger(logger_name)
 
 
 def init_logging() -> None:
@@ -262,9 +358,6 @@ def init_logging() -> None:
 
     # Initialize global print wrapping
     try:
-        # Import here to avoid circular imports
-        from zenml.logging.step_logging import setup_global_print_wrapping
-
         setup_global_print_wrapping()
     except ImportError:
         # If step_logging is not available, skip the wrapping
