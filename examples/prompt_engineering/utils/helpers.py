@@ -29,7 +29,7 @@ def format_comparison_results(results: dict) -> str:
         v2_score = scores["v2_scores"][i]
         test_winner = "V2.0" if v2_score > v1_score else "V1.0"
         output.append(
-            f"  Q{i+1}: V1.0={v1_score}, V2.0={v2_score} → {test_winner}"
+            f"  Q{i + 1}: V1.0={v1_score}, V2.0={v2_score} → {test_winner}"
         )
 
     return "\n".join(output)

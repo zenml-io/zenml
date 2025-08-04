@@ -2,7 +2,7 @@
 """Prompt Version Comparison Example - A/B testing for the same task.
 
 This example shows:
-1. Same real task (text summarization) 
+1. Same real task (text summarization)
 2. Two different prompt versions (v1.0 vs v2.0)
 3. Side-by-side comparison of effectiveness
 4. Winner determination for the task

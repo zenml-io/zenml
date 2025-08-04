@@ -208,7 +208,7 @@ def compare_text_outputs(
 
     for i, (out1, out2) in enumerate(zip(outputs1, outputs2)):
         diff = create_text_diff(
-            out1, out2, f"{name1} Output {i+1}", f"{name2} Output {i+1}"
+            out1, out2, f"{name1} Output {i + 1}", f"{name2} Output {i + 1}"
         )
 
         comparison = {

@@ -92,7 +92,7 @@ def demo_output_comparison():
         print(f"✅ Identical outputs: {stats['identical_outputs']}")
 
         for i, comp in enumerate(output_comparison["comparisons"]):
-            print(f"\n📄 COMPARISON {i+1}:")
+            print(f"\n📄 COMPARISON {i + 1}:")
             print(f"Similarity: {comp['similarity']:.2%}")
             print("Changes:")
             for change_type, line in comp["diff"]["side_by_side"][
