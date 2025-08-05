@@ -18,7 +18,6 @@ import logging
 import os
 import queue
 import re
-import sys
 import threading
 import time
 from contextlib import nullcontext
@@ -31,14 +30,8 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.artifacts.utils import (
-    _load_artifact_store,
-    _load_file_from_artifact_store,
-    _strip_timestamp_from_multiline_string,
-)
 from zenml.client import Client
 from zenml.constants import (
-    ENV_ZENML_CAPTURE_PRINTS,
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     LOGS_MERGE_INTERVAL_SECONDS,
@@ -49,7 +42,12 @@ from zenml.constants import (
 )
 from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
-from zenml.logger import get_logger, get_storage_log_level
+from zenml.logger import (
+    get_logger,
+    get_storage_log_level,
+    logging_handlers,
+    step_names_in_console,
+)
 from zenml.models import (
     LogsRequest,
     PipelineDeploymentResponse,
@@ -63,21 +61,17 @@ logger = get_logger(__name__)
 
 # Context variables
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
-step_names_in_console: ContextVar[bool] = ContextVar(
-    "step_names_in_console", default=False
-)
-
-# Context variable for logging handlers
-logging_handlers: ContextVar[List[logging.Handler]] = ContextVar(
-    "logging_handlers", default=[]
-)
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
-MAX_LOG_ENTRIES = 100  # Maximum number of log entries to return in a single request
-MAX_MESSAGE_SIZE = 10 * 1024  # Maximum size of a single log message in bytes (10KB)
+MAX_LOG_ENTRIES = (
+    100  # Maximum number of log entries to return in a single request
+)
+MAX_MESSAGE_SIZE = (
+    10 * 1024
+)  # Maximum size of a single log message in bytes (10KB)
 
 
 class LogEntry(BaseModel):
@@ -108,39 +102,6 @@ class LogEntry(BaseModel):
     )
 
 
-def _add_step_name_to_message(message: str) -> str:
-    """Adds the step name to the message.
-
-    Args:
-        message: The message to add the step name to.
-
-    Returns:
-        The message with the step name added.
-    """
-    try:
-        # Import here to avoid circular imports
-        from zenml.logging.step_logging import step_names_in_console
-
-        if step_names_in_console.get():
-            from zenml.steps import get_step_context
-
-            step_context = get_step_context()
-
-            if step_context and message not in ["\n", ""]:
-                # For progress bar updates (with \r), inject the step name after the \r
-                if "\r" in message:
-                    message = message.replace(
-                        "\r", f"\r[{step_context.step_name}] "
-                    )
-                else:
-                    message = f"[{step_context.step_name}] {message}"
-    except Exception:
-        # If we can't get step context, just use the original message
-        pass
-
-    return message
-
-
 class ArtifactStoreHandler(logging.Handler):
     """Handler that writes log messages to artifact store storage."""
 
@@ -167,7 +128,8 @@ class ArtifactStoreHandler(logging.Handler):
             level = LoggingLevels.__members__.get(record.levelname.upper())
 
             # Get the message
-            message = record.getMessage()
+            message = self.format(record)
+            message = remove_ansi_escape_codes(message).rstrip()
 
             # Check if message needs to be chunked
             message_bytes = message.encode("utf-8")
@@ -203,7 +165,6 @@ class ArtifactStoreHandler(logging.Handler):
                     json_line = log_record.model_dump_json(exclude_none=True)
                     self.storage.write(json_line)
         except Exception:
-            # Don't let storage errors break logging
             pass
 
     def _split_to_chunks(self, message: str) -> List[str]:
@@ -252,67 +213,6 @@ class ArtifactStoreHandler(logging.Handler):
             start = end
 
         return chunks
-
-
-def setup_global_print_wrapping() -> None:
-    """Set up global print() wrapping with context-aware handlers."""
-    # Check if we should capture prints
-    capture_prints = handle_bool_env_var(
-        ENV_ZENML_CAPTURE_PRINTS, default=True
-    )
-
-    if not capture_prints:
-        return
-
-    # Check if already wrapped to avoid double wrapping
-    if hasattr(__builtins__, "_zenml_original_print"):
-        return
-
-    import builtins
-
-    original_print = builtins.print
-
-    def wrapped_print(*args: Any, **kwargs: Any) -> None:
-        # Convert print arguments to message
-        message = " ".join(str(arg) for arg in args)
-
-        # Determine if this should go to stderr or stdout based on file argument
-        file_arg = kwargs.get("file", sys.stdout)
-
-        # Call active handlers first (for storage)
-        if message.strip():
-            handlers = logging_handlers.get()
-
-            for handler in handlers:
-                try:
-                    # Create a LogRecord for the handler
-                    record = logging.LogRecord(
-                        name="print",
-                        level=logging.ERROR
-                        if file_arg == sys.stderr
-                        else logging.INFO,
-                        pathname="",
-                        lineno=0,
-                        msg=message,
-                        args=(),
-                        exc_info=None,
-                    )
-                    # Check if handler's level would accept this record
-                    if record.levelno >= handler.level:
-                        handler.emit(record)
-                except Exception:
-                    # Don't let handler errors break print
-                    pass
-
-        if step_names_in_console.get():
-            message = _add_step_name_to_message(message)
-
-        # Then call original print for console display
-        return original_print(message, *args[1:], **kwargs)
-
-    # Store original and replace print
-    setattr(builtins, "_zenml_original_print", original_print)
-    setattr(builtins, "print", wrapped_print)
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -422,9 +322,9 @@ def fetch_log_records(
     """Fetches the logs from the artifact store and parses them into LogEntry objects.
 
     This implementation uses streaming to efficiently handle large log files by:
-    
+
     1. Reading logs line by line instead of loading everything into memory
-    2. Applying filters as we go to avoid processing unnecessary data  
+    2. Applying filters as we go to avoid processing unnecessary data
     3. Stopping once we have the required number of filtered entries
 
     Args:
@@ -447,35 +347,35 @@ def fetch_log_records(
     target_total = offset + count
     matching_entries = []
     entries_found = 0
-    
+
     # Stream logs line by line instead of reading everything
     try:
         for line in _stream_logs_line_by_line(
             zen_store=zen_store,
-            artifact_store_id=artifact_store_id, 
+            artifact_store_id=artifact_store_id,
             logs_uri=logs_uri,
         ):
             if not line.strip():
                 continue
-                
+
             log_entry = parse_log_entry(line)
             if not log_entry:
                 continue
-                
+
             # Check if this entry matches our filters
             if _entry_matches_filters(log_entry, level, search):
                 entries_found += 1
-                
+
                 # Only start collecting after we've skipped 'offset' entries
                 if entries_found > offset:
                     matching_entries.append(log_entry)
-                    
+
                 # Stop reading once we have enough entries
                 if entries_found >= target_total:
                     break
-                    
+
         return matching_entries
-        
+
     except DoesNotExistException:
         # Re-raise DoesNotExistException as-is
         raise
@@ -510,6 +410,11 @@ def fetch_logs(
         DoesNotExistException: If the artifact does not exist in the artifact
             store.
     """
+    from zenml.artifacts.utils import (
+        _load_artifact_store,
+        _load_file_from_artifact_store,
+        _strip_timestamp_from_multiline_string,
+    )
 
     def _read_file(
         uri: str,
@@ -601,23 +506,23 @@ def _stream_logs_line_by_line(
     logs_uri: str,
 ) -> Any:
     """Stream logs line by line without loading the entire file into memory.
-    
+
     This generator yields log lines one by one, handling both single files
     and directories with multiple log files.
-    
+
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the log file or directory.
-        
+
     Yields:
         Individual log lines as strings.
-        
+
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
     """
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
-    
+
     try:
         if not artifact_store.isdir(logs_uri):
             # Single file case
@@ -632,10 +537,10 @@ def _stream_logs_line_by_line(
                     f"Folder '{logs_uri}' is empty in artifact store "
                     f"'{artifact_store.name}'."
                 )
-            
+
             # Sort files to read them in order
             files.sort()
-            
+
             for file in files:
                 file_path = os.path.join(logs_uri, str(file))
                 with artifact_store.open(file_path, "r") as f:
@@ -646,17 +551,15 @@ def _stream_logs_line_by_line(
 
 
 def _entry_matches_filters(
-    entry: LogEntry, 
-    level: Optional[str] = None, 
-    search: Optional[str] = None
+    entry: LogEntry, level: Optional[str] = None, search: Optional[str] = None
 ) -> bool:
     """Check if a log entry matches the given filters.
-    
+
     Args:
         entry: The log entry to check.
         level: Optional log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
-        
+
     Returns:
         True if the entry matches all filters, False otherwise.
     """
@@ -669,15 +572,14 @@ def _entry_matches_filters(
         except KeyError:
             # If invalid level provided, ignore the filter
             pass
-    
+
     # Apply search filter
     if search:
         search_lower = search.lower()
         if search_lower not in entry.message.lower():
             return False
-    
-    return True
 
+    return True
 
 
 class PipelineLogsStorage:
@@ -781,11 +683,11 @@ class PipelineLogsStorage:
         except Exception as e:
             logger.error("Error in log storage thread: %s", e)
         finally:
-            # Always mark all queue tasks as done
             for _ in messages:
                 self.log_queue.task_done()
 
-            time.sleep(self.write_interval)
+            # Wait for the next write interval or until shutdown is requested
+            self.shutdown_event.wait(timeout=self.write_interval)
 
     def _log_storage_worker(self) -> None:
         """Log storage thread worker that processes the log queue."""
@@ -964,6 +866,10 @@ class PipelineLogsStorage:
         Args:
             merge_all_files: whether to merge all files or only raw files
         """
+        from zenml.artifacts.utils import (
+            _load_file_from_artifact_store,
+        )
+
         # If the artifact store is immutable, merge the log files
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
             merged_file_suffix = "_merged"
@@ -1040,13 +946,12 @@ class PipelineLogsStorageContext:
             ArtifactStoreHandler(self.storage)
         )
         self.artifact_store_handler.setFormatter(
-            logging.Formatter(
-                "[%(levelname)s] %(message)s (%(name)s:%(filename)s:%(lineno)d)"
-            )
+            logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
         )
 
         # Additional configuration
         self.prepend_step_name = prepend_step_name
+        self.original_step_names_in_console: Optional[bool] = None
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
@@ -1074,6 +979,9 @@ class PipelineLogsStorageContext:
         handlers = logging_handlers.get().copy()
         handlers.append(self.artifact_store_handler)
         logging_handlers.set(handlers)
+
+        # Save the current step names context variable state
+        self.original_step_names_in_console = step_names_in_console.get()
 
         # Set the step names context variable
         step_names_disabled = handle_bool_env_var(
@@ -1141,8 +1049,9 @@ class PipelineLogsStorageContext:
         except Exception:
             pass
 
-        # Reset the step names context to default
-        step_names_in_console.set(False)
+        # Restore the original step names context variable state
+        if self.original_step_names_in_console is not None:
+            step_names_in_console.set(self.original_step_names_in_console)
 
 
 def setup_orchestrator_logging(

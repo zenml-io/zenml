@@ -27,7 +27,11 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.logging.step_logging import fetch_log_records, LogEntry, MAX_LOG_ENTRIES
+from zenml.logging.step_logging import (
+    MAX_LOG_ENTRIES,
+    LogEntry,
+    fetch_log_records,
+)
 from zenml.models import (
     Page,
     StepRunFilter,

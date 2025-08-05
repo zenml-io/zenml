@@ -478,27 +478,27 @@ def run_logs(
             target_total = offset + count
             matching_entries = []
             entries_found = 0
-            
+
             for line in workload_logs.split("\n"):
                 if not line.strip():
                     continue
-                    
+
                 log_record = parse_log_entry(line)
                 if not log_record:
                     continue
-                    
+
                 # Check if this entry matches our filters
                 if _entry_matches_filters(log_record, level, search):
                     entries_found += 1
-                    
+
                     # Only start collecting after we've skipped 'offset' entries
                     if entries_found > offset:
                         matching_entries.append(log_record)
-                        
+
                     # Stop processing once we have enough entries
                     if entries_found >= target_total:
                         break
-                        
+
             return matching_entries
 
     # Handle logs from log collection
