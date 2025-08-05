@@ -136,7 +136,7 @@ class ArtifactStoreHandler(logging.Handler):
             message_bytes = message.encode("utf-8")
             if len(message_bytes) <= MAX_MESSAGE_SIZE:
                 # Message is small enough, emit as-is
-                log_record = LogEntry(
+                log_record = LogEntry.model_construct(
                     message=message,
                     name=record.name,
                     level=level,
@@ -153,7 +153,7 @@ class ArtifactStoreHandler(logging.Handler):
                 for i, chunk in enumerate(chunks):
                     chunk_message = f"{chunk} (chunk {i + 1}/{len(chunks)})"
 
-                    log_record = LogEntry(
+                    log_record = LogEntry.model_construct(
                         message=chunk_message,
                         name=record.name,
                         level=level,
