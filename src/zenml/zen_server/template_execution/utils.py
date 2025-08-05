@@ -287,7 +287,7 @@ def trigger_deployment(
         )
 
         runner_timeout = handle_int_env_var(
-            ENV_ZENML_RUNNER_POD_TIMEOUT, default=60
+            ENV_ZENML_RUNNER_POD_TIMEOUT, default=180
         )
 
         # could do this same thing with a step operator, but we need some
