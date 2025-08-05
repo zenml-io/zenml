@@ -22,8 +22,7 @@ def setup_openai_client() -> OpenAI:
         if "proxies" in str(e):
             # Try with minimal config to avoid version issues
             return OpenAI(
-                api_key=api_key,
-                base_url="https://api.openai.com/v1"
+                api_key=api_key, base_url="https://api.openai.com/v1"
             )
         raise
 

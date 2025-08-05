@@ -7,16 +7,17 @@ from pydantic import BaseModel, ValidationError
 from schemas.invoice_schema import InvoiceData
 
 from zenml import step
+from zenml.prompts import PromptResponse
 
 
 @step
 def validate_batch_results(
-    extraction_results: List[Dict[str, Any]],
+    extraction_results: List[PromptResponse],
 ) -> Dict[str, Any]:
-    """Validate batch of extraction results.
+    """Validate batch of PromptResponse results.
 
     Args:
-        extraction_results: List of dictionaries containing extracted data
+        extraction_results: List of PromptResponse artifacts containing extracted data
 
     Returns:
         Dictionary containing validation results
@@ -34,9 +35,9 @@ def validate_batch_results(
         "total_warnings": 0,
     }
 
-    for result in extraction_results:
-        if result.get("extracted_data") is not None:
-            validated = _validate_single_result(result, expected_schema)
+    for response in extraction_results:
+        if response.parsed_output is not None:
+            validated = _validate_single_response(response, expected_schema)
             validated_results.append(validated)
 
             if validated["is_valid"]:
@@ -51,11 +52,14 @@ def validate_batch_results(
             # Failed extraction
             validated_results.append(
                 {
-                    "file_path": result.get("file_path"),
+                    "file_path": response.metadata.get(
+                        "document_path", "unknown"
+                    ),
                     "is_valid": False,
                     "schema_valid": False,
                     "validated_data": None,
-                    "errors": [result.get("error", "Extraction failed")],
+                    "errors": response.validation_errors
+                    or ["Extraction failed"],
                     "warnings": [],
                     "quality_metrics": {"overall_quality": 0.0},
                 }
@@ -91,14 +95,14 @@ def validate_batch_results(
     }
 
 
-def _validate_single_result(
-    extraction_result: Dict[str, Any], expected_schema: Type[BaseModel]
+def _validate_single_response(
+    response: PromptResponse, expected_schema: Type[BaseModel]
 ) -> Dict[str, Any]:
-    """Validate a single extraction result."""
+    """Validate a single PromptResponse result."""
     validation_errors = []
     validation_warnings = []
 
-    extracted_data = extraction_result.get("extracted_data", {})
+    extracted_data = response.parsed_output or {}
 
     # 1. Schema validation
     try:
@@ -172,10 +176,10 @@ def _validate_single_result(
 
     # 3. Calculate quality scores
     completeness_score = _calculate_field_completeness(extracted_data)
-    confidence_score = _calculate_confidence_score(extraction_result)
+    confidence_score = _calculate_confidence_score_from_response(response)
 
     return {
-        "file_path": extraction_result.get("file_path"),
+        "file_path": response.metadata.get("document_path", "unknown"),
         "is_valid": len(validation_errors) == 0,
         "schema_valid": schema_valid,
         "validated_data": validated_dict,
@@ -192,9 +196,13 @@ def _validate_single_result(
             )
             / 3,
         },
-        "processing_metadata": extraction_result.get(
-            "processing_metadata", {}
-        ),
+        "processing_metadata": {
+            "model_name": response.model_name,
+            "total_tokens": response.total_tokens,
+            "total_cost": response.total_cost,
+            "response_time_ms": response.response_time_ms,
+            "validation_passed": response.validation_passed,
+        },
     }
 
 
@@ -271,3 +279,60 @@ def _calculate_confidence_score(extraction_result: Dict[str, Any]) -> float:
         confidence += 0.1
 
     return max(0.0, min(1.0, confidence))  # Clamp between 0 and 1
+
+
+def _calculate_confidence_score_from_response(
+    response: PromptResponse,
+) -> float:
+    """Calculate confidence score based on PromptResponse metadata."""
+    # Start with quality score if available
+    if response.quality_score is not None:
+        return response.quality_score
+
+    # Start with lower base confidence to be more realistic
+    confidence = 0.3
+
+    # Boost confidence if LLM finished normally
+    if response.metadata.get("finish_reason") == "stop":
+        confidence += 0.15
+    elif response.metadata.get("finish_reason") == "length":
+        confidence -= 0.1  # Truncated responses are concerning
+
+    # Validation is important but not everything
+    if response.validation_passed:
+        confidence += 0.15
+    else:
+        confidence -= 0.25
+
+    # Adjust based on response length - be more nuanced
+    content_length = len(response.content)
+    if content_length > 500:  # Very detailed responses
+        confidence += 0.1
+    elif content_length > 200:  # Good detail
+        confidence += 0.05
+    elif content_length < 50:  # Too brief
+        confidence -= 0.15
+
+    # Token usage should be reasonable - penalize extremes
+    if response.completion_tokens:
+        if 100 < response.completion_tokens < 800:  # Good range
+            confidence += 0.1
+        elif response.completion_tokens > 1500:  # Too verbose
+            confidence -= 0.1
+        elif response.completion_tokens < 30:  # Too brief
+            confidence -= 0.1
+
+    # Schema helps but only slightly
+    if response.metadata.get("has_schema"):
+        confidence += 0.05
+
+    # Check for validation errors as red flags
+    if response.validation_errors:
+        error_penalty = min(0.2, len(response.validation_errors) * 0.05)
+        confidence -= error_penalty
+
+    # Cost effectiveness - very expensive responses might indicate issues
+    if response.total_cost and response.total_cost > 0.05:  # > 5 cents
+        confidence -= 0.05
+
+    return max(0.1, min(0.95, confidence))  # Clamp between 10% and 95%

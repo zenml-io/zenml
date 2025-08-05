@@ -37,7 +37,7 @@ class PromptMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES: ClassVar[tuple[Type[Any], ...]] = (Prompt,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Prompt]) -> Prompt:  # noqa: ARG002
+    def load(self, data_type: Type[Prompt]) -> Prompt:
         """Load a Prompt object from storage.
 
         Args:
@@ -68,7 +68,7 @@ class PromptMaterializer(BaseMaterializer):
             f.write(json.dumps(prompt_dict, indent=2, default=str))
 
     def extract_metadata(self, data: Prompt) -> Dict[str, Any]:
-        """Extract basic metadata from a Prompt object.
+        """Extract comprehensive metadata from a Prompt object.
 
         Args:
             data: The Prompt object
@@ -77,15 +77,44 @@ class PromptMaterializer(BaseMaterializer):
             Dictionary containing extracted metadata
         """
         metadata = {
+            # Basic prompt metadata
             "prompt_type": data.prompt_type,
             "template_length": len(data.template),
             "variable_count": len(data.variables),
             "variable_names": data.get_variable_names(),
             "missing_variables": data.get_missing_variables(),
             "variables_complete": data.validate_variables(),
+            # Enhanced fields metadata
+            "has_output_schema": data.output_schema is not None,
+            "schema_type": type(data.output_schema).__name__
+            if data.output_schema
+            else None,
+            "examples_count": len(data.examples),
+            "has_examples": len(data.examples) > 0,
         }
 
-        logger.info(f"Extracted metadata for prompt: {data.prompt_type}")
+        # Add schema details if available
+        if data.output_schema is not None:
+            schema_dict = data.get_schema_dict()
+            if schema_dict:
+                metadata["schema_properties"] = list(
+                    schema_dict.get("properties", {}).keys()
+                )
+                metadata["schema_required"] = schema_dict.get("required", [])
+
+        # Add example validation status
+        if data.examples:
+            valid_examples = [
+                data.validate_example(ex) for ex in data.examples
+            ]
+            metadata["valid_examples_count"] = sum(valid_examples)
+            metadata["all_examples_valid"] = all(valid_examples)
+
+        logger.info(
+            f"Extracted metadata for prompt: {data.prompt_type}, "
+            f"schema={data.output_schema is not None}, "
+            f"examples={len(data.examples)}"
+        )
         return metadata
 
     def save_visualizations(
@@ -197,13 +226,92 @@ class PromptMaterializer(BaseMaterializer):
             <div style="margin-top: 20px;">
                 <p><strong>Template Length:</strong> {len(prompt.template)} characters</p>
                 <p><strong>Missing Variables:</strong> {", ".join(prompt.get_missing_variables()) or "None"}</p>
+                <p><strong>Output Schema:</strong> {"Yes" if prompt.output_schema else "No"}</p>
+                <p><strong>Examples:</strong> {len(prompt.examples)}</p>
             </div>
 
+            {self._generate_schema_section_html(prompt)}
+            {self._generate_examples_section_html(prompt)}
             {sample_output}
         </div>
         """
 
         return html_content
+
+    def _generate_schema_section_html(self, prompt: Prompt) -> str:
+        """Generate HTML section for output schema.
+
+        Args:
+            prompt: The Prompt object
+
+        Returns:
+            HTML string for schema section
+        """
+        if not prompt.output_schema:
+            return ""
+
+        import html
+
+        schema_dict = prompt.get_schema_dict()
+        if not schema_dict:
+            return ""
+
+        schema_json = html.escape(json.dumps(schema_dict, indent=2))
+
+        return f"""
+        <div style="margin-top: 20px;">
+            <h3>Output Schema</h3>
+            <div style="background-color: #e7f3ff; padding: 15px; border-radius: 5px;">
+                <pre style="background-color: white; padding: 10px; border-radius: 3px; overflow-x: auto; font-family: monospace; font-size: 12px;">{schema_json}</pre>
+            </div>
+        </div>
+        """
+
+    def _generate_examples_section_html(self, prompt: Prompt) -> str:
+        """Generate HTML section for examples.
+
+        Args:
+            prompt: The Prompt object
+
+        Returns:
+            HTML string for examples section
+        """
+        if not prompt.examples:
+            return ""
+
+        import html
+
+        examples_html = """
+        <div style="margin-top: 20px;">
+            <h3>Examples</h3>
+        """
+
+        for i, example in enumerate(prompt.examples, 1):
+            input_json = html.escape(
+                json.dumps(example.get("input", {}), indent=2)
+            )
+            output_json = html.escape(
+                json.dumps(example.get("output", {}), indent=2)
+            )
+
+            examples_html += f"""
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #007bff;">
+                <h4>Example {i}</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <strong>Input:</strong>
+                        <pre style="background-color: white; padding: 10px; border-radius: 3px; font-family: monospace; font-size: 12px; margin-top: 5px;">{input_json}</pre>
+                    </div>
+                    <div>
+                        <strong>Expected Output:</strong>
+                        <pre style="background-color: white; padding: 10px; border-radius: 3px; font-family: monospace; font-size: 12px; margin-top: 5px;">{output_json}</pre>
+                    </div>
+                </div>
+            </div>
+            """
+
+        examples_html += "</div>"
+        return examples_html
 
     def _generate_prompt_markdown(self, prompt: Prompt) -> str:
         """Generate Markdown visualization for a prompt.
@@ -233,6 +341,38 @@ class PromptMaterializer(BaseMaterializer):
             except Exception:
                 pass
 
+        # Schema section
+        schema_section = ""
+        if prompt.output_schema:
+            schema_dict = prompt.get_schema_dict()
+            if schema_dict:
+                schema_section = f"""
+## Output Schema
+
+```json
+{json.dumps(schema_dict, indent=2)}
+```
+"""
+
+        # Examples section
+        examples_section = ""
+        if prompt.examples:
+            examples_section = "\n## Examples\n"
+            for i, example in enumerate(prompt.examples, 1):
+                examples_section += f"""
+### Example {i}
+
+**Input:**
+```json
+{json.dumps(example.get("input", {}), indent=2)}
+```
+
+**Expected Output:**
+```json
+{json.dumps(example.get("output", {}), indent=2)}
+```
+"""
+
         markdown = f"""# Prompt Template
 
 **Type:** {prompt.prompt_type}
@@ -252,7 +392,9 @@ class PromptMaterializer(BaseMaterializer):
 - **Template Length:** {len(prompt.template)} characters
 - **Variable Count:** {len(prompt.get_variable_names())}
 - **Missing Variables:** {", ".join(prompt.get_missing_variables()) or "None"}
-{sample_output}
+- **Output Schema:** {"Yes" if prompt.output_schema else "No"}
+- **Examples:** {len(prompt.examples)}
+{schema_section}{examples_section}{sample_output}
 """
 
         return markdown

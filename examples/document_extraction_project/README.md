@@ -1,6 +1,6 @@
 # Document Extraction with ZenML
 
-A focused, runnable example of document extraction using ZenML's artifact store and prompt management system.
+A focused, runnable example of document extraction using ZenML's enhanced prompt and response artifact system, featuring structured output schemas, few-shot learning, and comprehensive response tracking.
 
 ## Prerequisites
 
@@ -82,6 +82,30 @@ The project includes three sample invoice documents in `sample_documents/`:
 - `sample_invoice_2.txt` - Database migration services from DataTech Solutions
 - `sample_invoice_3.txt` - Cloud services annual billing from CloudServ Inc.
 
+## Enhanced Features
+
+This example showcases ZenML's enhanced prompt and response artifact system:
+
+### 🎯 **Structured Output Schemas**
+- Prompts include Pydantic schema definitions for type-safe extraction
+- Automatic validation and error reporting for malformed responses
+- Rich dashboard visualizations showing schema compliance
+
+### 📚 **Few-Shot Learning**
+- Prompts contain comprehensive examples for better LLM performance
+- Multiple real-world invoice examples with expected outputs
+- Support for different document types (standard, OCR-processed)
+
+### 📊 **Comprehensive Response Tracking**
+- `PromptResponse` artifacts capture complete LLM interaction metadata
+- Cost tracking (tokens, pricing) and performance metrics
+- Quality scores and validation results with detailed error reporting
+
+### 🔗 **Artifact Linking**
+- Automatic provenance tracking between prompts and responses
+- Support for multi-turn conversations and response chaining
+- Rich metadata for debugging and optimization
+
 ## Sample Output
 
 ```json
@@ -90,18 +114,27 @@ The project includes three sample invoice documents in `sample_documents/`:
     "total_documents": 3,
     "successful_extractions": 3,
     "success_rate": 1.0,
-    "schema_compliance_rate": 1.0
+    "schema_compliance_rate": 1.0,
+    "average_confidence": 0.94,
+    "total_cost_usd": 0.0127
   },
   "validated_results": [
     {
       "file_path": "/path/to/sample_invoice_1.txt",
       "is_valid": true,
+      "schema_valid": true,
       "validated_data": {
         "invoice_number": "INV-2024-001",
         "invoice_date": "2024-01-15",
-        "vendor_name": "ACME Corporation",
+        "vendor": {"name": "ACME Corporation"},
         "total_amount": 8680.00,
         "line_items": [...]
+      },
+      "quality_metrics": {
+        "field_completeness": 0.95,
+        "schema_compliance": 1.0,
+        "confidence_score": 0.94,
+        "overall_quality": 0.96
       }
     }
   ]

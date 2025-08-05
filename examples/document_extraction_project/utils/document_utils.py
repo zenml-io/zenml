@@ -1,9 +1,8 @@
 """Document processing utilities."""
 
-import io
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 # Optional imports - gracefully handle missing dependencies
 try:

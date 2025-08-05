@@ -8,11 +8,12 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from pipelines.document_extraction_pipeline import document_extraction_pipeline
-from prompts.invoice_prompts import (
+from prompt.invoice_prompts import (
     invoice_extraction_ocr,
     invoice_extraction_v2,
 )
 from utils.api_utils import validate_api_setup
+
 
 def setup_environment() -> None:
     """Set up the environment and validate API access."""
@@ -75,9 +76,7 @@ def get_file_paths(document_path: str) -> List[str]:
         return [str(path)]
 
 
-def select_prompt(
-    document_type: str, extraction_method: str = "standard"
-):
+def select_prompt(document_type: str, extraction_method: str = "standard"):
     """Select appropriate prompt based on document type and method."""
     if document_type == "invoice" and extraction_method == "ocr":
         return invoice_extraction_ocr
@@ -191,15 +190,22 @@ def main() -> None:
 
         try:
             # The output is a list containing ArtifactVersionResponse objects
-            output_artifacts = pipeline_run.steps["validate_batch_results"].outputs["output"]
-            
-            if isinstance(output_artifacts, list) and len(output_artifacts) > 0:
+            output_artifacts = pipeline_run.steps[
+                "validate_batch_results"
+            ].outputs["output"]
+
+            if (
+                isinstance(output_artifacts, list)
+                and len(output_artifacts) > 0
+            ):
                 # Get the first artifact and load it
                 results = output_artifacts[0].load()
-                print(f"Debug: Successfully loaded results type: {type(results)}")
+                print(
+                    f"Debug: Successfully loaded results type: {type(results)}"
+                )
             else:
                 raise ValueError("No output artifacts found")
-            
+
         except Exception as e:
             print(f"⚠️  Could not extract results: {e}")
             results = {

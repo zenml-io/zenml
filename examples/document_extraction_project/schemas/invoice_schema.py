@@ -66,3 +66,29 @@ class InvoiceData(BaseModel):
         """Pydantic configuration."""
 
         json_encoders = {date: lambda v: v.isoformat() if v else None}
+
+
+class OCRInvoiceData(BaseModel):
+    """Simplified invoice data structure for OCR extracted text with confidence notes."""
+
+    invoice_number: Optional[str] = Field(None, description="Invoice number")
+    invoice_date: Optional[date] = Field(
+        None, description="Date invoice was issued"
+    )
+    vendor: VendorInfo = Field(
+        default_factory=VendorInfo, description="Vendor information"
+    )
+    line_items: List[InvoiceLineItem] = Field(
+        default_factory=list, description="List of line items"
+    )
+    total_amount: Optional[float] = Field(None, description="Total amount due")
+    currency: Optional[str] = Field(None, description="Currency code")
+    confidence_notes: Optional[str] = Field(
+        None,
+        description="Notes about uncertain extractions due to OCR quality",
+    )
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_encoders = {date: lambda v: v.isoformat() if v else None}

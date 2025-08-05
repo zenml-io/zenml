@@ -15,7 +15,7 @@
 
 import re
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -61,6 +61,24 @@ class Prompt(BaseModel):
             template="Answer: {question}",
             version="2.0.0"  # Track iterations
         )
+
+        # Prompt with structured output schema
+        from pydantic import BaseModel
+        class InvoiceData(BaseModel):
+            total: float
+            vendor: str
+            date: str
+
+        prompt = Prompt(
+            template="Extract invoice data: {document_text}",
+            output_schema=InvoiceData,
+            examples=[
+                {
+                    "input": {"document_text": "Invoice from ACME Corp. Total: $100"},
+                    "output": {"total": 100.0, "vendor": "ACME Corp", "date": "2024-01-01"}
+                }
+            ]
+        )
     """
 
     model_config = {"protected_namespaces": ()}
@@ -78,6 +96,17 @@ class Prompt(BaseModel):
     prompt_type: PromptType = Field(
         default=PromptType.USER,
         description="Type of prompt: system, user, or assistant",
+    )
+
+    # Enhanced fields for structured output and examples
+    output_schema: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="JSON schema dict defining expected LLM response structure",
+    )
+
+    examples: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of input-output examples to guide LLM behavior and improve response quality",
     )
 
     def format(self, **kwargs: Any) -> str:
@@ -133,6 +162,68 @@ class Prompt(BaseModel):
         template_vars = set(self.get_variable_names())
         provided_vars = set(self.variables.keys())
         return list(template_vars - provided_vars)
+
+    def get_schema_dict(self) -> Optional[Dict[str, Any]]:
+        """Get the output schema as a dictionary.
+
+        Returns:
+            Schema dictionary or None if no schema is defined
+        """
+        return self.output_schema
+
+    def validate_example(self, example: Dict[str, Any]) -> bool:
+        """Validate that an example has the correct structure.
+
+        Args:
+            example: Example to validate
+
+        Returns:
+            True if example is valid, False otherwise
+        """
+        if not isinstance(example, dict):
+            return False
+
+        required_keys = {"input", "output"}
+        return required_keys.issubset(example.keys())
+
+    def add_example(
+        self, input_vars: Dict[str, Any], expected_output: Any
+    ) -> None:
+        """Add a new example to the prompt.
+
+        Args:
+            input_vars: Input variables for the example
+            expected_output: Expected output for the example
+        """
+        example = {"input": input_vars, "output": expected_output}
+        if self.validate_example(example):
+            self.examples.append(example)
+        else:
+            raise ValueError(
+                "Invalid example format. Must have 'input' and 'output' keys."
+            )
+
+    def format_with_examples(self, **kwargs: Any) -> str:
+        """Format the prompt template with examples included.
+
+        Args:
+            **kwargs: Variables to substitute in the template
+
+        Returns:
+            Formatted prompt string with examples
+        """
+        formatted_prompt = self.format(**kwargs)
+
+        if not self.examples:
+            return formatted_prompt
+
+        examples_text = "\n\nExamples:\n"
+        for i, example in enumerate(self.examples, 1):
+            examples_text += f"\nExample {i}:\n"
+            examples_text += f"Input: {example['input']}\n"
+            examples_text += f"Output: {example['output']}\n"
+
+        return formatted_prompt + examples_text
 
     def diff(
         self, other: "Prompt", name1: str = "Current", name2: str = "Other"

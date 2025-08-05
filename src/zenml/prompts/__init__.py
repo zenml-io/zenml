@@ -21,11 +21,15 @@ from zenml.prompts.diff_utils import (
 )
 from zenml.prompts.prompt import Prompt, PromptType
 from zenml.prompts.prompt_materializer import PromptMaterializer
+from zenml.prompts.prompt_response import PromptResponse
+from zenml.prompts.prompt_response_materializer import PromptResponseMaterializer
 
 __all__ = [
     "Prompt",
     "PromptType",
     "PromptMaterializer",
+    "PromptResponse",
+    "PromptResponseMaterializer",
     # Diff utilities - core functionality
     "create_text_diff",
     "compare_prompts", 

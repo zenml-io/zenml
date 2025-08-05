@@ -1,0 +1,29 @@
+BILL
+Doc No: 2024-Q1-0456
+
+FastTech Repair Service
+Phone: 555-REPAIR (555-732-4739)
+Email: invoices@fasttechrepair.biz
+
+CUSTOMER INFO:
+Jane's Coffee Shop
+Owner: Jane Smith  
+Location: 123 Main St, Anytown, ST 12345
+
+DATE OF SERVICE: 2024-02-15
+TECHNICIAN: Mike Johnson
+
+WORK PERFORMED:
+- Espresso machine repair (part #EM-4402) ... $245.00
+- Labor (3 hours @ $75/hour) ................ $225.00
+- Emergency service fee ....................... $50.00
+- Parts: steam wand assembly ................. $89.95
+
+TOTAL BEFORE TAX: $609.95
+Sales Tax (6.5%): $39.65
+AMOUNT DUE: $649.60
+
+Terms: Payment due on receipt
+Late fee: 1.5% per month on unpaid balance
+
+Thank you for choosing FastTech!
