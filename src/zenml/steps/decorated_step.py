@@ -42,28 +42,20 @@ def remove_decorator_from_source_code(
         return source_code
 
     for decorator in function_def.decorator_list:
-        lineno = None
-        end_lineno = None
-
         if isinstance(decorator, ast.Call):
-            if decorator.func.id == decorator_name:
-                lineno = decorator.func.lineno
-                end_lineno = decorator.func.end_lineno
-        elif isinstance(decorator, ast.Name):
-            if decorator.id == decorator_name:
-                lineno = decorator.lineno
-                end_lineno = decorator.end_lineno
+            decorator = decorator.func
 
-        if lineno is not None and end_lineno is not None:
-            source_code_lines = source_code.split("\n")
-            # The line numbers are 1-indexed, so we need to
-            # subtract 1
-            source_code_lines = (
-                source_code_lines[: lineno - 1]
-                + source_code_lines[end_lineno:]
-            )
-            source_code = "\n".join(source_code_lines)
-            break
+        if isinstance(decorator, ast.Name):
+            if decorator.id == decorator_name:
+                source_code_lines = source_code.split("\n")
+                # The line numbers are 1-indexed, so we need to
+                # subtract 1
+                source_code_lines = (
+                    source_code_lines[: decorator.lineno - 1]
+                    + source_code_lines[decorator.end_lineno:]
+                )
+                source_code = "\n".join(source_code_lines)
+                break            
 
     return source_code
 
