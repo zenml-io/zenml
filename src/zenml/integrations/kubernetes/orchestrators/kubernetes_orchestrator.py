@@ -534,6 +534,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     "onPodConditions": [
                         {
                             "type": "DisruptionTarget",
+                            "status": "True",
                         }
                     ],
                 },
