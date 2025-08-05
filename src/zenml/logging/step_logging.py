@@ -20,7 +20,6 @@ import queue
 import re
 import threading
 import time
-import traceback
 from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
