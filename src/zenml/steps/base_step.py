@@ -104,8 +104,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -594,8 +594,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -728,8 +728,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
