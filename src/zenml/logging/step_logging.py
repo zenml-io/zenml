@@ -660,9 +660,7 @@ class PipelineLogsStorageContext:
             root_logger.setLevel(min_level)
 
         # Add handler to context variables for print() capture
-        handlers = logging_handlers.get().copy()
-        handlers.append(self.artifact_store_handler)
-        logging_handlers.set(handlers)
+        logging_handlers.add(self.artifact_store_handler)
 
         # Save the current step names context variable state
         self.original_step_names_in_console = step_names_in_console.get()
@@ -713,20 +711,17 @@ class PipelineLogsStorageContext:
 
         # Remove handler from root logger and restore original level
         root_logger = logging.getLogger()
-            
+
         # Check if handler is still in the root logger before removing
         if self.artifact_store_handler in root_logger.handlers:
             root_logger.removeHandler(self.artifact_store_handler)
-        
+
         # Restore original root logger level
         if hasattr(self, "original_root_level"):
             root_logger.setLevel(self.original_root_level)
 
         # Remove handler from context variables
-        handlers = logging_handlers.get().copy()
-        if self.artifact_store_handler in handlers:
-            handlers.remove(self.artifact_store_handler)
-        logging_handlers.set(handlers)
+        logging_handlers.remove(self.artifact_store_handler)
 
         # Shutdown thread (it will automatically drain queue and merge files)
         try:
