@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Logger implementation."""
 
+import builtins
 import logging
 import os
 import re
 import sys
 from contextvars import ContextVar
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from rich.traceback import install as rich_tb_install
 
@@ -33,6 +34,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
+from zenml.utils.context_utils import ContextVarList
 
 ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
     ENV_ZENML_LOGGING_COLORS_DISABLED, False
@@ -42,10 +44,7 @@ ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
 step_names_in_console: ContextVar[bool] = ContextVar(
     "step_names_in_console", default=False
 )
-
-logging_handlers: ContextVar[List[logging.Handler]] = ContextVar(
-    "logging_handlers", default=[]
-)
+logging_handlers = ContextVarList("logging_handlers")
 
 
 def _add_step_name_to_message(message: str) -> str:
@@ -250,8 +249,6 @@ def setup_global_print_wrapping() -> None:
     if hasattr(__builtins__, "_zenml_original_print"):
         return
 
-    import builtins
-
     original_print = builtins.print
 
     def wrapped_print(*args: Any, **kwargs: Any) -> None:
@@ -356,11 +353,7 @@ def init_logging() -> None:
         root_logger.addHandler(console_handler)
 
     # Initialize global print wrapping
-    try:
-        setup_global_print_wrapping()
-    except ImportError:
-        # If step_logging is not available, skip the wrapping
-        pass
+    setup_global_print_wrapping()
 
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
     suppress_zenml_logs: bool = handle_bool_env_var(
