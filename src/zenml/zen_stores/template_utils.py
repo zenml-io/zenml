@@ -27,13 +27,56 @@ from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.stack import Flavor
-from zenml.zen_stores.schemas import PipelineDeploymentSchema
+from zenml.zen_stores.schemas import (
+    PipelineBuildSchema,
+    PipelineDeploymentSchema,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineConfiguration
     from zenml.config.step_configurations import Step
 
 logger = get_logger(__name__)
+
+
+def validate_build_is_runnable(
+    build: Optional[PipelineBuildSchema],
+) -> None:
+    """Validate that a build is runnable.
+
+    Args:
+        build: The build to validate.
+    """
+    if not build or not build.stack:
+        raise ValueError(
+            "Deployment versions are only supported for remote orchestrators "
+            "that use container images to run the pipeline."
+        )
+
+    for component in build.stack.components:
+        if not component.flavor_schema:
+            raise ValueError(
+                "Unable to create deployment versions as a component of the "
+                "associated stack has no flavor."
+            )
+
+        if component.flavor_schema.is_custom:
+            raise ValueError(
+                "Unable to create deployment versions as a component of the "
+                "associated stack has a custom flavor."
+            )
+
+        flavor_model = component.flavor_schema.to_model()
+        flavor = Flavor.from_model(flavor_model)
+        component_config = flavor.config_class(
+            **component.to_model(include_metadata=True).configuration
+        )
+
+        if component_config.is_local:
+            raise ValueError(
+                "Unable to create deployment versions as the associated stack "
+                "contains local components."
+            )
 
 
 def validate_deployment_is_templatable(

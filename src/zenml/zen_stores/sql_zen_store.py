@@ -4832,6 +4832,10 @@ class SqlZenStore(BaseZenStore):
         Args:
             deployment: The deployment to create.
 
+        Raises:
+            ValueError: If deployment versions are not supported for the
+                current server.
+
         Returns:
             The newly created deployment.
         """
@@ -4853,7 +4857,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            self._get_reference_schema_by_id(
+            build = self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=PipelineBuildSchema,
                 reference_id=deployment.build,
@@ -4894,6 +4898,14 @@ class SqlZenStore(BaseZenStore):
                 deployment.source_deployment = (
                     run_template.source_deployment_id
                 )
+
+            if deployment.version:
+                if not self.get_store_info().is_pro_server():
+                    raise ValueError(
+                        "Deployment versions are only supported on ZenML Pro "
+                        "servers."
+                    )
+                template_utils.validate_build_is_runnable(build)
 
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
@@ -5026,6 +5038,10 @@ class SqlZenStore(BaseZenStore):
             deployment_id: The ID of the deployment to update.
             deployment_update: The update to apply.
 
+        Raises:
+            ValueError: If deployment versions are not supported for the
+                current server.
+
         Returns:
             The updated deployment.
         """
@@ -5035,6 +5051,15 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineDeploymentSchema,
                 session=session,
             )
+
+            if deployment.version:
+                if not self.get_store_info().is_pro_server():
+                    raise ValueError(
+                        "Deployment versions are only supported on ZenML Pro "
+                        "servers."
+                    )
+                template_utils.validate_build_is_runnable(deployment.build)
+
             deployment.update(deployment_update)
 
             try:

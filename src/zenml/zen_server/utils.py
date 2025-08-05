@@ -57,15 +57,15 @@ from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import ProjectScopedFilter
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.cache import MemoryCache
+from zenml.zen_server.deployment_execution.workload_manager_interface import (
+    WorkloadManagerInterface,
+)
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.request_management import RequestContext, RequestManager
-from zenml.zen_server.deployment_execution.workload_manager_interface import (
-    WorkloadManagerInterface,
-)
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 if TYPE_CHECKING:
