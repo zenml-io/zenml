@@ -77,11 +77,11 @@ def get_file_paths(document_path: str) -> List[str]:
 
 def select_prompt(
     document_type: str, extraction_method: str = "standard"
-) -> str:
+):
     """Select appropriate prompt based on document type and method."""
     if document_type == "invoice" and extraction_method == "ocr":
-        return invoice_extraction_ocr.template
-    return invoice_extraction_v2.template
+        return invoice_extraction_ocr
+    return invoice_extraction_v2
 
 
 def print_results_summary(results: Dict[str, Any]) -> None:

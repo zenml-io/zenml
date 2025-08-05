@@ -1,6 +1,6 @@
 """Invoice extraction prompts for ZenML."""
 
-from prompts.base_prompt import Prompt
+from zenml.prompts import Prompt
 
 # Basic invoice extraction prompt
 invoice_extraction_v1 = Prompt(
@@ -45,7 +45,7 @@ CRITICAL REQUIREMENTS:
 5. Line items must be an array of objects
 
 Extract the data now:""",
-    variables=["document_text"]
+    variables={"document_text": ""}
 )
 
 
@@ -101,7 +101,7 @@ EXTRACTION RULES:
 7. Look for PO numbers and payment terms
 
 CRITICAL: Return only valid JSON matching the exact structure above.""",
-    variables=["document_text"]
+    variables={"document_text": ""}
 )
 
 
@@ -150,5 +150,5 @@ IMPORTANT:
 - Use null for values you cannot determine with confidence
 - Include confidence_notes for uncertain extractions
 - Return only valid JSON""",
-    variables=["document_text"]
+    variables={"document_text": ""}
 )

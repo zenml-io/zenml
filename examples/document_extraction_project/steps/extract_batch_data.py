@@ -9,19 +9,20 @@ from utils.api_utils import (
 )
 
 from zenml import step
+from zenml.prompts import Prompt
 
 
 @step
 def extract_batch_data(
     documents: List[Dict[str, Any]],
-    extraction_prompt: str,
+    extraction_prompt: Prompt,
     model_name: str = "gpt-4",
 ) -> List[Dict[str, Any]]:
     """Extract data from multiple documents.
 
     Args:
         documents: List of dictionaries containing document data
-        extraction_prompt: Prompt template string for extraction
+        extraction_prompt: ZenML Prompt artifact for extraction
         model_name: Name of the LLM model to use
 
     Returns:
@@ -75,7 +76,8 @@ def extract_batch_data(
                 "raw_llm_response": api_response["content"],
                 "processing_metadata": {
                     "model_used": model_name,
-                    "prompt_length": len(extraction_prompt),
+                    "prompt_type": extraction_prompt.prompt_type,
+                    "prompt_variables": list(extraction_prompt.variables.keys()),
                     "token_usage": api_response["usage"],
                     "response_time_ms": api_response["response_time_ms"],
                     "estimated_cost_usd": estimated_cost,

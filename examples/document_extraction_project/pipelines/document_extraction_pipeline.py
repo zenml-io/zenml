@@ -8,12 +8,13 @@ from steps.process_document_batch import process_document_batch
 from steps.validate_batch_results import validate_batch_results
 
 from zenml import pipeline
+from zenml.prompts import Prompt
 
 
 @pipeline(enable_cache=False)
 def document_extraction_pipeline(
     file_paths: List[str],
-    extraction_prompt: str,
+    extraction_prompt: Prompt,
     model_name: str = "gpt-4",
     min_text_length: int = 100,
 ) -> Dict[str, Any]:
@@ -21,7 +22,7 @@ def document_extraction_pipeline(
 
     Args:
         file_paths: List of paths to documents to process (can be remote paths)
-        extraction_prompt: Prompt template string for extraction
+        extraction_prompt: ZenML Prompt artifact for extraction
         model_name: LLM model to use (default: gpt-4)
         min_text_length: Minimum text length to process document
 
