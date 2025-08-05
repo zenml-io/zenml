@@ -399,7 +399,7 @@ if server_config().workload_manager_enabled:
         Returns:
             The created pipeline run.
         """
-        from zenml.zen_server.template_execution.utils import (
+        from zenml.zen_server.deployment_execution.utils import (
             trigger_deployment,
         )
 

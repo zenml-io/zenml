@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """Utility functions to run a pipeline from the server."""
 
 import hashlib
@@ -53,11 +66,11 @@ from zenml.stack.flavor import Flavor
 from zenml.utils import pydantic_utils, requirements_utils, settings_utils
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, generate_access_token
+from zenml.zen_server.deployment_execution.runner_entrypoint_configuration import (
+    RunnerEntrypointConfiguration,
+)
 from zenml.zen_server.feature_gate.endpoint_utils import (
     report_usage,
-)
-from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
-    RunnerEntrypointConfiguration,
 )
 from zenml.zen_server.utils import (
     deployment_executor,
