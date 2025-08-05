@@ -636,6 +636,7 @@ class PipelineLogsStorageContext:
         # Additional configuration
         self.prepend_step_name = prepend_step_name
         self.original_step_names_in_console: Optional[bool] = None
+        self._original_root_level: Optional[int] = None
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
@@ -651,7 +652,7 @@ class PipelineLogsStorageContext:
 
         # Set root logger level to minimum of all active handlers
         # This ensures records can reach any handler that needs them
-        self.original_root_level = root_logger.level
+        self._original_root_level = root_logger.level
         handler_levels = [handler.level for handler in root_logger.handlers]
 
         # Set root logger to the minimum level among all handlers
@@ -717,8 +718,8 @@ class PipelineLogsStorageContext:
             root_logger.removeHandler(self.artifact_store_handler)
 
         # Restore original root logger level
-        if hasattr(self, "original_root_level"):
-            root_logger.setLevel(self.original_root_level)
+        if self._original_root_level is not None:
+            root_logger.setLevel(self._original_root_level)
 
         # Remove handler from context variables
         logging_handlers.remove(self.artifact_store_handler)
