@@ -1,0 +1,40 @@
+CloudServ Inc.
+INVOICE
+
+From:
+CloudServ Inc.
+555 Cloud Drive, Suite 200
+Digital City, DC 11111
+Phone: 1-800-CLOUD-99
+Email: billing@cloudserv.com
+
+To:
+StartupCorp
+999 Entrepreneur Street
+Startup Valley, SV 22222
+
+Invoice #: CS-2024-MAR-0789
+Date: 2024-03-25
+Due: 2024-04-24
+Terms: NET 30
+
+SERVICES PROVIDED:
+-------------------------
+Cloud Storage (500GB)          12 months   $29.99/mo    $359.88
+Backup Services               12 months   $19.99/mo    $239.88
+Security Monitoring           12 months   $49.99/mo    $599.88
+Premium Support               12 months   $99.99/mo    $1,199.88
+
+                                          Subtotal:    $2,399.52
+                                          Tax (7%):    $167.97
+                                          Total Due:   $2,567.49
+
+PAYMENT INFORMATION:
+Bank: First National Bank
+Routing: 123456789
+Account: 987654321
+
+Or pay online at: www.cloudserv.com/pay
+
+Late payment fee of $50 applies after due date.
+Thank you for choosing CloudServ!

@@ -14,8 +14,7 @@ from zenml import pipeline
 
 @pipeline
 def prompt_version_comparison() -> dict:
-    """
-    Compare different versions of prompts on the same task.
+    """Compare different versions of prompts on the same task.
 
     This shows:
     1. Same real task (text summarization)
