@@ -586,7 +586,7 @@ def main() -> None:
                 interrupt_function=should_interrupt_execution,
                 monitoring_interval=pipeline_settings.job_monitoring_interval,
                 monitoring_delay=pipeline_settings.job_monitoring_delay,
-                interrupt_interval=pipeline_settings.interrupt_check_interval,
+                interrupt_check_interval=pipeline_settings.interrupt_check_interval,
                 max_parallelism=pipeline_settings.max_parallelism,
             ).run()
         finally:

@@ -71,7 +71,20 @@ class Node(BaseModel):
 
 
 class DagRunner:
-    """DAG runner."""
+    """DAG runner.
+
+    This class does the orchestration of running the nodes of a DAG. It is
+    running two loops in separate threads:
+    The main thread
+      - checks if any nodes should be skipped or are ready to
+        run, in which case the node will be added to the startup queue
+      - creates a worker thread to start the node and executes it in a thread
+        pool if there are nodes in the startup queue and the maximum
+        parallelism is not reached
+      - periodically checks if the DAG should be interrupted
+    The monitoring thread
+      - monitors the running nodes and updates their status
+    """
 
     def __init__(
         self,
