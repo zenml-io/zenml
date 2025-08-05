@@ -24,7 +24,7 @@ from zenml.models import (
     RunTemplateResponseMetadata,
     RunTemplateResponseResources,
 )
-from zenml.zen_server.template_execution.utils import (
+from zenml.zen_server.deployment_execution.utils import (
     deployment_request_from_source_deployment,
 )
 

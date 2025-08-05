@@ -63,7 +63,7 @@ from zenml.zen_server.feature_gate.feature_gate_interface import (
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.request_management import RequestContext, RequestManager
-from zenml.zen_server.template_execution.workload_manager_interface import (
+from zenml.zen_server.deployment_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -72,7 +72,7 @@ if TYPE_CHECKING:
     from fastapi import Request
 
     from zenml.zen_server.auth import AuthContext
-    from zenml.zen_server.template_execution.utils import (
+    from zenml.zen_server.deployment_execution.utils import (
         BoundedThreadPoolExecutor,
     )
 
@@ -237,7 +237,7 @@ def deployment_executor() -> "BoundedThreadPoolExecutor":
 def initialize_deployment_executor() -> None:
     """Initialize the deployment executor."""
     global _deployment_executor
-    from zenml.zen_server.template_execution.utils import (
+    from zenml.zen_server.deployment_execution.utils import (
         BoundedThreadPoolExecutor,
     )
 
