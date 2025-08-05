@@ -87,18 +87,10 @@ class ArtifactStoreHandler(logging.Handler):
         """
         try:
             # Format for storage with timestamp, level, and message
-            message = remove_ansi_escape_codes(record.getMessage()).rstrip()
-
-            # Include exception information if present
-            if record.exc_info:
-                exception_text = "".join(
-                    traceback.format_exception(*record.exc_info)
-                )
-                message = f"{message}\n{exception_text.rstrip()}"
-
-            self.storage.write(self.format(record))
+            message = self.format(record)
+            message = remove_ansi_escape_codes(message).rstrip()
+            self.storage.write(message)
         except Exception:
-            # Don't let storage errors break logging
             pass
 
 

@@ -125,7 +125,6 @@ class CustomFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
-
         # Get the template
         format_template = self._get_format_template(record)
 
