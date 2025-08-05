@@ -712,14 +712,15 @@ class PipelineLogsStorageContext:
             )
 
         # Remove handler from root logger and restore original level
-        if self.artifact_store_handler:
-            root_logger = logging.getLogger()
-            # Check if handler is still in the root logger before removing
-            if self.artifact_store_handler in root_logger.handlers:
-                root_logger.removeHandler(self.artifact_store_handler)
-            # Restore original root logger level
-            if hasattr(self, "original_root_level"):
-                root_logger.setLevel(self.original_root_level)
+        root_logger = logging.getLogger()
+            
+        # Check if handler is still in the root logger before removing
+        if self.artifact_store_handler in root_logger.handlers:
+            root_logger.removeHandler(self.artifact_store_handler)
+        
+        # Restore original root logger level
+        if hasattr(self, "original_root_level"):
+            root_logger.setLevel(self.original_root_level)
 
         # Remove handler from context variables
         handlers = logging_handlers.get().copy()
