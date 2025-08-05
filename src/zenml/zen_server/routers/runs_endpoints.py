@@ -28,7 +28,7 @@ from zenml.constants import (
     STOP,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, LoggingLevels
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
@@ -437,7 +437,7 @@ def run_logs(
     source: str,
     offset: int = 0,
     count: int = MAX_LOG_ENTRIES,
-    level: Optional[str] = None,
+    level: LoggingLevels = LoggingLevels.INFO,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:

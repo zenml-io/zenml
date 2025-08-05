@@ -30,6 +30,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
@@ -316,7 +317,7 @@ def fetch_log_records(
     logs_uri: str,
     offset: int = 0,
     count: int = MAX_LOG_ENTRIES,  # Number of entries to return
-    level: Optional[str] = None,
+    level: LoggingLevels = LoggingLevels.INFO,
     search: Optional[str] = None,
 ) -> List[LogEntry]:
     """Fetches the logs from the artifact store and parses them into LogEntry objects.
@@ -385,121 +386,6 @@ def fetch_log_records(
         return []
 
 
-def fetch_logs(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
-    logs_uri: str,
-    offset: int = 0,
-    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
-    strip_timestamp: bool = False,
-) -> str:
-    """Fetches the logs from the artifact store.
-
-    Args:
-        zen_store: The store in which the artifact is stored.
-        artifact_store_id: The ID of the artifact store.
-        logs_uri: The URI of the artifact.
-        offset: The offset from which to start reading.
-        length: The amount of bytes that should be read.
-        strip_timestamp: Whether to strip timestamps in logs or not
-
-    Returns:
-        The logs as a string.
-
-    Raises:
-        DoesNotExistException: If the artifact does not exist in the artifact
-            store.
-    """
-    from zenml.artifacts.utils import (
-        _load_artifact_store,
-        _load_file_from_artifact_store,
-        _strip_timestamp_from_multiline_string,
-    )
-
-    def _read_file(
-        uri: str,
-        offset: int = 0,
-        length: Optional[int] = None,
-        strip_timestamp: bool = False,
-    ) -> str:
-        file_content = str(
-            _load_file_from_artifact_store(
-                uri,
-                artifact_store=artifact_store,
-                mode="rb",
-                offset=offset,
-                length=length,
-            ).decode()
-        )
-        if strip_timestamp:
-            file_content = _strip_timestamp_from_multiline_string(file_content)
-        return file_content
-
-    artifact_store = _load_artifact_store(artifact_store_id, zen_store)
-    try:
-        if not artifact_store.isdir(logs_uri):
-            return _read_file(logs_uri, offset, length, strip_timestamp)
-        else:
-            files = artifact_store.listdir(logs_uri)
-            if len(files) == 1:
-                return _read_file(
-                    os.path.join(logs_uri, str(files[0])),
-                    offset,
-                    length,
-                    strip_timestamp,
-                )
-            else:
-                is_negative_offset = offset < 0
-                files.sort(reverse=is_negative_offset)
-
-                # search for the first file we need to read
-                latest_file_id = 0
-                for i, file in enumerate(files):
-                    file_size: int = artifact_store.size(
-                        os.path.join(logs_uri, str(file))
-                    )  # type: ignore[assignment]
-
-                    if is_negative_offset:
-                        if file_size >= -offset:
-                            latest_file_id = -(i + 1)
-                            break
-                        else:
-                            offset += file_size
-                    else:
-                        if file_size > offset:
-                            latest_file_id = i
-                            break
-                        else:
-                            offset -= file_size
-
-                # read the files according to pre-filtering
-                files.sort()
-                ret = []
-                for file in files[latest_file_id:]:
-                    ret.append(
-                        _read_file(
-                            os.path.join(logs_uri, str(file)),
-                            offset,
-                            length,
-                            strip_timestamp,
-                        )
-                    )
-                    offset = 0
-                    length -= len(ret[-1])
-                    if length <= 0:
-                        # stop further reading, if the whole length is already read
-                        break
-
-                if not ret:
-                    raise DoesNotExistException(
-                        f"Folder '{logs_uri}' is empty in artifact store "
-                        f"'{artifact_store.name}'."
-                    )
-                return "".join(ret)
-    finally:
-        artifact_store.cleanup()
-
-
 def _stream_logs_line_by_line(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
@@ -551,7 +437,9 @@ def _stream_logs_line_by_line(
 
 
 def _entry_matches_filters(
-    entry: LogEntry, level: Optional[str] = None, search: Optional[str] = None
+    entry: LogEntry,
+    level: LoggingLevels = LoggingLevels.INFO,
+    search: Optional[str] = None,
 ) -> bool:
     """Check if a log entry matches the given filters.
 
@@ -566,8 +454,7 @@ def _entry_matches_filters(
     # Apply level filter
     if level:
         try:
-            min_level = LoggingLevels[level.upper()]
-            if not entry.level or entry.level.value < min_level.value:
+            if not entry.level or entry.level.value < level.value:
                 return False
         except KeyError:
             # If invalid level provided, ignore the filter
