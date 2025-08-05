@@ -30,7 +30,10 @@ class KubeflowIntegration(Integration):
     """Definition of Kubeflow Integration for ZenML."""
 
     NAME = KUBEFLOW
-    REQUIREMENTS = ["kfp>=2.6.0", "kfp-kubernetes>=1.1.0"]  # Only 1.x version that supports pyyaml 6
+    REQUIREMENTS = [
+        "kfp>=2.6.0", 
+        "kfp-kubernetes>=1.1.0",
+    ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = [
         "kfp", # it is used by GCP as well
     ]
@@ -45,7 +48,10 @@ class KubeflowIntegration(Integration):
         from zenml.integrations.kubeflow.flavors import (
             KubeflowOrchestratorFlavor,
         )
+        from zenml.integrations.kubeflow.flavors.kubeflow_training_step_operator_flavor import (
+            KubeflowTrainingStepOperatorFlavor,
+        )
 
-        return [KubeflowOrchestratorFlavor]
+        return [KubeflowOrchestratorFlavor, KubeflowTrainingStepOperatorFlavor]
 
 
