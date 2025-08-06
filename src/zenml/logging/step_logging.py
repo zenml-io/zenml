@@ -102,6 +102,18 @@ class LogEntry(BaseModel):
     lineno: Optional[int] = Field(
         default=None, description="The fileno that generated this log entry"
     )
+    chunk_index: Optional[int] = Field(
+        default=None,
+        description="The index of the chunk in the complete log entry",
+    )
+    chunk_size: Optional[int] = Field(
+        default=None,
+        description="The total number of chunks in the complete log entry",
+    )
+    chunk_id: Optional[UUID] = Field(
+        default=None,
+        description="The unique identifier of the complete log entry",
+    )
 
 
 class ArtifactStoreHandler(logging.Handler):
@@ -151,17 +163,19 @@ class ArtifactStoreHandler(logging.Handler):
             else:
                 # Message is too large, split into chunks and emit each one
                 chunks = self._split_to_chunks(message)
+                chunk_id = uuid4()
                 for i, chunk in enumerate(chunks):
-                    chunk_message = f"{chunk} (chunk {i + 1}/{len(chunks)})"
-
                     log_record = LogEntry.model_construct(
-                        message=chunk_message,
+                        message=chunk,
                         name=record.name,
                         level=level,
                         module=record.module,
                         filename=record.filename,
                         lineno=record.lineno,
                         timestamp=utc_now(),
+                        chunk_index=i,
+                        chunk_size=len(chunks),
+                        chunk_id=chunk_id,
                     )
 
                     json_line = log_record.model_dump_json(exclude_none=True)
