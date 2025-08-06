@@ -84,6 +84,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
+    execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE
 
     @field_validator("name")
     @classmethod
