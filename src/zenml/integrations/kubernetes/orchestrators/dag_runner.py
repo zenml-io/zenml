@@ -21,7 +21,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
@@ -100,7 +99,6 @@ class DagRunner:
         monitoring_delay: float = 0.0,
         interrupt_check_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
-        execution_mode: Optional[ExecutionMode] = None,
     ) -> None:
         """Initialize the DAG runner.
 
@@ -117,7 +115,6 @@ class DagRunner:
             interrupt_check_interval: The interval in which the interrupt
                 function is called.
             max_parallelism: The maximum number of nodes to run in parallel.
-            execution_mode: The execution mode of the DAG.
         """
         self.nodes = {node.id: node for node in nodes}
         self.startup_queue: queue.Queue[Node] = queue.Queue()
@@ -138,7 +135,6 @@ class DagRunner:
         self.startup_executor = ThreadPoolExecutor(
             max_workers=10, thread_name_prefix="DagRunner-Startup"
         )
-        self.execution_mode = execution_mode
 
     @property
     def running_nodes(self) -> List[Node]:
