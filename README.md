@@ -22,7 +22,7 @@
 [pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?color=281158
 [pypi-url]: https://pypi.org/project/zenml/
 [pypiversion-shield]: https://img.shields.io/pypi/v/zenml?color=361776
-[downloads-shield]: https://img.shields.io/pypi/dm/zenml?color=431D93
+[downloads-shield]: https://static.pepy.tech/badge/zenml
 [downloads-url]: https://pypi.org/project/zenml/
 [contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=7A3EF4
 [contributors-url]: https://github.com/zenml-io/zenml/graphs/contributors
