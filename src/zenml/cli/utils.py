@@ -2731,7 +2731,7 @@ def handle_table_output(
 
     if zenml_table_output:
         from zenml_cli import clean_output
-        
+
         clean_output(zenml_table_output)
 
     # Show pagination info for table format
