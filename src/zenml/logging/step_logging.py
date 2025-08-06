@@ -104,15 +104,15 @@ class LogEntry(BaseModel):
     )
     chunk_index: Optional[int] = Field(
         default=None,
-        description="The index of the chunk in the complete log entry",
+        description="The index of the chunk in the log entry",
     )
-    chunk_size: Optional[int] = Field(
+    chunk_count_in_entry: Optional[int] = Field(
         default=None,
-        description="The total number of chunks in the complete log entry",
+        description="The total number of chunks in the log entry",
     )
-    chunk_id: Optional[UUID] = Field(
+    entry_id: Optional[UUID] = Field(
         default=None,
-        description="The unique identifier of the complete log entry",
+        description="The unique identifier of the log entry",
     )
 
 
@@ -174,8 +174,8 @@ class ArtifactStoreHandler(logging.Handler):
                         lineno=record.lineno,
                         timestamp=utc_now(),
                         chunk_index=i,
-                        chunk_size=len(chunks),
-                        chunk_id=chunk_id,
+                        chunk_count_in_entry=len(chunks),
+                        entry_id=chunk_id,
                     )
 
                     json_line = log_record.model_dump_json(exclude_none=True)
