@@ -22,7 +22,7 @@ import yaml
 from click.testing import CliRunner
 
 from zenml.cli.cli import cli
-import logging
+
 
 class TestCLITableIntegration:
     """Integration tests for CLI commands using the new table system."""
