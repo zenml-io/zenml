@@ -457,16 +457,15 @@ class BaseOrchestrator(StackComponent, ABC):
         Individual orchestrator implementations can override this method
         to add specific validation.
         """
-        if not self._active_deployment:
-            return
-
         execution_mode = (
             self._active_deployment.pipeline_configuration.execution_mode
         )
-        if execution_mode is None:
-            logger.debug("No execution mode specified, using default behavior")
-        else:
-            logger.info(f"Using execution mode: {execution_mode}")
+
+        if execution_mode not in self.supported_execution_modes:
+            raise ValueError(
+                f"Execution mode {execution_mode} is not supported by the "
+                f"{self.__class__.__name__} orchestrator."
+            )
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
