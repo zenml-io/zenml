@@ -103,7 +103,7 @@ CRITICAL: Return only valid JSON matching the exact schema structure.""",
                         "quantity": 1,
                         "unit_price": 650.0,
                         "total": 650.0,
-                    }
+                    },
                 ],
                 "subtotal": 1550.0,
                 "tax_amount": 124.0,

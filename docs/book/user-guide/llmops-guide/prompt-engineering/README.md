@@ -1,11 +1,11 @@
 ---
-description: Simple prompt engineering with ZenML - automatic versioning, GitHub-style diffs, and dashboard visualization.
+description: Comprehensive prompt engineering with ZenML - automatic versioning, structured output schemas, few-shot learning, response tracking, and rich dashboard visualization.
 icon: edit
 ---
 
 # Prompt Engineering
 
-ZenML's prompt engineering focuses on the three things teams actually need: **automatic versioning**, **GitHub-style comparisons**, and **dashboard visualization**.
+ZenML's prompt engineering provides both **simple artifact versioning** and **advanced LLM capabilities**: **automatic versioning**, **GitHub-style comparisons**, **dashboard visualization**, **structured output schemas**, **few-shot learning**, and **comprehensive response tracking**.
 
 ## Quick Start
 
@@ -45,9 +45,40 @@ comparison = compare_text_outputs(v1_outputs, v2_outputs)
 print(f"Similarity: {comparison['aggregate_stats']['average_similarity']:.1%}")
 ```
 
+### Enhanced LLM Features
+```python
+from schemas.my_schema import OutputSchema
+
+# Structured output with schema validation
+prompt = Prompt(
+    template="Extract data: {document}",
+    output_schema=OutputSchema.model_json_schema(),
+    examples=[{
+        "input": {"document": "Invoice #123 for $100"},
+        "output": {"number": "123", "amount": 100}
+    }]
+)
+```
+
+### Response Tracking
+```python
+from zenml.prompts import PromptResponse
+
+# Comprehensive LLM response artifacts
+response = PromptResponse(
+    content="Extracted data here",
+    parsed_output={"structured": "data"},
+    total_cost=0.002,
+    quality_score=0.94
+)
+```
+
 ### Dashboard Integration
 - Syntax-highlighted templates with HTML diffs
 - Variable tables and validation
+- **Schema visualization** with JSON schema display
+- **Few-shot examples** with input/output pairs
+- **Response tracking** with cost, quality, and performance metrics
 - Automatic version tracking via ZenML artifacts
 - GitHub-style side-by-side comparisons
 
@@ -93,7 +124,7 @@ Instead of complex version trees, focus on "Does this new prompt work better?"
 
 * [Quick Start](quick-start.md) - Working example walkthrough
 * [Understanding Prompt Management](understanding-prompt-management.md) - Research and philosophy  
-* [Best Practices](best-practices.md) - Production guidance
+* [Best Practices](best-practices.md) - Production guidance including **artifact tracing** and **prompt-response relationships**
 
 ## Example Structure
 

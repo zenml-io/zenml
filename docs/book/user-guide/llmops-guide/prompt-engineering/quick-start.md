@@ -116,17 +116,85 @@ pipeline_run = prompt_pipeline()
 
 ## 5. Dashboard Visualization
 
-When you run pipelines with prompts:
+When you run pipelines with prompts and responses:
 
 1. **Navigate to your ZenML dashboard**
 2. **View the pipeline run**
-3. **Click on prompt artifacts** to see:
+3. **Click on Prompt artifacts** to see:
    - Syntax-highlighted templates
    - Variable tables and validation
+   - **JSON schema visualization** with properties and types
+   - **Few-shot examples** with input/output pairs
    - HTML diff visualizations
    - Metadata and statistics
+4. **Click on PromptResponse artifacts** to see:
+   - **Response content** with syntax highlighting
+   - **Cost breakdown** (tokens, pricing, efficiency)
+   - **Quality metrics** and validation results
+   - **Performance data** (response time, token usage)
+   - **Provenance links** back to source prompts
 
-## 6. Advanced Comparison in Pipelines
+## 6. Enhanced Prompts with Schemas and Examples
+
+```python
+from zenml.prompts import Prompt
+from pydantic import BaseModel
+
+# Define output schema
+class InvoiceData(BaseModel):
+    invoice_number: str
+    amount: float
+    vendor: str
+
+# Create enhanced prompt with schema and examples
+enhanced_prompt = Prompt(
+    template="Extract invoice data from: {document_text}",
+    output_schema=InvoiceData.model_json_schema(),
+    examples=[
+        {
+            "input": {"document_text": "Invoice #INV-001 from ACME Corp for $500"},
+            "output": {
+                "invoice_number": "INV-001", 
+                "amount": 500.0,
+                "vendor": "ACME Corp"
+            }
+        }
+    ],
+    variables={"document_text": ""}
+)
+
+# Use with format_with_examples to include examples in prompt
+formatted_with_examples = enhanced_prompt.format_with_examples(
+    document_text="Invoice #INV-123 from XYZ Inc for $250"
+)
+```
+
+## 7. Response Tracking
+
+```python
+from zenml.prompts import PromptResponse
+from datetime import datetime
+
+# Create comprehensive response artifact
+response = PromptResponse(
+    content='{"invoice_number": "INV-123", "amount": 250.0, "vendor": "XYZ Inc"}',
+    parsed_output={"invoice_number": "INV-123", "amount": 250.0, "vendor": "XYZ Inc"},
+    model_name="gpt-4",
+    prompt_tokens=150,
+    completion_tokens=45,
+    total_cost=0.003,
+    quality_score=0.95,
+    validation_passed=True,
+    created_at=datetime.now()
+)
+
+# Check response validity
+print(f"Valid response: {response.is_valid_response()}")
+print(f"Token efficiency: {response.get_token_efficiency():.1%}")
+print(f"Cost per token: ${response.get_cost_per_token():.6f}")
+```
+
+## 8. Advanced Comparison in Pipelines
 
 ```python
 @step

@@ -1,10 +1,10 @@
 ---
-description: Learn production-tested best practices for prompt engineering at scale, from teams handling millions of requests per day.
+description: Learn production-tested best practices for prompt engineering at scale, including structured output, response tracking, and cost optimization.
 ---
 
 # Best Practices
 
-This page compiles lessons learned from production teams using ZenML's prompt engineering features at scale. These practices are derived from real-world usage, user research, and common pitfalls we've observed.
+This page compiles lessons learned from production teams using ZenML's prompt engineering features at scale. These practices cover both simple prompt versioning and advanced LLM capabilities like structured output and response tracking.
 
 ## Version Management
 
@@ -721,3 +721,605 @@ Before deploying prompts to production:
 - [ ] **Documentation updated** with rationale and performance data
 
 Following these practices will help you build robust, scalable prompt engineering workflows that deliver real business value while avoiding common pitfalls that derail many LLMOps projects.
+
+## Enhanced Features Best Practices
+
+### Structured Output with Schemas
+
+Use Pydantic schemas for type-safe, validated responses:
+
+```python
+from pydantic import BaseModel, Field
+
+# ✅ Good: Well-defined schema with descriptions
+class CustomerInsight(BaseModel):
+    sentiment: str = Field(..., description="POSITIVE, NEGATIVE, or NEUTRAL")
+    confidence: float = Field(..., description="Confidence score 0.0-1.0")
+    key_themes: List[str] = Field(..., description="Main topics discussed")
+    action_required: bool = Field(..., description="Whether follow-up is needed")
+
+schema_prompt = Prompt(
+    template="Analyze this customer feedback: {feedback}",
+    output_schema=CustomerInsight.model_json_schema(),
+    variables={"feedback": ""}
+)
+
+# ❌ Avoid: Overly complex nested schemas
+class OverlyComplexSchema(BaseModel):
+    level1: Dict[str, Dict[str, List[Dict[str, Optional[Union[str, int, float]]]]]]
+```
+
+### Few-Shot Learning Examples
+
+Provide diverse, realistic examples that cover edge cases:
+
+```python
+# ✅ Good: Diverse examples covering different scenarios
+invoice_prompt = Prompt(
+    template="Extract invoice data from: {document_text}",
+    output_schema=InvoiceSchema.model_json_schema(),
+    examples=[
+        {
+            "input": {"document_text": "Invoice #INV-001 from ACME Corp for $500"},
+            "output": {"number": "INV-001", "amount": 500.0, "vendor": "ACME Corp"}
+        },
+        {
+            "input": {"document_text": "Bill No. B-789 - DataTech Solutions - Total: €1,200"},
+            "output": {"number": "B-789", "amount": 1200.0, "vendor": "DataTech Solutions"}
+        },
+        {
+            "input": {"document_text": "Receipt #R-456 missing amount field"},
+            "output": {"number": "R-456", "amount": None, "vendor": None}
+        }
+    ]
+)
+
+# ❌ Avoid: Examples too similar to each other or test data
+```
+
+### Response Tracking and Cost Management
+
+Monitor LLM performance and costs systematically:
+
+```python
+@step
+def process_with_tracking(
+    documents: List[str],
+    prompt: Prompt
+) -> List[PromptResponse]:
+    """Process documents with comprehensive response tracking."""
+    responses = []
+    
+    for doc in documents:
+        response = call_llm_with_prompt(prompt.format(document=doc))
+        
+        # Create tracked response artifact
+        tracked_response = PromptResponse(
+            content=response.content,
+            parsed_output=parse_structured_output(response.content),
+            model_name="gpt-4",
+            prompt_tokens=response.usage.prompt_tokens,
+            completion_tokens=response.usage.completion_tokens,
+            total_cost=calculate_cost(response.usage),
+            validation_passed=validate_output(parsed_output),
+            created_at=datetime.now(),
+            metadata={"document_type": "invoice", "processing_batch": "batch_001"}
+        )
+        
+        responses.append(tracked_response)
+    
+    return responses
+```
+
+### Quality and Validation Patterns
+
+Implement robust validation beyond schema compliance:
+
+```python
+def validate_response_quality(response: PromptResponse) -> float:
+    """Calculate comprehensive quality score for responses."""
+    score = 0.0
+    
+    # Schema compliance (40% of score)
+    if response.validation_passed:
+        score += 0.4
+    
+    # Content quality (30% of score)
+    if response.parsed_output and len(str(response.parsed_output)) > 50:
+        score += 0.3
+    
+    # Cost efficiency (20% of score)
+    if response.get_cost_per_token() and response.get_cost_per_token() < 0.001:
+        score += 0.2
+    
+    # Speed (10% of score)
+    if response.response_time_ms and response.response_time_ms < 5000:
+        score += 0.1
+    
+    return score
+```
+
+### Avoiding Data Leakage in Examples
+
+Ensure prompt examples don't over-match your test data:
+
+```python
+# ✅ Good: Examples use different patterns than test data
+# Test data: "INVOICE #INV-2024-001 from ACME Corporation"
+# Examples should use different formats:
+examples = [
+    {"input": "Bill #B-789 from TechCorp", "output": {"number": "B-789"}},
+    {"input": "Receipt R-456 - DataSoft", "output": {"number": "R-456"}},
+]
+
+# ❌ Avoid: Examples too similar to test data
+bad_examples = [
+    {"input": "INVOICE #INV-2024-002 from ACME Corporation", ...}  # Too similar!
+]
+```
+
+### Performance Monitoring
+
+Set up comprehensive monitoring for production prompts:
+
+```python
+@step
+def monitor_prompt_performance(responses: List[PromptResponse]) -> Dict[str, float]:
+    """Monitor key performance indicators for prompt responses."""
+    metrics = {
+        "success_rate": sum(r.validation_passed for r in responses) / len(responses),
+        "average_quality": sum(r.quality_score or 0 for r in responses) / len(responses),
+        "average_cost": sum(r.total_cost or 0 for r in responses) / len(responses),
+        "average_response_time": sum(r.response_time_ms or 0 for r in responses) / len(responses),
+        "token_efficiency": sum(r.get_token_efficiency() or 0 for r in responses) / len(responses)
+    }
+    
+    # Alert if metrics degrade
+    if metrics["success_rate"] < 0.95:
+        logger.warning(f"Success rate below threshold: {metrics['success_rate']:.2%}")
+    
+    return metrics
+```
+
+These enhanced features enable production-grade LLM workflows with proper observability, cost control, and quality assurance while maintaining ZenML's philosophy of simplicity and artifact-based management.
+
+## Artifact Tracing and Relationships
+
+A critical aspect of production LLM workflows is **tracing which responses were generated by which prompts**. ZenML provides elegant solutions for this through its built-in artifact lineage system.
+
+### The Hybrid Approach (Recommended)
+
+The most effective strategy combines **ZenML's automatic lineage tracking** (80% of use cases) with **strategic metadata** (20% of use cases) for enhanced querying.
+
+#### Primary: Metadata-Based Linking
+
+The most flexible approach uses explicit metadata linking to trace prompt → response relationships across runs and pipelines:
+
+```python
+from zenml import step, pipeline
+from zenml.prompts import Prompt, PromptResponse
+from zenml.client import Client
+import hashlib
+import uuid
+
+@step
+def create_extraction_prompt() -> Prompt:
+    """Create prompt artifact with linkable ID."""
+    prompt = Prompt(
+        template="Extract invoice data: {document_text}",
+        output_schema=InvoiceSchema.model_json_schema(),
+        examples=[...]
+    )
+    
+    # Create unique prompt identifier for linking
+    prompt_id = str(uuid.uuid4())
+    prompt_hash = hashlib.md5(prompt.template.encode()).hexdigest()[:8]
+    
+    # Store ID in prompt metadata for linking
+    prompt.metadata = {
+        "prompt_id": prompt_id,
+        "prompt_hash": prompt_hash,
+        "prompt_name": "invoice_extraction_v2",
+        "schema_version": "1.0"
+    }
+    
+    return prompt
+
+@step
+def extract_data(
+    documents: List[str], 
+    prompt: Prompt
+) -> List[PromptResponse]:
+    """Process documents with explicit metadata linking."""
+    responses = []
+    
+    # Get prompt linking information
+    prompt_id = prompt.metadata.get("prompt_id")
+    prompt_hash = prompt.metadata.get("prompt_hash")
+    prompt_name = prompt.metadata.get("prompt_name")
+    
+    for doc in documents:
+        # LLM processing
+        llm_output = call_llm_api(prompt.format(document_text=doc))
+        
+        # Create response with explicit linking metadata
+        response = PromptResponse(
+            content=llm_output["content"],
+            parsed_output=parse_json(llm_output["content"]),
+            model_name="gpt-4",
+            total_cost=0.003,
+            validation_passed=True,
+            metadata={
+                # Explicit prompt linking
+                "prompt_id": prompt_id,
+                "prompt_hash": prompt_hash,
+                "prompt_name": prompt_name,
+                "prompt_template_preview": prompt.template[:50] + "...",
+                
+                # Business context
+                "document_type": "invoice",
+                "processing_batch": f"batch_{uuid.uuid4().hex[:8]}",
+                "created_by_step": "extract_data"
+            }
+        )
+        responses.append(response)
+    
+    return responses
+
+@pipeline
+def document_pipeline():
+    """Pipeline with metadata-based linking."""
+    prompt = create_extraction_prompt()
+    documents = ["Invoice text...", "Bill content..."]
+    responses = extract_data(documents, prompt)
+    return responses
+```
+
+#### Querying by Metadata Linkage
+
+```python
+from zenml.client import Client
+
+def find_responses_by_prompt_id(prompt_id: str = None, prompt_name: str = None):
+    """Find all responses generated by a specific prompt using metadata linking."""
+    client = Client()
+    
+    # Get all PromptResponse artifacts
+    all_response_artifacts = client.list_artifacts(
+        type_name="PromptResponse",
+        size=1000  # Adjust as needed
+    )
+    
+    matching_responses = []
+    
+    # Filter by prompt metadata
+    for artifact in all_response_artifacts:
+        response = artifact.load()
+        
+        # Match by prompt_id or prompt_name
+        if prompt_id and response.metadata.get("prompt_id") == prompt_id:
+            matching_responses.append({
+                "response": response,
+                "artifact_id": artifact.id,
+                "artifact_name": artifact.name,
+                "created": artifact.created
+            })
+        elif prompt_name and response.metadata.get("prompt_name") == prompt_name:
+            matching_responses.append({
+                "response": response,
+                "artifact_id": artifact.id,
+                "artifact_name": artifact.name,
+                "created": artifact.created
+            })
+    
+    # Sort by creation time
+    matching_responses.sort(key=lambda x: x["created"], reverse=True)
+    
+    if matching_responses:
+        responses = [item["response"] for item in matching_responses]
+        
+        # Analyze results
+        success_rate = sum(r.validation_passed for r in responses) / len(responses)
+        total_cost = sum(r.total_cost or 0 for r in responses)
+        avg_quality = sum(r.quality_score or 0 for r in responses) / len(responses)
+        
+        # Get prompt info from first response
+        first_response = responses[0]
+        prompt_info = {
+            "prompt_name": first_response.metadata.get("prompt_name"),
+            "prompt_hash": first_response.metadata.get("prompt_hash"),
+            "template_preview": first_response.metadata.get("prompt_template_preview")
+        }
+        
+        return {
+            "prompt_info": prompt_info,
+            "response_count": len(responses),
+            "success_rate": success_rate,
+            "avg_quality": avg_quality,
+            "total_cost": total_cost,
+            "responses": responses,
+            "time_range": {
+                "earliest": matching_responses[-1]["created"],
+                "latest": matching_responses[0]["created"]
+            }
+        }
+    else:
+        return {"error": f"No responses found for prompt_id={prompt_id}, prompt_name={prompt_name}"}
+
+# Usage examples
+analysis_by_name = find_responses_by_prompt_id(prompt_name="invoice_extraction_v2")
+if "error" not in analysis_by_name:
+    print(f"Found {analysis_by_name['response_count']} responses for {analysis_by_name['prompt_info']['prompt_name']}")
+    print(f"Success rate: {analysis_by_name['success_rate']:.1%}")
+    print(f"Average quality: {analysis_by_name['avg_quality']:.2f}")
+    print(f"Total cost: ${analysis_by_name['total_cost']:.4f}")
+```
+
+#### Secondary: Strategic Metadata
+
+Add minimal metadata only for business-specific filtering that ZenML doesn't handle:
+
+```python
+@step
+def extract_data_with_metadata(
+    documents: List[Dict[str, str]], 
+    prompt: Prompt
+) -> List[PromptResponse]:
+    """Enhanced version with strategic metadata."""
+    responses = []
+    
+    for doc in documents:
+        llm_output = call_llm_api(prompt.format(document_text=doc["content"]))
+        
+        response = PromptResponse(
+            content=llm_output["content"],
+            parsed_output=parse_json(llm_output["content"]),
+            model_name="gpt-4",
+            total_cost=0.003,
+            metadata={
+                # ✅ Business context for filtering
+                "document_type": doc["type"],  # "invoice", "receipt", "bill"
+                "processing_batch": "batch_2024_001",
+                "source_system": "accounting_app",
+                
+                # ❌ Avoid: ZenML already tracks these
+                # "prompt_version": "...",  # ZenML handles versioning
+                # "step_name": "...",       # ZenML tracks pipeline structure
+                # "run_id": "...",          # ZenML provides run context
+            }
+        )
+        responses.append(response)
+    
+    return responses
+
+# Query by business metadata
+def analyze_by_document_type():
+    """Analyze performance by document type using metadata."""
+    client = Client()
+    
+    # Get recent runs
+    runs = client.list_pipeline_runs(
+        pipeline_name="document_pipeline",
+        size=10
+    )
+    
+    results_by_type = {}
+    
+    for run in runs:
+        step = run.steps.get("extract_data_with_metadata")
+        if step:
+            responses = [artifact.load() for artifact in step.outputs["return"]]
+            
+            # Group by document type using metadata
+            for response in responses:
+                doc_type = response.metadata.get("document_type", "unknown")
+                if doc_type not in results_by_type:
+                    results_by_type[doc_type] = []
+                results_by_type[doc_type].append(response)
+    
+    # Analyze each type
+    for doc_type, responses in results_by_type.items():
+        success_rate = sum(r.validation_passed for r in responses) / len(responses)
+        avg_cost = sum(r.total_cost or 0 for r in responses) / len(responses)
+        
+        print(f"{doc_type}: {success_rate:.1%} success, ${avg_cost:.4f} avg cost")
+```
+
+### Dashboard Integration
+
+The ZenML dashboard provides visual artifact lineage without any additional code:
+
+```python
+# Get dashboard URL for artifact lineage
+client = Client()
+run = client.get_pipeline_run("latest")
+prompt_artifact = run.steps["create_extraction_prompt"].outputs["return"]
+
+dashboard_url = f"http://localhost:8237/artifacts/{prompt_artifact.id}/lineage"
+print(f"View prompt lineage at: {dashboard_url}")
+```
+
+In the dashboard:
+1. **Navigate to the Artifacts tab**
+2. **Click on your Prompt artifact**  
+3. **View the "Lineage" tab** - see a visual graph of all PromptResponse artifacts generated
+4. **Click through relationships** - explore the complete pipeline flow
+
+### Advanced: Cross-Run Analysis with Metadata
+
+For production monitoring, analyze prompt performance across multiple runs using metadata linkage:
+
+```python
+def monitor_prompt_performance_by_metadata(
+    prompt_name: str, 
+    days: int = 7,
+    document_type: str = "invoice"
+) -> Dict:
+    """Monitor prompt performance across multiple runs using metadata."""
+    from datetime import datetime, timedelta
+    client = Client()
+    
+    # Get all PromptResponse artifacts from the last N days
+    cutoff_date = datetime.now() - timedelta(days=days)
+    
+    all_response_artifacts = client.list_artifacts(
+        type_name="PromptResponse",
+        created=f">{days}d",  # Last N days
+        size=10000  # Adjust as needed
+    )
+    
+    # Filter responses by prompt and document type
+    matching_responses = []
+    
+    for artifact in all_response_artifacts:
+        response = artifact.load()
+        
+        # Filter by prompt name and document type
+        if (response.metadata.get("prompt_name") == prompt_name and 
+            response.metadata.get("document_type") == document_type):
+            matching_responses.append({
+                "response": response,
+                "artifact": artifact,
+                "batch_id": response.metadata.get("processing_batch"),
+                "created": artifact.created
+            })
+    
+    # Group by processing batch (represents different runs)
+    batches = {}
+    for item in matching_responses:
+        batch_id = item["batch_id"] or "unknown"
+        if batch_id not in batches:
+            batches[batch_id] = []
+        batches[batch_id].append(item)
+    
+    # Analyze each batch
+    performance_data = []
+    
+    for batch_id, batch_responses in batches.items():
+        responses = [item["response"] for item in batch_responses]
+        
+        # Get prompt characteristics from first response
+        first_response = responses[0]
+        prompt_hash = first_response.metadata.get("prompt_hash")
+        
+        # Calculate batch metrics
+        batch_metrics = {
+            "batch_id": batch_id,
+            "batch_date": batch_responses[0]["created"],
+            "prompt_hash": prompt_hash,
+            "prompt_name": prompt_name,
+            "document_type": document_type,
+            "response_count": len(responses),
+            "success_rate": sum(r.validation_passed for r in responses) / len(responses),
+            "avg_quality": sum(r.quality_score or 0 for r in responses) / len(responses),
+            "total_cost": sum(r.total_cost or 0 for r in responses),
+            "avg_response_time": sum(r.response_time_ms or 0 for r in responses) / len(responses),
+            "validation_errors": sum(len(r.validation_errors) for r in responses)
+        }
+        
+        performance_data.append(batch_metrics)
+    
+    # Sort by date
+    performance_data.sort(key=lambda x: x["batch_date"], reverse=True)
+    
+    # Calculate overall metrics
+    all_responses = [item["response"] for item in matching_responses]
+    
+    if all_responses:
+        overall_metrics = {
+            "monitoring_period": f"Last {days} days",
+            "prompt_name": prompt_name,
+            "document_type": document_type,
+            "total_batches": len(batches),
+            "total_responses": len(all_responses),
+            "overall_success_rate": sum(r.validation_passed for r in all_responses) / len(all_responses),
+            "overall_avg_quality": sum(r.quality_score or 0 for r in all_responses) / len(all_responses),
+            "total_cost": sum(r.total_cost or 0 for r in all_responses),
+            "performance_by_batch": performance_data,
+            "prompt_versions": len(set(p["prompt_hash"] for p in performance_data if p["prompt_hash"]))
+        }
+    else:
+        overall_metrics = {
+            "error": f"No responses found for prompt '{prompt_name}' and document type '{document_type}'"
+        }
+    
+    return overall_metrics
+
+# Usage examples
+monitoring = monitor_prompt_performance_by_metadata(
+    prompt_name="invoice_extraction_v2",
+    days=7,
+    document_type="invoice"
+)
+
+if "error" not in monitoring:
+    print(f"Monitored '{monitoring['prompt_name']}' over {monitoring['monitoring_period']}")
+    print(f"Total responses: {monitoring['total_responses']} across {monitoring['total_batches']} batches")
+    print(f"Overall success rate: {monitoring['overall_success_rate']:.1%}")
+    print(f"Average quality: {monitoring['overall_avg_quality']:.2f}")
+    print(f"Total cost: ${monitoring['total_cost']:.2f}")
+    print(f"Prompt versions detected: {monitoring['prompt_versions']}")
+    
+    # Analyze trend over batches
+    recent_batches = monitoring['performance_by_batch'][:3]
+    if len(recent_batches) >= 2:
+        trend = recent_batches[0]['success_rate'] - recent_batches[1]['success_rate']
+        print(f"Success rate trend: {trend:+.1%} (latest vs previous)")
+
+# Compare different prompt versions
+def compare_prompt_versions(prompt_base_name: str, days: int = 30):
+    """Compare performance of different versions of a prompt."""
+    client = Client()
+    
+    # Get all responses for prompts with similar names
+    all_responses = client.list_artifacts(
+        type_name="PromptResponse", 
+        created=f">{days}d",
+        size=10000
+    )
+    
+    version_performance = {}
+    
+    for artifact in all_responses:
+        response = artifact.load()
+        prompt_name = response.metadata.get("prompt_name", "")
+        
+        if prompt_base_name in prompt_name:
+            if prompt_name not in version_performance:
+                version_performance[prompt_name] = []
+            version_performance[prompt_name].append(response)
+    
+    # Compare versions
+    comparison = {}
+    for version, responses in version_performance.items():
+        comparison[version] = {
+            "response_count": len(responses),
+            "success_rate": sum(r.validation_passed for r in responses) / len(responses),
+            "avg_quality": sum(r.quality_score or 0 for r in responses) / len(responses),
+            "total_cost": sum(r.total_cost or 0 for r in responses),
+            "avg_cost_per_response": sum(r.total_cost or 0 for r in responses) / len(responses)
+        }
+    
+    return comparison
+```
+
+### Why This Approach Works Best
+
+1. **Leverages ZenML's Strengths**: Automatic artifact tracking, versioning, and dashboard visualization
+2. **Minimal Overhead**: Most relationships tracked automatically without additional code
+3. **Business Context**: Strategic metadata for filtering and analysis that ZenML doesn't provide
+4. **Scalable**: Fast queries for recent data, efficient for production monitoring
+5. **Future-Proof**: Benefits from ZenML improvements and ecosystem development
+
+### When to Use Each Method
+
+| Scenario | Approach | Example |
+|----------|----------|---------|
+| "What responses did this prompt generate?" | **ZenML Lineage** | `run.steps["step"].outputs["return"]` |
+| "Compare prompts across runs" | **ZenML Lineage** | Multi-run analysis with automatic relationships |
+| "Filter by document type" | **Strategic Metadata** | `response.metadata["document_type"] == "invoice"` |
+| "A/B testing prompt variants" | **Strategic Metadata** | `response.metadata["prompt_variant"] == "A"` |
+| "Debug specific pipeline run" | **Dashboard** | Visual lineage exploration |
+| "Production monitoring" | **Hybrid** | ZenML lineage + business metadata filtering |
+
+This hybrid approach gives you **90% of the power with 10% of the complexity** - exactly what production teams need for effective LLM workflows.
