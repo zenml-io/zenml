@@ -547,8 +547,7 @@ def deployment_request_from_source_deployment(
     assert source_deployment.build
     deployment_request = PipelineDeploymentRequest(
         project=source_deployment.project_id,
-        run_name_template=config.run_name
-        or get_default_run_name(pipeline_name=pipeline_configuration.name),
+        run_name_template=config.run_name or source_deployment.run_name_template,
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
         client_environment={},
