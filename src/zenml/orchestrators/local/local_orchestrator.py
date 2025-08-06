@@ -88,14 +88,27 @@ class LocalOrchestrator(BaseOrchestrator):
 
         # Run each step
         for step_name, step in deployment.step_configurations.items():
-            if any(fs in step.spec.upstream_steps for fs in failed_steps):
-                failed_steps.append(step_name)
-                continue
-
             if (
                 execution_mode == ExecutionMode.STOP_ON_FAILURE
                 and len(failed_steps) > 0
             ):
+                logger.warning(
+                    "Stopping pipeline run due to failure in step(s) %s and "
+                    "execution mode %s.",
+                    ", ".join(failed_steps),
+                    execution_mode,
+                )
+                continue
+
+            if failed_upstream_steps := [fs for fs in failed_steps if fs in step.spec.upstream_steps]:
+                logger.warning(
+                    "Skipping step %s due to failure in upstream step(s) %s and "
+                    "execution mode %s",
+                    step_name,
+                    ", ".join(failed_upstream_steps),
+                    execution_mode,
+                )
+                failed_steps.append(step_name)
                 continue
 
             if self.requires_resources_in_orchestration_environment(step):

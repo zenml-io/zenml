@@ -155,8 +155,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
         # Get execution mode for failure handling
         execution_mode = deployment.pipeline_configuration.execution_mode
-        if execution_mode is None:
-            execution_mode = ExecutionMode.CONTINUE_ON_FAILURE
 
         # List of steps that failed
         failed_steps = []
@@ -168,19 +166,19 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 and len(failed_steps) > 0
             ):
                 logger.warning(
-                    "Stopping pipeline run due to failure in step %s and "
-                    "execution mode %s",
-                    failed_steps,
+                    "Stopping pipeline run due to failure in step(s) %s and "
+                    "execution mode %s.",
+                    ", ".join(failed_steps),
                     execution_mode,
                 )
                 continue
 
-            if any(fs in step.spec.upstream_steps for fs in failed_steps):
+            if failed_upstream_steps := [fs for fs in failed_steps if fs in step.spec.upstream_steps]:
                 logger.warning(
-                    "Skipping step %s due to failure in upstream step %s and "
+                    "Skipping step %s due to failure in upstream step(s) %s and "
                     "execution mode %s",
                     step_name,
-                    failed_steps,
+                    ", ".join(failed_upstream_steps),
                     execution_mode,
                 )
                 failed_steps.append(step_name)
