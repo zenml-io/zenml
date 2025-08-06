@@ -14,7 +14,7 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type
 from uuid import uuid4
 
 from zenml.enums import ExecutionMode
@@ -149,6 +149,22 @@ class LocalOrchestrator(BaseOrchestrator):
 
         return self._orchestrator_run_id
 
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        from zenml.enums import ExecutionMode
+
+        # Local orchestrator supports all execution modes
+        return [
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        ]
+
 
 class LocalOrchestratorConfig(BaseOrchestratorConfig):
     """Local orchestrator config."""
@@ -228,19 +244,3 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
             The implementation class for this flavor.
         """
         return LocalOrchestrator
-
-    @property
-    def supported_execution_modes(self):
-        """Returns the supported execution modes for this flavor.
-
-        Returns:
-            A tuple of supported execution modes.
-        """
-        from zenml.enums import ExecutionMode
-
-        # Local orchestrator supports all execution modes
-        return (
-            ExecutionMode.FAIL_FAST,
-            ExecutionMode.STOP_ON_FAILURE,
-            ExecutionMode.CONTINUE_ON_FAILURE,
-        )

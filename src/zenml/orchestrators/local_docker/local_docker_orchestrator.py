@@ -249,6 +249,19 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         )
         return None
 
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Supported execution modes for this orchestrator.
+
+        Returns:
+            Supported execution modes for this orchestrator.
+        """
+        return [
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        ]
+
 
 class LocalDockerOrchestratorSettings(BaseSettings):
     """Local Docker orchestrator settings.
@@ -342,16 +355,3 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
             Implementation class for this flavor.
         """
         return LocalDockerOrchestrator
-
-    @property
-    def supported_execution_modes(self) -> List[ExecutionMode]:
-        """Supported execution modes for this orchestrator.
-
-        Returns:
-            Supported execution modes for this orchestrator.
-        """
-        return [
-            ExecutionMode.FAIL_FAST,
-            ExecutionMode.STOP_ON_FAILURE,
-            ExecutionMode.CONTINUE_ON_FAILURE,
-        ]

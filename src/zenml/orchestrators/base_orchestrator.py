@@ -21,6 +21,7 @@ from typing import (
     Callable,
     Dict,
     Iterator,
+    List,
     Optional,
     Tuple,
     Type,
@@ -450,6 +451,15 @@ class BaseOrchestrator(StackComponent, ABC):
         """Cleans up the active run."""
         self._active_deployment = None
 
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        return [ExecutionMode.CONTINUE_ON_FAILURE]
+
     def _validate_execution_mode(self) -> None:
         """Validate that the requested execution mode is supported.
 
@@ -621,15 +631,6 @@ class BaseOrchestratorFlavor(Flavor):
             The config class.
         """
         return BaseOrchestratorConfig
-
-    @property
-    def supported_execution_modes(self) -> Tuple[ExecutionMode, ...]:
-        """Returns the supported execution modes for this flavor.
-
-        Returns:
-            A tuple of supported execution modes.
-        """
-        return (ExecutionMode.CONTINUE_ON_FAIL,)
 
     @property
     @abstractmethod
