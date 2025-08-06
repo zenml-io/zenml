@@ -73,7 +73,7 @@ def zenml_table(
     max_width: Optional[int] = None,
     pagination: Optional[Dict[str, Any]] = None,
     **kwargs: Any,
-) -> None:
+) -> Optional[str]:
     """Render data in specified format following ZenML CLI table guidelines.
 
     This function provides a centralized way to render tabular data across
@@ -102,13 +102,15 @@ def zenml_table(
     if output_format == "none":
         return
     elif output_format == "json":
-        _render_json(data, columns, sort_by, reverse, pagination)
+        return _render_json(data, columns, sort_by, reverse, pagination)
     elif output_format == "yaml":
-        _render_yaml(data, columns, sort_by, reverse, pagination)
+        return _render_yaml(data, columns, sort_by, reverse, pagination)
     elif output_format == "tsv":
-        _render_tsv(data, columns, sort_by, reverse)
+        return _render_tsv(data, columns, sort_by, reverse)
+    elif output_format == "csv":
+        return _render_csv(data, columns, sort_by, reverse)
     elif output_format == "table":
-        _render_table(
+        return _render_table(
             data, columns, sort_by, reverse, no_truncate, no_color, max_width
         )
     else:
@@ -316,7 +318,7 @@ def _render_json(
     sort_by: Optional[str] = None,
     reverse: bool = False,
     pagination: Optional[Dict[str, Any]] = None,
-) -> None:
+) -> str:
     """Render data as JSON.
 
     Args:
@@ -325,6 +327,9 @@ def _render_json(
         sort_by: Column to sort by
         reverse: Whether to reverse sort order
         pagination: Optional pagination metadata
+
+    Returns:
+        JSON string representation of the data
     """
     prepared_data = _prepare_data(
         data, columns, sort_by, reverse, clean_internal_fields=True
@@ -333,9 +338,9 @@ def _render_json(
     # Add pagination metadata if provided
     if pagination:
         output_data = {"items": prepared_data, "pagination": pagination}
-        print(json.dumps(output_data, indent=2, default=str))
+        return json.dumps(output_data, indent=2, default=str)
     else:
-        print(json.dumps(prepared_data, indent=2, default=str))
+        return json.dumps(prepared_data, indent=2, default=str)
 
 
 def _render_yaml(
@@ -344,7 +349,7 @@ def _render_yaml(
     sort_by: Optional[str] = None,
     reverse: bool = False,
     pagination: Optional[Dict[str, Any]] = None,
-) -> None:
+) -> str:
     """Render data as YAML.
 
     Args:
@@ -353,6 +358,9 @@ def _render_yaml(
         sort_by: Column to sort by
         reverse: Whether to reverse sort order
         pagination: Optional pagination metadata
+
+    Returns:
+        YAML string representation of the data
     """
     prepared_data = _prepare_data(
         data, columns, sort_by, reverse, clean_internal_fields=True
@@ -361,9 +369,9 @@ def _render_yaml(
     # Add pagination metadata if provided
     if pagination:
         output_data = {"items": prepared_data, "pagination": pagination}
-        print(yaml.dump(output_data, default_flow_style=False))
+        return yaml.dump(output_data, default_flow_style=False)
     else:
-        print(yaml.dump(prepared_data, default_flow_style=False))
+        return yaml.dump(prepared_data, default_flow_style=False)
 
 
 def _render_tsv(
@@ -371,7 +379,7 @@ def _render_tsv(
     columns: Optional[List[str]] = None,
     sort_by: Optional[str] = None,
     reverse: bool = False,
-) -> None:
+) -> str:
     """Render data as TSV (Tab-Separated Values).
 
     Args:
@@ -379,21 +387,26 @@ def _render_tsv(
         columns: Optional list of column names to include
         sort_by: Column to sort by
         reverse: Whether to reverse sort order
+
+    Returns:
+        TSV string representation of the data
     """
     prepared_data = _prepare_data(
         data, columns, sort_by, reverse, clean_internal_fields=True
     )
 
     if not prepared_data:
-        return
+        return ""
 
     # Get headers
     headers = columns if columns else list(prepared_data[0].keys())
 
-    # Print headers
-    print("\t".join(headers))
+    lines = []
 
-    # Print data
+    # Add headers
+    lines.append("\t".join(headers))
+
+    # Add data
     for row in prepared_data:
         values = []
         for header in headers:
@@ -403,7 +416,58 @@ def _render_tsv(
                 value.replace("\t", " ").replace("\n", " ").replace("\r", " ")
             )
             values.append(value)
-        print("\t".join(values))
+        lines.append("\t".join(values))
+
+    return "\n".join(lines)
+
+
+def _render_csv(
+    data: List[Dict[str, Any]],
+    columns: Optional[List[str]] = None,
+    sort_by: Optional[str] = None,
+    reverse: bool = False,
+) -> str:
+    """Render data as CSV (Comma-Separated Values).
+
+    Args:
+        data: List of data dictionaries to render
+        columns: Optional list of column names to include
+        sort_by: Column to sort by
+        reverse: Whether to reverse sort order
+
+    Returns:
+        CSV string representation of the data
+    """
+    prepared_data = _prepare_data(
+        data, columns, sort_by, reverse, clean_internal_fields=True
+    )
+
+    if not prepared_data:
+        return ""
+
+    # Get headers
+    headers = columns if columns else list(prepared_data[0].keys())
+
+    lines = []
+
+    # Add headers
+    lines.append(",".join(headers))
+
+    # Add data
+    for row in prepared_data:
+        values = []
+        for header in headers:
+            value = (
+                str(row.get(header, "")) if row.get(header) is not None else ""
+            )
+            # For CSV, escape commas and quotes
+            if "," in value or '"' in value:
+                escaped_value = value.replace('"', '""')
+                value = f'"{escaped_value}"'
+            values.append(value)
+        lines.append(",".join(values))
+
+    return "\n".join(lines)
 
 
 def _render_table(
@@ -414,7 +478,7 @@ def _render_table(
     no_truncate: bool = False,
     no_color: bool = False,
     max_width: Optional[int] = None,
-) -> None:
+) -> str:
     """Render data as a formatted table following ZenML guidelines.
 
     Args:
@@ -425,11 +489,14 @@ def _render_table(
         no_truncate: Whether to disable truncation
         no_color: Whether to disable colored output
         max_width: Maximum table width
+
+    Returns:
+        Formatted table string representation of the data
     """
     prepared_data = _prepare_data(data, columns, sort_by, reverse)
 
     if not prepared_data:
-        return
+        return ""
 
     # Apply special formatting for stack tables and model version tables
     prepared_data = _apply_stack_formatting(prepared_data)
@@ -600,14 +667,23 @@ def _render_table(
 
     # Use console with appropriate width
     console_width = table_width if table_width else available_width
+
+    # Capture output to string instead of printing
+    from io import StringIO
+
+    output_buffer = StringIO()
+
     table_console = Console(
         width=console_width,
         force_terminal=not no_color,
         no_color=no_color or os.getenv("NO_COLOR") is not None,
+        file=output_buffer,
     )
 
-    # Print with two spaces between columns (handled by Rich's padding)
+    # Render to string buffer instead of printing
     table_console.print(rich_table)
+
+    return output_buffer.getvalue()
 
 
 def _get_terminal_width() -> Optional[int]:

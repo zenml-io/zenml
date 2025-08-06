@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "zenml"
 version = "0.84.1"
-packages = [{ include = "zenml", from = "src" }]
+packages = [{ include = "zenml", from = "src" }, { include = "zenml_cli", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
 readme = "README.md"
@@ -38,7 +38,7 @@ exclude = [
 include = ["src/zenml", "*.txt", "*.sh", "*.md"]
 
 [tool.poetry.scripts]
-zenml = "zenml.cli.cli:cli"
+zenml = "zenml_cli:cli"
 
 [tool.poetry.dependencies]
 alembic = { version = ">=1.8.1,<=1.15.2" }

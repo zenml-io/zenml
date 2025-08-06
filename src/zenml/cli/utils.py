@@ -2717,8 +2717,7 @@ def handle_table_output(
             "total": page.total,
         }
 
-    # Call the table utility
-    zenml_table(
+    zenml_table_output = zenml_table(
         data=data,
         output_format=output,
         columns=column_list,
@@ -2729,6 +2728,11 @@ def handle_table_output(
         pagination=pagination_info,
         **kwargs,
     )
+
+    if zenml_table_output:
+        from zenml_cli import clean_output
+        
+        clean_output(zenml_table_output)
 
     # Show pagination info for table format
     if page is not None and output == "table":
