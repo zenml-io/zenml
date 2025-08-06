@@ -21,7 +21,7 @@ from typing import Any, List, Optional
 class ContextVarList:
     """Thread-safe wrapper around ContextVar[List] with atomic add/remove operations."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         """Initialize the context variable list.
 
         Args:
@@ -35,12 +35,20 @@ class ContextVarList:
         self._lock = threading.Lock()
 
     def get(self) -> List[Any]:
-        """Get the current list value. Returns empty list if not set."""
+        """Get the current list value. Returns empty list if not set.
+
+        Returns:
+            The current list value.
+        """
         value = self._context_var.get()
         return value if value is not None else []
 
     def add(self, item: Any) -> None:
-        """Thread-safely add an item to the list."""
+        """Thread-safely add an item to the list.
+
+        Args:
+            item: The item to add to the list.
+        """
         with self._lock:
             current_list = self.get()
             if item not in current_list:
@@ -48,7 +56,11 @@ class ContextVarList:
                 self._context_var.set(new_list)
 
     def remove(self, item: Any) -> None:
-        """Thread-safely remove an item from the list."""
+        """Thread-safely remove an item from the list.
+
+        Args:
+            item: The item to remove from the list.
+        """
         with self._lock:
             current_list = self.get()
             if item in current_list:
