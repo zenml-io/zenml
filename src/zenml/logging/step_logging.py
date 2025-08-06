@@ -384,6 +384,7 @@ def fetch_log_records(
     except Exception as e:
         # For any other errors during streaming, fall back to empty result
         logger.warning(f"Error streaming logs from {logs_uri}: {e}")
+        return []
 
 
 def _stream_logs_line_by_line(
