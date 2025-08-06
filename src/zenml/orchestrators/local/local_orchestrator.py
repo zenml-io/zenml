@@ -100,7 +100,9 @@ class LocalOrchestrator(BaseOrchestrator):
                 )
                 continue
 
-            if failed_upstream_steps := [fs for fs in failed_steps if fs in step.spec.upstream_steps]:
+            if failed_upstream_steps := [
+                fs for fs in failed_steps if fs in step.spec.upstream_steps
+            ]:
                 logger.warning(
                     "Skipping step %s due to failure in upstream step(s) %s and "
                     "execution mode %s",
