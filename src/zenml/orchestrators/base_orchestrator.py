@@ -467,6 +467,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Individual orchestrator implementations can override this method
         to add specific validation.
         """
+        assert self._active_deployment
+
         execution_mode = (
             self._active_deployment.pipeline_configuration.execution_mode
         )

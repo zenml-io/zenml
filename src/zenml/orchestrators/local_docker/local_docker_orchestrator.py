@@ -157,7 +157,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         execution_mode = deployment.pipeline_configuration.execution_mode
 
         # List of steps that failed
-        failed_steps = []
+        failed_steps: List[str] = []
 
         # Run each step
         for step_name, step in deployment.step_configurations.items():

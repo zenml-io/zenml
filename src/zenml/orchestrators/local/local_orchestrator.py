@@ -81,7 +81,7 @@ class LocalOrchestrator(BaseOrchestrator):
         execution_mode = deployment.pipeline_configuration.execution_mode
 
         # Track failed steps
-        failed_steps = []
+        failed_steps: List[str] = []
 
         # Run each step
         for step_name, step in deployment.step_configurations.items():
