@@ -23,8 +23,11 @@ class ExternalUserModel(BaseModel):
     """External user model."""
 
     id: UUID
-    email: str
+    username: str
+    email: Optional[str] = None
     name: Optional[str] = None
     is_admin: bool = False
+    is_service_account: bool = False
+    avatar_url: Optional[str] = None
 
     model_config = ConfigDict(extra="ignore")

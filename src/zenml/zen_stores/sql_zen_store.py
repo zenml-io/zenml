@@ -262,6 +262,7 @@ from zenml.models import (
     ServerSettingsResponse,
     ServerSettingsUpdate,
     ServiceAccountFilter,
+    ServiceAccountInternalRequest,
     ServiceAccountRequest,
     ServiceAccountResponse,
     ServiceAccountUpdate,
@@ -6187,6 +6188,14 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
+            # Acquire exclusive lock on the deployment to prevent deadlocks
+            # during insertion
+            session.exec(
+                select(PipelineDeploymentSchema.id)
+                .with_for_update()
+                .where(PipelineDeploymentSchema.id == pipeline_run.deployment)
+            )
+
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
                 # as we don't want to replace a placeholder run with another
@@ -7485,7 +7494,10 @@ class SqlZenStore(BaseZenStore):
 
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
     def create_service_account(
-        self, service_account: ServiceAccountRequest
+        self,
+        service_account: Union[
+            ServiceAccountRequest, ServiceAccountInternalRequest
+        ],
     ) -> ServiceAccountResponse:
         """Creates a new service account.
 

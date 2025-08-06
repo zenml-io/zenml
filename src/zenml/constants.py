@@ -173,6 +173,12 @@ ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
 ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE = "ZENML_DISABLE_PIPELINE_LOGS_STORAGE"
 ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS = "ZENML_DISABLE_STEP_NAMES_IN_LOGS"
+ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE = "ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE"
+ENV_ZENML_LOGS_STORAGE_QUEUE_TIMEOUT = "ZENML_LOGS_STORAGE_QUEUE_TIMEOUT"
+
+ENV_ZENML_LOGS_WRITE_INTERVAL_SECONDS = "ZENML_LOGS_WRITE_INTERVAL_SECONDS"
+ENV_ZENML_LOGS_MERGE_INTERVAL_SECONDS = "ZENML_LOGS_MERGE_INTERVAL_SECONDS"
+
 ENV_ZENML_CUSTOM_SOURCE_ROOT = "ZENML_CUSTOM_SOURCE_ROOT"
 ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION = (
     "ZENML_PIPELINE_API_TOKEN_EXPIRATION"
@@ -313,8 +319,9 @@ _csp_connect_src_urls = [
     "https://raw.githubusercontent.com",
 ]
 _csp_img_src_urls = [
-    "https://public-flavor-logos.s3.eu-central-1.amazonaws.com",
-    "https://avatar.vercel.sh",
+    "*"
+    # "https://public-flavor-logos.s3.eu-central-1.amazonaws.com",
+    # "https://avatar.vercel.sh",
 ]
 _csp_frame_src_urls = [
     "https://zenml.hellonext.co",
@@ -502,4 +509,23 @@ STACK_DEPLOYMENT_API_TOKEN_EXPIRATION = 60 * 6  # 6 hours
 
 ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION = handle_int_env_var(
     ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION, default=0
+)
+
+# Logs storage constants
+# Maximum number of log batches to queue.
+LOGS_STORAGE_MAX_QUEUE_SIZE = handle_int_env_var(
+    ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE, default=100000
+)
+# Queue timeout controls log dropping vs application blocking:
+# - Positive value (e.g., 30): Wait N seconds, then drop logs if queue full
+# - Negative value (e.g., -1): Block indefinitely until queue has space (never drop logs)
+LOGS_STORAGE_QUEUE_TIMEOUT = handle_int_env_var(
+    ENV_ZENML_LOGS_STORAGE_QUEUE_TIMEOUT, default=-1
+)
+# Log batch-write and merge windows in seconds.
+LOGS_WRITE_INTERVAL_SECONDS = handle_int_env_var(
+    ENV_ZENML_LOGS_WRITE_INTERVAL_SECONDS, default=2
+)
+LOGS_MERGE_INTERVAL_SECONDS = handle_int_env_var(
+    ENV_ZENML_LOGS_MERGE_INTERVAL_SECONDS, default=10 * 60
 )

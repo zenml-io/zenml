@@ -25,6 +25,7 @@ from zenml.constants import (
     SERVICE_ACCOUNTS,
     VERSION_1,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     APIKeyFilter,
     APIKeyRequest,
@@ -41,13 +42,14 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
-    verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission_for_model
+from zenml.zen_server.rbac.utils import (
+    delete_model_resource,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
@@ -172,12 +174,24 @@ def update_service_account(
 
     Returns:
         The updated service account.
+
+    Raises:
+        IllegalOperationError: If the service account was created via external
+            authentication.
     """
-    return verify_permissions_and_update_entity(
-        id=service_account_name_or_id,
-        update_model=service_account_update,
-        get_method=zen_store().get_service_account,
-        update_method=zen_store().update_service_account,
+    service_account = zen_store().get_service_account(
+        service_account_name_or_id, hydrate=True
+    )
+    if service_account.external_user_id is not None:
+        raise IllegalOperationError(
+            "Service accounts created via external authentication cannot "
+            "be updated."
+        )
+
+    verify_permission_for_model(service_account, action=Action.UPDATE)
+
+    return zen_store().update_service_account(
+        service_account_name_or_id, service_account_update
     )
 
 
@@ -194,12 +208,25 @@ def delete_service_account(
 
     Args:
         service_account_name_or_id: Name or ID of the service account.
+
+    Raises:
+        IllegalOperationError: If the service account was created via external
+            authentication.
     """
-    verify_permissions_and_delete_entity(
-        id=service_account_name_or_id,
-        get_method=zen_store().get_service_account,
-        delete_method=zen_store().delete_service_account,
+    service_account = zen_store().get_service_account(
+        service_account_name_or_id, hydrate=True
     )
+    if service_account.external_user_id is not None:
+        raise IllegalOperationError(
+            "Service accounts created via external authentication cannot "
+            "be deleted."
+        )
+
+    verify_permission_for_model(service_account, action=Action.DELETE)
+
+    zen_store().delete_service_account(service_account_name_or_id)
+
+    delete_model_resource(service_account)
 
 
 # --------
@@ -226,6 +253,10 @@ def create_api_key(
 
     Returns:
         The created API key.
+
+    Raises:
+        IllegalOperationError: If the service account was created via external
+            authentication.
     """
 
     def create_api_key_wrapper(
@@ -237,6 +268,12 @@ def create_api_key(
         )
 
     service_account = zen_store().get_service_account(service_account_id)
+
+    if service_account.external_user_id is not None:
+        raise IllegalOperationError(
+            "Service accounts created via external authentication cannot "
+            "have associated API keys."
+        )
 
     return verify_permissions_and_create_entity(
         request_model=api_key,
@@ -333,8 +370,19 @@ def update_api_key(
 
     Returns:
         The updated API key.
+
+    Raises:
+        IllegalOperationError: If the service account was created via external
+            authentication.
     """
     service_account = zen_store().get_service_account(service_account_id)
+
+    if service_account.external_user_id is not None:
+        raise IllegalOperationError(
+            "Service accounts created via external authentication cannot "
+            "have associated API keys."
+        )
+
     verify_permission_for_model(service_account, action=Action.UPDATE)
     return zen_store().update_api_key(
         service_account_id=service_account_id,
@@ -367,8 +415,19 @@ def rotate_api_key(
 
     Returns:
         The updated API key.
+
+    Raises:
+        IllegalOperationError: If the service account was created via external
+            authentication.
     """
     service_account = zen_store().get_service_account(service_account_id)
+
+    if service_account.external_user_id is not None:
+        raise IllegalOperationError(
+            "Service accounts created via external authentication cannot "
+            "have associated API keys."
+        )
+
     verify_permission_for_model(service_account, action=Action.UPDATE)
     return zen_store().rotate_api_key(
         service_account_id=service_account_id,
