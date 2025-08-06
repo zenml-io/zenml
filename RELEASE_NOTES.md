@@ -1,5 +1,22 @@
 <!-- markdown-link-check-disable -->
 
+# 0.84.2
+
+## What's Changed
+* Add version 0.84.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3863
+* Add 0.84.1 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3865
+* Fix wandb flavor needing integration to be installed by @stefannica in https://github.com/zenml-io/zenml/pull/3871
+* Verify symlinks and hardlinks in the path materializer by @stefannica in https://github.com/zenml-io/zenml/pull/3870
+* Don't sleep in logging thread if shutdown was requested by @schustmi in https://github.com/zenml-io/zenml/pull/3872
+* Fix run creation deadlock by @schustmi in https://github.com/zenml-io/zenml/pull/3876
+* Fix nonlinear scaling of pipeline compilation time by @schustmi in https://github.com/zenml-io/zenml/pull/3873
+* Fix type annotations by @schustmi in https://github.com/zenml-io/zenml/pull/3878
+* Orchestrator pod restarts by @schustmi in https://github.com/zenml-io/zenml/pull/3869
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.84.1...0.84.2
+
+
 # 0.84.1
 
 The `0.84.1` release delivers important **stability improvements** and **feature enhancements** that strengthen ZenML's orchestration capabilities and developer experience. This release focuses on enhanced Kubernetes orchestrator management with schedule support and better error handling, improved step exception collection for debugging, external service account support, dynamic fan-out/fan-in patterns for run templates, and critical fixes for Vertex step operators and logging reliability.
