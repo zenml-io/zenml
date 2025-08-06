@@ -387,9 +387,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Returns:
             A tuple of supported execution modes.
         """
-        from zenml.enums import ExecutionMode
-
-        # Kubernetes orchestrator supports all execution modes
         return [
             ExecutionMode.FAIL_FAST,
             ExecutionMode.STOP_ON_FAILURE,

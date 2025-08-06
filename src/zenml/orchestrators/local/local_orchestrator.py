@@ -14,7 +14,7 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 from uuid import uuid4
 
 from zenml.enums import ExecutionMode
@@ -156,9 +156,6 @@ class LocalOrchestrator(BaseOrchestrator):
         Returns:
             A tuple of supported execution modes.
         """
-        from zenml.enums import ExecutionMode
-
-        # Local orchestrator supports all execution modes
         return [
             ExecutionMode.FAIL_FAST,
             ExecutionMode.STOP_ON_FAILURE,
