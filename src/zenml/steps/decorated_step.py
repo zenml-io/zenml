@@ -33,7 +33,17 @@ def remove_decorator_from_source_code(
     """
     import ast
 
-    module = ast.parse(source_code)
+    # Remove potential indentation from the source code
+    source_code_lines = source_code.split("\n")
+    if source_code_lines:
+        first_line = source_code_lines[0]
+        leading_spaces = len(first_line) - len(first_line.lstrip())
+        source_code_lines = [
+            line[leading_spaces:] if len(line) >= leading_spaces else line
+            for line in source_code_lines
+        ]
+
+    module = ast.parse("\n".join(source_code_lines))
     if not module.body or not isinstance(module.body[0], ast.FunctionDef):
         return source_code
 
@@ -42,20 +52,31 @@ def remove_decorator_from_source_code(
         return source_code
 
     for decorator in function_def.decorator_list:
-        if isinstance(decorator, ast.Call):
-            decorator = decorator.func
+        lineno = None
+        end_lineno = None
 
-        if isinstance(decorator, ast.Name):
+        if isinstance(decorator, ast.Call) and isinstance(
+            decorator.func, ast.Name
+        ):
+            if decorator.func.id == decorator_name:
+                lineno = decorator.lineno
+                end_lineno = decorator.end_lineno
+        elif isinstance(decorator, ast.Name):
             if decorator.id == decorator_name:
-                source_code_lines = source_code.split("\n")
-                # The line numbers are 1-indexed, so we need to
-                # subtract 1
-                source_code_lines = (
-                    source_code_lines[: decorator.lineno - 1]
-                    + source_code_lines[decorator.end_lineno:]
-                )
-                source_code = "\n".join(source_code_lines)
-                break            
+                lineno = decorator.lineno
+                end_lineno = decorator.end_lineno
+        else:
+            continue
+
+        if lineno is not None and end_lineno is not None:
+            # The line numbers are 1-indexed, so we need to
+            # subtract 1
+            source_code_lines = (
+                source_code_lines[: lineno - 1]
+                + source_code_lines[end_lineno:]
+            )
+            source_code = "\n".join(source_code_lines)
+            break
 
     return source_code
 
