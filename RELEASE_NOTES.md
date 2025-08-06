@@ -2,6 +2,25 @@
 
 # 0.84.2
 
+The `0.84.2` release brings significant **performance improvements** and **reliability enhancements** that strengthen ZenML's orchestration capabilities. This release features a major refactor of the Kubernetes orchestrator with enhanced restart capabilities, faster pipeline compilation for large pipelines, critical security fixes, and improved logging performance.
+
+## Kubernetes Orchestrator
+
+- **Enhanced Robustness**: Complete rework to use Jobs instead of raw pods for orchestrator execution with state reconstruction support, enabling automatic restarts for a much more robust orchestration experience
+- **Deprecated Settings**: Several settings attributes are now deprecated due to the shift from pods to Jobs, streamlining the configuration interface
+- **Updated Logging Behavior**: The orchestrator pod no longer streams logs from step pods directly, improving performance and resource usage
+
+## 🚀 Improvements
+- **Faster Pipeline Compilation**: Significantly improved pipeline compilation performance for large pipelines
+
+## 🛠️ Fixes
+- **Run Creation Deadlock**: Fixed deadlock that could happen if two steps try to create a run at the same time
+- **Security Enhancement**: Enhanced path materializer to properly validate symlinks and hardlinks to prevent path traversal attacks
+- **Logging Performance**: Improved logging thread performance by avoiding unnecessary sleep when shutdown is requested
+- **WandB Integration**: Fixed WandB experiment tracker flavor initialization when the integration is not installed
+- **Type Annotations**: Fixed type annotations for `experiment_tracker` and `step_operator` parameters to accept both string and boolean values
+
+
 ## What's Changed
 * Add version 0.84.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3863
 * Add 0.84.1 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3865
