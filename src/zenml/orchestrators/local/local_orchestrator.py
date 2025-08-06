@@ -89,6 +89,7 @@ class LocalOrchestrator(BaseOrchestrator):
         # Run each step
         for step_name, step in deployment.step_configurations.items():
             if any(fs in step.spec.upstream_steps for fs in failed_steps):
+                failed_steps.append(step_name)
                 continue
 
             if (

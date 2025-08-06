@@ -633,14 +633,20 @@ def main() -> None:
                     )
                     return InterruptMode.GRACEFUL
                 elif run.status == ExecutionStatus.FAILED:
-                    if deployment.pipeline_configuration.execution_mode == ExecutionMode.STOP_ON_FAILURE:
+                    if (
+                        deployment.pipeline_configuration.execution_mode
+                        == ExecutionMode.STOP_ON_FAILURE
+                    ):
                         logger.info(
                             "Stopping DAG execution because pipeline run is in "
                             "`%s` state.",
                             run.status,
                         )
                         return InterruptMode.GRACEFUL
-                    elif deployment.pipeline_configuration.execution_mode == ExecutionMode.FAIL_FAST:
+                    elif (
+                        deployment.pipeline_configuration.execution_mode
+                        == ExecutionMode.FAIL_FAST
+                    ):
                         logger.info(
                             "Stopping DAG execution because pipeline run is in "
                             "`%s` state.",
@@ -665,7 +671,7 @@ def main() -> None:
                 interrupt_check_interval=pipeline_settings.interrupt_check_interval,
                 max_parallelism=pipeline_settings.max_parallelism,
                 node_stop_function=stop_step,
-                execution_mode=deployment.pipeline_configuration.execution_mode
+                execution_mode=deployment.pipeline_configuration.execution_mode,
             ).run()
         finally:
             if (

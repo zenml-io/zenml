@@ -17,7 +17,7 @@ import copy
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from uuid import uuid4
 
 from docker.errors import ContainerError
@@ -28,7 +28,7 @@ from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionMode, StackComponentType
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     BaseOrchestratorConfig,
@@ -153,8 +153,39 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
         start_time = time.time()
 
+        # Get execution mode for failure handling
+        execution_mode = deployment.pipeline_configuration.execution_mode
+        if execution_mode is None:
+            execution_mode = ExecutionMode.CONTINUE_ON_FAILURE
+
+        # List of steps that failed
+        failed_steps = []
+
         # Run each step
         for step_name, step in deployment.step_configurations.items():
+            if (
+                execution_mode == ExecutionMode.STOP_ON_FAILURE
+                and len(failed_steps) > 0
+            ):
+                logger.warning(
+                    "Stopping pipeline run due to failure in step %s and "
+                    "execution mode %s",
+                    failed_steps,
+                    execution_mode,
+                )
+                continue
+
+            if any(fs in step.spec.upstream_steps for fs in failed_steps):
+                logger.warning(
+                    "Skipping step %s due to failure in upstream step %s and "
+                    "execution mode %s",
+                    step_name,
+                    failed_steps,
+                    execution_mode,
+                )
+                failed_steps.append(step_name)
+                continue
+
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
@@ -205,7 +236,11 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                     logger.info(line.strip().decode())
             except ContainerError as e:
                 error_message = e.stderr.decode()
-                raise RuntimeError(error_message)
+                failed_steps.append(step_name)
+                if execution_mode == ExecutionMode.FAIL_FAST:
+                    raise RuntimeError(error_message)
+                else:
+                    logger.error(error_message)
 
         run_duration = time.time() - start_time
         logger.info(
@@ -307,3 +342,16 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
             Implementation class for this flavor.
         """
         return LocalDockerOrchestrator
+
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Supported execution modes for this orchestrator.
+
+        Returns:
+            Supported execution modes for this orchestrator.
+        """
+        return [
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        ]
