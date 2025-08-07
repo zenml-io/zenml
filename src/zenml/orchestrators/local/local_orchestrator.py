@@ -80,7 +80,6 @@ class LocalOrchestrator(BaseOrchestrator):
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()
 
-        # Get execution mode for failure handling
         execution_mode = deployment.pipeline_configuration.execution_mode
 
         failed_steps: List[str] = []
