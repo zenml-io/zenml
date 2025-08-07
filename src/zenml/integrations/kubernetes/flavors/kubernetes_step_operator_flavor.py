@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, List, Optional, Type
 
-from pydantic import Field
+from pydantic import Field, NonNegativeInt
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -23,6 +23,7 @@ from zenml.integrations.kubernetes import KUBERNETES_STEP_OPERATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.step_operators import (
@@ -31,11 +32,7 @@ if TYPE_CHECKING:
 
 
 class KubernetesStepOperatorSettings(BaseSettings):
-    """Settings for the Kubernetes step operator.
-
-    Configuration options for individual step execution on Kubernetes.
-    Field descriptions are defined inline using Field() descriptors.
-    """
+    """Settings for the Kubernetes step operator."""
 
     pod_settings: Optional[KubernetesPodSettings] = Field(
         default=None,
@@ -49,32 +46,66 @@ class KubernetesStepOperatorSettings(BaseSettings):
         default=False,
         description="Whether to run step containers in privileged mode with extended permissions.",
     )
-    pod_startup_timeout: int = Field(
-        default=600,
-        description="Maximum seconds to wait for step pods to start. Default is 10 minutes.",
+    job_name_prefix: Optional[str] = Field(
+        default=None,
+        description="Prefix for the job name.",
     )
-    pod_failure_max_retries: int = Field(
-        default=3,
-        description="Maximum retry attempts when step pods fail to start.",
+    ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="Seconds to keep finished jobs before automatic cleanup.",
     )
-    pod_failure_retry_delay: int = Field(
-        default=10,
-        description="Delay in seconds between pod failure retry attempts.",
+    active_deadline_seconds: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="Job deadline in seconds. If the job doesn't finish "
+        "within this time, it will be terminated.",
     )
-    pod_failure_backoff: float = Field(
-        default=1.0,
-        description="Exponential backoff factor for retry delays. Values > 1.0 increase delay with each retry.",
+    fail_on_container_waiting_reasons: Optional[List[str]] = Field(
+        default=[
+            "InvalidImageName",
+            "ErrImagePull",
+            "ImagePullBackOff",
+            "CreateContainerConfigError",
+        ],
+        description="List of container waiting reasons that should cause the "
+        "job to fail immediately. This should be set to a list of "
+        "nonrecoverable reasons, which if found in any "
+        "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
+        "should cause the job to fail immediately.",
+    )
+
+    # Deprecated fields
+    pod_startup_timeout: Optional[int] = Field(
+        default=None,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+    pod_failure_max_retries: Optional[int] = Field(
+        default=None,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+    pod_failure_retry_delay: Optional[int] = Field(
+        default=None,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+    pod_failure_backoff: Optional[float] = Field(
+        default=None,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "pod_startup_timeout",
+        "pod_failure_max_retries",
+        "pod_failure_retry_delay",
+        "pod_failure_backoff",
     )
 
 
 class KubernetesStepOperatorConfig(
     BaseStepOperatorConfig, KubernetesStepOperatorSettings
 ):
-    """Configuration for the Kubernetes step operator.
-
-    Defines cluster connection and execution settings.
-    Field descriptions are defined inline using Field() descriptors.
-    """
+    """Configuration for the Kubernetes step operator."""
 
     kubernetes_namespace: str = Field(
         default="zenml",

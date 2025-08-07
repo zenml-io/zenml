@@ -95,7 +95,7 @@ def add_local_stores_mount(
 
 
 def build_pod_manifest(
-    pod_name: str,
+    pod_name: Optional[str],
     image_name: str,
     command: List[str],
     args: List[str],
@@ -262,90 +262,6 @@ def add_pod_settings(
                 setattr(pod_spec, key, value)
 
 
-def build_cron_job_manifest(
-    cron_expression: str,
-    pod_name: str,
-    image_name: str,
-    command: List[str],
-    args: List[str],
-    privileged: bool,
-    pod_settings: Optional[KubernetesPodSettings] = None,
-    service_account_name: Optional[str] = None,
-    env: Optional[Dict[str, str]] = None,
-    labels: Optional[Dict[str, str]] = None,
-    mount_local_stores: bool = False,
-    successful_jobs_history_limit: Optional[int] = None,
-    failed_jobs_history_limit: Optional[int] = None,
-    ttl_seconds_after_finished: Optional[int] = None,
-    termination_grace_period_seconds: Optional[int] = 30,
-) -> k8s_client.V1CronJob:
-    """Create a manifest for launching a pod as scheduled CRON job.
-
-    Args:
-        cron_expression: CRON job schedule expression, e.g. "* * * * *".
-        pod_name: Name of the pod.
-        image_name: Name of the Docker image.
-        command: Command to execute the entrypoint in the pod.
-        args: Arguments provided to the entrypoint command.
-        privileged: Whether to run the container in privileged mode.
-        pod_settings: Optional settings for the pod.
-        service_account_name: Optional name of a service account.
-            Can be used to assign certain roles to a pod, e.g., to allow it to
-            run Kubernetes commands from within the cluster.
-        env: Environment variables to set.
-        labels: Labels to add to the pod.
-        mount_local_stores: Whether to mount the local stores path inside the
-            pod.
-        successful_jobs_history_limit: The number of successful jobs to retain.
-        failed_jobs_history_limit: The number of failed jobs to retain.
-        ttl_seconds_after_finished: The amount of seconds to keep finished jobs
-            before deleting them.
-        termination_grace_period_seconds: The amount of seconds to wait for a
-            pod to shutdown gracefully.
-
-    Returns:
-        CRON job manifest.
-    """
-    pod_manifest = build_pod_manifest(
-        pod_name=pod_name,
-        image_name=image_name,
-        command=command,
-        args=args,
-        privileged=privileged,
-        pod_settings=pod_settings,
-        service_account_name=service_account_name,
-        env=env,
-        labels=labels,
-        mount_local_stores=mount_local_stores,
-        termination_grace_period_seconds=termination_grace_period_seconds,
-    )
-
-    job_spec = k8s_client.V1CronJobSpec(
-        schedule=cron_expression,
-        successful_jobs_history_limit=successful_jobs_history_limit,
-        failed_jobs_history_limit=failed_jobs_history_limit,
-        job_template=k8s_client.V1JobTemplateSpec(
-            metadata=pod_manifest.metadata,
-            spec=k8s_client.V1JobSpec(
-                template=k8s_client.V1PodTemplateSpec(
-                    metadata=pod_manifest.metadata,
-                    spec=pod_manifest.spec,
-                ),
-                ttl_seconds_after_finished=ttl_seconds_after_finished,
-            ),
-        ),
-    )
-
-    job_manifest = k8s_client.V1CronJob(
-        kind="CronJob",
-        api_version="batch/v1",
-        metadata=pod_manifest.metadata,
-        spec=job_spec,
-    )
-
-    return job_manifest
-
-
 def build_role_binding_manifest_for_service_account(
     name: str,
     role_name: str,
@@ -475,6 +391,7 @@ def build_job_manifest(
     backoff_limit: Optional[int] = None,
     ttl_seconds_after_finished: Optional[int] = None,
     labels: Optional[Dict[str, str]] = None,
+    annotations: Optional[Dict[str, str]] = None,
     active_deadline_seconds: Optional[int] = None,
     pod_failure_policy: Optional[Dict[str, Any]] = None,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
@@ -487,6 +404,7 @@ def build_job_manifest(
         backoff_limit: The backoff limit for the job.
         ttl_seconds_after_finished: The TTL seconds after finished for the job.
         labels: The labels to use for the job.
+        annotations: The annotations to use for the job.
         active_deadline_seconds: The active deadline seconds for the job.
         pod_failure_policy: The pod failure policy for the job.
         owner_references: The owner references for the job.
@@ -505,7 +423,57 @@ def build_job_manifest(
     job_metadata = k8s_client.V1ObjectMeta(
         name=job_name,
         labels=labels,
+        annotations=annotations,
         owner_references=owner_references,
     )
 
     return k8s_client.V1Job(spec=job_spec, metadata=job_metadata)
+
+
+def job_template_manifest_from_job(
+    job: k8s_client.V1Job,
+) -> k8s_client.V1JobTemplateSpec:
+    """Build a Kubernetes job template manifest from a job.
+
+    Args:
+        job: The job manifest to build the template from.
+
+    Returns:
+        The job template manifest.
+    """
+    return k8s_client.V1JobTemplateSpec(
+        metadata=job.metadata,
+        spec=job.spec,
+    )
+
+
+def build_cron_job_manifest(
+    job_template: k8s_client.V1JobTemplateSpec,
+    cron_expression: str,
+    successful_jobs_history_limit: Optional[int] = None,
+    failed_jobs_history_limit: Optional[int] = None,
+) -> k8s_client.V1CronJob:
+    """Build a Kubernetes cron job manifest.
+
+    Args:
+        job_template: The job template to use for the cron job.
+        cron_expression: The cron expression to use for the cron job.
+        successful_jobs_history_limit: The number of successful jobs to keep.
+        failed_jobs_history_limit: The number of failed jobs to keep.
+
+    Returns:
+        The Kubernetes cron job manifest.
+    """
+    spec = k8s_client.V1CronJobSpec(
+        schedule=cron_expression,
+        successful_jobs_history_limit=successful_jobs_history_limit,
+        failed_jobs_history_limit=failed_jobs_history_limit,
+        job_template=job_template,
+    )
+
+    return k8s_client.V1CronJob(
+        kind="CronJob",
+        api_version="batch/v1",
+        metadata=job_template.metadata,
+        spec=spec,
+    )
