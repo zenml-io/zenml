@@ -24,7 +24,7 @@ from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Generator, List, Optional, Type, Union
+from typing import Any, Iterator, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -405,7 +405,7 @@ def _stream_logs_line_by_line(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
-) -> Generator[str, None, None]:
+) -> Iterator[str]:
     """Stream logs line by line without loading the entire file into memory.
 
     This generator yields log lines one by one, handling both single files
