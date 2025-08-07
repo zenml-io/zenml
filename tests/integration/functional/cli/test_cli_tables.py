@@ -15,49 +15,70 @@
 
 import json
 import os
+import subprocess
+import sys
 from unittest.mock import patch
 
 import pytest
 import yaml
-from click.testing import CliRunner
-
-from zenml.cli.cli import cli
 
 
 class TestCLITableIntegration:
     """Integration tests for CLI commands using the new table system."""
 
-    @pytest.fixture(scope="function")
-    def runner(self):
-        """CLI runner fixture."""
-        return CliRunner()
+    def run_zenml_cli(self, args, **kwargs):
+        """Run zenml CLI command using subprocess for realistic testing.
+        
+        Args:
+            args: List of command arguments (e.g., ["stack", "list"])
+            **kwargs: Additional subprocess.run arguments
+            
+        Returns:
+            subprocess.CompletedProcess: The result of the command
+        """
+        cmd = ["zenml"] + args
+        
+        # Set default subprocess arguments
+        subprocess_kwargs = {
+            "capture_output": True,
+            "text": True,
+            "timeout": 30,  # Prevent hanging tests
+        }
+        subprocess_kwargs.update(kwargs)
+        
+        return subprocess.run(cmd, **subprocess_kwargs)
 
-    def test_stack_list_table_format(self, runner):
+    def test_stack_list_table_format(self):
         """Test stack list command with table format."""
-        result = runner.invoke(cli, ["stack", "list"])
+        result = self.run_zenml_cli(["stack", "list"])
 
-        assert result.exit_code == 0
-        assert "NAME" in result.output  # Check uppercase headers
-        assert "OWNER" in result.output
-        assert "COMPONENTS" in result.output
+        assert result.returncode == 0
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stdout
+        assert "NAME" in output  # Check uppercase headers
+        assert "OWNER" in output
+        assert "COMPONENTS" in output
 
         # Check for active stack indicator
-        if "●" in result.output:
-            assert "(active)" in result.output
+        if "●" in output:
+            assert "(active)" in output
 
-    def test_stack_list_json_format(self, runner):
+    def test_stack_list_json_format(self):
         """Test stack list command with JSON format."""
-        result = runner.invoke(cli, ["stack", "list", "--output", "json"])
+        result = self.run_zenml_cli(["stack", "list", "--output", "json"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+
+        # JSON output should go to stdout via clean_output(), fallback to stderr
+        output = result.stdout if result.stdout.strip() else result.stderr
 
         # Parse JSON output
         try:
-            data = json.loads(result.output)
+            data = json.loads(output)
             assert "items" in data or isinstance(data, list)
 
             # If pagination format
-            if "items" in data:
+            if isinstance(data, dict) and "items" in data:
                 assert "pagination" in data
                 items = data["items"]
             else:
@@ -72,15 +93,18 @@ class TestCLITableIntegration:
         except json.JSONDecodeError:
             pytest.fail("Invalid JSON output from stack list command")
 
-    def test_stack_list_yaml_format(self, runner):
+    def test_stack_list_yaml_format(self):
         """Test stack list command with YAML format."""
-        result = runner.invoke(cli, ["stack", "list", "--output", "yaml"])
+        result = self.run_zenml_cli(["stack", "list", "--output", "yaml"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+
+        # YAML output should go to stdout via clean_output(), fallback to stderr
+        output = result.stdout if result.stdout.strip() else result.stderr
 
         # Parse YAML output
         try:
-            data = yaml.safe_load(result.output)
+            data = yaml.safe_load(output)
             assert isinstance(data, (list, dict))
 
             # If pagination format
@@ -96,72 +120,86 @@ class TestCLITableIntegration:
         except yaml.YAMLError:
             pytest.fail("Invalid YAML output from stack list command")
 
-    def test_stack_list_tsv_format(self, runner):
+    def test_stack_list_tsv_format(self):
         """Test stack list command with TSV format."""
-        result = runner.invoke(cli, ["stack", "list", "--output", "tsv"])
+        result = self.run_zenml_cli(["stack", "list", "--output", "tsv"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
 
-        lines = result.output.strip().split("\n")
+        # TSV output should go to stdout via clean_output(), fallback to stderr
+        output = result.stdout if result.stdout.strip() else result.stderr
+        lines = output.strip().split("\n")
         if lines and lines[0]:
             # Check header line contains tab-separated values
             assert "\t" in lines[0]
             headers = lines[0].split("\t")
             assert "name" in headers
 
-    def test_user_list_table_format(self, runner):
+    def test_user_list_table_format(self):
         """Test user list command with table format."""
-        result = runner.invoke(cli, ["user", "list"])
+        result = self.run_zenml_cli(["user", "list"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stderr
         # Should contain uppercase headers and data
-        assert result.output.strip()  # Should produce some output
+        assert output.strip()  # Should produce some output
 
-    def test_pipeline_list_table_format(self, runner):
+    def test_pipeline_list_table_format(self):
         """Test pipeline list command with table format."""
-        result = runner.invoke(cli, ["pipeline", "list"])
+        result = self.run_zenml_cli(["pipeline", "list"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stderr
         # Check for reasonable output (may be empty if no pipelines)
-        if "NAME" in result.output:
-            assert "TAGS" in result.output or "DESCRIPTION" in result.output
+        if "NAME" in output:
+            assert "TAGS" in output or "DESCRIPTION" in output
 
-    def test_model_list_table_format(self, runner):
+    def test_model_list_table_format(self):
         """Test model list command with table format."""
-        result = runner.invoke(cli, ["model", "list"])
+        result = self.run_zenml_cli(["model", "list"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stderr
         # Should handle empty or populated model lists
-        assert isinstance(result.output, str)
+        assert isinstance(output, str)
 
-    def test_secret_list_table_format(self, runner):
+    def test_secret_list_table_format(self):
         """Test secret list command with table format."""
-        result = runner.invoke(cli, ["secret", "list"])
+        result = self.run_zenml_cli(["secret", "list"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stderr
         # Should handle empty or populated secret lists
-        assert isinstance(result.output, str)
+        assert isinstance(output, str)
 
     @patch.dict(os.environ, {"NO_COLOR": "1"})
-    def test_no_color_environment(self, runner):
+    def test_no_color_environment(self):
         """Test that NO_COLOR environment variable is respected."""
-        result = runner.invoke(cli, ["stack", "list"])
+        result = self.run_zenml_cli(["stack", "list"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stderr
         # Output should be present but without ANSI escape codes
         # This is a basic check - detailed ANSI parsing would be complex
-        assert result.output.strip()
+        assert output.strip()
 
     @patch.dict(os.environ, {"COLUMNS": "40"})
-    def test_narrow_terminal(self, runner):
+    def test_narrow_terminal(self):
         """Test table formatting with narrow terminal."""
-        result = runner.invoke(cli, ["stack", "list"])
+        result = self.run_zenml_cli(["stack", "list"])
 
-        assert result.exit_code == 0
-        assert result.output.strip()
+        assert result.returncode == 0
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stderr
+        assert output.strip()
 
         # Check that lines don't exceed reasonable width for narrow terminal
-        lines = result.output.split("\n")
+        lines = output.split("\n")
         for line in lines:
             # Remove ANSI escape codes for length check
             clean_line = self._remove_ansi_codes(line)
@@ -169,21 +207,27 @@ class TestCLITableIntegration:
             assert len(clean_line) <= 120  # Reasonable upper bound
 
     @patch.dict(os.environ, {"COLUMNS": "200"})
-    def test_wide_terminal(self, runner):
+    def test_wide_terminal(self):
         """Test table formatting with wide terminal."""
-        result = runner.invoke(cli, ["stack", "list"])
+        result = self.run_zenml_cli(["stack", "list"])
 
-        assert result.exit_code == 0
-        assert result.output.strip()
+        assert result.returncode == 0
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stderr
+        assert output.strip()
 
-    def test_pagination_in_json_output(self, runner):
+    def test_pagination_in_json_output(self):
         """Test that pagination information is included in JSON output."""
-        result = runner.invoke(cli, ["stack", "list", "--output", "json"])
+        result = self.run_zenml_cli(["stack", "list", "--output", "json"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+
+        # JSON output should go to stdout via clean_output(), fallback to stderr
+        output = result.stdout if result.stdout.strip() else result.stderr
 
         try:
-            data = json.loads(result.output)
+            print(output)
+            data = json.loads(output)
             # Check if pagination format is used
             if isinstance(data, dict) and "pagination" in data:
                 pagination = data["pagination"]
@@ -191,21 +235,25 @@ class TestCLITableIntegration:
         except json.JSONDecodeError:
             pytest.fail("Invalid JSON output")
 
-    def test_error_handling_invalid_output_format(self, runner):
+    def test_error_handling_invalid_output_format(self):
         """Test error handling for invalid output format."""
-        result = runner.invoke(cli, ["stack", "list", "--output", "invalid"])
+        result = self.run_zenml_cli(["stack", "list", "--output", "invalid"])
 
         # Should either fail gracefully or show help
-        assert result.exit_code != 0 or "invalid" not in result.output.lower()
+        output = result.stderr + result.stdout
+        assert result.returncode != 0 or "invalid" not in output.lower()
 
-    def test_mixed_data_types_handling(self, runner):
+    def test_mixed_data_types_handling(self):
         """Test handling of mixed data types in JSON output."""
-        result = runner.invoke(cli, ["stack", "list", "--output", "json"])
+        result = self.run_zenml_cli(["stack", "list", "--output", "json"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
+
+        # JSON output should go to stdout via clean_output(), fallback to stderr
+        output = result.stdout if result.stdout.strip() else result.stderr
 
         try:
-            data = json.loads(result.output)
+            data = json.loads(output)
             # Should be valid JSON with proper data types
             assert isinstance(data, (list, dict))
         except json.JSONDecodeError:
@@ -218,7 +266,7 @@ class TestCLITableIntegration:
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
         return ansi_escape.sub("", text)
 
-    def test_consistent_header_formatting(self, runner):
+    def test_consistent_header_formatting(self):
         """Test that headers are consistently formatted across commands."""
         commands_to_test = [
             ["stack", "list"],
@@ -227,11 +275,13 @@ class TestCLITableIntegration:
         ]
 
         for command in commands_to_test:
-            result = runner.invoke(cli, command)
+            result = self.run_zenml_cli(command)
 
-            if result.exit_code == 0 and result.output.strip():
+            # Table output goes to stderr due to stdout rerouting
+            output = result.stderr
+            if result.returncode == 0 and output.strip():
                 # Headers should be uppercase and properly formatted
-                lines = result.output.split("\n")
+                lines = output.split("\n")
                 header_line = None
 
                 for line in lines:
@@ -246,23 +296,26 @@ class TestCLITableIntegration:
                     # Should contain uppercase headers
                     assert any(word.isupper() for word in header_line.split())
 
-    def test_status_colorization_in_output(self, runner):
+    def test_status_colorization_in_output(self):
         """Test that status values are properly colorized when color is enabled."""
-        result = runner.invoke(cli, ["stack", "list"])
+        result = self.run_zenml_cli(["stack", "list"])
 
-        assert result.exit_code == 0
+        assert result.returncode == 0
 
+        # Table output goes to stderr due to stdout rerouting
+        output = result.stderr
+        
         # If there are status-like fields with known values, they should be colorized
         # This is a basic check - the exact colorization depends on the data
         if any(
-            status in result.output.lower()
+            status in output.lower()
             for status in ["active", "running", "failed", "pending"]
         ):
             # Should contain ANSI color codes (unless NO_COLOR is set)
             if os.getenv("NO_COLOR") != "1":
                 # Basic check for ANSI codes presence
                 assert (
-                    "\x1b[" in result.output
-                    or "[32m" in result.output
-                    or "[31m" in result.output
+                    "\x1b[" in output
+                    or "[32m" in output
+                    or "[31m" in output
                 )
