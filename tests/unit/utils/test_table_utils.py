@@ -57,7 +57,7 @@ class TestZenmlTable:
         """Test basic table formatting."""
         output = zenml_table(sample_data, output_format="table")
         assert output is not None
-        
+
         # Check that headers are uppercase
         assert "NAME" in output
         assert "STATUS" in output
@@ -81,7 +81,9 @@ class TestZenmlTable:
     def test_json_format_with_pagination(self, sample_data):
         """Test JSON output with pagination metadata."""
         pagination = {"index": 1, "total": 3, "max_size": 20}
-        output = zenml_table(sample_data, output_format="json", pagination=pagination)
+        output = zenml_table(
+            sample_data, output_format="json", pagination=pagination
+        )
         assert output is not None
 
         output_data = json.loads(output)
@@ -199,9 +201,7 @@ class TestZenmlTable:
         assert output is not None
 
     @patch("zenml.utils.table_utils.shutil.get_terminal_size")
-    def test_terminal_width_detection(
-        self, mock_terminal_size, sample_data
-    ):
+    def test_terminal_width_detection(self, mock_terminal_size, sample_data):
         """Test terminal width detection."""
         mock_terminal_size.return_value.columns = 120
 

@@ -61,6 +61,8 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
+from zenml.constants import ENV_ZENML_CLI_COLUMN_WIDTH, handle_int_env_var
+
 
 def zenml_table(
     data: List[Dict[str, Any]],
@@ -687,18 +689,19 @@ def _render_table(
 
 
 def _get_terminal_width() -> Optional[int]:
-    """Get terminal width from environment or shutil.
+    """Get terminal width from ZENML_CLI_COLUMN_WIDTH environment variable or shutil.
+
+    Checks the ZENML_CLI_COLUMN_WIDTH environment variable first, then falls back
+    to shutil.get_terminal_size() for automatic detection.
 
     Returns:
         Terminal width in characters, or None if cannot be determined
     """
-    # Check COLUMNS environment variable first
-    columns_env = os.getenv("COLUMNS")
-    if columns_env:
-        try:
-            return int(columns_env)
-        except ValueError:
-            pass
+    # Check ZenML-specific CLI column width environment variable first
+    # Use handle_int_env_var with default=0 to indicate "not set"
+    columns_env = handle_int_env_var(ENV_ZENML_CLI_COLUMN_WIDTH, default=0)
+    if columns_env > 0:
+        return columns_env
 
     # Fall back to shutil.get_terminal_size
     try:

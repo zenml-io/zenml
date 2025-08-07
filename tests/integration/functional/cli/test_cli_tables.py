@@ -16,11 +16,12 @@
 import json
 import os
 import subprocess
-import sys
 from unittest.mock import patch
 
 import pytest
 import yaml
+
+from zenml.constants import ENV_ZENML_CLI_COLUMN_WIDTH
 
 
 class TestCLITableIntegration:
@@ -28,16 +29,16 @@ class TestCLITableIntegration:
 
     def run_zenml_cli(self, args, **kwargs):
         """Run zenml CLI command using subprocess for realistic testing.
-        
+
         Args:
             args: List of command arguments (e.g., ["stack", "list"])
             **kwargs: Additional subprocess.run arguments
-            
+
         Returns:
             subprocess.CompletedProcess: The result of the command
         """
         cmd = ["zenml"] + args
-        
+
         # Set default subprocess arguments
         subprocess_kwargs = {
             "capture_output": True,
@@ -45,7 +46,7 @@ class TestCLITableIntegration:
             "timeout": 30,  # Prevent hanging tests
         }
         subprocess_kwargs.update(kwargs)
-        
+
         return subprocess.run(cmd, **subprocess_kwargs)
 
     def test_stack_list_table_format(self):
@@ -188,14 +189,14 @@ class TestCLITableIntegration:
         # This is a basic check - detailed ANSI parsing would be complex
         assert output.strip()
 
-    @patch.dict(os.environ, {"COLUMNS": "40"})
+    @patch.dict(os.environ, {ENV_ZENML_CLI_COLUMN_WIDTH: "40"})
     def test_narrow_terminal(self):
         """Test table formatting with narrow terminal."""
         result = self.run_zenml_cli(["stack", "list"])
 
         assert result.returncode == 0
         # Table output goes to stderr due to stdout rerouting
-        output = result.stderr
+        output = result.stdout
         assert output.strip()
 
         # Check that lines don't exceed reasonable width for narrow terminal
@@ -206,14 +207,14 @@ class TestCLITableIntegration:
             # Allow some flexibility for table borders and formatting
             assert len(clean_line) <= 120  # Reasonable upper bound
 
-    @patch.dict(os.environ, {"COLUMNS": "200"})
+    @patch.dict(os.environ, {ENV_ZENML_CLI_COLUMN_WIDTH: "200"})
     def test_wide_terminal(self):
         """Test table formatting with wide terminal."""
         result = self.run_zenml_cli(["stack", "list"])
 
         assert result.returncode == 0
         # Table output goes to stderr due to stdout rerouting
-        output = result.stderr
+        output = result.stdout
         assert output.strip()
 
     def test_pagination_in_json_output(self):
@@ -304,7 +305,7 @@ class TestCLITableIntegration:
 
         # Table output goes to stderr due to stdout rerouting
         output = result.stderr
-        
+
         # If there are status-like fields with known values, they should be colorized
         # This is a basic check - the exact colorization depends on the data
         if any(
@@ -315,7 +316,5 @@ class TestCLITableIntegration:
             if os.getenv("NO_COLOR") != "1":
                 # Basic check for ANSI codes presence
                 assert (
-                    "\x1b[" in output
-                    or "[32m" in output
-                    or "[31m" in output
+                    "\x1b[" in output or "[32m" in output or "[31m" in output
                 )
