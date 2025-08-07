@@ -15,12 +15,11 @@
 
 import sys
 import logging
-from contextvars import ContextVar
-import click
-from typing import Optional
+
+from typing import List
 
 # Global variable to store original stdout for CLI clean output
-_original_stdout = ContextVar("original_stdout", default=sys.stdout)
+_original_stdout = sys.stdout
 
 
 def reroute_stdout() -> None:
@@ -30,11 +29,7 @@ def reroute_stdout() -> None:
     output goes to stderr, while preserving the original stdout for clean
     output that can be piped.
     """
-    original_stdout = sys.stdout
-    modified_handlers = []  # Track which handlers we actually modify
-
-    # Store the original stdout for clean_output to use later
-    _original_stdout.set(original_stdout)
+    modified_handlers: List[logging.StreamHandler] = []
 
     # Reroute stdout to stderr
     sys.stdout = sys.stderr
@@ -43,10 +38,10 @@ def reroute_stdout() -> None:
     for handler in logging.root.handlers:
         if (
             isinstance(handler, logging.StreamHandler)
-            and handler.stream is original_stdout
-        ):  # Use 'is' for exact match
+            and handler.stream is _original_stdout
+        ):
             handler.stream = sys.stderr
-            modified_handlers.append(handler)  # Track this modification
+            modified_handlers.append(handler) 
 
     # Handle ALL existing individual logger handlers that hold references to original stdout
     for _, logger in logging.Logger.manager.loggerDict.items():
@@ -54,7 +49,7 @@ def reroute_stdout() -> None:
             for handler in logger.handlers:
                 if (
                     isinstance(handler, logging.StreamHandler)
-                    and handler.stream is original_stdout
+                    and handler.stream is _original_stdout
                 ):
                     handler.setStream(sys.stderr)
                     modified_handlers.append(handler)
@@ -72,14 +67,11 @@ def clean_output(text: str) -> None:
     Args:
         text: Text to output to stdout.
     """
-    original_stdout = _original_stdout.get()
-
-    original_stdout.write(text)
+    _original_stdout.write(text)
     if not text.endswith("\n"):
-        original_stdout.write("\n")
-    original_stdout.flush()
+        _original_stdout.write("\n")
+    _original_stdout.flush()
 
-# Only import 
 reroute_stdout()
 
 # Import the cli only after rerouting stdout

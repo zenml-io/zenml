@@ -96,11 +96,11 @@ def zenml_table(
         ValueError: If an unsupported output format is provided
     """
     if not data:
-        return
+        return None
 
     # Handle output format
     if output_format == "none":
-        return
+        return None
     elif output_format == "json":
         return _render_json(data, columns, sort_by, reverse, pagination)
     elif output_format == "yaml":
