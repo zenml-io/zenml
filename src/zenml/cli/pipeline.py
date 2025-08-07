@@ -373,7 +373,12 @@ def create_run_template(
 @pipeline.command("deploy", help="Deploy a pipeline.")
 @click.argument("source")
 @click.option(
-    "--name", "-n", type=str, required=True, help="The name of the deployment."
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+    help="The version name of the deployment. If not provided, a version "
+    "name will be generated automatically.",
 )
 @click.option(
     "--description",
@@ -408,7 +413,7 @@ def create_run_template(
 )
 def deploy_pipeline(
     source: str,
-    name: str,
+    version: Optional[str] = None,
     description: Optional[str] = None,
     tags: Optional[List[str]] = None,
     config_path: Optional[str] = None,
@@ -418,7 +423,7 @@ def deploy_pipeline(
 
     Args:
         source: Importable source resolving to a pipeline instance.
-        name: Name of the deployment.
+        version: Version name of the deployment.
         description: Description of the deployment.
         tags: Tags to add to the deployment.
         config_path: Path to configuration file for the deployment.
@@ -441,7 +446,7 @@ def deploy_pipeline(
             config_path=config_path
         )
         deployment = pipeline_instance.deploy(
-            name=name, description=description, tags=tags
+            version=version, description=description, tags=tags
         )
 
     cli_utils.declare(

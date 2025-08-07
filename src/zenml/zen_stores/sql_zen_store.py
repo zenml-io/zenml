@@ -4925,13 +4925,13 @@ class SqlZenStore(BaseZenStore):
                 session.add(new_deployment)
                 session.commit()
             except IntegrityError as e:
-                if deployment.version and self._deployment_version_exists(
+                if new_deployment.version and self._deployment_version_exists(
                     session=session,
                     pipeline_id=deployment.pipeline,
-                    version=deployment.version,
+                    version=new_deployment.version,
                 ):
                     raise EntityExistsError(
-                        f"Deployment version {deployment.version} already "
+                        f"Deployment version {new_deployment.version} already "
                         f"exists for pipeline {deployment.pipeline}."
                     )
                 else:
@@ -5073,16 +5073,13 @@ class SqlZenStore(BaseZenStore):
                 session.add(deployment)
                 session.commit()
             except IntegrityError as e:
-                if (
-                    deployment_update.version
-                    and self._deployment_version_exists(
-                        session=session,
-                        pipeline_id=deployment.pipeline_id,
-                        version=deployment_update.version,
-                    )
+                if deployment.version and self._deployment_version_exists(
+                    session=session,
+                    pipeline_id=deployment.pipeline_id,
+                    version=deployment.version,
                 ):
                     raise EntityExistsError(
-                        f"Deployment version {deployment_update.version} "
+                        f"Deployment version {deployment.version} "
                         f"already exists for pipeline {deployment.pipeline_id}."
                     )
                 else:

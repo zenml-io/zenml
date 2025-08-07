@@ -115,9 +115,10 @@ class PipelineDeploymentBase(BaseZenModel):
 class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     """Request model for pipeline deployments."""
 
-    version: Optional[str] = Field(
+    version: Optional[Union[str, bool]] = Field(
         default=None,
-        title="The version of the deployment.",
+        title="The version of the deployment. If set to True, a version will "
+        "be generated automatically.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
@@ -165,9 +166,11 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
 class PipelineDeploymentUpdate(BaseUpdate):
     """Pipeline deployment update model."""
 
-    version: Optional[str] = Field(
+    version: Optional[Union[str, bool]] = Field(
         default=None,
-        title="The version of the deployment.",
+        title="The version of the deployment. If set to True, the existing "
+        "version will be kept or a new version will be generated. If set to "
+        "False, the version will be removed.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(

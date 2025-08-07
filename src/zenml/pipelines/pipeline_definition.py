@@ -1553,14 +1553,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def deploy(
         self,
-        name: str,
+        version: Optional[str] = None,
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
     ) -> PipelineDeploymentResponse:
         """Deploy the pipeline.
 
         Args:
-            name: The name of the deployment.
+            version: The version name of the deployment. If not provided,
+                a version name will be generated automatically.
             description: The description of the deployment.
             tags: The tags to add to the deployment.
 
@@ -1570,7 +1571,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._prepare_if_possible()
         return self._create_deployment(
             skip_schedule_registration=True,
-            name=name,
+            version=version or True,
             description=description,
             tags=tags,
             **self._run_args,

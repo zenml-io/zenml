@@ -15,7 +15,7 @@
 
 import json
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
@@ -363,8 +363,17 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             )
             client_env = "{}"
 
+        id_ = uuid4()
+        if isinstance(request.version, str):
+            version = request.version
+        elif request.version is True:
+            version = str(id_)
+        else:
+            version = None
+
         return cls(
-            version=request.version,
+            id=id_,
+            version=version,
             description=request.description,
             stack_id=request.stack,
             project_id=request.project,
@@ -401,8 +410,13 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The updated schema.
         """
-        if update.version:
+        if isinstance(update.version, str):
             self.version = update.version
+        elif update.version is True and not self.version:
+            self.version = str(self.id)
+        elif update.version is False:
+            self.version = None
+
         if update.description:
             self.description = update.description
 
