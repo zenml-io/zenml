@@ -4911,6 +4911,9 @@ class SqlZenStore(BaseZenStore):
                     )
                 template_utils.validate_build_is_runnable(build)
 
+                if isinstance(deployment.version, str):
+                    validate_name(deployment, "version")
+
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
                 project_id=deployment.project,
@@ -5066,6 +5069,9 @@ class SqlZenStore(BaseZenStore):
                         "servers."
                     )
                 template_utils.validate_build_is_runnable(deployment.build)
+
+                if isinstance(deployment.version, str):
+                    validate_name(deployment_update, "version")
 
             deployment.update(deployment_update)
 

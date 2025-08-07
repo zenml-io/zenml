@@ -26,7 +26,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -119,7 +119,6 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
         default=None,
         title="The version of the deployment. If set to True, a version will "
         "be generated automatically.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
         default=None,
@@ -159,6 +158,20 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
         description="Deployment that is the source of this deployment.",
     )
 
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            if not v:
+                raise ValueError("Deployment version cannot be empty.")
+            if len(v) > STR_FIELD_MAX_LENGTH:
+                raise ValueError(
+                    f"Deployment version `{v}` is too long. The maximum length "
+                    f"is {STR_FIELD_MAX_LENGTH} characters."
+                )
+
+        return v
+
 
 # ------------------ Update Model ------------------
 
@@ -184,6 +197,20 @@ class PipelineDeploymentUpdate(BaseUpdate):
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the deployment."
     )
+
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            if not v:
+                raise ValueError("Deployment version cannot be empty.")
+            if len(v) > STR_FIELD_MAX_LENGTH:
+                raise ValueError(
+                    f"Deployment version `{v}` is too long. The maximum length "
+                    f"is {STR_FIELD_MAX_LENGTH} characters."
+                )
+
+        return v
 
 
 # ------------------ Response Model ------------------
