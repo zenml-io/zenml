@@ -19,7 +19,10 @@ import os
 import re
 import sys
 from contextvars import ContextVar
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
+
+if TYPE_CHECKING:
+    from zenml.logging.step_logging import ArtifactStoreHandler
 
 from rich.traceback import install as rich_tb_install
 
@@ -44,7 +47,9 @@ ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
 step_names_in_console: ContextVar[bool] = ContextVar(
     "step_names_in_console", default=False
 )
-logging_handlers = ContextVarList("logging_handlers")
+logging_handlers: ContextVarList["ArtifactStoreHandler"] = ContextVarList(
+    "logging_handlers"
+)
 
 
 def _add_step_name_to_message(message: str) -> str:

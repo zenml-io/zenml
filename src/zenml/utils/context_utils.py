@@ -15,10 +15,12 @@
 
 import threading
 from contextvars import ContextVar
-from typing import Any, List, Optional
+from typing import Generic, List, Optional, TypeVar
+
+T = TypeVar("T")
 
 
-class ContextVarList:
+class ContextVarList(Generic[T]):
     """Thread-safe wrapper around ContextVar[List] with atomic add/remove operations."""
 
     def __init__(self, name: str):
@@ -28,29 +30,29 @@ class ContextVarList:
             name: The name for the underlying ContextVar.
         """
         # Use None as default to avoid mutable default issues
-        self._context_var: ContextVar[Optional[List[Any]]] = ContextVar(
+        self._context_var: ContextVar[Optional[List[T]]] = ContextVar(
             name, default=None
         )
         # Lock to ensure atomic operations
         self._lock = threading.Lock()
 
-    def get(self) -> List[Any]:
+    def get(self) -> List[T]:
         """Get the current list value. Returns empty list if not set."""
         value = self._context_var.get()
         return value if value is not None else []
 
-    def add(self, item: Any) -> None:
+    def add(self, item: T) -> None:
         """Thread-safely add an item to the list."""
         with self._lock:
             current_list = self.get()
-            if item not in current_list:
+            if not any(x is item for x in current_list):
                 new_list = current_list + [item]
                 self._context_var.set(new_list)
 
-    def remove(self, item: Any) -> None:
+    def remove(self, item: T) -> None:
         """Thread-safely remove an item from the list."""
         with self._lock:
             current_list = self.get()
-            if item in current_list:
-                new_list = [x for x in current_list if x != item]
+            if any(x is item for x in current_list):
+                new_list = [x for x in current_list if x is not item]
                 self._context_var.set(new_list)
