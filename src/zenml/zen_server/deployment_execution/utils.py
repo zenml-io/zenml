@@ -58,7 +58,6 @@ from zenml.models import (
 from zenml.pipelines.build_utils import compute_stack_checksum
 from zenml.pipelines.run_utils import (
     create_placeholder_run,
-    get_default_run_name,
     validate_run_config_is_runnable_from_server,
     validate_stack_is_runnable_from_server,
 )
@@ -547,7 +546,8 @@ def deployment_request_from_source_deployment(
     assert source_deployment.build
     deployment_request = PipelineDeploymentRequest(
         project=source_deployment.project_id,
-        run_name_template=config.run_name or source_deployment.run_name_template,
+        run_name_template=config.run_name
+        or source_deployment.run_name_template,
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
         client_environment={},

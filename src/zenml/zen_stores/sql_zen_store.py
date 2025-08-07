@@ -4836,6 +4836,9 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If deployment versions are not supported for the
                 current server.
+            EntityExistsError: If a deployment with the same version already
+                exists for the same pipeline.
+            RuntimeError: If the deployment creation fails.
 
         Returns:
             The newly created deployment.
@@ -5042,6 +5045,9 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If deployment versions are not supported for the
                 current server.
+            EntityExistsError: If a deployment with the same version already
+                exists for the same pipeline.
+            RuntimeError: If the deployment update fails.
 
         Returns:
             The updated deployment.

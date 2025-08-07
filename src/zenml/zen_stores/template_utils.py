@@ -46,6 +46,9 @@ def validate_build_is_runnable(
 
     Args:
         build: The build to validate.
+
+    Raises:
+        ValueError: If the build is not runnable.
     """
     if not build or not build.stack:
         raise ValueError(

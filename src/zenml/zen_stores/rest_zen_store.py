@@ -1735,6 +1735,9 @@ class RestZenStore(BaseZenStore):
             deployment_id: The ID of the deployment to trigger.
             trigger_request: Configuration for the trigger.
 
+        Raises:
+            RuntimeError: If the server does not support running a deployment.
+
         Returns:
             Model of the pipeline run.
         """

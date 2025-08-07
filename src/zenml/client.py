@@ -4189,6 +4189,7 @@ class Client(metaclass=ClientMetaClass):
         deployment_id: Optional[Union[str, UUID]] = None,
         code_repository_id: Optional[Union[str, UUID]] = None,
         template_id: Optional[Union[str, UUID]] = None,
+        source_deployment_id: Optional[Union[str, UUID]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
@@ -4228,6 +4229,7 @@ class Client(metaclass=ClientMetaClass):
             deployment_id: The id of the deployment to filter by.
             code_repository_id: The id of the code repository to filter by.
             template_id: The ID of the template to filter by.
+            source_deployment_id: The ID of the source deployment to filter by.
             model_version_id: The ID of the model version to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
@@ -4270,6 +4272,7 @@ class Client(metaclass=ClientMetaClass):
             deployment_id=deployment_id,
             code_repository_id=code_repository_id,
             template_id=template_id,
+            source_deployment_id=source_deployment_id,
             model_version_id=model_version_id,
             orchestrator_run_id=orchestrator_run_id,
             stack_id=stack_id,
