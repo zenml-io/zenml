@@ -66,6 +66,10 @@ class LocalOrchestrator(BaseOrchestrator):
 
         Returns:
             Optional submission result.
+
+        Raises:
+            Exception: If the pipeline run fails and the execution mode is
+                `ExecutionMode.FAIL_FAST`.
         """
         if deployment.schedule:
             logger.warning(
