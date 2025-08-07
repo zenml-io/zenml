@@ -551,6 +551,16 @@ def main() -> None:
                     )
                     continue
 
+                step_name_annotation = job.metadata.annotations.get(
+                    STEP_NAME_ANNOTATION_KEY, None
+                )
+                if (
+                    step_name_annotation is None
+                    or step_name_annotation != step_name
+                ):
+                    # This is not the job we are looking for, skip it
+                    continue
+
                 # Delete the running/pending job
                 try:
                     batch_api.delete_namespaced_job(
