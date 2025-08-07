@@ -123,7 +123,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
-            RuntimeError: If a step fails.
+            RuntimeError: If the pipeline run fails.
 
         Returns:
             Optional submission result.

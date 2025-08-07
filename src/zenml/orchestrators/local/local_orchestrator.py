@@ -68,8 +68,7 @@ class LocalOrchestrator(BaseOrchestrator):
             Optional submission result.
 
         Raises:
-            Exception: If the pipeline run fails and the execution mode is
-                `ExecutionMode.FAIL_FAST`.
+            RuntimeError: If the pipeline run fails.
         """
         if deployment.schedule:
             logger.warning(
@@ -124,11 +123,13 @@ class LocalOrchestrator(BaseOrchestrator):
 
             try:
                 self.run_step(step=step)
-            except Exception:
+            except Exception as e:
                 failed_steps.append(step_name)
 
                 if execution_mode == ExecutionMode.FAIL_FAST:
-                    raise
+                    raise RuntimeError(
+                        f"Step {step_name} failed with error: {e}"
+                    )
 
         run_duration = time.time() - start_time
 
