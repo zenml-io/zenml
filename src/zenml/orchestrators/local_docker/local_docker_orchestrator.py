@@ -242,6 +242,12 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 else:
                     logger.error(error_message)
 
+        if failed_steps:
+            raise RuntimeError(
+                "Pipeline run has failed due to failure in step(s): "
+                f"{', '.join(failed_steps)}"
+            )
+
         run_duration = time.time() - start_time
         logger.info(
             "Pipeline run has finished in `%s`.",

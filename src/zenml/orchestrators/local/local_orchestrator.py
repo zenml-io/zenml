@@ -124,13 +124,20 @@ class LocalOrchestrator(BaseOrchestrator):
 
             try:
                 self.run_step(step=step)
-            except Exception as e:
+            except Exception:
                 failed_steps.append(step_name)
 
                 if execution_mode == ExecutionMode.FAIL_FAST:
-                    raise e
+                    raise
 
         run_duration = time.time() - start_time
+
+        if failed_steps:
+            raise RuntimeError(
+                "Pipeline run has failed due to failure in step(s): "
+                f"{', '.join(failed_steps)}"
+            )
+
         logger.info(
             "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
