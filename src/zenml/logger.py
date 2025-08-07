@@ -13,27 +13,73 @@
 #  permissions and limitations under the License.
 """Logger implementation."""
 
+import builtins
 import logging
 import os
 import re
 import sys
-from typing import Any, Dict
+from contextvars import ContextVar
+from typing import TYPE_CHECKING, Any, Dict
+
+if TYPE_CHECKING:
+    from zenml.logging.step_logging import ArtifactStoreHandler
 
 from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_CAPTURE_PRINTS,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
+    ZENML_STORAGE_LOGGING_VERBOSITY,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
+from zenml.utils.context_utils import ContextVarList
 
 ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
     ENV_ZENML_LOGGING_COLORS_DISABLED, False
 )
+
+
+step_names_in_console: ContextVar[bool] = ContextVar(
+    "step_names_in_console", default=False
+)
+logging_handlers: ContextVarList["ArtifactStoreHandler"] = ContextVarList(
+    "logging_handlers"
+)
+
+
+def _add_step_name_to_message(message: str) -> str:
+    """Adds the step name to the message.
+
+    Args:
+        message: The message to add the step name to.
+
+    Returns:
+        The message with the step name added.
+    """
+    try:
+        if step_names_in_console.get():
+            from zenml.steps import get_step_context
+
+            step_context = get_step_context()
+
+            if step_context and message not in ["\n", ""]:
+                # For progress bar updates (with \r), inject the step name after the \r
+                if "\r" in message:
+                    message = message.replace(
+                        "\r", f"\r[{step_context.step_name}] "
+                    )
+                else:
+                    message = f"[{step_context.step_name}] {message}"
+    except Exception:
+        # If we can't get step context, just use the original message
+        pass
+
+    return message
 
 
 class CustomFormatter(logging.Formatter):
@@ -51,12 +97,20 @@ class CustomFormatter(logging.Formatter):
     blue: str = "\x1b[34m"
     reset: str = "\x1b[0m"
 
-    format_template: str = (
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%("
-        "filename)s:%(lineno)d)"
-        if LoggingLevels[ZENML_LOGGING_VERBOSITY] == LoggingLevels.DEBUG
-        else "%(message)s"
-    )
+    def _get_format_template(self, record: logging.LogRecord) -> str:
+        """Get the format template based on the logging level.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            The format template string.
+        """
+        # Only include location info for DEBUG level
+        if get_logging_level() == LoggingLevels.DEBUG:
+            return "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+        else:
+            return "%(message)s"
 
     COLORS: Dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
@@ -75,20 +129,42 @@ class CustomFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
+        # Get the template
+        format_template = self._get_format_template(record)
+
+        # Apply step name prepending if enabled (for console display)
+        message = record.getMessage()
+        try:
+            if step_names_in_console.get():
+                message = _add_step_name_to_message(message)
+        except Exception:
+            # If we can't get step context, just use the original message
+            pass
+
+        # Create a new record with the modified message
+        modified_record = logging.LogRecord(
+            name=record.name,
+            level=record.levelno,
+            pathname=record.pathname,
+            lineno=record.lineno,
+            msg=message,
+            args=(),
+            exc_info=record.exc_info,
+        )
+
         if ZENML_LOGGING_COLORS_DISABLED:
             # If color formatting is disabled, use the default format without colors
-            formatter = logging.Formatter(self.format_template)
-            return formatter.format(record)
+            formatter = logging.Formatter(format_template)
+            return formatter.format(modified_record)
         else:
             # Use color formatting
             log_fmt = (
                 self.COLORS[LoggingLevels(record.levelno)]
-                + self.format_template
+                + format_template
                 + self.reset
             )
             formatter = logging.Formatter(log_fmt)
-            formatted_message = formatter.format(record)
-
+            formatted_message = formatter.format(modified_record)
             quoted_groups = re.findall("`([^`]*)`", formatted_message)
             for quoted in quoted_groups:
                 formatted_message = formatted_message.replace(
@@ -130,6 +206,23 @@ def get_logging_level() -> LoggingLevels:
     return LoggingLevels[verbosity]
 
 
+def get_storage_log_level() -> LoggingLevels:
+    """Get storage logging level from the env variable with safe fallback.
+
+    Returns:
+        The storage logging level, defaulting to INFO if invalid.
+
+    Raises:
+        KeyError: If the storage logging level is not found.
+    """
+    verbosity = ZENML_STORAGE_LOGGING_VERBOSITY.upper()
+    if verbosity not in LoggingLevels.__members__:
+        raise KeyError(
+            f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
+        )
+    return LoggingLevels[verbosity]
+
+
 def set_root_verbosity() -> None:
     """Set the root verbosity."""
     level = get_logging_level()
@@ -145,6 +238,65 @@ def set_root_verbosity() -> None:
         logging.disable(sys.maxsize)
         logging.getLogger().disabled = True
         get_logger(__name__).debug("Logging NOTSET")
+
+
+def setup_global_print_wrapping() -> None:
+    """Set up global print() wrapping with context-aware handlers."""
+    # Check if we should capture prints
+    capture_prints = handle_bool_env_var(
+        ENV_ZENML_CAPTURE_PRINTS, default=True
+    )
+
+    if not capture_prints:
+        return
+
+    # Check if already wrapped to avoid double wrapping
+    if hasattr(__builtins__, "_zenml_original_print"):
+        return
+
+    original_print = builtins.print
+
+    def wrapped_print(*args: Any, **kwargs: Any) -> None:
+        # Convert print arguments to message
+        message = " ".join(str(arg) for arg in args)
+
+        # Determine if this should go to stderr or stdout based on file argument
+        file_arg = kwargs.get("file", sys.stdout)
+
+        # Call active handlers first (for storage)
+        if message.strip():
+            handlers = logging_handlers.get()
+
+            for handler in handlers:
+                try:
+                    # Create a LogRecord for the handler
+                    record = logging.LogRecord(
+                        name="print",
+                        level=logging.ERROR
+                        if file_arg == sys.stderr
+                        else logging.INFO,
+                        pathname="",
+                        lineno=0,
+                        msg=message,
+                        args=(),
+                        exc_info=None,
+                    )
+                    # Check if handler's level would accept this record
+                    if record.levelno >= handler.level:
+                        handler.emit(record)
+                except Exception:
+                    # Don't let handler errors break print
+                    pass
+
+        if step_names_in_console.get():
+            message = _add_step_name_to_message(message)
+
+        # Then call original print for console display
+        return original_print(message, *args[1:], **kwargs)
+
+    # Store original and replace print
+    setattr(builtins, "_zenml_original_print", original_print)
+    setattr(builtins, "print", wrapped_print)
 
 
 def get_formatter() -> logging.Formatter:
@@ -167,6 +319,8 @@ def get_console_handler() -> Any:
     """
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(get_formatter())
+    # Set console handler level explicitly to console verbosity
+    console_handler.setLevel(get_logging_level().value)
     return console_handler
 
 
@@ -179,12 +333,7 @@ def get_logger(logger_name: str) -> logging.Logger:
     Returns:
         A logger object.
     """
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(get_logging_level().value)
-    logger.addHandler(get_console_handler())
-
-    logger.propagate = False
-    return logger
+    return logging.getLogger(logger_name)
 
 
 def init_logging() -> None:
@@ -193,9 +342,23 @@ def init_logging() -> None:
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(get_formatter())
-    logging.root.addHandler(console_handler)
+    # Check if console handler already exists to avoid duplicates
+    root_logger = logging.getLogger()
+    has_console_handler = any(
+        isinstance(handler, logging.StreamHandler)
+        and handler.stream == sys.stdout
+        for handler in root_logger.handlers
+    )
+
+    if not has_console_handler:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(get_formatter())
+        # Set console handler level explicitly to console verbosity
+        console_handler.setLevel(get_logging_level().value)
+        root_logger.addHandler(console_handler)
+
+    # Initialize global print wrapping
+    setup_global_print_wrapping()
 
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
     suppress_zenml_logs: bool = handle_bool_env_var(

@@ -291,7 +291,7 @@ source = "init"
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
-log_cli = true
+log_cli = false
 log_cli_level = "INFO"
 testpaths = "tests"
 xfail_strict = true
