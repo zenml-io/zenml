@@ -24,7 +24,7 @@ from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import Any, List, Optional, Type, Union
+from typing import Any, Generator, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -102,16 +102,16 @@ class LogEntry(BaseModel):
     lineno: Optional[int] = Field(
         default=None, description="The fileno that generated this log entry"
     )
-    chunk_index: Optional[int] = Field(
-        default=None,
+    chunk_index: int = Field(
+        default=0,
         description="The index of the chunk in the log entry",
     )
-    chunk_count_in_entry: Optional[int] = Field(
-        default=None,
+    total_chunks: int = Field(
+        default=1,
         description="The total number of chunks in the log entry",
     )
-    entry_id: Optional[UUID] = Field(
-        default=None,
+    entry_id: UUID = Field(
+        default_factory=uuid4,
         description="The unique identifier of the log entry",
     )
 
@@ -174,7 +174,7 @@ class ArtifactStoreHandler(logging.Handler):
                         lineno=record.lineno,
                         timestamp=utc_now(),
                         chunk_index=i,
-                        chunk_count_in_entry=len(chunks),
+                        total_chunks=len(chunks),
                         entry_id=chunk_id,
                     )
 
@@ -405,7 +405,7 @@ def _stream_logs_line_by_line(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
-) -> Any:
+) -> Generator[str, None, None]:
     """Stream logs line by line without loading the entire file into memory.
 
     This generator yields log lines one by one, handling both single files
