@@ -153,7 +153,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
         start_time = time.time()
 
-        # Get execution mode for failure handling
         execution_mode = deployment.pipeline_configuration.execution_mode
 
         # List of steps that failed
