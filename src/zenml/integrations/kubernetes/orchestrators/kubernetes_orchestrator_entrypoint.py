@@ -534,6 +534,16 @@ def main() -> None:
                 return
 
             for job in jobs.items:
+                # Check if this is a job related to the correct step
+                step_name_annotation = job.metadata.annotations.get(
+                    STEP_NAME_ANNOTATION_KEY, None
+                )
+                if (
+                    step_name_annotation is None
+                    or step_name_annotation != step_name
+                ):
+                    continue
+
                 # Check if job is already completed or failed - skip deletion
                 job_finished = False
                 if job.status.conditions:
@@ -549,16 +559,6 @@ def main() -> None:
                     logger.debug(
                         f"Job {job.metadata.name} for step {step_name} already finished, skipping deletion"
                     )
-                    continue
-
-                step_name_annotation = job.metadata.annotations.get(
-                    STEP_NAME_ANNOTATION_KEY, None
-                )
-                if (
-                    step_name_annotation is None
-                    or step_name_annotation != step_name
-                ):
-                    # This is not the job we are looking for, skip it
                     continue
 
                 # Delete the running/pending job
