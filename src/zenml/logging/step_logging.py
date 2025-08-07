@@ -194,38 +194,38 @@ class ArtifactStoreHandler(logging.Handler):
         """
         # Calculate how many chunks we need
         message_bytes = message.encode("utf-8")
-        chunk_count = (
-            len(message_bytes) + MAX_MESSAGE_SIZE - 1
-        ) // MAX_MESSAGE_SIZE
 
-        # Split the message into chunks
+        # Split the message into chunks, handling UTF-8 boundaries
         chunks = []
         start = 0
-        for i in range(chunk_count):
+
+        while start < len(message_bytes):
             # Calculate the end position for this chunk
             end = min(start + MAX_MESSAGE_SIZE, len(message_bytes))
 
-            # Extract the chunk and decode it
-            chunk_bytes = message_bytes[start:end]
+            # If we're not at the end of the message, find a safe UTF-8 boundary
+            if end < len(message_bytes):
+                # Back up to find a valid UTF-8 character boundary
+                while end > start and (message_bytes[end] & 0x80) != 0:
+                    # Check if this byte is the start of a UTF-8 character
+                    if (message_bytes[end] & 0xC0) != 0x80:
+                        break
+                    end -= 1
 
-            # Handle potential UTF-8 boundary issues
+            # Extract and decode the chunk
+            chunk_bytes = message_bytes[start:end]
             try:
                 chunk_text = chunk_bytes.decode("utf-8")
+                chunks.append(chunk_text)
             except UnicodeDecodeError:
-                # If we cut in the middle of a UTF-8 character, back off until we find a valid boundary
-                while len(chunk_bytes) > 0:
-                    try:
-                        chunk_text = chunk_bytes.decode("utf-8")
-                        break
-                    except UnicodeDecodeError:
-                        chunk_bytes = chunk_bytes[:-1]
-                        end -= 1
-                else:
-                    # If we can't decode anything, skip this chunk
-                    start = end
-                    continue
+                # This should rarely happen with proper boundary detection
+                # but handle it gracefully by skipping to the next chunk boundary
+                chunks.append(
+                    message_bytes[start:end].decode("utf-8", errors="replace")
+                )
+                # Advance to where the next iteration would normally start
+                end = min(start + MAX_MESSAGE_SIZE, len(message_bytes))
 
-            chunks.append(chunk_text)
             start = end
 
         return chunks
@@ -358,6 +358,7 @@ def fetch_log_records(
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact
             store.
+        FileNotFoundError: If the log file does not exist in the artifact store.
     """
     # We need to find (offset + count) matching entries total
     target_total = offset + count
