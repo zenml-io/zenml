@@ -219,9 +219,11 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_pipeline_deployment_request_model,
     sample_pipeline_run_request_model,
     sample_step_request_model,
+    create_pipeline_model,
 ):
     """Tests that the latest step run with the same cache key is used for
     caching."""
+    pipeline = create_pipeline_model()
     sample_step_request_model.cache_key = "cache_key"
     sample_step_request_model.project = clean_client.active_project.id
     sample_pipeline_deployment_request_model.project = (
@@ -231,7 +233,7 @@ def test_fetching_cached_step_run_uses_latest_candidate(
         clean_client.active_stack.id
     )
     sample_pipeline_run_request_model.project = clean_client.active_project.id
-    sample_pipeline_run_request_model.pipeline = None
+    sample_pipeline_run_request_model.pipeline = pipeline.id
 
     sample_step = Step.model_validate(
         {
