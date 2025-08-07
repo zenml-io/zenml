@@ -90,12 +90,12 @@ class LocalOrchestrator(BaseOrchestrator):
                 and len(failed_steps) > 0
             ):
                 logger.warning(
-                    "Stopping pipeline run due to failure in step(s) %s and "
+                    "Stopping pipeline run due to failure in step %s and "
                     "execution mode %s.",
-                    ", ".join(failed_steps),
+                    failed_steps[0],
                     execution_mode,
                 )
-                continue
+                break
 
             if failed_upstream_steps := [
                 fs for fs in failed_steps if fs in step.spec.upstream_steps
