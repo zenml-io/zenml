@@ -1,0 +1,29 @@
+lNV0lCE N0. ABC-2O24-789
+
+Pr0fessi0nal Serv1ces lnc.
+5678 0ffice Park Way
+8usiness C1ty, 8C 54321
+Ph0ne: (555) 987-65432
+
+8lLL T0:
+Retai1 Sh0p LLC
+987 St0re Street
+Sh0pping T0wn, ST 987651
+
+Date: 02/2O/24
+Due: 03/22/2024
+
+lTEM                           QTY    PR1CE    T0TAL
+---------------------------------------------------
+C0nsulting Services            2O     $125     $2,5OO
+S0ftware License               1      $8OO     $8OO  
+0nh0arding Training            8      $1OO     $8OO
+
+                              Su8t0tal: $4,1OO
+                              Tax (7%): $287
+                              T0tal: $4,387
+
+Payment Terms: Net 15 days
+Late Fee: 2% per m0nth
+
+Thank y0u!

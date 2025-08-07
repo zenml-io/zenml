@@ -1,0 +1,18 @@
+# Core ZenML and ML dependencies
+zenml[server]>=0.84.1
+pydantic>=2.0.0
+
+# LLM API clients
+openai>=1.0.0
+
+# Document processing
+PyMuPDF>=1.20.0  # PDF text extraction
+pytesseract>=0.3.10  # OCR for images
+Pillow>=9.0.0  # Image processing
+
+# PDF generation (for sample documents)
+reportlab>=3.6.0
+
+# Optional: Better text processing
+spacy>=3.4.0  # For advanced text processing
+textract>=1.6.0  # Alternative document extraction

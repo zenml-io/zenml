@@ -4232,6 +4232,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         has_custom_name: Optional[bool] = None,
+        artifact_type: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -4250,6 +4251,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             name: The name of the artifact to filter by.
             has_custom_name: Filter artifacts with/without custom names.
+            artifact_type: Type of the artifact to filter by.
             user: Filter by user name or ID.
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -4270,6 +4272,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             has_custom_name=has_custom_name,
+            artifact_type=artifact_type,
             tag=tag,
             tags=tags,
             user=user,

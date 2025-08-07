@@ -207,6 +207,10 @@ class ArtifactFilter(ProjectScopedFilter, TaggableFilter):
 
     name: Optional[str] = None
     has_custom_name: Optional[bool] = None
+    artifact_type: Optional[str] = Field(
+        default=None,
+        description="Type of the artifact",
+    )
 
     def apply_sorting(
         self,

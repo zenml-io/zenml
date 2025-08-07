@@ -39,11 +39,13 @@ def upgrade() -> None:
     session = Session(bind=bind)
 
     tags = session.execute(
-        sa.text("""
+        sa.text(
+            """
             SELECT t.id, tr.resource_id, tr.resource_type
             FROM tag t
             JOIN tag_resource tr ON t.id = tr.tag_id
-        """)
+        """
+        )
     )
 
     tag_ids = []
