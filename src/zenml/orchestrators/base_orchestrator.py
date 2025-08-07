@@ -466,6 +466,9 @@ class BaseOrchestrator(StackComponent, ABC):
         This base implementation logs the execution mode being used.
         Individual orchestrator implementations can override this method
         to add specific validation.
+
+        Raises:
+            ValueError: If the execution mode is not supported.
         """
         assert self._active_deployment
 
