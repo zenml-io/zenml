@@ -1075,3 +1075,49 @@ def test_artifact_version_as_step_input(clean_client):
 
     with does_not_raise():
         test_pipeline()
+
+
+def test_step_source_code_cache_value():
+    """Tests that the source code cache value of a step is correct."""
+
+    def do_nothing(func):
+        return func
+
+    @step
+    def test_step():
+        pass
+
+    source_code_1 = test_step.source_code_cache_value
+
+    @step(enable_cache=True)
+    def test_step():
+        pass
+
+    source_code_2 = test_step.source_code_cache_value
+
+    @step(
+        enable_cache=True,
+        extra={"some_key": "some_value"},
+        settings={"orchestrator": {"some_setting": "some_value"}},
+    )
+    def test_step():
+        pass
+
+    source_code_3 = test_step.source_code_cache_value
+
+    @step
+    @do_nothing
+    def test_step():
+        pass
+
+    source_code_4 = test_step.source_code_cache_value
+
+    @do_nothing
+    @step
+    def test_step():
+        pass
+
+    source_code_5 = test_step.source_code_cache_value
+
+    assert source_code_1 == source_code_2 == source_code_3
+    assert source_code_4 == source_code_5
