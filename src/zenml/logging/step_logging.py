@@ -203,26 +203,19 @@ class ArtifactStoreHandler(logging.Handler):
             # Calculate the end position for this chunk
             end = min(start + MAX_MESSAGE_SIZE, len(message_bytes))
 
-            # If we're not at the end of the message, find a safe UTF-8 boundary
-            if end < len(message_bytes):
-                # Back up to find a valid UTF-8 character boundary
-                while end > start + 1 and (message_bytes[end] & 0x80) != 0:
-                    # Check if this byte is the start of a UTF-8 character
-                    if (message_bytes[end] & 0xC0) != 0x80:
-                        break
+            # Try to decode the chunk, backing up if we hit a UTF-8 boundary issue
+            while end > start:
+                chunk_bytes = message_bytes[start:end]
+                try:
+                    chunk_text = chunk_bytes.decode("utf-8")
+                    chunks.append(chunk_text)
+                    break
+                except UnicodeDecodeError:
+                    # If we can't decode, try a smaller chunk
                     end -= 1
-
-            # Extract and decode the chunk
-            chunk_bytes = message_bytes[start:end]
-            try:
-                chunk_text = chunk_bytes.decode("utf-8")
-                chunks.append(chunk_text)
-            except UnicodeDecodeError:
-                # Reset to original chunk size to try decoding with replacement characters
+            else:
+                # If we can't decode anything, use replacement characters
                 end = min(start + MAX_MESSAGE_SIZE, len(message_bytes))
-
-                # This should rarely happen with proper boundary detection
-                # but handle it gracefully by skipping to the next chunk boundary
                 chunks.append(
                     message_bytes[start:end].decode("utf-8", errors="replace")
                 )
