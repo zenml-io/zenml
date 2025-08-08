@@ -45,6 +45,9 @@
 
 ---
 
+ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's one platform to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
+
+
 ## 🚨 The Problem: MLOps Works for Models, But What About AI?
 
 ![No MLOps for modern AI](docs/book/.gitbook/assets/readme_problem.png)
