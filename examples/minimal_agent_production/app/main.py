@@ -47,11 +47,18 @@ def infer_document_type(filename: str, content: str) -> str:
             return doc_type
 
     # Fallback to content-based inference using utility function
-    return infer_document_type_from_content(content)
+    return str(infer_document_type_from_content(content))
 
 
 def generate_filename(content: str) -> str:
-    """Generate a filename based on document content."""
+    """Generate a filename based on document content.
+
+    Args:
+        content: Document text content to generate filename from
+
+    Returns:
+        str: Generated filename with .txt extension
+    """
     lines = content.strip().split("\n")
     first_line = lines[0] if lines else "document"
 
@@ -146,7 +153,7 @@ def _run_pipeline_child(
                                             f"Trying to load output: {output_name}, type: {type(output_artifact)}"
                                         )
                                         analysis_result = (
-                                            output_artifact.load()
+                                            output_artifact.load()  # type: ignore
                                         )
                                         print(
                                             f"Successfully loaded: {type(analysis_result)}"
@@ -159,7 +166,7 @@ def _run_pipeline_child(
                                     first_output = next(
                                         iter(step.outputs.values())
                                     )
-                                    analysis_result = first_output.load()
+                                    analysis_result = first_output.load()  # type: ignore
                                     print(
                                         f"Successfully loaded from first output: {type(analysis_result)}"
                                     )
@@ -233,9 +240,9 @@ class DocumentRequest(BaseModel):
         analysis_type: Depth of analysis to perform
     """
 
-    filename: str = None
+    filename: str | None = None
     content: str
-    document_type: str = None
+    document_type: str | None = None
     analysis_type: str = "full"
 
 
@@ -250,20 +257,32 @@ app.add_middleware(
 
 
 @app.get("/health")
-def health() -> dict:
-    """Health check endpoint for service monitoring."""
+def health() -> dict[str, str]:
+    """Health check endpoint for service monitoring.
+
+    Returns:
+        dict[str, str]: Health status response
+    """
     return {"status": "ok"}
 
 
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon() -> Response:
-    """Return empty favicon response to prevent browser errors."""
+    """Return empty favicon response to prevent browser errors.
+
+    Returns:
+        Response: Empty 204 No Content response
+    """
     return Response(status_code=204)
 
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> HTMLResponse:
-    """Serve the main document analysis web interface."""
+    """Serve the main document analysis web interface.
+
+    Returns:
+        HTMLResponse: Complete HTML page for document analysis UI
+    """
     html = """
     <!DOCTYPE html>
     <html>
@@ -686,8 +705,18 @@ def index() -> HTMLResponse:
 
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    """Upload a file and return its content with inferred metadata."""
+async def upload_file(file: UploadFile = File(...)) -> JSONResponse:
+    """Upload a file and return its content with inferred metadata.
+
+    Args:
+        file: The uploaded file to process
+
+    Returns:
+        JSONResponse: File metadata including filename, content, type, and size
+
+    Raises:
+        HTTPException: If file processing fails or file is not text-based
+    """
     try:
         # Read file content
         content_bytes = await file.read()
@@ -708,13 +737,15 @@ async def upload_file(file: UploadFile = File(...)):
         filename = file.filename or generate_filename(content)
         document_type = infer_document_type(filename, content)
 
-        return {
-            "filename": filename,
-            "content": content,
-            "document_type": document_type,
-            "size": len(content),
-            "lines": len(content.split("\n")),
-        }
+        return JSONResponse(
+            {
+                "filename": filename,
+                "content": content,
+                "document_type": document_type,
+                "size": len(content),
+                "lines": len(content.split("\n")),
+            }
+        )
 
     except Exception as e:
         raise HTTPException(
@@ -723,7 +754,7 @@ async def upload_file(file: UploadFile = File(...)):
 
 
 @app.post("/analyze")
-def analyze_document_endpoint(req: DocumentRequest):
+def analyze_document_endpoint(req: DocumentRequest) -> JSONResponse:
     """Analyze a document using the ZenML pipeline.
 
     Args:

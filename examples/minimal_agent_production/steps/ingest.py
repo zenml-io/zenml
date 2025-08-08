@@ -5,11 +5,6 @@ document data before analysis. It handles different document types and
 formats, preparing them for analysis.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent))
-
 from models import DocumentRequest
 
 from zenml import step
@@ -42,15 +37,6 @@ def ingest_document_step(
 
     Raises:
         ValueError: If content is empty or invalid
-
-    Example:
-        >>> doc = ingest_document_step(
-        ...     filename="my_doc.md",
-        ...     content="# My Document\nThis is content...",
-        ...     document_type="markdown"
-        ... )
-        >>> print(doc.filename)
-        my_doc.md
     """
     logger.info(f"Ingesting document: {filename}")
 

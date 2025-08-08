@@ -6,7 +6,7 @@ with sample input data for testing and demonstration purposes.
 
 from __future__ import annotations
 
-from pipelines.production import document_analysis_pipeline
+from pipelines import document_analysis_pipeline
 
 if __name__ == "__main__":
     # Sample document analysis

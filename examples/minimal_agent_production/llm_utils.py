@@ -38,9 +38,18 @@ def analyze_document_with_fallback(
     model: str = "gpt-3.5-turbo",
     metadata: Optional[Dict[str, str]] = None,
 ) -> Dict[str, object]:
-    """Analyze document and return summary, keywords, sentiment, readability.
+    """Analyze a document using LLM with deterministic fallback.
 
-    If API keys present, call LiteLLM. Otherwise, return deterministic analysis.
+    Args:
+        content: Raw document content to analyze
+        filename: Name of the document (for context)
+        model: LLM model identifier to use when available
+        metadata: Optional request metadata to pass to the LLM client
+
+    Returns:
+        Dict with keys: summary (str), keywords (list[str]), sentiment (str),
+        readability_score (float), tokens_prompt (int), tokens_completion (int),
+        latency_ms (int)
     """
     start = time.time()
     if use_real_llm():
@@ -86,7 +95,7 @@ READABILITY: [easy/medium/hard]"""
                 response.choices[0].message["content"]
                 if hasattr(response.choices[0], "message")
                 else response.choices[0]["message"]["content"]
-            )  # type: ignore
+            )
             tokens_prompt = int(
                 getattr(response, "usage", {}).get("prompt_tokens", 0)
             )
@@ -110,18 +119,20 @@ READABILITY: [easy/medium/hard]"""
         except Exception:
             # Graceful fallback
             analysis = deterministic_analysis(content, filename)
-            summary = analysis["summary"]
-            keywords = analysis["keywords"]
-            sentiment = analysis["sentiment"]
-            readability_score = analysis["readability_score"]
+            summary = str(analysis["summary"])
+            keywords = list(analysis["keywords"])  # type: ignore
+            sentiment = str(analysis["sentiment"])
+            readability_score = float(
+                str(analysis.get("readability_score", 0.5))
+            )
             tokens_prompt = len(content.split())
             tokens_completion = len(summary.split())
     else:
         analysis = deterministic_analysis(content, filename)
-        summary = analysis["summary"]
-        keywords = analysis["keywords"]
-        sentiment = analysis["sentiment"]
-        readability_score = analysis["readability_score"]
+        summary = str(analysis["summary"])
+        keywords = list(analysis["keywords"])  # type: ignore
+        sentiment = str(analysis["sentiment"])
+        readability_score = float(str(analysis.get("readability_score", 0.5)))
         tokens_prompt = len(content.split())
         tokens_completion = len(summary.split())
 
@@ -138,7 +149,14 @@ READABILITY: [easy/medium/hard]"""
 
 
 def clean_text_content(content: str) -> str:
-    """Clean markdown and HTML content for better analysis."""
+    """Clean markdown and HTML content for better analysis.
+
+    Args:
+        content: Raw text content that may include markdown/HTML
+
+    Returns:
+        Cleaned plain-text string suitable for analysis
+    """
     import re
 
     # Remove HTML tags
@@ -205,7 +223,15 @@ def clean_text_content(content: str) -> str:
 
 
 def extract_meaningful_summary(content: str, filename: str) -> str:
-    """Extract a meaningful summary from document content."""
+    """Extract a meaningful summary from document content.
+
+    Args:
+        content: Raw document content
+        filename: Document name used in fallback summary
+
+    Returns:
+        Concise summary string (2-3 sentences when possible)
+    """
     cleaned_content = clean_text_content(content)
 
     # Split into paragraphs and sentences
@@ -252,7 +278,14 @@ def extract_meaningful_summary(content: str, filename: str) -> str:
 
 
 def infer_document_type_from_content(content: str) -> str:
-    """Infer document type from content patterns."""
+    """Infer document type from content patterns.
+
+    Args:
+        content: Raw document content
+
+    Returns:
+        Inferred document type label
+    """
     content_lower = content.lower()
 
     if "readme" in content_lower or "installation" in content_lower:
@@ -266,7 +299,15 @@ def infer_document_type_from_content(content: str) -> str:
 
 
 def deterministic_analysis(content: str, filename: str) -> Dict[str, object]:
-    """Deterministic document analysis using simple rules."""
+    """Deterministic document analysis using simple rules.
+
+    Args:
+        content: Raw document content to analyze
+        filename: Name of the document (for context)
+
+    Returns:
+        Dict with summary, keywords, sentiment, readability_score
+    """
     # Clean content for analysis
     cleaned_content = clean_text_content(content)
     words = cleaned_content.lower().split()
@@ -474,7 +515,15 @@ def deterministic_analysis(content: str, filename: str) -> Dict[str, object]:
 
 
 def extract_field(text: str, field_name: str) -> str:
-    """Extract a field from structured LLM response."""
+    """Extract a field from structured LLM response.
+
+    Args:
+        text: Text blob returned by the LLM
+        field_name: Field name to extract (e.g., "SUMMARY")
+
+    Returns:
+        Extracted value or "N/A" if not found
+    """
     pattern = f"{field_name}:\\s*(.+?)(?=\\n[A-Z]+:|$)"
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     return match.group(1).strip() if match else "N/A"

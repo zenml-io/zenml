@@ -6,26 +6,21 @@ methods when LLM services are unavailable.
 """
 
 import os
-import sys
 import time
 from collections import Counter
-from pathlib import Path
-from typing import Annotated, Dict, List, Optional
-
-sys.path.append(str(Path(__file__).parent.parent))
+from typing import Annotated, Dict, List, Optional, cast
 
 from models import DocumentAnalysis, DocumentRequest
-
-from zenml import step
-from zenml.logger import get_logger
-
-from .utils import (
+from steps.utils import (
     clean_text_content,
     extract_field_from_llm_response,
     extract_meaningful_summary,
     get_common_stop_words,
     get_technical_filter_terms,
 )
+
+from zenml import step
+from zenml.logger import get_logger
 
 # Get ZenML logger for consistent logging
 logger = get_logger(__name__)
@@ -77,7 +72,6 @@ def perform_llm_analysis(
 
     Raises:
         ImportError: If litellm is not available
-        Exception: If LLM service call fails
     """
     logger.info(f"Starting LLM analysis for document: {filename}")
 
@@ -458,15 +452,17 @@ def analyze_document_step(
     # Create analysis object with results
     analysis = DocumentAnalysis(
         document=document,
-        summary=str(analysis_result["summary"]),
-        keywords=list(analysis_result["keywords"]),
-        sentiment=str(analysis_result["sentiment"]),
+        summary=cast(str, analysis_result["summary"]),
+        keywords=cast(List[str], analysis_result["keywords"]),
+        sentiment=cast(str, analysis_result["sentiment"]),
         word_count=len(document.content.split()),
-        readability_score=float(analysis_result["readability_score"]),
+        readability_score=float(
+            cast(float, analysis_result["readability_score"])
+        ),
         model=f"lite-llm-auto ({analysis_method})",
-        latency_ms=int(analysis_result["latency_ms"]),
-        tokens_prompt=int(analysis_result["tokens_prompt"]),
-        tokens_completion=int(analysis_result["tokens_completion"]),
+        latency_ms=int(cast(int, analysis_result["latency_ms"])),
+        tokens_prompt=int(cast(int, analysis_result["tokens_prompt"])),
+        tokens_completion=int(cast(int, analysis_result["tokens_completion"])),
         metadata={
             "source": "document_analysis_pipeline",
             "analysis_method": analysis_method,

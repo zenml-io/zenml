@@ -6,7 +6,7 @@ of document analysis outputs and generate evaluation reports.
 
 from __future__ import annotations
 
-from pipelines.evaluation import evaluation_pipeline
+from pipelines import evaluation_pipeline
 
 if __name__ == "__main__":
     evaluation_pipeline(max_items=125)

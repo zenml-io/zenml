@@ -5,11 +5,7 @@ from document analysis results, providing visual summaries for the
 ZenML dashboard.
 """
 
-import sys
-from pathlib import Path
 from typing import Annotated
-
-sys.path.append(str(Path(__file__).parent.parent))
 
 from models import DocumentAnalysis
 

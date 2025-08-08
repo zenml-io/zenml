@@ -5,11 +5,7 @@ outputs, including loading analyses from the model registry, annotation,
 and report generation.
 """
 
-import sys
-from pathlib import Path
 from typing import Annotated, List
-
-sys.path.append(str(Path(__file__).parent.parent))
 
 from models import (
     AnalysisAnnotation,

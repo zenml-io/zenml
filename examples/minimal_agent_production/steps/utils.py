@@ -268,7 +268,7 @@ def infer_document_type_from_content(content: str) -> str:
 
     if type_scores:
         # Return the type with the highest score
-        best_type = max(type_scores, key=type_scores.get)
+        best_type = max(type_scores, key=lambda k: type_scores[k])
         logger.debug(
             f"Inferred document type: {best_type} (score: {type_scores[best_type]})"
         )

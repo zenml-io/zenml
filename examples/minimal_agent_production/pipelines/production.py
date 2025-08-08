@@ -5,8 +5,6 @@ from ingestion through analysis to report generation, with full
 logging and error handling.
 """
 
-from typing import Annotated
-
 from steps import (
     analyze_document_step,
     ingest_document_step,
@@ -16,7 +14,6 @@ from steps import (
 from zenml import Model, pipeline
 from zenml.config import DockerSettings
 from zenml.logger import get_logger
-from zenml.types import HTMLString
 
 # Get ZenML logger for pipeline-level logging
 logger = get_logger(__name__)
@@ -38,7 +35,7 @@ def document_analysis_pipeline(
     content: str,
     document_type: str = "text",
     analysis_type: str = "full",
-) -> Annotated[HTMLString, "analysis_report"]:
+) -> None:
     """Complete document analysis pipeline with logging and error handling.
 
     This pipeline performs end-to-end document analysis including:
@@ -51,16 +48,6 @@ def document_analysis_pipeline(
         content: Raw document content to analyze
         document_type: Type of document (text, markdown, report, article)
         analysis_type: Analysis depth (full, summary_only, etc.)
-
-    Returns:
-        HTMLString: Generated analysis report for dashboard display
-
-    Example:
-        >>> pipeline_run = document_analysis_pipeline(
-        ...     filename="my_doc.md",
-        ...     content="# Document Content...",
-        ...     document_type="markdown"
-        ... )
     """
     logger.info(
         f"Starting document analysis pipeline for: {filename} "
@@ -82,9 +69,8 @@ def document_analysis_pipeline(
 
     # Step 3: Generate HTML report
     logger.info("Step 3/3: Rendering analysis report")
-    report = render_analysis_report_step(analysis)
+    render_analysis_report_step(analysis)
 
     logger.info(
         f"Document analysis pipeline completed successfully for: {filename}"
     )
-    return report
