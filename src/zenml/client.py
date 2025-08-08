@@ -4208,7 +4208,7 @@ class Client(metaclass=ClientMetaClass):
         stack_component: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         include_full_metadata: bool = False,
-        triggered_by_step_run_id: Optional[Union[UUID, str]] = None
+        triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
