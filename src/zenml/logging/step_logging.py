@@ -110,7 +110,7 @@ class LogEntry(BaseModel):
         default=1,
         description="The total number of chunks in the log entry",
     )
-    entry_id: UUID = Field(
+    id: UUID = Field(
         default_factory=uuid4,
         description="The unique identifier of the log entry",
     )
@@ -163,7 +163,7 @@ class ArtifactStoreHandler(logging.Handler):
             else:
                 # Message is too large, split into chunks and emit each one
                 chunks = self._split_to_chunks(message)
-                chunk_id = uuid4()
+                entry_id = uuid4()
                 for i, chunk in enumerate(chunks):
                     log_record = LogEntry.model_construct(
                         message=chunk,
@@ -175,7 +175,7 @@ class ArtifactStoreHandler(logging.Handler):
                         timestamp=utc_now(),
                         chunk_index=i,
                         total_chunks=len(chunks),
-                        entry_id=chunk_id,
+                        id=entry_id,
                     )
 
                     json_line = log_record.model_dump_json(exclude_none=True)
