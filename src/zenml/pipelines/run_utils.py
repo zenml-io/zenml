@@ -53,6 +53,7 @@ def create_placeholder_run(
     deployment: "PipelineDeploymentResponse",
     orchestrator_run_id: Optional[str] = None,
     logs: Optional["LogsRequest"] = None,
+    trigger_execution_id: Optional[UUID] = None,
 ) -> "PipelineRunResponse":
     """Create a placeholder run for the deployment.
 
@@ -60,6 +61,8 @@ def create_placeholder_run(
         deployment: The deployment for which to create the placeholder run.
         orchestrator_run_id: The orchestrator run ID for the run.
         logs: The logs for the run.
+        trigger_execution_id: The ID of the trigger execution that triggered
+            the run.
 
     Returns:
         The placeholder run.
@@ -86,6 +89,7 @@ def create_placeholder_run(
         status=ExecutionStatus.INITIALIZING,
         tags=deployment.pipeline_configuration.tags,
         logs=logs,
+        trigger_execution_id=trigger_execution_id,
     )
     run, _ = Client().zen_store.get_or_create_run(run_request)
     return run

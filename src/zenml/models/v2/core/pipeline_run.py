@@ -248,7 +248,12 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     )
     template_id: Optional[UUID] = Field(
         default=None,
-        description="Template used for the pipeline run.",
+        description="DEPRECATED: Template used for the pipeline run.",
+        deprecated=True,
+    )
+    source_deployment_id: Optional[UUID] = Field(
+        default=None,
+        description="Source deployment used for the pipeline run.",
     )
     is_templatable: bool = Field(
         default=False,
@@ -515,6 +520,15 @@ class PipelineRunResponse(
         return self.get_metadata().template_id
 
     @property
+    def source_deployment_id(self) -> Optional[UUID]:
+        """The `source_deployment_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().source_deployment_id
+
+    @property
     def is_templatable(self) -> bool:
         """The `is_templatable` property.
 
@@ -588,6 +602,7 @@ class PipelineRunFilter(
         "schedule_id",
         "stack_id",
         "template_id",
+        "source_deployment_id",
         "pipeline",
         "stack",
         "code_repository",
@@ -595,6 +610,7 @@ class PipelineRunFilter(
         "stack_component",
         "pipeline_name",
         "templatable",
+        "triggered_by_step_run_id",
     ]
     CLI_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -647,7 +663,13 @@ class PipelineRunFilter(
     )
     template_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Template used for the pipeline run.",
+        description="DEPRECATED: Template used for the pipeline run.",
+        union_mode="left_to_right",
+        deprecated=True,
+    )
+    source_deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Source deployment used for the pipeline run.",
         union_mode="left_to_right",
     )
     model_version_id: Optional[Union[UUID, str]] = Field(
@@ -699,6 +721,11 @@ class PipelineRunFilter(
     templatable: Optional[bool] = Field(
         default=None, description="Whether the run is templatable."
     )
+    triggered_by_step_run_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="The ID of the step run that triggered this pipeline run.",
+        union_mode="left_to_right",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -730,6 +757,8 @@ class PipelineRunFilter(
             StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
+            StepRunSchema,
+            TriggerExecutionSchema,
         )
 
         if self.unlisted is not None:
@@ -779,6 +808,14 @@ class PipelineRunFilter(
                 PipelineDeploymentSchema.template_id == self.template_id,
             )
             custom_filters.append(run_template_filter)
+
+        if self.source_deployment_id:
+            source_deployment_filter = and_(
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.source_deployment_id
+                == self.source_deployment_id,
+            )
+            custom_filters.append(source_deployment_filter)
 
         if self.pipeline:
             pipeline_filter = and_(
@@ -883,6 +920,19 @@ class PipelineRunFilter(
                 )
 
             custom_filters.append(templatable_filter)
+
+        if self.triggered_by_step_run_id:
+            trigger_filter = and_(
+                PipelineRunSchema.trigger_execution_id
+                == TriggerExecutionSchema.id,
+                TriggerExecutionSchema.step_run_id == StepRunSchema.id,
+                self.generate_custom_query_conditions_for_column(
+                    value=self.triggered_by_step_run_id,
+                    table=StepRunSchema,
+                    column="id",
+                ),
+            )
+            custom_filters.append(trigger_filter)
 
         return custom_filters
 

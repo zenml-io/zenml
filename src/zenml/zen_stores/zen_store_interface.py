@@ -82,6 +82,8 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentTriggerRequest,
+    PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1300,6 +1302,7 @@ class ZenStoreInterface(ABC):
         deployment_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -1310,6 +1313,7 @@ class ZenStoreInterface(ABC):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            include_config_schema: Whether the config schema will be filled.
 
         Returns:
             The deployment.
@@ -1337,6 +1341,22 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def update_deployment(
+        self,
+        deployment_id: UUID,
+        deployment_update: PipelineDeploymentUpdate,
+    ) -> PipelineDeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+        """
+
+    @abstractmethod
     def delete_deployment(self, deployment_id: UUID) -> None:
         """Deletes a deployment.
 
@@ -1345,6 +1365,22 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the deployment doesn't exist.
+        """
+
+    @abstractmethod
+    def trigger_deployment(
+        self,
+        deployment_id: UUID,
+        trigger_request: PipelineDeploymentTriggerRequest,
+    ) -> PipelineRunResponse:
+        """Trigger a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to trigger.
+            trigger_request: Configuration for the trigger.
+
+        Returns:
+            Model of the pipeline run.
         """
 
     # -------------------- Run templates --------------------

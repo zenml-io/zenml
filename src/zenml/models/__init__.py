@@ -231,11 +231,13 @@ from zenml.models.v2.core.pipeline_build import (
 from zenml.models.v2.core.pipeline_deployment import (
     PipelineDeploymentBase,
     PipelineDeploymentRequest,
+    PipelineDeploymentUpdate,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
     PipelineDeploymentResponseResources,
+    PipelineDeploymentTriggerRequest,
 )
 from zenml.models.v2.core.pipeline_run import (
     PipelineRunRequest,
@@ -690,11 +692,13 @@ __all__ = [
     "PipelineBuildResponseResources",
     "PipelineDeploymentBase",
     "PipelineDeploymentRequest",
+    "PipelineDeploymentUpdate",
     "PipelineDeploymentFilter",
     "PipelineDeploymentResponse",
     "PipelineDeploymentResponseBody",
     "PipelineDeploymentResponseMetadata",
     "PipelineDeploymentResponseResources",
+    "PipelineDeploymentTriggerRequest",
     "PipelineRunRequest",
     "PipelineRunUpdate",
     "PipelineRunFilter",

@@ -453,6 +453,7 @@ def sample_pipeline_deployment_request_model() -> PipelineDeploymentRequest:
         client_version="0.12.3",
         server_version="0.12.3",
         stack=uuid4(),
+        pipeline=uuid4(),
     )
 
 
@@ -628,6 +629,7 @@ def sample_deployment_response_model(
             project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
+            runnable=True,
         ),
         metadata=PipelineDeploymentResponseMetadata(
             run_name_template="",

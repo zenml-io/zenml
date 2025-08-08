@@ -20,7 +20,7 @@ import pytest
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.models import PipelineDeploymentRequest
+from zenml.models import PipelineDeploymentRequest, PipelineRequest
 
 
 class StubEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -46,6 +46,11 @@ def test_calling_entrypoint_configuration_with_invalid_deployment_id():
 
 def test_loading_the_deployment(clean_client):
     """Tests loading the deployment by ID."""
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            name="pipeline",
+        )
+    )
     request = PipelineDeploymentRequest(
         user=clean_client.active_user.id,
         project=clean_client.active_project.id,
@@ -54,6 +59,7 @@ def test_loading_the_deployment(clean_client):
         stack=clean_client.active_stack.id,
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline=pipeline.id,
     )
 
     deployment = clean_client.zen_store.create_deployment(request)
