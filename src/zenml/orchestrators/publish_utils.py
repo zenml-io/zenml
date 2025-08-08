@@ -185,19 +185,19 @@ def get_pipeline_run_status(
         else:
             return ExecutionStatus.STOPPING
 
-    # If there is a stopped step, the run is stopped or stopping
-    if ExecutionStatus.STOPPED in step_statuses:
-        if all(status.is_finished for status in step_statuses):
-            return ExecutionStatus.STOPPED
-        else:
-            return ExecutionStatus.STOPPING
-
-    # Otherwise, if there is a failed step, the run is failed
-    elif (
+    # If there is a failed step, the run is failed
+    if (
         ExecutionStatus.FAILED in step_statuses
         or run_status == ExecutionStatus.FAILED
     ):
         return ExecutionStatus.FAILED
+
+    # If there is a stopped step, the run is stopped or stopping
+    elif ExecutionStatus.STOPPED in step_statuses:
+        if all(status.is_finished for status in step_statuses):
+            return ExecutionStatus.STOPPED
+        else:
+            return ExecutionStatus.STOPPING
 
     # If there is a running step, the run is running
     elif (

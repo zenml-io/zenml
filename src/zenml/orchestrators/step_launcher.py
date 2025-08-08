@@ -164,7 +164,7 @@ class StepLauncher:
 
                 if self._step_run:
                     pipeline_run = client.get_pipeline_run(
-                        self._step_run.pipeline_run_id
+                        self._step_run.pipeline_run_id, hydrate=False
                     )
                 else:
                     raise RunInterruptedException(
@@ -182,7 +182,17 @@ class StepLauncher:
                             status=ExecutionStatus.STOPPED,
                             end_time=utc_now(),
                         )
-                    raise RunStoppedException("Pipeline run in stopped.")
+                    raise RunStoppedException("Pipeline run is stopped.")
+                elif step_run := client.get_run_step(
+                    self._step_run.id, hydrate=False
+                ):
+                    if step_run.status in ExecutionStatus.STOPPING:
+                        publish_utils.publish_step_run_status_update(
+                            step_run_id=step_run.id,
+                            status=ExecutionStatus.STOPPED,
+                            end_time=utc_now(),
+                        )
+                    raise RunStoppedException("Pipeline run is stopped.")
                 else:
                     raise RunInterruptedException(
                         "The execution was interrupted."

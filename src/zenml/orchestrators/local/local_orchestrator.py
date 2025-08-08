@@ -14,9 +14,10 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 from uuid import uuid4
 
+from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     BaseOrchestrator,
@@ -65,6 +66,9 @@ class LocalOrchestrator(BaseOrchestrator):
 
         Returns:
             Optional submission result.
+
+        Raises:
+            RuntimeError: If the pipeline run fails.
         """
         if deployment.schedule:
             logger.warning(
@@ -76,8 +80,37 @@ class LocalOrchestrator(BaseOrchestrator):
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()
 
+        execution_mode = deployment.pipeline_configuration.execution_mode
+
+        failed_steps: List[str] = []
+
         # Run each step
         for step_name, step in deployment.step_configurations.items():
+            if (
+                execution_mode == ExecutionMode.STOP_ON_FAILURE
+                and len(failed_steps) > 0
+            ):
+                logger.warning(
+                    "Stopping pipeline run due to failure in step %s and "
+                    "execution mode %s.",
+                    failed_steps[0],
+                    execution_mode,
+                )
+                break
+
+            if failed_upstream_steps := [
+                fs for fs in failed_steps if fs in step.spec.upstream_steps
+            ]:
+                logger.warning(
+                    "Skipping step %s due to failure in upstream step(s) %s and "
+                    "execution mode %s",
+                    step_name,
+                    ", ".join(failed_upstream_steps),
+                    execution_mode,
+                )
+                failed_steps.append(step_name)
+                continue
+
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
@@ -86,11 +119,24 @@ class LocalOrchestrator(BaseOrchestrator):
                     step_name,
                 )
 
-            self.run_step(
-                step=step,
-            )
+            try:
+                self.run_step(step=step)
+            except Exception as e:
+                failed_steps.append(step_name)
+
+                if execution_mode == ExecutionMode.FAIL_FAST:
+                    raise RuntimeError(
+                        f"Step {step_name} failed with error: {e}"
+                    )
 
         run_duration = time.time() - start_time
+
+        if failed_steps:
+            raise RuntimeError(
+                "Pipeline run has failed due to failure in step(s): "
+                f"{', '.join(failed_steps)}"
+            )
+
         logger.info(
             "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
@@ -112,6 +158,19 @@ class LocalOrchestrator(BaseOrchestrator):
             raise RuntimeError("No run id set.")
 
         return self._orchestrator_run_id
+
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        return [
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        ]
 
 
 class LocalOrchestratorConfig(BaseOrchestratorConfig):
