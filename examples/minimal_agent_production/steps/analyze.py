@@ -10,7 +10,7 @@ import sys
 import time
 from collections import Counter
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Annotated, Dict, List, Optional
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -393,7 +393,9 @@ def calculate_readability_score(
 
 
 @step
-def analyze_document_step(document: DocumentRequest) -> DocumentAnalysis:
+def analyze_document_step(
+    document: DocumentRequest,
+) -> Annotated[DocumentAnalysis, "document_analysis"]:
     """Analyze document content using LLM or deterministic methods.
 
     This step performs comprehensive document analysis including summarization,

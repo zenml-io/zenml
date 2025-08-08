@@ -25,9 +25,9 @@ docker_settings = DockerSettings(
 
 @pipeline(
     settings={"docker": docker_settings},
-    model=Model(name="document_analysis_agent", version=None),
+    model=Model(name="document_analysis_agent", version="production"),
 )
-def evaluation_pipeline(max_items: int = 20):
+def evaluation_pipeline(max_items: int = 100):
     """End-to-end evaluation pipeline for document analysis.
 
     Orchestrates the complete evaluation workflow from loading

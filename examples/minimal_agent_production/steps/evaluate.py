@@ -27,11 +27,11 @@ from zenml.types import HTMLString
 logger = get_logger(__name__)
 
 
-@step
+@step(enable_cache=False)
 def load_recent_analyses(max_items: int = 20) -> List[DocumentAnalysis]:
     """Load recent document analyses for evaluation.
 
-    Fetches the most recent DocumentAnalysis artifacts from the
+    Fetches the most recent DocumentAnalysis artifacts by name from the
     document_analysis_agent model for quality assessment and evaluation.
 
     Args:
@@ -41,55 +41,53 @@ def load_recent_analyses(max_items: int = 20) -> List[DocumentAnalysis]:
         List of DocumentAnalysis objects for evaluation
     """
     client = Client()
+    analyses: List[DocumentAnalysis] = []
 
     try:
         # Get the document analysis model
-        model = client.get_model("document_analysis_agent")
-
-        # Get recent model versions with their artifacts
-        model_versions = client.list_model_versions(
-            model_name_or_id=model.id,
-            sort_by="desc:created",
-            size=max_items,
+        model_version = client.get_model_version(
+            "document_analysis_agent", "production"
         )
 
-        analyses: List[DocumentAnalysis] = []
-        for model_version in model_versions:
-            try:
-                # Get artifacts from this model version
-                artifacts = client.list_model_version_artifact_links(
-                    model_version_id=model_version.id
-                )
+        # Get artifact versions by name from the model
+        artifact_versions = client.list_artifact_versions(
+            name="document_analysis",
+            sort_by="desc:created",
+            size=max_items,
+            model_version_id=model_version.id,
+        )
 
-                # Look for DocumentAnalysis artifacts
-                for artifact_link in artifacts:
-                    try:
-                        artifact = client.get_artifact_version(
-                            artifact_link.artifact_version.id
-                        )
-                        if "DocumentAnalysis" in str(artifact.data_type):
-                            analysis = artifact.load()
-                            if isinstance(analysis, DocumentAnalysis):
-                                analyses.append(analysis)
-                                if len(analyses) >= max_items:
-                                    break
-                    except Exception as e:
-                        logger.warning(f"Failed to load artifact: {e}")
-                        continue
+        logger.info(
+            f"Found {len(artifact_versions)} document_analysis artifacts"
+        )
+
+        for artifact_version in artifact_versions:
+            try:
+                # Load the artifact directly by its version
+                analysis = artifact_version.load()
+                if isinstance(analysis, DocumentAnalysis):
+                    analyses.append(analysis)
+                    logger.debug(
+                        f"Loaded analysis for: {analysis.document.filename}"
+                    )
 
                 if len(analyses) >= max_items:
                     break
 
             except Exception as e:
-                logger.warning(f"Failed to process model version: {e}")
+                logger.warning(
+                    f"Failed to load artifact version {artifact_version.id}: {e}"
+                )
                 continue
 
-        logger.info(f"Loaded {len(analyses)} document analyses for evaluation")
+        logger.info(
+            f"Successfully loaded {len(analyses)} document analyses for evaluation"
+        )
         return analyses
 
     except Exception as e:
         logger.warning(
-            f"Failed to load from model, falling back to empty list: {e}"
+            f"Failed to load analyses from model, returning empty list: {e}"
         )
         return []
 
@@ -144,7 +142,7 @@ def _annotate_analysis(analysis: DocumentAnalysis) -> AnalysisAnnotation:
 @step
 def annotate_analyses_step(
     analyses: List[DocumentAnalysis],
-) -> List[AnnotatedAnalysis]:
+) -> Annotated[List[AnnotatedAnalysis], "annotated_analyses"]:
     """Annotate document analyses with quality assessments.
 
     Applies automated quality scoring to document analyses using
@@ -214,7 +212,7 @@ def annotate_analyses_step(
 @step
 def aggregate_evaluation_results_step(
     annotated: List[AnnotatedAnalysis],
-) -> EvaluationReport:
+) -> Annotated[EvaluationReport, "evaluation_report"]:
     """Aggregate annotations into evaluation report.
 
     Compiles individual analysis annotations into summary statistics
@@ -348,7 +346,7 @@ def aggregate_evaluation_results_step(
 @step
 def render_evaluation_report_step(
     report: EvaluationReport,
-) -> Annotated[HTMLString, "document_analysis_eval_report"]:
+) -> Annotated[HTMLString, "evaluation_report_html"]:
     """Render evaluation report as HTML string artifact.
 
     Converts the evaluation report into an HTMLString artifact
