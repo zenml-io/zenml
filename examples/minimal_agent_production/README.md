@@ -1,0 +1,155 @@
+## Document Analysis Pipeline (with Tracing, Annotation, and Evaluation)
+
+This example shows how to:
+
+- Create a document analysis pipeline using ZenML
+- Trigger it from a FastAPI app for production usage
+- Analyze documents with summarization, keyword extraction, and sentiment analysis
+- Capture lightweight traces for every analysis
+- Annotate and evaluate past runs with a separate evaluation pipeline
+
+The analysis pipeline is designed for batch processing: it takes document content as input and performs comprehensive analysis including summarization, keyword extraction, sentiment analysis, and readability scoring. It can run with a real LLM (via LiteLLM) if API keys are available, or fall back to deterministic analysis for offline demos.
+
+### What's Included
+
+- **Document Analysis Pipeline**: `document_analysis_pipeline` that processes documents and stores analysis results
+- **FastAPI Web App**: `app/main.py` provides a web interface for document upload and analysis
+- **Evaluation Pipeline**: loads recent analysis traces, annotates them with quality checks, aggregates metrics, and renders HTML reports
+- **Optional LLM Integration**: via LiteLLM for enhanced analysis quality
+- **Optional Observability**: via Langfuse if environment variables are set
+
+### Prerequisites
+
+```bash
+pip install "zenml[server]"
+zenml init
+```
+
+Optional for real LLMs and tracing:
+
+```bash
+# Use any LiteLLM-supported provider (OpenAI shown as example)
+export OPENAI_API_KEY="your-key"
+
+# Optional: Langfuse (v2) for observability
+export LANGFUSE_PUBLIC_KEY="..."
+export LANGFUSE_SECRET_KEY="..."
+export LANGFUSE_HOST="https://cloud.langfuse.com"
+```
+
+### Install Dependencies
+
+```bash
+cd examples/minimal_agent_production
+pip install -r requirements.txt
+```
+
+### Run the FastAPI app (Document Analysis Service)
+
+```bash
+cd examples/minimal_agent_production
+uvicorn app.main:app --reload --port 8010
+```
+
+Open your browser to `http://localhost:8010` to access the document analysis interface. You can:
+
+- **Upload files**: Drag and drop text files, markdown files, or other documents
+- **Paste text**: Directly paste document content into the textarea
+- **Choose document type**: Select from text, markdown, report, or article
+- **Get analysis**: Receive summary, keywords, sentiment, and readability scores
+
+Alternatively, send a request programmatically:
+
+```bash
+curl -X POST http://localhost:8010/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "filename": "sample-report.txt",
+        "content": "This is a sample document for analysis. It contains multiple sentences to demonstrate the document processing capabilities. The system will extract key information and provide insights about the content quality and characteristics.",
+        "document_type": "report",
+        "analysis_type": "full"
+      }'
+```
+
+The endpoint triggers a ZenML pipeline run that analyzes the document and stores detailed results you can inspect in the ZenML dashboard.
+
+### Run the evaluation pipeline
+
+```bash
+python run_evaluation.py
+```
+
+This loads recent document analysis traces, annotates them with quality checks (summary quality, keyword relevance, sentiment accuracy, analysis completeness), aggregates metrics, and writes an HTML report artifact.
+
+### View results
+
+```bash
+zenml up  # Start ZenML dashboard
+```
+
+Open the ZenML dashboard to see:
+- **Document Analysis Pipeline**: Processing traces with input documents and analysis outputs
+- **Evaluation Pipeline**: Quality assessment reports with scoring metrics
+- **HTML Reports**: Rich visualizations of analysis results and quality assessments
+
+### Analysis Features
+
+The document analysis pipeline provides:
+
+1. **Summarization**: Concise 2-3 sentence summaries of document content
+2. **Keyword Extraction**: Top 5 relevant keywords or phrases
+3. **Sentiment Analysis**: Overall document sentiment (positive/negative/neutral)
+4. **Readability Scoring**: Quantitative readability assessment (0-1 scale)
+5. **Processing Metrics**: Word count, processing time, token usage
+
+### Remote and Run Templates (Production Story)
+
+- **Open-source users**: Configure your pipeline to use a remote stack (e.g., remote orchestrator) and trigger via the FastAPI app. The code works unchanged; you only need to configure your stack.
+- **ZenML Pro users**: Create a run template from `document_analysis_pipeline` and trigger it via the ZenML UI/API/Webhooks. The FastAPI app can be modified to call the run template endpoint instead of running locally.
+
+### Structure
+
+```
+examples/minimal_agent_production/
+├── app/
+│   └── main.py                  # FastAPI document analysis service
+├── materializers/
+│   └── html_materializer.py     # Renders HTML reports in ZenML UI
+├── pipelines/
+│   ├── evaluation.py            # Evaluation pipeline for quality assessment
+│   └── production.py            # Document analysis pipeline
+├── llm_utils.py                 # Document analysis utilities with LLM fallback
+├── models.py                    # Pydantic models for DocumentRequest/Analysis/Eval
+├── run_production.py            # CLI way to run the document analysis pipeline
+├── run_evaluation.py            # CLI way to run the evaluation pipeline
+├── requirements.txt             # Dependencies
+└── README.md                    # This file
+```
+
+### Use Cases
+
+This document analysis pipeline is ideal for:
+
+- **Content Management**: Batch processing of documents for categorization
+- **Research Analysis**: Automated analysis of papers, reports, and articles
+- **Content Quality Assessment**: Systematic evaluation of document quality
+- **Knowledge Management**: Extracting insights from document repositories
+- **Compliance Review**: Batch processing of documents for regulatory compliance
+
+### Why Document Analysis vs. Chatbot?
+
+Document analysis is better suited for ZenML pipelines because:
+
+- **Batch-oriented**: Natural fit for pipeline processing paradigms
+- **Asynchronous**: Users expect longer processing times for document analysis
+- **Scalable**: Can easily process multiple documents in parallel
+- **Traceable**: Rich artifacts and metadata for each analysis
+- **Evaluatable**: Clear metrics for analysis quality assessment
+
+### Notes
+
+- The evaluation rubric focuses on analysis quality (summary completeness, keyword relevance, sentiment accuracy)
+- Analysis results are stored as ZenML artifacts (Pydantic-serialized) for full traceability
+- If Langfuse is configured, LLM calls are also logged for observability
+- For production deployments, consider using run templates and remote orchestrators
+- The system gracefully falls back to deterministic analysis when no LLM API keys are available
