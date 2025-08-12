@@ -58,7 +58,9 @@ def collect_exception_information(
             )
             end_line = start_line + len(lines)
 
-            line_pattern = re.compile(f'File "{source_file}", line (\d+),')
+            line_pattern = re.compile(
+                rf'File "{re.escape(source_file)}", line (\d+),'
+            )
 
             for index, line in enumerate(tb):
                 match = line_pattern.search(line)
