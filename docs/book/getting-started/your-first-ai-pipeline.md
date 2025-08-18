@@ -49,6 +49,11 @@ curl -X POST http://localhost:8010/analyze \
 
 The endpoint triggers a ZenML pipeline run that stores detailed results and metadata you can inspect in the dashboard.
 
+<figure>
+  <img src="../.gitbook/assets/your-first-ai-pipeline-app.png" alt="FastAPI document analysis UI">
+  <figcaption>The web UI served by uvicorn at <code>http://localhost:8010</code>.</figcaption>
+</figure>
+
 ### Inspect your pipeline runs
 ```bash
 zenml login --local
@@ -59,6 +64,11 @@ In the dashboard, open the latest run to explore:
 - **Artifacts** like `DocumentAnalysis` with summary, keywords, sentiment, readability score
 - **Metadata** such as latency, token usage, and model name (when in LLM mode)
 
+<figure>
+  <img src="../.gitbook/assets/your-first-ai-pipeline-dag-analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
+  <figcaption>Document analysis pipeline DAG with step-level artifacts and metadata.</figcaption>
+</figure>
+
 ### Evaluate quality
 Generate a quality report across recent analyses:
 ```bash
@@ -66,6 +76,11 @@ python run_evaluation.py
 ```
 
 Open the run in the dashboard and locate the HTML report artifact with per-item annotations (summary quality, keyword relevance, sentiment accuracy, completeness) and aggregated scores.
+
+<figure>
+  <img src="../.gitbook/assets/your-first-ai-pipeline-dag-evaluation.png" alt="Evaluation pipeline DAG in ZenML dashboard">
+  <figcaption>Evaluation pipeline producing an HTML report artifact with aggregated metrics.</figcaption>
+</figure>
 
 ### How it works (at a glance)
 - The FastAPI app forwards requests to the `document_analysis_pipeline` in `pipelines/production.py`
@@ -119,21 +134,5 @@ graph TD
   P -. runs on .-> O[(Orchestrator: local or remote)]
   O -. stores .-> AR
 ```
-
-### Screenshots (to be added)
-<figure>
-  <img src="../.gitbook/assets/your-first-ai-pipeline-app.png" alt="FastAPI document analysis UI">
-  <figcaption>FastAPI app running via uvicorn.</figcaption>
-  </figure>
-
-<figure>
-  <img src="../.gitbook/assets/your-first-ai-pipeline-dag-analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
-  <figcaption>Document analysis pipeline: steps and artifacts.</figcaption>
-  </figure>
-
-<figure>
-  <img src="../.gitbook/assets/your-first-ai-pipeline-dag-evaluation.png" alt="Evaluation pipeline DAG in ZenML dashboard">
-  <figcaption>Evaluation pipeline: annotations and HTML report artifact.</figcaption>
-  </figure>
 
 
