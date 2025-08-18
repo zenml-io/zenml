@@ -112,29 +112,40 @@ Key files to explore:
 Looking for the code? Browse the complete example at `examples/minimal_agent_production`.
 
 ### Architecture (at a glance)
+
 ```mermaid
-graph TD
-  U[User / Client] --> A[FastAPI app]
-  A --> P[ZenML document analysis pipeline]
-  P --> S1[ingest_document_step]
-  S1 --> S2[analyze_document_step (LLM or fallback)]
-  S2 --> S3[render_report_step]
-  S2 -->|DocumentAnalysis artifact| AR[Artifact Store]
-  S3 -->|HTML Report| AR
-
-  subgraph Evaluation
-    E[Evaluation pipeline] --> R1[load recent analyses]
-    R1 --> R2[annotate & score]
-    R2 --> R3[render evaluation HTML]
-    R3 --> AR
+---
+config:
+  layout: elk
+  theme: mc
+---
+flowchart LR
+ subgraph Evaluation["Evaluation Pipeline"]
+        R1["load recent analyses"]
+        R2["annotate and score"]
+        R3["render evaluation HTML"]
   end
-
-  classDef dim fill:#f5f5f7,stroke:#d0d0d7,color:#333;
-  class Evaluation dim;
-
-  %% Optional remote execution
-  P -. runs on .-> O[(Orchestrator: local or remote)]
-  O -. stores .-> AR
+ subgraph s1["Document Analysis Pipeline"]
+        S1["ingest_document_step"]
+        S2["analyze_document_step LLM or fallback"]
+        S3["render_report_step"]
+  end
+ subgraph s2["Stack"]
+        O[("Orchestrator - local or remote")]
+        AR["Artifact Store"]
+  end
+    U["User / Client"] --> A["FastAPI app"]
+    A -- Triggers on document upload --> s1
+    S1 --> S2
+    S2 --> S3
+    S3 -- DocumentAnalysisResult --> AR
+    R1 --> R2
+    R2 --> R3
+    U -- Triggers to evaluate app --> Evaluation
+    Evaluation -- Executes on --> O
+    s1 -- Executes on --> O
+    style s1 fill:#E1BEE7,stroke:#AA00FF
+    style Evaluation fill:#E1BEE7,stroke:#AA00FF
 ```
 
 
