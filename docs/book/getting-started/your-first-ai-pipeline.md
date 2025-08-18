@@ -58,6 +58,7 @@ flowchart TB
 ```
 
 ### Prerequisites
+
 ```bash
 pip install "zenml[server]"
 zenml init
@@ -69,6 +70,7 @@ export OPENAI_API_KEY="your-key"
 ```
 
 ### Get the example
+
 ```bash
 git clone --depth 1 https://github.com/zenml-io/zenml.git
 cd zenml/examples/minimal_agent_production
@@ -79,6 +81,7 @@ Already have the repo? Just `cd examples/minimal_agent_production` and continue.
 {% endhint %}
 
 ### Run the service
+
 ```bash
 uvicorn app.main:app --reload --port 8010
 ```
@@ -103,6 +106,7 @@ The endpoint triggers a ZenML pipeline run that stores detailed results and meta
 </figure>
 
 ### Inspect your pipeline runs
+
 ```bash
 zenml login --local
 ```
@@ -118,6 +122,7 @@ In the dashboard, open the latest run to explore:
 </figure>
 
 ### Evaluate quality
+
 Generate a quality report across recent analyses:
 ```bash
 python run_evaluation.py
@@ -131,6 +136,7 @@ Open the run in the dashboard and locate the HTML report artifact with per-item 
 </figure>
 
 ### How it works (at a glance)
+
 - The FastAPI app forwards requests to the `document_analysis_pipeline` in `pipelines/production.py`
 - The `analyze` step uses LiteLLM if an API key is configured, otherwise a deterministic analyzer
 - Artifacts are versioned and traceable; evaluation runs read past analyses and render a report
@@ -146,10 +152,9 @@ Key files to explore:
 - **Operationalize**: Add caching, retries, schedules, and CI/CD using concepts in the docs
 
 ### Extend it
+
 - Swap LLMs/providers through LiteLLM without code changes
 - Add guardrails/structured outputs via Pydantic models
 - Add retrieval or additional steps for more advanced analysis
 
 Looking for the code? Browse the complete example at `examples/minimal_agent_production`.
-
-
