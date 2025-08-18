@@ -431,48 +431,26 @@ def get_analysis_result(run_id: str) -> JSONResponse:
                     status_code=500,
                 )
             elif status_value == "completed":
-                # Try preferred step, then fall back to any step output that loads
-                candidate_artifacts = []
+                # Simple direct access to the known artifact
                 try:
-                    step = zenml_run.steps.get("analyze_document_step")
+                    analyze_step = zenml_run.steps['analyze_document_step']
+                    document_analysis_artifacts = analyze_step.outputs['document_analysis']
+                    
+                    if document_analysis_artifacts and len(document_analysis_artifacts) > 0:
+                        analysis_result = document_analysis_artifacts[0].load()
+                        
+                        completed_data = {
+                            "status": "completed",
+                            "summary": analysis_result.summary,
+                            "keywords": analysis_result.keywords,
+                            "sentiment": analysis_result.sentiment,
+                            "word_count": analysis_result.word_count,
+                            "readability_score": analysis_result.readability_score,
+                        }
+                        ANALYSIS_RESULTS.pop(run_id)  # Clean up
+                        return JSONResponse(completed_data)
                 except Exception:
-                    step = None
-                if step and getattr(step, "outputs", None):
-                    candidate_artifacts.extend(list(step.outputs.values()))
-                # Fallback: search all steps
-                if not candidate_artifacts:
-                    for s in getattr(zenml_run, "steps", {}).values():
-                        if getattr(s, "outputs", None):
-                            candidate_artifacts.extend(
-                                list(s.outputs.values())
-                            )
-
-                for artifact_view in candidate_artifacts:
-                    try:
-                        analysis_result = artifact_view.load()
-                        if all(
-                            hasattr(analysis_result, attr)
-                            for attr in (
-                                "summary",
-                                "keywords",
-                                "sentiment",
-                                "word_count",
-                                "readability_score",
-                            )
-                        ):
-                            completed_data = {
-                                "status": "completed",
-                                "summary": analysis_result.summary,
-                                "keywords": analysis_result.keywords,
-                                "sentiment": analysis_result.sentiment,
-                                "word_count": analysis_result.word_count,
-                                "readability_score": analysis_result.readability_score,
-                            }
-                            ANALYSIS_RESULTS[run_id] = completed_data
-                            ANALYSIS_RESULTS.pop(run_id)
-                            return JSONResponse(completed_data)
-                    except Exception:
-                        continue
+                    pass
 
                 ANALYSIS_RESULTS[run_id] = {
                     "status": "error",

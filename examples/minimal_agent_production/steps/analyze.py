@@ -24,24 +24,6 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def check_llm_availability() -> bool:
-    """Check if LLM services are available via API keys.
-
-    Returns:
-        bool: True if any supported LLM provider API key is configured
-    """
-    supported_providers = [
-        "OPENAI_API_KEY",
-        "ANTHROPIC_API_KEY",
-        "GROQ_API_KEY",
-        "COHERE_API_KEY",
-    ]
-
-    available = any(os.environ.get(var) for var in supported_providers)
-    logger.info(
-        f"LLM availability check: {'Available' if available else 'Not available'}"
-    )
-    return available
 
 
 def perform_llm_analysis(
@@ -260,27 +242,20 @@ def analyze_document_step(
         raise ValueError(error_msg)
 
     # Attempt LLM analysis first, fall back to simple analysis if needed
-    if check_llm_availability():
-        try:
-            logger.info("Using LLM-based analysis")
-            analysis_result = perform_llm_analysis(
-                content=document.content,
-                filename=document.filename,
-                metadata={"source": "document_analysis_pipeline"},
-            )
-            analysis_method = "llm"
-        except Exception as e:
-            logger.warning(f"LLM analysis failed ({str(e)}), using fallback")
-            analysis_result = perform_deterministic_analysis(
-                content=document.content, filename=document.filename
-            )
-            analysis_method = "deterministic_fallback"
-    else:
-        logger.info("LLM not available, using simple analysis")
+    try:
+        logger.info("Attempting LLM-based analysis")
+        analysis_result = perform_llm_analysis(
+            content=document.content,
+            filename=document.filename,
+            metadata={"source": "document_analysis_pipeline"},
+        )
+        analysis_method = "llm"
+    except Exception as e:
+        logger.warning(f"LLM analysis failed ({str(e)}), using fallback")
         analysis_result = perform_deterministic_analysis(
             content=document.content, filename=document.filename
         )
-        analysis_method = "deterministic"
+        analysis_method = "deterministic_fallback"
 
     # Create analysis object with results
     analysis = DocumentAnalysis(

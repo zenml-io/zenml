@@ -50,75 +50,32 @@ def main() -> int:
         except Exception:
             run_id = ""
 
-        # Try to extract the analysis result directly from the run's artifacts
+        # Extract the analysis result - much simpler approach!
         result_payload = None
         try:
             # Give the run a moment to fully complete and artifacts to be saved
             import time
-
             time.sleep(1)
-
+            
             # Refresh the run to get latest state
             from zenml.client import Client
-
             client = Client()
             run = client.get_pipeline_run(run_id)
-
-            step = None
-            try:
-                step = run.steps.get("analyze_document_step")
-            except Exception:
-                step = None
-            # Try to find artifacts in a more systematic way
-            artifacts_found = []
-
-            # First try the analyze step specifically
-            if step and hasattr(step, "outputs"):
-                for output_name, output in step.outputs.items():
-                    artifacts_found.append(output)
-
-            # If no artifacts in analyze step, check all steps
-            if not artifacts_found:
-                for step_name, s in getattr(run, "steps", {}).items():
-                    if hasattr(s, "outputs"):
-                        for output_name, output in s.outputs.items():
-                            artifacts_found.append(output)
-
-            # Try to load each artifact
-            for artifact_view in artifacts_found:
-                try:
-                    # Handle different artifact types
-                    if hasattr(artifact_view, "load"):
-                        analysis_result = artifact_view.load()
-                    elif isinstance(artifact_view, list):
-                        # If it's a list, try to access the first element
-                        if len(artifact_view) > 0:
-                            first_item = artifact_view[0]
-                            if hasattr(first_item, "load"):
-                                analysis_result = first_item.load()
-                            else:
-                                analysis_result = first_item
-                        else:
-                            continue
-                    else:
-                        analysis_result = artifact_view
-
-                    # Check if it's a DocumentAnalysis object (or has the right attributes)
-                    if hasattr(analysis_result, "summary") and hasattr(
-                        analysis_result, "keywords"
-                    ):
-                        result_payload = {
-                            "summary": str(analysis_result.summary),
-                            "keywords": list(analysis_result.keywords),
-                            "sentiment": str(analysis_result.sentiment),
-                            "word_count": int(analysis_result.word_count),
-                            "readability_score": float(
-                                analysis_result.readability_score
-                            ),
-                        }
-                        break
-                except Exception:
-                    continue
+            
+            # Simple direct access to the known artifact
+            analyze_step = run.steps['analyze_document_step']
+            document_analysis_artifacts = analyze_step.outputs['document_analysis']
+            
+            if document_analysis_artifacts and len(document_analysis_artifacts) > 0:
+                analysis_result = document_analysis_artifacts[0].load()
+                
+                result_payload = {
+                    "summary": str(analysis_result.summary),
+                    "keywords": list(analysis_result.keywords),
+                    "sentiment": str(analysis_result.sentiment),
+                    "word_count": int(analysis_result.word_count),
+                    "readability_score": float(analysis_result.readability_score),
+                }
         except Exception:
             result_payload = None
 
