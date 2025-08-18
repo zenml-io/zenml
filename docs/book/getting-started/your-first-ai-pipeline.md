@@ -7,14 +7,12 @@ icon: rocket
 
 Build and evaluate a real AI service powered by a ZenML pipeline. This quickstart works out of the box with a deterministic fallback and upgrades seamlessly to LLMs when you add a provider API key.
 
-### Why pipelines (for ML and AI engineers)
-- **Reproducibility by default**: Every step is versioned and parameterized; artifacts are stored and reloadable. Rerun any experiment exactly, compare apples-to-apples.
-- **Run anywhere without code changes**: Switch from your laptop to a remote orchestrator or Kubernetes with a stack change, not a code rewrite.
-- **Unified for models and agents**: The same primitives (steps, pipelines, artifacts) handle sklearn models and LLM/agent workflows—no parallel toolchains.
-- **Built-in observability**: Step-level metadata (latency, tokens, model/cost), lineage, and artifacts show you what happened and why.
-- **Evaluate early and often**: Treat quality as a pipeline with metrics and HTML reports; automate regression checks for both models and agents.
-- **Separation of concerns**: Keep ML/agent logic in code; keep infrastructure in stacks (or Pro run templates). Teams can evolve each independently.
-- **Production ready**: Caching, retries, schedules, CI/CD, and governance come with the pipeline-first approach—not as afterthoughts.
+{% hint style="info" %}
+Why pipelines?
+- **Reproducible & portable**: Run the same code locally or on the cloud by switching stacks.
+- **One approach for models and agents**: Steps, pipelines, and artifacts work for sklearn and LLMs alike.
+- **Evaluate & observe by default**: Quality reports, lineage, and step metadata (tokens, latency) out of the box.
+{% endhint %}
 
 ### What you'll build
 - **Document analysis service**: A FastAPI app that triggers a ZenML pipeline
