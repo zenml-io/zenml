@@ -10,6 +10,16 @@ This example shows how to:
 
 The analysis pipeline is designed for batch processing: it takes document content as input and performs comprehensive analysis including summarization, keyword extraction, sentiment analysis, and readability scoring. It can run with a real LLM (via LiteLLM) if API keys are available, or fall back to deterministic analysis for offline demos.
 
+### Why pipelines (for ML and AI engineers)
+
+- Reproducible & portable: versioned steps and artifacts that run locally or on the cloud without code changes
+- Unified for models and agents: the same primitives work for scikit-learn and LLM/agent workflows
+- Evaluate & observe by default: step metadata (tokens, latency), lineage, and quality reports are first-class
+
+### Architecture
+
+![Architecture overview](assets/architecture.png)
+
 ### What's Included
 
 - **Document Analysis Pipeline**: `document_analysis_pipeline` that processes documents and stores analysis results
@@ -32,10 +42,18 @@ export OPENAI_API_KEY="your-key"
 
 ```
 
-### Install Dependencies
+### Get the example & install dependencies
+
+If you don't have this repository locally yet:
 
 ```bash
-cd examples/minimal_agent_production
+git clone --depth 1 https://github.com/zenml-io/zenml.git
+cd zenml/examples/minimal_agent_production
+```
+
+Then install example dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
@@ -53,6 +71,8 @@ Open your browser to `http://localhost:8010` to access the document analysis int
 - **Choose document type**: Select from text, markdown, report, or article
 - **Get analysis**: Receive summary, keywords, sentiment, and readability scores
 
+![FastAPI UI](assets/app.png)
+
 Alternatively, send a request programmatically:
 
 ```bash
@@ -66,15 +86,17 @@ curl -X POST http://localhost:8010/analyze \
       }'
 ```
 
-The endpoint triggers a ZenML pipeline run that analyzes the document and stores detailed results you can inspect in the ZenML dashboard.
+The endpoint triggers a ZenML pipeline run that analyzes the document and stores detailed results and metadata you can inspect in the ZenML dashboard.
 
-### Run the evaluation pipeline
+### Evaluate quality
 
 ```bash
 python run_evaluation.py
 ```
 
-This loads recent document analysis traces, annotates them with quality checks (summary quality, keyword relevance, sentiment accuracy, analysis completeness), aggregates metrics, and writes an HTML report artifact.
+This loads recent document analyses, annotates them with quality checks (summary quality, keyword relevance, sentiment accuracy, analysis completeness), aggregates metrics, and writes an HTML report artifact.
+
+![Evaluation pipeline DAG](assets/pipeline_evaluation.png)
 
 ### View results
 
@@ -86,6 +108,8 @@ Open the ZenML dashboard to see:
 - **Document Analysis Pipeline**: Processing traces with input documents and analysis outputs
 - **Evaluation Pipeline**: Quality assessment reports with scoring metrics
 - **HTML Reports**: Rich visualizations of analysis results and quality assessments
+
+![Analysis pipeline DAG](assets/pipeline_analysis.png)
 
 ### Analysis Features
 
