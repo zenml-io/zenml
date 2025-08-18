@@ -55,26 +55,35 @@ def main() -> int:
         try:
             # Give the run a moment to fully complete and artifacts to be saved
             import time
+
             time.sleep(1)
-            
+
             # Refresh the run to get latest state
             from zenml.client import Client
+
             client = Client()
             run = client.get_pipeline_run(run_id)
-            
+
             # Simple direct access to the known artifact
-            analyze_step = run.steps['analyze_document_step']
-            document_analysis_artifacts = analyze_step.outputs['document_analysis']
-            
-            if document_analysis_artifacts and len(document_analysis_artifacts) > 0:
+            analyze_step = run.steps["analyze_document_step"]
+            document_analysis_artifacts = analyze_step.outputs[
+                "document_analysis"
+            ]
+
+            if (
+                document_analysis_artifacts
+                and len(document_analysis_artifacts) > 0
+            ):
                 analysis_result = document_analysis_artifacts[0].load()
-                
+
                 result_payload = {
                     "summary": str(analysis_result.summary),
                     "keywords": list(analysis_result.keywords),
                     "sentiment": str(analysis_result.sentiment),
                     "word_count": int(analysis_result.word_count),
-                    "readability_score": float(analysis_result.readability_score),
+                    "readability_score": float(
+                        analysis_result.readability_score
+                    ),
                 }
         except Exception:
             result_payload = None

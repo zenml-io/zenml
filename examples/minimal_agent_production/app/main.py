@@ -433,12 +433,17 @@ def get_analysis_result(run_id: str) -> JSONResponse:
             elif status_value == "completed":
                 # Simple direct access to the known artifact
                 try:
-                    analyze_step = zenml_run.steps['analyze_document_step']
-                    document_analysis_artifacts = analyze_step.outputs['document_analysis']
-                    
-                    if document_analysis_artifacts and len(document_analysis_artifacts) > 0:
+                    analyze_step = zenml_run.steps["analyze_document_step"]
+                    document_analysis_artifacts = analyze_step.outputs[
+                        "document_analysis"
+                    ]
+
+                    if (
+                        document_analysis_artifacts
+                        and len(document_analysis_artifacts) > 0
+                    ):
                         analysis_result = document_analysis_artifacts[0].load()
-                        
+
                         completed_data = {
                             "status": "completed",
                             "summary": analysis_result.summary,

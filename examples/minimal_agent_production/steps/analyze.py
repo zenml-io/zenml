@@ -5,7 +5,6 @@ including LLM-based analysis with graceful fallbacks to deterministic
 methods when LLM services are unavailable.
 """
 
-import os
 import time
 from collections import Counter
 from typing import Annotated, Dict, List, Optional, cast
@@ -22,8 +21,6 @@ from zenml.logger import get_logger
 
 # Get ZenML logger for consistent logging
 logger = get_logger(__name__)
-
-
 
 
 def perform_llm_analysis(
