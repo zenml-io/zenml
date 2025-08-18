@@ -20,6 +20,43 @@ Why pipelines?
 - **Tracked artifacts**: Summary, keywords, sentiment, readability, and rich metadata
 - **Quality evaluation**: A separate pipeline that annotates runs and generates an HTML report
 
+### Architecture (at a glance)
+
+```mermaid
+---
+config:
+  layout: elk
+  theme: mc
+---
+flowchart TB
+ subgraph Evaluation["Evaluation Pipeline"]
+        R1["load recent analyses"]
+        R2["annotate and score"]
+        R3["render evaluation HTML"]
+  end
+ subgraph s1["Document Analysis Pipeline"]
+        S1["ingest_document_step"]
+        S2["analyze_document_step LLM or fallback"]
+        S3["render_report_step"]
+  end
+ subgraph s2["Stack"]
+        O[("Orchestrator - local or remote")]
+        AR["Artifact Store"]
+  end
+    U["User / Client"] --> A["FastAPI app"]
+    A -- Triggers on document upload --> s1
+    S1 --> S2
+    S2 --> S3
+    S3 -- DocumentAnalysisResult --> AR
+    R1 --> R2
+    R2 --> R3
+    U -- Triggers to evaluate app --> Evaluation
+    Evaluation -- Executes on --> O
+    s1 -- Executes on --> O
+    style s1 fill:#E1BEE7,stroke:#AA00FF
+    style Evaluation fill:#E1BEE7,stroke:#AA00FF
+```
+
 ### Prerequisites
 ```bash
 pip install "zenml[server]"
@@ -33,9 +70,13 @@ export OPENAI_API_KEY="your-key"
 
 ### Get the example
 ```bash
-cd examples/minimal_agent_production
+git clone --depth 1 https://github.com/zenml-io/zenml.git
+cd zenml/examples/minimal_agent_production
 pip install -r requirements.txt
 ```
+{% hint style="info" %}
+Already have the repo? Just `cd examples/minimal_agent_production` and continue.
+{% endhint %}
 
 ### Run the service
 ```bash
@@ -110,42 +151,5 @@ Key files to explore:
 - Add retrieval or additional steps for more advanced analysis
 
 Looking for the code? Browse the complete example at `examples/minimal_agent_production`.
-
-### Architecture (at a glance)
-
-```mermaid
----
-config:
-  layout: elk
-  theme: mc
----
-flowchart TB
- subgraph Evaluation["Evaluation Pipeline"]
-        R1["load recent analyses"]
-        R2["annotate and score"]
-        R3["render evaluation HTML"]
-  end
- subgraph s1["Document Analysis Pipeline"]
-        S1["ingest_document_step"]
-        S2["analyze_document_step LLM or fallback"]
-        S3["render_report_step"]
-  end
- subgraph s2["Stack"]
-        O[("Orchestrator - local or remote")]
-        AR["Artifact Store"]
-  end
-    U["User / Client"] --> A["FastAPI app"]
-    A -- Triggers on document upload --> s1
-    S1 --> S2
-    S2 --> S3
-    S3 -- DocumentAnalysisResult --> AR
-    R1 --> R2
-    R2 --> R3
-    U -- Triggers to evaluate app --> Evaluation
-    Evaluation -- Executes on --> O
-    s1 -- Executes on --> O
-    style s1 fill:#E1BEE7,stroke:#AA00FF
-    style Evaluation fill:#E1BEE7,stroke:#AA00FF
-```
 
 
