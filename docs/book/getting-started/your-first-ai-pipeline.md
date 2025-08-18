@@ -1,3 +1,8 @@
+---
+description: Build your first AI pipeline and service with ZenML in minutes.
+icon: rocket
+---
+
 ## Your First AI Pipeline
 
 Build and evaluate a real AI service powered by a ZenML pipeline. This quickstart works out of the box with a deterministic fallback and upgrades seamlessly to LLMs when you add a provider API key.
@@ -46,7 +51,7 @@ The endpoint triggers a ZenML pipeline run that stores detailed results and meta
 
 ### Inspect your pipeline runs
 ```bash
-zenml up
+zenml login --local
 ```
 
 In the dashboard, open the latest run to explore:

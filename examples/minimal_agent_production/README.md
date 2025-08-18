@@ -79,7 +79,7 @@ This loads recent document analysis traces, annotates them with quality checks (
 ### View results
 
 ```bash
-zenml up  # Start ZenML dashboard
+zenml login --local  # Start ZenML dashboard locally
 ```
 
 Open the ZenML dashboard to see:
