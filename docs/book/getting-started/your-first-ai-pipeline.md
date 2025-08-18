@@ -89,4 +89,51 @@ Key files to explore:
 
 Looking for the code? Browse the complete example at `examples/minimal_agent_production`.
 
+### Why this approach
+- **One framework, two worlds**: The same pipeline-first, artifact-tracking approach works for both classical ML (e.g., scikit-learn) and AI agents/LLMs. No parallel stacks.
+- **Deterministic → LLM**: Start with a fallback that runs anywhere; add an API key to upgrade quality. Same code, richer metadata (tokens, model, cost).
+- **Evaluate early**: Treat quality as a first-class output via an evaluation pipeline and HTML report.
+
+### Architecture (at a glance)
+```mermaid
+graph TD
+  U[User / Client] --> A[FastAPI app]
+  A --> P[ZenML document analysis pipeline]
+  P --> S1[ingest_document_step]
+  S1 --> S2[analyze_document_step (LLM or fallback)]
+  S2 --> S3[render_report_step]
+  S2 -->|DocumentAnalysis artifact| AR[Artifact Store]
+  S3 -->|HTML Report| AR
+
+  subgraph Evaluation
+    E[Evaluation pipeline] --> R1[load recent analyses]
+    R1 --> R2[annotate & score]
+    R2 --> R3[render evaluation HTML]
+    R3 --> AR
+  end
+
+  classDef dim fill:#f5f5f7,stroke:#d0d0d7,color:#333;
+  class Evaluation dim;
+
+  %% Optional remote execution
+  P -. runs on .-> O[(Orchestrator: local or remote)]
+  O -. stores .-> AR
+```
+
+### Screenshots (to be added)
+<figure>
+  <img src="../.gitbook/assets/your-first-ai-pipeline-app.png" alt="FastAPI document analysis UI">
+  <figcaption>FastAPI app running via uvicorn.</figcaption>
+  </figure>
+
+<figure>
+  <img src="../.gitbook/assets/your-first-ai-pipeline-dag-analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
+  <figcaption>Document analysis pipeline: steps and artifacts.</figcaption>
+  </figure>
+
+<figure>
+  <img src="../.gitbook/assets/your-first-ai-pipeline-dag-evaluation.png" alt="Evaluation pipeline DAG in ZenML dashboard">
+  <figcaption>Evaluation pipeline: annotations and HTML report artifact.</figcaption>
+  </figure>
+
 
