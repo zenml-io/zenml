@@ -119,7 +119,7 @@ config:
   layout: elk
   theme: mc
 ---
-flowchart LR
+flowchart TB
  subgraph Evaluation["Evaluation Pipeline"]
         R1["load recent analyses"]
         R2["annotate and score"]
