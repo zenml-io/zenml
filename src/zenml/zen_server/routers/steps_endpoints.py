@@ -255,7 +255,7 @@ def get_step_logs(
     step_id: UUID,
     offset: int = 0,
     count: int = MAX_LOG_ENTRIES,  # Number of log entries to return
-    level: LoggingLevels = LoggingLevels.INFO,
+    level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:

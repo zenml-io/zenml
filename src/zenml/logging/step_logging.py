@@ -326,7 +326,7 @@ def fetch_log_records(
     logs_uri: str,
     offset: int = 0,
     count: int = MAX_LOG_ENTRIES,  # Number of entries to return
-    level: LoggingLevels = LoggingLevels.INFO,
+    level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
 ) -> List[LogEntry]:
     """Fetches the logs from the artifact store and parses them into LogEntry objects.
@@ -448,7 +448,7 @@ def _stream_logs_line_by_line(
 
 def _entry_matches_filters(
     entry: LogEntry,
-    level: LoggingLevels = LoggingLevels.INFO,
+    level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
 ) -> bool:
     """Check if a log entry matches the given filters.
@@ -464,7 +464,10 @@ def _entry_matches_filters(
     # Apply level filter
     if level:
         try:
-            if not entry.level or entry.level.value < level.value:
+            logging.warning(f"Entry level: {entry.level}, Level: {level}")
+            logging.warning(f"Level Type: {type(level)}")
+            logging.warning(f"Entry level value: {type(entry.level)}")
+            if not entry.level or entry.level.value < level:
                 return False
         except KeyError:
             # If invalid level provided, ignore the filter
@@ -821,9 +824,6 @@ class PipelineLogsStorageContext:
         # Create the handler object
         self.artifact_store_handler: ArtifactStoreHandler = (
             ArtifactStoreHandler(self.storage)
-        )
-        self.artifact_store_handler.setFormatter(
-            logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
         )
 
         # Additional configuration

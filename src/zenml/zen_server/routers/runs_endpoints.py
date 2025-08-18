@@ -437,7 +437,7 @@ def run_logs(
     source: str,
     offset: int = 0,
     count: int = MAX_LOG_ENTRIES,
-    level: LoggingLevels = LoggingLevels.INFO,
+    level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
