@@ -426,7 +426,7 @@ Note the following:
 To start the containers, run the following command from the directory where the `docker-compose.yml` file is located:
 
 ```shell
-docker compose -p zenml login --local  -d
+docker compose -p zenml up  -d
 ```
 
 or, if you need to use a different filename or path:
