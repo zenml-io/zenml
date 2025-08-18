@@ -7,6 +7,15 @@ icon: rocket
 
 Build and evaluate a real AI service powered by a ZenML pipeline. This quickstart works out of the box with a deterministic fallback and upgrades seamlessly to LLMs when you add a provider API key.
 
+### Why pipelines (for ML and AI engineers)
+- **Reproducibility by default**: Every step is versioned and parameterized; artifacts are stored and reloadable. Rerun any experiment exactly, compare apples-to-apples.
+- **Run anywhere without code changes**: Switch from your laptop to a remote orchestrator or Kubernetes with a stack change, not a code rewrite.
+- **Unified for models and agents**: The same primitives (steps, pipelines, artifacts) handle sklearn models and LLM/agent workflows—no parallel toolchains.
+- **Built-in observability**: Step-level metadata (latency, tokens, model/cost), lineage, and artifacts show you what happened and why.
+- **Evaluate early and often**: Treat quality as a pipeline with metrics and HTML reports; automate regression checks for both models and agents.
+- **Separation of concerns**: Keep ML/agent logic in code; keep infrastructure in stacks (or Pro run templates). Teams can evolve each independently.
+- **Production ready**: Caching, retries, schedules, CI/CD, and governance come with the pipeline-first approach—not as afterthoughts.
+
 ### What you'll build
 - **Document analysis service**: A FastAPI app that triggers a ZenML pipeline
 - **LLM-first with fallback**: Uses LiteLLM if an API key is set, otherwise runs a deterministic analysis
@@ -103,11 +112,6 @@ Key files to explore:
 - Add retrieval or additional steps for more advanced analysis
 
 Looking for the code? Browse the complete example at `examples/minimal_agent_production`.
-
-### Why this approach
-- **One framework, two worlds**: The same pipeline-first, artifact-tracking approach works for both classical ML (e.g., scikit-learn) and AI agents/LLMs. No parallel stacks.
-- **Deterministic → LLM**: Start with a fallback that runs anywhere; add an API key to upgrade quality. Same code, richer metadata (tokens, model, cost).
-- **Evaluate early**: Treat quality as a first-class output via an evaluation pipeline and HTML report.
 
 ### Architecture (at a glance)
 ```mermaid
