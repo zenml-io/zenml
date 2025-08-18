@@ -276,18 +276,24 @@ def aggregate_evaluation_results_step(
             f"</tr>"
         )
 
+    # Read CSS content for inline inclusion
+    css_path = "static/css/evaluation.css"
+    try:
+        with open(css_path, "r") as f:
+            css_content = f.read()
+    except FileNotFoundError:
+        logger.warning(
+            f"CSS file not found at {css_path}, using fallback styles"
+        )
+        css_content = "/* Fallback styles */ body { font-family: Arial, sans-serif; margin: 20px; }"
+
     # Generate comprehensive HTML report
     html = f"""
     <html>
       <head>
         <title>Document Analysis Evaluation</title>
         <style>
-          body {{ font-family: Arial, sans-serif; margin: 20px; }}
-          table {{ border-collapse: collapse; width: 100%; }}
-          th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-          th {{ background-color: #f2f2f2; }}
-          .metric {{ background: #e3f2fd; padding: 8px; margin: 4px; border-radius: 4px; display: inline-block; }}
-          .summary {{ background: #f0f9ff; padding: 16px; border-radius: 8px; margin: 16px 0; }}
+          {css_content}
         </style>
       </head>
       <body>

@@ -4,10 +4,31 @@ This module defines Pydantic models used throughout the document analysis
 pipeline for request/response handling, analysis results, and evaluation.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
+
+
+class AnalysisResponse(BaseModel):
+    """Structured response model for LLM analysis.
+
+    Used with instructor to ensure structured JSON output from LLM calls
+    instead of relying on regex parsing of text responses.
+    """
+
+    summary: str = Field(
+        description="Concise 2-3 sentence summary focusing on main purpose/value"
+    )
+    keywords: List[str] = Field(
+        description="5 key keywords or phrases, focus on meaningful terms"
+    )
+    sentiment: str = Field(
+        description="Overall sentiment: positive, negative, or neutral"
+    )
+    readability: str = Field(
+        description="Readability assessment: easy, medium, or hard"
+    )
 
 
 class DocumentRequest(BaseModel):
@@ -28,7 +49,9 @@ class DocumentRequest(BaseModel):
     content: str
     document_type: Optional[str] = Field(default="text")
     analysis_type: Optional[str] = Field(default="full")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
 
 class DocumentAnalysis(BaseModel):
@@ -63,7 +86,9 @@ class DocumentAnalysis(BaseModel):
     tokens_prompt: int
     tokens_completion: int
     metadata: Dict[str, str] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
 
 class AnalysisAnnotation(BaseModel):

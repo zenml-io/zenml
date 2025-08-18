@@ -16,7 +16,6 @@ The analysis pipeline is designed for batch processing: it takes document conten
 - **FastAPI Web App**: `app/main.py` provides a web interface for document upload and analysis
 - **Evaluation Pipeline**: loads recent analysis traces, annotates them with quality checks, aggregates metrics, and renders HTML reports
 - **Optional LLM Integration**: via LiteLLM for enhanced analysis quality
-- **Optional Observability**: via Langfuse if environment variables are set
 
 ### Prerequisites
 
@@ -31,10 +30,6 @@ Optional for real LLMs and tracing:
 # Use any LiteLLM-supported provider (OpenAI shown as example)
 export OPENAI_API_KEY="your-key"
 
-# Optional: Langfuse (v2) for observability
-export LANGFUSE_PUBLIC_KEY="..."
-export LANGFUSE_SECRET_KEY="..."
-export LANGFUSE_HOST="https://cloud.langfuse.com"
 ```
 
 ### Install Dependencies
@@ -113,12 +108,24 @@ The document analysis pipeline provides:
 examples/minimal_agent_production/
 ├── app/
 │   └── main.py                  # FastAPI document analysis service
-├── materializers/
-│   └── html_materializer.py     # Renders HTML reports in ZenML UI
 ├── pipelines/
 │   ├── evaluation.py            # Evaluation pipeline for quality assessment
 │   └── production.py            # Document analysis pipeline
-├── llm_utils.py                 # Document analysis utilities with LLM fallback
+├── steps/
+│   ├── analyze.py               # Document analysis with LLM and fallback
+│   ├── evaluate.py              # Quality evaluation and annotation
+│   ├── ingest.py                # Document ingestion utilities
+│   ├── render.py                # HTML report rendering
+│   └── utils.py                 # Text processing utilities
+├── static/
+│   ├── css/                     # CSS stylesheets for HTML reports
+│   │   ├── evaluation.css       # Evaluation report styles
+│   │   ├── main.css            # Main interface styles
+│   │   └── report.css          # Analysis report styles
+│   ├── js/
+│   │   └── main.js             # Frontend JavaScript for document analysis UI
+│   └── templates/
+│       └── index.html          # HTML template for main interface
 ├── models.py                    # Pydantic models for DocumentRequest/Analysis/Eval
 ├── run_production.py            # CLI way to run the document analysis pipeline
 ├── run_evaluation.py            # CLI way to run the evaluation pipeline
@@ -150,6 +157,5 @@ Document analysis is better suited for ZenML pipelines because:
 
 - The evaluation rubric focuses on analysis quality (summary completeness, keyword relevance, sentiment accuracy)
 - Analysis results are stored as ZenML artifacts (Pydantic-serialized) for full traceability
-- If Langfuse is configured, LLM calls are also logged for observability
 - For production deployments, consider using run templates and remote orchestrators
 - The system gracefully falls back to deterministic analysis when no LLM API keys are available

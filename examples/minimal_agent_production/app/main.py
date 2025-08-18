@@ -7,18 +7,18 @@ generation through a modern web interface.
 
 from __future__ import annotations
 
-import json
-import multiprocessing as mp
-import os
-import tempfile
-import time
+import uuid
 
 from fastapi import FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
-from pipelines.production import document_analysis_pipeline
 from pydantic import BaseModel
 from steps.utils import infer_document_type_from_content
+
+from zenml.logger import get_logger
+
+# Get ZenML logger for consistent logging
+logger = get_logger(__name__)
 
 
 def infer_document_type(filename: str, content: str) -> str:
@@ -78,175 +78,14 @@ def generate_filename(content: str) -> str:
     return f"{filename}.txt"
 
 
-# Top-level function for multiprocessing (must be picklable)
-def _run_pipeline_child(
-    out_file: str,
-    filename: str,
-    content: str,
-    document_type: str,
-    analysis_type: str,
-) -> None:
-    from zenml.client import (
-        Client as _Client,  # re-import inside child process
-    )
-
-    try:
-        run = document_analysis_pipeline(
-            filename=filename,
-            content=content,
-            document_type=document_type,
-            analysis_type=analysis_type,
-        )
-        client_inner = _Client()
-        timeout = 120
-        waited_local = 0
-        analysis_result = None
-        run_id_str = ""
-        while waited_local < timeout:
-            try:
-                fresh = client_inner.get_pipeline_run(run.id)
-                run_id_str = str(fresh.id)
-
-                # Check if the pipeline run is finished
-                if fresh.status and hasattr(fresh.status, "value"):
-                    if fresh.status.value in ("failed", "crashed"):
-                        with open(out_file, "w") as f:
-                            json.dump(
-                                {
-                                    "error": f"Pipeline failed: {fresh.status.value}",
-                                    "run_id": run_id_str,
-                                },
-                                f,
-                            )
-                        return
-                    elif fresh.status.value == "completed":
-                        # Pipeline completed, wait a moment for artifacts to be available
-                        time.sleep(2)
-
-                        print(
-                            f"Pipeline completed. Available steps: {list(fresh.steps.keys())}"
-                        )
-
-                        # Get the analysis result
-                        step = fresh.steps.get("analyze_document_step")
-                        if step:
-                            print(
-                                f"Found step, outputs type: {type(step.outputs)}"
-                            )
-                            print(f"Step outputs: {step.outputs}")
-
-                            try:
-                                # Try different ways to access the output
-                                if hasattr(step, "output") and step.output:
-                                    print("Trying step.output")
-                                    analysis_result = step.output.load()
-                                    print(
-                                        f"Successfully loaded from step.output: {type(analysis_result)}"
-                                    )
-                                elif hasattr(step.outputs, "items"):
-                                    print("Trying step.outputs.items()")
-                                    for (
-                                        output_name,
-                                        output_artifact,
-                                    ) in step.outputs.items():
-                                        print(
-                                            f"Trying to load output: {output_name}, type: {type(output_artifact)}"
-                                        )
-                                        analysis_result = (
-                                            output_artifact.load()  # type: ignore
-                                        )
-                                        print(
-                                            f"Successfully loaded: {type(analysis_result)}"
-                                        )
-                                        break
-                                elif isinstance(step.outputs, dict):
-                                    print(
-                                        "Outputs is dict, getting first value"
-                                    )
-                                    first_output = next(
-                                        iter(step.outputs.values())
-                                    )
-                                    analysis_result = first_output.load()  # type: ignore
-                                    print(
-                                        f"Successfully loaded from first output: {type(analysis_result)}"
-                                    )
-                                else:
-                                    print(
-                                        f"Unknown outputs structure: {type(step.outputs)}"
-                                    )
-                            except Exception as e:
-                                print(f"Error loading step output: {e}")
-                                continue
-                        else:
-                            print("No analyze_document_step found")
-
-                        if analysis_result:
-                            print("Breaking out of loop with analysis result")
-                            break
-                        else:
-                            print(
-                                "No analysis result found, continuing to wait"
-                            )
-                            # If still no result after pipeline completion, continue waiting
-                            time.sleep(1)
-
-            except Exception:
-                # Log the error but continue trying
-                pass
-            time.sleep(1.0)
-            waited_local += 1
-        if analysis_result:
-            try:
-                result_data = {
-                    "summary": analysis_result.summary,
-                    "keywords": analysis_result.keywords,
-                    "sentiment": analysis_result.sentiment,
-                    "word_count": analysis_result.word_count,
-                    "readability_score": analysis_result.readability_score,
-                    "run_id": run_id_str,
-                }
-                with open(out_file, "w") as f:
-                    json.dump(result_data, f)
-            except Exception as e:
-                with open(out_file, "w") as f:
-                    json.dump(
-                        {
-                            "error": f"Failed to process analysis result: {str(e)}",
-                            "run_id": run_id_str,
-                        },
-                        f,
-                    )
-        else:
-            with open(out_file, "w") as f:
-                json.dump(
-                    {
-                        "error": "Timeout waiting for analysis",
-                        "run_id": run_id_str,
-                    },
-                    f,
-                )
-    except Exception as e:
-        with open(out_file, "w") as f:
-            json.dump({"error": str(e)}, f)
-
-
-class DocumentRequest(BaseModel):
-    """Request model for document analysis endpoints.
-
-    Attributes:
-        filename: Name of the document file
-        content: Raw text content of the document
-        document_type: Type classification of the document
-        analysis_type: Depth of analysis to perform
-    """
-
-    filename: str | None = None
-    content: str
-    document_type: str | None = None
-    analysis_type: str = "full"
+# Global storage for analysis results (in production, use Redis or a database)
+ANALYSIS_RESULTS = {}
 
 
 app = FastAPI(title="Document Analysis Service")
+
+# CORS middleware - configured for development only.
+# In production, restrict origins to specific domains for security.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -282,426 +121,56 @@ def index() -> HTMLResponse:
 
     Returns:
         HTMLResponse: Complete HTML page for document analysis UI
+
+    Raises:
+        HTTPException: If template file is not found
     """
-    html = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Document Analysis Service</title>
-      <style>
-        body { 
-          font-family: system-ui, Arial, sans-serif; 
-          background: #f6f8fb; 
-          margin: 0; 
-          padding: 0; 
-        }
-        .container { 
-          max-width: 900px; 
-          margin: 0 auto; 
-          padding: 24px; 
-        }
-        .header {
-          text-align: center;
-          margin-bottom: 30px;
-        }
-        h1 { 
-          font-size: 28px; 
-          margin: 0 0 8px; 
-          color: #1e3a8a;
-        }
-        .subtitle {
-          color: #6b7280;
-          font-size: 16px;
-        }
-        .upload-area { 
-          background: white; 
-          border: 2px dashed #cbd5e1; 
-          border-radius: 12px; 
-          padding: 40px; 
-          text-align: center; 
-          margin-bottom: 20px;
-          transition: all 0.3s;
-          cursor: pointer;
-        }
-        .upload-area:hover {
-          border-color: #2563eb;
-          background: #fafbfc;
-        }
-        .upload-area.dragover {
-          border-color: #2563eb;
-          background: #f0f9ff;
-          transform: scale(1.02);
-        }
-        textarea { 
-          width: 100%; 
-          height: 200px; 
-          padding: 12px; 
-          border: 1px solid #cbd5e1; 
-          border-radius: 8px; 
-          font-family: monospace;
-          resize: vertical;
-        }
-        .form-row { 
-          display: flex; 
-          gap: 12px; 
-          margin: 16px 0; 
-        }
-        .form-group {
-          flex: 1;
-        }
-        label { 
-          display: block; 
-          margin-bottom: 4px; 
-          font-weight: 500;
-          color: #374151;
-        }
-        input[type=text], select { 
-          width: 100%; 
-          padding: 10px 12px; 
-          border: 1px solid #cbd5e1; 
-          border-radius: 6px; 
-        }
-        button { 
-          padding: 12px 24px; 
-          background: #2563eb; 
-          color: white; 
-          border: none; 
-          border-radius: 8px; 
-          cursor: pointer; 
-          font-size: 16px;
-          font-weight: 500;
-          width: 100%;
-        }
-        button:disabled { 
-          background: #94a3b8; 
-          cursor: not-allowed; 
-        }
-        button:hover:not(:disabled) {
-          background: #1d4ed8;
-        }
-        .results { 
-          background: white; 
-          border: 1px solid #e2e8f0; 
-          border-radius: 12px; 
-          padding: 20px; 
-          margin-top: 20px; 
-          display: none;
-        }
-        .results.show {
-          display: block;
-        }
-        .result-section {
-          margin-bottom: 20px;
-        }
-        .result-section h3 {
-          margin: 0 0 8px;
-          color: #1e3a8a;
-        }
-        .metrics {
-          display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
-          margin: 12px 0;
-        }
-        .metric {
-          background: #e3f2fd;
-          padding: 8px 12px;
-          border-radius: 6px;
-          font-size: 14px;
-          font-weight: 500;
-        }
-        .keywords {
-          background: #fff3e0;
-          padding: 12px;
-          border-radius: 6px;
-          margin: 8px 0;
-        }
-        .summary {
-          background: #f9f9f9;
-          padding: 16px;
-          border-left: 4px solid #2563eb;
-          border-radius: 0 6px 6px 0;
-        }
-        .loading {
-          text-align: center;
-          padding: 40px;
-          color: #6b7280;
-        }
-        .error {
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          color: #dc2626;
-          padding: 12px;
-          border-radius: 6px;
-          margin: 12px 0;
-        }
-        .file-info {
-          background: #f0f9ff;
-          border: 1px solid #dbeafe;
-          padding: 16px;
-          border-radius: 8px;
-          margin: 16px 0;
-        }
-        .file-info p {
-          margin: 4px 0;
-          color: #1e40af;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>📄 Document Analysis Service</h1>
-          <p class="subtitle">Upload text documents for AI-powered analysis including summarization, keyword extraction, and sentiment analysis</p>
-        </div>
-        
-        <div class="upload-area" id="uploadArea">
-          <p><strong>📤 Drop files here or click to select</strong></p>
-          <p>Supported formats: TXT, MD, HTML, or paste text directly</p>
-          <input type="file" id="fileInput" style="display: none;" accept=".txt,.md,.html,.csv,.json,.xml">
-        </div>
-        
-        <div id="fileInfo" class="file-info" style="display: none;">
-          <p><strong>📄 File:</strong> <span id="fileName"></span></p>
-          <p><strong>📝 Type:</strong> <span id="fileType"></span> • <strong>📊 Size:</strong> <span id="fileSize"></span></p>
-        </div>
-        
-        <form id="analysisForm">
-          <label for="content">Document Content:</label>
-          <textarea id="content" name="content" placeholder="Paste your document content here, or upload a file using the area above..." required></textarea>
-          
-          <button type="submit" id="analyzeBtn">🔍 Analyze Document</button>
-        </form>
-        
-        <div id="results" class="results">
-          <div class="loading" id="loadingState">
-            <p>⏳ Analyzing document... This may take up to 2 minutes.</p>
-          </div>
-          <div id="analysisResults" style="display: none;">
-            <div class="result-section">
-              <h3>Summary</h3>
-              <div class="summary" id="summaryText"></div>
-            </div>
-            
-            <div class="result-section">
-              <h3>Key Metrics</h3>
-              <div class="metrics">
-                <div class="metric">Words: <span id="wordCount"></span></div>
-                <div class="metric">Sentiment: <span id="sentiment"></span></div>
-                <div class="metric">Readability: <span id="readability"></span>/1.0</div>
-              </div>
-            </div>
-            
-            <div class="result-section">
-              <h3>Keywords</h3>
-              <div class="keywords" id="keywords"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <script>
-        const form = document.getElementById('analysisForm');
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const contentTextarea = document.getElementById('content');
-        const fileInfo = document.getElementById('fileInfo');
-        const fileName = document.getElementById('fileName');
-        const fileType = document.getElementById('fileType');
-        const fileSize = document.getElementById('fileSize');
-        const results = document.getElementById('results');
-        const loadingState = document.getElementById('loadingState');
-        const analysisResults = document.getElementById('analysisResults');
-        const analyzeBtn = document.getElementById('analyzeBtn');
+    # Read template files (use absolute paths from the app directory)
+    import os
 
-        let currentFileData = null;
+    base_path = os.path.dirname(
+        os.path.dirname(__file__)
+    )  # Go up to examples/minimal_agent_production
+    template_path = os.path.join(
+        base_path, "static", "templates", "index.html"
+    )
+    css_path = os.path.join(base_path, "static", "css", "main.css")
+    js_path = os.path.join(base_path, "static", "js", "main.js")
 
-        // Click to upload
-        uploadArea.addEventListener('click', () => {
-          fileInput.click();
-        });
+    logger.info(f"Loading template from: {template_path}")
+    logger.info(f"Loading CSS from: {css_path}")
+    logger.info(f"Loading JS from: {js_path}")
 
-        // File input change
-        fileInput.addEventListener('change', handleFileSelect);
+    try:
+        with open(template_path, "r") as f:
+            html_content = f.read()
+    except FileNotFoundError:
+        logger.error(f"Template file not found at {template_path}")
+        raise HTTPException(status_code=500, detail="Template file not found")
 
-        function handleFileSelect(e) {
-          const files = e.target.files;
-          if (files.length > 0) {
-            processFile(files[0]);
-          }
-        }
+    try:
+        with open(css_path, "r") as f:
+            css_content = f.read()
+    except FileNotFoundError:
+        logger.warning(
+            f"CSS file not found at {css_path}, using fallback styles"
+        )
+        css_content = "/* Fallback styles */ body { font-family: Arial, sans-serif; margin: 20px; }"
 
-        // Drag and drop functionality
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-          uploadArea.addEventListener(eventName, preventDefaults, false);
-        });
+    try:
+        with open(js_path, "r") as f:
+            js_content = f.read()
+    except FileNotFoundError:
+        logger.warning(
+            f"JavaScript file not found at {js_path}, using fallback"
+        )
+        js_content = "console.log('JavaScript file not found');"
 
-        function preventDefaults(e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
+    # Replace placeholders in template
+    html_content = html_content.replace("{CSS_CONTENT}", css_content)
+    html_content = html_content.replace("{JAVASCRIPT_CONTENT}", js_content)
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-          uploadArea.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-          uploadArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-          uploadArea.classList.add('dragover');
-        }
-
-        function unhighlight(e) {
-          uploadArea.classList.remove('dragover');
-        }
-
-        uploadArea.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-          const dt = e.dataTransfer;
-          const files = dt.files;
-          
-          if (files.length > 0) {
-            processFile(files[0]);
-          }
-        }
-
-        async function processFile(file) {
-          try {
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            showMessage('📤 Uploading file...', 'info');
-            
-            const response = await fetch('/upload', {
-              method: 'POST',
-              body: formData
-            });
-            
-            if (!response.ok) {
-              throw new Error(`Upload failed: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            
-            // Update UI with file info
-            fileName.textContent = data.filename;
-            fileType.textContent = data.document_type.charAt(0).toUpperCase() + data.document_type.slice(1);
-            fileSize.textContent = formatFileSize(data.size);
-            fileInfo.style.display = 'block';
-            
-            // Set content
-            contentTextarea.value = data.content;
-            
-            // Store file data for analysis
-            currentFileData = {
-              filename: data.filename,
-              document_type: data.document_type,
-              content: data.content
-            };
-            
-            showMessage('✅ File uploaded successfully!', 'success');
-            
-          } catch (error) {
-            showError('Upload failed: ' + error.message);
-          }
-        }
-
-        function formatFileSize(bytes) {
-          if (bytes === 0) return '0 Bytes';
-          const k = 1024;
-          const sizes = ['Bytes', 'KB', 'MB'];
-          const i = Math.floor(Math.log(bytes) / Math.log(k));
-          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function showMessage(text, type) {
-          const div = document.createElement('div');
-          div.className = type === 'success' ? 'success' : type === 'info' ? 'info' : 'error';
-          div.textContent = text;
-          div.style.cssText = `
-            padding: 12px; 
-            border-radius: 6px; 
-            margin: 12px 0;
-            ${type === 'success' ? 'background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534;' : 
-              type === 'info' ? 'background: #eff6ff; border: 1px solid #dbeafe; color: #1e40af;' : 
-              'background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;'}
-          `;
-          uploadArea.parentNode.insertBefore(div, uploadArea.nextSibling);
-          setTimeout(() => div.remove(), 3000);
-        }
-
-        form.addEventListener('submit', async function(e) {
-          e.preventDefault();
-          
-          const content = contentTextarea.value.trim();
-          if (!content) {
-            showError('Please provide document content');
-            return;
-          }
-          
-          const data = {
-            content: content,
-            filename: currentFileData?.filename,
-            document_type: currentFileData?.document_type,
-            analysis_type: 'full'
-          };
-          
-          analyzeBtn.disabled = true;
-          results.classList.add('show');
-          loadingState.style.display = 'block';
-          analysisResults.style.display = 'none';
-          
-          try {
-            const response = await fetch('/analyze', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            
-            if (result.error) {
-              showError(result.error);
-            } else {
-              showResults(result);
-            }
-          } catch (error) {
-            showError('Network error: ' + error.message);
-          } finally {
-            analyzeBtn.disabled = false;
-            loadingState.style.display = 'none';
-          }
-        });
-
-        function showResults(data) {
-          document.getElementById('summaryText').textContent = data.summary;
-          document.getElementById('wordCount').textContent = data.word_count;
-          document.getElementById('sentiment').textContent = data.sentiment.charAt(0).toUpperCase() + data.sentiment.slice(1);
-          document.getElementById('readability').textContent = data.readability_score.toFixed(2);
-          document.getElementById('keywords').textContent = data.keywords.join(', ');
-          
-          analysisResults.style.display = 'block';
-        }
-
-        function showError(message) {
-          const errorDiv = document.createElement('div');
-          errorDiv.className = 'error';
-          errorDiv.textContent = 'Error: ' + message;
-          results.appendChild(errorDiv);
-          setTimeout(() => errorDiv.remove(), 5000);
-        }
-      </script>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html)
+    return HTMLResponse(content=html_content)
 
 
 @app.post("/upload")
@@ -753,15 +222,27 @@ async def upload_file(file: UploadFile = File(...)) -> JSONResponse:
         )
 
 
+class AnalyzeRequest(BaseModel):
+    """Request model for document analysis endpoint."""
+
+    filename: str | None = None
+    content: str
+    document_type: str | None = None
+    analysis_type: str = "full"
+
+
 @app.post("/analyze")
-def analyze_document_endpoint(req: DocumentRequest) -> JSONResponse:
-    """Analyze a document using the ZenML pipeline.
+def analyze_document_endpoint(req: AnalyzeRequest) -> JSONResponse:
+    """Start document analysis and return a task ID for polling.
 
     Args:
         req: Document request containing content and metadata
 
     Returns:
-        JSON response with analysis results or error information
+        JSON response with task ID for polling results
+
+    Raises:
+        RuntimeError: If pipeline fails to start
     """
     # Auto-infer filename and document type if not provided
     filename = req.filename or generate_filename(req.content)
@@ -769,43 +250,243 @@ def analyze_document_endpoint(req: DocumentRequest) -> JSONResponse:
         filename, req.content
     )
 
-    # Run the pipeline in a separate process to avoid signal handling in worker thread
-    tmp_dir = tempfile.mkdtemp(prefix="doc_analysis_")
-    out_file = os.path.join(tmp_dir, "analysis.json")
-    proc = mp.Process(
-        target=_run_pipeline_child,
-        args=(
-            out_file,
-            filename,
-            req.content,
-            document_type,
-            req.analysis_type,
-        ),
-    )
-    proc.start()
+    # Generate unique run ID
+    run_id = str(uuid.uuid4())
 
-    # Poll the output file up to timeout
-    timeout_s = 130
-    waited = 0
-    while waited < timeout_s:
-        if os.path.exists(out_file):
-            try:
-                with open(out_file, "r") as f:
-                    data = json.load(f)
-                if "summary" in data:
-                    return JSONResponse(data)
-                elif "error" in data:
-                    return JSONResponse(
-                        data,
-                        status_code=500
-                        if data["error"].lower().startswith("step failed")
-                        else 202,
-                    )
-            except Exception:
-                pass
-        time.sleep(1.0)
-        waited += 1
+    # Initialize status
+    ANALYSIS_RESULTS[run_id] = {"status": "running"}
+
+    # Run pipeline directly - frontend will poll for results
+    try:
+        # Run the pipeline directly with JSON-serializable primitives
+        logger.info(f"Starting pipeline run {run_id} for document: {filename}")
+        # Run pipeline in a separate process to avoid signal issues in non-main thread
+        import json
+        import os
+        import subprocess
+        import sys
+        import tempfile
+
+        base_path = os.path.dirname(os.path.dirname(__file__))
+        runner = os.path.join(base_path, "run_pipeline.py")
+        # For very large content, write to a temp file to avoid argv limits
+        temp_path = None
+        output_json_path = None
+        try:
+            cmd = [
+                sys.executable,
+                runner,
+                "--filename",
+                filename,
+                "--document_type",
+                document_type,
+                "--analysis_type",
+                req.analysis_type,
+            ]
+            # Create a temp output path to get clean JSON without parsing stdout
+            with tempfile.NamedTemporaryFile(
+                mode="w", delete=False, encoding="utf-8", suffix=".json"
+            ) as of:
+                output_json_path = of.name
+            cmd.extend(["--output_json", output_json_path])
+            if len(req.content) > 20000:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", delete=False, encoding="utf-8", suffix=".txt"
+                ) as tf:
+                    tf.write(req.content)
+                    temp_path = tf.name
+                cmd.extend(["--content_file", temp_path])
+            else:
+                cmd.extend(["--content", req.content])
+
+            proc = subprocess.run(cmd, capture_output=True, text=True)
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+            # We do not remove output_json_path yet; we need to read it first
+        try:
+            if proc.returncode != 0:
+                raise RuntimeError(proc.stderr.strip() or "Runner failed")
+            if not output_json_path or not os.path.exists(output_json_path):
+                raise RuntimeError("Runner did not produce output JSON")
+            payload_text = (
+                open(output_json_path, "r", encoding="utf-8").read().strip()
+            )
+            payload = json.loads(payload_text or "{}")
+        except json.JSONDecodeError:
+            payload = {
+                "error": proc.stderr.strip() or "Invalid JSON from runner"
+            }
+        finally:
+            if output_json_path and os.path.exists(output_json_path):
+                try:
+                    os.remove(output_json_path)
+                except OSError:
+                    pass
+
+        if proc.returncode != 0 or "error" in payload:
+            raise RuntimeError(
+                payload.get("error") or "Pipeline runner failed"
+            )
+
+        # If result payload already available (e.g., cached run), return immediately
+        result_payload = (
+            payload.get("result") if isinstance(payload, dict) else None
+        )
+        if result_payload and all(
+            key in result_payload
+            for key in [
+                "summary",
+                "keywords",
+                "sentiment",
+                "word_count",
+                "readability_score",
+            ]
+        ):
+            ANALYSIS_RESULTS[run_id] = {
+                "status": "completed",
+                **result_payload,
+            }
+        else:
+            ANALYSIS_RESULTS[run_id] = {
+                "status": "running",
+                "zenml_run_id": payload.get("zenml_run_id", ""),
+            }
+
+    except Exception as e:
+        logger.error(f"Failed to start pipeline: {e}")
+        ANALYSIS_RESULTS[run_id] = {
+            "status": "error",
+            "error": f"Failed to start pipeline: {str(e)}",
+        }
 
     return JSONResponse(
-        {"error": "Timeout waiting for analysis"}, status_code=202
+        {
+            "run_id": run_id,
+            "status": "started",
+            "message": "Analysis started. Use GET /result/{run_id} to check status.",
+        }
+    )
+
+
+@app.get("/result/{run_id}")
+def get_analysis_result(run_id: str) -> JSONResponse:
+    """Get analysis results by run ID.
+
+    Args:
+        run_id: Unique identifier for the analysis run
+
+    Returns:
+        JSON response with analysis results or status
+
+    Raises:
+        HTTPException: If analysis run is not found
+    """
+    if run_id not in ANALYSIS_RESULTS:
+        raise HTTPException(status_code=404, detail="Analysis run not found")
+
+    result = ANALYSIS_RESULTS[run_id]
+
+    # If already completed or errored, return immediately
+    if result["status"] in ["completed", "error"]:
+        if result["status"] == "error":
+            return JSONResponse(
+                {"status": "error", "error": result["error"]}, status_code=500
+            )
+        else:
+            # Clean up completed result after returning
+            completed_result = ANALYSIS_RESULTS.pop(run_id)
+            return JSONResponse(completed_result)
+
+    # Check ZenML run status
+    if "zenml_run_id" in result:
+        try:
+            from zenml.client import Client
+
+            client = Client()
+            zenml_run = client.get_pipeline_run(result["zenml_run_id"])
+
+            # Normalize status across ZenML versions
+            status_value = (
+                getattr(zenml_run.status, "value", None)
+                if getattr(zenml_run, "status", None) is not None
+                else None
+            )
+            if status_value is None:
+                status_value = str(getattr(zenml_run, "status", "")).lower()
+
+            if status_value in ("failed", "crashed"):
+                ANALYSIS_RESULTS[run_id] = {
+                    "status": "error",
+                    "error": f"Pipeline failed: {status_value}",
+                }
+                return JSONResponse(
+                    {
+                        "status": "error",
+                        "error": f"Pipeline failed: {status_value}",
+                    },
+                    status_code=500,
+                )
+            elif status_value == "completed":
+                # Try preferred step, then fall back to any step output that loads
+                candidate_artifacts = []
+                try:
+                    step = zenml_run.steps.get("analyze_document_step")
+                except Exception:
+                    step = None
+                if step and getattr(step, "outputs", None):
+                    candidate_artifacts.extend(list(step.outputs.values()))
+                # Fallback: search all steps
+                if not candidate_artifacts:
+                    for s in getattr(zenml_run, "steps", {}).values():
+                        if getattr(s, "outputs", None):
+                            candidate_artifacts.extend(
+                                list(s.outputs.values())
+                            )
+
+                for artifact_view in candidate_artifacts:
+                    try:
+                        analysis_result = artifact_view.load()
+                        if all(
+                            hasattr(analysis_result, attr)
+                            for attr in (
+                                "summary",
+                                "keywords",
+                                "sentiment",
+                                "word_count",
+                                "readability_score",
+                            )
+                        ):
+                            completed_data = {
+                                "status": "completed",
+                                "summary": analysis_result.summary,
+                                "keywords": analysis_result.keywords,
+                                "sentiment": analysis_result.sentiment,
+                                "word_count": analysis_result.word_count,
+                                "readability_score": analysis_result.readability_score,
+                            }
+                            ANALYSIS_RESULTS[run_id] = completed_data
+                            ANALYSIS_RESULTS.pop(run_id)
+                            return JSONResponse(completed_data)
+                    except Exception:
+                        continue
+
+                ANALYSIS_RESULTS[run_id] = {
+                    "status": "error",
+                    "error": "No analysis results found in pipeline output",
+                }
+                return JSONResponse(
+                    {"status": "error", "error": "No analysis results found"},
+                    status_code=500,
+                )
+        except Exception as e:
+            logger.warning(f"Error checking pipeline status: {e}")
+
+    # Still running
+    return JSONResponse(
+        {"status": "running", "message": "Analysis in progress..."},
+        status_code=202,
     )

@@ -278,45 +278,6 @@ def infer_document_type_from_content(content: str) -> str:
     return "document"
 
 
-def extract_field_from_llm_response(text: str, field_name: str) -> str:
-    """Extract a specific field from structured LLM response text.
-
-    Parses LLM responses that follow a structured format like:
-    FIELD_NAME: value
-
-    Args:
-        text: Full LLM response text
-        field_name: Name of field to extract (case-insensitive)
-
-    Returns:
-        str: Extracted field value or "N/A" if not found
-
-    Example:
-        >>> text = "SUMMARY: This is a summary\\nKEYWORDS: word1, word2"
-        >>> extract_field_from_llm_response(text, "SUMMARY")
-        'This is a summary'
-    """
-    if not text or not field_name:
-        logger.warning(
-            f"Invalid input for field extraction: text={bool(text)}, field={field_name}"
-        )
-        return "N/A"
-
-    # Create pattern to match field name followed by colon and value
-    pattern = f"{field_name}:\\s*(.+?)(?=\\n[A-Z]+:|$)"
-    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-
-    if match:
-        value = match.group(1).strip()
-        logger.debug(
-            f"Extracted {field_name}: {value[:50]}{'...' if len(value) > 50 else ''}"
-        )
-        return value
-
-    logger.warning(f"Field '{field_name}' not found in LLM response")
-    return "N/A"
-
-
 def get_common_stop_words() -> set[str]:
     """Get comprehensive set of common English stop words.
 
@@ -407,42 +368,4 @@ def get_common_stop_words() -> set[str]:
         "their",
         "they",
         "then",
-    }
-
-
-def get_technical_filter_terms() -> set[str]:
-    """Get set of technical terms to filter from keywords.
-
-    Returns terms that commonly appear in technical documents but don't
-    provide meaningful semantic value for keyword extraction.
-
-    Returns:
-        set[str]: Set of technical filter terms
-    """
-    return {
-        "docs",
-        "book",
-        "gitbook",
-        "assets",
-        "href",
-        "img",
-        "src",
-        "alt",
-        "div",
-        "align",
-        "html",
-        "http",
-        "https",
-        "www",
-        "com",
-        "org",
-        "net",
-        "github",
-        "repo",
-        "repository",
-        "branch",
-        "commit",
-        "pull",
-        "request",
-        "issue",
     }
