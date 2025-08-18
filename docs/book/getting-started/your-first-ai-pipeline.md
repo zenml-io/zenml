@@ -14,9 +14,11 @@ Why pipelines?
 - **Evaluate & observe by default**: Quality reports, lineage, and step metadata (tokens, latency) out of the box.
 {% endhint %}
 
+Modeling agents as pipelines makes non-deterministic workflows debuggable and shippable: prompts, tools, and routing become explicit steps; runs produce versioned artifacts (including traces and metrics) you can compare and evaluate. This is the same pattern you use for classical ML, so agents and models share the lifecycle and tooling.
+
 ### What you'll build
 - **Document analysis service**: A FastAPI app that triggers a ZenML pipeline
-- **LLM-first with fallback**: Uses LiteLLM if an API key is set, otherwise runs a deterministic analysis
+- **LLM-first with fallback**: Uses [LiteLLM](https://github.com/BerriAI/litellm) if an API key is set, otherwise runs a deterministic analysis
 - **Tracked artifacts**: Summary, keywords, sentiment, readability, and rich metadata
 - **Quality evaluation**: A separate pipeline that annotates runs and generates an HTML report
 

@@ -8,13 +8,15 @@ This example shows how to:
 - Capture lightweight traces for every analysis
 - Annotate and evaluate past runs with a separate evaluation pipeline
 
-The analysis pipeline is designed for batch processing: it takes document content as input and performs comprehensive analysis including summarization, keyword extraction, sentiment analysis, and readability scoring. It can run with a real LLM (via LiteLLM) if API keys are available, or fall back to deterministic analysis for offline demos.
+The analysis pipeline is designed for batch processing: it takes document content as input and performs comprehensive analysis including summarization, keyword extraction, sentiment analysis, and readability scoring. It can run with a real LLM (via [LiteLLM](https://github.com/BerriAI/litellm)) if API keys are available, or fall back to deterministic analysis for offline demos.
 
 ### Why pipelines (for ML and AI engineers)
 
 - Reproducible & portable: versioned steps and artifacts that run locally or on the cloud without code changes
 - Unified for models and agents: the same primitives work for scikit-learn and LLM/agent workflows
 - Evaluate & observe by default: step metadata (tokens, latency), lineage, and quality reports are first-class
+
+Modeling agents as pipelines makes non-deterministic systems shippable: prompts, tools, and routing become explicit steps; outputs become versioned artifacts you can evaluate and compare. The same development and production practices you trust for classical ML apply 1:1 to agent workflows.
 
 ### Architecture
 
