@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
     API,
@@ -35,9 +36,9 @@ from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
     LogPage,
     _entry_matches_filters,
-    download_log_records,
     fetch_log_records,
     parse_log_entry,
+    stream_log_records,
 )
 from zenml.models import (
     Page,
@@ -539,17 +540,28 @@ def run_logs(
 def download_run_logs(
     run_id: UUID,
     source: str,
-    format_string: str = "[{timestamp}] [{level}] {message}",
-    raw: bool = False,
+    format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
     _: AuthContext = Security(authorize),
-) -> str:
+) -> StreamingResponse:
     """Download all pipeline run logs for a specific source as a formatted string.
+
+    Available fields for the format string:
+        - {timestamp}: ISO format timestamp (e.g., "2024-01-15T10:30:45.123456")
+        - {level}: Log level name (e.g., "INFO", "ERROR", "DEBUG")
+        - {message}: The actual log message content
+        - {name}: Logger name (e.g., "zenml.pipeline")
+        - {module}: Module name (e.g., "zenml.pipelines")
+        - {filename}: Source filename (e.g., "pipeline.py")
+        - {lineno}: Line number where log was generated
+        - {chunk_index}: Chunk index for large messages (usually 0)
+        - {total_chunks}: Total chunks for large messages (usually 1)
+        - {id}: Unique log entry ID (UUID)
 
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
-        format_string: Format string for each log entry. Available fields: {timestamp}, {level}, {message}, {name}, {module}, {filename}, {lineno}, {chunk_index}, {total_chunks}, {id}.
-        raw: If True, returns the raw log file content without any formatting.
+        format_string: Format string for each log entry using Python string formatting.
+            If None or empty string, returns raw jsonified log entries without formatting.
 
     Returns:
         A string containing all log entries, either raw or formatted.
@@ -573,53 +585,73 @@ def download_run_logs(
                 workload_id=deployment.id
             )
 
-            if raw:
-                return workload_logs
+            def generate_workload_logs():
+                """Generator for workload manager logs."""
+                if not format_string:
+                    # Return raw logs
+                    for line in workload_logs.split("\n"):
+                        yield line + "\n"
+                    return
 
-            # Process and format workload logs
-            formatted_entries = []
-            for line in workload_logs.split("\n"):
-                if not line.strip():
-                    continue
+                # Process and format workload logs
+                for line in workload_logs.split("\n"):
+                    if not line.strip():
+                        continue
 
-                log_record = parse_log_entry(line)
-                if not log_record:
-                    continue
+                    log_record = parse_log_entry(line)
+                    if not log_record:
+                        continue
 
-                # Prepare format arguments
-                format_args = {
-                    "message": log_record.message or "",
-                    "name": log_record.name or "",
-                    "level": log_record.level.name if log_record.level else "",
-                    "timestamp": log_record.timestamp.isoformat() if log_record.timestamp else "",
-                    "module": log_record.module or "",
-                    "filename": log_record.filename or "",
-                    "lineno": log_record.lineno or "",
-                    "chunk_index": log_record.chunk_index,
-                    "total_chunks": log_record.total_chunks,
-                    "id": str(log_record.id),
-                }
-                
-                # Format the entry using the provided format string
-                try:
-                    formatted_entry = format_string.format(**format_args)
-                    formatted_entries.append(formatted_entry)
-                except (KeyError, ValueError):
-                    # If formatting fails, fall back to raw message
-                    formatted_entries.append(log_record.message or "")
+                    # Prepare format arguments
+                    format_args = {
+                        "message": log_record.message or "",
+                        "name": log_record.name or "",
+                        "level": log_record.level.name
+                        if log_record.level
+                        else "",
+                        "timestamp": log_record.timestamp.isoformat()
+                        if log_record.timestamp
+                        else "",
+                        "module": log_record.module or "",
+                        "filename": log_record.filename or "",
+                        "lineno": log_record.lineno or "",
+                        "chunk_index": log_record.chunk_index,
+                        "total_chunks": log_record.total_chunks,
+                        "id": str(log_record.id),
+                    }
 
-            return "\n".join(formatted_entries)
+                    # Format the entry using the provided format string
+                    try:
+                        formatted_entry = format_string.format(**format_args)
+                        yield formatted_entry + "\n"
+                    except (KeyError, ValueError):
+                        # If formatting fails, fall back to raw message
+                        yield (log_record.message or "") + "\n"
+
+            return StreamingResponse(
+                generate_workload_logs(),
+                media_type="text/plain",
+                headers={
+                    "Content-Disposition": f"attachment; filename=run-{run_id}-{source}-logs.txt"
+                },
+            )
 
     # Handle logs from log collection
     if run.log_collection:
         for log_entry in run.log_collection:
             if log_entry.source == source:
-                return download_log_records(
+                log_generator = stream_log_records(
                     zen_store=store,
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,
                     format_string=format_string,
-                    raw=raw,
+                )
+                return StreamingResponse(
+                    log_generator,
+                    media_type="text/plain",
+                    headers={
+                        "Content-Disposition": f"attachment; filename=run-{run_id}-{source}-logs.txt"
+                    },
                 )
 
     # If no logs found for the specified source, raise an error

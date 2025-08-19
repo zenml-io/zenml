@@ -17,6 +17,7 @@ from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
     API,
@@ -30,8 +31,8 @@ from zenml.enums import ExecutionStatus, LoggingLevels
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
     LogPage,
-    download_log_records,
     fetch_log_records,
+    stream_log_records,
 )
 from zenml.models import (
     Page,
@@ -303,16 +304,27 @@ def get_step_logs(
 @async_fastapi_endpoint_wrapper
 def download_step_logs(
     step_id: UUID,
-    format_string: str = "[{timestamp}] [{level}] {message}",
-    raw: bool = False,
+    format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
     _: AuthContext = Security(authorize),
-) -> str:
+) -> StreamingResponse:
     """Download all logs of a specific step as a formatted string.
 
+    Available fields for the format string:
+        - {timestamp}: ISO format timestamp (e.g., "2024-01-15T10:30:45.123456")
+        - {level}: Log level name (e.g., "INFO", "ERROR", "DEBUG")
+        - {message}: The actual log message content
+        - {name}: Logger name (e.g., "zenml.pipeline")
+        - {module}: Module name (e.g., "zenml.pipelines")
+        - {filename}: Source filename (e.g., "pipeline.py")
+        - {lineno}: Line number where log was generated
+        - {chunk_index}: Chunk index for large messages (usually 0)
+        - {total_chunks}: Total chunks for large messages (usually 1)
+        - {id}: Unique log entry ID (UUID)
+
     Args:
-        step_id: ID of the step for which to get the logs.
-        format_string: Format string for each log entry. Available fields: {timestamp}, {level}, {message}, {name}, {module}, {filename}, {lineno}, {chunk_index}, {total_chunks}, {id}.
-        raw: If True, returns the raw log file content without any formatting.
+        step_id: ID of the step.
+        format_string: Format string for each log entry using Python string formatting.
+            If None or empty string, returns raw jsonified log entries without formatting.
 
     Returns:
         A string containing all log entries, either raw or formatted.
@@ -330,10 +342,16 @@ def download_step_logs(
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
-    return download_log_records(
+    log_generator = stream_log_records(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,
         logs_uri=logs.uri,
         format_string=format_string,
-        raw=raw,
+    )
+    return StreamingResponse(
+        log_generator,
+        media_type="text/plain",
+        headers={
+            "Content-Disposition": f"attachment; filename=step-{step_id}-logs.txt"
+        },
     )

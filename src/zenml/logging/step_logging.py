@@ -502,8 +502,7 @@ def download_log_records(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
-    format_string: str = "[{timestamp}] [{level}] {message}",
-    raw: bool = False,
+    format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
 ) -> str:
     """Downloads all logs from the artifact store as a formatted string.
 
@@ -511,8 +510,7 @@ def download_log_records(
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the artifact.
-        format_string: Format string for each log entry. Can use any LogEntry field.
-        raw: If True, returns the raw jsonified log entries without formatting.
+        format_string: Format string for each log entry using Python string formatting.
 
     Returns:
         A string containing all log entries, either raw or formatted.
@@ -521,7 +519,7 @@ def download_log_records(
         DoesNotExistException: If the artifact does not exist in the artifact store.
         FileNotFoundError: If the log file does not exist in the artifact store.
     """
-    if raw:
+    if not format_string:
         # Return raw file content for raw format
         artifact_store = _load_artifact_store(artifact_store_id, zen_store)
         try:
@@ -537,23 +535,23 @@ def download_log_records(
                         f"Folder '{logs_uri}' is empty in artifact store "
                         f"'{artifact_store.name}'."
                     )
-                
+
                 # Sort files to read them in order
                 files.sort()
                 content = []
-                
+
                 for file in files:
                     file_path = os.path.join(logs_uri, str(file))
                     with artifact_store.open(file_path, "r") as f:
                         content.append(f.read())
-                
+
                 return "\n".join(content)
         finally:
             artifact_store.cleanup()
 
     # Format logs using the provided format string
     formatted_entries = []
-    
+
     try:
         for line in _stream_logs_line_by_line(
             zen_store=zen_store,
@@ -572,7 +570,9 @@ def download_log_records(
                 "message": log_entry.message or "",
                 "name": log_entry.name or "",
                 "level": log_entry.level.name if log_entry.level else "",
-                "timestamp": log_entry.timestamp.isoformat() if log_entry.timestamp else "",
+                "timestamp": log_entry.timestamp.isoformat()
+                if log_entry.timestamp
+                else "",
                 "module": log_entry.module or "",
                 "filename": log_entry.filename or "",
                 "lineno": log_entry.lineno or "",
@@ -580,7 +580,7 @@ def download_log_records(
                 "total_chunks": log_entry.total_chunks,
                 "id": str(log_entry.id),
             }
-            
+
             # Format the entry using the provided format string
             try:
                 formatted_entry = format_string.format(**format_args)
@@ -599,6 +599,79 @@ def download_log_records(
         # For any other errors during streaming, raise with context
         logger.error(f"Error downloading logs from {logs_uri}: {e}")
         raise
+
+
+def stream_log_records(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+    format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
+) -> Iterator[str]:
+    """Streams logs from the artifact store line by line.
+
+    This generator yields formatted log lines one at a time, making it memory-efficient
+    for large log files.
+
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the artifact.
+        format_string: Format string for each log entry. If None or empty, yields raw lines.
+
+    Yields:
+        Individual formatted log lines as strings.
+
+    Raises:
+        DoesNotExistException: If the artifact does not exist in the artifact store.
+        FileNotFoundError: If the log file does not exist in the artifact store.
+    """
+    if not format_string:
+        # Stream raw file content
+        for line in _stream_logs_line_by_line(
+            zen_store=zen_store,
+            artifact_store_id=artifact_store_id,
+            logs_uri=logs_uri,
+        ):
+            yield line + "\n"
+        return
+
+    # Stream formatted logs
+    for line in _stream_logs_line_by_line(
+        zen_store=zen_store,
+        artifact_store_id=artifact_store_id,
+        logs_uri=logs_uri,
+    ):
+        if not line.strip():
+            continue
+
+        log_entry = parse_log_entry(line)
+        if not log_entry:
+            continue
+
+        # Prepare format arguments
+        format_args = {
+            "message": log_entry.message or "",
+            "name": log_entry.name or "",
+            "level": log_entry.level.name if log_entry.level else "",
+            "timestamp": log_entry.timestamp.isoformat()
+            if log_entry.timestamp
+            else "",
+            "module": log_entry.module or "",
+            "filename": log_entry.filename or "",
+            "lineno": log_entry.lineno or "",
+            "chunk_index": log_entry.chunk_index,
+            "total_chunks": log_entry.total_chunks,
+            "id": str(log_entry.id),
+        }
+
+        # Format the entry using the provided format string
+        try:
+            formatted_entry = format_string.format(**format_args)
+            yield formatted_entry + "\n"
+        except (KeyError, ValueError) as e:
+            # If formatting fails, fall back to raw message
+            logger.warning(f"Failed to format log entry: {e}")
+            yield (log_entry.message or "") + "\n"
 
 
 class PipelineLogsStorage:
