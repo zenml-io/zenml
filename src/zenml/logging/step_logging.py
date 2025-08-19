@@ -406,7 +406,13 @@ def fetch_log_records(
     except Exception as e:
         # For any other errors during streaming, fall back to empty result
         logger.warning(f"Error streaming logs from {logs_uri}: {e}")
-        return []
+        return LogPage(
+            items=[],
+            total=0,
+            index=page,
+            max_size=count,
+            total_pages=0,
+        )
 
 
 def _stream_logs_line_by_line(
@@ -477,9 +483,6 @@ def _entry_matches_filters(
     # Apply level filter
     if level:
         try:
-            logging.warning(f"Entry level: {entry.level}, Level: {level}")
-            logging.warning(f"Level Type: {type(level)}")
-            logging.warning(f"Entry level value: {type(entry.level)}")
             if not entry.level or entry.level.value < level:
                 return False
         except KeyError:
@@ -493,6 +496,109 @@ def _entry_matches_filters(
             return False
 
     return True
+
+
+def download_log_records(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+    format_string: str = "[{timestamp}] [{level}] {message}",
+    raw: bool = False,
+) -> str:
+    """Downloads all logs from the artifact store as a formatted string.
+
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the artifact.
+        format_string: Format string for each log entry. Can use any LogEntry field.
+        raw: If True, returns the raw jsonified log entries without formatting.
+
+    Returns:
+        A string containing all log entries, either raw or formatted.
+
+    Raises:
+        DoesNotExistException: If the artifact does not exist in the artifact store.
+        FileNotFoundError: If the log file does not exist in the artifact store.
+    """
+    if raw:
+        # Return raw file content for raw format
+        artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+        try:
+            if not artifact_store.isdir(logs_uri):
+                # Single file case
+                with artifact_store.open(logs_uri, "r") as file:
+                    return file.read()
+            else:
+                # Directory case - concatenate all files
+                files = artifact_store.listdir(logs_uri)
+                if not files:
+                    raise DoesNotExistException(
+                        f"Folder '{logs_uri}' is empty in artifact store "
+                        f"'{artifact_store.name}'."
+                    )
+                
+                # Sort files to read them in order
+                files.sort()
+                content = []
+                
+                for file in files:
+                    file_path = os.path.join(logs_uri, str(file))
+                    with artifact_store.open(file_path, "r") as f:
+                        content.append(f.read())
+                
+                return "\n".join(content)
+        finally:
+            artifact_store.cleanup()
+
+    # Format logs using the provided format string
+    formatted_entries = []
+    
+    try:
+        for line in _stream_logs_line_by_line(
+            zen_store=zen_store,
+            artifact_store_id=artifact_store_id,
+            logs_uri=logs_uri,
+        ):
+            if not line.strip():
+                continue
+
+            log_entry = parse_log_entry(line)
+            if not log_entry:
+                continue
+
+            # Prepare format arguments
+            format_args = {
+                "message": log_entry.message or "",
+                "name": log_entry.name or "",
+                "level": log_entry.level.name if log_entry.level else "",
+                "timestamp": log_entry.timestamp.isoformat() if log_entry.timestamp else "",
+                "module": log_entry.module or "",
+                "filename": log_entry.filename or "",
+                "lineno": log_entry.lineno or "",
+                "chunk_index": log_entry.chunk_index,
+                "total_chunks": log_entry.total_chunks,
+                "id": str(log_entry.id),
+            }
+            
+            # Format the entry using the provided format string
+            try:
+                formatted_entry = format_string.format(**format_args)
+                formatted_entries.append(formatted_entry)
+            except (KeyError, ValueError) as e:
+                # If formatting fails, fall back to raw message
+                logger.warning(f"Failed to format log entry: {e}")
+                formatted_entries.append(log_entry.message or "")
+
+        return "\n".join(formatted_entries)
+
+    except (DoesNotExistException, FileNotFoundError):
+        # Re-raise these exceptions as-is
+        raise
+    except Exception as e:
+        # For any other errors during streaming, raise with context
+        logger.error(f"Error downloading logs from {logs_uri}: {e}")
+        raise
 
 
 class PipelineLogsStorage:

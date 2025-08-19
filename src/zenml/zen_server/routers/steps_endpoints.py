@@ -30,6 +30,7 @@ from zenml.enums import ExecutionStatus, LoggingLevels
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
     LogPage,
+    download_log_records,
     fetch_log_records,
 )
 from zenml.models import (
@@ -292,4 +293,47 @@ def get_step_logs(
         count=count,
         level=level,
         search=search,
+    )
+
+
+@router.get(
+    "/{step_id}" + LOGS + "/download",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def download_step_logs(
+    step_id: UUID,
+    format_string: str = "[{timestamp}] [{level}] {message}",
+    raw: bool = False,
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Download all logs of a specific step as a formatted string.
+
+    Args:
+        step_id: ID of the step for which to get the logs.
+        format_string: Format string for each log entry. Available fields: {timestamp}, {level}, {message}, {name}, {module}, {filename}, {lineno}, {chunk_index}, {total_chunks}, {id}.
+        raw: If True, returns the raw log file content without any formatting.
+
+    Returns:
+        A string containing all log entries, either raw or formatted.
+
+    Raises:
+        HTTPException: If no logs are available for this step.
+    """
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    store = zen_store()
+    logs = step.logs
+    if logs is None:
+        raise HTTPException(
+            status_code=404, detail="No logs available for this step"
+        )
+    return download_log_records(
+        zen_store=store,
+        artifact_store_id=logs.artifact_store_id,
+        logs_uri=logs.uri,
+        format_string=format_string,
+        raw=raw,
     )

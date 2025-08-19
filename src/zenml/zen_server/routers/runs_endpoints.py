@@ -35,6 +35,7 @@ from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
     LogPage,
     _entry_matches_filters,
+    download_log_records,
     fetch_log_records,
     parse_log_entry,
 )
@@ -520,6 +521,105 @@ def run_logs(
                     count=count,
                     level=level,
                     search=search,
+                )
+
+    # If no logs found for the specified source, raise an error
+    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
+
+
+@router.get(
+    "/{run_id}/logs/download",
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def download_run_logs(
+    run_id: UUID,
+    source: str,
+    format_string: str = "[{timestamp}] [{level}] {message}",
+    raw: bool = False,
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Download all pipeline run logs for a specific source as a formatted string.
+
+    Args:
+        run_id: ID of the pipeline run.
+        source: Required source to get logs for.
+        format_string: Format string for each log entry. Available fields: {timestamp}, {level}, {message}, {name}, {module}, {filename}, {lineno}, {chunk_index}, {total_chunks}, {id}.
+        raw: If True, returns the raw log file content without any formatting.
+
+    Returns:
+        A string containing all log entries, either raw or formatted.
+
+    Raises:
+        KeyError: If no logs are found for the specified source.
+    """
+    store = zen_store()
+
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=store.get_run,
+        hydrate=True,
+    )
+
+    # Handle runner logs from workload manager
+    if run.deployment_id and source == "runner":
+        deployment = store.get_deployment(run.deployment_id)
+        if deployment.template_id and server_config().workload_manager_enabled:
+            workload_logs = workload_manager().get_logs(
+                workload_id=deployment.id
+            )
+
+            if raw:
+                return workload_logs
+
+            # Process and format workload logs
+            formatted_entries = []
+            for line in workload_logs.split("\n"):
+                if not line.strip():
+                    continue
+
+                log_record = parse_log_entry(line)
+                if not log_record:
+                    continue
+
+                # Prepare format arguments
+                format_args = {
+                    "message": log_record.message or "",
+                    "name": log_record.name or "",
+                    "level": log_record.level.name if log_record.level else "",
+                    "timestamp": log_record.timestamp.isoformat() if log_record.timestamp else "",
+                    "module": log_record.module or "",
+                    "filename": log_record.filename or "",
+                    "lineno": log_record.lineno or "",
+                    "chunk_index": log_record.chunk_index,
+                    "total_chunks": log_record.total_chunks,
+                    "id": str(log_record.id),
+                }
+                
+                # Format the entry using the provided format string
+                try:
+                    formatted_entry = format_string.format(**format_args)
+                    formatted_entries.append(formatted_entry)
+                except (KeyError, ValueError):
+                    # If formatting fails, fall back to raw message
+                    formatted_entries.append(log_record.message or "")
+
+            return "\n".join(formatted_entries)
+
+    # Handle logs from log collection
+    if run.log_collection:
+        for log_entry in run.log_collection:
+            if log_entry.source == source:
+                return download_log_records(
+                    zen_store=store,
+                    artifact_store_id=log_entry.artifact_store_id,
+                    logs_uri=log_entry.uri,
+                    format_string=format_string,
+                    raw=raw,
                 )
 
     # If no logs found for the specified source, raise an error
