@@ -15,6 +15,7 @@
 
 import asyncio
 import logging
+import math
 import os
 import queue
 import re
@@ -114,6 +115,16 @@ class LogEntry(BaseModel):
         default_factory=uuid4,
         description="The unique identifier of the log entry",
     )
+
+
+class LogPage(BaseModel):
+    """A page of log entries."""
+
+    items: List[LogEntry]
+    total: int
+    index: int
+    max_size: int
+    total_pages: int
 
 
 class ArtifactStoreHandler(logging.Handler):
@@ -324,24 +335,23 @@ def fetch_log_records(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
-    offset: int = 0,
+    page: int = 1,
     count: int = MAX_LOG_ENTRIES,  # Number of entries to return
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
-) -> List[LogEntry]:
+) -> LogPage:
     """Fetches the logs from the artifact store and parses them into LogEntry objects.
 
     This implementation uses streaming to efficiently handle large log files by:
 
     1. Reading logs line by line instead of loading everything into memory
     2. Applying filters as we go to avoid processing unnecessary data
-    3. Stopping once we have the required number of filtered entries
 
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the artifact.
-        offset: The entry index from which to start reading (0-based) from filtered results.
+        page: The page number to return.
         count: The number of entries to return (max MAX_LOG_ENTRIES).
         level: Optional log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
@@ -355,7 +365,8 @@ def fetch_log_records(
         FileNotFoundError: If the log file does not exist in the artifact store.
     """
     # We need to find (offset + count) matching entries total
-    target_total = offset + count
+    start_index = (page - 1) * count
+    end_index = start_index + count
     matching_entries = []
     entries_found = 0
 
@@ -377,15 +388,17 @@ def fetch_log_records(
             if _entry_matches_filters(log_entry, level, search):
                 entries_found += 1
 
-                # Only start collecting after we've skipped 'offset' entries
-                if entries_found > offset:
+                # Only collect entries that are within the current page
+                if entries_found > start_index and entries_found <= end_index:
                     matching_entries.append(log_entry)
 
-                # Stop reading once we have enough entries
-                if entries_found >= target_total:
-                    break
-
-        return matching_entries
+        return LogPage(
+            items=matching_entries,
+            total=entries_found,
+            index=page,
+            max_size=count,
+            total_pages=math.ceil(entries_found / count),
+        )
 
     except (DoesNotExistException, FileNotFoundError):
         # Re-raise DoesNotExistException as-is

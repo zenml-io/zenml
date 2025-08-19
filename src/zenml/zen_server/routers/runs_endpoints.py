@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+import math
+from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -32,7 +33,7 @@ from zenml.enums import ExecutionStatus, LoggingLevels
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
-    LogEntry,
+    LogPage,
     _entry_matches_filters,
     fetch_log_records,
     parse_log_entry,
@@ -435,19 +436,18 @@ def stop_run(
 def run_logs(
     run_id: UUID,
     source: str,
-    offset: int = 0,
+    page: int = 1,
     count: int = MAX_LOG_ENTRIES,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> List[LogEntry]:
+) -> LogPage:
     """Get pipeline run logs for a specific source.
 
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
-        offset: The entry index from which to start reading (0-based) from filtered results.
-                Returns up to MAX_LOG_ENTRIES entries starting from this index.
+        page: The page number to return.
         count: The number of log entries to return.
         level: Optional log level filter (e.g., "INFO"). Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
@@ -474,8 +474,10 @@ def run_logs(
             workload_logs = workload_manager().get_logs(
                 workload_id=deployment.id
             )
-            # Stream parse workload logs with efficient filtering and pagination
-            target_total = offset + count
+
+            start_index = (page - 1) * count
+            end_index = start_index + count
+
             matching_entries = []
             entries_found = 0
 
@@ -492,14 +494,19 @@ def run_logs(
                     entries_found += 1
 
                     # Only start collecting after we've skipped 'offset' entries
-                    if entries_found > offset:
+                    if (
+                        entries_found > start_index
+                        and entries_found <= end_index
+                    ):
                         matching_entries.append(log_record)
 
-                    # Stop processing once we have enough entries
-                    if entries_found >= target_total:
-                        break
-
-            return matching_entries
+            return LogPage(
+                items=matching_entries,
+                total=entries_found,
+                index=page,
+                max_size=count,
+                total_pages=math.ceil(entries_found / count),
+            )
 
     # Handle logs from log collection
     if run.log_collection:
@@ -509,7 +516,7 @@ def run_logs(
                     zen_store=store,
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,
-                    offset=offset,
+                    page=page,
                     count=count,
                     level=level,
                     search=search,

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security
@@ -29,7 +29,7 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus, LoggingLevels
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
-    LogEntry,
+    LogPage,
     fetch_log_records,
 )
 from zenml.models import (
@@ -253,17 +253,17 @@ def get_step_status(
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
     step_id: UUID,
-    offset: int = 0,
+    page: int = 1,
     count: int = MAX_LOG_ENTRIES,  # Number of log entries to return
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> List[LogEntry]:
+) -> LogPage:
     """Get the logs of a specific step.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        offset: The entry index from which to start reading (0-based) from filtered results.
+        page: The page number to return.
         count: The number of log entries to return (max MAX_LOG_ENTRIES).
         level: Optional log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
@@ -288,7 +288,7 @@ def get_step_logs(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,
         logs_uri=logs.uri,
-        offset=offset,
+        page=page,
         count=count,
         level=level,
         search=search,
