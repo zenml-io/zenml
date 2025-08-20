@@ -18,7 +18,7 @@ Modeling agents as pipelines makes non-deterministic workflows debuggable and sh
 
 ### What you'll build
 - **Document analysis service**: A FastAPI app that triggers a ZenML pipeline
-- **LLM-first with fallback**: Uses [LiteLLM](https://github.com/BerriAI/litellm) if an API key is set, otherwise runs a deterministic analysis
+- **LLM-first with fallback**: Uses [LiteLLM](https://github.com/BerriAI/litellm) if an API key is set, otherwise runs a deterministic analysis that doesn't require making an API request to an LLM service
 - **Tracked artifacts**: Summary, keywords, sentiment, readability, and rich metadata
 - **Quality evaluation**: A separate pipeline that annotates runs and generates an HTML report
 
