@@ -150,7 +150,7 @@ Key files to explore:
 
 ### Production next steps
 - **Run remotely**: Configure a remote stack/orchestrator and run the same pipeline on managed compute. See [Deploy](deploying-zenml/README.md)
-- **Automate triggering**: Create a run template (ZenML Pro) and trigger via API/webhooks from your app
+- **Automate triggering**: [Create a run template](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) (ZenML Pro) and trigger via API/webhooks from your app
 - **Operationalize**: Add caching, retries, schedules, and CI/CD using concepts in the docs
 
 ### Extend it
