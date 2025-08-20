@@ -526,7 +526,7 @@ def download_log_records(
             if not artifact_store.isdir(logs_uri):
                 # Single file case
                 with artifact_store.open(logs_uri, "r") as file:
-                    return file.read()
+                    return str(file.read())
             else:
                 # Directory case - concatenate all files
                 files = artifact_store.listdir(logs_uri)
@@ -543,7 +543,7 @@ def download_log_records(
                 for file in files:
                     file_path = os.path.join(logs_uri, str(file))
                     with artifact_store.open(file_path, "r") as f:
-                        content.append(f.read())
+                        content.append(str(f.read()))
 
                 return "\n".join(content)
         finally:

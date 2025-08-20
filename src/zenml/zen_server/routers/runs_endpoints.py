@@ -14,7 +14,7 @@
 """Endpoint definitions for pipeline runs."""
 
 import math
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -585,7 +585,7 @@ def download_run_logs(
                 workload_id=deployment.id
             )
 
-            def generate_workload_logs():
+            def generate_workload_logs() -> Iterator[str]:
                 """Generator for workload manager logs.
 
                 Yields:
