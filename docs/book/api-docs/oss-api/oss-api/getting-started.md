@@ -26,6 +26,14 @@ ReDoc (`/redoc`), on the other hand, offers a more static and visually appealing
 
 If you are using the ZenML OSS server API using the methods displayed above, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, you can use one of the methods documented in the following sections.
 
+{% hint style="info" %}
+Choosing a method:
+
+- Humans at the CLI: use [interactive login](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive).
+- Short‑lived scripts: use [temporary API tokens](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token).
+- CI/CD and automation: use [service accounts + API keys](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
+{% endhint %}
+
 ### Using a short-lived API token
 
 You can generate a short-lived (1 hour) API token from your ZenML dashboard. This is useful when you need a fast way to make authenticated HTTP requests to the ZenML API endpoints and you don't need a long-term solution.
