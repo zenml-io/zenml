@@ -495,11 +495,4 @@ module = [
 ]
 ignore_missing_imports = true
 
-# Allow example modules to import each other when running from example directories
-[[tool.mypy.overrides]]
-module = [
-    "pipelines.*",
-    "steps.*",
-    "models",
-]
 ignore_missing_imports = true
