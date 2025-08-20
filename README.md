@@ -140,6 +140,7 @@ if __name__ == "__main__":
 ```
 
 **🚀 [See the complete working example →](examples/agent_comparison/)**
+Prefer a smaller end-to-end template? Check out the [Minimal Agent Production](examples/minimal_agent_production/) example — a lightweight document analysis service with pipelines, evaluation, and a simple web UI.
 
 **The Result:** A clear winner is selected based on data, not opinions. You have full lineage from the test data and agent versions to the final report and deployment decision.
 

@@ -149,7 +149,7 @@ Key files to explore:
 - `examples/minimal_agent_production/run_evaluation.py`
 
 ### Production next steps
-- **Run remotely**: Configure a remote stack/orchestrator and run the same pipeline on managed compute. See [Deploy](../deploying-zenml/README.md)
+- **Run remotely**: Configure a remote stack/orchestrator and run the same pipeline on managed compute. See [Deploy](deploying-zenml/README.md)
 - **Automate triggering**: Create a run template (ZenML Pro) and trigger via API/webhooks from your app
 - **Operationalize**: Add caching, retries, schedules, and CI/CD using concepts in the docs
 
