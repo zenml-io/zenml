@@ -20,7 +20,7 @@ Modeling agents as pipelines makes non-deterministic systems shippable: prompts,
 
 ### Architecture
 
-![Architecture overview](assets/architecture.png)
+![Architecture overview](static/images/architecture.png)
 
 ### What's Included
 
@@ -73,7 +73,7 @@ Open your browser to `http://localhost:8010` to access the document analysis int
 - **Choose document type**: Select from text, markdown, report, or article
 - **Get analysis**: Receive summary, keywords, sentiment, and readability scores
 
-![FastAPI UI](assets/app.png)
+![FastAPI UI](static/images/app.png)
 
 Alternatively, send a request programmatically:
 
@@ -90,6 +90,8 @@ curl -X POST http://localhost:8010/analyze \
 
 The endpoint triggers a ZenML pipeline run that analyzes the document and stores detailed results and metadata you can inspect in the ZenML dashboard.
 
+![Analysis results](static/images/app_result.png)
+
 ### Evaluate quality
 
 ```bash
@@ -98,7 +100,7 @@ python run_evaluation.py
 
 This loads recent document analyses, annotates them with quality checks (summary quality, keyword relevance, sentiment accuracy, analysis completeness), aggregates metrics, and writes an HTML report artifact.
 
-![Evaluation pipeline DAG](assets/pipeline_evaluation.png)
+![Evaluation pipeline DAG](static/images/pipeline_evaluation.png)
 
 ### View results
 
@@ -111,7 +113,7 @@ Open the ZenML dashboard to see:
 - **Evaluation Pipeline**: Quality assessment reports with scoring metrics
 - **HTML Reports**: Rich visualizations of analysis results and quality assessments
 
-![Analysis pipeline DAG](assets/pipeline_analysis.png)
+![Analysis pipeline DAG](static/images/pipeline_analysis.png)
 
 ### Analysis Features
 

@@ -103,7 +103,7 @@ curl -X POST http://localhost:8010/analyze \
 The endpoint triggers a ZenML pipeline run that stores detailed results and metadata you can inspect in the dashboard.
 
 <figure>
-  <img src="../.gitbook/assets/your-first-ai-pipeline-app.png" alt="FastAPI document analysis UI">
+  <img src="../.gitbook/assets/your_first_pipeline_ui.png" alt="FastAPI document analysis UI">
   <figcaption>The web UI served by uvicorn at <code>http://localhost:8010</code>.</figcaption>
 </figure>
 
@@ -119,7 +119,7 @@ In the dashboard, open the latest run to explore:
 - **Metadata** such as latency, token usage, and model name (when in LLM mode)
 
 <figure>
-  <img src="../.gitbook/assets/your-first-ai-pipeline-dag-analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
+  <img src="../.gitbook/assets/your_first_pipeline_analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
   <figcaption>Document analysis pipeline DAG with step-level artifacts and metadata.</figcaption>
 </figure>
 
@@ -133,7 +133,7 @@ python run_evaluation.py
 Open the run in the dashboard and locate the HTML report artifact with per-item annotations (summary quality, keyword relevance, sentiment accuracy, completeness) and aggregated scores.
 
 <figure>
-  <img src="../.gitbook/assets/your-first-ai-pipeline-dag-evaluation.png" alt="Evaluation pipeline DAG in ZenML dashboard">
+  <img src="../.gitbook/assets/your_first_pipeline_pipeline_evaluation.png" alt="Evaluation pipeline DAG in ZenML dashboard">
   <figcaption>Evaluation pipeline producing an HTML report artifact with aggregated metrics.</figcaption>
 </figure>
 
