@@ -586,7 +586,11 @@ def download_run_logs(
             )
 
             def generate_workload_logs():
-                """Generator for workload manager logs."""
+                """Generator for workload manager logs.
+
+                Yields:
+                    A string containing all log entries, either raw or formatted.
+                """
                 if not format_string:
                     # Return raw logs
                     for line in workload_logs.split("\n"):

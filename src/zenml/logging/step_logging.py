@@ -620,10 +620,6 @@ def stream_log_records(
 
     Yields:
         Individual formatted log lines as strings.
-
-    Raises:
-        DoesNotExistException: If the artifact does not exist in the artifact store.
-        FileNotFoundError: If the log file does not exist in the artifact store.
     """
     if not format_string:
         # Stream raw file content
