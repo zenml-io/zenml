@@ -1,18 +1,16 @@
-# ZenML Quickstart: Bridging Local Development and Cloud Deployment
+# Quickstart: Run Anywhere with ZenML (Local → Cloud)
 
-This repository demonstrates how ZenML streamlines the transition of machine learning workflows from local environments to cloud-scale operations.
+This example shows how to run the same pipeline locally and then on your cloud of choice by switching stacks — no code changes.
 
-Key advantages:
+What you'll learn:
 
-Deploy to major cloud providers with minimal code changes
-
-* Connect directly to your existing infrastructure
-* Bridge the gap between ML and Ops teams
-* Gain deep insights into pipeline metadata via the ZenML Dashboard
+- Run a pipeline locally with a built-in local stack
+- Switch to a remote stack (AWS/GCP/Azure) and run the same pipeline
+- Inspect runs and artifacts in the ZenML dashboard
 
 Unlike traditional MLOps tools, ZenML offers unparalleled flexibility and control. It integrates seamlessly with your infrastructure, allowing both ML and Ops teams to collaborate effectively without compromising on their specific requirements.
 
-The notebook guides you through adapting local code for cloud deployment, showcasing ZenML's ability to enhance workflow efficiency while maintaining reproducibility and auditability in production.
+The notebook guides you through adapting local code for cloud deployment, showcasing how ZenML preserves reproducibility and observability in production.
 
 Ready to unify your ML development and operations? Let's begin. The diagram below 
 describes what we'll show you in this example.
@@ -33,15 +31,25 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 ## :computer: Run Locally
 
-To run locally, install ZenML and pull this quickstart (if you haven't already done so):
+To run locally, install ZenML and pull this quickstart:
 
 ```shell
-# Install ZenML
+# Install ZenML with local server
 pip install "zenml[server]"
 
-# clone the ZenML repository
-git clone https://github.com/zenml-io/zenml.git
+# Clone the ZenML repository (shallow)
+git clone --depth 1 https://github.com/zenml-io/zenml.git
 cd zenml/examples/quickstart
+
+# Install example requirements
+pip install -r requirements.txt
+
+# Initialize and start the local dashboard
+zenml init
+zenml login
+
+# Avoid W&B import issues
+export WANDB_DISABLED="true"
 ```
 
 Now we're ready to start. You have two options for running the quickstart locally:
@@ -132,8 +140,8 @@ You can edit `configs/training_aws.yaml` to adjust the settings for running your
 
 #### GCP
 
-For GCP you will need to install some aws requirements in your local environment. You will also
-need an AWS stack registered in ZenML.
+For GCP you will need to install the GCP integration in your local environment. You will also
+need a GCP-based stack registered in ZenML.
 
 ```bash
 zenml integration install gcp
