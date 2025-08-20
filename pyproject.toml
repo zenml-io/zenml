@@ -491,5 +491,6 @@ module = [
     "vllm.*",
     "numba.*",
     "uvloop.*",
+    "litellm",
 ]
 ignore_missing_imports = true
