@@ -135,7 +135,7 @@ def verify_step_logs_are_downloadable(step: StepRunResponse) -> None:
         raise IllegalOperationError(
             f"No logs are available for step '{step.id}'"
         )
-    
+
     if not step.logs.artifact_store_id:
         raise KeyError(
             f"Step '{step.id}' logs cannot be downloaded because the "
