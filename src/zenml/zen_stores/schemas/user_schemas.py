@@ -63,6 +63,7 @@ if TYPE_CHECKING:
         StackSchema,
         StepRunSchema,
         TagSchema,
+        TriggerExecutionSchema,
         TriggerSchema,
     )
 
@@ -137,6 +138,9 @@ class UserSchema(NamedSchema, table=True):
             "cascade": "delete",
             "primaryjoin": "UserSchema.id==TriggerSchema.user_id",
         },
+    )
+    trigger_executions: List["TriggerExecutionSchema"] = Relationship(
+        back_populates="user",
     )
     auth_actions: List["ActionSchema"] = Relationship(
         back_populates="service_account",

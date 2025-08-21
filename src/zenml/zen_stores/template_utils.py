@@ -14,7 +14,7 @@
 """Utilities for run templates."""
 
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from pydantic import create_model
 from pydantic.fields import FieldInfo
@@ -27,9 +27,59 @@ from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.stack import Flavor
-from zenml.zen_stores.schemas import PipelineDeploymentSchema
+from zenml.zen_stores.schemas import (
+    PipelineBuildSchema,
+    PipelineDeploymentSchema,
+)
+
+if TYPE_CHECKING:
+    from zenml.config.pipeline_configurations import PipelineConfiguration
+    from zenml.config.step_configurations import Step
 
 logger = get_logger(__name__)
+
+
+def validate_build_is_runnable(
+    build: Optional[PipelineBuildSchema],
+) -> None:
+    """Validate that a build is runnable.
+
+    Args:
+        build: The build to validate.
+
+    Raises:
+        ValueError: If the build is not runnable.
+    """
+    if not build or not build.stack:
+        raise ValueError(
+            "Deployment versions are only supported for remote orchestrators "
+            "that use container images to run the pipeline."
+        )
+
+    for component in build.stack.components:
+        if not component.flavor_schema:
+            raise ValueError(
+                "Unable to create deployment versions as a component of the "
+                "associated stack has no flavor."
+            )
+
+        if component.flavor_schema.is_custom:
+            raise ValueError(
+                "Unable to create deployment versions as a component of the "
+                "associated stack has a custom flavor."
+            )
+
+        flavor_model = component.flavor_schema.to_model()
+        flavor = Flavor.from_model(flavor_model)
+        component_config = flavor.config_class(
+            **component.to_model(include_metadata=True).configuration
+        )
+
+        if component_config.is_local:
+            raise ValueError(
+                "Unable to create deployment versions as the associated stack "
+                "contains local components."
+            )
 
 
 def validate_deployment_is_templatable(
@@ -84,17 +134,19 @@ def validate_deployment_is_templatable(
 
 def generate_config_template(
     deployment: PipelineDeploymentSchema,
+    pipeline_configuration: "PipelineConfiguration",
+    step_configurations: Dict[str, "Step"],
 ) -> Dict[str, Any]:
     """Generate a run configuration template for a deployment.
 
     Args:
         deployment: The deployment.
+        pipeline_configuration: The pipeline configuration.
+        step_configurations: The step configurations.
 
     Returns:
         The run configuration template.
     """
-    deployment_model = deployment.to_model(include_metadata=True)
-
     steps_configs = {
         name: step.step_config_overrides.model_dump(
             include=set(StepConfigurationUpdate.model_fields),
@@ -102,13 +154,13 @@ def generate_config_template(
             exclude_none=True,
             exclude_defaults=True,
         )
-        for name, step in deployment_model.step_configurations.items()
+        for name, step in step_configurations.items()
     }
 
     for config in steps_configs.values():
         config.get("settings", {}).pop("docker", None)
 
-    pipeline_config = deployment_model.pipeline_configuration.model_dump(
+    pipeline_config = pipeline_configuration.model_dump(
         include=set(PipelineRunConfiguration.model_fields),
         exclude={"schedule", "build", "parameters"},
         exclude_none=True,
@@ -118,7 +170,7 @@ def generate_config_template(
     pipeline_config.get("settings", {}).pop("docker", None)
 
     config_template = {
-        "run_name": deployment_model.run_name_template,
+        "run_name": deployment.run_name_template,
         "steps": steps_configs,
         **pipeline_config,
     }
@@ -127,11 +179,13 @@ def generate_config_template(
 
 def generate_config_schema(
     deployment: PipelineDeploymentSchema,
+    step_configurations: Dict[str, "Step"],
 ) -> Dict[str, Any]:
     """Generate a run configuration schema for the deployment and stack.
 
     Args:
         deployment: The deployment schema.
+        step_configurations: The step configurations.
 
     Returns:
         The generated schema dictionary.
@@ -213,9 +267,7 @@ def generate_config_schema(
 
     all_steps: Dict[str, Any] = {}
     all_steps_required = False
-    for step_name, step in deployment.to_model(
-        include_metadata=True
-    ).step_configurations.items():
+    for step_name, step in step_configurations.items():
         step_fields = generic_step_fields.copy()
         if step.config.parameters:
             parameter_fields: Dict[str, Any] = {}

@@ -24,8 +24,8 @@ from zenml.models import (
     RunTemplateResponseMetadata,
     RunTemplateResponseResources,
 )
-from zenml.zen_server.template_execution.utils import (
-    deployment_request_from_template,
+from zenml.zen_server.deployment_execution.utils import (
+    deployment_request_from_source_deployment,
 )
 
 
@@ -70,7 +70,7 @@ def test_creating_deployment_request_from_template(
     )
 
     with does_not_raise():
-        deployment_request_from_template(
-            template=template_response,
+        deployment_request_from_source_deployment(
+            source_deployment=template_response,
             config=PipelineRunConfiguration(),
         )

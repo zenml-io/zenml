@@ -224,6 +224,8 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineDeploymentTriggerRequest,
+    PipelineDeploymentUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -4798,6 +4800,30 @@ class SqlZenStore(BaseZenStore):
         session.add(new_reference)
         return new_reference.id
 
+    def _deployment_version_exists(
+        self,
+        session: Session,
+        pipeline_id: UUID,
+        version: str,
+    ) -> bool:
+        """Check if a deployment with a certain version exists.
+
+        Args:
+            session: SQLAlchemy session.
+            pipeline_id: The pipeline ID of the deployment.
+            version: The version name.
+
+        Returns:
+            If a deployment with the given arguments exists.
+        """
+        query = select(PipelineDeploymentSchema.id).where(
+            col(PipelineDeploymentSchema.pipeline_id) == pipeline_id,
+            col(PipelineDeploymentSchema.version) == version,
+        )
+
+        with Session(self.engine) as session:
+            return session.exec(query).first() is not None
+
     def create_deployment(
         self,
         deployment: PipelineDeploymentRequest,
@@ -4806,6 +4832,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             deployment: The deployment to create.
+
+        Raises:
+            ValueError: If deployment versions are not supported for the
+                current server.
+            EntityExistsError: If a deployment with the same version already
+                exists for the same pipeline.
+            RuntimeError: If the deployment creation fails.
 
         Returns:
             The newly created deployment.
@@ -4828,7 +4861,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            self._get_reference_schema_by_id(
+            build = self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=PipelineBuildSchema,
                 reference_id=deployment.build,
@@ -4850,12 +4883,36 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            self._get_reference_schema_by_id(
+            run_template = self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=RunTemplateSchema,
                 reference_id=deployment.template,
                 session=session,
             )
+
+            self._get_reference_schema_by_id(
+                resource=deployment,
+                reference_schema=PipelineDeploymentSchema,
+                reference_id=deployment.source_deployment,
+                session=session,
+            )
+
+            if run_template and not deployment.source_deployment:
+                # TODO: remove this once we remove run templates entirely
+                deployment.source_deployment = (
+                    run_template.source_deployment_id
+                )
+
+            if deployment.version:
+                if not self.get_store_info().is_pro_server():
+                    raise ValueError(
+                        "Deployment versions are only supported on ZenML Pro "
+                        "servers."
+                    )
+                template_utils.validate_build_is_runnable(build)
+
+                if isinstance(deployment.version, str):
+                    validate_name(deployment, "version")
 
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
@@ -4866,8 +4923,22 @@ class SqlZenStore(BaseZenStore):
             new_deployment = PipelineDeploymentSchema.from_request(
                 deployment, code_reference_id=code_reference_id
             )
-            session.add(new_deployment)
-            session.commit()
+
+            try:
+                session.add(new_deployment)
+                session.commit()
+            except IntegrityError as e:
+                if new_deployment.version and self._deployment_version_exists(
+                    session=session,
+                    pipeline_id=deployment.pipeline,
+                    version=new_deployment.version,
+                ):
+                    raise EntityExistsError(
+                        f"Deployment version {new_deployment.version} already "
+                        f"exists for pipeline {deployment.pipeline}."
+                    )
+                else:
+                    raise RuntimeError("Deployment creation failed.") from e
 
             for index, (step_name, step_configuration) in enumerate(
                 deployment.step_configurations.items()
@@ -4885,6 +4956,12 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(step_configuration_schema)
             session.commit()
+
+            self._attach_tags_to_resources(
+                tags=deployment.tags,
+                resources=new_deployment,
+                session=session,
+            )
             session.refresh(new_deployment)
 
             return new_deployment.to_model(
@@ -4896,6 +4973,7 @@ class SqlZenStore(BaseZenStore):
         deployment_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
     ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
@@ -4906,6 +4984,7 @@ class SqlZenStore(BaseZenStore):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            include_config_schema: Whether the config schema will be filled.
 
         Returns:
             The deployment.
@@ -4922,6 +5001,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate,
                 include_resources=True,
                 step_configuration_filter=step_configuration_filter,
+                include_config_schema=include_config_schema,
             )
 
     def list_deployments(
@@ -4954,6 +5034,79 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
             )
 
+    def update_deployment(
+        self,
+        deployment_id: UUID,
+        deployment_update: PipelineDeploymentUpdate,
+    ) -> PipelineDeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Raises:
+            ValueError: If deployment versions are not supported for the
+                current server.
+            EntityExistsError: If a deployment with the same version already
+                exists for the same pipeline.
+            RuntimeError: If the deployment update fails.
+
+        Returns:
+            The updated deployment.
+        """
+        with Session(self.engine) as session:
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=PipelineDeploymentSchema,
+                session=session,
+            )
+
+            if deployment.version:
+                if not self.get_store_info().is_pro_server():
+                    raise ValueError(
+                        "Deployment versions are only supported on ZenML Pro "
+                        "servers."
+                    )
+                template_utils.validate_build_is_runnable(deployment.build)
+
+                if isinstance(deployment.version, str):
+                    validate_name(deployment_update, "version")
+
+            deployment.update(deployment_update)
+
+            try:
+                session.add(deployment)
+                session.commit()
+            except IntegrityError as e:
+                if deployment.version and self._deployment_version_exists(
+                    session=session,
+                    pipeline_id=deployment.pipeline_id,
+                    version=deployment.version,
+                ):
+                    raise EntityExistsError(
+                        f"Deployment version {deployment.version} "
+                        f"already exists for pipeline {deployment.pipeline_id}."
+                    )
+                else:
+                    raise RuntimeError("Deployment update failed.") from e
+
+            self._attach_tags_to_resources(
+                tags=deployment_update.add_tags,
+                resources=deployment,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=deployment_update.remove_tags,
+                resources=deployment,
+                session=session,
+            )
+
+            session.refresh(deployment)
+            return deployment.to_model(
+                include_metadata=True, include_resources=True
+            )
+
     def delete_deployment(self, deployment_id: UUID) -> None:
         """Deletes a deployment.
 
@@ -4970,6 +5123,24 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(deployment)
             session.commit()
+
+    def trigger_deployment(
+        self,
+        deployment_id: UUID,
+        trigger_request: PipelineDeploymentTriggerRequest,
+    ) -> NoReturn:
+        """Trigger a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to trigger.
+            trigger_request: Configuration for the trigger.
+
+        Raises:
+            NotImplementedError: Always.
+        """
+        raise NotImplementedError(
+            "Running a deployment is not possible with a local store."
+        )
 
     # -------------------- Run templates --------------------
 
@@ -5005,6 +5176,13 @@ class SqlZenStore(BaseZenStore):
             template_utils.validate_deployment_is_templatable(deployment)
 
             template_schema = RunTemplateSchema.from_request(request=template)
+
+            if not template.hidden:
+                # Also update the name and description of the underlying
+                # deployment
+                deployment.name = template.name
+                deployment.description = template.description
+                session.add(deployment)
 
             session.add(template_schema)
             session.commit()
@@ -5136,11 +5314,12 @@ class SqlZenStore(BaseZenStore):
             # manually as we can't have a foreign key there to avoid a cycle
             deployments = session.exec(
                 select(PipelineDeploymentSchema).where(
-                    PipelineDeploymentSchema.template_id == template_id
+                    PipelineDeploymentSchema.source_deployment_id
+                    == template_id
                 )
             ).all()
             for deployment in deployments:
-                deployment.template_id = None
+                deployment.source_deployment_id = None
                 session.add(deployment)
 
             session.commit()
@@ -5351,6 +5530,12 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.output_artifacts)),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.triggered_runs))
+                    .load_only(
+                        jl_arg(PipelineRunSchema.id),
+                        jl_arg(PipelineRunSchema.name),
+                    ),
                 ],
             )
             assert run.deployment is not None
@@ -5560,6 +5745,19 @@ class SqlZenStore(BaseZenStore):
                         regular_output_artifact_nodes[step_name][
                             substituted_output_name
                         ] = artifact_node
+
+                    for triggered_run in step_run.triggered_runs:
+                        triggered_run_node = helper.add_triggered_run_node(
+                            node_id=helper.get_triggered_run_node_id(
+                                name=triggered_run.name
+                            ),
+                            id=triggered_run.id,
+                            name=triggered_run.name,
+                        )
+                        helper.add_edge(
+                            source=step_node.node_id,
+                            target=triggered_run_node.node_id,
+                        )
                 else:
                     for input_name, input_config in step.spec.inputs.items():
                         # This node should always exist, as the step
@@ -9658,7 +9856,7 @@ class SqlZenStore(BaseZenStore):
                 analytics_handler.metadata = {
                     "project_id": pipeline_run.project_id,
                     "pipeline_run_id": pipeline_run_id,
-                    "template_id": pipeline_run.deployment.template_id,
+                    "source_deployment_id": pipeline_run.deployment.source_deployment_id,
                     "status": new_status,
                     "num_steps": num_steps,
                     "start_time": start_time_str,
@@ -12431,6 +12629,7 @@ class SqlZenStore(BaseZenStore):
             PipelineSchema: TaggableResourceTypes.PIPELINE,
             PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
             RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
+            PipelineDeploymentSchema: TaggableResourceTypes.PIPELINE_DEPLOYMENT,
         }
         if type(resource) not in resource_types:
             raise ValueError(
@@ -12456,6 +12655,7 @@ class SqlZenStore(BaseZenStore):
             ArtifactVersionSchema,
             ModelSchema,
             ModelVersionSchema,
+            PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
             RunTemplateSchema,
@@ -12471,6 +12671,7 @@ class SqlZenStore(BaseZenStore):
             TaggableResourceTypes.PIPELINE: PipelineSchema,
             TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
             TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
+            TaggableResourceTypes.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
         }
 
         return resource_type_to_schema_mapping[resource_type]
@@ -12782,6 +12983,7 @@ class SqlZenStore(BaseZenStore):
                     TaggableResourceTypes.PIPELINE_RUN.value,
                     TaggableResourceTypes.ARTIFACT_VERSION.value,
                     TaggableResourceTypes.RUN_TEMPLATE.value,
+                    TaggableResourceTypes.PIPELINE_DEPLOYMENT.value,
                 ]
 
                 # Check if tag is associated with any non-allowed resource types
@@ -12826,6 +13028,11 @@ class SqlZenStore(BaseZenStore):
                         TaggableResourceTypes.RUN_TEMPLATE,
                         RunTemplateSchema.id,
                         None,  # Special case - will be handled differently
+                    ),
+                    (
+                        TaggableResourceTypes.PIPELINE_DEPLOYMENT,
+                        PipelineDeploymentSchema.id,
+                        PipelineDeploymentSchema.pipeline_id,
                     ),
                 ]:
                     # Special handling for run templates as they don't have direct pipeline_id
@@ -13111,6 +13318,30 @@ class SqlZenStore(BaseZenStore):
                                             resource_type=TaggableResourceTypes.RUN_TEMPLATE,
                                         )
                                     )
+                    elif isinstance(resource, PipelineDeploymentSchema):
+                        scope_id = resource.pipeline_id
+                        scope_ids[
+                            TaggableResourceTypes.PIPELINE_DEPLOYMENT
+                        ].append(scope_id)
+
+                        # TODO: This is very inefficient, we should use a
+                        # better query
+                        older_deployments = self.list_deployments(
+                            PipelineDeploymentFilter(
+                                id=f"notequals:{resource.id}",
+                                project=resource.project.id,
+                                pipeline_id=scope_id,
+                                tags=[tag_schema.name],
+                            )
+                        )
+                        if older_deployments.items:
+                            detach_resources.append(
+                                TagResourceRequest(
+                                    tag_id=tag_schema.id,
+                                    resource_id=older_deployments.items[0].id,
+                                    resource_type=TaggableResourceTypes.PIPELINE_DEPLOYMENT,
+                                )
+                            )
                     else:
                         raise ValueError(
                             "Can not attach exclusive tag to resource of type "

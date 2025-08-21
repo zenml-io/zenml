@@ -13,15 +13,28 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.enums import ExecutionStatus
+from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -29,6 +42,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    TaggableFilter,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
@@ -40,6 +54,15 @@ from zenml.models.v2.core.pipeline_build import (
 )
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
+from zenml.models.v2.core.tag import TagResponse
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
 
 # ------------------ Request Model ------------------
 
@@ -92,9 +115,24 @@ class PipelineDeploymentBase(BaseZenModel):
 class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     """Request model for pipeline deployments."""
 
+    version: Optional[Union[str, bool]] = Field(
+        default=None,
+        title="The version of the deployment. If set to True, a version will "
+        "be generated automatically.",
+    )
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the deployment.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags of the deployment.",
+    )
+
     stack: UUID = Field(title="The stack associated with the deployment.")
-    pipeline: Optional[UUID] = Field(
-        default=None, title="The pipeline associated with the deployment."
+    pipeline: UUID = Field(
+        title="The pipeline associated with the deployment."
     )
     build: Optional[UUID] = Field(
         default=None, title="The build associated with the deployment."
@@ -112,19 +150,83 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     )
     template: Optional[UUID] = Field(
         default=None,
-        description="Template used for the deployment.",
+        description="DEPRECATED: Template used for the deployment.",
+        deprecated=True,
     )
+    source_deployment: Optional[UUID] = Field(
+        default=None,
+        description="Deployment that is the source of this deployment.",
+    )
+
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            if not v:
+                raise ValueError("Deployment version cannot be empty.")
+            if len(v) > STR_FIELD_MAX_LENGTH:
+                raise ValueError(
+                    f"Deployment version `{v}` is too long. The maximum length "
+                    f"is {STR_FIELD_MAX_LENGTH} characters."
+                )
+
+        return v
 
 
 # ------------------ Update Model ------------------
 
-# There is no update model for pipeline deployments.
+
+class PipelineDeploymentUpdate(BaseUpdate):
+    """Pipeline deployment update model."""
+
+    version: Optional[Union[str, bool]] = Field(
+        default=None,
+        title="The version of the deployment. If set to True, the existing "
+        "version will be kept or a new version will be generated. If set to "
+        "False, the version will be removed.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the deployment.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    add_tags: Optional[List[str]] = Field(
+        default=None, title="New tags to add to the deployment."
+    )
+    remove_tags: Optional[List[str]] = Field(
+        default=None, title="Tags to remove from the deployment."
+    )
+
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            if not v:
+                raise ValueError("Deployment version cannot be empty.")
+            if len(v) > STR_FIELD_MAX_LENGTH:
+                raise ValueError(
+                    f"Deployment version `{v}` is too long. The maximum length "
+                    f"is {STR_FIELD_MAX_LENGTH} characters."
+                )
+
+        return v
+
 
 # ------------------ Response Model ------------------
 
 
 class PipelineDeploymentResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline deployments."""
+
+    version: Optional[str] = Field(
+        default=None,
+        title="The version of the deployment.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    runnable: bool = Field(
+        title="If a run can be started from the deployment.",
+    )
 
 
 class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
@@ -137,6 +239,10 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
         "pipeline_spec",
     ]
 
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the deployment.",
+    )
     run_name_template: str = Field(
         title="The run name template for runs created using this deployment.",
     )
@@ -185,12 +291,35 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
     )
     template_id: Optional[UUID] = Field(
         default=None,
-        description="Template used for the pipeline run.",
+        description="Template from which this deployment was created.",
+        deprecated=True,
+    )
+    source_deployment_id: Optional[UUID] = Field(
+        default=None,
+        description="Deployment that is the source of this deployment.",
+    )
+    config_template: Optional[Dict[str, Any]] = Field(
+        default=None, title="Run configuration template."
+    )
+    config_schema: Optional[Dict[str, Any]] = Field(
+        default=None, title="Run configuration schema."
     )
 
 
 class PipelineDeploymentResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
+
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the deployment.",
+    )
+    latest_triggered_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the latest triggered run of the deployment.",
+    )
+    latest_triggered_run_status: Optional[ExecutionStatus] = Field(
+        default=None,
+        title="The status of the latest triggered run of the deployment.",
+    )
 
 
 class PipelineDeploymentResponse(
@@ -213,6 +342,34 @@ class PipelineDeploymentResponse(
         return Client().zen_store.get_deployment(self.id)
 
     # Body and metadata properties
+
+    @property
+    def version(self) -> Optional[str]:
+        """The `version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().version
+
+    @property
+    def runnable(self) -> bool:
+        """The `runnable` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().runnable
+
+    @property
+    def description(self) -> Optional[str]:
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().description
+
     @property
     def run_name_template(self) -> str:
         """The `run_name_template` property.
@@ -348,13 +505,89 @@ class PipelineDeploymentResponse(
         """
         return self.get_metadata().template_id
 
+    @property
+    def source_deployment_id(self) -> Optional[UUID]:
+        """The `source_deployment_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().source_deployment_id
+
+    @property
+    def config_schema(self) -> Optional[Dict[str, Any]]:
+        """The `config_schema` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().config_schema
+
+    @property
+    def config_template(self) -> Optional[Dict[str, Any]]:
+        """The `config_template` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().config_template
+
+    @property
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().tags
+
+    @property
+    def latest_triggered_run_id(self) -> Optional[UUID]:
+        """The `latest_triggered_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().latest_triggered_run_id
+
+    @property
+    def latest_triggered_run_status(self) -> Optional[ExecutionStatus]:
+        """The `latest_triggered_run_status` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().latest_triggered_run_status
+
 
 # ------------------ Filter Model ------------------
 
 
-class PipelineDeploymentFilter(ProjectScopedFilter):
-    """Model to enable advanced filtering of all pipeline deployments."""
+class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
+    """Model for filtering pipeline deployments."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "named_only",
+    ]
+    CUSTOM_SORTING_OPTIONS = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
+    ]
+
+    version: Optional[str] = Field(
+        default=None,
+        description="Version of the deployment.",
+    )
+    versioned_only: Optional[bool] = Field(
+        default=None,
+        description="Whether to only return deployments with a version name.",
+    )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline associated with the deployment.",
@@ -379,4 +612,52 @@ class PipelineDeploymentFilter(ProjectScopedFilter):
         default=None,
         description="Template used as base for the deployment.",
         union_mode="left_to_right",
+    )
+    source_deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Source deployment used for the deployment.",
+        union_mode="left_to_right",
+    )
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        from sqlmodel import col
+
+        from zenml.zen_stores.schemas import (
+            PipelineDeploymentSchema,
+        )
+
+        custom_filters = super().get_custom_filters(table)
+
+        if self.versioned_only:
+            custom_filters.append(
+                col(PipelineDeploymentSchema.version).is_not(None)
+            )
+
+        return custom_filters
+
+
+# ------------------ Trigger Model ------------------
+
+
+class PipelineDeploymentTriggerRequest(BaseZenModel):
+    """Request model for triggering a pipeline deployment."""
+
+    run_configuration: Optional[PipelineRunConfiguration] = Field(
+        default=None,
+        title="The run configuration for the deployment.",
+    )
+
+    step_run: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the step run that triggered the deployment.",
     )
