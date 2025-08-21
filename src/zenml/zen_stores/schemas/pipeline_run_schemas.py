@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -23,11 +23,13 @@ from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship
-
+from zenml.enums import LoggingLevels
+from zenml.config import step_configurations
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
+    ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
     TaggableResourceTypes,
@@ -386,6 +388,27 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         else:
             raise RuntimeError("Pipeline run has no deployment.")
 
+    def get_step_configurations(self) -> List[Step]:
+        """Get the list of all the steps.
+        
+        Returns:
+            The list of Step objects, including the step that did not run yet.
+        """
+        if self.deployment:
+            steps = []
+            pipeline_configuration = self.get_pipeline_configuration()
+            for step_configuration in self.deployment.get_step_configurations():
+                steps.append(
+                    Step.from_dict(
+                        data=json.loads(step_configuration.config),
+                        pipeline_configuration=pipeline_configuration,
+                    )
+                )
+            return steps
+        else:
+            raise RuntimeError("Pipeline run has no deployment.")
+
+
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
     ) -> Dict[str, List[RunMetadataEntry]]:
@@ -671,3 +694,99 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             Whether the pipeline run is a placeholder run.
         """
         return self.status == ExecutionStatus.INITIALIZING.value
+
+
+    def _check_if_completed(self) -> Tuple[bool, Optional[datetime]]:
+        """Checks whether the run has finished.
+        
+        Returns:
+            A tuple containing:
+            - Whether the run has finished executing
+            - The end time if the run has finished, None otherwise
+        """
+        run_status = ExecutionStatus(self.status)
+
+        if not run_status.is_finished:
+            return False, None
+        
+        if run_status == ExecutionStatus.FAILED:
+            execution_mode = self.get_pipeline_configuration().execution_mode
+
+            if execution_mode in [ExecutionMode.FAIL_FAST, ExecutionMode.STOP_ON_FAILURE]:
+                is_completed = all(ExecutionStatus(s.status).is_finished for s in self.step_runs)
+                return is_completed, self.end_time if is_completed else None
+            
+            elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
+                if self.deployment:
+                    # Get all step configurations
+                    step_configurations = self.deployment.get_step_configurations()
+                    
+                    # Create Step objects from configurations
+                    pipeline_configuration = self.get_pipeline_configuration()
+                    steps = []
+                    for step_config in step_configurations:
+                        step = Step.from_dict(
+                            data=json.loads(step_config.config),
+                            pipeline_configuration=pipeline_configuration,
+                        )
+                        steps.append(step)
+                    
+                    # Build a reverse DAG (step_name -> list of downstream steps)
+                    reverse_dag = {}
+                    for step in steps:
+                        step_name = step.config.name
+                        reverse_dag[step_name] = []
+                        
+                    for step in steps:
+                        step_name = step.config.name
+                        upstream_steps = step.spec.upstream_steps
+                        for upstream_step in upstream_steps:
+                            if upstream_step in reverse_dag:
+                                reverse_dag[upstream_step].append(step_name)
+                    
+                    # Find all failed steps
+                    failed_steps = set()
+                    step_run_statuses = {sr.name: ExecutionStatus(sr.status) for sr in self.step_runs}
+                    
+                    for step_run in self.step_runs:
+                        if ExecutionStatus(step_run.status).is_failed:
+                            failed_steps.add(step_run.name)
+                    
+                    # Recursively find all downstream steps of failed steps
+                    def find_all_downstream_steps(step_name: str, visited: set) -> set:
+                        if step_name in visited:
+                            return set()
+                        visited.add(step_name)
+                        
+                        downstream = set()
+                        for downstream_step in reverse_dag.get(step_name, []):
+                            downstream.add(downstream_step)
+                            downstream.update(find_all_downstream_steps(downstream_step, visited))
+                        return downstream
+                    
+                    # Get all steps that should be skipped (failed + their downstream)
+                    skipped_steps = set(failed_steps)
+                    for failed_step in failed_steps:
+                        skipped_steps.update(find_all_downstream_steps(failed_step, set()))
+                    
+                    # Check if all non-skipped steps are finished
+                    all_step_names = {step.config.name for step in steps}
+                    remaining_steps = all_step_names - skipped_steps
+                    
+                    for step_name in remaining_steps:
+                        if step_name in step_run_statuses:
+                            if not step_run_statuses[step_name].is_finished:
+                                return False, None
+                        else:
+                            # Step hasn't started yet
+                            return False, None
+                    
+                    return True, self.end_time
+                else:
+                    # No deployment, fallback to basic check
+                    is_completed = all(ExecutionStatus(s.status).is_finished for s in self.step_runs)
+                    return is_completed, self.end_time if is_completed else None
+        
+        # For successful runs or other execution modes, use basic check
+        is_completed = all(ExecutionStatus(s.status).is_finished for s in self.step_runs)
+        return is_completed, self.end_time if is_completed else None

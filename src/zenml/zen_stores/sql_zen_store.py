@@ -123,6 +123,7 @@ from zenml.enums import (
     ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
+    ExecutionMode,
     ExecutionStatus,
     LoggingLevels,
     MetadataResourceTypes,
@@ -5823,17 +5824,11 @@ class SqlZenStore(BaseZenStore):
                 include_full_metadata=include_full_metadata,
             )
 
-    def get_run_status(
-        self,
-        run_id: UUID,
-    ) -> Tuple[ExecutionStatus, Optional[datetime]]:
-        """Gets the status of a pipeline run.
+    def _check_if_completed(self,run_id:UUID) -> Tuple[bool, Optional[datetime]]:
+        """Check if a pipeline run is completed.
 
         Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The pipeline run status and end time.
+            run_id: The ID of the pipeline run to check.
         """
         with Session(self.engine) as session:
             run = self._get_schema_by_id(
@@ -5841,7 +5836,7 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-            return ExecutionStatus(run.status), run.end_time
+            return run._check_if_completed()
 
     def _replace_placeholder_run(
         self,
@@ -8940,6 +8935,17 @@ class SqlZenStore(BaseZenStore):
                     f"Cannot create step '{step_run.name}' for pipeline in "
                     f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
                 )
+            
+            if run.status == ExecutionStatus.FAILED:
+                execution_mode = run.get_pipeline_configuration().execution_mode
+
+                if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
+                    raise IllegalOperationError(
+                        f"Cannot creat step '{step_run.name}' for the run '{run.name}'"
+                        "because the run is in a FAILED state and the execution mode is"
+                        f"{execution_mode}."
+                    )
+
             self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,
@@ -9073,6 +9079,24 @@ class SqlZenStore(BaseZenStore):
                         f"source '{step_run.logs.source}' already exists "
                         f"within the scope of the same step '{step_schema.id}'."
                     )
+
+            # If the created step is in failed state, we need to stop all
+            # other steps in the pipeline. This is only relevant in
+            # FAIL_FAST mode.
+            if step_schema.status == ExecutionStatus.FAILED:
+                execution_mode = (
+                    run.get_pipeline_configuration().execution_mode
+                )
+
+                if execution_mode == ExecutionMode.FAIL_FAST:
+                    for step in run.step_runs:
+                        if (
+                            step.id != step_schema.id
+                            and not ExecutionStatus(step.status).is_finished
+                        ):
+                            step.status = ExecutionStatus.STOPPING.value
+                            session.add(step)
+
             # If cached, attach metadata of the original step
             if (
                 step_run.status == ExecutionStatus.CACHED
@@ -9326,6 +9350,20 @@ class SqlZenStore(BaseZenStore):
                     "The status of retried step runs can not be updated."
                 )
 
+            # Release the read locks of the previous two queries before we
+            # try to acquire more exclusive locks
+            session.commit()
+
+            # Acquire exclusive lock on the pipeline run to prevent deadlocks
+            # during insertion
+            session.exec(
+                select(PipelineRunSchema.id)
+                .with_for_update()
+                .where(
+                    PipelineRunSchema.id == existing_step_run.pipeline_run_id
+                )
+            )
+
             if (
                 existing_step_run.is_retriable
                 and step_run_update.status == ExecutionStatus.FAILED
@@ -9333,6 +9371,13 @@ class SqlZenStore(BaseZenStore):
                 # This step will be retried by the orchestrator, so we
                 # set its status accordingly.
                 step_run_update.status = ExecutionStatus.RETRYING
+
+            # If the step is stopping and fails, we need to set its status to stopped.
+            if (
+                existing_step_run.status == ExecutionStatus.STOPPING.value
+                and step_run_update.status == ExecutionStatus.FAILED
+            ):
+                step_run_update.status = ExecutionStatus.STOPPED
 
             # Update the step
             existing_step_run.update(step_run_update)
@@ -9347,6 +9392,22 @@ class SqlZenStore(BaseZenStore):
                         name=name,
                         session=session,
                     )
+
+            # If the step failed, we need to stop all other steps in the pipeline.
+            # This is only relevant in FAIL_FAST mode.
+            if step_run_update.status == ExecutionStatus.FAILED:
+                execution_mode = existing_step_run.pipeline_run.get_pipeline_configuration().execution_mode
+
+                if execution_mode == ExecutionMode.FAIL_FAST:
+                    for step in existing_step_run.pipeline_run.step_runs:
+                        if (
+                            step.id != existing_step_run.id
+                            and not ExecutionStatus(step.status).is_finished
+                        ):
+                            step.status = ExecutionStatus.STOPPING.value
+                            session.add(step)
+
+            session.commit()
 
             # Update loaded artifacts.
             for (

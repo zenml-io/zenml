@@ -22,7 +22,7 @@ from typing_extensions import Annotated
 from zenml import get_pipeline_context, get_step_context, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, ModelStages
+from zenml.enums import ExecutionMode, ExecutionStatus, ModelStages
 from zenml.model.model import Model
 
 
@@ -239,13 +239,19 @@ def test_recovery_of_steps(clean_client: "Client", model: Model):
         )
 
     with pytest.raises(Exception, match="make pipeline fail"):
-        _this_pipeline_will_recover.with_options(model=model)(1)
+        _this_pipeline_will_recover.with_options(
+            model=model, execution_mode=ExecutionMode.FAIL_FAST
+        )(1)
     if model.version is None:
         model.version = "1"
     with pytest.raises(Exception, match="make pipeline fail"):
-        _this_pipeline_will_recover.with_options(model=model)(2)
+        _this_pipeline_will_recover.with_options(
+            model=model, execution_mode=ExecutionMode.FAIL_FAST
+        )(2)
     with pytest.raises(Exception, match="make pipeline fail"):
-        _this_pipeline_will_recover.with_options(model=model)(3)
+        _this_pipeline_will_recover.with_options(
+            model=model, execution_mode=ExecutionMode.FAIL_FAST
+        )(3)
 
     mv = clean_client.get_model_version(
         model_name_or_id="foo",
