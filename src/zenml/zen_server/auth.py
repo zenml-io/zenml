@@ -410,9 +410,9 @@ def authenticate_credentials(
             # to avoid unnecessary database queries.
 
             @cache_result(expiry=30)
-            def get_pipeline_run_status(
+            def check_if_pipeline_run_completed(
                 pipeline_run_id: UUID,
-            ) -> Tuple[Optional[ExecutionStatus], Optional[datetime]]:
+            ) -> Tuple[bool, Optional[datetime]]:
                 """Get the status of a pipeline run.
 
                 Args:
@@ -423,15 +423,15 @@ def authenticate_credentials(
                     run does not exist.
                 """
                 try:
-                    return zen_store().get_run_status(pipeline_run_id)
+                    return zen_store()._check_if_completed(pipeline_run_id)
                 except KeyError:
-                    return None, None
+                    return False, None
 
             (
-                pipeline_run_status,
+                pipeline_run_completed,
                 pipeline_run_end_time,
-            ) = get_pipeline_run_status(decoded_token.pipeline_run_id)
-            if pipeline_run_status is None:
+            ) = check_if_pipeline_run_completed(decoded_token.pipeline_run_id)
+            if not pipeline_run_completed:
                 error = (
                     f"Authentication error: error retrieving token pipeline run "
                     f"{decoded_token.pipeline_run_id}"
@@ -443,7 +443,7 @@ def authenticate_credentials(
                 ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
                 DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
             )
-            if pipeline_run_status.is_finished:
+            if pipeline_run_completed:
                 if leeway < 0:
                     # The token should never expire, we don't need to check
                     # the end time.

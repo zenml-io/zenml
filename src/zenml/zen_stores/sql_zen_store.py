@@ -5824,17 +5824,11 @@ class SqlZenStore(BaseZenStore):
                 include_full_metadata=include_full_metadata,
             )
 
-    def get_run_status(
-        self,
-        run_id: UUID,
-    ) -> Tuple[ExecutionStatus, Optional[datetime]]:
-        """Gets the status of a pipeline run.
+    def _check_if_completed(self,run_id:UUID) -> Tuple[bool, Optional[datetime]]:
+        """Check if a pipeline run is completed.
 
         Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The pipeline run status and end time.
+            run_id: The ID of the pipeline run to check.
         """
         with Session(self.engine) as session:
             run = self._get_schema_by_id(
@@ -5842,7 +5836,7 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-            return ExecutionStatus(run.status), run.end_time
+            return run._check_if_completed()
 
     def _replace_placeholder_run(
         self,
@@ -8941,6 +8935,17 @@ class SqlZenStore(BaseZenStore):
                     f"Cannot create step '{step_run.name}' for pipeline in "
                     f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
                 )
+            
+            if run.status == ExecutionStatus.FAILED:
+                execution_mode = run.get_pipeline_configuration().execution_mode
+
+                if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
+                    raise IllegalOperationError(
+                        f"Cannot creat step '{step_run.name}' for the run '{run.name}'"
+                        "because the run is in a FAILED state and the execution mode is"
+                        f"{execution_mode}."
+                    )
+
             self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,
