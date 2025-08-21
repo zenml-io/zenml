@@ -1,17 +1,28 @@
-"""Quality gate step for data quality assessment and pipeline routing.
-
-Evaluates EDA results against quality thresholds to make pass/fail decisions
-for downstream processing or model training workflows.
-"""
+"""Quality gate step for data quality assessment and pipeline routing."""
 
 import logging
-from typing import Annotated, Any, Dict, Tuple
+from typing import Annotated, Any, Dict, List, Tuple
 
 from models import QualityGateDecision
 
 from zenml import step
 
 logger = logging.getLogger(__name__)
+
+
+def _check_quality_metric(
+    condition: bool,
+    pass_msg: str,
+    fail_msg: str,
+    blocking_issues: List[str],
+    decision_factors: List[str],
+) -> None:
+    """Helper to standardize quality check pattern."""
+    if condition:
+        blocking_issues.append(fail_msg)
+        decision_factors.append(f"{pass_msg.split(':')[0]}: ❌")
+    else:
+        decision_factors.append(f"{pass_msg}: ✅")
 
 
 def evaluate_quality_gate(
@@ -22,102 +33,75 @@ def evaluate_quality_gate(
     require_target_column: bool = False,
     target_column: str = None,
 ) -> Annotated[QualityGateDecision, "quality_gate_decision"]:
-    """Evaluate data quality and make gate pass/fail decision.
-
-    Analyzes the EDA report results against configurable quality thresholds
-    to determine if the data meets requirements for downstream processing.
-
-    Args:
-        report_json: EDA report JSON containing quality metrics and findings
-        min_quality_score: Minimum data quality score required (0-100)
-        block_on_high_severity: Whether to fail on high-severity issues
-        max_missing_data_pct: Maximum allowable missing data percentage
-        require_target_column: Whether a target column is required
-        target_column: Expected target column name (if required)
-
-    Returns:
-        QualityGateDecision with pass/fail result and recommendations
-    """
+    """Evaluate data quality and make gate pass/fail decision."""
     logger.info("Evaluating data quality gate")
 
     try:
-        # Extract key metrics from report
+        # Extract metrics
         quality_score = report_json.get("data_quality_score", 0.0)
         fixes = report_json.get("fixes", [])
         missing_data_analysis = report_json.get("missing_data_analysis", {})
         column_profiles = report_json.get("column_profiles", {})
 
-        # Initialize decision components
         blocking_issues = []
-        recommendations = []
         decision_factors = []
 
-        # Check 1: Overall quality score
-        if quality_score < min_quality_score:
-            blocking_issues.append(
-                f"Data quality score ({quality_score:.1f}) below minimum threshold ({min_quality_score})"
-            )
-            decision_factors.append(
-                f"Quality score: {quality_score:.1f}/{min_quality_score} ❌"
-            )
-        else:
-            decision_factors.append(
-                f"Quality score: {quality_score:.1f}/{min_quality_score} ✅"
-            )
+        # Quality score check
+        _check_quality_metric(
+            quality_score < min_quality_score,
+            f"Quality score: {quality_score:.1f}/{min_quality_score}",
+            f"Data quality score ({quality_score:.1f}) below minimum threshold ({min_quality_score})",
+            blocking_issues,
+            decision_factors,
+        )
 
-        # Check 2: High severity issues
-        high_severity_fixes = [
-            fix for fix in fixes if fix.get("severity") == "high"
-        ]
+        # High severity issues check
+        high_severity_fixes = [f for f in fixes if f.get("severity") == "high"]
         if block_on_high_severity and high_severity_fixes:
-            high_severity_titles = [
-                fix.get("title", "Unknown issue")
-                for fix in high_severity_fixes
-            ]
-            blocking_issues.append(
-                f"High severity issues found: {', '.join(high_severity_titles)}"
-            )
-            decision_factors.append(
-                f"High severity issues: {len(high_severity_fixes)} ❌"
+            titles = [f.get("title", "Unknown") for f in high_severity_fixes]
+            _check_quality_metric(
+                True,
+                f"High severity issues: {len(high_severity_fixes)}",
+                f"High severity issues found: {', '.join(titles)}",
+                blocking_issues,
+                decision_factors,
             )
         else:
             decision_factors.append(
                 f"High severity issues: {len(high_severity_fixes)} ✅"
             )
 
-        # Check 3: Missing data threshold
+        # Missing data check
         overall_missing_pct = missing_data_analysis.get(
             "missing_percentage", 0.0
         )
-        if overall_missing_pct > max_missing_data_pct:
-            blocking_issues.append(
-                f"Missing data percentage ({overall_missing_pct:.1f}%) exceeds threshold ({max_missing_data_pct}%)"
-            )
-            decision_factors.append(
-                f"Missing data: {overall_missing_pct:.1f}%/{max_missing_data_pct}% ❌"
-            )
-        else:
-            decision_factors.append(
-                f"Missing data: {overall_missing_pct:.1f}%/{max_missing_data_pct}% ✅"
-            )
+        _check_quality_metric(
+            overall_missing_pct > max_missing_data_pct,
+            f"Missing data: {overall_missing_pct:.1f}%/{max_missing_data_pct}%",
+            f"Missing data percentage ({overall_missing_pct:.1f}%) exceeds threshold ({max_missing_data_pct}%)",
+            blocking_issues,
+            decision_factors,
+        )
 
-        # Check 4: Target column requirement
-        if require_target_column and target_column:
-            if target_column not in column_profiles:
+        # Target column check
+        if require_target_column:
+            if not target_column:
                 blocking_issues.append(
-                    f"Required target column '{target_column}' not found in dataset"
+                    "Target column required but not specified"
+                )
+                decision_factors.append("Target column: Not specified ❌")
+            elif target_column not in column_profiles:
+                blocking_issues.append(
+                    f"Required target column '{target_column}' not found"
                 )
                 decision_factors.append(
                     f"Target column '{target_column}': Missing ❌"
                 )
             else:
-                # Check target column quality
-                target_profile = column_profiles[target_column]
-                target_missing_pct = target_profile.get("null_percentage", 0.0)
-
-                if (
-                    target_missing_pct > 50
-                ):  # Target column shouldn't be mostly empty
+                target_missing_pct = column_profiles[target_column].get(
+                    "null_percentage", 0.0
+                )
+                if target_missing_pct > 50:
                     blocking_issues.append(
                         f"Target column '{target_column}' has {target_missing_pct:.1f}% missing values"
                     )
@@ -128,54 +112,25 @@ def evaluate_quality_gate(
                     decision_factors.append(
                         f"Target column '{target_column}': Present ✅"
                     )
-        elif require_target_column and not target_column:
-            # If target column is required but not specified
-            blocking_issues.append("Target column required but not specified")
-            decision_factors.append("Target column: Not specified ❌")
 
-        # Generate recommendations based on findings
+        # Generate recommendations
         recommendations = _generate_recommendations(
-            quality_score,
-            fixes,
-            missing_data_analysis,
-            column_profiles,
-            min_quality_score,
+            quality_score, fixes, overall_missing_pct, min_quality_score
         )
 
-        # Make final decision
+        # Make decision
         passed = len(blocking_issues) == 0
+        decision_reason = (
+            f"All quality checks passed. {', '.join(decision_factors)}"
+            if passed
+            else f"Quality gate failed. Issues: {'; '.join(blocking_issues)}"
+        )
 
-        # Debug logging
-        logger.info(f"Quality check details:")
         logger.info(
-            f"  - Quality score: {quality_score:.1f} >= {min_quality_score} = {quality_score >= min_quality_score}"
+            "✅ Quality gate PASSED" if passed else "❌ Quality gate FAILED"
         )
-        logger.info(
-            f"  - High severity issues: {len(high_severity_fixes)} (block_on_high_severity={block_on_high_severity})"
-        )
-        logger.info(
-            f"  - Missing data: {overall_missing_pct:.1f}% <= {max_missing_data_pct}% = {overall_missing_pct <= max_missing_data_pct}"
-        )
-        logger.info(
-            f"  - Require target: {require_target_column}, Target column: {target_column}"
-        )
-        logger.info(f"  - Blocking issues count: {len(blocking_issues)}")
-        logger.info(f"  - Decision factors: {decision_factors}")
-
-        if passed:
-            decision_reason = (
-                f"All quality checks passed. {', '.join(decision_factors)}"
-            )
-            logger.info("✅ Quality gate PASSED")
-        else:
-            decision_reason = f"Quality gate failed. Blocking issues: {'; '.join(blocking_issues)}"
-            logger.warning("❌ Quality gate FAILED")
+        if not passed:
             logger.warning(f"Blocking issues: {blocking_issues}")
-
-        # Log decision details
-        logger.info(f"Quality score: {quality_score:.1f}")
-        logger.info(f"Missing data: {overall_missing_pct:.1f}%")
-        logger.info(f"High severity issues: {len(high_severity_fixes)}")
 
         return QualityGateDecision(
             passed=passed,
@@ -202,13 +157,11 @@ def evaluate_quality_gate(
 
     except Exception as e:
         logger.error(f"Quality gate evaluation failed: {e}")
-
-        # Return failure decision
         return QualityGateDecision(
             passed=False,
             quality_score=0.0,
             decision_reason=f"Quality gate evaluation failed: {str(e)}",
-            blocking_issues=[f"Technical error during evaluation: {str(e)}"],
+            blocking_issues=[f"Technical error: {str(e)}"],
             recommendations=[
                 "Review EDA report format and quality gate configuration"
             ],
@@ -219,101 +172,73 @@ def evaluate_quality_gate(
 def _generate_recommendations(
     quality_score: float,
     fixes: list,
-    missing_data_analysis: dict,
-    column_profiles: dict,
+    overall_missing_pct: float,
     min_threshold: float,
 ) -> list:
     """Generate actionable recommendations based on quality assessment."""
     recommendations = []
 
-    # Score-based recommendations
-    if quality_score < min_threshold:
-        score_gap = min_threshold - quality_score
-        if score_gap > 30:
-            recommendations.append(
-                "Consider data cleaning or alternative data sources due to significant quality issues"
-            )
-        elif score_gap > 15:
-            recommendations.append(
-                "Address high-priority data quality issues before proceeding"
-            )
-        else:
-            recommendations.append(
-                "Minor quality improvements recommended but data is usable"
-            )
+    # Quality score recommendations
+    score_gap = min_threshold - quality_score
+    if score_gap > 30:
+        recommendations.append(
+            "Consider alternative data sources due to significant quality issues"
+        )
+    elif score_gap > 15:
+        recommendations.append(
+            "Address high-priority data quality issues before proceeding"
+        )
+    elif score_gap > 0:
+        recommendations.append("Minor quality improvements recommended")
 
-    # Fix-based recommendations
+    # Critical fixes
     critical_fixes = [
-        fix for fix in fixes if fix.get("severity") in ["high", "critical"]
+        f for f in fixes if f.get("severity") in ["high", "critical"]
     ]
     if critical_fixes:
         recommendations.append(
             f"Implement {len(critical_fixes)} critical data quality fixes"
         )
 
-        # Add specific recommendations for common issues
-        for fix in critical_fixes[:3]:  # Top 3 critical fixes
-            if "missing" in fix.get("title", "").lower():
-                recommendations.append(
-                    "Consider imputation strategies for missing data"
-                )
-            elif "duplicate" in fix.get("title", "").lower():
-                recommendations.append(
-                    "Remove or consolidate duplicate records"
-                )
-            elif "outlier" in fix.get("title", "").lower():
-                recommendations.append("Investigate and handle outlier values")
+        # Add specific fix types
+        fix_types = {
+            "missing": "Consider imputation strategies for missing data",
+            "duplicate": "Remove or consolidate duplicate records",
+            "outlier": "Investigate and handle outlier values",
+        }
+
+        for fix in critical_fixes[:3]:
+            title = fix.get("title", "").lower()
+            for keyword, recommendation in fix_types.items():
+                if keyword in title and recommendation not in recommendations:
+                    recommendations.append(recommendation)
+                    break
 
     # Missing data recommendations
-    overall_missing_pct = missing_data_analysis.get("missing_percentage", 0.0)
     if overall_missing_pct > 20:
         recommendations.append(
-            "High missing data detected - consider data imputation or collection improvements"
+            "High missing data detected - consider imputation or collection improvements"
         )
     elif overall_missing_pct > 10:
         recommendations.append(
             "Moderate missing data - review imputation strategies"
         )
 
-    # Column-specific recommendations
-    if column_profiles:
-        high_missing_cols = [
-            col
-            for col, profile in column_profiles.items()
-            if profile.get("null_percentage", 0) > 50
-        ]
-
-        if high_missing_cols:
-            if len(high_missing_cols) == 1:
-                recommendations.append(
-                    f"Column '{high_missing_cols[0]}' has excessive missing data - consider removal or targeted collection"
-                )
-            else:
-                recommendations.append(
-                    f"{len(high_missing_cols)} columns have >50% missing data - review data collection process"
-                )
-
-    # Pipeline-specific recommendations
-    if quality_score >= min_threshold and len(critical_fixes) == 0:
-        recommendations.append(
-            "Data quality is acceptable for downstream processing"
+    # Pipeline recommendations
+    if quality_score >= min_threshold and not critical_fixes:
+        recommendations.extend(
+            [
+                "Data quality acceptable for downstream processing",
+                "Consider implementing quality monitoring",
+            ]
         )
+    elif score_gap <= min_threshold * 0.2:  # Close to passing
         recommendations.append(
-            "Consider implementing monitoring for quality regression"
-        )
-    elif quality_score >= min_threshold * 0.8:  # Close to passing
-        recommendations.append(
-            "Data quality is borderline - implement fixes and re-evaluate"
-        )
-        recommendations.append(
-            "Consider A/B testing with and without quality improvements"
+            "Data quality borderline - implement fixes and re-evaluate"
         )
     else:
         recommendations.append(
-            "Significant data quality issues require attention before production use"
-        )
-        recommendations.append(
-            "Consider data pipeline improvements or alternative data sources"
+            "Significant quality issues require attention before production use"
         )
 
     return recommendations
@@ -331,11 +256,7 @@ def evaluate_quality_gate_with_routing(
     Annotated[QualityGateDecision, "quality_gate_decision"],
     Annotated[str, "routing_message"],
 ]:
-    """Combined quality gate evaluation and routing decision.
-
-    Returns both the detailed quality decision and routing message.
-    """
-    # Use existing logic to evaluate quality
+    """Combined quality gate evaluation and routing decision."""
     decision = evaluate_quality_gate(
         report_json,
         min_quality_score,
@@ -345,14 +266,13 @@ def evaluate_quality_gate_with_routing(
         target_column,
     )
 
-    # Generate routing message
-    if decision.passed:
-        routing_message = (
-            "🚀 Data quality passed - proceed to downstream processing"
-        )
-        logger.info(routing_message)
-    else:
-        routing_message = "🛑 Data quality insufficient - review and improve data before proceeding"
-        logger.warning(routing_message)
+    routing_message = (
+        "🚀 Data quality passed - proceed to downstream processing"
+        if decision.passed
+        else "🛑 Data quality insufficient - review and improve data before proceeding"
+    )
 
+    logger.info(routing_message) if decision.passed else logger.warning(
+        routing_message
+    )
     return decision, routing_message
