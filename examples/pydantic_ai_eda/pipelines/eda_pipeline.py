@@ -10,9 +10,8 @@ from typing import Any, Dict, Optional
 
 from models import AgentConfig, DataSourceConfig
 from steps import (
-    evaluate_quality_gate,
+    evaluate_quality_gate_with_routing,
     ingest_data,
-    route_based_on_quality,
     run_eda_agent,
 )
 
@@ -61,21 +60,14 @@ def eda_pipeline(
         agent_config=agent_config,
     )
 
-    # Step 3: Evaluate data quality gate
-    quality_decision = evaluate_quality_gate(
+    # Step 3: Evaluate data quality gate and get routing decision
+    quality_decision, routing_message = evaluate_quality_gate_with_routing(
         report_json=report_json,
         min_quality_score=min_quality_score,
         block_on_high_severity=block_on_high_severity,
         max_missing_data_pct=max_missing_data_pct,
         require_target_column=require_target_column,
         target_column=source_config.target_column,
-    )
-
-    # Step 4: Route based on quality assessment
-    routing_message = route_based_on_quality(
-        decision=quality_decision,
-        on_pass_message="Data quality acceptable - ready for downstream processing",
-        on_fail_message="Data quality insufficient - requires remediation before use",
     )
 
     # Log pipeline summary (note: artifacts are returned, actual values logged in steps)

@@ -5,7 +5,7 @@ for downstream processing or model training workflows.
 """
 
 import logging
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any, Dict, Tuple
 
 from models import QualityGateDecision
 
@@ -14,7 +14,6 @@ from zenml import step
 logger = logging.getLogger(__name__)
 
 
-@step
 def evaluate_quality_gate(
     report_json: Dict[str, Any],
     min_quality_score: float = 70.0,
@@ -129,6 +128,10 @@ def evaluate_quality_gate(
                     decision_factors.append(
                         f"Target column '{target_column}': Present ✅"
                     )
+        elif require_target_column and not target_column:
+            # If target column is required but not specified
+            blocking_issues.append("Target column required but not specified")
+            decision_factors.append("Target column: Not specified ❌")
 
         # Generate recommendations based on findings
         recommendations = _generate_recommendations(
@@ -142,6 +145,23 @@ def evaluate_quality_gate(
         # Make final decision
         passed = len(blocking_issues) == 0
 
+        # Debug logging
+        logger.info(f"Quality check details:")
+        logger.info(
+            f"  - Quality score: {quality_score:.1f} >= {min_quality_score} = {quality_score >= min_quality_score}"
+        )
+        logger.info(
+            f"  - High severity issues: {len(high_severity_fixes)} (block_on_high_severity={block_on_high_severity})"
+        )
+        logger.info(
+            f"  - Missing data: {overall_missing_pct:.1f}% <= {max_missing_data_pct}% = {overall_missing_pct <= max_missing_data_pct}"
+        )
+        logger.info(
+            f"  - Require target: {require_target_column}, Target column: {target_column}"
+        )
+        logger.info(f"  - Blocking issues count: {len(blocking_issues)}")
+        logger.info(f"  - Decision factors: {decision_factors}")
+
         if passed:
             decision_reason = (
                 f"All quality checks passed. {', '.join(decision_factors)}"
@@ -150,6 +170,7 @@ def evaluate_quality_gate(
         else:
             decision_reason = f"Quality gate failed. Blocking issues: {'; '.join(blocking_issues)}"
             logger.warning("❌ Quality gate FAILED")
+            logger.warning(f"Blocking issues: {blocking_issues}")
 
         # Log decision details
         logger.info(f"Quality score: {quality_score:.1f}")
@@ -299,27 +320,39 @@ def _generate_recommendations(
 
 
 @step
-def route_based_on_quality(
-    decision: QualityGateDecision,
-    on_pass_message: str = "Proceed to downstream processing",
-    on_fail_message: str = "Data quality insufficient - halt pipeline",
-) -> Annotated[str, "routing_decision"]:
-    """Route pipeline execution based on quality gate decision.
+def evaluate_quality_gate_with_routing(
+    report_json: Dict[str, Any],
+    min_quality_score: float = 70.0,
+    block_on_high_severity: bool = True,
+    max_missing_data_pct: float = 30.0,
+    require_target_column: bool = False,
+    target_column: str = None,
+) -> Tuple[
+    Annotated[QualityGateDecision, "quality_gate_decision"],
+    Annotated[str, "routing_message"],
+]:
+    """Combined quality gate evaluation and routing decision.
 
-    Simple routing step that can be used to conditionally execute
-    downstream steps based on quality gate results.
-
-    Args:
-        decision: Quality gate decision result
-        on_pass_message: Message when quality gate passes
-        on_fail_message: Message when quality gate fails
-
-    Returns:
-        Routing message indicating next steps
+    Returns both the detailed quality decision and routing message.
     """
+    # Use existing logic to evaluate quality
+    decision = evaluate_quality_gate(
+        report_json,
+        min_quality_score,
+        block_on_high_severity,
+        max_missing_data_pct,
+        require_target_column,
+        target_column,
+    )
+
+    # Generate routing message
     if decision.passed:
-        logger.info(f"🚀 {on_pass_message}")
-        return on_pass_message
+        routing_message = (
+            "🚀 Data quality passed - proceed to downstream processing"
+        )
+        logger.info(routing_message)
     else:
-        logger.warning(f"🛑 {on_fail_message}")
-        return on_fail_message
+        routing_message = "🛑 Data quality insufficient - review and improve data before proceeding"
+        logger.warning(routing_message)
+
+    return decision, routing_message
