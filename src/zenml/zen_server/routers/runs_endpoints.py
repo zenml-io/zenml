@@ -22,6 +22,7 @@ from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
     API,
+    DOWNLOAD_TOKEN,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -30,7 +31,7 @@ from zenml.constants import (
     STOP,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, LoggingLevels
+from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
@@ -51,7 +52,13 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.utils import run_utils
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import (
+    AuthContext,
+    authorize,
+    generate_download_token,
+    verify_download_token,
+)
+from zenml.zen_server.download_utils import verify_run_logs_are_downloadable
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
@@ -529,6 +536,52 @@ def run_logs(
 
 
 @router.get(
+    "/{run_id}/logs" + DOWNLOAD_TOKEN,
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def get_run_logs_download_token(
+    run_id: UUID,
+    source: str,
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get a download token for the pipeline run logs.
+
+    Args:
+        run_id: ID of the pipeline run.
+        source: Required source to get logs for.
+
+    Returns:
+        The download token for the run logs.
+
+    Raises:
+        KeyError: If no logs are found for the specified source.
+    """
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        hydrate=True,
+    )
+    verify_run_logs_are_downloadable(run, source)
+
+    # The run log download is handled in a separate tab by the browser. In this
+    # tab, we do not have the ability to set any headers and therefore cannot
+    # include the CSRF token in the request. To handle this, we instead generate
+    # a JWT token in this endpoint (which includes CSRF and RBAC checks) and
+    # then use that token to download the run logs in a separate endpoint
+    # which only verifies this short-lived token.
+    return generate_download_token(
+        download_type=DownloadType.RUN_LOGS,
+        resource_id=run_id,
+        extra_data={"source": source},
+    )
+
+
+@router.get(
     "/{run_id}/logs/download",
     responses={
         401: error_response,
@@ -540,8 +593,8 @@ def run_logs(
 def download_run_logs(
     run_id: UUID,
     source: str,
+    token: str,
     format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
-    _: AuthContext = Security(authorize),
 ) -> StreamingResponse:
     """Download all pipeline run logs for a specific source as a formatted string.
 
@@ -560,6 +613,7 @@ def download_run_logs(
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
+        token: The token to authenticate the run logs download.
         format_string: Format string for each log entry using Python string formatting.
             If None or empty string, returns raw jsonified log entries without formatting.
 
@@ -569,13 +623,15 @@ def download_run_logs(
     Raises:
         KeyError: If no logs are found for the specified source.
     """
-    store = zen_store()
-
-    run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=store.get_run,
-        hydrate=True,
+    verify_download_token(
+        token=token,
+        download_type=DownloadType.RUN_LOGS,
+        resource_id=run_id,
+        extra_data={"source": source},
     )
+
+    store = zen_store()
+    run = store.get_run(run_id)
 
     # Handle runner logs from workload manager
     if run.deployment_id and source == "runner":

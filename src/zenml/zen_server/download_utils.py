@@ -11,21 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utility functions for downloading artifacts."""
+"""Utility functions for downloading artifacts and logs."""
 
 import os
 import tarfile
 import tempfile
-from typing import (
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING
 
 from zenml.artifacts.utils import _load_artifact_store
-from zenml.exceptions import (
-    IllegalOperationError,
-)
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ArtifactVersionResponse,
+    PipelineRunResponse,
+    StepRunResponse,
 )
 from zenml.zen_server.utils import server_config, zen_store
 
@@ -121,3 +119,76 @@ def create_artifact_archive(
                     tar.addfile(tarinfo, fileobj=f)
 
         return temp_file.name
+
+
+def verify_step_logs_are_downloadable(step: StepRunResponse) -> None:
+    """Verify that logs for the given step are downloadable.
+
+    Args:
+        step: The step to verify.
+
+    Raises:
+        IllegalOperationError: If no logs are available for this step.
+        KeyError: If the artifact store is not found or the logs URI does not exist.
+    """
+    if step.logs is None:
+        raise IllegalOperationError(
+            f"No logs are available for step '{step.id}'"
+        )
+    
+    if not step.logs.artifact_store_id:
+        raise KeyError(
+            f"Step '{step.id}' logs cannot be downloaded because the "
+            "underlying artifact store was deleted."
+        )
+
+    artifact_store = _load_artifact_store(
+        artifact_store_id=step.logs.artifact_store_id, zen_store=zen_store()
+    )
+
+    if not artifact_store.exists(step.logs.uri):
+        raise KeyError(f"The step logs URI '{step.logs.uri}' does not exist.")
+
+
+def verify_run_logs_are_downloadable(
+    run: PipelineRunResponse, source: str
+) -> None:
+    """Verify that logs for the given pipeline run and source are downloadable.
+
+    Args:
+        run: The pipeline run to verify.
+        source: The log source to verify.
+
+    Raises:
+        KeyError: If no logs are found for the specified source or if the artifact store is not found.
+    """
+    # Handle runner logs from workload manager
+    if run.deployment_id and source == "runner":
+        deployment = zen_store().get_deployment(run.deployment_id)
+        if deployment.template_id and server_config().workload_manager_enabled:
+            return  # Workload manager logs are available
+
+    # Handle logs from log collection
+    if run.log_collection:
+        for log_entry in run.log_collection:
+            if log_entry.source == source:
+                # Check if the artifact store exists and logs are accessible
+                if not log_entry.artifact_store_id:
+                    raise KeyError(
+                        f"Run '{run.id}' logs for source '{source}' cannot be downloaded because the "
+                        "underlying artifact store was deleted."
+                    )
+
+                artifact_store = _load_artifact_store(
+                    artifact_store_id=log_entry.artifact_store_id,
+                    zen_store=zen_store(),
+                )
+
+                if not artifact_store.exists(log_entry.uri):
+                    raise KeyError(
+                        f"The logs URI '{log_entry.uri}' for source '{source}' does not exist."
+                    )
+                return
+
+    # If we get here, no logs were found for the specified source
+    raise KeyError(f"No logs found for source '{source}' in run {run.id}")

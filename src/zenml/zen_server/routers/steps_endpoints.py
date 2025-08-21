@@ -21,13 +21,14 @@ from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
     API,
+    DOWNLOAD_TOKEN,
     LOGS,
     STATUS,
     STEP_CONFIGURATION,
     STEPS,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, LoggingLevels
+from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
     LogEntry,
@@ -41,7 +42,13 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import (
+    AuthContext,
+    authorize,
+    generate_download_token,
+    verify_download_token,
+)
+from zenml.zen_server.download_utils import verify_step_logs_are_downloadable
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
@@ -298,14 +305,50 @@ def get_step_logs(
 
 
 @router.get(
+    "/{step_id}" + LOGS + DOWNLOAD_TOKEN,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def get_step_logs_download_token(
+    step_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get a download token for the step logs.
+
+    Args:
+        step_id: ID of the step for which to get the logs.
+
+    Returns:
+        The download token for the step logs.
+    """
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    # Verify that logs are downloadable
+    verify_step_logs_are_downloadable(step)
+
+    # The step log download is handled in a separate tab by the browser. In this
+    # tab, we do not have the ability to set any headers and therefore cannot
+    # include the CSRF token in the request. To handle this, we instead generate
+    # a JWT token in this endpoint (which includes CSRF and RBAC checks) and
+    # then use that token to download the step logs in a separate endpoint
+    # which only verifies this short-lived token.
+    return generate_download_token(
+        download_type=DownloadType.STEP_LOGS,
+        resource_id=step_id,
+    )
+
+
+@router.get(
     "/{step_id}" + LOGS + "/download",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
 def download_step_logs(
     step_id: UUID,
+    token: str,
     format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
-    _: AuthContext = Security(authorize),
 ) -> StreamingResponse:
     """Download all logs of a specific step as a formatted string.
 
@@ -323,6 +366,7 @@ def download_step_logs(
 
     Args:
         step_id: ID of the step.
+        token: The token to authenticate the step logs download.
         format_string: Format string for each log entry using Python string formatting.
             If None or empty string, returns raw jsonified log entries without formatting.
 
@@ -332,10 +376,13 @@ def download_step_logs(
     Raises:
         HTTPException: If no logs are available for this step.
     """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
+    verify_download_token(
+        token=token,
+        download_type=DownloadType.STEP_LOGS,
+        resource_id=step_id,
+    )
 
+    step = zen_store().get_run_step(step_id, hydrate=True)
     store = zen_store()
     logs = step.logs
     if logs is None:
