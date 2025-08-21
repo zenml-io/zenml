@@ -16,7 +16,7 @@
 import functools
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Awaitable, Callable, Optional, Tuple, Union
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union, cast
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
@@ -1049,7 +1049,7 @@ def generate_access_token(
 def generate_download_token(
     download_type: DownloadType,
     resource_id: UUID,
-    extra_data: Optional[dict] = None,
+    extra_data: Optional[Dict[str, Any]] = None,
     expires_in_seconds: int = 30,
 ) -> str:
     """Generate a JWT token for downloading content.
@@ -1087,8 +1087,8 @@ def verify_download_token(
     token: str,
     download_type: DownloadType,
     resource_id: UUID,
-    extra_data: Optional[dict] = None,
-) -> dict:
+    extra_data: Optional[Dict[str, Any]] = None,
+) -> None:
     """Verify a JWT token for downloading content.
 
     Args:
@@ -1097,9 +1097,6 @@ def verify_download_token(
         resource_id: The expected resource ID.
         extra_data: Optional extra data to verify in the token.
 
-    Returns:
-        The decoded token claims.
-
     Raises:
         CredentialsNotValid: If the token is invalid or doesn't match expected values.
     """
@@ -1107,10 +1104,13 @@ def verify_download_token(
 
     config = server_config()
     try:
-        claims = jwt.decode(
-            token,
-            config.jwt_secret_key,
-            algorithms=[config.jwt_token_algorithm],
+        claims = cast(
+            Dict[str, Any],
+            jwt.decode(
+                token,
+                config.jwt_secret_key,
+                algorithms=[config.jwt_token_algorithm],
+            ),
         )
     except jwt.PyJWTError as e:
         raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
@@ -1125,8 +1125,6 @@ def verify_download_token(
         for key, expected_value in extra_data.items():
             if claims.get(key) != expected_value:
                 raise CredentialsNotValid(f"Invalid {key}")
-
-    return claims
 
 
 def http_authentication(
