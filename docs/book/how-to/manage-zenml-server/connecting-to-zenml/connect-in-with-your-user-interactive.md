@@ -40,7 +40,7 @@ To keep things simple, we can summarize the steps:
 1. Use the `zenml login <URL>` command to start a device flow and connect to a zenml server.
 2. Choose whether to trust the device when prompted.
 3. Check permitted devices with `zenml authorized-device list`.
-4. Invalidate a token with `zenml device lock ...`.
+4. Invalidate a token with `zenml authorized-device lock ...`.
 
 ### Important notice
 
