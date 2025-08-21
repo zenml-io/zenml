@@ -30,7 +30,7 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus, LoggingLevels
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
-    LogPage,
+    LogEntry,
     fetch_log_records,
     stream_log_records,
 )
@@ -260,7 +260,7 @@ def get_step_logs(
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> LogPage:
+) -> Page[LogEntry]:
     """Get the logs of a specific step.
 
     Args:

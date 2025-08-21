@@ -53,6 +53,7 @@ from zenml.logger import (
 from zenml.models import (
     LogsRequest,
     LogsResponse,
+    Page,
     PipelineDeploymentResponse,
     PipelineRunUpdate,
 )
@@ -115,16 +116,6 @@ class LogEntry(BaseModel):
         default_factory=uuid4,
         description="The unique identifier of the log entry",
     )
-
-
-class LogPage(BaseModel):
-    """A page of log entries."""
-
-    items: List[LogEntry]
-    total: int
-    index: int
-    max_size: int
-    total_pages: int
 
 
 class ArtifactStoreHandler(logging.Handler):
@@ -339,7 +330,7 @@ def fetch_log_records(
     count: int = MAX_LOG_ENTRIES,  # Number of entries to return
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
-) -> LogPage:
+) -> Page[LogEntry]:
     """Fetches the logs from the artifact store and parses them into LogEntry objects.
 
     This implementation uses streaming to efficiently handle large log files by:
@@ -392,7 +383,7 @@ def fetch_log_records(
                 if entries_found > start_index and entries_found <= end_index:
                     matching_entries.append(log_entry)
 
-        return LogPage(
+        return Page[LogEntry](
             items=matching_entries,
             total=entries_found,
             index=page,
@@ -406,7 +397,7 @@ def fetch_log_records(
     except Exception as e:
         # For any other errors during streaming, fall back to empty result
         logger.warning(f"Error streaming logs from {logs_uri}: {e}")
-        return LogPage(
+        return Page[LogEntry](
             items=[],
             total=0,
             index=page,

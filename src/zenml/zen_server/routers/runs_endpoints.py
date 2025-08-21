@@ -34,7 +34,7 @@ from zenml.enums import ExecutionStatus, LoggingLevels
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
     MAX_LOG_ENTRIES,
-    LogPage,
+    LogEntry,
     _entry_matches_filters,
     fetch_log_records,
     parse_log_entry,
@@ -443,7 +443,7 @@ def run_logs(
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> LogPage:
+) -> Page[LogEntry]:
     """Get pipeline run logs for a specific source.
 
     Args:
@@ -502,7 +502,7 @@ def run_logs(
                     ):
                         matching_entries.append(log_record)
 
-            return LogPage(
+            return Page[LogEntry](
                 items=matching_entries,
                 total=entries_found,
                 index=page,
