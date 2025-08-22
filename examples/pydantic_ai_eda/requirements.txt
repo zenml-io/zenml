@@ -7,7 +7,7 @@ numpy>=1.24.0,<2.0.0
 duckdb>=1.0.0,<2.0.0
 
 # Pydantic compatibility - CRITICAL: Must be <2.10 for ZenML compatibility
-pydantic>=2.0.0,<2.10.0
+pydantic
 
 # AI/ML frameworks
 pydantic-ai[logfire]>=0.4.0
