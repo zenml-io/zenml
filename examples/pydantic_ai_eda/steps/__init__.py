@@ -11,11 +11,14 @@ This module contains all the step functions used in the EDA pipeline:
 
 from .eda_agent import run_eda_agent
 from .ingest import ingest_data
+from .prompt_experiment import compare_agent_prompts, evaluate_prompts_with_test_cases
 from .quality_gate import evaluate_quality_gate, evaluate_quality_gate_with_routing
 
 __all__ = [
     "ingest_data",
     "run_eda_agent",
+    "compare_agent_prompts",
+    "evaluate_prompts_with_test_cases",
     "evaluate_quality_gate", 
     "evaluate_quality_gate_with_routing",
 ]
