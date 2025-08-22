@@ -104,6 +104,10 @@ class ArtifactVersionRequest(ProjectScopedRequest):
     data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
+    content_hash: Optional[str] = Field(
+        title="The content hash of the artifact version.",
+        default=None,
+    )
     tags: Optional[List[str]] = Field(
         title="Tags of the artifact.",
         description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
@@ -199,6 +203,10 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     )
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",
+        default=None,
+    )
+    content_hash: Optional[str] = Field(
+        title="The content hash of the artifact version.",
         default=None,
     )
 
@@ -306,6 +314,15 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().type
+
+    @property
+    def content_hash(self) -> Optional[str]:
+        """The `content_hash` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().content_hash
 
     @property
     def tags(self) -> List[TagResponse]:

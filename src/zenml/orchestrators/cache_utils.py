@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
     from zenml.models import (
+        ArtifactVersionResponse,
         PipelineDeploymentResponse,
         PipelineRunResponse,
         StepRunResponse,
@@ -39,7 +40,7 @@ logger = get_logger(__name__)
 
 def generate_cache_key(
     step: "Step",
-    input_artifact_ids: Dict[str, "UUID"],
+    input_artifacts: Dict[str, "ArtifactVersionResponse"],
     artifact_store: "BaseArtifactStore",
     project_id: "UUID",
 ) -> str:
@@ -91,9 +92,13 @@ def generate_cache_key(
         hash_.update(str(value).encode())
 
     # Input artifacts
-    for name, artifact_version_id in input_artifact_ids.items():
+    for name, artifact_version in input_artifacts.items():
         hash_.update(name.encode())
-        hash_.update(artifact_version_id.bytes)
+
+        if artifact_version.content_hash:
+            hash_.update(artifact_version.content_hash.encode())
+        else:
+            hash_.update(artifact_version.id.bytes)
 
     # Output artifacts and materializers
     for name, output in step.config.outputs.items():
