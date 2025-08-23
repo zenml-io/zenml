@@ -41,6 +41,7 @@ This collection demonstrates how to integrate popular agent frameworks with ZenM
 Choose any framework and get started in minutes:
 
 ```bash
+export OPENAI_API_KEY="your-api-key-here"
 cd framework-name/
 uv venv --python 3.11
 source .venv/bin/activate  
@@ -120,14 +121,6 @@ def agent_pipeline() -> str:
 - **LlamaIndex**: Function agents with async capabilities
 - **OpenAI Agents SDK**: Structured execution with OpenAI
 
-## 💡 Key Learnings
-
-1. **ExternalArtifact simplifies inputs**: No need for input steps
-2. **Framework APIs vary significantly**: Each requires specific execution patterns
-3. **Async handling matters**: Some frameworks require event loop management
-4. **Error handling is crucial**: Agent execution can fail in many ways
-5. **Consistent patterns scale**: Following established patterns makes integration easier
-
 ## 🔄 Implementation Notes
 
 ### Async Frameworks
@@ -153,28 +146,6 @@ Each framework returns different response types:
 - **ZenML**: Latest version
 - **UV**: For fast package management
 - **OpenAI API Key**: Most examples use OpenAI (set `OPENAI_API_KEY`)
-
-## 🛠️ Development
-
-### Adding New Frameworks
-
-1. Create folder structure:
-   ```
-   new-framework/
-   ├── README.md
-   ├── requirements.txt
-   └── run.py
-   ```
-
-2. Follow the three-step pipeline pattern
-3. Add framework-specific notes to main README
-4. Test with ZenML integration
-
-### Code Quality
-- **Error handling**: Always wrap agent execution in try-catch
-- **Resource management**: Properly start/stop runtimes
-- **Artifact naming**: Use descriptive, consistent names
-- **Documentation**: Clear, concise README per framework
 
 ## 🆘 Getting Help
 
@@ -210,9 +181,8 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 [Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
 [LLMOps Guide]: https://docs.zenml.io/user-guides/llmops-guide
 [Documentation]: https://docs.zenml.io/
-[API Reference]: https://apidocs.zenml.io/
+[SDK Reference]: https://sdkdocs.zenml.io/
 [Examples]: https://github.com/zenml-io/zenml/tree/main/examples
-[Podcast]: https://podcast.zenml.io/
 
 ---
 
