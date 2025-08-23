@@ -123,6 +123,15 @@ def agent_pipeline() -> str:
 
 ## 🔄 Implementation Notes
 
+### Production vs. Demos
+**These examples demonstrate single-query execution for simplicity.** In production, ZenML's value comes from:
+- **Batch processing**: Process hundreds/thousands of queries overnight
+- **Agent evaluation**: Compare different frameworks on test datasets  
+- **Data pipelines**: Use agents to process document collections
+- **A/B testing**: Systematic comparison of agent configurations
+
+For real-time serving, use FastAPI/Flask directly. Use ZenML for the operational layer.
+
 ### Async Frameworks
 Some frameworks require async handling within ZenML steps:
 - **LlamaIndex**: `asyncio.run(agent.run(query))`
