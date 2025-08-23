@@ -1,7 +1,7 @@
 <br />
 <div align="center">
   <a href="https://zenml.io">
-    <img src="https://zenml.io/assets/social-media-preview.png" alt="ZenML Logo" width="600">
+    <img src="../../docs/book/.gitbook/assets/header.png" alt="ZenML Logo" width="600">
   </a>
 
 <h3 align="center">Agent Frameworks Integration Examples</h3>
