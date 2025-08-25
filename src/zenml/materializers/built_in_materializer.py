@@ -138,6 +138,19 @@ class BuiltInMaterializer(BaseMaterializer):
 
         return {}
 
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+        """
+        import hashlib
+        import json
+
+        json_string = json.dumps(data, sort_keys=True)
+
+        return hashlib.md5(json_string.encode()).hexdigest()
+
 
 class BytesMaterializer(BaseMaterializer):
     """Handle `bytes` data type, which is not JSON serializable."""

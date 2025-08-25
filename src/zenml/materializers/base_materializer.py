@@ -229,6 +229,17 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         # Optionally, extract some metadata from `data` for ZenML to store.
         return {}
 
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
+        """
+        return None
+
     # ================
     # Internal Methods
     # ================

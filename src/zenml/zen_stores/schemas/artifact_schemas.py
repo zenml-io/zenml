@@ -299,6 +299,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         ),
     )
     save_type: str = Field(sa_column=Column(TEXT, nullable=False))
+    content_hash: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     # Foreign keys
     artifact_id: UUID = build_foreign_key_field(
@@ -483,6 +484,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             materializer=artifact_version_request.materializer.model_dump_json(),
             data_type=artifact_version_request.data_type.model_dump_json(),
             save_type=artifact_version_request.save_type.value,
+            content_hash=artifact_version_request.content_hash,
         )
 
     def to_model(
@@ -530,6 +532,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             updated=self.updated,
             save_type=ArtifactSaveType(self.save_type),
             artifact_store_id=self.artifact_store_id,
+            content_hash=self.content_hash,
         )
 
         # Create the metadata of the model
