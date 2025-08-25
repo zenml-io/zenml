@@ -38,6 +38,7 @@ if TYPE_CHECKING:
         ModelVersionSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
+        PipelineEndpointSchema,
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
@@ -120,6 +121,10 @@ class ProjectSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     model_versions: List["ModelVersionSchema"] = Relationship(
+        back_populates="project",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    pipeline_endpoints: List["PipelineEndpointSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )

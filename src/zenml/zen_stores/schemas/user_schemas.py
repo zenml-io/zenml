@@ -51,6 +51,7 @@ if TYPE_CHECKING:
         OAuthDeviceSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
+        PipelineEndpointSchema,
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
@@ -168,6 +169,9 @@ class UserSchema(NamedSchema, table=True):
     api_keys: List["APIKeySchema"] = Relationship(
         back_populates="service_account",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    pipeline_endpoints: List["PipelineEndpointSchema"] = Relationship(
+        back_populates="user",
     )
     tags: List["TagSchema"] = Relationship(
         back_populates="user",
