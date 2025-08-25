@@ -9,6 +9,11 @@ from pydantic_ai.settings import ModelSettings
 from zenml import step
 from zenml.types import MarkdownString
 
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+
 # Logfire for observability
 try:
     import logfire
@@ -26,13 +31,24 @@ def run_eda_agent(
     dataset_df: pd.DataFrame,
     dataset_metadata: Dict[str, Any],
     agent_config: AgentConfig = None,
+    custom_system_prompt: str = None,
 ) -> Tuple[
     Annotated[MarkdownString, "eda_report_markdown"],
     Annotated[Dict[str, Any], "eda_report_json"],
     Annotated[List[Dict[str, str]], "sql_execution_log"],
     Annotated[Dict[str, pd.DataFrame], "analysis_tables"],
 ]:
-    """Run simple Pydantic AI agent for EDA analysis."""
+    """Run Pydantic AI agent for EDA analysis with optional custom prompt.
+    
+    Args:
+        dataset_df: Dataset to analyze
+        dataset_metadata: Metadata about the dataset
+        agent_config: Configuration for the AI agent
+        custom_system_prompt: Optional custom system prompt (overrides default)
+        
+    Returns:
+        Tuple of EDA outputs: markdown report, JSON report, SQL log, analysis tables
+    """
     if agent_config is None:
         agent_config = AgentConfig()
 
@@ -49,8 +65,12 @@ def run_eda_agent(
     deps = AnalystAgentDeps()
     main_ref = deps.store(dataset_df)
 
-    # Create the EDA analyst agent with focused system prompt
-    system_prompt = """You are a data analyst. Perform quick but insightful EDA.
+    # Create the EDA analyst agent with system prompt (custom or default)
+    if custom_system_prompt:
+        system_prompt = custom_system_prompt
+        logger.info("🎯 Using custom optimized system prompt for analysis")
+    else:
+        system_prompt = """You are a data analyst. Perform quick but insightful EDA.
 
 FOCUS ON:
 - Data quality score (0-100) based on missing data and duplicates
@@ -59,6 +79,7 @@ FOCUS ON:
 - 2-3 actionable recommendations
 
 Be concise but specific with numbers. Aim for quality insights, not exhaustive analysis."""
+        logger.info("📝 Using default system prompt for analysis")
 
     analyst_agent = Agent(
         f"openai:{agent_config.model_name}",
