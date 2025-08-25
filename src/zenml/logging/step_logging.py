@@ -70,10 +70,10 @@ ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
-MAX_LOG_ENTRIES = (
+DEFAULT_PAGE_SIZE = (
     100  # Maximum number of log entries to return in a single request
 )
-MAX_MESSAGE_SIZE = (
+DEFAULT_MESSAGE_SIZE = (
     10 * 1024
 )  # Maximum size of a single log message in bytes (10KB)
 
@@ -149,7 +149,7 @@ class ArtifactStoreHandler(logging.Handler):
 
             # Check if message needs to be chunked
             message_bytes = message.encode("utf-8")
-            if len(message_bytes) <= MAX_MESSAGE_SIZE:
+            if len(message_bytes) <= DEFAULT_MESSAGE_SIZE:
                 # Message is small enough, emit as-is
                 log_record = LogEntry.model_construct(
                     message=message,
@@ -203,7 +203,7 @@ class ArtifactStoreHandler(logging.Handler):
 
         while start < len(message_bytes):
             # Calculate the end position for this chunk
-            end = min(start + MAX_MESSAGE_SIZE, len(message_bytes))
+            end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
 
             # Try to decode the chunk, backing up if we hit a UTF-8 boundary issue
             while end > start:
@@ -217,7 +217,7 @@ class ArtifactStoreHandler(logging.Handler):
                     end -= 1
             else:
                 # If we can't decode anything, use replacement characters
-                end = min(start + MAX_MESSAGE_SIZE, len(message_bytes))
+                end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
                 chunks.append(
                     message_bytes[start:end].decode("utf-8", errors="replace")
                 )
@@ -327,7 +327,7 @@ def fetch_log_records(
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
     page: int = 1,
-    count: int = MAX_LOG_ENTRIES,  # Number of entries to return
+    count: int = DEFAULT_PAGE_SIZE,  # Number of entries to return
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
 ) -> Page[LogEntry]:
@@ -343,7 +343,7 @@ def fetch_log_records(
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the artifact.
         page: The page number to return.
-        count: The number of entries to return (max MAX_LOG_ENTRIES).
+        count: The number of entries to return.
         level: Optional log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
 

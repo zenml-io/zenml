@@ -34,7 +34,7 @@ from zenml.constants import (
 from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
-    MAX_LOG_ENTRIES,
+    DEFAULT_PAGE_SIZE,
     LogEntry,
     _entry_matches_filters,
     fetch_log_records,
@@ -446,7 +446,7 @@ def run_logs(
     run_id: UUID,
     source: str,
     page: int = 1,
-    count: int = MAX_LOG_ENTRIES,
+    count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
@@ -462,7 +462,7 @@ def run_logs(
         search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        A list of up to MAX_LOG_ENTRIES structured LogEntry objects for
+        A list of up to DEFAULT_PAGE_SIZE structured LogEntry objects for
         the specified source, starting from the given offset index in the filtered results.
 
     Raises:
@@ -557,9 +557,6 @@ def get_run_logs_download_token(
 
     Returns:
         The download token for the run logs.
-
-    Raises:
-        KeyError: If no logs are found for the specified source.
     """
     run = verify_permissions_and_get_entity(
         id=run_id,

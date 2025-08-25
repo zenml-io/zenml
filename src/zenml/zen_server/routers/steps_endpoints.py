@@ -30,7 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
 from zenml.logging.step_logging import (
-    MAX_LOG_ENTRIES,
+    DEFAULT_PAGE_SIZE,
     LogEntry,
     fetch_log_records,
     stream_log_records,
@@ -263,7 +263,7 @@ def get_step_status(
 def get_step_logs(
     step_id: UUID,
     page: int = 1,
-    count: int = MAX_LOG_ENTRIES,  # Number of log entries to return
+    count: int = DEFAULT_PAGE_SIZE,  
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
@@ -273,7 +273,7 @@ def get_step_logs(
     Args:
         step_id: ID of the step for which to get the logs.
         page: The page number to return.
-        count: The number of log entries to return (max MAX_LOG_ENTRIES).
+        count: The number of log entries to return (max DEFAULT_PAGE_SIZE).
         level: Optional log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
 
