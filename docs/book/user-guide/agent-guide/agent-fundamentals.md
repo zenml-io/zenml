@@ -8,16 +8,26 @@ This chapter shows you how to transform experimental agent code into systematic,
 
 <figure><img src="../.gitbook/assets/agent-scaling-challenge.png" alt=""><figcaption><p>ZenML transforms agent development from experimental scripts into systematic, trackable workflows.</p></figcaption></figure>
 
+## A note on agent orchestrators vs ZenML
+
+Some of you might already be familiar with agent orchestration frameworks like [LangGraph](https://www.langchain.com/langgraph) or the [OpenAI SDK](https://openai.github.io/openai-agents-python/). The good news is that these frameworks integrate seamlessly with ZenML pipelines: you can easily embed agent workflows as steps within your pipeline, allowing you to orchestrate, track, and version your agent experiments alongside the rest of your ML workflow. This means you get the benefits of both worlds—leveraging powerful agent frameworks while maintaining systematic experiment tracking and reproducibility through ZenML.
+
+Having said that, you don't need agent frameworks. Many successful production systems use direct LLM API calls. ZenML works with any approach - frameworks, custom code, or direct API calls. The key is systematic development, not the underlying implementation.
+
+{% hint style="info" %}
+**Quick Start**: If you want to see working examples of ZenML with agent frameworks first, check our [framework integrations example](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations) with 11+ ready-to-run examples.
+{% endhint %}
+
 ## From Scripts to Systematic Development
 
 Most agent development starts like this:
 
 ```python
 # Experimental notebook approach
-agent_v1 = create_langchain_agent(prompt_template_v1)
+agent_v1 = create_langgraph_agent(prompt_template_v1)
 agent_v2 = create_custom_agent(prompt_template_v2)
 
-response_v1 = agent_v1.run("Analyze this customer feedback...")
+response_v1 = agent_v1.invoke("Analyze this customer feedback...")
 response_v2 = agent_v2.run("Analyze this customer feedback...")
 
 # Manual comparison by eyeballing outputs

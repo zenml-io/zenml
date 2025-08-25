@@ -11,7 +11,9 @@ Transform your agent development from experimental scripts into systematic, prod
 
 ## Why pipelines for agents (for ML/AI engineers)
 
-Agents evolve quickly: prompts change, tools are added/removed, and behavior shifts in production. A pipeline-first approach gives you reproducibility, lineage, and safe iteration: you version prompts and configs, deploy with confidence, and evaluate continuously on real traces. ZenML lets you apply the same rigor you use for classical ML to agents—regardless of whether you use an agent framework or direct LLM calls. The benefit is speed with control: faster iteration loops, clear governance, and a shared operating model across teams.
+Agents evolve quickly: prompts change, tools are added/removed, and behavior shifts in production. A pipeline-first approach gives you reproducibility, lineage, and safe iteration: you version prompts and configs, deploy with confidence, and evaluate continuously on real traces. 
+
+ZenML lets you apply the same rigor you use for classical ML to agents—regardless of whether you use an agent framework or direct LLM calls. The benefit is speed with control: faster iteration loops, clear governance, and a shared operating model across teams.
 
 Common pitfalls of ad‑hoc agent work today:
 - Experiment across notebooks and frameworks without shared structure
@@ -21,7 +23,7 @@ Common pitfalls of ad‑hoc agent work today:
 
 **ZenML changes this** by applying the same systematic rigor you use for traditional ML to agent development.
 
-Looking for a runnable starting point? See the end-to-end minimal example in `examples/minimal_agent_production`.
+Looking for a runnable starting point? See the end-to-end minimal example in [`examples/minimal_agent_production`](https://github.com/zenml-io/zenml/tree/main/examples/minimal_agent_production).
 
 ## This Guide's Journey
 
@@ -45,12 +47,4 @@ Each chapter builds on the previous one, creating a complete workflow from initi
 - Familiarity with [ZenML fundamentals](../starter-guide/)
 - Experience with [LLM evaluation patterns](../llmops-guide/evaluation/) (helpful but not required)
 
-## Framework Philosophy
-
-**Important**: You don't need agent frameworks. Many successful production systems use direct LLM API calls. ZenML works with any approach - frameworks, custom code, or direct API calls. The key is systematic development, not the underlying implementation.
-
 Ready? Let's start with [development fundamentals](agent-fundamentals.md) to set up your systematic agent development workflow.
-
-{% hint style="info" %}
-**Quick Start**: If you want to see working examples first, check our [framework integrations repository](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations) with 11+ ready-to-run examples.
-{% endhint %}
