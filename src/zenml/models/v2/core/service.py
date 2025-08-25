@@ -28,7 +28,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
-from sqlalchemy.sql.elements import ColumnElement
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ServiceState
@@ -44,6 +43,8 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.misc.service import ServiceType
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.models.v2.core.model_version import ModelVersionResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema

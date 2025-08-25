@@ -37,8 +37,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import Float, and_, asc, cast, desc, or_
-from sqlmodel import SQLModel
 
 from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
@@ -54,6 +52,7 @@ from zenml.utils.typing_utils import get_args
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
+    from sqlmodel import SQLModel
 
     from zenml.zen_stores.schemas import BaseSchema, NamedSchema
 
@@ -112,7 +111,7 @@ class Filter(BaseModel, ABC):
 
     def generate_query_conditions(
         self,
-        table: Type[SQLModel],
+        table: Type["SQLModel"],
     ) -> "ColumnElement[bool]":
         """Generate the query conditions for the database.
 
@@ -270,6 +269,8 @@ class StrFilter(Filter):
         Raises:
             ValueError: If the comparison fails.
         """
+        from sqlalchemy import Float, and_, cast
+
         try:
             numeric_column = cast(column, Float)
             assert self.value is not None
@@ -332,6 +333,8 @@ class StrFilter(Filter):
         Returns:
             The query condition.
         """
+        from sqlalchemy import or_
+
         if is_json_encoded:
             return or_(
                 column.startswith(self.value),
@@ -350,6 +353,8 @@ class StrFilter(Filter):
         Returns:
             The query condition.
         """
+        from sqlalchemy import or_
+
         if is_json_encoded:
             return or_(
                 column.endswith(self.value), column.endswith(f'{self.value}"')
@@ -367,6 +372,8 @@ class StrFilter(Filter):
         Returns:
             The query condition.
         """
+        from sqlalchemy import and_
+
         if is_json_encoded:
             return and_(column != self.value, column != f'"{self.value}"')
         else:
@@ -382,6 +389,8 @@ class StrFilter(Filter):
         Returns:
             The query condition.
         """
+        from sqlalchemy import or_
+
         if is_json_encoded:
             return or_(column == self.value, column == f'"{self.value}"')
         else:
@@ -862,7 +871,7 @@ class BaseFilter(BaseModel):
     @staticmethod
     def generate_custom_query_conditions_for_column(
         value: Any,
-        table: Type[SQLModel],
+        table: Type["SQLModel"],
         column: str,
     ) -> "ColumnElement[bool]":
         """Generate custom filter conditions for a column of a table.
@@ -976,6 +985,8 @@ class BaseFilter(BaseModel):
         Returns:
             The query with sorting applied.
         """
+        from sqlalchemy import asc, desc
+
         column, operand = self.sorting_params
 
         if operand == SorterOps.DESCENDING:
