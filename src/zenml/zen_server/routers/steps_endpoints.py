@@ -263,7 +263,7 @@ def get_step_status(
 def get_step_logs(
     step_id: UUID,
     page: int = 1,
-    count: int = DEFAULT_PAGE_SIZE,  
+    count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
