@@ -15,6 +15,7 @@
 
 import asyncio
 import logging
+import math
 import os
 import queue
 import re
@@ -22,11 +23,15 @@ import threading
 import time
 from contextlib import nullcontext
 from contextvars import ContextVar
+from datetime import datetime
 from types import TracebackType
-from typing import Any, List, Optional, Type, Union
+from typing import Any, Iterator, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
+from pydantic import BaseModel, Field
+
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
@@ -37,6 +42,7 @@ from zenml.constants import (
     LOGS_WRITE_INTERVAL_SECONDS,
     handle_bool_env_var,
 )
+from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import (
     get_logger,
@@ -47,10 +53,12 @@ from zenml.logger import (
 from zenml.models import (
     LogsRequest,
     LogsResponse,
+    Page,
     PipelineDeploymentResponse,
     PipelineRunUpdate,
 )
 from zenml.utils.io_utils import sanitize_remote_path
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -62,6 +70,52 @@ ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
+DEFAULT_PAGE_SIZE = (
+    100  # Maximum number of log entries to return in a single request
+)
+DEFAULT_MESSAGE_SIZE = (
+    10 * 1024
+)  # Maximum size of a single log message in bytes (10KB)
+
+
+class LogEntry(BaseModel):
+    """A structured log entry with parsed information."""
+
+    message: str = Field(description="The log message content")
+    name: Optional[str] = Field(
+        default=None,
+        description="The name of the logger",
+    )
+    level: Optional[LoggingLevels] = Field(
+        default=None,
+        description="The log level",
+    )
+    timestamp: Optional[datetime] = Field(
+        default=None,
+        description="When the log was created",
+    )
+    module: Optional[str] = Field(
+        default=None, description="The module that generated this log entry"
+    )
+    filename: Optional[str] = Field(
+        default=None,
+        description="The name of the file that generated this log entry",
+    )
+    lineno: Optional[int] = Field(
+        default=None, description="The fileno that generated this log entry"
+    )
+    chunk_index: int = Field(
+        default=0,
+        description="The index of the chunk in the log entry",
+    )
+    total_chunks: int = Field(
+        default=1,
+        description="The total number of chunks in the log entry",
+    )
+    id: UUID = Field(
+        default_factory=uuid4,
+        description="The unique identifier of the log entry",
+    )
 
 
 class ArtifactStoreHandler(logging.Handler):
@@ -86,12 +140,91 @@ class ArtifactStoreHandler(logging.Handler):
             record: The log record to emit.
         """
         try:
-            # Format for storage with timestamp, level, and message
+            # Get level enum
+            level = LoggingLevels.__members__.get(record.levelname.upper())
+
+            # Get the message
             message = self.format(record)
             message = remove_ansi_escape_codes(message).rstrip()
-            self.storage.write(message)
+
+            # Check if message needs to be chunked
+            message_bytes = message.encode("utf-8")
+            if len(message_bytes) <= DEFAULT_MESSAGE_SIZE:
+                # Message is small enough, emit as-is
+                log_record = LogEntry.model_construct(
+                    message=message,
+                    name=record.name,
+                    level=level,
+                    timestamp=utc_now(),
+                    module=record.module,
+                    filename=record.filename,
+                    lineno=record.lineno,
+                )
+                json_line = log_record.model_dump_json(exclude_none=True)
+                self.storage.write(json_line)
+            else:
+                # Message is too large, split into chunks and emit each one
+                chunks = self._split_to_chunks(message)
+                entry_id = uuid4()
+                for i, chunk in enumerate(chunks):
+                    log_record = LogEntry.model_construct(
+                        message=chunk,
+                        name=record.name,
+                        level=level,
+                        module=record.module,
+                        filename=record.filename,
+                        lineno=record.lineno,
+                        timestamp=utc_now(),
+                        chunk_index=i,
+                        total_chunks=len(chunks),
+                        id=entry_id,
+                    )
+
+                    json_line = log_record.model_dump_json(exclude_none=True)
+                    self.storage.write(json_line)
         except Exception:
             pass
+
+    def _split_to_chunks(self, message: str) -> List[str]:
+        """Split a large message into chunks.
+
+        Args:
+            message: The message to split.
+
+        Returns:
+            A list of message chunks.
+        """
+        # Calculate how many chunks we need
+        message_bytes = message.encode("utf-8")
+
+        # Split the message into chunks, handling UTF-8 boundaries
+        chunks = []
+        start = 0
+
+        while start < len(message_bytes):
+            # Calculate the end position for this chunk
+            end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
+
+            # Try to decode the chunk, backing up if we hit a UTF-8 boundary issue
+            while end > start:
+                chunk_bytes = message_bytes[start:end]
+                try:
+                    chunk_text = chunk_bytes.decode("utf-8")
+                    chunks.append(chunk_text)
+                    break
+                except UnicodeDecodeError:
+                    # If we can't decode, try a smaller chunk
+                    end -= 1
+            else:
+                # If we can't decode anything, use replacement characters
+                end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
+                chunks.append(
+                    message_bytes[start:end].decode("utf-8", errors="replace")
+                )
+
+            start = end
+
+        return chunks
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -104,6 +237,43 @@ def remove_ansi_escape_codes(text: str) -> str:
         the version of the input string where the escape codes are removed.
     """
     return ansi_escape.sub("", text)
+
+
+def parse_log_entry(log_line: str) -> Optional[LogEntry]:
+    """Parse a single log entry into a LogEntry object.
+
+    Handles two formats:
+    1. JSON format: {"timestamp": "...", "level": "...", "message": "...", "location": "..."}
+       Uses Pydantic's model_validate_json for automatic parsing and validation.
+    2. Plain text: Any other text (defaults to INFO level)
+
+    Args:
+        log_line: A single log line to parse
+
+    Returns:
+        LogEntry object. For JSON logs, all fields are validated and parsed automatically.
+        For plain text logs, only message is populated with INFO level default.
+        Returns None only for empty lines.
+    """
+    stripped_line = log_line.strip()
+    if not stripped_line:
+        return None
+
+    # Try to parse JSON format first
+    if stripped_line.startswith("{") and stripped_line.endswith("}"):
+        try:
+            return LogEntry.model_validate_json(stripped_line)
+        except Exception:
+            # If JSON parsing or validation fails, treat as plain text
+            pass
+
+    # For any other format (plain text), create LogEntry with defaults
+    return LogEntry(
+        message=stripped_line,
+        name=None,  # No logger name available for plain text logs
+        level=LoggingLevels.INFO,  # Default level for plain text logs
+        timestamp=None,  # No timestamp available for plain text logs
+    )
 
 
 def prepare_logs_uri(
@@ -152,119 +322,240 @@ def prepare_logs_uri(
     return sanitize_remote_path(logs_uri)
 
 
-def fetch_logs(
+def fetch_log_records(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
-    offset: int = 0,
-    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
-    strip_timestamp: bool = False,
-) -> str:
-    """Fetches the logs from the artifact store.
+    page: int = 1,
+    count: int = DEFAULT_PAGE_SIZE,  # Number of entries to return
+    level: int = LoggingLevels.INFO.value,
+    search: Optional[str] = None,
+) -> Page[LogEntry]:
+    """Fetches the logs from the artifact store and parses them into LogEntry objects.
+
+    This implementation uses streaming to efficiently handle large log files by:
+
+    1. Reading logs line by line instead of loading everything into memory
+    2. Applying filters as we go to avoid processing unnecessary data
 
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the artifact.
-        offset: The offset from which to start reading.
-        length: The amount of bytes that should be read.
-        strip_timestamp: Whether to strip timestamps in logs or not
+        page: The page number to return.
+        count: The number of entries to return.
+        level: Optional log level filter. Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        The logs as a string.
+        A list of LogEntry objects starting from the specified offset in the filtered results.
 
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact
             store.
+        FileNotFoundError: If the log file does not exist in the artifact store.
     """
-    from zenml.artifacts.utils import (
-        _load_artifact_store,
-        _load_file_from_artifact_store,
-        _strip_timestamp_from_multiline_string,
-    )
+    # We need to find (offset + count) matching entries total
+    start_index = (page - 1) * count
+    end_index = start_index + count
+    matching_entries = []
+    entries_found = 0
 
-    def _read_file(
-        uri: str,
-        offset: int = 0,
-        length: Optional[int] = None,
-        strip_timestamp: bool = False,
-    ) -> str:
-        file_content = str(
-            _load_file_from_artifact_store(
-                uri,
-                artifact_store=artifact_store,
-                mode="rb",
-                offset=offset,
-                length=length,
-            ).decode()
+    # Stream logs line by line instead of reading everything
+    try:
+        for line in _stream_logs_line_by_line(
+            zen_store=zen_store,
+            artifact_store_id=artifact_store_id,
+            logs_uri=logs_uri,
+        ):
+            if not line.strip():
+                continue
+
+            log_entry = parse_log_entry(line)
+            if not log_entry:
+                continue
+
+            # Check if this entry matches our filters
+            if _entry_matches_filters(log_entry, level, search):
+                entries_found += 1
+
+                # Only collect entries that are within the current page
+                if entries_found > start_index and entries_found <= end_index:
+                    matching_entries.append(log_entry)
+
+        return Page[LogEntry](
+            items=matching_entries,
+            total=entries_found,
+            index=page,
+            max_size=count,
+            total_pages=math.ceil(entries_found / count),
         )
-        if strip_timestamp:
-            file_content = _strip_timestamp_from_multiline_string(file_content)
-        return file_content
 
+    except (DoesNotExistException, FileNotFoundError):
+        # Re-raise DoesNotExistException as-is
+        raise
+    except Exception as e:
+        # For any other errors during streaming, fall back to empty result
+        logger.warning(f"Error streaming logs from {logs_uri}: {e}")
+        return Page[LogEntry](
+            items=[],
+            total=0,
+            index=page,
+            max_size=count,
+            total_pages=0,
+        )
+
+
+def _stream_logs_line_by_line(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+) -> Iterator[str]:
+    """Stream logs line by line without loading the entire file into memory.
+
+    This generator yields log lines one by one, handling both single files
+    and directories with multiple log files.
+
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the log file or directory.
+
+    Yields:
+        Individual log lines as strings.
+
+    Raises:
+        DoesNotExistException: If the artifact does not exist in the artifact store.
+    """
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+
     try:
         if not artifact_store.isdir(logs_uri):
-            return _read_file(logs_uri, offset, length, strip_timestamp)
+            # Single file case
+            with artifact_store.open(logs_uri, "r") as file:
+                for line in file:
+                    yield line.rstrip("\n\r")
         else:
+            # Directory case - may contain multiple log files
             files = artifact_store.listdir(logs_uri)
-            if len(files) == 1:
-                return _read_file(
-                    os.path.join(logs_uri, str(files[0])),
-                    offset,
-                    length,
-                    strip_timestamp,
+            if not files:
+                raise DoesNotExistException(
+                    f"Folder '{logs_uri}' is empty in artifact store "
+                    f"'{artifact_store.name}'."
                 )
-            else:
-                is_negative_offset = offset < 0
-                files.sort(reverse=is_negative_offset)
 
-                # search for the first file we need to read
-                latest_file_id = 0
-                for i, file in enumerate(files):
-                    file_size: int = artifact_store.size(
-                        os.path.join(logs_uri, str(file))
-                    )  # type: ignore[assignment]
+            # Sort files to read them in order
+            files.sort()
 
-                    if is_negative_offset:
-                        if file_size >= -offset:
-                            latest_file_id = -(i + 1)
-                            break
-                        else:
-                            offset += file_size
-                    else:
-                        if file_size > offset:
-                            latest_file_id = i
-                            break
-                        else:
-                            offset -= file_size
-
-                # read the files according to pre-filtering
-                files.sort()
-                ret = []
-                for file in files[latest_file_id:]:
-                    ret.append(
-                        _read_file(
-                            os.path.join(logs_uri, str(file)),
-                            offset,
-                            length,
-                            strip_timestamp,
-                        )
-                    )
-                    offset = 0
-                    length -= len(ret[-1])
-                    if length <= 0:
-                        # stop further reading, if the whole length is already read
-                        break
-
-                if not ret:
-                    raise DoesNotExistException(
-                        f"Folder '{logs_uri}' is empty in artifact store "
-                        f"'{artifact_store.name}'."
-                    )
-                return "".join(ret)
+            for file in files:
+                file_path = os.path.join(logs_uri, str(file))
+                with artifact_store.open(file_path, "r") as f:
+                    for line in f:
+                        yield line.rstrip("\n\r")
     finally:
         artifact_store.cleanup()
+
+
+def _entry_matches_filters(
+    entry: LogEntry,
+    level: int = LoggingLevels.INFO.value,
+    search: Optional[str] = None,
+) -> bool:
+    """Check if a log entry matches the given filters.
+
+    Args:
+        entry: The log entry to check.
+        level: Optional log level filter. Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
+
+    Returns:
+        True if the entry matches all filters, False otherwise.
+    """
+    # Apply level filter
+    if level:
+        try:
+            if not entry.level or entry.level.value < level:
+                return False
+        except KeyError:
+            # If invalid level provided, ignore the filter
+            pass
+
+    # Apply search filter
+    if search:
+        search_lower = search.lower()
+        if search_lower not in entry.message.lower():
+            return False
+
+    return True
+
+
+def stream_log_records(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+    format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
+) -> Iterator[str]:
+    """Streams logs from the artifact store line by line.
+
+    This generator yields formatted log lines one at a time, making it memory-efficient
+    for large log files.
+
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the artifact.
+        format_string: Format string for each log entry. If None or empty, yields raw lines.
+
+    Yields:
+        Individual formatted log lines as strings.
+    """
+    if not format_string:
+        # Stream raw file content
+        for line in _stream_logs_line_by_line(
+            zen_store=zen_store,
+            artifact_store_id=artifact_store_id,
+            logs_uri=logs_uri,
+        ):
+            yield line + "\n"
+        return
+
+    # Stream formatted logs
+    for line in _stream_logs_line_by_line(
+        zen_store=zen_store,
+        artifact_store_id=artifact_store_id,
+        logs_uri=logs_uri,
+    ):
+        if not line.strip():
+            continue
+
+        log_entry = parse_log_entry(line)
+        if not log_entry:
+            continue
+
+        # Prepare format arguments
+        format_args = {
+            "message": log_entry.message or "",
+            "name": log_entry.name or "",
+            "level": log_entry.level.name if log_entry.level else "",
+            "timestamp": log_entry.timestamp.isoformat()
+            if log_entry.timestamp
+            else "",
+            "module": log_entry.module or "",
+            "filename": log_entry.filename or "",
+            "lineno": log_entry.lineno or "",
+            "chunk_index": log_entry.chunk_index,
+            "total_chunks": log_entry.total_chunks,
+            "id": str(log_entry.id),
+        }
+
+        # Format the entry using the provided format string
+        try:
+            formatted_entry = format_string.format(**format_args)
+            yield formatted_entry + "\n"
+        except (KeyError, ValueError) as e:
+            # If formatting fails, fall back to raw message
+            logger.warning(f"Failed to format log entry: {e}")
+            yield (log_entry.message or "") + "\n"
 
 
 class PipelineLogsStorage:
@@ -609,9 +900,6 @@ class PipelineLogsStorageContext:
         # Create the handler object
         self.artifact_store_handler: ArtifactStoreHandler = (
             ArtifactStoreHandler(self.storage)
-        )
-        self.artifact_store_handler.setFormatter(
-            logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
         )
 
         # Additional configuration

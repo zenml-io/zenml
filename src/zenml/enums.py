@@ -53,6 +53,14 @@ class ArtifactSaveType(StrEnum):
     )
 
 
+class DownloadType(StrEnum):
+    """All possible types of downloadable content."""
+
+    ARTIFACT = "artifact"
+    STEP_LOGS = "step_logs"
+    RUN_LOGS = "run_logs"
+
+
 class VisualizationType(StrEnum):
     """All currently available visualization types."""
 

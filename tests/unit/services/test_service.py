@@ -81,10 +81,8 @@ def test_from_model(service_response):
     assert service.admin_state == service_response.admin_state
     assert dict(service.config) == service_response.config
     assert dict(service.status) == service_response.status
-    assert service.SERVICE_TYPE["type"] == service_response.service_type.type
-    assert (
-        service.SERVICE_TYPE["flavor"] == service_response.service_type.flavor
-    )
+    assert service.SERVICE_TYPE.type == service_response.service_type.type
+    assert service.SERVICE_TYPE.flavor == service_response.service_type.flavor
     assert service.endpoint == service_response.endpoint
 
 
