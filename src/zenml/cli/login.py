@@ -336,10 +336,10 @@ def connect_to_pro_server(
     if api_key and api_key.startswith("ZENPROKEY_"):
         if not pro_server:
             raise ValueError(
-                "You must provide the URL of the ZenML Pro server when "
+                "You must provide the name of the ZenML Pro server when "
                 "connecting with a ZenML Pro API key."
             )
-        credentials_store.set_api_key(pro_api_url, api_key)
+        credentials_store.set_api_key(pro_api_url, api_key, is_zenml_pro=True)
         api_key = None
 
     if not pro_server:
@@ -385,10 +385,9 @@ def connect_to_pro_server(
 
     if login or refresh:
         # If we reached this point, then we need to start a new login flow.
-        # We also need to remove all existing API tokens associated with the
-        # target ZenML Pro API, otherwise they will continue to be used after
-        # the re-login flow.
-        credentials_store.clear_all_pro_tokens()
+        # We also need to remove all existing credentials, otherwise they will
+        # continue to be used after the re-login flow.
+        credentials_store.clear_all_credentials()
         try:
             token = web_login(
                 pro_api_url=pro_api_url,
@@ -1153,7 +1152,7 @@ def logout(
             if credentials and credentials.pro_api_url == pro_api_url:
                 gc.set_default_store()
 
-            credentials_store.clear_all_pro_tokens(pro_api_url)
+            credentials_store.clear_all_credentials()
             cli_utils.declare("Logged out from all ZenML Pro servers.")
         return
 

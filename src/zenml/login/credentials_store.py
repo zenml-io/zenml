@@ -382,29 +382,10 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         """
         self.clear_token(pro_api_url)
 
-    def clear_all_pro_tokens(
-        self, pro_api_url: Optional[str] = None
-    ) -> List[ServerCredentials]:
-        """Delete all tokens from the store for ZenML Pro servers connected to a given API server.
-
-        Args:
-            pro_api_url: The URL of the ZenML Pro API server.
-
-        Returns:
-            A list of the credentials that were cleared.
-        """
-        credentials_to_clear = []
-        for server_url, server in self.credentials.copy().items():
-            if (
-                server.type == ServerType.PRO
-                and server.pro_api_url
-                and (pro_api_url is None or server.pro_api_url == pro_api_url)
-            ):
-                if server.api_key:
-                    continue
-                self.clear_token(server_url)
-                credentials_to_clear.append(server)
-        return credentials_to_clear
+    def clear_all_credentials(self) -> None:
+        """Delete all stored credentials."""
+        self.credentials = {}
+        self._save_credentials()
 
     def can_login(self, server_url: str) -> bool:
         """Check if credentials to login to the given server exist.
@@ -438,6 +419,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         self,
         server_url: str,
         api_key: str,
+        is_zenml_pro: bool = False,
     ) -> None:
         """Store an API key in the credentials store for a specific server URL.
 
@@ -447,6 +429,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Args:
             server_url: The server URL for which the token is to be stored.
             api_key: The API key to store.
+            is_zenml_pro: Whether the API key is for the ZenML Pro API.
         """
         self.check_and_reload_from_file()
         credential = self.credentials.get(server_url)
@@ -457,9 +440,11 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             credential.api_key = api_key
             credential.username = None
             credential.password = None
+            if is_zenml_pro:
+                credential.pro_api_url = server_url
         else:
             self.credentials[server_url] = ServerCredentials(
-                url=server_url, api_key=api_key
+                url=server_url, api_key=api_key, pro_api_url=server_url
             )
 
         self._save_credentials()
