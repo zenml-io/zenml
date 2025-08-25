@@ -90,6 +90,15 @@ To generate a new API token for the ZenML Pro API:
 * Currently, there is no "service account" concept for the ZenML Pro API (cloudapi.zenml.io)
 {% endhint %}
 
+{% hint style="warning" %}
+Which credentials should you use?
+
+- For organization/workspace/user management on the Pro management API (`cloudapi.zenml.io`), use short‑lived Pro API tokens (no service accounts).
+- For pipeline/run‑template operations on your Workspace API (your workspace URL), use temporary user tokens or—recommended for automation—service accounts + API keys.
+
+See the high‑level overview: [Connect to a server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml#choose-how-to-connect).
+{% endhint %}
+
 ## Workspace API Authentication
 
 The **Workspace API** is different from the ZenML Pro API and supports additional authentication methods including service accounts. This is the API you'll use for triggering run templates and other pipeline operations.

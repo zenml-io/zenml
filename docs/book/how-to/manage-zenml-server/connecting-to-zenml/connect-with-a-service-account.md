@@ -86,6 +86,10 @@ You can use a service account's API key to obtain short-lived API tokens for pro
 
 Accessing the API with this method is thoroughly documented in the [API reference section](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key).
 
+{% hint style="warning" %}
+Service accounts are supported for OSS servers and Workspace APIs. They are not supported for the ZenML Pro management API (`cloudapi.zenml.io`). For Pro management API access, use a Pro API token instead. See [Pro API Getting Started](https://docs.zenml.io/api-reference/pro-api/getting-started#programmatic-access-with-api-tokens).
+{% endhint %}
+
 ## Important notice
 
 Every API key issued is a potential gateway to access your data, secrets and infrastructure. It's important to regularly rotate API keys and deactivate or delete service accounts and API keys that are no longer needed.

@@ -22,6 +22,10 @@ To generate a new API token:
 
 ## Programmatic access with API tokens
 
-You can use the generated API tokens for programmatic access to the ZenML server's REST API. This is the quickest way to access the ZenML API programmatically when you're not using the ZenML CLI or Python client and you don't want to set up a service account.
+You can use the generated API tokens for programmatic access to the ZenML server's REST API (OSS server or Workspace API). This is the quickest way to access the ZenML API programmatically when you're not using the ZenML CLI or Python client and you don't want to set up a service account.
 
 Accessing the API with this method is thoroughly documented in the [API reference section](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-short-lived-api-token).
+
+{% hint style="info" %}
+Using the ZenML Pro management API (`cloudapi.zenml.io`)? Generate organization‑scoped API tokens in the Pro dashboard instead. See [Pro API Getting Started](https://docs.zenml.io/api-reference/pro-api/getting-started#programmatic-access-with-api-tokens).
+{% endhint %}
