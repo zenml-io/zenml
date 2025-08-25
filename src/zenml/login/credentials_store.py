@@ -302,6 +302,10 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
         Args:
             server_url: The server URL for which to check the authentication.
+
+        Returns:
+            True if the credentials store contains credentials that can be used
+            to login to the given server URL, False otherwise.
         """
         credentials = self.get_credentials(server_url)
         if credentials and (
@@ -366,6 +370,10 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
         Args:
             pro_api_url: The URL of the ZenML Pro API server.
+
+        Returns:
+            True if the credentials store contains credentials that can be used
+            to login to the given ZenML Pro API server, False otherwise.
         """
         credentials = self.get_pro_credentials(pro_api_url)
         if credentials and (

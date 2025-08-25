@@ -65,15 +65,14 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
 
         Args:
             url: The URL of the ZenML Pro API server.
-
-        Raises:
-            AuthorizationException: If no API token is found in the credentials
-                store.
         """
         self._url = url
 
     def authenticate(self) -> APIToken:
         """Authenticate to ZenML Pro and return the API token.
+
+        Returns:
+            The API token.
 
         Raises:
             AuthorizationException: If the login fails.
