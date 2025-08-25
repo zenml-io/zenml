@@ -12,6 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Secrets Store implementation."""
+try:
+    import sqlalchemy
+except ImportError:
+    raise ImportError("Slim client of ZenML only supports connecting to Rest servers, not to remote or local databases.")
 
 from typing import (
     TYPE_CHECKING,

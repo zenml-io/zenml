@@ -204,14 +204,19 @@ class BaseZenStore(
             TypeError: If no store type was found to support the supplied URL.
         """
         from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
-        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
-        if SqlZenStoreConfiguration.supports_url_scheme(url):
-            return StoreType.SQL
-        elif RestZenStoreConfiguration.supports_url_scheme(url):
+        if RestZenStoreConfiguration.supports_url_scheme(url):
             return StoreType.REST
+        
+        try:
+            from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+        except ImportError:
+            pass
         else:
-            raise TypeError(f"No store implementation found for URL: {url}.")
+            if SqlZenStoreConfiguration.supports_url_scheme(url):
+                return StoreType.SQL
+
+        raise TypeError(f"No store implementation found for URL: {url}.")
 
     @staticmethod
     def create_store(
@@ -252,10 +257,10 @@ class BaseZenStore(
         Returns:
             The default store configuration.
         """
+        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
         from zenml.zen_stores.secrets_stores.sql_secrets_store import (
             SqlSecretsStoreConfiguration,
         )
-        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(
             type=StoreType.SQL,
@@ -386,14 +391,20 @@ class BaseZenStore(
         Returns:
             Information about the store.
         """
-        from zenml.zen_stores.sql_zen_store import SqlZenStore
+        try:
+            from zenml.zen_stores.sql_zen_store import SqlZenStore
+        except ImportError:
+            is_sql_zen_store = False
+        else:
+            is_sql_zen_store = isinstance(self, SqlZenStore)
+        
 
         server_config = ServerConfiguration.get_server_config()
         deployment_type = server_config.deployment_type
         auth_scheme = server_config.auth_scheme
         metadata = server_config.metadata
         secrets_store_type = SecretsStoreType.NONE
-        if isinstance(self, SqlZenStore) and self.config.secrets_store:
+        if is_sql_zen_store and self.config.secrets_store:
             secrets_store_type = self.config.secrets_store.type
         store_info = ServerModel(
             id=GlobalConfiguration().user_id,

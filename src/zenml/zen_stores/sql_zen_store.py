@@ -13,6 +13,11 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+try:
+    import sqlalchemy
+except ImportError:
+    raise ImportError("Slim client of ZenML only supports connecting to Rest servers, not to remote or local databases.")
+
 import base64
 import inspect
 import json
