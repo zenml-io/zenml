@@ -17,7 +17,6 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
 from uuid import UUID
 
-from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 
 from zenml.constants import (
@@ -302,6 +301,8 @@ class APIKeyInternalResponse(APIKeyResponse):
         Returns:
             True if the keys match.
         """
+        from passlib.context import CryptContext
+
         # even when the hashed key is not set, we still want to execute
         # the hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)

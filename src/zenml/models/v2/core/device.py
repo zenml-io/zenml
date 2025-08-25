@@ -17,7 +17,6 @@ from datetime import datetime
 from typing import Optional, Union
 from uuid import UUID
 
-from passlib.context import CryptContext
 from pydantic import Field
 
 from zenml.enums import OAuthDeviceStatus
@@ -400,6 +399,8 @@ class OAuthDeviceInternalResponse(OAuthDeviceResponse):
         Returns:
             True if the code is valid, False otherwise.
         """
+        from passlib.context import CryptContext
+
         context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         result = context.verify(code, code_hash)
 
