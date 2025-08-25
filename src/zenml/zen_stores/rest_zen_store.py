@@ -421,7 +421,12 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         if api_key := data.pop("api_key", None):
             credentials_store = get_credentials_store()
-            credentials_store.set_api_key(url, api_key)
+            if api_key.startswith("ZENPROKEY_"):
+                credentials_store.set_api_key(
+                    ZENML_PRO_API_URL, api_key, is_zenml_pro=True
+                )
+            else:
+                credentials_store.set_api_key(url, api_key)
 
         return data
 

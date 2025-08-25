@@ -5,6 +5,12 @@ description: >-
 
 # Connect with a Service Account
 
+{% hint style="warning" %}
+**Service accounts are not available in ZenML Pro**
+
+If you are using ZenML Pro, you will notice that workspace level service accounts are not available. Please use [organization level service accounts instead](https://docs.zenml.io/pro/core-concepts/service-accounts).
+{% endhint %}
+
 Sometimes you may need to authenticate to a ZenML server from a non-interactive environment where the web login is not possible, like a CI/CD workload or a serverless function. In these cases, you can configure a service account and an API key and use the API key to authenticate to the ZenML server:
 
 ```bash
