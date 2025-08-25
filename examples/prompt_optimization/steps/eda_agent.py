@@ -7,9 +7,8 @@ from pydantic_ai import Agent
 from pydantic_ai.settings import ModelSettings
 
 from zenml import step
-from zenml.types import MarkdownString
-
 from zenml.logger import get_logger
+from zenml.types import MarkdownString
 
 logger = get_logger(__name__)
 
@@ -39,13 +38,13 @@ def run_eda_agent(
     Annotated[Dict[str, pd.DataFrame], "analysis_tables"],
 ]:
     """Run Pydantic AI agent for EDA analysis with optional custom prompt.
-    
+
     Args:
         dataset_df: Dataset to analyze
         dataset_metadata: Metadata about the dataset
         agent_config: Configuration for the AI agent
         custom_system_prompt: Optional custom system prompt (overrides default)
-        
+
     Returns:
         Tuple of EDA outputs: markdown report, JSON report, SQL log, analysis tables
     """

@@ -26,7 +26,9 @@ def ingest_data(
     Returns:
         Tuple of (dataframe, metadata)
     """
-    logger.info(f"Loading data from {source_config.source_type}:{source_config.source_path}")
+    logger.info(
+        f"Loading data from {source_config.source_type}:{source_config.source_path}"
+    )
 
     # Load data based on source type
     if source_config.source_type == "hf":
@@ -34,12 +36,16 @@ def ingest_data(
     elif source_config.source_type == "local":
         df = _load_from_local(source_config)
     else:
-        raise ValueError(f"Unsupported source type: {source_config.source_type}")
+        raise ValueError(
+            f"Unsupported source type: {source_config.source_type}"
+        )
 
     # Apply sampling if configured
     if source_config.sample_size and len(df) > source_config.sample_size:
         df = df.sample(n=source_config.sample_size, random_state=42)
-        logger.info(f"Sampled {source_config.sample_size} rows from {len(df)} total")
+        logger.info(
+            f"Sampled {source_config.sample_size} rows from {len(df)} total"
+        )
 
     # Generate simple metadata
     metadata = {
@@ -63,12 +69,14 @@ def _load_from_huggingface(config: DataSourceConfig) -> pd.DataFrame:
         # Simple dataset loading
         dataset = load_dataset(config.source_path, split="train")
         df = dataset.to_pandas()
-        
+
         logger.info(f"Loaded HuggingFace dataset: {config.source_path}")
         return df
 
     except ImportError:
-        raise ImportError("datasets library required. Install with: pip install datasets")
+        raise ImportError(
+            "datasets library required. Install with: pip install datasets"
+        )
     except Exception as e:
         raise RuntimeError(f"Failed to load dataset {config.source_path}: {e}")
 
@@ -77,7 +85,7 @@ def _load_from_local(config: DataSourceConfig) -> pd.DataFrame:
     """Load dataset from local file."""
     try:
         file_path = config.source_path
-        
+
         if file_path.endswith(".csv"):
             df = pd.read_csv(file_path)
         elif file_path.endswith(".json"):
