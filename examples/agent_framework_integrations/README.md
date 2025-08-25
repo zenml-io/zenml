@@ -184,7 +184,6 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 | 📓 **[Documentation]** | Full ZenML documentation |
 | 📒 **[API Reference]** | Detailed API documentation |
 | ⚽ **[Examples]** | More ZenML examples |
-| 🔈 **[Podcast]** | ML conversations every 2 weeks |
 
 [ZenML 101]: https://docs.zenml.io/user-guides/starter-guide
 [Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
