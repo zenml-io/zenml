@@ -96,7 +96,7 @@ __all__ = ["kernel", "create_kernel", "WeatherPlugin"]
 # Interactive demo (run only when executed directly)                          #
 # --------------------------------------------------------------------------- #
 async def _demo() -> None:  # pragma: no cover – illustrative only
-    """Simple interactive test of function-calling behaviour."""
+    """Simple interactive test of function-calling behavior."""
     chat_service = kernel.get_service(OpenAIChatCompletion)  # type: ignore[arg-type]
 
     # Chat history with a user request that triggers function calling

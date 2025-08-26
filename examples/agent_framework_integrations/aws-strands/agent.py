@@ -18,7 +18,7 @@ def get_weather(city: str) -> str:
     return f"It\u2019s always sunny in {city}!"
 
 
-# Initialise the OpenAI model, pulling the key from the environment rather than
+# Initialize the OpenAI model, pulling the key from the environment rather than
 # hard-coding credentials.
 model = OpenAIModel(
     client_args={
