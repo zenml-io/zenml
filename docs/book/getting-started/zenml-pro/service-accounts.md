@@ -250,13 +250,13 @@ curl -X 'POST' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'password=ZENPROKEY_eyJpZCI6I...'
 
-{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5Y2ViM2U3NS0wYzE4LTRjZmItYjQxYi1kNWRiMWQ2NDAwNzciLCJpc3MiOiJodHRwczovL2Nsb3VkYXBpLnplbm1sLmlvIiwiYXVkIjoiaHR0cHM6Ly9jbG91ZGFwaS56ZW5tbC5pbyIsImV4cCI6MTc1MTYyMDU2OSwiYXBpX2tleV9pZCI6ImNmMmY0ODBlLTFiNTYtNGVkMi04ZDg4LTljY2VkZjgwMTNlMiIsImd0eSI6Inplbm1sX2FwaV9rZXkifQ.775Id3uS602-VHEFH5w7zY5SXZ4XcUapm2xCtAEMeBg","expires_in":3600,"token_type":"bearer","device_id":null,"device_metadata":null}
+{"access_token":"...(access-token-value)...","expires_in":3600,"token_type":"bearer","device_id":null,"device_metadata":null}
 ```
 
 Then finally, the generated API access token is used as a bearer token when calling ZenML Pro API endpoints:
 
 ```python
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5Y2ViM2U3NS0wYzE4LTRjZmItYjQxYi1kNWRiMWQ2NDAwNzciLCJpc3MiOiJodHRwczovL2Nsb3VkYXBpLnplbm1sLmlvIiwiYXVkIjoiaHR0cHM6Ly9jbG91ZGFwaS56ZW5tbC5pbyIsImV4cCI6MTc1MTYyMDU2OSwiYXBpX2tleV9pZCI6ImNmMmY0ODBlLTFiNTYtNGVkMi04ZDg4LTljY2VkZjgwMTNlMiIsImd0eSI6Inplbm1sX2FwaV9rZXkifQ.775Id3uS602-VHEFH5w7zY5SXZ4XcUapm2xCtAEMeBg" https://cloudapi.zenml.io/users/me
+curl -H "Authorization: Bearer ...(access-token-value)..." https://cloudapi.zenml.io/users/me
 
 {"password":null,"password_expired":null,"name":"Automation Bot","avatar_url":null,"company":null,"job_title":null,"metadata":{},"id":"9ceb3e75-0c18-4cfb-b41b-d5db1d640077","username":"autobot","email":"autobot","oauth_provider":null,"oauth_id":null,"is_active":true,"is_superuser":false,"is_service_account":true,"organization_id":"fc992c14-d960-4db7-812e-8f070c99c6f0"}
 ```

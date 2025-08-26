@@ -178,6 +178,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
             url + "/auth/login",
             data={"password": api_key},
             headers=headers,
+            timeout=10,
         )
         json_response = cls._handle_response(response)
         if not isinstance(json_response, dict):
