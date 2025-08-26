@@ -17,10 +17,8 @@ jobs:
       ZENML_DEBUG: true
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_LOGGING_VERBOSITY: INFO
-      MLSTACKS_ANALYTICS_OPT_OUT: true
       AUTO_OPEN_DASHBOARD: false
       ZENML_ENABLE_RICH_TRACEBACK: false
-      TOKENIZERS_PARALLELISM: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       # Force uv venv to use Python 3.11 inside each example
