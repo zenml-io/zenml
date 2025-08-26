@@ -10,7 +10,7 @@ from typing import Annotated, Any, Dict, List
 
 from autogen_core import (
     AgentId,
-    BaseRuntime,
+    AgentRuntime,
     MessageContext,
     RoutedAgent,
     SingleThreadedAgentRuntime,
@@ -183,16 +183,18 @@ class TravelCoordinator(RoutedAgent):
         return travel_plan
 
 
-def setup_runtime() -> BaseRuntime:
+async def setup_runtime() -> AgentRuntime:
     """PanAgent entrypoint to configure and return the Autogen runtime."""
     runtime = SingleThreadedAgentRuntime()
 
     # Register all the agents that form the ensemble
-    WeatherAgent.register(runtime, "weather_agent", lambda: WeatherAgent())
-    AttractionAgent.register(
+    await WeatherAgent.register(
+        runtime, "weather_agent", lambda: WeatherAgent()
+    )
+    await AttractionAgent.register(
         runtime, "attraction_agent", lambda: AttractionAgent()
     )
-    TravelCoordinator.register(
+    await TravelCoordinator.register(
         runtime, "coordinator", lambda: TravelCoordinator()
     )
 
