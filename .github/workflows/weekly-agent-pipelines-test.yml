@@ -37,13 +37,6 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           source $HOME/.cargo/env
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-      - name: Cache UV dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: uv-agent-examples-${{ runner.os }}-3.11-${{ github.run_id }}
-          restore-keys: |
-            uv-agent-examples-${{ runner.os }}-3.11-
       - name: Run all agent examples
         id: run_examples
         shell: bash
