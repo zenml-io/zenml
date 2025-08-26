@@ -58,7 +58,12 @@ from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
 )
-from zenml.enums import GenericFilterOps, ServiceState, StackComponentType
+from zenml.enums import (
+    GenericFilterOps,
+    PipelineEndpointStatus,
+    ServiceState,
+    StackComponentType,
+)
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     RegisteredModel,
@@ -96,6 +101,7 @@ if TYPE_CHECKING:
         AuthenticationMethodModel,
         ComponentResponse,
         FlavorResponse,
+        PipelineEndpointResponse,
         PipelineRunResponse,
         ResourceTypeModel,
         ServiceConnectorRequest,
@@ -2301,6 +2307,81 @@ def print_pipeline_runs_table(
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)
+
+
+def get_pipeline_endpoint_status_emoji(
+    status: "PipelineEndpointStatus",
+) -> str:
+    """Returns an emoji representing the given pipeline endpoint status.
+
+    Args:
+        status: The pipeline endpoint status to get the emoji for.
+
+    Returns:
+        An emoji representing the given pipeline endpoint status.
+
+    Raises:
+        RuntimeError: If the given pipeline endpoint status is not supported.
+    """
+    if status == PipelineEndpointStatus.DEPLOYING:
+        return ":hourglass_flowing_sand:"
+    if status == PipelineEndpointStatus.ERROR:
+        return ":x:"
+    if status == PipelineEndpointStatus.RUNNING:
+        return ":gear:"
+    if status in [
+        PipelineEndpointStatus.DELETED,
+        PipelineEndpointStatus.DELETING,
+    ]:
+        return ":stop_sign:"
+    if status == PipelineEndpointStatus.UNKNOWN:
+        return ":question:"
+    raise RuntimeError(f"Unknown status: {status}")
+
+
+def print_pipeline_endpoints_table(
+    pipeline_endpoints: Sequence["PipelineEndpointResponse"],
+) -> None:
+    """Print a prettified list of all pipeline endpoints supplied to this method.
+
+    Args:
+        pipeline_endpoints: List of pipeline endpoints
+    """
+    endpoint_dicts = []
+    for pipeline_endpoint in pipeline_endpoints:
+        if pipeline_endpoint.user:
+            user_name = pipeline_endpoint.user.name
+        else:
+            user_name = "-"
+
+        if (
+            pipeline_endpoint.pipeline_deployment is None
+            or pipeline_endpoint.pipeline_deployment.pipeline is None
+        ):
+            pipeline_name = "unlisted"
+        else:
+            pipeline_name = pipeline_endpoint.pipeline_deployment.pipeline.name
+        if (
+            pipeline_endpoint.pipeline_deployment is None
+            or pipeline_endpoint.pipeline_deployment.stack is None
+        ):
+            stack_name = "[DELETED]"
+        else:
+            stack_name = pipeline_endpoint.pipeline_deployment.stack.name
+        status = pipeline_endpoint.status or "unknown"
+        status_emoji = get_pipeline_endpoint_status_emoji(
+            PipelineEndpointStatus(status)
+        )
+        run_dict = {
+            "ENDPOINT NAME": pipeline_endpoint.name,
+            "PIPELINE NAME": pipeline_name,
+            "URL": pipeline_endpoint.url or "N/A",
+            "STATUS": f"{status_emoji} {status.upper()}",
+            "STACK": stack_name,
+            "OWNER": user_name,
+        }
+        endpoint_dicts.append(run_dict)
+    print_table(endpoint_dicts)
 
 
 def check_zenml_pro_project_availability() -> None:

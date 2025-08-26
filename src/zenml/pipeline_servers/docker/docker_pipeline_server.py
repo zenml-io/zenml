@@ -50,11 +50,12 @@ from zenml.pipeline_servers.base_pipeline_server import (
     BasePipelineServer,
     BasePipelineServerConfig,
     BasePipelineServerFlavor,
-    PipelineEndpointDeletionError,
     PipelineEndpointDeploymentError,
+    PipelineEndpointDeprovisionError,
     PipelineEndpointNotFoundError,
+    PipelineLogsNotFoundError,
+    PipelineServerError,
 )
-from zenml.serving.entrypoint import ServingPipelineEntrypoint
 from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils
 from zenml.utils.networking_utils import (
@@ -242,16 +243,10 @@ class DockerPipelineServer(BasePipelineServer):
             The docker container for the service, or None if the container
             does not exist.
         """
-        metadata = DockerPipelineEndpointMetadata.from_endpoint(endpoint)
-        container_id: Optional[str] = None
-        if metadata.container_id:
-            container_id = metadata.container_id
-        elif metadata.container_name:
-            container_id = metadata.container_name
-        else:
-            container_id = self._get_container_id(endpoint)
         try:
-            return self.docker_client.containers.get(container_id)
+            return self.docker_client.containers.get(
+                self._get_container_id(endpoint)
+            )
         except docker_errors.NotFound:
             # container doesn't exist yet or was removed
             return None
@@ -488,7 +483,7 @@ class DockerPipelineServer(BasePipelineServer):
         run_args.update(uid_args)
 
         try:
-            self.docker_client.containers.run(
+            container = self.docker_client.containers.run(
                 image=image,
                 name=self._get_container_id(endpoint),
                 entrypoint=entrypoint,
@@ -518,7 +513,7 @@ class DockerPipelineServer(BasePipelineServer):
                 f"failed to start: {e}"
             )
 
-        return self.do_get_pipeline_endpoint(endpoint)
+        return self._get_container_operational_state(container)
 
     def do_get_pipeline_endpoint(
         self,
@@ -555,7 +550,12 @@ class DockerPipelineServer(BasePipelineServer):
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
-        """Abstract method to get the logs of a pipeline endpoint.
+        """Get the logs of a Docker pipeline endpoint.
+
+        This method implements proper log streaming with support for both
+        historical and real-time log retrieval. It follows the SOLID principles
+        by handling errors early and delegating to the Docker client for the
+        actual log streaming.
 
         Args:
             endpoint: The pipeline endpoint to get the logs of.
@@ -574,16 +574,86 @@ class DockerPipelineServer(BasePipelineServer):
                 be retrieved for any other reason or if an unexpected error
                 occurs.
         """
-        yield ""
+        # Early return pattern - handle preconditions first
+        container = self._get_container(endpoint)
+        if container is None:
+            raise PipelineEndpointNotFoundError(
+                f"Docker container for pipeline endpoint '{endpoint.name}' "
+                "not found"
+            )
 
-    def do_delete_pipeline_endpoint(
+        try:
+            # Configure log streaming parameters
+            log_kwargs = {
+                "stdout": True,
+                "stderr": True,
+                "stream": follow,
+                "follow": follow,
+                "timestamps": True,
+            }
+
+            # Add tail parameter if specified
+            if tail is not None and tail > 0:
+                log_kwargs["tail"] = tail
+
+            # Stream logs from the Docker container
+            log_stream = container.logs(**log_kwargs)
+
+            # Handle the generator pattern properly
+            if follow:
+                # For streaming logs, iterate over the generator
+                for log_line in log_stream:
+                    if isinstance(log_line, bytes):
+                        yield log_line.decode(
+                            "utf-8", errors="replace"
+                        ).rstrip()
+                    else:
+                        yield str(log_line).rstrip()
+            else:
+                # For static logs, handle as a single response
+                if isinstance(log_stream, bytes):
+                    # Split into individual lines and yield each
+                    log_text = log_stream.decode("utf-8", errors="replace")
+                    for line in log_text.splitlines():
+                        yield line
+                else:
+                    # Already an iterator, yield each line
+                    for log_line in log_stream:
+                        if isinstance(log_line, bytes):
+                            yield log_line.decode(
+                                "utf-8", errors="replace"
+                            ).rstrip()
+                        else:
+                            yield str(log_line).rstrip()
+
+        except docker_errors.NotFound as e:
+            raise PipelineLogsNotFoundError(
+                f"Logs for pipeline endpoint '{endpoint.name}' not found: {e}"
+            )
+        except docker_errors.APIError as e:
+            raise PipelineServerError(
+                f"Docker API error while retrieving logs for pipeline endpoint "
+                f"'{endpoint.name}': {e}"
+            )
+        except docker_errors.DockerException as e:
+            raise PipelineServerError(
+                f"Docker error while retrieving logs for pipeline endpoint "
+                f"'{endpoint.name}': {e}"
+            )
+        except Exception as e:
+            raise PipelineServerError(
+                f"Unexpected error while retrieving logs for pipeline endpoint "
+                f"'{endpoint.name}': {e}"
+            )
+
+    def do_deprovision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
     ) -> Optional[PipelineEndpointOperationalState]:
-        """Delete a docker pipeline endpoint.
+        """Deprovision a docker pipeline endpoint.
 
         Args:
-            endpoint: The pipeline endpoint to delete.
+            endpoint: The pipeline endpoint to deprovision.
 
         Returns:
             The PipelineEndpointOperationalState object representing the
@@ -593,8 +663,8 @@ class DockerPipelineServer(BasePipelineServer):
         Raises:
             PipelineEndpointNotFoundError: if no pipeline endpoint is found
                 corresponding to the provided PipelineEndpointResponse.
-            PipelineEndpointDeletionError: if the pipeline endpoint deletion
-                fails.
+            PipelineEndpointDeprovisionError: if the pipeline endpoint
+                deprovision fails.
         """
         container = self._get_container(endpoint)
         if container is None:
@@ -607,7 +677,7 @@ class DockerPipelineServer(BasePipelineServer):
             container.stop()
             container.remove()
         except docker_errors.DockerException as e:
-            raise PipelineEndpointDeletionError(
+            raise PipelineEndpointDeprovisionError(
                 f"Docker container for pipeline endpoint '{endpoint.name}' "
                 f"failed to delete: {e}"
             )

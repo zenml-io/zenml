@@ -97,7 +97,7 @@ class PipelineEndpointUpdate(BaseUpdate):
         default=None,
         title="The new status of the pipeline endpoint.",
     )
-    metadata: Optional[Dict[str, Any]] = Field(
+    endpoint_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The new metadata of the pipeline endpoint.",
     )
@@ -117,7 +117,7 @@ class PipelineEndpointUpdate(BaseUpdate):
         return cls(
             status=operational_state.status,
             url=operational_state.url,
-            metadata=operational_state.metadata,
+            endpoint_metadata=operational_state.metadata,
         )
 
 
@@ -152,7 +152,7 @@ class PipelineEndpointResponseMetadata(ProjectScopedResponseMetadata):
         title="The pipeline server ID.",
         description="The ID of the pipeline server component managing this endpoint.",
     )
-    metadata: Dict[str, Any] = Field(
+    endpoint_metadata: Dict[str, Any] = Field(
         title="The metadata of the pipeline endpoint.",
     )
 
@@ -242,7 +242,7 @@ class PipelineEndpointResponse(
         Returns:
             The metadata of the pipeline endpoint.
         """
-        return self.get_metadata().metadata
+        return self.get_metadata().endpoint_metadata
 
     @property
     def pipeline_deployment(self) -> Optional["PipelineDeploymentResponse"]:
