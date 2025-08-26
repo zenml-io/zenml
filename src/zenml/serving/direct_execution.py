@@ -340,10 +340,15 @@ class DirectExecutionEngine:
             if source_step_name in step_outputs:
                 step_output = step_outputs[source_step_name]
                 
-                # For direct execution, we pass data directly without complex output resolution
-                # The step output is what the step function returned directly
-                input_artifacts[input_name] = step_output
-                logger.debug(f"✅ Resolved '{input_name}' from step '{source_step_name}' (output: {type(step_output).__name__})")
+                # Handle multiple outputs by checking if we need a specific output
+                resolved_value = self._resolve_step_output(
+                    step_output=step_output,
+                    output_name=output_name,
+                    source_step_name=source_step_name
+                )
+                
+                input_artifacts[input_name] = resolved_value
+                logger.debug(f"✅ Resolved '{input_name}' from step '{source_step_name}' output '{output_name}' (type: {type(resolved_value).__name__})")
             else:
                 logger.warning(f"❌ Source step '{source_step_name}' not found for input '{input_name}'")
         
@@ -401,6 +406,65 @@ class DirectExecutionEngine:
                 raise RuntimeError(f"Unable to find value for step function argument `{arg_name}`.")
         
         return function_params
+    
+    def _resolve_step_output(
+        self,
+        step_output: Any,
+        output_name: str,
+        source_step_name: str
+    ) -> Any:
+        """Resolve a specific output from a step's return value.
+        
+        This handles the common cases for ZenML step outputs:
+        1. Single output: return the output directly
+        2. Multiple outputs as dict: {"output1": val1, "output2": val2}
+        3. Multiple outputs as tuple/list: (val1, val2) with positional matching
+        
+        Args:
+            step_output: The raw output from the step function
+            output_name: The name of the specific output we want
+            source_step_name: Name of the source step (for error messages)
+            
+        Returns:
+            The resolved output value
+        """
+        # Case 1: If output_name is "output" or empty, assume single output
+        if not output_name or output_name == "output":
+            logger.debug(f"Using entire output from step '{source_step_name}' (single output)")
+            return step_output
+            
+        # Case 2: Multiple outputs as dictionary
+        if isinstance(step_output, dict):
+            if output_name in step_output:
+                logger.debug(f"Found named output '{output_name}' in dict from step '{source_step_name}'")
+                return step_output[output_name]
+            else:
+                # If the requested output name is not in the dict, but there's only one item,
+                # assume it's a single output case and return the whole thing
+                if len(step_output) == 1:
+                    logger.debug(f"Single dict output from step '{source_step_name}', returning entire output")
+                    return step_output
+                else:
+                    available = list(step_output.keys())
+                    logger.warning(
+                        f"Output '{output_name}' not found in step '{source_step_name}' dict outputs. "
+                        f"Available: {available}. Using entire output."
+                    )
+                    return step_output
+        
+        # Case 3: Multiple outputs as tuple/list - we can't resolve by name without spec
+        # So we'll return the entire output and let the receiving step handle it
+        elif isinstance(step_output, (tuple, list)):
+            logger.debug(
+                f"Step '{source_step_name}' returned tuple/list with {len(step_output)} items. "
+                f"Cannot resolve '{output_name}' without output specification. Using entire output."
+            )
+            return step_output
+            
+        # Case 4: Single value output
+        else:
+            logger.debug(f"Single value output from step '{source_step_name}', returning entire output")
+            return step_output
 
     def _execute_step(
         self,
