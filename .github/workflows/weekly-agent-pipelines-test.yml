@@ -7,7 +7,6 @@ on:
     - cron: 30 7 * * 1
   push:
     branches: [main, develop]
-  pull_request:  # DISABLE THIS AFTER FINISHED TESTING
   workflow_dispatch:
 jobs:
   test-agent-examples:
