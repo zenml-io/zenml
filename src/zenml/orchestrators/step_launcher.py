@@ -137,9 +137,16 @@ class StepLauncher:
 
     def _setup_signal_handlers(self) -> None:
         """Set up signal handlers for graceful shutdown, chaining previous handlers."""
-        # Save previous handlers
-        self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
-        self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
+        try:
+            # Save previous handlers
+            self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
+            self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
+        except ValueError as e:
+            # This happens when not in the main thread
+            logger.debug(f"Cannot set up signal handlers: {e}")
+            self._prev_sigterm_handler = None
+            self._prev_sigint_handler = None
+            return
 
         def signal_handler(signum: int, frame: Any) -> None:
             """Handle shutdown signals gracefully.
@@ -203,8 +210,13 @@ class StepLauncher:
                     self._prev_sigint_handler(signum, frame)
 
         # Register handlers for common termination signals
-        signal.signal(signal.SIGTERM, signal_handler)
-        signal.signal(signal.SIGINT, signal_handler)
+        try:
+            signal.signal(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+        except ValueError as e:
+            # This happens when not in the main thread
+            logger.debug(f"Cannot register signal handlers: {e}")
+            # Continue without signal handling - the step will still run
 
     def launch(self) -> None:
         """Launches the step.
