@@ -16,7 +16,9 @@
 import time
 from abc import ABC, abstractmethod
 from typing import (
+    TYPE_CHECKING,
     ClassVar,
+    Dict,
     Generator,
     Optional,
     Type,
@@ -38,6 +40,9 @@ from zenml.models import (
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -76,6 +81,10 @@ class PipelineEndpointDeletionTimeoutError(PipelineServerError):
 
 class PipelineLogsNotFoundError(KeyError, PipelineServerError):
     """Error raised when pipeline logs are not found."""
+
+
+class PipelineEndpointServerMismatchError(PipelineServerError):
+    """Error raised when a pipeline endpoint is not managed by this pipeline server."""
 
 
 class BasePipelineServerConfig(StackComponentConfig):
@@ -163,10 +172,39 @@ class BasePipelineServer(StackComponent, ABC):
             PipelineEndpointUpdate.from_operational_state(operational_state),
         )
 
+    def _check_pipeline_endpoint_server(
+        self, endpoint: PipelineEndpointResponse
+    ) -> None:
+        """Check if the pipeline endpoint is managed by this pipeline server.
+
+        Args:
+            endpoint: The pipeline endpoint to check.
+
+        Raises:
+            PipelineEndpointServerMismatchError: if the pipeline endpoint is not
+                managed by this pipeline server.
+        """
+        if (
+            endpoint.pipeline_server_id
+            and endpoint.pipeline_server_id != self.id
+        ):
+            pipeline_server = endpoint.pipeline_server
+            assert pipeline_server, "Pipeline server not found"
+            raise PipelineEndpointServerMismatchError(
+                f"Pipeline endpoint with name '{endpoint.name}' in project "
+                f"{endpoint.project_id} "
+                f"is not managed by this pipeline server ({self.name}). "
+                "Please switch to the correct pipeline server in your stack "
+                f"({pipeline_server.name}) and try again."
+            )
+
     def serve_pipeline(
         self,
         deployment: PipelineDeploymentResponse,
+        stack: "Stack",
         endpoint_name: str,
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[Dict[str, str]] = None,
         replace: bool = True,
         timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT,
     ) -> PipelineEndpointResponse:
@@ -181,8 +219,15 @@ class BasePipelineServer(StackComponent, ABC):
 
         Args:
             deployment: The pipeline deployment to serve as an HTTP endpoint.
+            stack: The stack the pipeline will be served on.
             endpoint_name: Unique name for the pipeline endpoint. This name must
                 be unique at the project level.
+            environment: A dictionary of environment variables to set on the
+                pipeline endpoint.
+            secrets: A dictionary of secret environment variables to set
+                on the pipeline endpoint. These secret environment variables
+                should not be exposed as regular environment variables on the
+                pipeline server.
             replace: If True, it will update in-place any existing pipeline
                 endpoint instance with the same name. If False, and the pipeline
                 endpoint instance already exists, it will raise a
@@ -242,6 +287,8 @@ class BasePipelineServer(StackComponent, ABC):
                     "exists, but it cannot be found"
                 )
 
+            self._check_pipeline_endpoint_server(endpoint)
+
             logger.debug(
                 f"Existing pipeline endpoint found with name '{endpoint_name}'"
             )
@@ -251,11 +298,22 @@ class BasePipelineServer(StackComponent, ABC):
             f"deployment ID: {deployment.id}"
         )
 
+        if not endpoint.pipeline_deployment:
+            raise PipelineEndpointDeploymentError(
+                f"Pipeline endpoint {endpoint_name} has no associated pipeline "
+                "deployment"
+            )
+
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
         )
         try:
-            endpoint_state = self.do_serve_pipeline(endpoint)
+            endpoint_state = self.do_serve_pipeline(
+                endpoint,
+                stack=stack,
+                environment=environment,
+                secrets=secrets,
+            )
         except PipelineEndpointDeploymentError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise PipelineEndpointDeploymentError(
@@ -335,6 +393,8 @@ class BasePipelineServer(StackComponent, ABC):
                 f"not found in project {project}"
             )
 
+        self._check_pipeline_endpoint_server(endpoint)
+
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
         )
@@ -390,6 +450,8 @@ class BasePipelineServer(StackComponent, ABC):
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
                 f"not found in project {project}"
             )
+
+        self._check_pipeline_endpoint_server(endpoint)
 
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
@@ -481,6 +543,8 @@ class BasePipelineServer(StackComponent, ABC):
                 f"not found in project {project}"
             )
 
+        self._check_pipeline_endpoint_server(endpoint)
+
         try:
             return self.do_get_pipeline_endpoint_logs(endpoint, follow, tail)
         except PipelineServerError as e:
@@ -499,6 +563,9 @@ class BasePipelineServer(StackComponent, ABC):
     def do_serve_pipeline(
         self,
         endpoint: PipelineEndpointResponse,
+        stack: "Stack",
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[Dict[str, str]] = None,
     ) -> PipelineEndpointOperationalState:
         """Abstract method to serve a pipeline as an HTTP endpoint.
 
@@ -527,6 +594,13 @@ class BasePipelineServer(StackComponent, ABC):
 
         Args:
             endpoint: The pipeline endpoint to serve as an HTTP endpoint.
+            stack: The stack the pipeline will be served on.
+            environment: A dictionary of environment variables to set on the
+                pipeline endpoint.
+            secrets: A dictionary of secret environment variables to set
+                on the pipeline endpoint. These secret environment variables
+                should not be exposed as regular environment variables on the
+                pipeline server.
 
         Returns:
             The PipelineEndpointOperationalState object representing the
