@@ -33,9 +33,11 @@ from docker.models.containers import Container
 from pydantic import BaseModel
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.docker_settings import DockerSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
+    PIPELINE_SERVER_DOCKER_IMAGE_KEY,
 )
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.logger import get_logger
@@ -66,10 +68,11 @@ logger = get_logger(__name__)
 class DockerPipelineEndpointMetadata(BaseModel):
     """Metadata for a Docker pipeline endpoint."""
 
-    port: int
+    port: Optional[int] = None
     container_id: Optional[str] = None
     container_name: Optional[str] = None
-    container_image: Optional[str] = None
+    container_image_id: Optional[str] = None
+    container_image_uri: Optional[str] = None
     container_status: Optional[str] = None
 
     @classmethod
@@ -86,14 +89,25 @@ class DockerPipelineEndpointMetadata(BaseModel):
         """
         image = container.image
         if image is not None:
-            image_url = image.attrs["RepoDigests"][0]
+            image_url = image.attrs["RepoTags"][0]
+            image_id = image.attrs["Id"]
         else:
             image_url = None
+            image_id = None
+        if container.ports:
+            ports = list(container.ports.values())
+            if len(ports) > 0:
+                port = int(ports[0][0]["HostPort"])
+            else:
+                port = None
+        else:
+            port = None
         return cls(
-            port=container.ports[0][0],
+            port=port,
             container_id=container.id,
             container_name=container.name,
-            container_image=image_url,
+            container_image_uri=image_url,
+            container_image_id=image_id,
             container_status=container.status,
         )
 
@@ -123,6 +137,8 @@ class DockerPipelineServer(BasePipelineServer):
     # * which environment variables go into the container? who provides them?
     # * how are endpoints authenticated?
     # * check the health status of the container too
+    # * how to automatically add the local image builder to the stack ?
+    # * pipeline inside pipeline
 
     _docker_client: Optional[DockerClient] = None
 
@@ -227,10 +243,15 @@ class DockerPipelineServer(BasePipelineServer):
             does not exist.
         """
         metadata = DockerPipelineEndpointMetadata.from_endpoint(endpoint)
-        if metadata.container_id is None:
-            return None
+        container_id: Optional[str] = None
+        if metadata.container_id:
+            container_id = metadata.container_id
+        elif metadata.container_name:
+            container_id = metadata.container_name
+        else:
+            container_id = self._get_container_id(endpoint)
         try:
-            return self.docker_client.containers.get(metadata.container_id)
+            return self.docker_client.containers.get(container_id)
         except docker_errors.NotFound:
             # container doesn't exist yet or was removed
             return None
@@ -245,18 +266,19 @@ class DockerPipelineServer(BasePipelineServer):
 
         Returns:
             The docker image used to serve the pipeline deployment.
+
+        Raises:
+            RuntimeError: if the pipeline deployment does not have a build or
+                if the pipeline server image is not in the build.
         """
         if deployment.build is None:
-            raise ValueError(
-                "Pipeline deployment does not have a build. "
-                "Please run a build before serving the pipeline."
+            raise RuntimeError("Pipeline deployment does not have a build. ")
+        if PIPELINE_SERVER_DOCKER_IMAGE_KEY not in deployment.build.images:
+            raise RuntimeError(
+                "Pipeline deployment build does not have a pipeline server "
+                "image. "
             )
-        if len(deployment.build.images) == 0:
-            raise ValueError(
-                "Pipeline deployment build does not have any images. "
-                "Please run a containerized build before serving the pipeline."
-            )
-        return list(deployment.build.images.values())[0].image
+        return deployment.build.images[PIPELINE_SERVER_DOCKER_IMAGE_KEY].image
 
     def _get_container_operational_state(
         self, container: Container
@@ -295,6 +317,27 @@ class DockerPipelineServer(BasePipelineServer):
             # TODO: check if the endpoint is healthy.
 
         return state
+
+    def get_updated_docker_settings(
+        self,
+        pipeline_settings: "DockerSettings",
+    ) -> DockerSettings:
+        """Abstract method to update the Docker settings for a pipeline endpoint.
+
+        Args:
+            pipeline_settings: The pipeline settings to update.
+
+        Returns:
+            The updated Docker settings.
+        """
+        requirements = pipeline_settings.requirements
+        if requirements is None:
+            requirements = ["uvicorn", "fastapi"]
+        elif isinstance(requirements, list):
+            requirements.extend(["uvicorn", "fastapi"])
+        return pipeline_settings.model_copy(
+            update={"requirements": requirements}
+        )
 
     def do_serve_pipeline(
         self,
@@ -342,13 +385,18 @@ class DockerPipelineServer(BasePipelineServer):
             endpoint
         )
 
-        entrypoint = ServingPipelineEntrypoint.get_entrypoint_command()
+        # entrypoint = ServingPipelineEntrypoint.get_entrypoint_command()
 
-        arguments = ServingPipelineEntrypoint.get_entrypoint_arguments(
-            deployment_id=deployment.id,
-            runtime_params={},
-            create_zen_run=False,
-        )
+        # arguments = ServingPipelineEntrypoint.get_entrypoint_arguments(
+        #     deployment_id=deployment.id,
+        #     runtime_params={},
+        #     create_zen_run=False,
+        # )
+
+        # TODO: use a proper entrypoint and arguments here
+        entrypoint = ["python", "-m", "zenml.serving"]
+        arguments = []
+        environment["ZENML_PIPELINE_DEPLOYMENT_ID"] = str(deployment.id)
 
         # Add the local stores path as a volume mount
         stack.check_local_paths()
@@ -448,8 +496,8 @@ class DockerPipelineServer(BasePipelineServer):
                 detach=True,
                 volumes=docker_volumes,
                 environment=docker_environment,
-                remove=True,
-                auto_remove=True,
+                remove=False,
+                auto_remove=False,
                 ports=ports,
                 labels={
                     "zenml-pipeline-endpoint-uuid": str(endpoint.id),
@@ -463,6 +511,7 @@ class DockerPipelineServer(BasePipelineServer):
                 f"Docker container for pipeline endpoint '{endpoint.name}' "
                 f"started with ID {self._get_container_id(endpoint)}",
             )
+
         except docker_errors.DockerException as e:
             raise PipelineEndpointDeploymentError(
                 f"Docker container for pipeline endpoint '{endpoint.name}' "

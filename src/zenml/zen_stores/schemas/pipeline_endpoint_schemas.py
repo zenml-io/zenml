@@ -87,7 +87,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         sa_column=Column(TEXT, nullable=True),
     )
     endpoint_metadata: str = Field(
-        default_factory=dict,
+        default="{}",
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"

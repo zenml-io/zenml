@@ -751,6 +751,7 @@ class Stack:
         requires_image_builder = (
             self.orchestrator.flavor != "local"
             or self.step_operator
+            or self.pipeline_server
             or (self.model_deployer and self.model_deployer.flavor != "mlflow")
         )
         skip_default_image_builder = handle_bool_env_var(
