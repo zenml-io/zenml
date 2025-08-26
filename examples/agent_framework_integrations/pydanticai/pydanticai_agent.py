@@ -1,7 +1,9 @@
 from pydantic_ai import Agent
 
+
 def get_secret_data() -> str:
     return "something_secret"
+
 
 agent = Agent(
     "openai:gpt-5-nano",
