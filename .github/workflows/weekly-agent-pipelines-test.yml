@@ -7,7 +7,7 @@ on:
     - cron: 30 7 * * 1
   push:
     branches: [main, develop]
-  pull_request:
+  pull_request:  # DISABLE THIS AFTER FINISHED TESTING
   workflow_dispatch:
 jobs:
   test-agent-examples:
@@ -87,8 +87,11 @@ jobs:
               FAIL_LIST=$(paste -sd ', ' ./agent-examples-results/agent-examples.failures.txt)
             fi
           fi
+
+          # Use a unique delimiter that won't appear in the content
+          DELIMITER="GH_OUTPUT_DELIMITER_$$"
           {
-            echo "message<<'EOF'"
+            echo "message<<${DELIMITER}"
             echo "**Agent Examples Failure Alert**"
             echo
             echo "Repository: ${{ github.repository }}"
@@ -104,7 +107,7 @@ jobs:
               echo "-----"
               sed -e 's/\r$//' ./agent-examples-results/agent-examples.summary.md
             fi
-            echo "EOF"
+            echo "${DELIMITER}"
           } >> "$GITHUB_OUTPUT"
       - name: Send Discord notification on failure
         uses: Ilshidur/action-discord@master
