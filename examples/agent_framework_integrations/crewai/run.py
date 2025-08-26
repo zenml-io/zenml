@@ -61,7 +61,7 @@ packing_advice_task = Task(
 crew = Crew(
     agents=[weather_checker, travel_advisor],
     tasks=[check_weather_task, packing_advice_task],
-    verbose=2,
+    verbose=True,
 )
 
 
