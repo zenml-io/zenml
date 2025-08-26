@@ -37,6 +37,7 @@ def format_pydanticai_response(
     query = agent_data["query"]
     response = agent_data["response"]
     status = agent_data["status"]
+    raise Exception("test")
 
     if status == "error":
         formatted = f"""❌ PYDANTICAI AGENT ERROR
