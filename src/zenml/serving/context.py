@@ -78,17 +78,17 @@ class ServingStepContext:
         return f"serving://{self.job_id}/{self.step_name}/{output_name or 'output'}"
 
     @property
-    def step_run_info(self):
+    def step_run_info(self) -> None:
         """Mock step run info for compatibility."""
         return None
 
     @property
-    def pipeline_run(self):
+    def pipeline_run(self) -> None:
         """Mock pipeline run for compatibility."""
         return None
 
     @property
-    def step_run(self):
+    def step_run(self) -> None:
         """Mock step run for compatibility."""
         return None
 

@@ -115,9 +115,12 @@ def _run_legacy_mode(
     final_host = host or os.getenv("ZENML_SERVICE_HOST", "0.0.0.0")
     final_port = port or int(os.getenv("ZENML_SERVICE_PORT", "8000"))
     final_workers = workers or int(os.getenv("ZENML_SERVICE_WORKERS", "1"))
-    final_log_level = (
-        log_level or os.getenv("ZENML_LOG_LEVEL", "info")
-    ).lower()
+    log_level_str = log_level or os.getenv("ZENML_LOG_LEVEL", "info") or "info"
+    final_log_level = log_level_str.lower()
+
+    # Ensure final_host is not None
+    if final_host is None:
+        final_host = "0.0.0.0"
 
     # Set environment variable for the serving application
     os.environ["ZENML_PIPELINE_DEPLOYMENT_ID"] = final_deployment_id

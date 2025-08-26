@@ -62,7 +62,7 @@ class PipelineServingService:
         self.last_execution_time: Optional[datetime] = None
 
         # Execution statistics
-        self.execution_stats = {
+        self.execution_stats: Dict[str, Any] = {
             "total_executions": 0,
             "successful_executions": 0,
             "failed_executions": 0,
@@ -266,7 +266,11 @@ class PipelineServingService:
 
             # Calculate execution time from job metadata
             job = job_registry.get_job(job_id)
-            execution_time = job.execution_time if job else 0
+            execution_time = (
+                job.execution_time
+                if job and job.execution_time is not None
+                else 0.0
+            )
 
             # Update statistics
             self._update_execution_stats(
@@ -399,7 +403,7 @@ class PipelineServingService:
             resolved_params = self._resolve_parameters(parameters)
 
             # Start execution in background without waiting
-            async def background_execution():
+            async def background_execution() -> None:
                 try:
                     # Update job to running status
                     job_registry.update_job_status(job_id, JobStatus.RUNNING)
@@ -499,7 +503,7 @@ class PipelineServingService:
             stream_manager = get_stream_manager_sync()
 
             # Create thread-safe event callback - no async operations in worker thread!
-            def event_callback(event: ServingEvent):
+            def event_callback(event: ServingEvent) -> None:
                 if stream_manager:
                     try:
                         # Use thread-safe method to send events to main loop

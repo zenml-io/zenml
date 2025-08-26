@@ -45,8 +45,12 @@ class EventStream:
         self.buffer_size = buffer_size
 
         # Create memory object stream for event passing
-        self._send_stream: Optional[MemoryObjectSendStream] = None
-        self._receive_stream: Optional[MemoryObjectReceiveStream] = None
+        self._send_stream: Optional[MemoryObjectSendStream[ServingEvent]] = (
+            None
+        )
+        self._receive_stream: Optional[
+            MemoryObjectReceiveStream[ServingEvent]
+        ] = None
         self._stream_created = False
 
         # Track subscribers and stream state
@@ -57,7 +61,7 @@ class EventStream:
             f"Created EventStream for job {job_id} with buffer size {buffer_size}"
         )
 
-    def _ensure_stream(self):
+    def _ensure_stream(self) -> None:
         """Ensure the memory object stream is created."""
         if not self._stream_created:
             self._send_stream, self._receive_stream = (
@@ -83,6 +87,9 @@ class EventStream:
 
         try:
             # Non-blocking send with immediate failure if buffer is full
+            assert (
+                self._send_stream is not None
+            )  # _ensure_stream guarantees this
             self._send_stream.send_nowait(event)
             logger.debug(
                 f"Sent event {event.event_type} for job {self.job_id}"
@@ -121,6 +128,9 @@ class EventStream:
                 f"New subscriber for job {self.job_id} (total: {self._subscribers})"
             )
 
+            assert (
+                self._receive_stream is not None
+            )  # _ensure_stream guarantees this
             async with self._receive_stream.clone() as stream:
                 async for event in stream:
                     if self._closed:
@@ -136,7 +146,7 @@ class EventStream:
                 f"Subscriber disconnected from job {self.job_id} (remaining: {self._subscribers})"
             )
 
-    def close(self):
+    def close(self) -> None:
         """Close the stream and stop accepting new events."""
         if self._closed:
             return
@@ -176,7 +186,7 @@ class StreamManager:
 
         self._streams: Dict[str, EventStream] = {}
         self._lock = asyncio.Lock()
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: Optional[asyncio.Task[None]] = None
         self._shutdown = False
 
         # Store reference to main event loop for cross-thread event scheduling
@@ -187,7 +197,7 @@ class StreamManager:
             f"StreamManager initialized with buffer size {default_buffer_size}"
         )
 
-    async def start_cleanup_task(self):
+    async def start_cleanup_task(self) -> None:
         """Start the background cleanup task."""
         if self._cleanup_task is None:
             # Capture the main event loop reference
@@ -197,7 +207,7 @@ class StreamManager:
             self._cleanup_task = asyncio.create_task(self._cleanup_loop())
             logger.info("Stream cleanup task started")
 
-    async def stop_cleanup_task(self):
+    async def stop_cleanup_task(self) -> None:
         """Stop the background cleanup task."""
         self._shutdown = True
         if self._cleanup_task:
@@ -314,7 +324,7 @@ class StreamManager:
         async for event in stream.subscribe():
             yield event
 
-    async def close_stream(self, job_id: str):
+    async def close_stream(self, job_id: str) -> None:
         """Close the stream for a specific job.
 
         Args:
@@ -349,7 +359,7 @@ class StreamManager:
             "default_buffer_size": self.default_buffer_size,
         }
 
-    async def _cleanup_loop(self):
+    async def _cleanup_loop(self) -> None:
         """Background task to periodically clean up old streams."""
         while not self._shutdown:
             try:
@@ -361,7 +371,7 @@ class StreamManager:
             except Exception as e:
                 logger.error(f"Error in stream cleanup loop: {e}")
 
-    async def _cleanup_old_streams(self):
+    async def _cleanup_old_streams(self) -> None:
         """Clean up closed streams with no subscribers."""
         async with self._lock:
             streams_to_remove = []
@@ -424,7 +434,9 @@ async def shutdown_stream_manager() -> None:
 
 
 @asynccontextmanager
-async def stream_events_as_sse(job_id: str):
+async def stream_events_as_sse(
+    job_id: str,
+) -> AsyncGenerator[AsyncGenerator[str, None], None]:
     """Context manager to stream events as Server-Sent Events format.
 
     Args:
@@ -435,7 +447,7 @@ async def stream_events_as_sse(job_id: str):
     """
     stream_manager = await get_stream_manager()
 
-    async def sse_generator():
+    async def sse_generator() -> AsyncGenerator[str, None]:
         try:
             async for event in stream_manager.subscribe_to_job(job_id):
                 # Format as SSE

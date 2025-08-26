@@ -16,9 +16,10 @@
 import asyncio
 import os
 import time
+from collections import deque
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from enum import Enum
-from typing import Callable, Optional, TypeVar
+from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
 
 import anyio
 from anyio import CapacityLimiter
@@ -40,7 +41,7 @@ class ExecutorType(str, Enum):
 class ServingConcurrencyConfig:
     """Configuration for serving concurrency management."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize concurrency configuration from environment variables."""
         # Maximum concurrent executions (default: 5 per CPU core)
         cpu_count = os.cpu_count() or 4
@@ -92,8 +93,8 @@ class ServingExecutionManager:
 
         # Executor for running sync functions
         if self.config.executor_type == ExecutorType.PROCESS:
-            self._executor = ProcessPoolExecutor(
-                max_workers=self.config.max_concurrency
+            self._executor: Union[ProcessPoolExecutor, ThreadPoolExecutor] = (
+                ProcessPoolExecutor(max_workers=self.config.max_concurrency)
             )
         else:
             self._executor = ThreadPoolExecutor(
@@ -112,9 +113,7 @@ class ServingExecutionManager:
         self._stats_lock = asyncio.Lock()  # Thread-safe stats updates
 
         # Track execution times for percentiles
-        from collections import deque
-
-        self._execution_times = deque(
+        self._execution_times: "deque[float]" = deque(
             maxlen=1000
         )  # Keep last 1000 execution times
 
@@ -125,9 +124,9 @@ class ServingExecutionManager:
     async def execute_with_limits(
         self,
         func: Callable[..., T],
-        *args,
+        *args: Any,
         timeout: Optional[float] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> T:
         """Execute a function with concurrency limits and timeout.
 
@@ -206,7 +205,7 @@ class ServingExecutionManager:
                 self._successful_executions += 1
                 self._execution_times.append(execution_time)
 
-            return result
+            return cast(T, result)
 
         except asyncio.TimeoutError:
             execution_time = time.time() - start_time
@@ -240,7 +239,7 @@ class ServingExecutionManager:
                 if self._queued_executions > 0:
                     self._queued_executions -= 1
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> Dict[str, Any]:
         """Get current execution statistics.
 
         Returns:
@@ -293,7 +292,7 @@ class ServingExecutionManager:
         # Use explicit queue tracking instead of capacity limiter statistics
         return self._queued_executions >= self.config.max_queue_size
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Shutdown the execution manager and cleanup resources."""
         logger.info("Shutting down ServingExecutionManager...")
 

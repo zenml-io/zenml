@@ -14,7 +14,7 @@
 """ZenML Pipeline Serving Entrypoint Configuration."""
 
 import os
-from typing import List, Set
+from typing import Any, List, Set
 
 import uvicorn
 
@@ -71,7 +71,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         }
 
     @classmethod
-    def get_entrypoint_arguments(cls, **kwargs) -> List[str]:
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
         """Gets arguments for the serving entrypoint command.
 
         Args:

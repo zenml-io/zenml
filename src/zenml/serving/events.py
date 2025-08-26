@@ -117,7 +117,7 @@ class EventBuilder:
         self.job_id = job_id
 
     def pipeline_started(
-        self, pipeline_name: str, parameters: Dict[str, Any], **kwargs
+        self, pipeline_name: str, parameters: Dict[str, Any], **kwargs: Any
     ) -> ServingEvent:
         """Create a pipeline started event.
 
@@ -146,7 +146,7 @@ class EventBuilder:
         execution_time: float,
         result: Any = None,
         steps_executed: int = 0,
-        **kwargs,
+        **kwargs: Any,
     ) -> ServingEvent:
         """Create a pipeline completed event.
 
@@ -179,7 +179,7 @@ class EventBuilder:
         error: str,
         execution_time: Optional[float] = None,
         failed_step: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ServingEvent:
         """Create a pipeline failed event.
 
@@ -206,7 +206,7 @@ class EventBuilder:
             },
         )
 
-    def step_started(self, step_name: str, **kwargs) -> ServingEvent:
+    def step_started(self, step_name: str, **kwargs: Any) -> ServingEvent:
         """Create a step started event.
 
         Args:
@@ -229,7 +229,7 @@ class EventBuilder:
         step_name: str,
         execution_time: float,
         output: Any = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ServingEvent:
         """Create a step completed event.
 
@@ -259,7 +259,7 @@ class EventBuilder:
         step_name: str,
         error: str,
         execution_time: Optional[float] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ServingEvent:
         """Create a step failed event.
 
@@ -286,7 +286,7 @@ class EventBuilder:
         level: LogLevel,
         message: str,
         step_name: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ServingEvent:
         """Create a log event.
 
@@ -309,7 +309,7 @@ class EventBuilder:
         )
 
     def error(
-        self, error: str, step_name: Optional[str] = None, **kwargs
+        self, error: str, step_name: Optional[str] = None, **kwargs: Any
     ) -> ServingEvent:
         """Create an error event.
 
@@ -336,7 +336,7 @@ class EventBuilder:
         total_steps: int,
         current_step_name: str,
         progress_percent: Optional[float] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ServingEvent:
         """Create a progress update event.
 
@@ -366,7 +366,7 @@ class EventBuilder:
             },
         )
 
-    def heartbeat(self, **kwargs) -> ServingEvent:
+    def heartbeat(self, **kwargs: Any) -> ServingEvent:
         """Create a heartbeat event to keep connections alive.
 
         Args:

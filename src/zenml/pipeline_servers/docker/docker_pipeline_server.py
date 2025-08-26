@@ -12,17 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML local Docker pipeline server.
-
-
-TODO:
-
-* figure out which image to use for the docker container from the deployment (or
+TODO: * figure out which image to use for the docker container from the deployment (or
 build another ?)
 * figure out how to inject the FastAPI/other requirements into the image
 * which environment variables go into the container? who provides them?
 * how are endpoints authenticated?
-* check the health status of the container too
-"""
+* check the health status of the container too.
+"""  # noqa: D205
 
 import copy
 import os
@@ -63,7 +59,9 @@ from zenml.pipeline_servers.base_pipeline_server import (
     PipelineEndpointDeploymentError,
     PipelineEndpointNotFoundError,
 )
-from zenml.serving.entrypoint import ServingPipelineEntrypoint
+from zenml.serving.entrypoint_configuration import (
+    ServingEntrypointConfiguration,
+)
 from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils
 from zenml.utils.networking_utils import (
@@ -204,7 +202,7 @@ class DockerPipelineServer(BasePipelineServer):
                 raise IOError(f"TCP port {preferred_ports} is not available.")
 
         port = scan_for_available_port(start=range[0], stop=range[1])
-        if port:
+        if port is not None:
             return port
         raise IOError(f"No free TCP ports found in range {range}")
 
@@ -344,9 +342,9 @@ class DockerPipelineServer(BasePipelineServer):
             endpoint
         )
 
-        entrypoint = ServingPipelineEntrypoint.get_entrypoint_command()
+        entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
 
-        arguments = ServingPipelineEntrypoint.get_entrypoint_arguments(
+        arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
             deployment_id=deployment.id,
             runtime_params={},
             create_zen_run=False,
