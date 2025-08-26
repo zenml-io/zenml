@@ -56,7 +56,7 @@ Answer (concise):
 
 prompt_builder = PromptBuilder(template=prompt_template)
 
-llm = OpenAIGenerator(model="gpt-4o-mini")
+llm = OpenAIGenerator(model="gpt-5-nano")
 
 # --------------------------------------------------------------------------- #
 # 3. Assemble the pipeline                                                    #

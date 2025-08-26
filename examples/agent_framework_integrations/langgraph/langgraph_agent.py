@@ -7,7 +7,7 @@ def get_weather(city: str) -> str:
 
 
 agent = create_react_agent(
-    model="openai:gpt-4o-mini",
+    model="openai:gpt-5-nano",
     tools=[get_weather],
     prompt="You are a helpful assistant",
 )

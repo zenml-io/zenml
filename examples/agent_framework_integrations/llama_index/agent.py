@@ -20,7 +20,7 @@ def calculate_tip(bill_amount: float, tip_percentage: float = 15.0) -> str:
 # Create the agent
 agent = FunctionAgent(
     tools=[get_weather, calculate_tip],
-    llm=OpenAI(model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")),
+    llm=OpenAI(model="gpt-5-nano", api_key=os.getenv("OPENAI_API_KEY")),
     system_prompt=(
         "You are a helpful assistant that can check weather for any city "
         "and calculate restaurant tips on demand."

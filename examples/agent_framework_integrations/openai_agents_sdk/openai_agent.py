@@ -16,5 +16,5 @@ agent = Agent(
     name="FactBot",
     instructions="You are a helpful assistant that provides fun facts about cities using your tools.",
     tools=[get_city_info],
-    # model="gpt-4o-mini" # The SDK defaults to a suitable model.
+    # model="gpt-5-nano" # The SDK defaults to a suitable model.
 )

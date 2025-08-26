@@ -57,7 +57,7 @@ class WeatherPlugin:
 # --------------------------------------------------------------------------- #
 def create_kernel(
     *,
-    model_id: str = "gpt-4o-mini",
+    model_id: str = "gpt-5-nano",
     service_id: str = "openai-chat",
 ) -> Kernel:
     """
@@ -66,7 +66,7 @@ def create_kernel(
     Parameters
     ----------
     model_id:
-        OpenAI model to register (default: ``gpt-4o-mini``).
+        OpenAI model to register (default: ``gpt-5-nano``).
     service_id:
         Service identifier used when registering the chat completion service.
     """

@@ -20,7 +20,7 @@ def load_docs(input_dict: dict) -> str:
 
 
 # Define the model and prompt
-llm = ChatOpenAI(model="gpt-4o-mini")
+llm = ChatOpenAI(model="gpt-5-nano")
 prompt = ChatPromptTemplate.from_template(
     "Write a concise summary of the following text:\n\n{text}"
 )
