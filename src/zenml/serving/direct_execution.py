@@ -338,17 +338,12 @@ class DirectExecutionEngine:
             logger.debug(f"Resolving input '{input_name}' from step '{source_step_name}' output '{output_name}'")
             
             if source_step_name in step_outputs:
-                try:
-                    resolved_value = self._resolve_step_output_value(
-                        source_step_name=source_step_name,
-                        output_name=output_name,
-                        step_output=step_outputs[source_step_name],
-                    )
-                    input_artifacts[input_name] = resolved_value
-                    logger.debug(f"✅ Resolved '{input_name}' from step '{source_step_name}' output '{output_name}'")
-                except Exception as e:
-                    logger.error(f"❌ Failed to resolve input '{input_name}': {e}")
-                    raise RuntimeError(f"Cannot resolve input '{input_name}' for step '{step_name}': {e}")
+                step_output = step_outputs[source_step_name]
+                
+                # For direct execution, we pass data directly without complex output resolution
+                # The step output is what the step function returned directly
+                input_artifacts[input_name] = step_output
+                logger.debug(f"✅ Resolved '{input_name}' from step '{source_step_name}' (output: {type(step_output).__name__})")
             else:
                 logger.warning(f"❌ Source step '{source_step_name}' not found for input '{input_name}'")
         
@@ -406,91 +401,6 @@ class DirectExecutionEngine:
                 raise RuntimeError(f"Unable to find value for step function argument `{arg_name}`.")
         
         return function_params
-    
-    def _resolve_step_output_value(
-        self,
-        source_step_name: str, 
-        output_name: str, 
-        step_output: Any, 
-    ) -> Any:
-        """Properly resolve step output value based on ZenML output specifications.
-        
-        This method handles the different ways ZenML steps can return outputs:
-        1. Single output: step returns the value directly
-        2. Multiple named outputs: step returns dict {"output1": val1, "output2": val2}
-        3. Multiple positional outputs: step returns tuple (val1, val2, val3)
-        
-        Args:
-            source_step_name: Name of the step that produced the output
-            output_name: Name of the specific output we want to extract
-            step_output: The actual output data from the step
-            
-        Returns:
-            The resolved output value
-            
-        Raises:
-            ValueError: If output cannot be resolved properly
-        """
-        # Get the source step's output specification
-        source_step_config = self.deployment.step_configurations[source_step_name]
-        output_specs = source_step_config.spec.outputs
-        
-        logger.debug(f"Resolving output '{output_name}' from step '{source_step_name}' with {len(output_specs)} outputs")
-        
-        if len(output_specs) == 1:
-            # Single output step - return the whole output regardless of naming
-            logger.debug("Single output step - using entire output")
-            return step_output
-            
-        elif len(output_specs) > 1:
-            # Multi-output step - need to resolve correctly
-            logger.debug(f"Multi-output step with outputs: {list(output_specs.keys())}")
-            
-            if isinstance(step_output, dict):
-                # Named outputs (step returns {"model": ..., "metrics": ...})
-                if output_name in step_output:
-                    logger.debug(f"Found named output '{output_name}' in dict")
-                    return step_output[output_name]
-                else:
-                    available_outputs = list(step_output.keys())
-                    raise ValueError(
-                        f"Output '{output_name}' not found in step '{source_step_name}' outputs. "
-                        f"Available outputs: {available_outputs}"
-                    )
-                    
-            elif isinstance(step_output, (tuple, list)):
-                # Positional outputs (step returns (model, metrics))
-                output_names = list(output_specs.keys())
-                logger.debug(f"Resolving positional output '{output_name}' from {output_names}")
-                
-                try:
-                    output_index = output_names.index(output_name)
-                    if output_index < len(step_output):
-                        logger.debug(f"Found positional output '{output_name}' at index {output_index}")
-                        return step_output[output_index]
-                    else:
-                        raise IndexError(f"Output index {output_index} out of range")
-                except ValueError:
-                    raise ValueError(
-                        f"Output '{output_name}' not found in step '{source_step_name}' output specification. "
-                        f"Expected outputs: {output_names}"
-                    )
-                except IndexError as e:
-                    raise ValueError(
-                        f"Step '{source_step_name}' returned {len(step_output)} values but "
-                        f"specification expects {len(output_names)} outputs: {e}"
-                    )
-            else:
-                # Single value but multiple outputs expected - this is likely an error
-                raise ValueError(
-                    f"Step '{source_step_name}' has {len(output_specs)} output specifications "
-                    f"but returned a single value of type {type(step_output).__name__}. "
-                    f"Expected either a dict with keys {list(output_specs.keys())} "
-                    f"or a tuple/list with {len(output_specs)} values."
-                )
-        else:
-            # No outputs specified - this shouldn't happen
-            raise ValueError(f"Step '{source_step_name}' has no output specifications")
 
     def _execute_step(
         self,
