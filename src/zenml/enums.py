@@ -56,7 +56,7 @@ class ArtifactSaveType(StrEnum):
 class DownloadType(StrEnum):
     """All possible types of downloadable content."""
 
-    ARTIFACT = "artifact"
+    ARTIFACT_VERSION = "artifact_version"
     STEP_LOGS = "step_logs"
     RUN_LOGS = "run_logs"
 

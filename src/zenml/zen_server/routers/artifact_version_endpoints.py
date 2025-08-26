@@ -329,7 +329,7 @@ def get_artifact_download_token(
     # then use that token to download the artifact data in a separate endpoint
     # which only verifies this short-lived token.
     return generate_download_token(
-        download_type=DownloadType.ARTIFACT,
+        download_type=DownloadType.ARTIFACT_VERSION,
         resource_id=artifact_version_id,
     )
 
@@ -353,7 +353,7 @@ def download_artifact_data(
     """
     verify_download_token(
         token=token,
-        download_type=DownloadType.ARTIFACT,
+        download_type=DownloadType.ARTIFACT_VERSION,
         resource_id=artifact_version_id,
     )
 
