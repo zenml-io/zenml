@@ -224,6 +224,10 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineEndpointFilter,
+    PipelineEndpointRequest,
+    PipelineEndpointResponse,
+    PipelineEndpointUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -350,6 +354,7 @@ from zenml.zen_stores.schemas import (
     OAuthDeviceSchema,
     PipelineBuildSchema,
     PipelineDeploymentSchema,
+    PipelineEndpointSchema,
     PipelineRunSchema,
     PipelineSchema,
     ProjectSchema,
@@ -4969,6 +4974,160 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.delete(deployment)
+            session.commit()
+
+    # -------------------- Pipeline endpoints --------------------
+
+    def create_pipeline_endpoint(
+        self, pipeline_endpoint: PipelineEndpointRequest
+    ) -> PipelineEndpointResponse:
+        """Create a new pipeline endpoint.
+
+        Args:
+            pipeline_endpoint: The pipeline endpoint to create.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=pipeline_endpoint, session=session
+            )
+            self._verify_name_uniqueness(
+                resource=pipeline_endpoint,
+                schema=PipelineEndpointSchema,
+                session=session,
+            )
+            self._get_reference_schema_by_id(
+                resource=pipeline_endpoint,
+                reference_schema=PipelineDeploymentSchema,
+                reference_id=pipeline_endpoint.pipeline_deployment_id,
+                session=session,
+            )
+            self._get_reference_schema_by_id(
+                resource=pipeline_endpoint,
+                reference_schema=StackComponentSchema,
+                reference_id=pipeline_endpoint.pipeline_server_id,
+                session=session,
+                reference_type="pipeline server",
+            )
+            pipeline_endpoint_schema = PipelineEndpointSchema.from_request(
+                pipeline_endpoint
+            )
+            session.add(pipeline_endpoint_schema)
+            session.commit()
+            session.refresh(pipeline_endpoint_schema)
+            return pipeline_endpoint_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_pipeline_endpoint(
+        self, endpoint_id: UUID, hydrate: bool = True
+    ) -> PipelineEndpointResponse:
+        """Get a pipeline endpoint with a given ID.
+
+        Args:
+            endpoint_id: ID of the pipeline endpoint.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The pipeline endpoint.
+        """
+        with Session(self.engine) as session:
+            pipeline_endpoint = self._get_schema_by_id(
+                resource_id=endpoint_id,
+                schema_class=PipelineEndpointSchema,
+                session=session,
+            )
+            return pipeline_endpoint.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_pipeline_endpoints(
+        self,
+        endpoint_filter_model: PipelineEndpointFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineEndpointResponse]:
+        """List all pipeline endpoints matching the given filter criteria.
+
+        Args:
+            endpoint_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all pipeline endpoints matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=endpoint_filter_model,
+                session=session,
+            )
+            query = select(PipelineEndpointSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineEndpointSchema,
+                filter_model=endpoint_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_pipeline_endpoint(
+        self,
+        endpoint_id: UUID,
+        endpoint_update: PipelineEndpointUpdate,
+    ) -> PipelineEndpointResponse:
+        """Update a pipeline endpoint.
+
+        Args:
+            endpoint_id: The ID of the pipeline endpoint to update.
+            endpoint_update: The update to apply.
+
+        Returns:
+            The updated pipeline endpoint.
+        """
+        with Session(self.engine) as session:
+            pipeline_endpoint = self._get_schema_by_id(
+                resource_id=endpoint_id,
+                schema_class=PipelineEndpointSchema,
+                session=session,
+            )
+
+            self._verify_name_uniqueness(
+                resource=endpoint_update,
+                schema=pipeline_endpoint,
+                session=session,
+            )
+            self._get_reference_schema_by_id(
+                resource=pipeline_endpoint,
+                reference_schema=PipelineDeploymentSchema,
+                reference_id=endpoint_update.pipeline_deployment_id,
+                session=session,
+            )
+
+            pipeline_endpoint.update(endpoint_update)
+            session.add(pipeline_endpoint)
+            session.commit()
+
+            session.refresh(pipeline_endpoint)
+
+            return pipeline_endpoint.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_pipeline_endpoint(self, endpoint_id: UUID) -> None:
+        """Delete a pipeline endpoint.
+
+        Args:
+            endpoint_id: The ID of the pipeline endpoint to delete.
+        """
+        with Session(self.engine) as session:
+            pipeline_endpoint = self._get_schema_by_id(
+                resource_id=endpoint_id,
+                schema_class=PipelineEndpointSchema,
+                session=session,
+            )
+
+            session.delete(pipeline_endpoint)
             session.commit()
 
     # -------------------- Run templates --------------------

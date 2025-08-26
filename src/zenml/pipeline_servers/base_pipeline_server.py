@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML pipeline servers."""
 
+import time
 from abc import ABC, abstractmethod
-from time import time
 from typing import (
     ClassVar,
     Generator,
@@ -41,7 +41,7 @@ from zenml.stack.stack_component import StackComponentConfig
 
 logger = get_logger(__name__)
 
-DEFAULT_PIPELINE_ENDPOINT_START_STOP_TIMEOUT = 300
+DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT = 300
 
 
 class PipelineServerError(Exception):
@@ -158,7 +158,7 @@ class BasePipelineServer(StackComponent, ABC):
             The updated pipeline endpoint.
         """
         client = Client()
-        return client.update_pipeline_endpoint(
+        return client.zen_store.update_pipeline_endpoint(
             endpoint.id,
             PipelineEndpointUpdate.from_operational_state(operational_state),
         )
@@ -168,7 +168,7 @@ class BasePipelineServer(StackComponent, ABC):
         deployment: PipelineDeploymentResponse,
         endpoint_name: str,
         replace: bool = True,
-        timeout: int = DEFAULT_PIPELINE_ENDPOINT_START_STOP_TIMEOUT,
+        timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT,
     ) -> PipelineEndpointResponse:
         """Serve a pipeline as an HTTP endpoint.
 
@@ -218,7 +218,9 @@ class BasePipelineServer(StackComponent, ABC):
         )
 
         try:
-            endpoint = client.create_pipeline_endpoint(endpoint_request)
+            endpoint = client.zen_store.create_pipeline_endpoint(
+                endpoint_request
+            )
             logger.debug(
                 f"Created new pipeline endpoint with name '{endpoint_name}'"
             )
@@ -230,7 +232,7 @@ class BasePipelineServer(StackComponent, ABC):
                 )
             try:
                 # Get the existing pipeline endpoint
-                endpoint = client.get_pipeline_endpoint_by_name_or_id(
+                endpoint = client.get_pipeline_endpoint(
                     endpoint_name, project=deployment.project_id
                 )
             except KeyError:
@@ -277,10 +279,10 @@ class BasePipelineServer(StackComponent, ABC):
             f"{endpoint_state.status}"
         )
 
-        start_time = time()
+        start_time = time.time()
         sleep_time = 5
         while endpoint_state.status == PipelineEndpointStatus.DEPLOYING:
-            if time() - start_time > timeout:
+            if time.time() - start_time > timeout:
                 raise PipelineEndpointDeploymentTimeoutError(
                     f"Deployment of pipeline endpoint for {endpoint_name} "
                     f"timed out after {timeout} seconds"
@@ -324,7 +326,7 @@ class BasePipelineServer(StackComponent, ABC):
         """
         client = Client()
         try:
-            endpoint = client.get_pipeline_endpoint_by_name_or_id(
+            endpoint = client.get_pipeline_endpoint(
                 endpoint_name_or_id, project=project
             )
         except KeyError:
@@ -363,7 +365,7 @@ class BasePipelineServer(StackComponent, ABC):
         self,
         endpoint_name_or_id: str,
         project: Optional[UUID] = None,
-        timeout: int = DEFAULT_PIPELINE_ENDPOINT_START_STOP_TIMEOUT,
+        timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT,
     ) -> None:
         """Delete a pipeline endpoint.
 
@@ -380,7 +382,7 @@ class BasePipelineServer(StackComponent, ABC):
         """
         client = Client()
         try:
-            endpoint = client.get_pipeline_endpoint_by_name_or_id(
+            endpoint = client.get_pipeline_endpoint(
                 endpoint_name_or_id, project=project
             )
         except KeyError:
@@ -389,11 +391,13 @@ class BasePipelineServer(StackComponent, ABC):
                 f"not found in project {project}"
             )
 
-        endpoint_state = PipelineEndpointOperationalState(
-            status=PipelineEndpointStatus.ERROR,
+        endpoint_state = (
+            PipelineEndpointOperationalState(
+                status=PipelineEndpointStatus.ERROR,
+            )
         )
         try:
-            endpoint_state = self.do_delete_pipeline_endpoint(endpoint)
+            deleted_endpoint_state = self.do_delete_pipeline_endpoint(endpoint)
         except PipelineEndpointNotFoundError:
             client.delete_pipeline_endpoint(endpoint.id)
             raise PipelineEndpointNotFoundError(
@@ -412,14 +416,18 @@ class BasePipelineServer(StackComponent, ABC):
                 f"{endpoint_name_or_id}: {e}"
             ) from e
 
-        if not endpoint_state:
+        if not deleted_endpoint_state:
+            # The endpoint was already fully deleted by the time the call to
+            # do_delete_pipeline_endpoint returned.
             client.delete_pipeline_endpoint(endpoint.id)
             return
 
-        start_time = time()
+        endpoint_state = deleted_endpoint_state
+
+        start_time = time.time()
         sleep_time = 5
         while endpoint_state.status == PipelineEndpointStatus.DELETING:
-            if time() - start_time > timeout:
+            if time.time() - start_time > timeout:
                 raise PipelineEndpointDeletionTimeoutError(
                     f"Deletion of pipeline endpoint for {endpoint_name_or_id} "
                     f"timed out after {timeout} seconds"
@@ -450,10 +458,11 @@ class BasePipelineServer(StackComponent, ABC):
         """Get the logs of a pipeline endpoint.
 
         Args:
-            endpoint_name_or_id: The name or ID of the pipeline endpoint to get the logs of.
-            project: The project ID of the pipeline endpoint to get the logs of. Required
-                if a name is provided.
-            follow: if True, the logs will be streamed as they are written
+            endpoint_name_or_id: The name or ID of the pipeline endpoint to get
+                the logs of.
+            project: The project ID of the pipeline endpoint to get the logs of.
+                Required if a name is provided.
+            follow: if True, the logs will be streamed as they are written.
             tail: only retrieve the last NUM lines of log output.
 
         Returns:
@@ -465,7 +474,7 @@ class BasePipelineServer(StackComponent, ABC):
         """
         client = Client()
         try:
-            endpoint = client.get_pipeline_endpoint_by_name_or_id(
+            endpoint = client.get_pipeline_endpoint(
                 endpoint_name_or_id, project=project
             )
         except KeyError:
@@ -501,7 +510,9 @@ class BasePipelineServer(StackComponent, ABC):
         - Create the actual pipeline endpoint infrastructure (e.g.,
         FastAPI server, Kubernetes deployment, cloud function, etc.) based on
         the information in the pipeline endpoint response, particularly the
-        pipeline deployment.
+        pipeline deployment. When determining how to name the external
+        resources, do not rely on the endpoint name as being immutable
+        or unique.
 
         - If the pipeline endpoint infrastructure is already deployed, update
         it to match the information in the pipeline endpoint response.

@@ -63,6 +63,7 @@ from zenml.enums import (
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
+    PipelineEndpointStatus,
     PluginSubType,
     PluginType,
     ServiceState,
@@ -132,6 +133,8 @@ from zenml.models import (
     PipelineBuildResponse,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
+    PipelineEndpointFilter,
+    PipelineEndpointResponse,
     PipelineFilter,
     PipelineResponse,
     PipelineRunFilter,
@@ -3493,6 +3496,111 @@ class Client(metaclass=ClientMetaClass):
             hydrate=False,
         )
         self.zen_store.delete_deployment(deployment_id=deployment.id)
+
+    # ------------------------------ Pipeline endpoints -----------------------------
+
+    def get_pipeline_endpoint(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = True,
+    ) -> PipelineEndpointResponse:
+        """Get a pipeline endpoint.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the endpoint to get.
+            project: The project name/ID to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The pipeline endpoint.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_pipeline_endpoint,
+            list_method=self.list_pipeline_endpoints,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=project,
+            hydrate=hydrate,
+        )
+
+    def list_pipeline_endpoints(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        deployment_id: Optional[Union[str, UUID]] = None,
+        project: Optional[Union[str, UUID]] = None,
+        status: Optional[PipelineEndpointStatus] = None,
+        url: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        hydrate: bool = False,
+    ) -> Page[PipelineEndpointResponse]:
+        """List pipeline endpoints.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of endpoints to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the endpoint to filter by.
+            project: The project name/ID to filter by.
+            deployment_id: The id of the deployment to filter by.
+            status: The status of the endpoint to filter by.
+            url: The url of the endpoint to filter by.
+            user: Filter by user name/ID.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of pipeline endpoints.
+        """
+        return self.zen_store.list_pipeline_endpoints(
+            endpoint_filter_model=PipelineEndpointFilter(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                project=project or self.active_project.id,
+                user=user,
+                name=name,
+                pipeline_deployment_id=deployment_id,
+                status=status,
+                url=url,
+            ),
+            hydrate=hydrate,
+        )
+
+    def delete_pipeline_endpoint(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Delete a pipeline endpoint.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the endpoint to delete.
+            project: The project name/ID to filter by.
+        """
+        endpoint = self.get_pipeline_endpoint(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        self.zen_store.delete_pipeline_endpoint(endpoint_id=endpoint.id)
+        logger.info("Deleted pipeline endpoint with name '%s'.", endpoint.name)
 
     # ------------------------------ Run templates -----------------------------
 

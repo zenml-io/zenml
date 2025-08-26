@@ -64,13 +64,11 @@ class PipelineEndpointRequest(ProjectScopedRequest):
         description="A unique name for the pipeline endpoint within the project.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    pipeline_deployment_id: Optional[UUID] = Field(
-        default=None,
+    pipeline_deployment_id: UUID = Field(
         title="The pipeline deployment ID.",
         description="The ID of the pipeline deployment being served by this endpoint.",
     )
-    pipeline_server_id: Optional[UUID] = Field(
-        default=None,
+    pipeline_server_id: UUID = Field(
         title="The pipeline server ID.",
         description="The ID of the pipeline server component managing this endpoint.",
     )
@@ -84,20 +82,24 @@ class PipelineEndpointUpdate(BaseUpdate):
 
     name: Optional[str] = Field(
         default=None,
-        title="The name of the pipeline endpoint.",
+        title="The new name of the pipeline endpoint.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    pipeline_deployment_id: Optional[UUID] = Field(
+        default=None,
+        title="New pipeline deployment ID.",
     )
     url: Optional[str] = Field(
         default=None,
-        title="The URL of the pipeline endpoint.",
+        title="The new URL of the pipeline endpoint.",
     )
     status: Optional[str] = Field(
         default=None,
-        title="The status of the pipeline endpoint.",
+        title="The new status of the pipeline endpoint.",
     )
     metadata: Optional[Dict[str, Any]] = Field(
         default=None,
-        title="The metadata of the pipeline endpoint.",
+        title="The new metadata of the pipeline endpoint.",
     )
 
     @classmethod

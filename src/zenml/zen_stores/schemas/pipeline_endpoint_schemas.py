@@ -17,7 +17,7 @@ import json
 from typing import Any, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
@@ -49,6 +49,13 @@ class PipelineEndpointSchema(NamedSchema, table=True):
     """SQL Model for pipeline endpoint."""
 
     __tablename__ = "pipeline_endpoint"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "project_id",
+            name="unique_pipeline_endpoint_name_in_project",
+        ),
+    )
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
