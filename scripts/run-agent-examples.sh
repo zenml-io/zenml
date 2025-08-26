@@ -176,6 +176,7 @@ TOTAL_DURATION_S=$(( TOTAL_END_SEC - TOTAL_START_SEC ))
 
 # Compose summary and failure list files at repository root
 SUMMARY_FILE="$ROOT_DIR/agent-examples.summary.md"
+DISCORD_SUMMARY_FILE="$ROOT_DIR/agent-examples.discord.md"
 FAILURES_FILE="$ROOT_DIR/agent-examples.failures.txt"
 
 PASS_COUNT="${#SUCCESSES[@]}"
@@ -232,6 +233,18 @@ TOTAL_COUNT=$(( PASS_COUNT + FAIL_COUNT + SKIP_COUNT ))
   echo "\\\`\\\`\\\`"
 } >"$SUMMARY_FILE"
 
+# Generate concise Discord summary
+{
+  if (( FAIL_COUNT > 0 )); then
+    echo "**Failed Examples:**"
+    for n in "${FAILURES[@]}"; do
+      echo "• ${n}"
+    done
+  else
+    echo "All agent examples passed! ✅"
+  fi
+} >"$DISCORD_SUMMARY_FILE"
+
 # Write failures file (newline-separated). Create empty file if none failed for consistent artifacts.
 : >"$FAILURES_FILE"
 if (( FAIL_COUNT > 0 )); then
@@ -266,6 +279,7 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     echo "total_count=${TOTAL_COUNT}"
     echo "total_duration_s=${TOTAL_DURATION_S}"
     echo "summary_file=${SUMMARY_FILE}"
+    echo "discord_summary_file=${DISCORD_SUMMARY_FILE}"
     echo "failures_file=${FAILURES_FILE}"
     echo "logs_dir=${LOGS_DIR}"
   } >>"$GITHUB_OUTPUT"

@@ -60,6 +60,7 @@ jobs:
           path: |
             agent-examples.failures.txt
             agent-examples.summary.md
+            agent-examples.discord.md
             agent-examples-logs
           if-no-files-found: warn
       - name: Fail if any example failed
@@ -81,32 +82,19 @@ jobs:
         id: build_message
         shell: bash
         run: |
-          FAIL_LIST="(none)"
-          if [ -f ./agent-examples-results/agent-examples.failures.txt ]; then
-            if [ -s ./agent-examples-results/agent-examples.failures.txt ]; then
-              FAIL_LIST=$(paste -sd ', ' ./agent-examples-results/agent-examples.failures.txt)
-            fi
-          fi
-
           # Use a unique delimiter that won't appear in the content
           DELIMITER="GH_OUTPUT_DELIMITER_$$"
           {
             echo "message<<${DELIMITER}"
             echo "**Agent Examples Failure Alert**"
             echo
-            echo "Repository: ${{ github.repository }}"
-            echo "Branch: ${{ github.ref_name }}"
-            echo "Workflow: ${{ github.workflow }}"
-            echo "Run ID: ${{ github.run_id }}"
-            echo
-            echo "Failures: ${FAIL_LIST}"
-            echo
-            echo "Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            echo
-            if [ -f ./agent-examples-results/agent-examples.summary.md ]; then
-              echo "-----"
-              sed -e 's/\r$//' ./agent-examples-results/agent-examples.summary.md
+            if [ -f ./agent-examples-results/agent-examples.discord.md ]; then
+              sed -e 's/\r$//' ./agent-examples-results/agent-examples.discord.md
+            else
+              echo "Failed to generate failure summary."
             fi
+            echo
+            echo "**Details:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             echo "${DELIMITER}"
           } >> "$GITHUB_OUTPUT"
       - name: Send Discord notification on failure
