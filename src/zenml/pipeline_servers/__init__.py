@@ -33,9 +33,17 @@ pipeline endpoint managed through ZenML.
 from zenml.pipeline_servers.base_pipeline_server import (
     BasePipelineServer,
     BasePipelineServerFlavor,
+    BasePipelineServerConfig,
+)
+from zenml.pipeline_servers.docker.docker_pipeline_server import (
+    DockerPipelineServer,
+    DockerPipelineServerFlavor,
 )
 
 __all__ = [
     "BasePipelineServer",
     "BasePipelineServerFlavor",
+    "BasePipelineServerConfig",
+    "DockerPipelineServer",
+    "DockerPipelineServerFlavor",
 ]
