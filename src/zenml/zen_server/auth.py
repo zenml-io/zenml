@@ -1049,7 +1049,7 @@ def generate_access_token(
 def generate_download_token(
     download_type: DownloadType,
     resource_id: UUID,
-    extra_data: Optional[Dict[str, Any]] = None,
+    extra_claims: Optional[Dict[str, Any]] = None,
     expires_in_seconds: int = 30,
 ) -> str:
     """Generate a JWT token for downloading content.
@@ -1057,7 +1057,7 @@ def generate_download_token(
     Args:
         download_type: The type of content being downloaded.
         resource_id: The ID of the resource to download.
-        extra_data: Optional extra data to include in the token.
+        extra_claims: Optional extra claims to include in the token.
         expires_in_seconds: Token expiration time in seconds.
 
     Returns:
@@ -1073,8 +1073,8 @@ def generate_download_token(
         "resource_id": str(resource_id),
     }
 
-    if extra_data:
-        payload.update(extra_data)
+    if extra_claims:
+        payload.update(extra_claims)
 
     return jwt.encode(
         payload,
@@ -1087,7 +1087,7 @@ def verify_download_token(
     token: str,
     download_type: DownloadType,
     resource_id: UUID,
-    extra_data: Optional[Dict[str, Any]] = None,
+    extra_claims: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Verify a JWT token for downloading content.
 
@@ -1095,7 +1095,7 @@ def verify_download_token(
         token: The JWT token to verify.
         download_type: The expected download type.
         resource_id: The expected resource ID.
-        extra_data: Optional extra data to verify in the token.
+        extra_claims: Optional extra claims to verify in the token.
 
     Raises:
         CredentialsNotValid: If the token is invalid or doesn't match expected values.
@@ -1121,8 +1121,8 @@ def verify_download_token(
     if claims.get("resource_id") != str(resource_id):
         raise CredentialsNotValid("Invalid resource ID")
 
-    if extra_data:
-        for key, expected_value in extra_data.items():
+    if extra_claims:
+        for key, expected_value in extra_claims.items():
             if claims.get(key) != expected_value:
                 raise CredentialsNotValid(f"Invalid {key}")
 

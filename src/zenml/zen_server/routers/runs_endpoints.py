@@ -574,7 +574,7 @@ def get_run_logs_download_token(
     return generate_download_token(
         download_type=DownloadType.RUN_LOGS,
         resource_id=run_id,
-        extra_data={"source": source},
+        extra_claims={"source": source},
     )
 
 
@@ -624,7 +624,7 @@ def download_run_logs(
         token=token,
         download_type=DownloadType.RUN_LOGS,
         resource_id=run_id,
-        extra_data={"source": source},
+        extra_claims={"source": source},
     )
 
     store = zen_store()
