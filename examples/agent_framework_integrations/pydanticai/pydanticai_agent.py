@@ -1,8 +1,10 @@
-from my_tool import get_secret_data
 from pydantic_ai import Agent
 
+def get_secret_data() -> str:
+    return "something_secret"
+
 agent = Agent(
-    "openai:gpt-4o-mini",
+    "openai:gpt-5-nano",
     system_prompt="Be concise, reply with one sentence.",
     tools=[get_secret_data],
 )
