@@ -29,10 +29,12 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildBase,
     PipelineBuildFilter,
+    PipelineEndpointFilter,
     PipelineFilter,
     PipelineRunFilter,
     ScheduleFilter,
 )
+from zenml.pipeline_servers.base_pipeline_server import BasePipelineServer
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
@@ -297,6 +299,137 @@ def run_pipeline(
             prevent_build_reuse=prevent_build_reuse,
         )
         pipeline_instance()
+
+
+@pipeline.command(
+    "serve",
+    help="Serve a pipeline. The SOURCE argument needs to be an "
+    "importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
+)
+@click.argument("source")
+@click.option(
+    "--endpoint-name",
+    "-e",
+    "endpoint_name",
+    type=str,
+    required=True,
+    help="Name of the endpoint to serve the pipeline on.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the run.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to run on.",
+)
+@click.option(
+    "--build",
+    "-b",
+    "build_path_or_id",
+    type=str,
+    required=False,
+    help="ID or path of the build to use.",
+)
+@click.option(
+    "--prevent-build-reuse",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Prevent automatic build reusing.",
+)
+@click.option(
+    "--attach",
+    "-a",
+    "attach",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Attach to the pipeline endpoint logs.",
+)
+def serve_pipeline(
+    source: str,
+    endpoint_name: str,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+    build_path_or_id: Optional[str] = None,
+    prevent_build_reuse: bool = False,
+    attach: bool = False,
+) -> None:
+    """Serve a pipeline for online inference.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        endpoint_name: Name of the endpoint to serve the pipeline on.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack on which the pipeline should
+            run.
+        build_path_or_id: ID of file path of the build to use for the pipeline
+            run.
+        prevent_build_reuse: If True, prevents automatic reusing of previous
+            builds.
+        attach: If True, attach to the pipeline endpoint logs.
+    """
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline serve` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the registered step classes "
+            "will be resolved. To silence this warning, run `zenml init` at "
+            "your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        build: Union[str, PipelineBuildBase, None] = None
+        if build_path_or_id:
+            if uuid_utils.is_valid_uuid(build_path_or_id):
+                build = build_path_or_id
+            elif os.path.exists(build_path_or_id):
+                build = PipelineBuildBase.from_yaml(build_path_or_id)
+            else:
+                cli_utils.error(
+                    f"The specified build {build_path_or_id} is not a valid UUID "
+                    "or file path."
+                )
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path,
+            build=build,
+            prevent_build_reuse=prevent_build_reuse,
+        )
+        endpoint = pipeline_instance.serve(endpoint_name=endpoint_name)
+
+        cli_utils.declare(f"Served pipeline endpoint '{endpoint_name}'.")
+        cli_utils.print_pydantic_model(
+            title="Pipeline Endpoint",
+            model=endpoint,
+            exclude_columns={
+                "created",
+                "updated",
+                "user",
+                "project",
+                "metadata",
+            },
+        )
+
+        if attach:
+            pipeline_server = BasePipelineServer.get_active_pipeline_server()
+            for log in pipeline_server.get_pipeline_endpoint_logs(
+                endpoint_name_or_id=endpoint.id,
+                follow=True,
+            ):
+                print(log)
 
 
 @pipeline.command(
@@ -736,3 +869,185 @@ def delete_pipeline_build(
         cli_utils.error(str(e))
     else:
         cli_utils.declare(f"Deleted pipeline build '{build_id}'.")
+
+
+@pipeline.group()
+def endpoints() -> None:
+    """Commands for pipeline endpoints."""
+
+
+@endpoints.command("list", help="List all registered pipeline endpoints.")
+@list_options(PipelineEndpointFilter)
+def list_pipeline_endpoints(**kwargs: Any) -> None:
+    """List all registered pipeline endpoints for the filter.
+
+    Args:
+        **kwargs: Keyword arguments to filter pipeline endpoints.
+    """
+    client = Client()
+    try:
+        with console.status("Listing pipeline endpoints...\n"):
+            pipeline_endpoints = client.list_pipeline_endpoints(**kwargs)
+    except KeyError as err:
+        cli_utils.error(str(err))
+    else:
+        if not pipeline_endpoints.items:
+            cli_utils.declare("No pipeline endpoints found for this filter.")
+            return
+
+        cli_utils.print_pipeline_endpoints_table(
+            pipeline_endpoints=pipeline_endpoints.items
+        )
+        cli_utils.print_page_info(pipeline_endpoints)
+
+
+@endpoints.command("describe")
+@click.argument("endpoint_name_or_id", type=str, required=True)
+def describe_pipeline_endpoint(
+    endpoint_name_or_id: str,
+) -> None:
+    """Describe a pipeline endpoint.
+
+    Args:
+        endpoint_name_or_id: The name or ID of the pipeline endpoint to describe.
+    """
+    # Ask for confirmation to describe endpoint.
+    try:
+        endpoint = Client().get_pipeline_endpoint(
+            name_id_or_prefix=endpoint_name_or_id,
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.print_pydantic_model(
+            title="Pipeline Endpoint",
+            model=endpoint,
+            exclude_columns={
+                "created",
+                "updated",
+                "user",
+                "project",
+                "metadata",
+            },
+        )
+
+
+@endpoints.command("deprovision")
+@click.argument("endpoint_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation.",
+)
+def deprovision_pipeline_endpoint(
+    endpoint_name_or_id: str,
+    yes: bool = False,
+) -> None:
+    """Deprovision a pipeline endpoint.
+
+    Args:
+        endpoint_name_or_id: The name or ID of the pipeline endpoint to deprovision.
+        yes: If set, don't ask for confirmation.
+    """
+    # Ask for confirmation to deprovision endpoint.
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to deprovision and delete pipeline endpoint "
+            f"`{endpoint_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline endpoint deprovision canceled.")
+            return
+
+    # Deprovision endpoint.
+    try:
+        Client().deprovision_pipeline_endpoint(
+            name_id_or_prefix=endpoint_name_or_id,
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Deprovisioned pipeline endpoint '{endpoint_name_or_id}'."
+        )
+
+
+@endpoints.command("refresh")
+@click.argument("endpoint_name_or_id", type=str, required=True)
+def refresh_pipeline_endpoint(
+    endpoint_name_or_id: str,
+) -> None:
+    """Refresh the status of a pipeline endpoint.
+
+    Args:
+        endpoint_name_or_id: The name or ID of the pipeline endpoint to refresh.
+    """
+    try:
+        endpoint = Client().refresh_pipeline_endpoint(
+            name_id_or_prefix=endpoint_name_or_id
+        )
+
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Refreshed the status of pipeline endpoint '{endpoint_name_or_id}'."
+        )
+        cli_utils.print_pydantic_model(
+            title="Pipeline Endpoint",
+            model=endpoint,
+            exclude_columns={
+                "created",
+                "updated",
+                "user",
+                "project",
+                "metadata",
+            },
+        )
+
+
+@endpoints.command("logs")
+@click.argument("endpoint_name_or_id", type=str, required=True)
+@click.option(
+    "--follow",
+    "-f",
+    is_flag=True,
+    default=False,
+    help="Follow the logs.",
+)
+@click.option(
+    "--tail",
+    "-t",
+    type=int,
+    default=None,
+    help="The number of lines to show from the end of the logs.",
+)
+def log_pipeline_endpoint(
+    endpoint_name_or_id: str,
+    follow: bool = False,
+    tail: Optional[int] = None,
+) -> None:
+    """Get the logs of a pipeline endpoint.
+
+    Args:
+        endpoint_name_or_id: The name or ID of the pipeline endpoint to get the logs of.
+        follow: If True, follow the logs.
+        tail: The number of lines to show from the end of the logs. If None,
+            show all logs.
+    """
+    try:
+        logs = Client().get_pipeline_endpoint_logs(
+            name_id_or_prefix=endpoint_name_or_id,
+            follow=follow,
+            tail=tail,
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        with console.status(
+            f"Streaming logs for pipeline endpoint '{endpoint_name_or_id}'...\n"
+        ):
+            for log in logs:
+                print(log)

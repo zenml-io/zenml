@@ -25,6 +25,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
     Mapping,
     Optional,
@@ -3535,7 +3536,8 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        deployment_id: Optional[Union[str, UUID]] = None,
+        pipeline_deployment_id: Optional[Union[str, UUID]] = None,
+        pipeline_server_id: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
         status: Optional[PipelineEndpointStatus] = None,
         url: Optional[str] = None,
@@ -3554,7 +3556,8 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering.
             name: The name of the endpoint to filter by.
             project: The project name/ID to filter by.
-            deployment_id: The id of the deployment to filter by.
+            pipeline_deployment_id: The id of the deployment to filter by.
+            pipeline_server_id: The id of the pipeline server to filter by.
             status: The status of the endpoint to filter by.
             url: The url of the endpoint to filter by.
             user: Filter by user name/ID.
@@ -3576,7 +3579,8 @@ class Client(metaclass=ClientMetaClass):
                 project=project or self.active_project.id,
                 user=user,
                 name=name,
-                pipeline_deployment_id=deployment_id,
+                pipeline_deployment_id=pipeline_deployment_id,
+                pipeline_server_id=pipeline_server_id,
                 status=status,
                 url=url,
             ),
@@ -3601,6 +3605,150 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_pipeline_endpoint(endpoint_id=endpoint.id)
         logger.info("Deleted pipeline endpoint with name '%s'.", endpoint.name)
+
+    def deprovision_pipeline_endpoint(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Deprovision a pipeline endpoint.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the endpoint to deprovision.
+            project: The project name/ID to filter by.
+        """
+        from zenml.pipeline_servers.base_pipeline_server import (
+            BasePipelineServer,
+        )
+        from zenml.stack.stack_component import StackComponent
+
+        endpoint = self.get_pipeline_endpoint(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        if endpoint.pipeline_server:
+            # Instantiate and deprovision the endpoint through the pipeline
+            # server
+
+            try:
+                pipeline_server = cast(
+                    BasePipelineServer,
+                    StackComponent.from_model(endpoint.pipeline_server),
+                )
+            except ImportError:
+                raise NotImplementedError(
+                    f"Pipeline server '{endpoint.pipeline_server.name}' could "
+                    f"not be instantiated. This is likely because the pipeline "
+                    f"server's dependencies are not installed."
+                )
+            pipeline_server.deprovision_pipeline_endpoint(
+                endpoint_name_or_id=endpoint.id
+            )
+            logger.info(
+                "Deprovisioned pipeline endpoint with name '%s'.",
+                endpoint.name,
+            )
+        else:
+            self.zen_store.delete_pipeline_endpoint(endpoint_id=endpoint.id)
+            logger.info(
+                "Deleted pipeline endpoint with name '%s'.", endpoint.name
+            )
+
+    def refresh_pipeline_endpoint(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+    ) -> PipelineEndpointResponse:
+        """Refresh the status of a pipeline endpoint.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the endpoint to refresh.
+            project: The project name/ID to filter by.
+        """
+        from zenml.pipeline_servers.base_pipeline_server import (
+            BasePipelineServer,
+        )
+        from zenml.stack.stack_component import StackComponent
+
+        endpoint = self.get_pipeline_endpoint(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        if endpoint.pipeline_server:
+            try:
+                pipeline_server = cast(
+                    BasePipelineServer,
+                    StackComponent.from_model(endpoint.pipeline_server),
+                )
+            except ImportError:
+                raise NotImplementedError(
+                    f"Pipeline server '{endpoint.pipeline_server.name}' could "
+                    f"not be instantiated. This is likely because the pipeline "
+                    f"server's dependencies are not installed."
+                )
+            return pipeline_server.refresh_pipeline_endpoint(
+                endpoint_name_or_id=endpoint.id
+            )
+        else:
+            raise NotImplementedError(
+                f"Pipeline endpoint '{endpoint.name}' is no longer managed by "
+                "a pipeline server. This is likely because the pipeline server "
+                "was deleted. Please delete the pipeline endpoint instead."
+            )
+
+    def get_pipeline_endpoint_logs(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Get the logs of a pipeline endpoint.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the endpoint to get the logs of.
+            project: The project name/ID to filter by.
+            follow: If True, follow the logs.
+            tail: The number of lines to show from the end of the logs.
+
+        Returns:
+            A generator that yields the logs of the pipeline endpoint.
+        """
+        from zenml.pipeline_servers.base_pipeline_server import (
+            BasePipelineServer,
+        )
+        from zenml.stack.stack_component import StackComponent
+
+        endpoint = self.get_pipeline_endpoint(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        if endpoint.pipeline_server:
+            try:
+                pipeline_server = cast(
+                    BasePipelineServer,
+                    StackComponent.from_model(endpoint.pipeline_server),
+                )
+            except ImportError:
+                raise NotImplementedError(
+                    f"Pipeline server '{endpoint.pipeline_server.name}' could "
+                    f"not be instantiated. This is likely because the pipeline "
+                    f"server's dependencies are not installed."
+                )
+            return pipeline_server.get_pipeline_endpoint_logs(
+                endpoint_name_or_id=endpoint.id,
+                follow=follow,
+                tail=tail,
+            )
+        else:
+            raise NotImplementedError(
+                f"Pipeline endpoint '{endpoint.name}' is no longer managed by "
+                "a pipeline server. This is likely because the pipeline server "
+                "was deleted. Please delete the pipeline endpoint instead."
+            )
 
     # ------------------------------ Run templates -----------------------------
 

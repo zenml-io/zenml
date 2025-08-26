@@ -87,7 +87,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         sa_column=Column(TEXT, nullable=True),
     )
     endpoint_metadata: str = Field(
-        default_factory=dict,
+        default="{}",
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -181,7 +181,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             metadata = PipelineEndpointResponseMetadata(
                 pipeline_deployment_id=self.pipeline_deployment_id,
                 pipeline_server_id=self.pipeline_server_id,
-                metadata=json.loads(self.endpoint_metadata),
+                endpoint_metadata=json.loads(self.endpoint_metadata),
             )
 
         resources = None
@@ -219,7 +219,9 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         for field, value in update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
-            if hasattr(self, field):
+            if field == "endpoint_metadata":
+                setattr(self, field, json.dumps(value))
+            elif hasattr(self, field):
                 setattr(self, field, value)
 
         self.updated = utc_now()

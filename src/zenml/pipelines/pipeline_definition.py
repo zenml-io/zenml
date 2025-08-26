@@ -53,7 +53,7 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import EntityExistsError, RunMonitoringError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
@@ -68,6 +68,7 @@ from zenml.models import (
     PipelineDeploymentBase,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineEndpointResponse,
     PipelineRequest,
     PipelineResponse,
     PipelineRunResponse,
@@ -597,6 +598,44 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 pipeline_id=pipeline_id,
                 code_repository=code_repository,
             )
+
+    def serve(
+        self,
+        endpoint_name: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> PipelineEndpointResponse:
+        """Serve the pipeline for online inference.
+
+        Args:
+            endpoint_name: The name of the endpoint to serve the pipeline on.
+            *args: Pipeline entrypoint input arguments.
+            **kwargs: Pipeline entrypoint input keyword arguments.
+
+        Returns:
+            The pipeline endpoint response.
+        """
+        self.prepare(*args, **kwargs)
+        deployment = self._create_deployment(**self._run_args)
+
+        stack = Client().active_stack
+
+        # Prevent execution of nested pipelines which might lead to
+        # unexpected behavior
+        previous_value = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+        try:
+            stack.prepare_pipeline_deployment(deployment=deployment)
+            return stack.serve_pipeline(
+                deployment=deployment,
+                endpoint_name=endpoint_name,
+            )
+        except RunMonitoringError as e:
+            # Don't mark the run as failed if the error happened during monitoring
+            # of the run.
+            raise e.original_exception from None
+        finally:
+            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = previous_value
 
     def _create_deployment(
         self,

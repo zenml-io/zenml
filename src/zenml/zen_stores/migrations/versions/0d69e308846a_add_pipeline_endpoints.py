@@ -35,9 +35,7 @@ def upgrade() -> None:
         sa.Column("url", sa.TEXT(), nullable=True),
         sa.Column(
             "endpoint_metadata",
-            sa.String(length=16777215).with_variant(
-                mysql.MEDIUMTEXT(), "mysql"
-            ),
+            sa.String(length=16777215).with_variant(mysql.MEDIUMTEXT, "mysql"),
             nullable=False,
         ),
         sa.Column(

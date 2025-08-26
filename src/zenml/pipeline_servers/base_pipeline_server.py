@@ -17,26 +17,34 @@ import time
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
-    ClassVar,
     Dict,
     Generator,
+    List,
     Optional,
     Type,
+    Union,
     cast,
 )
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.docker_settings import DockerSettings
+from zenml.constants import (
+    PIPELINE_SERVER_DOCKER_IMAGE_KEY,
+)
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
+    PipelineDeploymentBase,
     PipelineDeploymentResponse,
     PipelineEndpointOperationalState,
     PipelineEndpointRequest,
     PipelineEndpointResponse,
     PipelineEndpointUpdate,
 )
+from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
@@ -71,7 +79,7 @@ class PipelineEndpointDeploymentTimeoutError(PipelineServerError):
     """Error raised when a pipeline endpoint deployment times out."""
 
 
-class PipelineEndpointDeletionError(PipelineServerError):
+class PipelineEndpointDeprovisionError(PipelineServerError):
     """Error raised when a pipeline endpoint deletion fails."""
 
 
@@ -110,9 +118,6 @@ class BasePipelineServer(StackComponent, ABC):
     endpoints and to manage their lifecycle.
     """
 
-    NAME: ClassVar[str]
-    FLAVOR: ClassVar[Type["BasePipelineServerFlavor"]]
-
     @property
     def config(self) -> BasePipelineServerConfig:
         """Returns the `BasePipelineServerConfig` config.
@@ -133,24 +138,41 @@ class BasePipelineServer(StackComponent, ABC):
             TypeError: if a pipeline server is not part of the
                 active stack.
         """
-        flavor: BasePipelineServerFlavor = cls.FLAVOR()
         client = Client()
         pipeline_server = client.active_stack.pipeline_server
         if not pipeline_server or not isinstance(pipeline_server, cls):
             raise TypeError(
-                f"The active stack needs to have a {cls.NAME} pipeline "
-                f"server component registered to be able to deploy pipelines "
-                f"with {cls.NAME}. You can create a new stack with "
-                f"a {cls.NAME} pipeline server component or update your "
-                f"active stack to add this component, e.g.:\n\n"
-                f"  `zenml pipeline-server register {flavor.name} "
-                f"--flavor={flavor.name} ...`\n"
-                f"  `zenml stack register <STACK-NAME> -ps {flavor.name} ...`\n"
-                f"  or:\n"
-                f"  `zenml stack update -ps {flavor.name}`\n\n"
+                "The active stack needs to have a pipeline "
+                "server component registered to be able to deploy pipelines. "
+                "You can create a new stack with a pipeline server component "
+                "or update your active stack to add this component, e.g.:\n\n"
+                "  `zenml pipeline-server register ...`\n"
+                "  `zenml stack register <STACK-NAME> -ps ...`\n"
+                "  or:\n"
+                "  `zenml stack update -ps ...`\n\n"
             )
 
         return pipeline_server
+
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBase"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
+        pipeline_settings = deployment.pipeline_configuration.docker_settings
+        pipeline_settings = self.get_updated_docker_settings(pipeline_settings)
+        return [
+            BuildConfiguration(
+                key=PIPELINE_SERVER_DOCKER_IMAGE_KEY,
+                settings=pipeline_settings,
+            )
+        ]
 
     def _update_pipeline_endpoint(
         self,
@@ -203,10 +225,7 @@ class BasePipelineServer(StackComponent, ABC):
         deployment: PipelineDeploymentResponse,
         stack: "Stack",
         endpoint_name: str,
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, str]] = None,
         replace: bool = True,
-        timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT,
     ) -> PipelineEndpointResponse:
         """Serve a pipeline as an HTTP endpoint.
 
@@ -222,18 +241,11 @@ class BasePipelineServer(StackComponent, ABC):
             stack: The stack the pipeline will be served on.
             endpoint_name: Unique name for the pipeline endpoint. This name must
                 be unique at the project level.
-            environment: A dictionary of environment variables to set on the
-                pipeline endpoint.
-            secrets: A dictionary of secret environment variables to set
-                on the pipeline endpoint. These secret environment variables
-                should not be exposed as regular environment variables on the
-                pipeline server.
             replace: If True, it will update in-place any existing pipeline
                 endpoint instance with the same name. If False, and the pipeline
                 endpoint instance already exists, it will raise a
                 PipelineEndpointAlreadyExistsError.
-            timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to become operational.
+
 
         Raises:
             PipelineEndpointAlreadyExistsError: if the pipeline endpoint already
@@ -249,8 +261,15 @@ class BasePipelineServer(StackComponent, ABC):
         """
         client = Client()
 
+        environment = get_config_environment_vars()
+        # TODO: separate secrets from environment
+        secrets: Optional[Dict[str, str]] = None
+
+        # TODO: get timeout from config
+        timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
+
         logger.debug(
-            f"Deploying pipeline endpoint for {endpoint_name} with "
+            f"Deploying pipeline endpoint {endpoint_name} with "
             f"deployment ID: {deployment.id}"
         )
 
@@ -289,6 +308,15 @@ class BasePipelineServer(StackComponent, ABC):
 
             self._check_pipeline_endpoint_server(endpoint)
 
+            if endpoint.pipeline_deployment_id != deployment.id:
+                # The deployment has been updated
+                endpoint = client.zen_store.update_pipeline_endpoint(
+                    endpoint.id,
+                    PipelineEndpointUpdate(
+                        pipeline_deployment_id=deployment.id,
+                    ),
+                )
+
             logger.debug(
                 f"Existing pipeline endpoint found with name '{endpoint_name}'"
             )
@@ -314,15 +342,16 @@ class BasePipelineServer(StackComponent, ABC):
                 environment=environment,
                 secrets=secrets,
             )
+            endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
         except PipelineEndpointDeploymentError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise PipelineEndpointDeploymentError(
-                f"Failed to deploy pipeline endpoint for {endpoint_name}: {e}"
+                f"Failed to deploy pipeline endpoint {endpoint_name}: {e}"
             ) from e
         except PipelineServerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise PipelineServerError(
-                f"Failed to deploy pipeline endpoint for {endpoint_name}: {e}"
+                f"Failed to deploy pipeline endpoint {endpoint_name}: {e}"
             ) from e
         except Exception as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
@@ -332,21 +361,24 @@ class BasePipelineServer(StackComponent, ABC):
             ) from e
 
         logger.debug(
-            f"Deployed pipeline endpoint for {endpoint_name} with "
+            f"Deployed pipeline endpoint {endpoint_name} with "
             f"deployment ID: {deployment.id}. Operational state: "
             f"{endpoint_state.status}"
         )
 
         start_time = time.time()
         sleep_time = 5
-        while endpoint_state.status == PipelineEndpointStatus.DEPLOYING:
+        while endpoint_state.status not in [
+            PipelineEndpointStatus.RUNNING,
+            PipelineEndpointStatus.ERROR,
+        ]:
             if time.time() - start_time > timeout:
                 raise PipelineEndpointDeploymentTimeoutError(
-                    f"Deployment of pipeline endpoint for {endpoint_name} "
+                    f"Deployment of pipeline endpoint {endpoint_name} "
                     f"timed out after {timeout} seconds"
                 )
             logger.debug(
-                f"Pipeline endpoint for {endpoint_name} is not yet running. "
+                f"pipeline endpoint {endpoint_name} is not yet running. "
                 f"Waiting for {sleep_time} seconds..."
             )
             time.sleep(sleep_time)
@@ -355,7 +387,7 @@ class BasePipelineServer(StackComponent, ABC):
 
         if endpoint_state.status != PipelineEndpointStatus.RUNNING:
             raise PipelineEndpointDeploymentError(
-                f"Failed to deploy pipeline endpoint for {endpoint_name}: "
+                f"Failed to deploy pipeline endpoint {endpoint_name}: "
                 f"Operational state: {endpoint_state.status}"
             )
 
@@ -363,7 +395,7 @@ class BasePipelineServer(StackComponent, ABC):
 
     def refresh_pipeline_endpoint(
         self,
-        endpoint_name_or_id: str,
+        endpoint_name_or_id: Union[str, UUID],
         project: Optional[UUID] = None,
     ) -> PipelineEndpointResponse:
         """Refresh the status of a pipeline endpoint by name or ID.
@@ -410,7 +442,7 @@ class BasePipelineServer(StackComponent, ABC):
         except PipelineServerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise PipelineServerError(
-                f"Failed to refresh pipeline endpoint for {endpoint_name_or_id}: {e}"
+                f"Failed to refresh pipeline endpoint {endpoint_name_or_id}: {e}"
             ) from e
         except Exception as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
@@ -421,23 +453,25 @@ class BasePipelineServer(StackComponent, ABC):
 
         return self._update_pipeline_endpoint(endpoint, endpoint_state)
 
-    def delete_pipeline_endpoint(
+    def deprovision_pipeline_endpoint(
         self,
-        endpoint_name_or_id: str,
+        endpoint_name_or_id: Union[str, UUID],
         project: Optional[UUID] = None,
         timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT,
     ) -> None:
-        """Delete a pipeline endpoint.
+        """Deprovision a pipeline endpoint.
 
         Args:
-            endpoint_name_or_id: The name or ID of the pipeline endpoint to delete.
-            project: The project ID of the pipeline endpoint to delete. Required
-                if a name is provided.
+            endpoint_name_or_id: The name or ID of the pipeline endpoint to
+                deprovision.
+            project: The project ID of the pipeline endpoint to deprovision.
+                Required if a name is provided.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to stop.
+                endpoint to deprovision.
 
         Raises:
-            PipelineEndpointNotFoundError: if the pipeline endpoint is not found.
+            PipelineEndpointNotFoundError: if the pipeline endpoint is not found
+                or is not managed by this pipeline server.
             PipelineServerError: if an unexpected error occurs.
         """
         client = Client()
@@ -457,7 +491,9 @@ class BasePipelineServer(StackComponent, ABC):
             status=PipelineEndpointStatus.ERROR,
         )
         try:
-            deleted_endpoint_state = self.do_delete_pipeline_endpoint(endpoint)
+            deleted_endpoint_state = self.do_deprovision_pipeline_endpoint(
+                endpoint
+            )
         except PipelineEndpointNotFoundError:
             client.delete_pipeline_endpoint(endpoint.id)
             raise PipelineEndpointNotFoundError(
@@ -467,7 +503,7 @@ class BasePipelineServer(StackComponent, ABC):
         except PipelineServerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise PipelineServerError(
-                f"Failed to delete pipeline endpoint for {endpoint_name_or_id}: {e}"
+                f"Failed to delete pipeline endpoint {endpoint_name_or_id}: {e}"
             ) from e
         except Exception as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
@@ -486,23 +522,32 @@ class BasePipelineServer(StackComponent, ABC):
 
         start_time = time.time()
         sleep_time = 5
-        while endpoint_state.status == PipelineEndpointStatus.DELETING:
+        while endpoint_state.status not in [
+            PipelineEndpointStatus.DELETED,
+            PipelineEndpointStatus.ERROR,
+        ]:
             if time.time() - start_time > timeout:
                 raise PipelineEndpointDeletionTimeoutError(
-                    f"Deletion of pipeline endpoint for {endpoint_name_or_id} "
+                    f"Deletion of pipeline endpoint {endpoint_name_or_id} "
                     f"timed out after {timeout} seconds"
                 )
             logger.debug(
-                f"Pipeline endpoint for {endpoint_name_or_id} is not yet deleted. "
+                f"pipeline endpoint {endpoint_name_or_id} is not yet deleted. "
                 f"Waiting for {sleep_time} seconds..."
             )
             time.sleep(sleep_time)
-            endpoint_state = self.do_get_pipeline_endpoint(endpoint)
-            endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
+            try:
+                endpoint_state = self.do_get_pipeline_endpoint(endpoint)
+                endpoint = self._update_pipeline_endpoint(
+                    endpoint, endpoint_state
+                )
+            except PipelineEndpointNotFoundError:
+                client.delete_pipeline_endpoint(endpoint.id)
+                return
 
         if endpoint_state.status != PipelineEndpointStatus.DELETED:
-            raise PipelineEndpointDeletionError(
-                f"Failed to delete pipeline endpoint for {endpoint_name_or_id}: "
+            raise PipelineEndpointDeprovisionError(
+                f"Failed to delete pipeline endpoint {endpoint_name_or_id}: "
                 f"Operational state: {endpoint_state.status}"
             )
 
@@ -510,7 +555,7 @@ class BasePipelineServer(StackComponent, ABC):
 
     def get_pipeline_endpoint_logs(
         self,
-        endpoint_name_or_id: str,
+        endpoint_name_or_id: Union[str, UUID],
         project: Optional[UUID] = None,
         follow: bool = False,
         tail: Optional[int] = None,
@@ -549,7 +594,7 @@ class BasePipelineServer(StackComponent, ABC):
             return self.do_get_pipeline_endpoint_logs(endpoint, follow, tail)
         except PipelineServerError as e:
             raise PipelineServerError(
-                f"Failed to get logs for pipeline endpoint for {endpoint_name_or_id}: {e}"
+                f"Failed to get logs for pipeline endpoint {endpoint_name_or_id}: {e}"
             ) from e
         except Exception as e:
             raise PipelineServerError(
@@ -558,6 +603,20 @@ class BasePipelineServer(StackComponent, ABC):
             ) from e
 
     # ------------------ Abstract Methods ------------------
+
+    @abstractmethod
+    def get_updated_docker_settings(
+        self,
+        pipeline_settings: "DockerSettings",
+    ) -> DockerSettings:
+        """Abstract method to update the Docker settings for a pipeline endpoint.
+
+        Args:
+            pipeline_settings: The pipeline settings to update.
+
+        Returns:
+            The updated Docker settings.
+        """
 
     @abstractmethod
     def do_serve_pipeline(
@@ -662,16 +721,16 @@ class BasePipelineServer(StackComponent, ABC):
         """
 
     @abstractmethod
-    def do_delete_pipeline_endpoint(
+    def do_deprovision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
     ) -> Optional[PipelineEndpointOperationalState]:
-        """Abstract method to delete a pipeline endpoint.
+        """Abstract method to deprovision a pipeline endpoint.
 
         Concrete pipeline server subclasses must implement the following
         functionality in this method:
 
-        - Delete the actual pipeline endpoint infrastructure (e.g.,
+        - Deprovision the actual pipeline endpoint infrastructure (e.g.,
         FastAPI server, Kubernetes deployment, cloud function, etc.) based on
         the information in the pipeline endpoint response.
 
@@ -691,14 +750,14 @@ class BasePipelineServer(StackComponent, ABC):
 
         Returns:
             The PipelineEndpointOperationalState object representing the
-            operational state of the deleted pipeline endpoint, or None if the
-            deletion is completed before the call returns.
+            operational state of the deprovisioned pipeline endpoint, or None
+            if the deprovision is completed before the call returns.
 
         Raises:
             PipelineEndpointNotFoundError: if no pipeline endpoint is found
                 corresponding to the provided PipelineEndpointResponse.
-            PipelineEndpointDeletionError: if the pipeline endpoint deletion
-                fails.
+            PipelineEndpointDeprovisionError: if the pipeline endpoint
+                deprovision fails.
             PipelineServerError: if an unexpected error occurs.
         """
 
