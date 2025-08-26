@@ -11,18 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the ZenML local Docker pipeline server.
-
-
-TODO:
-
-* figure out which image to use for the docker container from the deployment (or
-build another ?)
-* figure out how to inject the FastAPI/other requirements into the image
-* which environment variables go into the container? who provides them?
-* how are endpoints authenticated?
-* check the health status of the container too
-"""
+"""Implementation of the ZenML local Docker pipeline server."""
 
 import copy
 import os
@@ -126,6 +115,15 @@ class DockerPipelineEndpointMetadata(BaseModel):
 class DockerPipelineServer(BasePipelineServer):
     """Pipeline server responsible for serving pipelines locally using Docker."""
 
+    # TODO:
+
+    # * figure out which image to use for the docker container from the deployment (or
+    # build another ?)
+    # * figure out how to inject the FastAPI/other requirements into the image
+    # * which environment variables go into the container? who provides them?
+    # * how are endpoints authenticated?
+    # * check the health status of the container too
+
     _docker_client: Optional[DockerClient] = None
 
     @property
@@ -203,9 +201,9 @@ class DockerPipelineServer(BasePipelineServer):
             if not allocate_port_if_busy:
                 raise IOError(f"TCP port {preferred_ports} is not available.")
 
-        port = scan_for_available_port(start=range[0], stop=range[1])
-        if port:
-            return port
+        available_port = scan_for_available_port(start=range[0], stop=range[1])
+        if available_port:
+            return available_port
         raise IOError(f"No free TCP ports found in range {range}")
 
     def _get_container_id(self, endpoint: PipelineEndpointResponse) -> str:

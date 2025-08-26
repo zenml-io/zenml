@@ -300,6 +300,105 @@ def run_pipeline(
 
 
 @pipeline.command(
+    "serve",
+    help="Serve a pipeline. The SOURCE argument needs to be an "
+    "importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
+)
+@click.argument("source")
+@click.option(
+    "--endpoint-name",
+    "-e",
+    "endpoint_name",
+    type=str,
+    required=True,
+    help="Name of the endpoint to serve the pipeline on.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the run.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to run on.",
+)
+@click.option(
+    "--build",
+    "-b",
+    "build_path_or_id",
+    type=str,
+    required=False,
+    help="ID or path of the build to use.",
+)
+@click.option(
+    "--prevent-build-reuse",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Prevent automatic build reusing.",
+)
+def serve_pipeline(
+    source: str,
+    endpoint_name: str,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+    build_path_or_id: Optional[str] = None,
+    prevent_build_reuse: bool = False,
+) -> None:
+    """Serve a pipeline for online inference.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        endpoint_name: Name of the endpoint to serve the pipeline on.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack on which the pipeline should
+            run.
+        build_path_or_id: ID of file path of the build to use for the pipeline
+            run.
+        prevent_build_reuse: If True, prevents automatic reusing of previous
+            builds.
+    """
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline serve` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the registered step classes "
+            "will be resolved. To silence this warning, run `zenml init` at "
+            "your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        build: Union[str, PipelineBuildBase, None] = None
+        if build_path_or_id:
+            if uuid_utils.is_valid_uuid(build_path_or_id):
+                build = build_path_or_id
+            elif os.path.exists(build_path_or_id):
+                build = PipelineBuildBase.from_yaml(build_path_or_id)
+            else:
+                cli_utils.error(
+                    f"The specified build {build_path_or_id} is not a valid UUID "
+                    "or file path."
+                )
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path,
+            build=build,
+            prevent_build_reuse=prevent_build_reuse,
+        )
+        pipeline_instance.serve(endpoint_name=endpoint_name)
+
+
+@pipeline.command(
     "create-run-template",
     help="Create a run template for a pipeline. The SOURCE argument needs to "
     "be an importable source path resolving to a ZenML pipeline instance, e.g. "

@@ -37,6 +37,7 @@ from zenml.models import (
     PipelineEndpointResponse,
     PipelineEndpointUpdate,
 )
+from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
@@ -203,10 +204,7 @@ class BasePipelineServer(StackComponent, ABC):
         deployment: PipelineDeploymentResponse,
         stack: "Stack",
         endpoint_name: str,
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, str]] = None,
         replace: bool = True,
-        timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT,
     ) -> PipelineEndpointResponse:
         """Serve a pipeline as an HTTP endpoint.
 
@@ -222,18 +220,11 @@ class BasePipelineServer(StackComponent, ABC):
             stack: The stack the pipeline will be served on.
             endpoint_name: Unique name for the pipeline endpoint. This name must
                 be unique at the project level.
-            environment: A dictionary of environment variables to set on the
-                pipeline endpoint.
-            secrets: A dictionary of secret environment variables to set
-                on the pipeline endpoint. These secret environment variables
-                should not be exposed as regular environment variables on the
-                pipeline server.
             replace: If True, it will update in-place any existing pipeline
                 endpoint instance with the same name. If False, and the pipeline
                 endpoint instance already exists, it will raise a
                 PipelineEndpointAlreadyExistsError.
-            timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to become operational.
+
 
         Raises:
             PipelineEndpointAlreadyExistsError: if the pipeline endpoint already
@@ -248,6 +239,13 @@ class BasePipelineServer(StackComponent, ABC):
             pipeline endpoint.
         """
         client = Client()
+
+        environment = get_config_environment_vars()
+        # TODO: separate secrets from environment
+        secrets: Optional[Dict[str, str]] = None
+
+        # TODO: get timeout from config
+        timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
 
         logger.debug(
             f"Deploying pipeline endpoint for {endpoint_name} with "

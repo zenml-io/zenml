@@ -67,6 +67,7 @@ if TYPE_CHECKING:
     from zenml.models import (
         PipelineDeploymentBase,
         PipelineDeploymentResponse,
+        PipelineEndpointResponse,
         PipelineRunResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
@@ -846,6 +847,27 @@ class Stack:
         """
         self.orchestrator.run(
             deployment=deployment, stack=self, placeholder_run=placeholder_run
+        )
+
+    def serve_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponse",
+        endpoint_name: str,
+    ) -> "PipelineEndpointResponse":
+        """Serves a pipeline on this stack.
+
+        Args:
+            deployment: The pipeline deployment.
+            endpoint_name: The name of the endpoint to serve the pipeline on.
+        """
+        if not self.pipeline_server:
+            raise RuntimeError(
+                "The stack does not have a pipeline server. Please add a "
+                "pipeline server to the stack in order to serve a pipeline."
+            )
+
+        return self.pipeline_server.serve_pipeline(
+            deployment=deployment, stack=self, endpoint_name=endpoint_name
         )
 
     def _get_active_components_for_step(
