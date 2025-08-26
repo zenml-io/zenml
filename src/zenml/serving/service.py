@@ -14,7 +14,6 @@
 """Core pipeline serving service implementation."""
 
 import asyncio
-import os
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, AsyncGenerator, Dict, Optional
@@ -24,8 +23,19 @@ from zenml.client import Client
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
-from zenml.serving.entrypoint import ServingPipelineEntrypoint
-from zenml.serving.models import StreamEvent
+from zenml.serving.concurrency import (
+    TooManyRequestsError,
+    get_execution_manager,
+)
+from zenml.serving.direct_execution import DirectExecutionEngine
+from zenml.serving.events import ServingEvent, create_event_builder
+from zenml.serving.jobs import (
+    JobStatus,
+    get_job_registry,
+)
+
+# StreamEvent is deprecated, using ServingEvent instead
+from zenml.serving.streams import get_stream_manager, get_stream_manager_sync
 
 logger = get_logger(__name__)
 
@@ -127,7 +137,7 @@ class PipelineServingService:
         Returns:
             Dictionary containing parameter information with types and defaults
         """
-        schema = {}
+        schema: Dict[str, Any] = {}
 
         if not self.deployment:
             return schema
@@ -209,7 +219,7 @@ class PipelineServingService:
         run_name: Optional[str] = None,
         timeout: Optional[int] = 300,
     ) -> Dict[str, Any]:
-        """Execute pipeline synchronously with given parameters.
+        """Execute pipeline synchronously with given parameters using ExecutionManager.
 
         Args:
             parameters: Parameters to pass to pipeline execution
@@ -218,50 +228,51 @@ class PipelineServingService:
 
         Returns:
             Dictionary containing execution results and metadata
-        """
-        start_time = time.time()
-        execution_id = f"execution_{int(start_time)}"
 
-        logger.info(f"Starting pipeline execution: {execution_id}")
+        Raises:
+            TooManyRequestsError: If service is overloaded
+        """
+        if not self.deployment:
+            raise RuntimeError("Service not properly initialized")
+
+        # Get execution manager and job registry
+        execution_manager = get_execution_manager()
+        job_registry = get_job_registry()
+
+        # Create job for tracking
+        job_id = job_registry.create_job(
+            parameters=parameters,
+            run_name=run_name,
+            pipeline_name=self.deployment.pipeline_configuration.name,
+        )
+
+        logger.info(f"Starting pipeline execution: {job_id}")
         logger.info(f"Parameters: {parameters}")
-        # TODO: Use run_name parameter when creating pipeline runs
-        if run_name:
-            logger.info(f"Using custom run name: {run_name}")
 
         try:
-            # Validate service is initialized
-            if not self.deployment:
-                raise RuntimeError("Service not properly initialized")
+            # Update job to running status
+            job_registry.update_job_status(job_id, JobStatus.RUNNING)
 
             # Resolve parameters
             resolved_params = self._resolve_parameters(parameters)
 
-            # Determine if we should create a ZenML run for tracking
-            # This could be enhanced to check request headers or other indicators
-            # For now, we'll default to not creating runs for standard HTTP requests
-            # but this can be overridden with an environment variable
-            create_zen_run = os.getenv("ZENML_SERVING_CREATE_RUNS", "false").lower() == "true"
-            
-            entrypoint = ServingPipelineEntrypoint(
-                deployment_id=self.deployment_id,
-                runtime_params=resolved_params,
-                create_zen_run=create_zen_run,
+            # Execute with the execution manager (handles concurrency and timeout)
+            result = await execution_manager.execute_with_limits(
+                self._execute_pipeline_sync,
+                resolved_params,
+                job_id,
+                timeout=timeout,
             )
 
-            # Execute with timeout
-            logger.info(f"Executing pipeline with {timeout}s timeout...")
-            result = await asyncio.wait_for(
-                asyncio.to_thread(entrypoint.run), timeout=timeout
-            )
-
-            # Calculate execution time
-            execution_time = time.time() - start_time
-            self.last_execution_time = datetime.now(timezone.utc)
+            # Calculate execution time from job metadata
+            job = job_registry.get_job(job_id)
+            execution_time = job.execution_time if job else 0
 
             # Update statistics
             self._update_execution_stats(
                 success=True, execution_time=execution_time
             )
+            self.last_execution_time = datetime.now(timezone.utc)
 
             logger.info(
                 f"✅ Pipeline execution completed in {execution_time:.2f}s"
@@ -269,22 +280,39 @@ class PipelineServingService:
 
             return {
                 "success": True,
-                "run_id": result.get("run_id"),  # Use actual run ID
-                "results": result.get("output"),  # Return the pipeline output
+                "job_id": job_id,
+                "run_id": result.get("run_id"),
+                "results": result.get("output"),
                 "execution_time": execution_time,
                 "metadata": {
                     "pipeline_name": result.get("pipeline_name"),
                     "steps_executed": result.get("steps_executed", 0),
                     "parameters_used": resolved_params,
-                    "execution_id": execution_id,
+                    "job_id": job_id,
                     "deployment_id": result.get("deployment_id"),
                     "step_results": result.get("step_results", {}),
                     "debug": result.get("debug", {}),
                 },
             }
 
+        except TooManyRequestsError:
+            # Clean up job
+            job_registry.update_job_status(
+                job_id, JobStatus.FAILED, error="Service overloaded"
+            )
+            raise
+
         except asyncio.TimeoutError:
-            execution_time = time.time() - start_time
+            # Update job and stats
+            execution_time = time.time() - (
+                job.created_at.timestamp() if job else time.time()
+            )
+            job_registry.update_job_status(
+                job_id,
+                JobStatus.FAILED,
+                error=f"Pipeline execution timed out after {timeout}s",
+                execution_time=execution_time,
+            )
             self._update_execution_stats(
                 success=False, execution_time=execution_time
             )
@@ -294,13 +322,24 @@ class PipelineServingService:
 
             return {
                 "success": False,
+                "job_id": job_id,
                 "error": error_msg,
                 "execution_time": execution_time,
-                "metadata": {"execution_id": execution_id},
+                "metadata": {"job_id": job_id},
             }
 
         except Exception as e:
-            execution_time = time.time() - start_time
+            # Update job and stats
+            job = job_registry.get_job(job_id)
+            execution_time = time.time() - (
+                job.created_at.timestamp() if job else time.time()
+            )
+            job_registry.update_job_status(
+                job_id,
+                JobStatus.FAILED,
+                error=str(e),
+                execution_time=execution_time,
+            )
             self._update_execution_stats(
                 success=False, execution_time=execution_time
             )
@@ -310,87 +349,311 @@ class PipelineServingService:
 
             return {
                 "success": False,
+                "job_id": job_id,
                 "error": error_msg,
                 "execution_time": execution_time,
-                "metadata": {"execution_id": execution_id},
+                "metadata": {"job_id": job_id},
             }
+
+    async def submit_pipeline(
+        self,
+        parameters: Dict[str, Any],
+        run_name: Optional[str] = None,
+        timeout: Optional[int] = 600,
+    ) -> Dict[str, Any]:
+        """Submit pipeline for asynchronous execution without blocking.
+
+        This method starts pipeline execution in the background and returns
+        immediately with job information for polling or streaming.
+
+        Args:
+            parameters: Parameters to pass to pipeline execution
+            run_name: Optional custom name for the pipeline run
+            timeout: Maximum execution time in seconds
+
+        Returns:
+            Dictionary containing job information for tracking
+
+        Raises:
+            TooManyRequestsError: If service is overloaded
+        """
+        if not self.deployment:
+            raise RuntimeError("Service not properly initialized")
+
+        # Get execution manager and job registry
+        execution_manager = get_execution_manager()
+        job_registry = get_job_registry()
+
+        # Create job for tracking
+        job_id = job_registry.create_job(
+            parameters=parameters,
+            run_name=run_name,
+            pipeline_name=self.deployment.pipeline_configuration.name,
+        )
+
+        logger.info(f"Submitting pipeline for async execution: {job_id}")
+        logger.info(f"Parameters: {parameters}")
+
+        try:
+            # Resolve parameters
+            resolved_params = self._resolve_parameters(parameters)
+
+            # Start execution in background without waiting
+            async def background_execution():
+                try:
+                    # Update job to running status
+                    job_registry.update_job_status(job_id, JobStatus.RUNNING)
+
+                    # Execute with the execution manager (handles concurrency and timeout)
+                    await execution_manager.execute_with_limits(
+                        self._execute_pipeline_sync,
+                        resolved_params,
+                        job_id,
+                        timeout=timeout,
+                    )
+
+                    logger.info(
+                        f"✅ Async pipeline execution completed: {job_id}"
+                    )
+
+                except TooManyRequestsError:
+                    job_registry.update_job_status(
+                        job_id, JobStatus.FAILED, error="Service overloaded"
+                    )
+                    logger.error(
+                        f"❌ Async execution failed - overloaded: {job_id}"
+                    )
+
+                except asyncio.TimeoutError:
+                    job_registry.update_job_status(
+                        job_id,
+                        JobStatus.FAILED,
+                        error=f"Pipeline execution timed out after {timeout}s",
+                    )
+                    logger.error(f"❌ Async execution timed out: {job_id}")
+
+                except Exception as e:
+                    job_registry.update_job_status(
+                        job_id, JobStatus.FAILED, error=str(e)
+                    )
+                    logger.error(
+                        f"❌ Async execution failed: {job_id} - {str(e)}"
+                    )
+
+            # Start background task (fire and forget)
+            asyncio.create_task(background_execution())
+
+            return {
+                "success": True,
+                "job_id": job_id,
+                "message": "Pipeline execution submitted successfully",
+                "status": "submitted",
+                "metadata": {
+                    "job_id": job_id,
+                    "pipeline_name": self.deployment.pipeline_configuration.name,
+                    "parameters_used": resolved_params,
+                    "deployment_id": self.deployment_id,
+                    "poll_url": f"/jobs/{job_id}",
+                    "stream_url": f"/stream/{job_id}",
+                    "estimated_timeout": timeout,
+                },
+            }
+
+        except Exception as e:
+            # Update job as failed and clean up
+            job_registry.update_job_status(
+                job_id, JobStatus.FAILED, error=str(e)
+            )
+
+            error_msg = f"Failed to submit pipeline execution: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+
+            return {
+                "success": False,
+                "job_id": job_id,
+                "error": error_msg,
+                "metadata": {"job_id": job_id},
+            }
+
+    def _execute_pipeline_sync(
+        self, resolved_params: Dict[str, Any], job_id: str
+    ) -> Dict[str, Any]:
+        """Execute pipeline synchronously using DirectExecutionEngine.
+
+        This method is called by the execution manager in a worker thread.
+
+        Args:
+            resolved_params: Resolved pipeline parameters
+            job_id: Job ID for tracking
+
+        Returns:
+            Pipeline execution results
+        """
+        start_time = time.time()
+
+        try:
+            # Get job registry using sync version for worker thread
+            job_registry = get_job_registry()
+
+            # Get stream manager reference (should be initialized from main thread)
+            stream_manager = get_stream_manager_sync()
+
+            # Create thread-safe event callback - no async operations in worker thread!
+            def event_callback(event: ServingEvent):
+                if stream_manager:
+                    try:
+                        # Use thread-safe method to send events to main loop
+                        stream_manager.send_event_threadsafe(event)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to send event from worker thread: {e}"
+                        )
+                else:
+                    logger.warning(
+                        "Stream manager not available for event sending"
+                    )
+
+            # Get job for cancellation token using sync method
+            job = job_registry.get_job(job_id)
+            cancellation_token = job.cancellation_token if job else None
+
+            # Assert deployment is not None for mypy
+            assert self.deployment is not None
+
+            # Create direct execution engine
+            engine = DirectExecutionEngine(
+                deployment=self.deployment,
+                event_callback=event_callback,
+                cancellation_token=cancellation_token,
+            )
+
+            # Execute pipeline
+            result = engine.execute(resolved_params, job_id=job_id)
+
+            execution_time = time.time() - start_time
+
+            # Update job as completed using sync method - no async operations in worker thread!
+            job_registry.update_job_status(
+                job_id,
+                JobStatus.COMPLETED,
+                result=result,
+                execution_time=execution_time,
+                steps_executed=len(engine._execution_order),
+            )
+
+            return {
+                "output": result,
+                "pipeline_name": self.deployment.pipeline_configuration.name,
+                "steps_executed": len(engine._execution_order),
+                "job_id": job_id,
+                "deployment_id": self.deployment_id,
+                "step_results": {},  # Could be enhanced to track individual step results
+                "debug": {},
+            }
+
+        except asyncio.CancelledError:
+            execution_time = time.time() - start_time
+            # Use sync method - no async operations in worker thread!
+            job_registry.update_job_status(
+                job_id,
+                JobStatus.CANCELED,
+                error="Execution was cancelled",
+                execution_time=execution_time,
+            )
+            raise
+
+        except Exception as e:
+            execution_time = time.time() - start_time
+            # Use sync method - no async operations in worker thread!
+            job_registry.update_job_status(
+                job_id,
+                JobStatus.FAILED,
+                error=str(e),
+                execution_time=execution_time,
+            )
+            raise
+
+        finally:
+            # No cleanup needed for thread-safe sync implementation
+            pass
 
     async def execute_pipeline_streaming(
         self, parameters: Dict[str, Any], run_name: Optional[str] = None
-    ) -> AsyncGenerator[StreamEvent, None]:
-        """Execute pipeline with streaming updates.
+    ) -> AsyncGenerator[ServingEvent, None]:
+        """Execute pipeline with true streaming updates.
 
         Args:
             parameters: Parameters to pass to pipeline execution
             run_name: Optional custom name for the pipeline run
 
         Yields:
-            StreamEvent objects with execution updates
+            ServingEvent objects with real-time execution updates
         """
-        start_time = time.time()
-        execution_id = f"stream_execution_{int(start_time)}"
+        if not self.deployment:
+            raise RuntimeError("Service not properly initialized")
 
-        logger.info(f"Starting streaming pipeline execution: {execution_id}")
+        # Get execution manager, job registry, and stream manager
+        execution_manager = get_execution_manager()
+        job_registry = get_job_registry()
+        stream_manager = await get_stream_manager()
+
+        # Create job for tracking
+        job_id = job_registry.create_job(
+            parameters=parameters,
+            run_name=run_name,
+            pipeline_name=self.deployment.pipeline_configuration.name,
+        )
+
+        logger.info(f"Starting streaming pipeline execution: {job_id}")
 
         try:
-            # Send start event
-            yield StreamEvent(
-                event="pipeline_started",
-                data={
-                    "execution_id": execution_id,
-                    "parameters": parameters,
-                    "pipeline_name": self.deployment.pipeline_configuration.name
-                    if self.deployment
-                    else "unknown",
-                },
-                timestamp=datetime.now(timezone.utc),
+            # Start the execution in background
+            execution_task = asyncio.create_task(
+                execution_manager.execute_with_limits(
+                    self._execute_pipeline_sync,
+                    self._resolve_parameters(parameters),
+                    job_id,
+                    timeout=600,  # Longer timeout for streaming
+                )
             )
 
-            # For MVP, we'll execute synchronously and provide periodic updates
-            # In the future, this could be enhanced with real step-by-step streaming
+            # Subscribe to events for this job
+            async for event in stream_manager.subscribe_to_job(job_id):
+                yield event
 
-            # Execute pipeline
-            result = await self.execute_pipeline(
-                parameters=parameters,
-                run_name=run_name,
-                timeout=600,  # Longer timeout for streaming
+                # If we get a pipeline completed, failed, or canceled event, we can stop
+                if event.event_type in [
+                    "pipeline_completed",
+                    "pipeline_failed",
+                    "cancellation_requested",
+                ]:
+                    break
+
+            # Wait for execution to complete and handle any remaining cleanup
+            try:
+                await execution_task
+            except Exception as e:
+                logger.error(f"Background execution failed: {e}")
+                # Error should have been captured in events already
+
+        except TooManyRequestsError:
+            # Send overload event
+            event_builder = create_event_builder(job_id)
+            error_event = event_builder.error(
+                "Service overloaded - too many concurrent requests"
             )
-
-            if result["success"]:
-                # Send completion event with results
-                yield StreamEvent(
-                    event="pipeline_completed",
-                    data={
-                        "execution_id": execution_id,
-                        "results": result["results"],
-                        "execution_time": result["execution_time"],
-                        "metadata": result["metadata"],
-                    },
-                    timestamp=datetime.now(timezone.utc),
-                )
-            else:
-                # Send error event
-                yield StreamEvent(
-                    event="error",
-                    error=result["error"],
-                    data={
-                        "execution_id": execution_id,
-                        "execution_time": result["execution_time"],
-                    },
-                    timestamp=datetime.now(timezone.utc),
-                )
+            yield error_event
 
         except Exception as e:
             logger.error(f"❌ Streaming execution failed: {str(e)}")
-            yield StreamEvent(
-                event="error",
-                error=str(e),
-                data={
-                    "execution_id": execution_id,
-                    "execution_time": time.time() - start_time,
-                },
-                timestamp=datetime.now(timezone.utc),
-            )
+            # Send error event
+            event_builder = create_event_builder(job_id)
+            error_event = event_builder.error(str(e))
+            yield error_event
+
+        finally:
+            # Close the stream for this job
+            await stream_manager.close_stream(job_id)
 
     def _update_execution_stats(
         self, success: bool, execution_time: float

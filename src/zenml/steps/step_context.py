@@ -54,6 +54,18 @@ def get_step_context() -> "StepContext":
     Raises:
         RuntimeError: If no step is currently running.
     """
+    # First check if we're in a serving context (thread-safe)
+    try:
+        from zenml.serving.context import get_serving_step_context
+
+        serving_context = get_serving_step_context()
+        if serving_context is not None:
+            # Return the serving context which implements the same interface
+            return serving_context  # type: ignore
+    except ImportError:
+        # Serving module not available, continue with normal flow
+        pass
+
     if StepContext._exists():
         return StepContext()  # type: ignore
     raise RuntimeError(

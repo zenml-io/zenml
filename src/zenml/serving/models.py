@@ -47,6 +47,10 @@ class PipelineResponse(BaseModel):
     success: bool = Field(
         description="Whether the pipeline execution was successful"
     )
+    job_id: Optional[str] = Field(
+        default=None,
+        description="Job ID for tracking execution status and streaming events",
+    )
     run_id: Optional[str] = Field(
         default=None,
         description="UUID of the pipeline run if execution was initiated",
@@ -60,6 +64,9 @@ class PipelineResponse(BaseModel):
     )
     execution_time: Optional[float] = Field(
         default=None, description="Total execution time in seconds"
+    )
+    message: Optional[str] = Field(
+        default=None, description="Human-readable status message"
     )
     metadata: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -82,7 +89,8 @@ class StreamEvent(BaseModel):
         description="Event-specific data such as step outputs or progress",
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), description="When the event occurred"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When the event occurred",
     )
     error: Optional[str] = Field(
         default=None, description="Error message if event represents a failure"

@@ -19,7 +19,7 @@ def get_weather(city: str) -> Dict[str, float]:
     return {
         "temperature": temp_base + random.uniform(-5, 5),
         "humidity": 40 + (ord(city[0]) % 40),
-        "wind_speed": 5 + (len(city) % 15)
+        "wind_speed": 5 + (len(city) % 15),
     }
 
 
@@ -29,7 +29,7 @@ def analyze_weather_with_llm(weather_data: Dict[str, float], city: str) -> str:
     temp = weather_data["temperature"]
     humidity = weather_data["humidity"]
     wind = weather_data["wind_speed"]
-    
+
     # Create a prompt for the LLM
     weather_prompt = f"""You are a weather expert AI assistant. Analyze the following weather data for {city} and provide detailed insights and recommendations.
 
@@ -51,27 +51,30 @@ Keep your response concise but informative."""
     try:
         # Try to use OpenAI API if available
         import os
-        
+
         import openai
-        
+
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ImportError("OpenAI API key not found")
-        
+
         client = openai.OpenAI(api_key=api_key)
-        
+
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful weather analysis expert."},
-                {"role": "user", "content": weather_prompt}
+                {
+                    "role": "system",
+                    "content": "You are a helpful weather analysis expert.",
+                },
+                {"role": "user", "content": weather_prompt},
             ],
             max_tokens=300,
-            temperature=0.7
+            temperature=0.7,
         )
-        
+
         llm_analysis = response.choices[0].message.content
-        
+
         return f"""🤖 LLM Weather Analysis for {city}:
 
 {llm_analysis}
@@ -83,7 +86,7 @@ Powered by: OpenAI GPT-3.5-turbo"""
     except Exception as e:
         # Fallback to rule-based analysis if LLM fails
         print(f"LLM analysis failed ({e}), using fallback...")
-        
+
         # Enhanced rule-based analysis
         if temp < 0:
             temp_desc = "freezing"
@@ -92,7 +95,7 @@ Powered by: OpenAI GPT-3.5-turbo"""
             clothing = "heavy winter coat, gloves, warm boots"
             warning = "⚠️ Risk of frostbite - limit outdoor exposure"
         elif temp < 10:
-            temp_desc = "cold" 
+            temp_desc = "cold"
             comfort = 4
             activities = "brisk walks, winter sports"
             clothing = "warm jacket, layers, closed shoes"
@@ -115,18 +118,18 @@ Powered by: OpenAI GPT-3.5-turbo"""
             activities = "indoor activities, swimming"
             clothing = "minimal light clothing, sun protection"
             warning = "⚠️ Heat warning - avoid prolonged sun exposure"
-        
+
         # Humidity adjustments
         if humidity > 80:
             comfort -= 1
             warning += " High humidity will make it feel warmer."
         elif humidity < 30:
             warning += " Low humidity may cause dry skin."
-        
+
         # Wind adjustments
         if wind > 20:
             warning += " Strong winds - secure loose items."
-        
+
         return f"""🤖 Weather Analysis for {city}:
 
 Assessment: {temp_desc.title()} weather with {humidity}% humidity
@@ -145,12 +148,12 @@ Analysis: Rule-based AI (LLM unavailable)"""
 @pipeline
 def weather_agent_pipeline(city: str = "London") -> str:
     """Weather agent pipeline that can be served via API.
-    
+
     Uses LLM to provide intelligent weather analysis.
-    
+
     Args:
         city: City name to analyze weather for
-        
+
     Returns:
         LLM-powered weather analysis and recommendations
     """
@@ -163,14 +166,13 @@ if __name__ == "__main__":
     # Create a deployment (not run it!)
     # We need to access the private _create_deployment method because
     # ZenML doesn't have a public method to create deployments without running
-    from zenml.pipelines.pipeline_definition import Pipeline
-    
+
     # First prepare the pipeline
     weather_agent_pipeline._prepare_if_possible()
-    
+
     # Create deployment without running
     deployment = weather_agent_pipeline._create_deployment()
-    
+
     print("\n✅ Pipeline deployed!")
     print(f"📋 Deployment ID: {deployment.id}")
     print("\n🚀 To serve this pipeline:")

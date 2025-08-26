@@ -391,10 +391,8 @@ class BasePipelineServer(StackComponent, ABC):
                 f"not found in project {project}"
             )
 
-        endpoint_state = (
-            PipelineEndpointOperationalState(
-                status=PipelineEndpointStatus.ERROR,
-            )
+        endpoint_state = PipelineEndpointOperationalState(
+            status=PipelineEndpointStatus.ERROR,
         )
         try:
             deleted_endpoint_state = self.do_delete_pipeline_endpoint(endpoint)
