@@ -82,6 +82,7 @@ from zenml.constants import (
     MODELS,
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
+    PIPELINE_ENDPOINTS,
     PIPELINES,
     PROJECTS,
     RUN_METADATA,
@@ -198,6 +199,10 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineEndpointFilter,
+    PipelineEndpointRequest,
+    PipelineEndpointResponse,
+    PipelineEndpointUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1696,6 +1701,98 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
+        )
+
+    # -------------------- Pipeline endpoints --------------------
+
+    def create_pipeline_endpoint(
+        self, pipeline_endpoint: PipelineEndpointRequest
+    ) -> PipelineEndpointResponse:
+        """Create a new pipeline endpoint.
+
+        Args:
+            pipeline_endpoint: The pipeline endpoint to create.
+
+        Returns:
+            The newly created pipeline endpoint.
+        """
+        return self._create_resource(
+            resource=pipeline_endpoint,
+            route=PIPELINE_ENDPOINTS,
+            response_model=PipelineEndpointResponse,
+        )
+
+    def get_pipeline_endpoint(
+        self, endpoint_id: UUID, hydrate: bool = True
+    ) -> PipelineEndpointResponse:
+        """Get a pipeline endpoint with a given ID.
+
+        Args:
+            endpoint_id: ID of the pipeline endpoint.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The pipeline endpoint.
+        """
+        return self._get_resource(
+            resource_id=endpoint_id,
+            route=PIPELINE_ENDPOINTS,
+            response_model=PipelineEndpointResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_pipeline_endpoints(
+        self,
+        endpoint_filter_model: PipelineEndpointFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineEndpointResponse]:
+        """List all pipeline endpoints matching the given filter criteria.
+
+        Args:
+            endpoint_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all pipeline endpoints matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_ENDPOINTS,
+            response_model=PipelineEndpointResponse,
+            filter_model=endpoint_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_pipeline_endpoint(
+        self, endpoint_id: UUID, endpoint_update: PipelineEndpointUpdate
+    ) -> PipelineEndpointResponse:
+        """Update a pipeline endpoint.
+
+        Args:
+            endpoint_id: The ID of the pipeline endpoint to update.
+            endpoint_update: The update to apply.
+
+        Returns:
+            The updated pipeline endpoint.
+        """
+        return self._update_resource(
+            resource_id=endpoint_id,
+            resource_update=endpoint_update,
+            route=PIPELINE_ENDPOINTS,
+            response_model=PipelineEndpointResponse,
+        )
+
+    def delete_pipeline_endpoint(self, endpoint_id: UUID) -> None:
+        """Delete a pipeline endpoint.
+
+        Args:
+            endpoint_id: The ID of the pipeline endpoint to delete.
+        """
+        self._delete_resource(
+            resource_id=endpoint_id,
+            route=PIPELINE_ENDPOINTS,
         )
 
     # -------------------- Run templates --------------------

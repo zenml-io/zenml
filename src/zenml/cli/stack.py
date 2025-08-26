@@ -197,6 +197,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-ps",
+    "--pipeline_server",
+    "pipeline_server",
+    help="Name of the pipeline server for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -231,6 +239,7 @@ def register_stack(
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
+    pipeline_server: Optional[str] = None,
     set_stack: bool = False,
     provider: Optional[str] = None,
     connector: Optional[str] = None,
@@ -251,6 +260,7 @@ def register_stack(
         annotator: Name of the annotator for this stack.
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
+        pipeline_server: Name of the pipeline server for this stack.
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
@@ -492,6 +502,7 @@ def register_stack(
             (StackComponentType.STEP_OPERATOR, step_operator),
             (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
+            (StackComponentType.PIPELINE_SERVER, pipeline_server),
         ]:
             if component_name_ and component_type_ not in components:
                 components[component_type_] = [
@@ -659,6 +670,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-ps",
+    "--pipeline_server",
+    "pipeline_server",
+    help="Name of the pipeline server for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name_or_id: Optional[str] = None,
     artifact_store: Optional[str] = None,
@@ -673,6 +692,7 @@ def update_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     model_registry: Optional[str] = None,
+    pipeline_server: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -691,6 +711,7 @@ def update_stack(
         data_validator: Name of the new data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         model_registry: Name of the new model registry for this stack.
+        pipeline_server: Name of the new pipeline server for this stack.
     """
     client = Client()
 
@@ -724,6 +745,8 @@ def update_stack(
             updates[StackComponentType.ORCHESTRATOR] = [orchestrator]
         if step_operator:
             updates[StackComponentType.STEP_OPERATOR] = [step_operator]
+        if pipeline_server:
+            updates[StackComponentType.PIPELINE_SERVER] = [pipeline_server]
 
         try:
             updated_stack = client.update_stack(
@@ -826,6 +849,14 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-ps",
+    "--pipeline_server",
+    "pipeline_server_flag",
+    help="Include this to remove the pipeline server from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
@@ -838,6 +869,7 @@ def remove_stack_component(
     data_validator_flag: Optional[bool] = False,
     image_builder_flag: Optional[bool] = False,
     model_registry_flag: Optional[str] = None,
+    pipeline_server_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -855,6 +887,7 @@ def remove_stack_component(
         data_validator_flag: To remove the data validator from this stack.
         image_builder_flag: To remove the image builder from this stack.
         model_registry_flag: To remove the model registry from this stack.
+        pipeline_server_flag: To remove the pipeline server from this stack.
     """
     client = Client()
 
@@ -890,6 +923,9 @@ def remove_stack_component(
 
         if image_builder_flag:
             stack_component_update[StackComponentType.IMAGE_BUILDER] = []
+
+        if pipeline_server_flag:
+            stack_component_update[StackComponentType.PIPELINE_SERVER] = []
 
         try:
             updated_stack = client.update_stack(

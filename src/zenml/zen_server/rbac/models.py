@@ -62,6 +62,7 @@ class ResourceType(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     PIPELINE_DEPLOYMENT = "pipeline_deployment"
     PIPELINE_BUILD = "pipeline_build"
+    PIPELINE_ENDPOINT = "pipeline_endpoint"
     SCHEDULE = "schedule"
     RUN_TEMPLATE = "run_template"
     SERVICE = "service"

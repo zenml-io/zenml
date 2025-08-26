@@ -237,6 +237,16 @@ from zenml.models.v2.core.pipeline_deployment import (
     PipelineDeploymentResponseMetadata,
     PipelineDeploymentResponseResources,
 )
+from zenml.models.v2.core.pipeline_endpoint import (
+    PipelineEndpointRequest,
+    PipelineEndpointUpdate,
+    PipelineEndpointFilter,
+    PipelineEndpointOperationalState,
+    PipelineEndpointResponse,
+    PipelineEndpointResponseBody,
+    PipelineEndpointResponseMetadata,
+    PipelineEndpointResponseResources,
+)
 from zenml.models.v2.core.pipeline_run import (
     PipelineRunRequest,
     PipelineRunUpdate,
@@ -488,6 +498,10 @@ PipelineDeploymentRequest.model_rebuild()
 PipelineDeploymentResponseBody.model_rebuild()
 PipelineDeploymentResponseMetadata.model_rebuild()
 PipelineDeploymentResponseResources.model_rebuild()
+PipelineEndpointRequest.model_rebuild()
+PipelineEndpointResponseBody.model_rebuild()
+PipelineEndpointResponseMetadata.model_rebuild()
+PipelineEndpointResponseResources.model_rebuild()
 PipelineRunRequest.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
@@ -695,6 +709,14 @@ __all__ = [
     "PipelineDeploymentResponseBody",
     "PipelineDeploymentResponseMetadata",
     "PipelineDeploymentResponseResources",
+    "PipelineEndpointRequest",
+    "PipelineEndpointUpdate",
+    "PipelineEndpointFilter",
+    "PipelineEndpointOperationalState",
+    "PipelineEndpointResponse",
+    "PipelineEndpointResponseBody",
+    "PipelineEndpointResponseMetadata",
+    "PipelineEndpointResponseResources",
     "PipelineRunRequest",
     "PipelineRunUpdate",
     "PipelineRunFilter",

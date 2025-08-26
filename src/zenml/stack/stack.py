@@ -70,6 +70,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
+    from zenml.pipeline_servers import BasePipelineServer
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
     from zenml.utils import secret_utils
@@ -107,6 +108,7 @@ class Stack:
         data_validator: Optional["BaseDataValidator"] = None,
         image_builder: Optional["BaseImageBuilder"] = None,
         model_registry: Optional["BaseModelRegistry"] = None,
+        pipeline_server: Optional["BasePipelineServer"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -125,6 +127,7 @@ class Stack:
             data_validator: Data validator component of the stack.
             image_builder: Image builder component of the stack.
             model_registry: Model registry component of the stack.
+            pipeline_server: Pipeline server component of the stack.
         """
         self._id = id
         self._name = name
@@ -140,6 +143,7 @@ class Stack:
         self._data_validator = data_validator
         self._model_registry = model_registry
         self._image_builder = image_builder
+        self._pipeline_server = pipeline_server
 
     @classmethod
     def from_model(cls, stack_model: "StackResponse") -> "Stack":
@@ -220,6 +224,7 @@ class Stack:
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
+        from zenml.pipeline_servers import BasePipelineServer
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -308,6 +313,12 @@ class Stack:
         ):
             _raise_type_error(model_registry, BaseModelRegistry)
 
+        pipeline_server = components.get(StackComponentType.PIPELINE_SERVER)
+        if pipeline_server is not None and not isinstance(
+            pipeline_server, BasePipelineServer
+        ):
+            _raise_type_error(pipeline_server, BasePipelineServer)
+
         return Stack(
             id=id,
             name=name,
@@ -323,6 +334,7 @@ class Stack:
             data_validator=data_validator,
             image_builder=image_builder,
             model_registry=model_registry,
+            pipeline_server=pipeline_server,
         )
 
     @property
@@ -347,6 +359,7 @@ class Stack:
                 self.data_validator,
                 self.image_builder,
                 self.model_registry,
+                self.pipeline_server,
             ]
             if component is not None
         }
@@ -477,6 +490,15 @@ class Stack:
             The model registry of the stack.
         """
         return self._model_registry
+
+    @property
+    def pipeline_server(self) -> Optional["BasePipelineServer"]:
+        """The pipeline server of the stack.
+
+        Returns:
+            The pipeline server of the stack.
+        """
+        return self._pipeline_server
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.

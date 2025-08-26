@@ -143,6 +143,7 @@ class StackComponentType(StrEnum):
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
+    PIPELINE_SERVER = "pipeline_server"
 
     @property
     def plural(self) -> str:
@@ -465,3 +466,14 @@ class ServiceState(StrEnum):
     PENDING_SHUTDOWN = "pending_shutdown"
     ERROR = "error"
     SCALED_TO_ZERO = "scaled_to_zero"
+
+
+class PipelineEndpointStatus(StrEnum):
+    """Status of a pipeline endpoint."""
+
+    UNKNOWN = "unknown"
+    DEPLOYING = "deploying"
+    RUNNING = "running"
+    DELETING = "deleting"
+    DELETED = "deleted"
+    ERROR = "error"

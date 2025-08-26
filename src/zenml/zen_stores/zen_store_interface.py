@@ -82,6 +82,10 @@ from zenml.models import (
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineEndpointFilter,
+    PipelineEndpointRequest,
+    PipelineEndpointResponse,
+    PipelineEndpointUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1345,6 +1349,89 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the deployment doesn't exist.
+        """
+
+    # -------------------- Pipeline endpoints --------------------
+
+    @abstractmethod
+    def create_pipeline_endpoint(
+        self, pipeline_endpoint: PipelineEndpointRequest
+    ) -> PipelineEndpointResponse:
+        """Create a new pipeline endpoint.
+
+        Args:
+            pipeline_endpoint: The pipeline endpoint to create.
+
+        Returns:
+            The newly created pipeline endpoint.
+
+        Raises:
+            EntityExistsError: If a pipeline endpoint with the same name already
+                exists in the same project.
+        """
+
+    @abstractmethod
+    def get_pipeline_endpoint(
+        self, endpoint_id: UUID, hydrate: bool = True
+    ) -> PipelineEndpointResponse:
+        """Get a pipeline endpoint with a given ID.
+
+        Args:
+            endpoint_id: ID of the pipeline endpoint.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The pipeline endpoint.
+
+        Raises:
+            KeyError: If the pipeline endpoint does not exist.
+        """
+
+    @abstractmethod
+    def list_pipeline_endpoints(
+        self,
+        endpoint_filter_model: PipelineEndpointFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineEndpointResponse]:
+        """List all pipeline endpoints matching the given filter criteria.
+
+        Args:
+            endpoint_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all pipeline endpoints matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_pipeline_endpoint(
+        self, endpoint_id: UUID, endpoint_update: PipelineEndpointUpdate
+    ) -> PipelineEndpointResponse:
+        """Update a pipeline endpoint.
+
+        Args:
+            endpoint_id: The ID of the pipeline endpoint to update.
+            endpoint_update: The update to apply.
+
+        Returns:
+            The updated pipeline endpoint.
+
+        Raises:
+            KeyError: If the pipeline endpoint does not exist.
+        """
+
+    @abstractmethod
+    def delete_pipeline_endpoint(self, endpoint_id: UUID) -> None:
+        """Delete a pipeline endpoint.
+
+        Args:
+            endpoint_id: The ID of the pipeline endpoint to delete.
+
+        Raises:
+            KeyError: If the pipeline endpoint does not exist.
         """
 
     # -------------------- Run templates --------------------
