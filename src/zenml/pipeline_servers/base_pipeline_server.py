@@ -154,26 +154,6 @@ class BasePipelineServer(StackComponent, ABC):
 
         return pipeline_server
 
-    def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
-    ) -> List["BuildConfiguration"]:
-        """Gets the Docker builds required for the component.
-
-        Args:
-            deployment: The pipeline deployment for which to get the builds.
-
-        Returns:
-            The required Docker builds.
-        """
-        pipeline_settings = deployment.pipeline_configuration.docker_settings
-        pipeline_settings = self.get_updated_docker_settings(pipeline_settings)
-        return [
-            BuildConfiguration(
-                key=PIPELINE_SERVER_DOCKER_IMAGE_KEY,
-                settings=pipeline_settings,
-            )
-        ]
-
     def _update_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
@@ -603,20 +583,6 @@ class BasePipelineServer(StackComponent, ABC):
             ) from e
 
     # ------------------ Abstract Methods ------------------
-
-    @abstractmethod
-    def get_updated_docker_settings(
-        self,
-        pipeline_settings: "DockerSettings",
-    ) -> DockerSettings:
-        """Abstract method to update the Docker settings for a pipeline endpoint.
-
-        Args:
-            pipeline_settings: The pipeline settings to update.
-
-        Returns:
-            The updated Docker settings.
-        """
 
     @abstractmethod
     def do_serve_pipeline(

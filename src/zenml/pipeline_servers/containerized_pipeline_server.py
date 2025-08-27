@@ -1,0 +1,102 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Base class for all ZenML pipeline servers."""
+
+from abc import ABC
+from typing import (
+    List,
+    Set,
+)
+
+from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import (
+    PIPELINE_SERVER_DOCKER_IMAGE_KEY,
+)
+from zenml.logger import get_logger
+from zenml.models import (
+    PipelineDeploymentBase,
+    PipelineDeploymentResponse,
+)
+from zenml.pipeline_servers.base_pipeline_server import BasePipelineServer
+
+logger = get_logger(__name__)
+
+
+class ContainerizedPipelineServer(BasePipelineServer, ABC):
+    """Base class for all containerized pipeline servers."""
+
+    CONTAINER_REQUIREMENTS: List[str] = []
+
+    @classmethod
+    def get_requirements(
+        cls,
+    ) -> List[str]:
+        """Method to get the container requirements for the pipeline server.
+
+        Returns:
+            A list of requirements.
+        """
+        return cls.CONTAINER_REQUIREMENTS
+
+    @staticmethod
+    def get_image(deployment: PipelineDeploymentResponse) -> str:
+        """Get the docker image used to serve a pipeline deployment.
+
+        Args:
+            deployment: The pipeline deployment to get the image for.
+
+        Returns:
+            The docker image used to serve the pipeline deployment.
+
+        Raises:
+            RuntimeError: if the pipeline deployment does not have a build or
+                if the pipeline server image is not in the build.
+        """
+        if deployment.build is None:
+            raise RuntimeError("Pipeline deployment does not have a build. ")
+        if PIPELINE_SERVER_DOCKER_IMAGE_KEY not in deployment.build.images:
+            raise RuntimeError(
+                "Pipeline deployment build does not have a pipeline server "
+                "image. "
+            )
+        return deployment.build.images[PIPELINE_SERVER_DOCKER_IMAGE_KEY].image
+
+    @property
+    def requirements(self) -> Set[str]:
+        """Set of PyPI requirements for the pipeline server.
+
+        Returns:
+            A set of PyPI requirements for the pipeline server.
+        """
+        requirements = super().requirements
+        requirements.update(self.get_requirements())
+        return requirements
+
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBase"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
+        return [
+            BuildConfiguration(
+                key=PIPELINE_SERVER_DOCKER_IMAGE_KEY,
+                settings=deployment.pipeline_configuration.docker_settings,
+            )
+        ]

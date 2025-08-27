@@ -33,21 +33,17 @@ from docker.models.containers import Container
 from pydantic import BaseModel
 
 from zenml.config.base_settings import BaseSettings
-from zenml.config.docker_settings import DockerSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
-    PIPELINE_SERVER_DOCKER_IMAGE_KEY,
 )
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineDeploymentResponse,
     PipelineEndpointOperationalState,
     PipelineEndpointResponse,
 )
 from zenml.pipeline_servers.base_pipeline_server import (
-    BasePipelineServer,
     BasePipelineServerConfig,
     BasePipelineServerFlavor,
     PipelineEndpointDeploymentError,
@@ -55,6 +51,9 @@ from zenml.pipeline_servers.base_pipeline_server import (
     PipelineEndpointNotFoundError,
     PipelineLogsNotFoundError,
     PipelineServerError,
+)
+from zenml.pipeline_servers.containerized_pipeline_server import (
+    ContainerizedPipelineServer,
 )
 from zenml.serving.entrypoint_configuration import (
     ServingEntrypointConfiguration,
@@ -130,20 +129,18 @@ class DockerPipelineEndpointMetadata(BaseModel):
         return cls.model_validate(endpoint.endpoint_metadata)
 
 
-class DockerPipelineServer(BasePipelineServer):
+class DockerPipelineServer(ContainerizedPipelineServer):
     """Pipeline server responsible for serving pipelines locally using Docker."""
 
     # TODO:
 
-    # * figure out which image to use for the docker container from the deployment (or
-    # build another ?)
-    # * figure out how to inject the FastAPI/other requirements into the image
     # * which environment variables go into the container? who provides them?
     # * how are endpoints authenticated?
     # * check the health status of the container too
     # * how to automatically add the local image builder to the stack ?
     # * pipeline inside pipeline
 
+    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
     _docker_client: Optional[DockerClient] = None
 
     @property
@@ -254,30 +251,6 @@ class DockerPipelineServer(BasePipelineServer):
             # container doesn't exist yet or was removed
             return None
 
-    def _get_container_image(
-        self, deployment: PipelineDeploymentResponse
-    ) -> str:
-        """Get the docker image used to serve a pipeline deployment.
-
-        Args:
-            deployment: The pipeline deployment to get the image for.
-
-        Returns:
-            The docker image used to serve the pipeline deployment.
-
-        Raises:
-            RuntimeError: if the pipeline deployment does not have a build or
-                if the pipeline server image is not in the build.
-        """
-        if deployment.build is None:
-            raise RuntimeError("Pipeline deployment does not have a build. ")
-        if PIPELINE_SERVER_DOCKER_IMAGE_KEY not in deployment.build.images:
-            raise RuntimeError(
-                "Pipeline deployment build does not have a pipeline server "
-                "image. "
-            )
-        return deployment.build.images[PIPELINE_SERVER_DOCKER_IMAGE_KEY].image
-
     def _get_container_operational_state(
         self, container: Container
     ) -> PipelineEndpointOperationalState:
@@ -315,27 +288,6 @@ class DockerPipelineServer(BasePipelineServer):
             # TODO: check if the endpoint is healthy.
 
         return state
-
-    def get_updated_docker_settings(
-        self,
-        pipeline_settings: "DockerSettings",
-    ) -> DockerSettings:
-        """Abstract method to update the Docker settings for a pipeline endpoint.
-
-        Args:
-            pipeline_settings: The pipeline settings to update.
-
-        Returns:
-            The updated Docker settings.
-        """
-        requirements = pipeline_settings.requirements
-        if requirements is None:
-            requirements = ["uvicorn", "fastapi"]
-        elif isinstance(requirements, list):
-            requirements.extend(["uvicorn", "fastapi"])
-        return pipeline_settings.model_copy(
-            update={"requirements": requirements}
-        )
 
     def do_serve_pipeline(
         self,
@@ -426,7 +378,7 @@ class DockerPipelineServer(BasePipelineServer):
         )
 
         assert endpoint.pipeline_deployment, "Pipeline deployment not found"
-        image = self._get_container_image(endpoint.pipeline_deployment)
+        image = self.get_image(endpoint.pipeline_deployment)
 
         try:
             self.docker_client.images.get(image)
