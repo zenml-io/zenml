@@ -7,7 +7,7 @@
 <h3 align="center">Agent Frameworks Integration Examples</h3>
 
   <p align="center">
-    Production-ready agent orchestration with ZenML
+    Systematic agent development with ZenML
     <br />
     <a href="https://zenml.io/features">Features</a>
     ·
@@ -32,9 +32,9 @@
   </p>
 </div>
 
-# 🤖 Agent Frameworks + ZenML
+# 🤖 ZenML Agent Development Platform
 
-This collection demonstrates how to integrate popular agent frameworks with ZenML for production-grade AI agent orchestration. Each example follows consistent patterns and best practices, making it easy to adapt any framework for your specific use case.
+This collection demonstrates how to use ZenML as your **agent development platform** - applying the same systematic development practices you use for traditional ML to agent development. Each example shows how any agent framework can benefit from ZenML's experiment tracking, evaluation workflows, and deployment capabilities.
 
 ## 🚀 Quick Start
 
@@ -121,17 +121,6 @@ def agent_pipeline() -> str:
 - **LlamaIndex**: Function agents with async capabilities
 - **OpenAI Agents SDK**: Structured execution with OpenAI
 
-## 🔄 Implementation Notes
-
-### Production vs. Demos
-**These examples demonstrate single-query execution for simplicity.** In production, ZenML's value comes from:
-- **Batch processing**: Process hundreds/thousands of queries overnight
-- **Agent evaluation**: Compare different frameworks on test datasets  
-- **Data pipelines**: Use agents to process document collections
-- **A/B testing**: Systematic comparison of agent configurations
-
-For real-time serving, use FastAPI/Flask directly. Use ZenML for the operational layer.
-
 ### Async Frameworks
 Some frameworks require async handling within ZenML steps:
 - **LlamaIndex**: `asyncio.run(agent.run(query))`
@@ -163,35 +152,26 @@ Each framework returns different response types:
 - 🐛 [Report issues](https://github.com/zenml-io/zenml/issues)
 - 💡 [Request features](https://zenml.io/discussion)
 
-## 🌟 About ZenML
-
-ZenML is an extensible, open-source MLOps framework for creating production-ready ML pipelines. These agent framework integrations showcase ZenML's flexibility in orchestrating AI workflows beyond traditional ML use cases.
-
-**Why ZenML for Agent Orchestration?**
-- 🔄 **Reproducible workflows**: Version and track agent executions
-- 📊 **Artifact management**: Store and version agent inputs/outputs
-- 🎯 **Production ready**: Built-in monitoring, logging, and error handling
-- 🔧 **Tool agnostic**: Works with any agent framework
-- ☁️ **Cloud native**: Deploy anywhere with consistent behavior
-
 ## 📖 Learn More
 
 | Resource | Description |
 |----------|-------------|
+| 🤖 **[Agent Guide]** | Complete guide to agent development with ZenML |
+| 📊 **[LLM Evaluation]** | Proven evaluation patterns for agents and LLMs |
 | 🧘 **[ZenML 101]** | New to ZenML? Start here! |
 | ⚛ **[Core Concepts]** | Understand ZenML fundamentals |
-| 🤖 **[LLMOps Guide]** | Complete guide to LLMOps with ZenML |
 | 📓 **[Documentation]** | Full ZenML documentation |
 | 📒 **[API Reference]** | Detailed API documentation |
 | ⚽ **[Examples]** | More ZenML examples |
 
-[ZenML 101]: https://docs.zenml.io/user-guides/starter-guide
+[Agent Guide]: https://docs.zenml.io/user-guide/agent-guide
+[LLM Evaluation]: https://docs.zenml.io/user-guide/llmops-guide/evaluation
+[ZenML 101]: https://docs.zenml.io/user-guide/starter-guide
 [Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
-[LLMOps Guide]: https://docs.zenml.io/user-guides/llmops-guide
 [Documentation]: https://docs.zenml.io/
-[SDK Reference]: https://sdkdocs.zenml.io/
+[API Reference]: https://sdkdocs.zenml.io/
 [Examples]: https://github.com/zenml-io/zenml/tree/main/examples
 
 ---
 
-*This collection demonstrates the power and flexibility of ZenML for orchestrating diverse agent frameworks in production environments.*
+*This collection demonstrates how ZenML transforms agent development into a systematic, trackable workflow - applying the same rigor you use for traditional ML to agent development.*
