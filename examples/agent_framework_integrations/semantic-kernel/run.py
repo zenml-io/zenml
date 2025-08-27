@@ -5,11 +5,22 @@ for orchestration and artifact management.
 """
 
 import asyncio
+import os
 from typing import Annotated, Any, Dict
 
 from semantic_kernel_agent import kernel
 
 from zenml import ExternalArtifact, pipeline, step
+from zenml.config import DockerSettings, PythonPackageInstaller
+
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    requirements="requirements.txt",  # relative to the pipeline directory
+    install_local_packages=True,  # Ensure local package is installed
+    environment={
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    },
+)
 
 
 @step
@@ -96,7 +107,7 @@ Response:
     return formatted.strip()
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings}, enable_cache=False)
 def semantic_kernel_agent_pipeline() -> str:
     """ZenML pipeline that orchestrates the Semantic Kernel agent.
 

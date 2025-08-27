@@ -56,6 +56,7 @@ python run.py
 | [Autogen](autogen/) | 🤝 Multi-Agent | Multi-agent conversations, Role-based collaboration | autogen, openai |
 | [AWS Strands](aws-strands/) | ⚡ Simple | Direct agent calls, Built-in tools | aws-agents, bedrock |
 | [CrewAI](crewai/) | 👥 Crews | Agent crews, Task delegation | crewai, openai |
+| [Google ADK](google_adk/) | 🔮 Gemini | Gemini-powered agents with tool calling | google-adk, gemini |
 | [Haystack](haystack/) | 🔍 RAG | Retrieval pipelines, Document processing | haystack, openai |
 | [LangChain](langchain/) | 🔗 Chains | Runnable chains, Tool composition | langchain, openai |
 | [LangGraph](langgraph/) | 🕸️ Graphs | ReAct agents, Graph workflows | langgraph, openai |
