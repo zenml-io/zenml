@@ -37,6 +37,9 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.entrypoints.base_entrypoint_configuration import (
+    DEPLOYMENT_ID_OPTION,
+)
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.models import (
@@ -56,6 +59,7 @@ from zenml.pipeline_servers.containerized_pipeline_server import (
     ContainerizedPipelineServer,
 )
 from zenml.serving.entrypoint_configuration import (
+    PORT_OPTION,
     ServingEntrypointConfiguration,
 )
 from zenml.stack import Stack, StackValidator
@@ -137,7 +141,6 @@ class DockerPipelineServer(ContainerizedPipelineServer):
     # * which environment variables go into the container? who provides them?
     # * how are endpoints authenticated?
     # * check the health status of the container too
-    # * how to automatically add the local image builder to the stack ?
     # * pipeline inside pipeline
 
     CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
@@ -338,9 +341,10 @@ class DockerPipelineServer(ContainerizedPipelineServer):
         entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
 
         arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id=deployment.id,
-            runtime_params={},
-            create_zen_run=False,
+            **{
+                DEPLOYMENT_ID_OPTION: deployment.id,
+                PORT_OPTION: 8000,
+            }
         )
 
         # Add the local stores path as a volume mount
@@ -400,7 +404,7 @@ class DockerPipelineServer(ContainerizedPipelineServer):
             allocate_port_if_busy=settings.allocate_port_if_busy,
             range=settings.port_range,
         )
-        ports[f"{port}/tcp"] = port
+        ports["8000/tcp"] = port
 
         uid_args: Dict[str, Any] = {}
         if sys.platform == "win32":

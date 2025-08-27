@@ -19,7 +19,6 @@ from typing import (
     TYPE_CHECKING,
     Dict,
     Generator,
-    List,
     Optional,
     Type,
     Union,
@@ -28,16 +27,10 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.docker_settings import DockerSettings
-from zenml.constants import (
-    PIPELINE_SERVER_DOCKER_IMAGE_KEY,
-)
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineDeploymentBase,
     PipelineDeploymentResponse,
     PipelineEndpointOperationalState,
     PipelineEndpointRequest,
