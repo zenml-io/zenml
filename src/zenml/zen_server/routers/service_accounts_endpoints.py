@@ -68,16 +68,12 @@ router = APIRouter(
 
 
 def _raise_deprecated_pro_service_accounts() -> None:
-    """Raises an error if Pro workspace level service accounts are used.
-
-    Raises:
-        IllegalOperationError: If Pro workspace level service accounts are used.
-    """
+    """Logs a warning if Pro workspace level service accounts are used."""
     from zenml.config.server_config import ServerConfiguration
 
     config = ServerConfiguration.get_server_config()
     if config.deployment_type == ServerDeploymentType.CLOUD:
-        raise IllegalOperationError(
+        logger.warning(
             "ZenML Pro workspace level service accounts and API keys are "
             "deprecated and will be removed in a future version. Please use "
             "ZenML Pro organization level service accounts and API keys "
