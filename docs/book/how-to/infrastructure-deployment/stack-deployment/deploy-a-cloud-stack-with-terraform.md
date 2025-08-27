@@ -3,6 +3,11 @@ description: Deploy a cloud stack using Terraform
 icon: globe
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Terraform Modules
 
 ZenML maintains a collection of [Terraform modules](https://registry.terraform.io/modules/zenml-io/zenml-stack) designed to streamline the provisioning of cloud resources and seamlessly integrate them with ZenML Stacks. These modules simplify the setup process, allowing users to quickly provision cloud resources as well as configure and authorize ZenML to utilize them for running pipelines and other AI/ML operations.
