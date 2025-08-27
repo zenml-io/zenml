@@ -582,7 +582,7 @@ class DockerPipelineServer(BasePipelineServer):
 
         try:
             # Configure log streaming parameters
-            log_kwargs = {
+            log_kwargs: Dict[str, Any] = {
                 "stdout": True,
                 "stderr": True,
                 "stream": follow,
