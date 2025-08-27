@@ -109,6 +109,7 @@ def agent_pipeline() -> str:
 ### Simple Execution
 - **AWS Strands**: Direct callable interface with `agent(query)`
 - **PydanticAI**: Clean `agent.run_sync(query)` API
+- **Google ADK**: `agent.run(query)` API
 
 ### Advanced Orchestration
 - **LangChain**: Composable chains with tool integration
