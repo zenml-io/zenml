@@ -61,7 +61,7 @@ If you choose to create a default API key during service account creation, the A
 
 ### Managing Service Account Roles and Permissions
 
-Service accounts are no different from regular users in that they can be assigned different [Organization, Workspace and Project roles](../roles.md) to control their access to different parts of the organization and they can be organized into [teams](../teams.md). They are marked as "BOT" in the UI, to clearly identify them as non-human users.
+Service accounts are no different from regular users in that they can be assigned different [Organization, Workspace and Project roles](./roles.md) to control their access to different parts of the organization and they can be organized into [teams](./teams.md). They are marked as "BOT" in the UI, to clearly identify them as non-human users.
 
 ![Service account Organization roles](../../.gitbook/assets/pro-service-accounts-13.png)
 ![Service account Workspace roles](../../.gitbook/assets/pro-service-accounts-14.png)
