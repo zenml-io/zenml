@@ -81,7 +81,6 @@ root_agent = Agent(
 docker_settings = DockerSettings(
     python_package_installer=PythonPackageInstaller.UV,
     requirements="requirements.txt",  # resolved relative to this directory
-    install_local_packages=True,  # allow local ZenML repo installation in container
     environment={
         # Expose credentials in the execution environment only; no hard-coding.
         "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY"),

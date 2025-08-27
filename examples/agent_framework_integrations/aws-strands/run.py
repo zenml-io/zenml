@@ -16,7 +16,6 @@ from zenml.config import DockerSettings, PythonPackageInstaller
 docker_settings = DockerSettings(
     python_package_installer=PythonPackageInstaller.UV,
     requirements="requirements.txt",  # relative to the pipeline directory
-    install_local_packages=True,  # Ensure local package is installed
     environment={
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
     },
