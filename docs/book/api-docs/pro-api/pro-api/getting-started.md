@@ -109,7 +109,7 @@ See the high‑level overview: [Connect to a server](https://docs.zenml.io/how-t
 * Follow the migration guide in [Migration of workspace level service accounts](../../../getting-started/zenml-pro/service-accounts.md#migration-of-workspace-level-service-accounts) to learn how to migrate from your existing service accounts.
 {% endhint %}
 
-A service account and API key can be configured for your ZenML Pro organization and used to authenticate to the ZenML Pro API. See [Service Accounts](../../../getting-started/zenml-pro/service-accounts.md) for more information.
+Organization‑level service accounts and API keys can be used to authenticate to the ZenML Pro API and to obtain short‑lived tokens for the Workspace API across all workspaces. See [Service Accounts](../../../getting-started/zenml-pro/service-accounts.md) for setup and examples.
 
 ## Workspace API Authentication
 

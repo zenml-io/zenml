@@ -38,6 +38,26 @@ You don't need to run `zenml login` after setting these two environment
 variables and can start interacting with your server right away.
 {% endhint %}
 
+{% hint style="info" %}
+Using ZenML Pro?
+
+Use an organization‑level service account and API key. Set the workspace URL and your org service account API key as environment variables:
+
+```bash
+export ZENML_STORE_URL=https://<your-workspace>.zenml.io
+export ZENML_STORE_API_KEY=<YOUR_ORG_SERVICE_ACCOUNT_API_KEY>
+# Optional for self-hosted Pro deployments:
+export ZENML_PRO_API_URL=https://<your-pro-api-url>
+```
+
+You can also authenticate via CLI:
+
+```bash
+zenml login <your-workspace-name> --api-key
+# You will be prompted to enter your organization service account API key
+```
+{% endhint %}
+
 To see all the service accounts you've created and their API keys, use the following commands:
 
 ```bash
