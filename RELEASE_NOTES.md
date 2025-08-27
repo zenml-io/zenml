@@ -1,5 +1,25 @@
 <!-- markdown-link-check-disable -->
 
+# 0.84.3
+
+## What's Changed
+* Add version 0.84.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3885
+* Fix PyPI download stats badge by @strickvl in https://github.com/zenml-io/zenml/pull/3882
+* Don't include decorator code in step cache key computation by @schustmi in https://github.com/zenml-io/zenml/pull/3880
+* Add an agent in production example by @htahir1 in https://github.com/zenml-io/zenml/pull/3890
+* Fix kubernetes name sanitization by @schustmi in https://github.com/zenml-io/zenml/pull/3887
+* Fix SyntaxWarning in `exception_utils` regex pattern by @strickvl in https://github.com/zenml-io/zenml/pull/3892
+* Add agent framework integration examples by @htahir1 in https://github.com/zenml-io/zenml/pull/3898
+* Add weekly agent examples test workflow by @strickvl in https://github.com/zenml-io/zenml/pull/3902
+* Add ability to use a ZenML Pro API key with `zenml login` by @stefannica in https://github.com/zenml-io/zenml/pull/3895
+* Add docs for workload manager env vars by @schustmi in https://github.com/zenml-io/zenml/pull/3907
+* Bump allowed versions of click by @strickvl in https://github.com/zenml-io/zenml/pull/3905
+* Allow workspace service accounts and API keys to be created by @stefannica in https://github.com/zenml-io/zenml/pull/3908
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.84.2...0.84.3
+
+
 # 0.84.2
 
 The `0.84.2` release brings significant **performance improvements** and **reliability enhancements** that strengthen ZenML's orchestration capabilities. This release features a major refactor of the Kubernetes orchestrator with enhanced restart capabilities, faster pipeline compilation for large pipelines, critical security fixes, and improved logging performance.
