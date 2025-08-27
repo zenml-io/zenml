@@ -94,6 +94,9 @@ def zenml_table(
         pagination: Optional pagination metadata for JSON/YAML output
         **kwargs: Additional formatting options
 
+    Returns:
+        The rendered table in the specified format or None if no data is provided
+
     Raises:
         ValueError: If an unsupported output format is provided
     """
@@ -101,9 +104,7 @@ def zenml_table(
         return None
 
     # Handle output format
-    if output_format == "none":
-        return None
-    elif output_format == "json":
+    if output_format == "json":
         return _render_json(data, columns, sort_by, reverse, pagination)
     elif output_format == "yaml":
         return _render_yaml(data, columns, sort_by, reverse, pagination)
