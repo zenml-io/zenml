@@ -119,6 +119,11 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
             == "true"
         )
 
+        deployment = self.load_deployment()
+
+        # Download code if necessary (for remote execution environments)
+        self.download_code_if_necessary(deployment=deployment)
+
         # Set environment variables for the serving application
         os.environ["ZENML_PIPELINE_DEPLOYMENT_ID"] = deployment_id
         if create_runs:
