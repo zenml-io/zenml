@@ -2,6 +2,11 @@
 description: See docstrings for ZenML Code
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Overview
 
 The ZenML SDK provides Python tools and interfaces for building, managing, and deploying production-ready machine learning pipelines. This documentation helps you get the most out of ZenML's features.
