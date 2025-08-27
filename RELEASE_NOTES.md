@@ -2,6 +2,23 @@
 
 # 0.84.3
 
+The `0.84.3` release introduces **ZenML Pro service account authentication** support and includes important **Kubernetes integration fixes**. This release enhances authentication flexibility for automated workflows and improves the reliability of Kubernetes-based orchestration.
+
+## 🚀 New Features
+
+### ZenML Pro Service Account Authentication
+- **CLI Login Support**: Added ability to authenticate with ZenML Pro using service account API keys via `zenml login --api-key`
+- **Programmatic Access**: Service account API keys can now be used for programmatic access to ZenML Pro workspaces
+- **Organization-Level Access**: Service accounts provide access to all workspaces within an organization for automated workflows
+
+## 🛠️ Fixes
+
+### Kubernetes Integration
+- **Name Sanitization**: Fixed Kubernetes resource name sanitization to properly handle special characters and ensure compliance with Kubernetes naming requirements
+
+### Dependencies
+- **Click Version**: Relaxed Click dependency version constraints to improve compatibility with other packages
+
 ## What's Changed
 * Add version 0.84.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3885
 * Fix PyPI download stats badge by @strickvl in https://github.com/zenml-io/zenml/pull/3882
