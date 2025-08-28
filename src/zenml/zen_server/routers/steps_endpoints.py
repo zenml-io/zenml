@@ -300,19 +300,20 @@ def get_step_logs(
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
-    
+
     # Parse PageInfo if provided
     parsed_page_info = None
     if page_info:
         try:
             import json
+
             page_info_dict = json.loads(page_info)
             parsed_page_info = PageInfo.model_validate(page_info_dict)
         except Exception:
             raise HTTPException(
                 status_code=400, detail="Invalid page_info format"
             )
-    
+
     return fetch_log_records(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,
@@ -365,7 +366,7 @@ def get_step_logs_info(
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
-    
+
     return generate_page_info(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,

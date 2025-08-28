@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-import math
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 from uuid import UUID
 
@@ -487,6 +486,7 @@ def run_logs(
     if page_info:
         try:
             import json
+
             page_info_dict = json.loads(page_info)
             parsed_page_info = PageInfo.model_validate(page_info_dict)
         except Exception:
@@ -598,8 +598,8 @@ def run_logs_info(
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
             raise HTTPException(
-                status_code=400, 
-                detail="PageInfo is not supported for runner logs from workload manager"
+                status_code=400,
+                detail="PageInfo is not supported for runner logs from workload manager",
             )
 
     # Handle logs from log collection
