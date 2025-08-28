@@ -14,9 +14,10 @@
 """Utilities for caching."""
 
 import hashlib
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Mapping, Optional
 
 from zenml.client import Client
+from zenml.constants import CODE_HASH_PARAMETER_NAME
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 from zenml.orchestrators import step_run_utils
@@ -40,7 +41,7 @@ logger = get_logger(__name__)
 
 def generate_cache_key(
     step: "Step",
-    input_artifacts: Dict[str, "ArtifactVersionResponse"],
+    input_artifacts: Mapping[str, "ArtifactVersionResponse"],
     artifact_store: "BaseArtifactStore",
     project_id: "UUID",
 ) -> str:
@@ -68,6 +69,7 @@ def generate_cache_key(
     Returns:
         A cache key.
     """
+    cache_policy = step.config.cache_policy
     hash_ = hashlib.md5()  # nosec
 
     # Project ID
@@ -95,7 +97,10 @@ def generate_cache_key(
     for name, artifact_version in input_artifacts.items():
         hash_.update(name.encode())
 
-        if artifact_version.content_hash:
+        if (
+            artifact_version.content_hash
+            and cache_policy.include_artifact_values
+        ):
             hash_.update(artifact_version.content_hash.encode())
         else:
             hash_.update(artifact_version.id.bytes)
@@ -108,6 +113,12 @@ def generate_cache_key(
 
     # Custom caching parameters
     for key, value in sorted(step.config.caching_parameters.items()):
+        if (
+            key == CODE_HASH_PARAMETER_NAME
+            and not cache_policy.include_step_code
+        ):
+            continue
+
         hash_.update(key.encode())
         hash_.update(str(value).encode())
 

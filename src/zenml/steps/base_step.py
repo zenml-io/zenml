@@ -35,6 +35,7 @@ from typing import (
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
+from zenml.config.cache_policy import CachePolicyOrString
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import (
@@ -117,6 +118,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
     ) -> None:
         """Initializes a step.
 
@@ -207,6 +209,7 @@ class BaseStep:
             model=model,
             retry=retry,
             substitutions=substitutions,
+            cache_policy=cache_policy,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -616,6 +619,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -655,6 +659,7 @@ class BaseStep:
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
+            cache_policy: Cache policy for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -725,6 +730,7 @@ class BaseStep:
                 "model": model,
                 "retry": retry,
                 "substitutions": substitutions,
+                "cache_policy": cache_policy,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -750,6 +756,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -779,6 +786,7 @@ class BaseStep:
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders for the step name.
+            cache_policy: Cache policy for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -805,6 +813,7 @@ class BaseStep:
             model=model,
             retry=retry,
             substitutions=substitutions,
+            cache_policy=cache_policy,
             merge=merge,
         )
         return step_copy

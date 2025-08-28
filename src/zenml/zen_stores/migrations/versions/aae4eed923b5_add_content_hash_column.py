@@ -1,7 +1,7 @@
 """Add content hash column [aae4eed923b5].
 
 Revision ID: aae4eed923b5
-Revises: 0.84.2
+Revises: 0.84.3
 Create Date: 2025-08-22 16:32:12.494008
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "aae4eed923b5"
-down_revision = "0.84.2"
+down_revision = "0.84.3"
 branch_labels = None
 depends_on = None
 
