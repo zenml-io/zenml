@@ -4,10 +4,17 @@ This pipeline uses an AI agent to analyze weather for any city.
 It can be deployed and served as a FastAPI endpoint.
 """
 
+import os
 import random
 from typing import Dict
 
 from zenml import pipeline, step
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    requirements=["openai"],
+    environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
+)
 
 
 @step
@@ -145,7 +152,7 @@ Raw Data: {temp:.1f}°C, {humidity}% humidity, {wind:.1f} km/h wind
 Analysis: Rule-based AI (LLM unavailable)"""
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings})
 def weather_agent_pipeline(city: str = "London") -> str:
     """Weather agent pipeline that can be served via API.
 

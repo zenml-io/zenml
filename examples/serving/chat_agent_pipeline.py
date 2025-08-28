@@ -4,10 +4,17 @@ This pipeline implements a conversational AI chat agent that works with
 ZenML's serving infrastructure for real-time chat applications.
 """
 
+import os
 import time
 from typing import Dict
 
 from zenml import pipeline, step
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    requirements=["openai"],
+    environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
+)
 
 
 @step
@@ -81,9 +88,11 @@ def generate_chat_response(
         }
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings})
 def chat_agent_pipeline(
-    message: str, user_name: str = "User", personality: str = "helpful"
+    message: str = "Hello",
+    user_name: str = "User",
+    personality: str = "helpful",
 ) -> Dict[str, str]:
     """Simple chat agent pipeline for serving demonstrations.
 
@@ -113,18 +122,9 @@ if __name__ == "__main__":
     print("📦 Creating deployment for serving...\n")
 
     try:
-        # Configure pipeline with default parameters for deployment
-        configured_pipeline = chat_agent_pipeline.configure(
-            parameters={
-                "message": "Hello",  # Default message
-                "user_name": "User",  # Default user name
-                "personality": "helpful",  # Default personality
-            }
-        )
-
         # Create deployment with configured parameters
-        configured_pipeline._prepare_if_possible()
-        deployment = configured_pipeline._create_deployment()
+        chat_agent_pipeline._prepare_if_possible()
+        deployment = chat_agent_pipeline._create_deployment()
 
         print(f"✅ Deployment ID: {deployment.id}")
         print("\n🔧 Start serving:")

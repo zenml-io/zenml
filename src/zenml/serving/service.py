@@ -132,7 +132,7 @@ class PipelineServingService:
             raise
 
     def _extract_parameter_schema(self) -> Dict[str, Any]:
-        """Extract parameter schema from pipeline deployment.
+        """Extract parameter schema from pipeline deployment and function signature.
 
         Returns:
             Dictionary containing parameter information with types and defaults
@@ -164,14 +164,51 @@ class PipelineServingService:
                 "required": False,  # Since it has a default
             }
 
-        # TODO: Enhanced parameter schema extraction
-        # In the future, we could:
-        # 1. Parse the actual pipeline function signature to get types
-        # 2. Extract parameter descriptions from docstrings
-        # 3. Identify required vs optional parameters
-        # 4. Validate parameter constraints
+        # Enhanced: Extract parameters from pipeline function signature
+        try:
+            # Get the pipeline source and load it to inspect the function signature
+            pipeline_spec = self.deployment.pipeline_configuration.spec
+            if pipeline_spec and pipeline_spec.source:
+                import inspect
+                
+                from zenml.utils import source_utils
+                
+                # Load the pipeline function
+                pipeline_func = source_utils.load(pipeline_spec.source)
+                
+                # Get function signature
+                sig = inspect.signature(pipeline_func)
+                
+                for param_name, param in sig.parameters.items():
+                    # Skip if we already have this parameter from deployment config
+                    if param_name in schema:
+                        continue
+                        
+                    # Extract type information
+                    param_type = "str"  # Default fallback
+                    if param.annotation != inspect.Parameter.empty:
+                        if hasattr(param.annotation, "__name__"):
+                            param_type = param.annotation.__name__
+                        else:
+                            param_type = str(param.annotation)
+                    
+                    # Extract default value
+                    has_default = param.default != inspect.Parameter.empty
+                    default_value = param.default if has_default else None
+                    
+                    schema[param_name] = {
+                        "type": param_type,
+                        "default": default_value,
+                        "required": not has_default,
+                    }
+                    
+                    logger.debug(f"Extracted function parameter: {param_name} ({param_type}) = {default_value}")
+                    
+        except Exception as e:
+            logger.warning(f"Failed to extract pipeline function signature: {e}")
+            # Continue with just deployment parameters
 
-        logger.debug(f"Extracted parameter schema: {schema}")
+        logger.debug(f"Final extracted parameter schema: {schema}")
         return schema
 
     def _resolve_parameters(
@@ -193,6 +230,7 @@ class PipelineServingService:
         Raises:
             ValueError: If parameter validation fails
         """
+        # TODO: Maybe use FastAPI's parameter validation instead?
         # Start with deployment defaults
         deployment_params = {}
         if self.deployment:
@@ -497,6 +535,7 @@ class PipelineServingService:
 
         try:
             # Get job registry using sync version for worker thread
+            # TODO: move this to serving execution manager and keep this function agnostic of job management.
             job_registry = get_job_registry()
 
             # Get stream manager reference (should be initialized from main thread)

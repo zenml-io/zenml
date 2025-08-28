@@ -28,6 +28,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
 from starlette.status import HTTP_429_TOO_MANY_REQUESTS
 
@@ -43,9 +44,11 @@ from zenml.serving.jobs import (
     shutdown_job_registry,
 )
 from zenml.serving.models import (
+    DeploymentInfo,
     ExecutionMetrics,
     HealthResponse,
     InfoResponse,
+    PipelineInfo,
     PipelineRequest,
     PipelineResponse,
     ServiceStatus,
@@ -136,6 +139,16 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
+)
+
+# Add CORS middleware to allow frontend access
+# TODO: In production, restrict allow_origins to specific domains for security
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins - restrict in production
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 
@@ -549,6 +562,7 @@ async def stream_job_events(job_id: str) -> StreamingResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @app.get("/concurrency/stats")
 async def concurrency_stats() -> Dict[str, Any]:
     """Get current concurrency and execution statistics.
@@ -610,16 +624,16 @@ async def pipeline_info() -> InfoResponse:
     info = service.get_service_info()
 
     return InfoResponse(
-        pipeline={
-            "name": info["pipeline"]["name"],
-            "steps": info["pipeline"]["steps"],
-            "parameters": info["pipeline"]["parameters"],
-        },
-        deployment={
-            "id": info["deployment"]["id"],
-            "created_at": info["deployment"]["created_at"],
-            "stack": info["deployment"]["stack"],
-        },
+        pipeline=PipelineInfo(
+            name=info["pipeline"]["name"],
+            steps=info["pipeline"]["steps"],
+            parameters=info["pipeline"]["parameters"],
+        ),
+        deployment=DeploymentInfo(
+            id=info["deployment"]["id"],
+            created_at=info["deployment"]["created_at"],
+            stack=info["deployment"]["stack"],
+        ),
     )
 
 

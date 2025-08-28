@@ -11,12 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Endpoint definitions for deployments."""
+"""Endpoint definitions for pipeline endpoints."""
 
+import json
+from typing import Any, AsyncGenerator, Dict, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, Security
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Security,
+    status,
+)
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
+from zenml.client import Client
 from zenml.constants import (
     API,
     PIPELINE_ENDPOINTS,
@@ -50,6 +63,42 @@ router = APIRouter(
     tags=["pipeline endpoints"],
     responses={401: error_response, 403: error_response},
 )
+
+
+class PipelineExecutionRequest(BaseModel):
+    """Request model for pipeline execution."""
+
+    parameters: Dict[str, Any] = {}
+    run_name: Optional[str] = None
+    config_path: Optional[str] = None
+    enable_cache: bool = True
+
+
+class PipelineExecutionResponse(BaseModel):
+    """Response model for pipeline execution."""
+
+    success: bool
+    job_id: Optional[str] = None
+    run_id: Optional[str] = None
+    message: Optional[str] = None
+    error: Optional[str] = None
+    result: Optional[Dict[str, Any]] = None
+
+
+class ChatMessage(BaseModel):
+    """Chat message model."""
+
+    role: str  # 'user' or 'assistant'
+    content: str
+    timestamp: Optional[str] = None
+
+
+class ChatRequest(BaseModel):
+    """Request model for chat interface."""
+
+    message: str
+    history: list[ChatMessage] = []
+    stream: bool = True
 
 
 @router.post(
