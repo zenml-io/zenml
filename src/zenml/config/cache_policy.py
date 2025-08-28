@@ -58,6 +58,14 @@ class CachePolicy(BaseModel):
 
 
 def _convert_cache_policy(value: Any) -> Any:
+    """Converts a potential cache policy string to a cache policy object.
+
+    Args:
+        value: The value to convert.
+
+    Returns:
+        The converted value.
+    """
     if isinstance(value, str):
         return CachePolicy.from_string(value)
 

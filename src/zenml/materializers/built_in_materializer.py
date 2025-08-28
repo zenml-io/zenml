@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's builtin materializer."""
 
+import hashlib
+import json
 import os
 from typing import (
     TYPE_CHECKING,
@@ -144,12 +146,11 @@ class BuiltInMaterializer(BaseMaterializer):
         Args:
             data: The data to compute the content hash of.
         """
-        import hashlib
-        import json
-
         json_string = json.dumps(data, sort_keys=True)
 
-        return hashlib.md5(json_string.encode()).hexdigest()
+        return hashlib.md5(
+            json_string.encode(), usedforsecurity=False
+        ).hexdigest()
 
 
 class BytesMaterializer(BaseMaterializer):
