@@ -14,10 +14,10 @@
 """Endpoint definitions for pipeline runs."""
 
 import math
-from typing import Any, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
@@ -36,8 +36,10 @@ from zenml.logger import get_logger
 from zenml.logging.step_logging import (
     DEFAULT_PAGE_SIZE,
     LogEntry,
+    PageInfo,
     _entry_matches_filters,
     fetch_log_records,
+    generate_page_info,
     parse_log_entry,
     stream_log_records,
 )
@@ -449,21 +451,25 @@ def run_logs(
     count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
+    page_info: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> Page[LogEntry]:
-    """Get pipeline run logs for a specific source.
+) -> List[LogEntry]:
+    """Get log entries for a specific pipeline run source and page.
+
+    This endpoint is optimized for speed and returns only the log entries for the
+    requested page. Use the /logs/info endpoint to get pagination metadata.
 
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
-        page: The page number to return.
-        count: The number of log entries to return.
-        level: Optional log level filter (e.g., "INFO"). Returns messages at this level and above.
+        page: The page number to return. Negative values count from end (-1 = last page).
+        count: The number of log entries to return per page.
+        level: Optional log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
+        page_info: Optional JSON-encoded PageInfo for efficient seeking.
 
     Returns:
-        A list of up to DEFAULT_PAGE_SIZE structured LogEntry objects for
-        the specified source, starting from the given offset index in the filtered results.
+        A list of LogEntry objects for the requested page.
 
     Raises:
         KeyError: If no logs are found for the specified source.
@@ -475,6 +481,18 @@ def run_logs(
         get_method=store.get_run,
         hydrate=True,
     )
+
+    # Parse PageInfo if provided
+    parsed_page_info = None
+    if page_info:
+        try:
+            import json
+            page_info_dict = json.loads(page_info)
+            parsed_page_info = PageInfo.model_validate(page_info_dict)
+        except Exception:
+            raise HTTPException(
+                status_code=400, detail="Invalid page_info format"
+            )
 
     # Handle runner logs from workload manager
     if run.deployment_id and source == "runner":
@@ -509,13 +527,7 @@ def run_logs(
                     ):
                         matching_entries.append(log_record)
 
-            return Page[LogEntry](
-                items=matching_entries,
-                total=entries_found,
-                index=page,
-                max_size=count,
-                total_pages=math.ceil(entries_found / count),
-            )
+            return matching_entries
 
     # Handle logs from log collection
     if run.log_collection:
@@ -527,6 +539,78 @@ def run_logs(
                     logs_uri=log_entry.uri,
                     page=page,
                     count=count,
+                    level=level,
+                    search=search,
+                    page_info=parsed_page_info,
+                )
+
+    # If no logs found for the specified source, raise an error
+    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
+
+
+@router.get(
+    "/{run_id}/logs/info",
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def run_logs_info(
+    run_id: UUID,
+    source: str,
+    page_size: int = DEFAULT_PAGE_SIZE,
+    level: int = LoggingLevels.INFO.value,
+    search: Optional[str] = None,
+    _: AuthContext = Security(authorize),
+) -> PageInfo:
+    """Get pagination information for pipeline run logs.
+
+    This endpoint scans the entire log file to generate pagination metadata including
+    byte positions for efficient page seeking. Use this when you need total counts
+    or want to enable efficient pagination.
+
+    Args:
+        run_id: ID of the pipeline run.
+        source: Required source to get logs for.
+        page_size: Number of entries per page.
+        level: Optional log level filter. Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
+
+    Returns:
+        PageInfo object with pagination metadata and byte positions.
+
+    Raises:
+        KeyError: If no logs are found for the specified source.
+        HTTPException: If runner logs are requested (not supported for PageInfo).
+    """
+    store = zen_store()
+
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=store.get_run,
+        hydrate=True,
+    )
+
+    # Handle runner logs from workload manager - not supported for PageInfo yet
+    if run.deployment_id and source == "runner":
+        deployment = store.get_deployment(run.deployment_id)
+        if deployment.template_id and server_config().workload_manager_enabled:
+            raise HTTPException(
+                status_code=400, 
+                detail="PageInfo is not supported for runner logs from workload manager"
+            )
+
+    # Handle logs from log collection
+    if run.log_collection:
+        for log_entry in run.log_collection:
+            if log_entry.source == source:
+                return generate_page_info(
+                    zen_store=store,
+                    artifact_store_id=log_entry.artifact_store_id,
+                    logs_uri=log_entry.uri,
+                    page_size=page_size,
                     level=level,
                     search=search,
                 )

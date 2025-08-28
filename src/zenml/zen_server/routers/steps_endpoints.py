@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security
@@ -32,7 +32,9 @@ from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
 from zenml.logging.step_logging import (
     DEFAULT_PAGE_SIZE,
     LogEntry,
+    PageInfo,
     fetch_log_records,
+    generate_page_info,
     stream_log_records,
 )
 from zenml.models import (
@@ -266,19 +268,24 @@ def get_step_logs(
     count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
+    page_info: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> Page[LogEntry]:
-    """Get the logs of a specific step.
+) -> List[LogEntry]:
+    """Get log entries for a specific step and page.
+
+    This endpoint is optimized for speed and returns only the log entries for the
+    requested page. Use the /logs/info endpoint to get pagination metadata.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        page: The page number to return.
-        count: The number of log entries to return (max DEFAULT_PAGE_SIZE).
+        page: The page number to return. Negative values count from end (-1 = last page).
+        count: The number of log entries to return per page.
         level: Optional log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
+        page_info: Optional JSON-encoded PageInfo for efficient seeking.
 
     Returns:
-        A list of LogEntry objects for the step.
+        A list of LogEntry objects for the requested page.
 
     Raises:
         HTTPException: If no logs are available for this step.
@@ -293,12 +300,77 @@ def get_step_logs(
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
+    
+    # Parse PageInfo if provided
+    parsed_page_info = None
+    if page_info:
+        try:
+            import json
+            page_info_dict = json.loads(page_info)
+            parsed_page_info = PageInfo.model_validate(page_info_dict)
+        except Exception:
+            raise HTTPException(
+                status_code=400, detail="Invalid page_info format"
+            )
+    
     return fetch_log_records(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,
         logs_uri=logs.uri,
         page=page,
         count=count,
+        level=level,
+        search=search,
+        page_info=parsed_page_info,
+    )
+
+
+@router.get(
+    "/{step_id}" + LOGS + "/info",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def get_step_logs_info(
+    step_id: UUID,
+    page_size: int = DEFAULT_PAGE_SIZE,
+    level: int = LoggingLevels.INFO.value,
+    search: Optional[str] = None,
+    _: AuthContext = Security(authorize),
+) -> PageInfo:
+    """Get pagination information for step logs.
+
+    This endpoint scans the entire log file to generate pagination metadata including
+    byte positions for efficient page seeking. Use this when you need total counts
+    or want to enable efficient pagination.
+
+    Args:
+        step_id: ID of the step for which to get the logs info.
+        page_size: Number of entries per page.
+        level: Optional log level filter. Returns messages at this level and above.
+        search: Optional search string. Only returns messages containing this string.
+
+    Returns:
+        PageInfo object with pagination metadata and byte positions.
+
+    Raises:
+        HTTPException: If no logs are available for this step.
+    """
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    store = zen_store()
+    logs = step.logs
+    if logs is None:
+        raise HTTPException(
+            status_code=404, detail="No logs available for this step"
+        )
+    
+    return generate_page_info(
+        zen_store=store,
+        artifact_store_id=logs.artifact_store_id,
+        logs_uri=logs.uri,
+        page_size=page_size,
         level=level,
         search=search,
     )
