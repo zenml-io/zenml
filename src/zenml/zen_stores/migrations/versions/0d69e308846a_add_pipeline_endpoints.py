@@ -44,7 +44,7 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column(
-            "pipeline_server_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            "deployer_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
         ),
         sa.ForeignKeyConstraint(
             ["pipeline_deployment_id"],
@@ -53,9 +53,9 @@ def upgrade() -> None:
             ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
-            ["pipeline_server_id"],
+            ["deployer_id"],
             ["stack_component.id"],
-            name="fk_pipeline_endpoint_pipeline_server_id_stack_component",
+            name="fk_pipeline_endpoint_deployer_id_stack_component",
             ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(

@@ -71,7 +71,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
-    from zenml.pipeline_servers import BasePipelineServer
+    from zenml.deployers import BaseDeployer
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
     from zenml.utils import secret_utils
@@ -109,7 +109,7 @@ class Stack:
         data_validator: Optional["BaseDataValidator"] = None,
         image_builder: Optional["BaseImageBuilder"] = None,
         model_registry: Optional["BaseModelRegistry"] = None,
-        pipeline_server: Optional["BasePipelineServer"] = None,
+        deployer: Optional["BaseDeployer"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -128,7 +128,7 @@ class Stack:
             data_validator: Data validator component of the stack.
             image_builder: Image builder component of the stack.
             model_registry: Model registry component of the stack.
-            pipeline_server: Pipeline server component of the stack.
+            deployer: Deployer component of the stack.
         """
         self._id = id
         self._name = name
@@ -144,7 +144,7 @@ class Stack:
         self._data_validator = data_validator
         self._model_registry = model_registry
         self._image_builder = image_builder
-        self._pipeline_server = pipeline_server
+        self._deployer = deployer
 
     @classmethod
     def from_model(cls, stack_model: "StackResponse") -> "Stack":
@@ -225,7 +225,7 @@ class Stack:
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
-        from zenml.pipeline_servers import BasePipelineServer
+        from zenml.deployers import BaseDeployer
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -314,11 +314,11 @@ class Stack:
         ):
             _raise_type_error(model_registry, BaseModelRegistry)
 
-        pipeline_server = components.get(StackComponentType.PIPELINE_SERVER)
-        if pipeline_server is not None and not isinstance(
-            pipeline_server, BasePipelineServer
+        deployer = components.get(StackComponentType.DEPLOYER)
+        if deployer is not None and not isinstance(
+            deployer, BaseDeployer
         ):
-            _raise_type_error(pipeline_server, BasePipelineServer)
+            _raise_type_error(deployer, BaseDeployer)
 
         return Stack(
             id=id,
@@ -335,7 +335,7 @@ class Stack:
             data_validator=data_validator,
             image_builder=image_builder,
             model_registry=model_registry,
-            pipeline_server=pipeline_server,
+            deployer=deployer,
         )
 
     @property
@@ -360,7 +360,7 @@ class Stack:
                 self.data_validator,
                 self.image_builder,
                 self.model_registry,
-                self.pipeline_server,
+                self.deployer,
             ]
             if component is not None
         }
@@ -493,13 +493,13 @@ class Stack:
         return self._model_registry
 
     @property
-    def pipeline_server(self) -> Optional["BasePipelineServer"]:
-        """The pipeline server of the stack.
+    def deployer(self) -> Optional["BaseDeployer"]:
+        """The deployer of the stack.
 
         Returns:
-            The pipeline server of the stack.
+            The deployer of the stack.
         """
-        return self._pipeline_server
+        return self._deployer
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
@@ -751,7 +751,7 @@ class Stack:
         requires_image_builder = (
             self.orchestrator.flavor != "local"
             or self.step_operator
-            or self.pipeline_server
+            or self.deployer
             or (self.model_deployer and self.model_deployer.flavor != "mlflow")
         )
         skip_default_image_builder = handle_bool_env_var(
@@ -861,13 +861,13 @@ class Stack:
             deployment: The pipeline deployment.
             endpoint_name: The name of the endpoint to serve the pipeline on.
         """
-        if not self.pipeline_server:
+        if not self.deployer:
             raise RuntimeError(
-                "The stack does not have a pipeline server. Please add a "
-                "pipeline server to the stack in order to serve a pipeline."
+                "The stack does not have a deployer. Please add a "
+                "deployer to the stack in order to serve a pipeline."
             )
 
-        return self.pipeline_server.serve_pipeline(
+        return self.deployer.serve_pipeline(
             deployment=deployment, stack=self, endpoint_name=endpoint_name
         )
 

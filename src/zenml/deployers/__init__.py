@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Pipeline servers are stack components responsible for serving pipelines as HTTP services.
+"""Deployers are stack components responsible for serving pipelines as HTTP services.
 
 Pipeline serving is the process of hosting and running machine-learning pipelines as
 part of a managed web service and providing access to pipeline execution through an API
@@ -19,35 +19,35 @@ endpoint like HTTP or GRPC. Once deployed, you can send execution requests
 to the pipeline through the web service's API and receive responses containing
 the pipeline results or execution status.
 
-Add a pipeline server to your ZenML stack to be able to implement continuous
+Add a deployer to your ZenML stack to be able to implement continuous
 pipeline serving that transforms your ML pipelines into long-running HTTP services
 for real-time, on-demand execution instead of traditional batch processing.
 
-When present in a stack, the pipeline server also acts as a registry for pipeline
-endpoints that are served with ZenML. You can use the pipeline server to list all
+When present in a stack, the deployer also acts as a registry for pipeline
+endpoints that are served with ZenML. You can use the deployer to list all
 pipeline endpoints that are currently deployed for online execution or filtered
 according to a particular deployment or configuration, or to delete an external
 pipeline endpoint managed through ZenML.
 """
 
-from zenml.pipeline_servers.base_pipeline_server import (
-    BasePipelineServer,
-    BasePipelineServerFlavor,
-    BasePipelineServerConfig,
+from zenml.deployers.base_deployer import (
+    BaseDeployer,
+    BaseDeployerFlavor,
+    BaseDeployerConfig,
 )
-from zenml.pipeline_servers.containerized_pipeline_server import (
-    ContainerizedPipelineServer,
+from zenml.deployers.containerized_deployer import (
+    ContainerizedDeployer,
 )
-from zenml.pipeline_servers.docker.docker_pipeline_server import (
-    DockerPipelineServer,
-    DockerPipelineServerFlavor,
+from zenml.deployers.docker.docker_deployer import (
+    DockerDeployer,
+    DockerDeployerFlavor,
 )
 
 __all__ = [
-    "BasePipelineServer",
-    "BasePipelineServerFlavor",
-    "BasePipelineServerConfig",
-    "ContainerizedPipelineServer",
-    "DockerPipelineServer",
-    "DockerPipelineServerFlavor",
+    "BaseDeployer",
+    "BaseDeployerFlavor",
+    "BaseDeployerConfig",
+    "ContainerizedDeployer",
+    "DockerDeployer",
+    "DockerDeployerFlavor",
 ]

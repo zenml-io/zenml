@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base class for all ZenML pipeline servers."""
+"""Base class for all ZenML deployers."""
 
 from abc import ABC
 from typing import (
@@ -21,20 +21,20 @@ from typing import (
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import (
-    PIPELINE_SERVER_DOCKER_IMAGE_KEY,
+    DEPLOYER_DOCKER_IMAGE_KEY,
 )
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineDeploymentBase,
     PipelineDeploymentResponse,
 )
-from zenml.pipeline_servers.base_pipeline_server import BasePipelineServer
+from zenml.deployers.base_deployer import BaseDeployer
 
 logger = get_logger(__name__)
 
 
-class ContainerizedPipelineServer(BasePipelineServer, ABC):
-    """Base class for all containerized pipeline servers."""
+class ContainerizedDeployer(BaseDeployer, ABC):
+    """Base class for all containerized deployers."""
 
     CONTAINER_REQUIREMENTS: List[str] = []
 
@@ -42,7 +42,7 @@ class ContainerizedPipelineServer(BasePipelineServer, ABC):
     def get_requirements(
         cls,
     ) -> List[str]:
-        """Method to get the container requirements for the pipeline server.
+        """Method to get the container requirements for the deployer.
 
         Returns:
             A list of requirements.
@@ -61,23 +61,23 @@ class ContainerizedPipelineServer(BasePipelineServer, ABC):
 
         Raises:
             RuntimeError: if the pipeline deployment does not have a build or
-                if the pipeline server image is not in the build.
+                if the deployer image is not in the build.
         """
         if deployment.build is None:
             raise RuntimeError("Pipeline deployment does not have a build. ")
-        if PIPELINE_SERVER_DOCKER_IMAGE_KEY not in deployment.build.images:
+        if DEPLOYER_DOCKER_IMAGE_KEY not in deployment.build.images:
             raise RuntimeError(
-                "Pipeline deployment build does not have a pipeline server "
+                "Pipeline deployment build does not have a deployer "
                 "image. "
             )
-        return deployment.build.images[PIPELINE_SERVER_DOCKER_IMAGE_KEY].image
+        return deployment.build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
 
     @property
     def requirements(self) -> Set[str]:
-        """Set of PyPI requirements for the pipeline server.
+        """Set of PyPI requirements for the deployer.
 
         Returns:
-            A set of PyPI requirements for the pipeline server.
+            A set of PyPI requirements for the deployer.
         """
         requirements = super().requirements
         requirements.update(self.get_requirements())
@@ -96,7 +96,7 @@ class ContainerizedPipelineServer(BasePipelineServer, ABC):
         """
         return [
             BuildConfiguration(
-                key=PIPELINE_SERVER_DOCKER_IMAGE_KEY,
+                key=DEPLOYER_DOCKER_IMAGE_KEY,
                 settings=deployment.pipeline_configuration.docker_settings,
             )
         ]
