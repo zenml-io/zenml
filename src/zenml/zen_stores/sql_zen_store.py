@@ -4904,13 +4904,6 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if deployment.version:
-                if not self.get_store_info().is_pro_server():
-                    raise ValueError(
-                        "Deployment versions are only supported on ZenML Pro "
-                        "servers."
-                    )
-                template_utils.validate_build_is_runnable(build)
-
                 if isinstance(deployment.version, str):
                     validate_name(deployment, "version")
 
@@ -5063,13 +5056,6 @@ class SqlZenStore(BaseZenStore):
             )
 
             if deployment.version:
-                if not self.get_store_info().is_pro_server():
-                    raise ValueError(
-                        "Deployment versions are only supported on ZenML Pro "
-                        "servers."
-                    )
-                template_utils.validate_build_is_runnable(deployment.build)
-
                 if isinstance(deployment.version, str):
                     validate_name(deployment_update, "version")
 
