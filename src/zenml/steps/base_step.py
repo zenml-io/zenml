@@ -148,6 +148,7 @@ class BaseStep:
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
+            cache_policy: Cache policy for this step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 

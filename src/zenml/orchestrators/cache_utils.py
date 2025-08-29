@@ -62,7 +62,7 @@ def generate_cache_key(
 
     Args:
         step: The step to generate the cache key for.
-        input_artifact_ids: The input artifact IDs for the step.
+        input_artifacts: The input artifacts for the step.
         artifact_store: The artifact store of the active stack.
         project_id: The ID of the active project.
 

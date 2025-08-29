@@ -145,6 +145,9 @@ class BuiltInMaterializer(BaseMaterializer):
 
         Args:
             data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
         """
         json_string = json.dumps(data, sort_keys=True)
 
@@ -202,6 +205,17 @@ class BytesMaterializer(BaseMaterializer):
             A dictionary of visualization URIs and their types.
         """
         return {self.data_path.replace("\\", "/"): VisualizationType.MARKDOWN}
+
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
+        """
+        return hashlib.md5(data, usedforsecurity=False).hexdigest()
 
 
 def _all_serializable(iterable: Iterable[Any]) -> bool:
@@ -503,3 +517,21 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         if hasattr(data, "__len__"):
             return {"length": len(data)}
         return {}
+
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
+        """
+        if _is_serializable(data):
+            json_string = json.dumps(data, sort_keys=True)
+
+            return hashlib.md5(
+                json_string.encode(), usedforsecurity=False
+            ).hexdigest()
+
+        return None
