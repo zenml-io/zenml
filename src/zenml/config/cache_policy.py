@@ -15,7 +15,7 @@
 
 from typing import Any, Union
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, Field
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
@@ -26,8 +26,24 @@ logger = get_logger(__name__)
 class CachePolicy(BaseModel):
     """Cache policy."""
 
-    include_step_code: bool = True
-    include_artifact_values: bool = True
+    include_step_code: bool = Field(
+        default=True,
+        description="Whether to include the step code in the cache key.",
+    )
+    include_step_parameters: bool = Field(
+        default=True,
+        description="Whether to include the step parameters in the cache key.",
+    )
+    include_artifact_values: bool = Field(
+        default=True,
+        description="Whether to include the artifact values in the cache key. "
+        "If the materializer for an artifact doesn't support generating a "
+        "content hash, the artifact ID will be used as a fallback if enabled.",
+    )
+    include_artifact_ids: bool = Field(
+        default=True,
+        description="Whether to include the artifact IDs in the cache key.",
+    )
 
     @classmethod
     def default(cls) -> "CachePolicy":
@@ -36,7 +52,12 @@ class CachePolicy(BaseModel):
         Returns:
             The default cache policy.
         """
-        return cls(include_step_code=True, include_artifact_values=True)
+        return cls(
+            include_step_code=True,
+            include_step_parameters=True,
+            include_artifact_values=True,
+            include_artifact_ids=True,
+        )
 
     @classmethod
     def from_string(cls, value: str) -> "CachePolicy":

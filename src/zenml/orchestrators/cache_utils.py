@@ -88,10 +88,10 @@ def generate_cache_key(
     # when committing some unrelated files
     hash_.update(step.spec.source.import_path.encode())
 
-    # Step parameters
-    for key, value in sorted(step.config.parameters.items()):
-        hash_.update(key.encode())
-        hash_.update(str(value).encode())
+    if cache_policy.include_step_parameters:
+        for key, value in sorted(step.config.parameters.items()):
+            hash_.update(key.encode())
+            hash_.update(str(value).encode())
 
     # Input artifacts
     for name, artifact_version in input_artifacts.items():
@@ -102,7 +102,7 @@ def generate_cache_key(
             and cache_policy.include_artifact_values
         ):
             hash_.update(artifact_version.content_hash.encode())
-        else:
+        elif cache_policy.include_artifact_ids:
             hash_.update(artifact_version.id.bytes)
 
     # Output artifacts and materializers
