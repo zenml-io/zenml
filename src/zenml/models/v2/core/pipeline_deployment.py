@@ -310,6 +310,7 @@ class PipelineDeploymentResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
 
     tags: List[TagResponse] = Field(
+        default=[],
         title="Tags associated with the deployment.",
     )
     latest_triggered_run_id: Optional[UUID] = Field(

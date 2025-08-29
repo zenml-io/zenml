@@ -49,6 +49,7 @@ def test_loading_the_deployment(clean_client):
     pipeline = clean_client.zen_store.create_pipeline(
         PipelineRequest(
             name="pipeline",
+            project=clean_client.active_project.id,
         )
     )
     request = PipelineDeploymentRequest(

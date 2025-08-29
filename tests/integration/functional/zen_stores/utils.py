@@ -711,6 +711,13 @@ class ModelContext:
                     )
                 )
 
+        pipeline_model = client.zen_store.create_pipeline(
+            PipelineRequest(
+                name=sample_name("pipeline"),
+                project=ws.id,
+            )
+        )
+
         for i in range(self.create_artifacts):
             artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
@@ -739,6 +746,7 @@ class ModelContext:
                 PipelineDeploymentRequest(
                     project=ws.id,
                     stack=stack.id,
+                    pipeline=pipeline_model.id,
                     run_name_template="",
                     pipeline_configuration={"name": "pipeline_name"},
                     client_version="0.12.3",
@@ -1272,6 +1280,7 @@ deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
         project=uuid.uuid4(),
         stack=uuid.uuid4(),
+        pipeline=uuid.uuid4(),
         run_name_template="template",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
@@ -1281,6 +1290,7 @@ deployment_crud_test_config = CrudTestConfig(
     ),
     filter_model=PipelineDeploymentFilter,
     entity_name="deployment",
+    conditional_entities={"pipeline": deepcopy(pipeline_crud_test_config)},
 )
 code_repository_crud_test_config = CrudTestConfig(
     create_model=CodeRepositoryRequest(
@@ -1349,6 +1359,7 @@ remote_deployment_crud_test_config = CrudTestConfig(
         project=uuid.uuid4(),
         stack=uuid.uuid4(),
         build=uuid.uuid4(),  # will be overridden in create()
+        pipeline=uuid.uuid4(),
         run_name_template="template",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
@@ -1360,6 +1371,7 @@ remote_deployment_crud_test_config = CrudTestConfig(
     entity_name="deployment",
     conditional_entities={
         "build": deepcopy(build_crud_test_config),
+        "pipeline": deepcopy(pipeline_crud_test_config),
     },
 )
 run_template_test_config = CrudTestConfig(

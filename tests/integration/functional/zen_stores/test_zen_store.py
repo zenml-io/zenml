@@ -5440,6 +5440,13 @@ class TestRunMetadata:
             )
         )
 
+        pipeline_model = client.zen_store.create_pipeline(
+            PipelineRequest(
+                name=sample_name("pipeline"),
+                project=client.active_project.id,
+            )
+        )
+
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
@@ -5483,6 +5490,7 @@ class TestRunMetadata:
                         name=sample_name("foo")
                     ),
                     stack=client.active_stack.id,
+                    pipeline=pipeline_model.id,
                     client_version="0.1.0",
                     server_version="0.1.0",
                     step_configurations={
@@ -5523,12 +5531,6 @@ class TestRunMetadata:
 
         elif type_ == MetadataResourceTypes.SCHEDULE:
             step_name = sample_name("foo")
-            new_pipeline = client.zen_store.create_pipeline(
-                pipeline=PipelineRequest(
-                    name="foo",
-                    project=client.active_project.id,
-                )
-            )
             resource = client.zen_store.create_schedule(
                 ScheduleRequest(
                     name="foo",
@@ -5536,7 +5538,7 @@ class TestRunMetadata:
                     project=client.active_project.id,
                     orchestrator_id=client.active_stack.orchestrator.id,
                     active=False,
-                    pipeline_id=new_pipeline.id,
+                    pipeline_id=pipeline_model.id,
                 )
             )
             deployment = client.zen_store.create_deployment(
@@ -5546,6 +5548,7 @@ class TestRunMetadata:
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
                     ),
+                    pipeline=pipeline_model.id,
                     stack=client.active_stack.id,
                     client_version="0.1.0",
                     server_version="0.1.0",
@@ -5605,8 +5608,8 @@ class TestRunMetadata:
         elif type_ == MetadataResourceTypes.SCHEDULE:
             client.zen_store.delete_deployment(deployment.id)
             client.zen_store.delete_schedule(resource.id)
-            client.zen_store.delete_pipeline(new_pipeline.id)
 
+        client.zen_store.delete_pipeline(pipeline_model.id)
         client.zen_store.delete_stack_component(sc.id)
 
 
