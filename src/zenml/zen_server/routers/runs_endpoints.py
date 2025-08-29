@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
+import math
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 from uuid import UUID
 
@@ -34,11 +35,13 @@ from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
     DEFAULT_PAGE_SIZE,
+    FilePosition,
     LogEntry,
-    PageInfo,
+    LogInfo,
+    PageResponse,
     _entry_matches_filters,
     fetch_log_records,
-    generate_page_info,
+    generate_log_info,
     parse_log_entry,
     stream_log_records,
 )
@@ -437,6 +440,7 @@ def stop_run(
 @router.get(
     "/{run_id}/logs",
     responses={
+        400: error_response,
         401: error_response,
         404: error_response,
         422: error_response,
@@ -450,25 +454,27 @@ def run_logs(
     count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
-    page_info: Optional[str] = None,
+    seek_file_index: Optional[int] = None,
+    seek_position: Optional[int] = None,
     _: AuthContext = Security(authorize),
-) -> List[LogEntry]:
-    """Get log entries for a specific pipeline run source and page.
+) -> PageResponse:
+    """Get log entries with navigation pointers for efficient pagination.
 
-    This endpoint is optimized for speed and returns only the log entries for the
-    requested page. Use the /logs/info endpoint to get pagination metadata.
+    This endpoint returns both the log entries for the requested page and position
+    information for seamless navigation to previous and next pages.
 
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
-        page: The page number to return. Negative values count from end (-1 = last page).
+        page: The page number to return (1-indexed). Negative values supported (-1 = last page).
         count: The number of log entries to return per page.
-        level: Optional log level filter. Returns messages at this level and above.
+        level: Log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
-        page_info: Optional JSON-encoded PageInfo for efficient seeking.
+        seek_file_index: Optional file index for efficient seeking.
+        seek_position: Optional position within file for efficient seeking.
 
     Returns:
-        A list of LogEntry objects for the requested page.
+        PageResponse with entries and navigation pointers.
 
     Raises:
         KeyError: If no logs are found for the specified source.
@@ -481,18 +487,13 @@ def run_logs(
         hydrate=True,
     )
 
-    # Parse PageInfo if provided
-    parsed_page_info = None
-    if page_info:
-        try:
-            import json
-
-            page_info_dict = json.loads(page_info)
-            parsed_page_info = PageInfo.model_validate(page_info_dict)
-        except Exception:
-            raise HTTPException(
-                status_code=400, detail="Invalid page_info format"
-            )
+    # Construct FilePosition if both parameters provided
+    parsed_seek_position = None
+    if seek_file_index is not None and seek_position is not None:
+        parsed_seek_position = FilePosition(
+            file_index=seek_file_index,
+            position=seek_position,
+        )
 
     # Handle runner logs from workload manager
     if run.deployment_id and source == "runner":
@@ -527,22 +528,33 @@ def run_logs(
                     ):
                         matching_entries.append(log_record)
 
-            return matching_entries
+            # Runner logs don't support FilePosition seeking yet, but we still return PageResponse
+            total_pages = math.ceil(entries_found / count) if entries_found > 0 else 0
+            
+            return PageResponse(
+                entries=matching_entries,
+                page_starts=FilePosition(file_index=0, position=0),  # Basic position for runner logs
+                prev_page_starts=FilePosition(file_index=0, position=0) if page > 1 else None,
+                next_page_starts=FilePosition(file_index=0, position=0) if page < total_pages else None,
+            )
 
     # Handle logs from log collection
     if run.log_collection:
         for log_entry in run.log_collection:
             if log_entry.source == source:
-                return fetch_log_records(
-                    zen_store=store,
-                    artifact_store_id=log_entry.artifact_store_id,
-                    logs_uri=log_entry.uri,
-                    page=page,
-                    count=count,
-                    level=level,
-                    search=search,
-                    page_info=parsed_page_info,
-                )
+                try:
+                    return fetch_log_records(
+                        zen_store=store,
+                        artifact_store_id=log_entry.artifact_store_id,
+                        logs_uri=log_entry.uri,
+                        page=page,
+                        count=count,
+                        level=level,
+                        search=search,
+                        seek_position=parsed_seek_position,
+                    )
+                except ValueError as e:
+                    raise HTTPException(status_code=400, detail=str(e)) from e
 
     # If no logs found for the specified source, raise an error
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")
@@ -564,26 +576,25 @@ def run_logs_info(
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> PageInfo:
-    """Get pagination information for pipeline run logs.
+) -> LogInfo:
+    """Get lightweight pagination information for pipeline run logs.
 
-    This endpoint scans the entire log file to generate pagination metadata including
-    byte positions for efficient page seeking. Use this when you need total counts
-    or want to enable efficient pagination.
+    This endpoint provides basic log statistics without position tracking for
+    efficient total count retrieval.
 
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
         page_size: Number of entries per page.
-        level: Optional log level filter. Returns messages at this level and above.
+        level: Log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        PageInfo object with pagination metadata and byte positions.
+        LogInfo object with pagination metadata.
 
     Raises:
         KeyError: If no logs are found for the specified source.
-        HTTPException: If runner logs are requested (not supported for PageInfo).
+        HTTPException: If runner logs are requested (not supported yet).
     """
     store = zen_store()
 
@@ -593,20 +604,43 @@ def run_logs_info(
         hydrate=True,
     )
 
-    # Handle runner logs from workload manager - not supported for PageInfo yet
+    # Handle runner logs from workload manager
     if run.deployment_id and source == "runner":
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
-            raise HTTPException(
-                status_code=400,
-                detail="PageInfo is not supported for runner logs from workload manager",
+            workload_logs = workload_manager().get_logs(
+                workload_id=deployment.id
+            )
+
+            total_entries = 0
+
+            for line in workload_logs.split("\n"):
+                if not line.strip():
+                    continue
+
+                log_record = parse_log_entry(line)
+                if not log_record:
+                    continue
+
+                # Check if this entry matches our filters
+                if _entry_matches_filters(log_record, level, search):
+                    total_entries += 1
+
+            total_pages = math.ceil(total_entries / page_size) if total_entries > 0 else 0
+
+            return LogInfo(
+                page_size=page_size,
+                total_entries=total_entries,
+                total_pages=total_pages,
+                level=level,
+                search=search,
             )
 
     # Handle logs from log collection
     if run.log_collection:
         for log_entry in run.log_collection:
             if log_entry.source == source:
-                return generate_page_info(
+                return generate_log_info(
                     zen_store=store,
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,

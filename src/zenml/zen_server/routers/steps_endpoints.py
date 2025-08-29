@@ -31,10 +31,12 @@ from zenml.constants import (
 from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
 from zenml.logging.step_logging import (
     DEFAULT_PAGE_SIZE,
+    FilePosition,
     LogEntry,
-    PageInfo,
+    LogInfo,
+    PageResponse,
     fetch_log_records,
-    generate_page_info,
+    generate_log_info,
     stream_log_records,
 )
 from zenml.models import (
@@ -259,7 +261,7 @@ def get_step_status(
 
 @router.get(
     "/{step_id}" + LOGS,
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={400: error_response, 401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
@@ -268,24 +270,26 @@ def get_step_logs(
     count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
-    page_info: Optional[str] = None,
+    seek_file_index: Optional[int] = None,
+    seek_position: Optional[int] = None,
     _: AuthContext = Security(authorize),
-) -> List[LogEntry]:
-    """Get log entries for a specific step and page.
+) -> PageResponse:
+    """Get log entries with navigation pointers for efficient pagination.
 
-    This endpoint is optimized for speed and returns only the log entries for the
-    requested page. Use the /logs/info endpoint to get pagination metadata.
+    This endpoint returns both the log entries for the requested page and position
+    information for seamless navigation to previous and next pages.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        page: The page number to return. Negative values count from end (-1 = last page).
+        page: The page number to return (1-indexed). Negative values supported (-1 = last page).
         count: The number of log entries to return per page.
-        level: Optional log level filter. Returns messages at this level and above.
+        level: Log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
-        page_info: Optional JSON-encoded PageInfo for efficient seeking.
+        seek_file_index: Optional file index for efficient seeking.
+        seek_position: Optional position within file for efficient seeking.
 
     Returns:
-        A list of LogEntry objects for the requested page.
+        PageResponse with entries and navigation pointers.
 
     Raises:
         HTTPException: If no logs are available for this step.
@@ -301,29 +305,28 @@ def get_step_logs(
             status_code=404, detail="No logs available for this step"
         )
 
-    # Parse PageInfo if provided
-    parsed_page_info = None
-    if page_info:
-        try:
-            import json
+    # Construct FilePosition if both parameters provided
+    parsed_seek_position = None
+    if seek_file_index is not None and seek_position is not None:
+        parsed_seek_position = FilePosition(
+            file_index=seek_file_index,
+            position=seek_position,
+        )
 
-            page_info_dict = json.loads(page_info)
-            parsed_page_info = PageInfo.model_validate(page_info_dict)
-        except Exception:
-            raise HTTPException(
-                status_code=400, detail="Invalid page_info format"
-            )
-
-    return fetch_log_records(
-        zen_store=store,
-        artifact_store_id=logs.artifact_store_id,
-        logs_uri=logs.uri,
-        page=page,
-        count=count,
-        level=level,
-        search=search,
-        page_info=parsed_page_info,
-    )
+    try:
+        return fetch_log_records(
+            zen_store=store,
+            artifact_store_id=logs.artifact_store_id,
+            logs_uri=logs.uri,
+            page=page,
+            count=count,
+            level=level,
+            search=search,
+            seek_position=parsed_seek_position,
+        )
+    except ValueError as e:
+        # Handle negative page out of bounds
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get(
@@ -337,21 +340,20 @@ def get_step_logs_info(
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
-) -> PageInfo:
+) -> LogInfo:
     """Get pagination information for step logs.
 
-    This endpoint scans the entire log file to generate pagination metadata including
-    byte positions for efficient page seeking. Use this when you need total counts
-    or want to enable efficient pagination.
+    This endpoint provides basic log statistics without position tracking for
+    efficient total count retrieval.
 
     Args:
         step_id: ID of the step for which to get the logs info.
         page_size: Number of entries per page.
-        level: Optional log level filter. Returns messages at this level and above.
+        level: Log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        PageInfo object with pagination metadata and byte positions.
+        LogInfo object with pagination metadata.
 
     Raises:
         HTTPException: If no logs are available for this step.
@@ -367,7 +369,7 @@ def get_step_logs_info(
             status_code=404, detail="No logs available for this step"
         )
 
-    return generate_page_info(
+    return generate_log_info(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,
         logs_uri=logs.uri,

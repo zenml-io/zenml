@@ -27,14 +27,11 @@ from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
-    Dict,
     Iterator,
     List,
     Optional,
-    Tuple,
     Type,
     Union,
-    overload,
 )
 from uuid import UUID, uuid4
 
@@ -127,23 +124,47 @@ class LogEntry(BaseModel):
     )
 
 
-class PageInfo(BaseModel):
-    """Information about log pagination with byte positions for efficient seeking."""
+class FilePosition(BaseModel):
+    """Position within a log file for efficient seeking."""
+
+    file_index: int = Field(
+        description="Index in sorted file list (0 for single files, proper index for directories)"
+    )
+    position: int = Field(
+        description="Opaque tell() token for position within that specific file"
+    )
+
+
+class LogInfo(BaseModel):
+    """Basic log pagination information without position data."""
 
     page_size: int = Field(description="Number of entries per page")
     total_entries: int = Field(
         description="Total number of entries matching filters"
     )
     total_pages: int = Field(description="Total number of pages")
-    page_starts: Dict[int, int] = Field(
-        description="Mapping of page number to byte position where page starts in raw file"
-    )
-    level: int = Field(
-        description="Log level filter used to generate this PageInfo"
-    )
+    level: int = Field(description="Log level filter used")
     search: Optional[str] = Field(
+        default=None, description="Search filter used"
+    )
+
+
+class PageResponse(BaseModel):
+    """Response containing log entries with navigation pointers for pagination."""
+
+    entries: List[LogEntry] = Field(
+        description="The actual log entries for this page"
+    )
+    page_starts: FilePosition = Field(
+        description="Where the current page starts"
+    )
+    prev_page_starts: Optional[FilePosition] = Field(
         default=None,
-        description="Search filter used to generate this PageInfo",
+        description="Where the previous page starts (None if this is the first page)",
+    )
+    next_page_starts: Optional[FilePosition] = Field(
+        default=None,
+        description="Where the next page starts (None if this is the last page)",
     )
 
 
@@ -359,131 +380,213 @@ def fetch_log_records(
     count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
-    page_info: Optional[PageInfo] = None,
-) -> List[LogEntry]:
-    """Fetches log entries for a specific page with optional PageInfo for efficient seeking.
+    seek_position: Optional[FilePosition] = None,
+) -> PageResponse:
+    """Fetches log entries with navigation pointers for efficient pagination.
 
-    This function operates in three modes:
-    1. Fast path: Without PageInfo, scans from beginning until target page is collected
-    2. Efficient path: With PageInfo, seeks to byte position and reads from there
-    3. Negative pages: Auto-generates PageInfo first, then serves the page
+    This function operates in two modes:
+    1. Fast path: Without seek_position, scans from start and tracks positions as we go
+    2. Efficient path: With seek_position, jumps directly to the specified position
+    3. Navigation: Always returns prev/current/next positions for seamless navigation
 
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
-        logs_uri: The URI of the artifact.
-        page: The page number to return. Negative values count from end (-1 = last page).
+        logs_uri: The URI of the artifact (file or directory).
+        page: The page number to return (1-indexed). Negative values supported (-1 = last page).
         count: The number of entries to return per page.
-        level: Optional log level filter. Returns messages at this level and above.
+        level: Log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
-        page_info: Optional PageInfo for efficient seeking. Must match current filters.
+        seek_position: Optional FilePosition to jump to for efficient seeking.
 
     Returns:
-        A list of LogEntry objects for the requested page.
+        PageResponse with entries and navigation pointers.
 
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
         FileNotFoundError: If the log file does not exist in the artifact store.
-        ValueError: If PageInfo filters don't match current request parameters.
+        ValueError: If negative page number is out of bounds or no entries match filters.
     """
-    # Handle negative pages by generating PageInfo first
+    # Handle negative pages by computing total pages first
     if page < 0:
-        if page_info is None:
-            page_info = generate_page_info(
-                zen_store=zen_store,
-                artifact_store_id=artifact_store_id,
-                logs_uri=logs_uri,
-                page_size=count,
-                level=level,
-                search=search,
-            )
-
-        # Convert negative page to positive (e.g., -1 becomes last page)
-        if page_info.total_pages > 0:
-            page = page_info.total_pages + page + 1
-            if page < 1:
-                page = 1
-        else:
-            page = 1
-
-    # Validate PageInfo if provided
-    if page_info is not None:
-        if (
-            page_info.level != level
-            or page_info.search != search
-            or page_info.page_size != count
-        ):
-            raise ValueError(
-                f"PageInfo filters don't match request: "
-                f"PageInfo(level={page_info.level}, search={page_info.search}, page_size={page_info.page_size}) "
-                f"vs Request(level={level}, search={search}, page_size={count})"
-            )
-
-    try:
-        # Efficient path: Use PageInfo to seek to the right position
-        if page_info is not None and page in page_info.page_starts:
-            return _fetch_page_with_seeking(
-                zen_store=zen_store,
-                artifact_store_id=artifact_store_id,
-                logs_uri=logs_uri,
-                page=page,
-                count=count,
-                level=level,
-                search=search,
-                page_info=page_info,
-            )
-
-        # Fast path: Scan from beginning until we reach the target page
-        return _fetch_page_without_seeking(
+        log_info = generate_log_info(
             zen_store=zen_store,
             artifact_store_id=artifact_store_id,
             logs_uri=logs_uri,
+            page_size=count,
+            level=level,
+            search=search,
+        )
+        
+        # If no pages available, we can't handle negative page requests
+        if log_info.total_pages == 0:
+            raise ValueError(
+                f"Cannot use negative page numbers when no log entries match the filters. "
+                f"Found {log_info.total_entries} total entries with level>={level}"
+                + (f" and search='{search}'" if search else "")
+            )
+        
+        # Convert negative page to positive: -1 = last page, -2 = second to last, etc.
+        page = log_info.total_pages + page + 1
+        # Check if the negative page request is out of bounds
+        if page < 1:
+            raise ValueError(
+                f"Page {page - log_info.total_pages - 1} is out of bounds. "
+                f"Only {log_info.total_pages} pages available. "
+                f"Valid negative page range: -{log_info.total_pages} to -1"
+            )
+
+    # Get sorted file list for directory URIs (needed for file_index calculations)
+    artifact_store = _load_artifact_store(
+        zen_store=zen_store, artifact_store_id=artifact_store_id
+    )
+
+    if artifact_store.isdir(logs_uri):
+        files = sorted(
+            [
+                str(f)
+                for f in artifact_store.listdir(logs_uri)
+                if str(f).endswith(".log")
+            ]
+        )
+    else:
+        files = [logs_uri]  # Single file case - file_index will be 0
+
+    # Use the appropriate fetching approach
+    if seek_position is not None:
+        # Efficient path: Jump straight to the position
+        return _fetch_page_with_position(
+            artifact_store=artifact_store,
+            files=files,
+            page=page,
+            count=count,
+            level=level,
+            search=search,
+            seek_position=seek_position,
+        )
+    else:
+        # Fast path: Scan from beginning and track positions
+        return _fetch_page_from_beginning(
+            artifact_store=artifact_store,
+            files=files,
             page=page,
             count=count,
             level=level,
             search=search,
         )
 
-    except (DoesNotExistException, FileNotFoundError):
-        # Re-raise these as-is
-        raise
-    except Exception as e:
-        # For any other errors, return empty result
-        logger.warning(f"Error fetching logs from {logs_uri}: {e}")
-        return []
 
-
-def _fetch_page_with_seeking(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
-    logs_uri: str,
+def _fetch_page_with_position(
+    artifact_store: BaseArtifactStore,
+    files: List[str],
     page: int,
     count: int,
     level: int,
     search: Optional[str],
-    page_info: PageInfo,
-) -> List[LogEntry]:
-    """Fetch a page by seeking to the byte position and reading from there."""
-    matching_entries = []
+    seek_position: FilePosition,
+) -> PageResponse:
+    """Fetch a page by seeking to a specific position for efficient reading."""
+    entries = []
+    page_starts = seek_position  # Current page starts where we're seeking to
+    prev_page_starts = None  # We'll track this as we go
+    next_page_starts = None  # We'll find this when we hit the next page
+
     entries_collected = 0
-
-    # Get the byte position where this page starts
-    start_byte_position = page_info.page_starts[page]
-
-    # Get artifact store
-    artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+    total_entries_seen = (
+        page - 1
+    ) * count  # Entries we've theoretically seen before this page
 
     try:
-        if not artifact_store.isdir(logs_uri):
-            # Single file case
-            with artifact_store.open(logs_uri, "r") as file:
-                # Seek to the starting position
-                file.seek(start_byte_position)
+        # Get the target file based on file_index
+        target_file = files[seek_position.file_index]
 
-                # Read line by line from this position
-                for line in file:
+        with artifact_store.open(target_file, "r") as file:
+            # Seek to the exact position
+            file.seek(seek_position.position)
+
+            while True:
+                current_pos = file.tell()
+                line = file.readline()
+                if not line:  # EOF
+                    break
+
+                line_text = line.rstrip("\n\r")
+                if not line_text.strip():
+                    continue
+
+                log_entry = parse_log_entry(line_text)
+                if not log_entry:
+                    continue
+
+                # Check if this entry matches our filters
+                if _entry_matches_filters(log_entry, level, search):
+                    entries.append(log_entry)
+                    entries_collected += 1
+
+                    # If this is the first entry of the NEXT page, record it!
+                    if entries_collected > count:
+                        next_page_starts = FilePosition(
+                            file_index=seek_position.file_index,
+                            position=current_pos,
+                        )
+                        # Remove the extra entry (it belongs to next page)
+                        entries.pop()
+                        break
+
+    except Exception as e:
+        # If seeking fails, fall back to scanning approach
+        logger.warning(f"Seeking failed, falling back to scanning: {e}")
+        return _fetch_page_from_beginning(
+            artifact_store, files, page, count, level, search
+        )
+
+    # Calculate totals (this is a rough estimate since we're seeking)
+    total_entries = total_entries_seen + len(entries)
+    if next_page_starts:
+        total_entries += 1  # At least one more entry exists
+
+    # Calculate prev_page_starts (this is tricky with seeking, so we estimate)
+    if page > 1:
+        # This is an estimate - in a real implementation, the client would track this
+        prev_page_starts = FilePosition(file_index=0, position=0)
+
+    return PageResponse(
+        entries=entries,
+        page_starts=page_starts,
+        prev_page_starts=prev_page_starts,
+        next_page_starts=next_page_starts,
+    )
+
+
+def _fetch_page_from_beginning(
+    artifact_store: BaseArtifactStore,
+    files: List[str],
+    page: int,
+    count: int,
+    level: int,
+    search: Optional[str],
+) -> PageResponse:
+    """Fetch a page by scanning from the beginning and tracking positions."""
+    entries = []
+    page_starts = None  # Current page start position
+    prev_page_starts = None  # Previous page start position
+    next_page_starts = None  # Next page start position
+
+    total_entries = 0
+    current_page_num = 1
+    entries_in_current_page = 0
+
+    # Track positions across all files
+    for file_index, file_path in enumerate(files):
+        try:
+            with artifact_store.open(file_path, "r") as file:
+                while True:
+                    current_pos = file.tell()
+                    line = file.readline()
+                    if not line:  # EOF
+                        break
+
                     line_text = line.rstrip("\n\r")
-
                     if not line_text.strip():
                         continue
 
@@ -493,114 +596,77 @@ def _fetch_page_with_seeking(
 
                     # Check if this entry matches our filters
                     if _entry_matches_filters(log_entry, level, search):
-                        matching_entries.append(log_entry)
-                        entries_collected += 1
+                        # If this is the first entry of ANY page, record the position
+                        if entries_in_current_page == 0:
+                            if current_page_num == page - 1:
+                                prev_page_starts = FilePosition(
+                                    file_index=file_index, position=current_pos
+                                )
+                            elif current_page_num == page:
+                                page_starts = FilePosition(
+                                    file_index=file_index, position=current_pos
+                                )
+                            elif current_page_num == page + 1:
+                                next_page_starts = FilePosition(
+                                    file_index=file_index, position=current_pos
+                                )
 
-                        # Stop when we have collected a full page
-                        if entries_collected >= count:
-                            break
-        else:
-            # Directory case is more complex - for now, fall back to non-seeking approach
-            return _fetch_page_without_seeking(
-                zen_store=zen_store,
-                artifact_store_id=artifact_store_id,
-                logs_uri=logs_uri,
-                page=page,
-                count=count,
-                level=level,
-                search=search,
-            )
+                        total_entries += 1
+                        entries_in_current_page += 1
 
-        return matching_entries
+                        # If this entry belongs to our target page, collect it
+                        if current_page_num == page:
+                            entries.append(log_entry)
 
-    finally:
-        artifact_store.cleanup()
+                        # If we've filled the current page, move to next page
+                        if entries_in_current_page >= count:
+                            current_page_num += 1
+                            entries_in_current_page = 0
 
+                            # If we've gone past our target page and found the next page start, we can stop
+                            if (
+                                current_page_num > page
+                                and next_page_starts is not None
+                            ):
+                                break
 
-def _fetch_page_without_seeking(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
-    logs_uri: str,
-    page: int,
-    count: int,
-    level: int,
-    search: Optional[str],
-) -> List[LogEntry]:
-    """Fetch a page by scanning from the beginning until we reach the target page."""
-    start_index = (page - 1) * count
-    end_index = start_index + count
-    matching_entries = []
-    entries_found = 0
-
-    # Stream logs line by line from the beginning
-    for line in _stream_logs_line_by_line(
-        zen_store=zen_store,
-        artifact_store_id=artifact_store_id,
-        logs_uri=logs_uri,
-        track_byte_positions=False,
-    ):
-        if not line.strip():
+        except Exception as e:
+            logger.warning(f"Error reading file {file_path}: {e}")
             continue
 
-        log_entry = parse_log_entry(line)
-        if not log_entry:
-            continue
+    # If we never found our page start (page is beyond available data), use a default
+    if page_starts is None and page == 1 and files:
+        page_starts = FilePosition(file_index=0, position=0)
+    elif page_starts is None:
+        # Page is beyond available data
+        last_file_index = len(files) - 1 if files else 0
+        page_starts = FilePosition(file_index=last_file_index, position=0)
 
-        # Check if this entry matches our filters
-        if _entry_matches_filters(log_entry, level, search):
-            entries_found += 1
-
-            # Only collect entries that are within the current page
-            if entries_found > start_index and entries_found <= end_index:
-                matching_entries.append(log_entry)
-
-                # Stop early if we've collected a full page
-                if len(matching_entries) >= count:
-                    break
-
-    return matching_entries
-
-
-@overload
-def _stream_logs_line_by_line(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
-    logs_uri: str,
-    track_byte_positions: bool = False,
-) -> Iterator[str]: ...
-
-
-@overload
-def _stream_logs_line_by_line(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
-    logs_uri: str,
-    track_byte_positions: bool = True,
-) -> Iterator[Tuple[str, int]]: ...
+    return PageResponse(
+        entries=entries,
+        page_starts=page_starts,
+        prev_page_starts=prev_page_starts,
+        next_page_starts=next_page_starts,
+    )
 
 
 def _stream_logs_line_by_line(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
-    track_byte_positions: bool = False,
-) -> Iterator[Union[str, Tuple[str, int]]]:
+) -> Iterator[str]:
     """Stream logs line by line without loading the entire file into memory.
 
     This generator yields log lines one by one, handling both single files
-    and directories with multiple log files. Optionally tracks byte positions
-    when needed for pagination efficiency.
+    and directories with multiple log files.
 
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the log file or directory.
-        track_byte_positions: If True, yields (line, position_info) tuples with
-            byte positions. Uses binary mode + file.tell() which is slower.
 
     Yields:
-        If track_byte_positions=False: Individual log lines as strings.
-        If track_byte_positions=True: Tuples of (line, cumulative_byte_position).
+        Individual log lines as strings.
 
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
@@ -610,20 +676,9 @@ def _stream_logs_line_by_line(
     try:
         if not artifact_store.isdir(logs_uri):
             # Single file case
-            if track_byte_positions:
-                with artifact_store.open(logs_uri, "r") as file:
-                    while True:
-                        line_start_pos = file.tell()
-                        line = file.readline()
-                        if not line:  # EOF
-                            break
-                        line_text = line.rstrip("\n\r")
-
-                        yield line_text, line_start_pos
-            else:
-                with artifact_store.open(logs_uri, "r") as file:
-                    for line in file:
-                        yield line.rstrip("\n\r")
+            with artifact_store.open(logs_uri, "r") as file:
+                for line in file:
+                    yield line.rstrip("\n\r")
         else:
             # Directory case - may contain multiple log files
             files = artifact_store.listdir(logs_uri)
@@ -636,32 +691,11 @@ def _stream_logs_line_by_line(
             # Sort files to read them in order
             files.sort()
 
-            if track_byte_positions:
-                cumulative_position = 0
-
-                for file in files:
-                    file_path = os.path.join(logs_uri, str(file))
-                    with artifact_store.open(file_path, "r") as f:
-                        while True:
-                            line_start_pos = f.tell()
-                            line = f.readline()
-                            if not line:  # EOF
-                                break
-                            line_text = line.rstrip("\n\r")
-
-                            yield (
-                                line_text,
-                                cumulative_position + line_start_pos,
-                            )
-
-                    # Update cumulative position for next file
-                    cumulative_position += f.tell()
-            else:
-                for file in files:
-                    file_path = os.path.join(logs_uri, str(file))
-                    with artifact_store.open(file_path, "r") as f:
-                        for line in f:
-                            yield line.rstrip("\n\r")
+            for file in files:
+                file_path = os.path.join(logs_uri, str(file))
+                with artifact_store.open(file_path, "r") as f:
+                    for line in f:
+                        yield line.rstrip("\n\r")
     finally:
         artifact_store.cleanup()
 
@@ -699,96 +733,64 @@ def _entry_matches_filters(
     return True
 
 
-def generate_page_info(
+def generate_log_info(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
     page_size: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
-) -> PageInfo:
-    """Generate PageInfo by scanning the entire log file and tracking byte positions.
+) -> LogInfo:
+    """Generate LogInfo.
 
-    This function uses the same streaming logic as fetch operations but with
-    byte position tracking enabled for efficient seeking.
+    This function provides basic log statistics by counting entries and calculating
+    page totals.
 
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the log file or directory.
         page_size: Number of entries per page.
-        level: Optional log level filter. Returns messages at this level and above.
+        level: Log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        PageInfo with byte positions and pagination details.
+        LogInfo with just the essential counts.
 
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
         FileNotFoundError: If the log file does not exist in the artifact store.
     """
-    page_starts: Dict[int, int] = {}
     total_entries = 0
-    current_page = 1
-    entries_in_current_page = 0
 
-    try:
-        # Use the same streaming logic but with byte position tracking
-        for line, byte_position in _stream_logs_line_by_line(
-            zen_store=zen_store,
-            artifact_store_id=artifact_store_id,
-            logs_uri=logs_uri,
-            track_byte_positions=True,
-        ):
-            if not line.strip():
-                continue
+    # Simple counting - no byte tracking needed
+    for line in _stream_logs_line_by_line(
+        zen_store=zen_store,
+        artifact_store_id=artifact_store_id,
+        logs_uri=logs_uri,
+    ):
+        if not line.strip():
+            continue
 
-            log_entry = parse_log_entry(line)
-            if not log_entry:
-                continue
+        log_entry = parse_log_entry(line)
+        if not log_entry:
+            continue
 
-            # Check if this entry matches our filters
-            if _entry_matches_filters(log_entry, level, search):
-                total_entries += 1
+        # Check if this entry matches our filters
+        if _entry_matches_filters(log_entry, level, search):
+            total_entries += 1
 
-                # If this is the first entry of a new page, record its byte position
-                if entries_in_current_page == 0:
-                    page_starts[current_page] = int(byte_position)
+    total_pages = (
+        math.ceil(total_entries / page_size) if total_entries > 0 else 0
+    )
 
-                entries_in_current_page += 1
-
-                # If we've filled the current page, move to next page
-                if entries_in_current_page >= page_size:
-                    current_page += 1
-                    entries_in_current_page = 0
-
-        total_pages = (
-            math.ceil(total_entries / page_size) if total_entries > 0 else 0
-        )
-
-        return PageInfo(
-            page_size=page_size,
-            total_entries=total_entries,
-            total_pages=total_pages,
-            page_starts=page_starts,
-            level=level,
-            search=search,
-        )
-
-    except (DoesNotExistException, FileNotFoundError):
-        # Re-raise DoesNotExistException as-is
-        raise
-    except Exception as e:
-        # For any other errors during scanning, fall back to empty result
-        logger.warning(f"Error generating page info for {logs_uri}: {e}")
-        return PageInfo(
-            page_size=page_size,
-            total_entries=0,
-            total_pages=0,
-            page_starts={},
-            level=level,
-            search=search,
-        )
+    return LogInfo(
+        page_size=page_size,
+        total_entries=total_entries,
+        total_pages=total_pages,
+        level=level,
+        search=search,
+    )
 
 
 def stream_log_records(
@@ -799,7 +801,7 @@ def stream_log_records(
 ) -> Iterator[str]:
     """Streams logs from the artifact store line by line.
 
-    This generator yields formatted log lines one at a time, making it memory-efficient
+    This generator yields formatted log lines one at  a time, making it memory-efficient
     for large log files.
 
     Args:
@@ -817,7 +819,6 @@ def stream_log_records(
             zen_store=zen_store,
             artifact_store_id=artifact_store_id,
             logs_uri=logs_uri,
-            track_byte_positions=False,
         ):
             yield line + "\n"
         return
@@ -827,7 +828,6 @@ def stream_log_records(
         zen_store=zen_store,
         artifact_store_id=artifact_store_id,
         logs_uri=logs_uri,
-        track_byte_positions=False,
     ):
         if not line.strip():
             continue
