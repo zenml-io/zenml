@@ -53,7 +53,6 @@ from rich.style import Style
 from rich.table import Table
 
 from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
@@ -2530,17 +2529,6 @@ def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
         # (Click applies decorators in reverse order)
         table_options = [
             click.option(
-                "--interactive",
-                is_flag=True,
-                default=False,
-                help="Interactive column selection prompt.",
-            ),
-            click.option(
-                "--query",
-                type=str,
-                help="JMESPath query to filter data before rendering.",
-            ),
-            click.option(
                 "--no-color",
                 is_flag=True,
                 default=False,
@@ -2551,17 +2539,6 @@ def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                 is_flag=True,
                 default=False,
                 help="Disable truncation of long values.",
-            ),
-            click.option(
-                "--reverse",
-                is_flag=True,
-                default=False,
-                help="Reverse the sort order.",
-            ),
-            click.option(
-                "--sort",
-                type=str,
-                help="Sort by specified field.",
             ),
             click.option(
                 "--columns",
@@ -2587,15 +2564,12 @@ def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
             "This command supports multiple output formats and table customization:\n\n"
             "- **--output/-o**: Choose from 'table' (default), 'json', 'yaml', 'tsv', or 'none'\n"
             "- **--columns**: Select specific columns to display (comma-separated)\n"
-            "- **--sort**: Sort by any field (combine with --reverse for descending)\n"
             "- **--no-truncate**: Show full values without truncation\n"
-            "- **--no-color**: Disable colored output\n"
-            "- **--query**: Apply JMESPath query for advanced filtering\n"
-            "- **--interactive**: Use interactive column selection (first time only)\n\n"
+            "- **--no-color**: Disable colored output\n\n"
             "Examples:\n"
             "  zenml <resource> list --output json\n"
-            "  zenml <resource> list --columns id,name,status --sort name\n"
-            "  zenml <resource> list --query \"[?status=='RUNNING']\"\n"
+            "  zenml <resource> list --columns id,name,status\n"
+            "  zenml <resource> list --no-truncate --no-color\n"
         )
 
         if func.__doc__:
@@ -2611,17 +2585,14 @@ def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
 
 
 def get_default_output_format() -> str:
-    """Get the default output format from GlobalConfiguration.
+    """Get the default output format from environment variable.
 
     Returns:
         The default output format, falling back to "table" if not configured.
     """
-    try:
-        gc = GlobalConfiguration()
-        return gc.default_output
-    except Exception:
-        # If configuration is not available, fall back to "table"
-        return "table"
+    from zenml.constants import ENV_ZENML_DEFAULT_OUTPUT
+
+    return os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
 
 
 def extract_table_options(kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -2639,12 +2610,8 @@ def extract_table_options(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     table_option_keys = [
         "output",
         "columns",
-        "sort",
-        "reverse",
         "no_truncate",
         "no_color",
-        "query",
-        "interactive",
     ]
 
     table_kwargs = {}
@@ -2659,12 +2626,8 @@ def handle_table_output(
     data: List[Dict[str, Any]],
     output: Optional[str] = None,
     columns: Optional[str] = None,
-    sort: Optional[str] = None,
-    reverse: bool = False,
     no_truncate: bool = False,
     no_color: bool = False,
-    query: Optional[str] = None,
-    interactive: bool = False,
     page: Optional["Page[Any]"] = None,
     **kwargs: Any,
 ) -> None:
@@ -2677,12 +2640,8 @@ def handle_table_output(
         data: List of dictionaries to render
         output: Output format (table, json, yaml, tsv, none). If None, uses default.
         columns: Comma-separated column names
-        sort: Column to sort by
-        reverse: Whether to reverse sort order
         no_truncate: Whether to disable truncation
         no_color: Whether to disable colored output
-        query: JMESPath query for filtering
-        interactive: Whether to use interactive column selection
         page: Optional Page object for pagination metadata in JSON/YAML output
         **kwargs: Additional formatting options
     """
@@ -2699,14 +2658,6 @@ def handle_table_output(
             col.strip() for col in columns.split(",") if col.strip()
         ]
 
-    # TODO: Implement JMESPath query filtering when needed
-    if query:
-        warning("JMESPath query filtering is not yet implemented.")
-
-    # TODO: Implement interactive column selection when needed
-    if interactive:
-        warning("Interactive column selection is not yet implemented.")
-
     # Handle pagination for JSON/YAML output formats
     pagination_info = None
     if page is not None and output in ["json", "yaml"]:
@@ -2721,8 +2672,6 @@ def handle_table_output(
         data=data,
         output_format=output,
         columns=column_list,
-        sort_by=sort,
-        reverse=reverse,
         no_truncate=no_truncate,
         no_color=no_color,
         pagination=pagination_info,
