@@ -128,6 +128,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken
 from zenml.login.credentials_store import get_credentials_store
+from zenml.login.pro.client import ZenMLProClient
 from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.pro.utils import (
     get_troubleshooting_instructions,
@@ -422,7 +423,12 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         if api_key := data.pop("api_key", None):
             credentials_store = get_credentials_store()
-            credentials_store.set_api_key(url, api_key)
+            if api_key.startswith("ZENPROKEY_"):
+                credentials_store.set_api_key(
+                    ZENML_PRO_API_URL, api_key, is_zenml_pro=True
+                )
+            else:
+                credentials_store.set_api_key(url, api_key)
 
         return data
 
@@ -4239,17 +4245,22 @@ class RestZenStore(BaseZenStore):
                 if not pro_api_url:
                     pro_api_url = ZENML_PRO_API_URL
 
-                pro_token = credentials_store.get_pro_token(
-                    pro_api_url, allow_expired=True
+                pro_credentials = credentials_store.get_pro_credentials(
+                    pro_api_url
                 )
-                if not pro_token:
+                if not pro_credentials:
                     raise CredentialsNotValid(
                         "You need to be logged in to ZenML Pro in order to "
                         f"access the ZenML Pro server '{self.url}'. Please run "
                         "'zenml login' to log in or choose a different server."
                     )
 
-                elif pro_token.expired:
+                elif pro_credentials.has_valid_token:
+                    assert pro_credentials.api_token is not None
+                    pro_token = pro_credentials.api_token
+                elif pro_credentials.can_refresh_token:
+                    pro_token = ZenMLProClient(pro_api_url).authenticate()
+                else:
                     raise CredentialsNotValid(
                         "Your ZenML Pro login session has expired. "
                         "Please log in again using 'zenml login'."
