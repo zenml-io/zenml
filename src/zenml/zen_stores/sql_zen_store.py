@@ -4834,8 +4834,6 @@ class SqlZenStore(BaseZenStore):
             deployment: The deployment to create.
 
         Raises:
-            ValueError: If deployment versions are not supported for the
-                current server.
             EntityExistsError: If a deployment with the same version already
                 exists for the same pipeline.
             RuntimeError: If the deployment creation fails.
@@ -4861,7 +4859,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            build = self._get_reference_schema_by_id(
+            self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=PipelineBuildSchema,
                 reference_id=deployment.build,
@@ -5039,8 +5037,6 @@ class SqlZenStore(BaseZenStore):
             deployment_update: The update to apply.
 
         Raises:
-            ValueError: If deployment versions are not supported for the
-                current server.
             EntityExistsError: If a deployment with the same version already
                 exists for the same pipeline.
             RuntimeError: If the deployment update fails.
