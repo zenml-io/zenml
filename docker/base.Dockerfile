@@ -5,6 +5,7 @@ ARG USER_UID=1000
 ARG USER_GID=1000
 ARG ZENML_VERSION=""
 ARG ZENML_NIGHTLY="false"
+ARG ZENML_SLIM="false"
 
 # Use a minimal base image to reduce the attack surface
 FROM python:${PYTHON_VERSION}-slim-bookworm AS base
@@ -30,6 +31,7 @@ FROM base AS builder
 ARG VIRTUAL_ENV
 ARG ZENML_VERSION
 ARG ZENML_NIGHTLY
+ARG ZENML_SLIM
 
 ENV \
   # Set up virtual environment
@@ -55,6 +57,7 @@ FROM builder AS client-builder
 ARG VIRTUAL_ENV
 ARG ZENML_VERSION
 ARG ZENML_NIGHTLY
+ARG ZENML_SLIM
 
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
@@ -62,6 +65,8 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Determine the package name based on ZENML_NIGHTLY
 RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
       PACKAGE_NAME="zenml-nightly"; \
+    elif [ "$ZENML_SLIM" = "true" ]; then \
+      PACKAGE_NAME="zenml-slim"; \
     else \
       PACKAGE_NAME="zenml"; \
     fi \
