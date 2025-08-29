@@ -107,6 +107,7 @@ class ArtifactVersionRequest(ProjectScopedRequest):
     content_hash: Optional[str] = Field(
         title="The content hash of the artifact version.",
         default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     tags: Optional[List[str]] = Field(
         title="Tags of the artifact.",
