@@ -149,11 +149,10 @@ class BuiltInMaterializer(BaseMaterializer):
         Returns:
             The content hash of the given data.
         """
-        json_string = json.dumps(data, sort_keys=True)
-
-        return hashlib.md5(
-            json_string.encode(), usedforsecurity=False
-        ).hexdigest()
+        hash_ = hashlib.md5(usedforsecurity=False)
+        hash_.update(self.__class__.__name__.encode())
+        hash_.update(json.dumps(data, sort_keys=True).encode())
+        return hash_.hexdigest()
 
 
 class BytesMaterializer(BaseMaterializer):
@@ -215,7 +214,10 @@ class BytesMaterializer(BaseMaterializer):
         Returns:
             The content hash of the given data.
         """
-        return hashlib.md5(data, usedforsecurity=False).hexdigest()
+        hash_ = hashlib.md5(usedforsecurity=False)
+        hash_.update(self.__class__.__name__.encode())
+        hash_.update(data)
+        return hash_.hexdigest()
 
 
 def _all_serializable(iterable: Iterable[Any]) -> bool:
@@ -528,10 +530,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             The content hash of the given data.
         """
         if _is_serializable(data):
-            json_string = json.dumps(data, sort_keys=True)
-
-            return hashlib.md5(
-                json_string.encode(), usedforsecurity=False
-            ).hexdigest()
+            hash_ = hashlib.md5(usedforsecurity=False)
+            hash_.update(self.__class__.__name__.encode())
+            hash_.update(json.dumps(data, sort_keys=True).encode())
+            return hash_.hexdigest()
 
         return None
