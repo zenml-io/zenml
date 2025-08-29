@@ -254,6 +254,21 @@ def _is_serializable(obj: Any) -> bool:
     return False
 
 
+def _custom_json_converter(obj: Any) -> Any:
+    """Custom JSON converter that handles sets and tuples.
+
+    Args:
+        obj: The object to convert.
+
+    Returns:
+        The converted object.
+    """
+    if isinstance(obj, (set, tuple)):
+        return list(obj)
+
+    return obj
+
+
 def find_type_by_str(type_str: str) -> Type[Any]:
     """Get a Python type, given its string representation.
 
@@ -532,7 +547,11 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         if _is_serializable(data):
             hash_ = hashlib.md5(usedforsecurity=False)
             hash_.update(self.__class__.__name__.encode())
-            hash_.update(json.dumps(data, sort_keys=True).encode())
+            hash_.update(
+                json.dumps(
+                    data, sort_keys=True, default=_custom_json_converter
+                ).encode()
+            )
             return hash_.hexdigest()
 
         return None
