@@ -39,6 +39,12 @@ class PipelineRequest(BaseModel):
         ge=1,
         le=3600,  # Max 1 hour
     )
+    capture_override: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Override capture policy for this specific request. Can specify "
+        "'mode', 'artifacts', 'sample_rate', 'max_bytes', or 'redact' to override "
+        "endpoint defaults. Takes highest precedence in policy resolution.",
+    )
 
 
 class PipelineResponse(BaseModel):

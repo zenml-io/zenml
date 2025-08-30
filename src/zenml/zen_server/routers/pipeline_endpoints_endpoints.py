@@ -13,23 +13,17 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline endpoints."""
 
-import json
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
-    Query,
     Request,
     Security,
-    status,
 )
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from zenml.client import Client
 from zenml.constants import (
     API,
     PIPELINE_ENDPOINTS,

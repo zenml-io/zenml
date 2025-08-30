@@ -1,7 +1,17 @@
-"""Simple Chat Agent Pipeline for ZenML Serving Demo.
+"""Privacy-Focused Chat Agent Pipeline for ZenML Serving Demo.
 
-This pipeline implements a conversational AI chat agent that works with
-ZenML's serving infrastructure for real-time chat applications.
+This pipeline implements a conversational AI chat agent that demonstrates
+simplified capture settings for privacy-sensitive applications.
+
+Key Privacy Features:
+- User messages: Only captured on errors with PII redaction - {"inputs": {"message": "errors_only"}}
+- User names: Never captured - {"inputs": {"user_name": "none"}}
+- Responses: Minimal sampling (5%) without artifact storage - {"outputs": "sampled", "sample_rate": 0.05}
+- Comprehensive PII redaction patterns at both step and pipeline level
+
+This example shows how to build chat applications with ZenML serving
+using the new simplified capture syntax while maintaining strong privacy
+protections.
 """
 
 import os
@@ -11,17 +21,44 @@ from typing import Dict
 from zenml import pipeline, step
 from zenml.config import DockerSettings
 
+# Import enums for type-safe capture mode configuration
+from zenml.serving.policy import CapturePolicyMode as CaptureMode
+
+# This example demonstrates type-safe enum usage to prevent typos:
+# Instead of: "full" -> CaptureMode.FULL (validates at import time)
+# Available: FULL, METADATA, SAMPLED, ERRORS_ONLY, NONE
+
 docker_settings = DockerSettings(
     requirements=["openai"],
     environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
 )
 
 
-@step
+@step(
+    settings={
+        "serving_capture": {
+            "inputs": {
+                "message": CaptureMode.ERRORS_ONLY,
+                "user_name": CaptureMode.NONE,
+                "personality": CaptureMode.FULL,
+            },
+            "outputs": CaptureMode.SAMPLED,
+            "sample_rate": 0.05,
+            "max_bytes": 1024,
+            "redact": ["password", "email", "phone", "ssn", "credit"],
+        }
+    }
+)
 def generate_chat_response(
-    message: str, user_name: str = "User", personality: str = "helpful"
+    message: str, user_name: str, personality: str
 ) -> Dict[str, str]:
     """Generate a chat response using LLM or fallback logic.
+
+    Demonstrates privacy-first capture for chat applications:
+    - Messages: Only captured on errors with PII redaction (debugging failed responses)
+    - User names: Never captured (strict PII protection)
+    - Personality: Always captured (safe configuration data)
+    - Responses: Sample 5% for quality monitoring, no artifact storage (cost optimization)
 
     Args:
         message: User's message
@@ -88,13 +125,41 @@ def generate_chat_response(
         }
 
 
-@pipeline(settings={"docker": docker_settings})
+@pipeline(
+    settings={
+        "docker": docker_settings,
+        # Privacy-first pipeline defaults for chat applications using type-safe enums
+        "serving_capture": {
+            "mode": CaptureMode.NONE,  # Very conservative default for chat (type-safe)
+            "max_bytes": 512,  # Small payloads for privacy
+            "redact": [
+                "password",
+                "email",
+                "phone",
+                "ssn",
+                "credit",
+                "token",
+                "key",
+                "secret",
+            ],
+        },
+    }
+)
 def chat_agent_pipeline(
     message: str = "Hello",
     user_name: str = "User",
     personality: str = "helpful",
 ) -> Dict[str, str]:
-    """Simple chat agent pipeline for serving demonstrations.
+    """Privacy-focused chat agent pipeline demonstrating step-level capture annotations.
+
+    Showcases privacy-first approach for chat applications:
+    - User messages: Error-only capture with PII redaction
+    - User names: Never captured (zero PII exposure)
+    - Responses: Minimal sampling (5%) for quality monitoring
+    - No artifact storage: Optimizes for privacy and cost
+
+    Pipeline-level policy is very restrictive; step annotations selectively enable
+    capture only where needed for debugging and quality assurance.
 
     Args:
         message: User's chat message

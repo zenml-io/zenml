@@ -1,7 +1,16 @@
-"""Simple Weather Agent Pipeline for Serving Demo.
+"""Weather Agent Pipeline with Simplified Capture Settings.
 
-This pipeline uses an AI agent to analyze weather for any city.
-It can be deployed and served as a FastAPI endpoint.
+This pipeline demonstrates how to use ZenML's simplified capture settings
+to control data logging and artifact persistence in a weather analysis service.
+
+Key Capture Features:
+- City names: Always captured (safe public data) - settings: {"inputs": {"city": "full"}}
+- Weather data: Metadata-only (run tracking without payload exposure) - settings: {"inputs": {"weather_data": "metadata"}}
+- LLM responses: Full capture with complete artifact persistence - settings: {"outputs": "full"}
+- Pipeline default: Conservative metadata-only mode with custom redaction rules
+
+This example shows the new simplified syntax for capture configuration with
+fine-grained control over different data types.
 """
 
 import os
@@ -11,15 +20,36 @@ from typing import Dict
 from zenml import pipeline, step
 from zenml.config import DockerSettings
 
+# Import enums for type-safe capture mode configuration
+from zenml.serving.policy import CapturePolicyMode as CaptureMode
+
+# Note: You can use either approach:
+# 1. String literals: "full", "metadata", "sampled", "errors_only", "none"
+# 2. Type-safe enums: CaptureMode.FULL, CaptureMode.METADATA, etc.
+# 3. Cap constants: Cap.full, Cap.metadata, etc. (returns Capture objects)
+# This example demonstrates the type-safe enum approach
+
 docker_settings = DockerSettings(
     requirements=["openai"],
     environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
 )
 
 
-@step
+@step(
+    settings={
+        "serving_capture": {
+            "inputs": {"city": CaptureMode.FULL},
+            "outputs": CaptureMode.FULL,
+        }
+    }
+)
 def get_weather(city: str) -> Dict[str, float]:
-    """Simulate getting weather data for a city."""
+    """Simulate getting weather data for a city.
+
+    Demonstrates:
+    - Input capture: City names are safe to log for monitoring
+    - Output capture: Weather data is valuable for debugging and analytics
+    """
     # In real life, this would call a weather API
     # For demo, we generate based on city name
     temp_base = sum(ord(c) for c in city.lower()) % 30
@@ -30,9 +60,26 @@ def get_weather(city: str) -> Dict[str, float]:
     }
 
 
-@step
+@step(
+    settings={
+        "serving_capture": {
+            "inputs": {
+                "weather_data": CaptureMode.METADATA,
+                "city": CaptureMode.FULL,
+            },
+            "outputs": CaptureMode.FULL,
+        }
+    }
+)
 def analyze_weather_with_llm(weather_data: Dict[str, float], city: str) -> str:
-    """Use LLM to analyze weather and provide intelligent recommendations."""
+    """Use LLM to analyze weather and provide intelligent recommendations.
+
+    Demonstrates:
+    - Input capture: Weather data uses metadata-only (run records but no payload preview)
+    - Input capture: City names are always captured for monitoring
+    - Output capture: Full capture of all responses for complete monitoring
+    - Artifacts: Always persist LLM responses for analysis and debugging
+    """
     temp = weather_data["temperature"]
     humidity = weather_data["humidity"]
     wind = weather_data["wind_speed"]
@@ -59,7 +106,10 @@ Keep your response concise but informative."""
         # Try to use OpenAI API if available
         import os
 
-        import openai
+        try:
+            import openai
+        except ImportError:
+            raise ImportError("OpenAI package not available")
 
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
@@ -152,11 +202,24 @@ Raw Data: {temp:.1f}°C, {humidity}% humidity, {wind:.1f} km/h wind
 Analysis: Rule-based AI (LLM unavailable)"""
 
 
-@pipeline(settings={"docker": docker_settings})
+@pipeline(
+    settings={
+        "docker": docker_settings,
+        # Pipeline-level defaults using new simplified syntax with type-safe enums
+        "serving_capture": {
+            "mode": CaptureMode.FULL,  # Type-safe enum value
+            "max_bytes": 32768,  # Increased for better artifact storage
+            "redact": ["password", "token", "key", "secret", "api_key"],
+        },
+    }
+)
 def weather_agent_pipeline(city: str = "London") -> str:
-    """Weather agent pipeline that can be served via API.
+    """Weather agent pipeline demonstrating step-level capture annotations.
 
-    Uses LLM to provide intelligent weather analysis.
+    Uses LLM to provide intelligent weather analysis with full artifact persistence:
+    - City names: Always captured (safe public data)
+    - Weather data: Metadata-only logging (structured data, not sensitive)
+    - LLM responses: Full capture with complete artifact storage for analysis
 
     Args:
         city: City name to analyze weather for
@@ -165,8 +228,8 @@ def weather_agent_pipeline(city: str = "London") -> str:
         LLM-powered weather analysis and recommendations
     """
     weather_data = get_weather(city=city)
-    analysis = analyze_weather_with_llm(weather_data=weather_data, city=city)
-    return analysis
+    result = analyze_weather_with_llm(weather_data=weather_data, city=city)
+    return result
 
 
 if __name__ == "__main__":

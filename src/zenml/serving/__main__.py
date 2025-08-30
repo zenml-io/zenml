@@ -18,7 +18,7 @@
 This module provides the main entry point for ZenML pipeline serving.
 
 Usage (via entrypoint configuration):
-    python -m zenml.serving --deployment_id <ID> --host 0.0.0.0 --port 8000
+    python -m zenml.serving --deployment_id <ID> --host 0.0.0.0 --port 8001
 """
 
 import argparse
@@ -62,7 +62,7 @@ def main() -> None:
     )
     parser.add_argument("--host", help="Host to bind to (default: 0.0.0.0)")
     parser.add_argument(
-        "--port", type=int, help="Port to bind to (default: 8000)"
+        "--port", type=int, help="Port to bind to (default: 8001)"
     )
     parser.add_argument(
         "--workers", type=int, help="Number of workers (default: 1)"

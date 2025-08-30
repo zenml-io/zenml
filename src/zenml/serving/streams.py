@@ -64,10 +64,11 @@ class EventStream:
     def _ensure_stream(self) -> None:
         """Ensure the memory object stream is created."""
         if not self._stream_created:
-            self._send_stream, self._receive_stream = (
-                anyio.create_memory_object_stream(
-                    max_buffer_size=self.buffer_size
-                )
+            (
+                self._send_stream,
+                self._receive_stream,
+            ) = anyio.create_memory_object_stream(
+                max_buffer_size=self.buffer_size
             )
             self._stream_created = True
 

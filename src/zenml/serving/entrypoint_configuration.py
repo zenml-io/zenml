@@ -91,7 +91,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
             f"--{HOST_OPTION}",
             str(kwargs.get(HOST_OPTION, "0.0.0.0")),
             f"--{PORT_OPTION}",
-            str(kwargs.get(PORT_OPTION, 8000)),
+            str(kwargs.get(PORT_OPTION, 8001)),
             f"--{WORKERS_OPTION}",
             str(kwargs.get(WORKERS_OPTION, 1)),
             f"--{LOG_LEVEL_OPTION}",
@@ -111,7 +111,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         # Extract configuration from entrypoint args
         deployment_id = self.entrypoint_args[DEPLOYMENT_ID_OPTION]
         host = self.entrypoint_args.get(HOST_OPTION, "0.0.0.0")
-        port = int(self.entrypoint_args.get(PORT_OPTION, 8000))
+        port = int(self.entrypoint_args.get(PORT_OPTION, 8001))
         workers = int(self.entrypoint_args.get(WORKERS_OPTION, 1))
         log_level = self.entrypoint_args.get(LOG_LEVEL_OPTION, "info")
         create_runs = (

@@ -16,6 +16,10 @@
 This module provides functionality to serve ZenML pipelines as FastAPI endpoints,
 enabling real-time execution of ML pipelines, AI agents, and multi-agent systems
 through HTTP/WebSocket APIs.
+
+For capture mode configuration, use:
+    from zenml.serving.policy import CapturePolicyMode  # Enum values
+    from zenml.serving.capture import Cap  # Convenience constants
 """
 
 try:
@@ -24,6 +28,7 @@ try:
     __all__ = [
         "PipelineServingService",
     ]
+        
 except ImportError:
     # Handle case where optional dependencies might not be available
     __all__ = []

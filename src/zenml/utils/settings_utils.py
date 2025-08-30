@@ -14,9 +14,15 @@
 """Utility functions for ZenML settings."""
 
 import re
-from typing import TYPE_CHECKING, Dict, Sequence, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Type
 
-from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
+from zenml.config.constants import (
+    DOCKER_SETTINGS_KEY,
+    RESOURCE_SETTINGS_KEY,
+    SERVING_CAPTURE_SETTINGS_KEY,
+    SERVING_SETTINGS_KEY,
+)
+from zenml.config.serving_settings import ServingCaptureSettings
 from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
@@ -127,10 +133,13 @@ def get_general_settings() -> Dict[str, Type["BaseSettings"]]:
         Dictionary mapping general settings keys to their type.
     """
     from zenml.config import DockerSettings, ResourceSettings
+    from zenml.config.serving_settings import ServingSettings
 
     return {
         DOCKER_SETTINGS_KEY: DockerSettings,
         RESOURCE_SETTINGS_KEY: ResourceSettings,
+        SERVING_SETTINGS_KEY: ServingSettings,
+        SERVING_CAPTURE_SETTINGS_KEY: ServingCaptureSettings,
     }
 
 
@@ -152,3 +161,130 @@ def validate_setting_keys(setting_keys: Sequence[str]) -> None:
                 "settings. Stack component specific keys are of the format "
                 "`<STACK_COMPONENT_TYPE>.<STACK_COMPONENT_FLAVOR>`."
             )
+
+
+def normalize_serving_capture_settings(
+    settings: Dict[str, Any],
+) -> Optional[ServingCaptureSettings]:
+    """Normalize serving capture settings from both new and legacy formats.
+
+    Supports both:
+    - New format: settings["serving_capture"] = {"mode": "full", ...}
+    - Legacy format: settings["serving"]["capture"] = {"inputs": {...}, ...}
+
+    Args:
+        settings: The settings dictionary to normalize
+
+    Returns:
+        Normalized ServingCaptureSettings if any capture settings exist, None otherwise
+    """
+    from zenml.config.serving_settings import ServingCaptureSettings
+
+    # Check for new format first
+    if "serving_capture" in settings:
+        capture_config = settings["serving_capture"]
+        if isinstance(capture_config, ServingCaptureSettings):
+            return capture_config
+        if isinstance(capture_config, dict):
+            return ServingCaptureSettings(**capture_config)
+        if isinstance(capture_config, str):
+            # Handle bare string mode
+            return ServingCaptureSettings(mode=capture_config)
+        # Unknown type: return None to satisfy typing
+        return None
+
+    # Check for legacy format
+    if "serving" in settings and isinstance(settings["serving"], dict):
+        serving_config = settings["serving"]
+        if "capture" in serving_config and isinstance(
+            serving_config["capture"], dict
+        ):
+            legacy_config = serving_config["capture"]
+
+            # Convert legacy nested structure to flat structure
+            normalized = {}
+
+            # Extract global settings
+            if "mode" in legacy_config:
+                normalized["mode"] = legacy_config["mode"]
+            if "sample_rate" in legacy_config:
+                normalized["sample_rate"] = legacy_config["sample_rate"]
+            if "max_bytes" in legacy_config:
+                normalized["max_bytes"] = legacy_config["max_bytes"]
+            if "redact" in legacy_config:
+                normalized["redact"] = legacy_config["redact"]
+            if "retention_days" in legacy_config:
+                normalized["retention_days"] = legacy_config["retention_days"]
+
+            # Extract per-value settings
+            if "inputs" in legacy_config:
+                inputs_config = legacy_config["inputs"]
+                if isinstance(inputs_config, dict):
+                    # Convert nested input configs to simple mode strings
+                    normalized_inputs = {}
+                    for param_name, param_config in inputs_config.items():
+                        if (
+                            isinstance(param_config, dict)
+                            and "mode" in param_config
+                        ):
+                            normalized_inputs[param_name] = param_config[
+                                "mode"
+                            ]
+                        elif isinstance(param_config, str):
+                            normalized_inputs[param_name] = param_config
+                    if normalized_inputs:
+                        normalized["inputs"] = normalized_inputs
+
+            if "outputs" in legacy_config:
+                outputs_config = legacy_config["outputs"]
+                if isinstance(outputs_config, dict):
+                    # Convert nested output configs to simple mode strings
+                    normalized_outputs = {}
+                    for output_name, output_config in outputs_config.items():
+                        if (
+                            isinstance(output_config, dict)
+                            and "mode" in output_config
+                        ):
+                            normalized_outputs[output_name] = output_config[
+                                "mode"
+                            ]
+                        elif isinstance(output_config, str):
+                            normalized_outputs[output_name] = output_config
+                    if normalized_outputs:
+                        normalized["outputs"] = normalized_outputs
+                elif isinstance(outputs_config, str):
+                    # Single string for default output
+                    normalized["outputs"] = outputs_config
+
+            if normalized:
+                return ServingCaptureSettings(**normalized)
+
+    return None
+
+
+def get_pipeline_serving_capture_settings(
+    settings: Dict[str, Any],
+) -> Optional[ServingCaptureSettings]:
+    """Get pipeline-level serving capture settings with normalization.
+
+    Args:
+        settings: Pipeline settings dictionary
+
+    Returns:
+        Normalized ServingCaptureSettings if found, None otherwise
+    """
+    return normalize_serving_capture_settings(settings)
+
+
+def get_step_serving_capture_settings(
+    settings: Dict[str, Any],
+) -> Optional[ServingCaptureSettings]:
+    """Get step-level serving capture settings with normalization.
+
+    Args:
+        settings: Step settings dictionary
+
+    Returns:
+        Normalized ServingCaptureSettings if found, None otherwise
+    """
+    return normalize_serving_capture_settings(settings)

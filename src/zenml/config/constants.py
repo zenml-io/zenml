@@ -15,3 +15,5 @@
 
 DOCKER_SETTINGS_KEY = "docker"
 RESOURCE_SETTINGS_KEY = "resources"
+SERVING_SETTINGS_KEY = "serving"
+SERVING_CAPTURE_SETTINGS_KEY = "serving_capture"

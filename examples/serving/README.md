@@ -79,13 +79,31 @@ python -m zenml.serving \
 
 ## Example 1: Weather Agent Pipeline
 
-### Step 1: Create Pipeline Deployment
+### Step 1: Create Pipeline Deployment (with pipeline-level capture defaults)
 
 ```bash
 python weather_pipeline.py
 ```
 
-This outputs a deployment ID like: `12345678-1234-5678-9abc-123456789abc`
+This example pipeline is configured with pipeline-level capture settings in code:
+
+```python
+@pipeline(settings={
+  "docker": docker_settings,
+  "serving": {
+    "capture": {
+      "mode": "full",
+      "artifacts": "full",
+      "max_bytes": 262144,
+      "redact": ["password", "token"],
+    }
+  },
+})
+def weather_agent_pipeline(city: str = "London") -> None:
+    ...
+```
+
+It will print a deployment ID like: `12345678-1234-5678-9abc-123456789abc`.
 
 ### Step 2: Start Serving Service  
 
@@ -110,13 +128,33 @@ Service starts on `http://localhost:8000` (or your custom port)
 ### Step 3: Test Weather Analysis
 
 ```bash
-# Test with curl
+# Test with curl (endpoint defaults from pipeline settings)
 curl -X POST "http://localhost:8000/invoke" \
   -H "Content-Type: application/json" \
   -d '{"parameters": {"city": "Paris"}}'
 
+# Override capture for a single call (per-call override wins over defaults)
+curl -X POST "http://localhost:8000/invoke" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "parameters": {"city": "Tokyo"},
+        "capture_override": {
+          "mode": "sampled",
+          "sample_rate": 0.25,
+          "artifacts": "sampled",
+          "max_bytes": 4096,
+          "redact": ["api_key", "password"]
+        }
+      }'
+
 # Or use test script
 python test_serving.py
+```
+
+Global off-switch (ops): to disable all tracking regardless of policy, set:
+
+```bash
+export ZENML_SERVING_CREATE_RUNS=false
 ```
 
 ---
@@ -289,3 +327,15 @@ curl http://localhost:8000/concurrency/stats
 - **🗄️ Persistence**: Consider Redis for job state in multi-instance deployments
 - **📊 Monitoring**: Integrate with observability tools (Prometheus, Grafana)
 - **🚨 Error Handling**: Implement retry logic and circuit breakers
+
+## 📜 Capture Policy Summary
+
+- Precedence: per-call override > step annotations > pipeline settings > endpoint default (dashboard/CLI).
+- Modes:
+  - **none**: no runs/steps, no payloads, no artifacts
+  - **metadata** (default): runs/steps, no payload previews
+  - **errors_only**: runs/steps, payload previews only on failures
+  - **sampled**: runs/steps, payload/artifact capture for a fraction of invocations
+  - **full**: runs/steps, payload previews for all invocations
+- Artifacts: `none|errors_only|sampled|full` (orthogonal to mode; disabled if mode=none).
+- Sampling: deterministic per-invocation (based on invocation id).

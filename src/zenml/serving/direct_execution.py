@@ -19,11 +19,13 @@ in serving scenarios.
 """
 
 import asyncio
+import inspect
 import time
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol
 
 from zenml.logger import get_logger
 from zenml.orchestrators.topsort import topsorted_layers
+from zenml.serving.capture import Capture
 from zenml.serving.context import serving_job_context, serving_step_context
 from zenml.serving.events import EventBuilder, ServingEvent
 from zenml.utils import source_utils
@@ -66,6 +68,7 @@ class DirectExecutionEngine:
         deployment: "PipelineDeploymentResponse",
         pipeline_run: Optional[Any] = None,
         event_callback: Optional[Callable[[ServingEvent], None]] = None,
+        result_callback: Optional[Callable[[str, Any, bool], None]] = None,
         cancellation_token: Optional[CancellationToken] = None,
     ):
         """Initialize the direct execution engine.
@@ -75,14 +78,20 @@ class DirectExecutionEngine:
             pipeline_run: Optional pipeline run for tracking. If provided,
                 steps will have proper context with run information.
             event_callback: Optional callback for sending events during execution
+            result_callback: Optional callback for raw step results (step_name, output, success)
             cancellation_token: Optional token to check for cancellation requests
         """
         self.deployment = deployment
         self.pipeline_run = pipeline_run
         self.event_callback = event_callback
+        self.result_callback = result_callback
         self.cancellation_token = cancellation_token
         self._loaded_steps: Dict[str, type] = {}
         self._execution_order: List[str] = []
+        self._step_capture_overrides: Dict[
+            str, Dict[str, Dict[str, Optional[Capture]]]
+        ] = {}
+        self._step_mode_overrides: Dict[str, str] = {}
 
         # Pre-load all steps and build execution order
         self._initialize_steps()
@@ -96,6 +105,14 @@ class DirectExecutionEngine:
             f"{' (with events)' if event_callback else ''}"
             f"{' (cancellable)' if cancellation_token else ''}"
         )
+
+    def get_step_mode_overrides(self) -> Dict[str, str]:
+        """Get step-level global mode overrides.
+
+        Returns:
+            Dict mapping step names to their mode overrides
+        """
+        return self._step_mode_overrides.copy()
 
     def _initialize_steps(self) -> None:
         """Pre-load all step instances for fast execution.
@@ -147,6 +164,10 @@ class DirectExecutionEngine:
                 # Store the step class (don't instantiate yet)
                 # We'll instantiate it during execution with proper parameters
                 self._loaded_steps[step_name] = step_class
+
+                # Parse capture annotations for this step
+                self._parse_step_capture_annotations(step_name, step_class)
+
                 logger.debug(f"Successfully loaded step '{step_name}'")
 
             except Exception as e:
@@ -154,6 +175,186 @@ class DirectExecutionEngine:
                 raise RuntimeError(
                     f"Failed to initialize step '{step_name}': {str(e)}"
                 ) from e
+
+    def _parse_step_capture_annotations(
+        self, step_name: str, step_class: type
+    ) -> None:
+        """Parse capture configuration from step settings.
+
+        Args:
+            step_name: Name of the step
+            step_class: Loaded step class
+        """
+        try:
+            # Get step configuration
+            step_config = self.deployment.step_configurations.get(step_name)
+            if not step_config:
+                logger.debug(f"No step configuration found for '{step_name}'")
+                self._step_capture_overrides[step_name] = {
+                    "inputs": {},
+                    "outputs": {},
+                }
+                return
+
+            # Check for serving capture configuration in step settings
+            step_settings = step_config.config.settings
+
+            # First check for new serving_capture format
+            from zenml.utils.settings_utils import (
+                get_step_serving_capture_settings,
+            )
+
+            step_capture_settings = get_step_serving_capture_settings(
+                step_settings
+            )
+            capture_config: Dict[str, Any] = {}
+
+            if step_capture_settings:
+                # Parse step-level global mode if present
+                if (
+                    step_capture_settings.mode
+                    and step_capture_settings.mode != "full"
+                ):
+                    self._step_mode_overrides[step_name] = (
+                        step_capture_settings.mode
+                    )
+
+                # Convert new format to legacy format for processing
+                if step_capture_settings.inputs:
+                    capture_config["inputs"] = {}
+                    for (
+                        param_name,
+                        mode,
+                    ) in step_capture_settings.inputs.items():
+                        capture_config["inputs"][param_name] = {"mode": mode}
+
+                if step_capture_settings.outputs:
+                    capture_config["outputs"] = {}
+                    if isinstance(step_capture_settings.outputs, str):
+                        # Single mode for default output
+                        capture_config["outputs"]["output"] = {
+                            "mode": step_capture_settings.outputs
+                        }
+                    elif isinstance(step_capture_settings.outputs, dict):
+                        for (
+                            output_name,
+                            mode,
+                        ) in step_capture_settings.outputs.items():
+                            capture_config["outputs"][output_name] = {
+                                "mode": mode
+                            }
+
+                # Add global settings if available
+                if step_capture_settings.max_bytes is not None:
+                    for section in ["inputs", "outputs"]:
+                        if section in capture_config:
+                            for param_config in capture_config[
+                                section
+                            ].values():
+                                param_config["max_bytes"] = (
+                                    step_capture_settings.max_bytes
+                                )
+
+                if step_capture_settings.redact is not None:
+                    for section in ["inputs", "outputs"]:
+                        if section in capture_config:
+                            for param_config in capture_config[
+                                section
+                            ].values():
+                                param_config["redact"] = (
+                                    step_capture_settings.redact
+                                )
+            else:
+                # Fallback to legacy serving.capture format
+                serving_settings = step_settings.get("serving")
+
+                # If serving_settings is a BaseSettings object, convert to dict
+                if serving_settings is not None and hasattr(
+                    serving_settings, "model_dump"
+                ):
+                    serving_dict = serving_settings.model_dump()
+                elif isinstance(serving_settings, dict):
+                    serving_dict = serving_settings
+                else:
+                    serving_dict = {}
+
+                capture_config = serving_dict.get("capture", {})
+
+                # Parse step-level global mode from legacy format if present
+                if (
+                    "mode" in capture_config
+                    and capture_config["mode"] != "full"
+                ):
+                    self._step_mode_overrides[step_name] = capture_config[
+                        "mode"
+                    ]
+
+            if not capture_config:
+                logger.debug(
+                    f"No capture configuration found in step '{step_name}' settings"
+                )
+                self._step_capture_overrides[step_name] = {
+                    "inputs": {},
+                    "outputs": {},
+                }
+                return
+
+            # Parse input capture settings
+            input_captures = {}
+            inputs_config = capture_config.get("inputs", {})
+            for param_name, param_config in inputs_config.items():
+                if isinstance(param_config, dict):
+                    # Convert dict config to Capture object
+                    capture = Capture(
+                        mode=param_config.get("mode", "metadata"),
+                        sample_rate=param_config.get("sample_rate"),
+                        max_bytes=param_config.get("max_bytes"),
+                        redact=param_config.get("redact"),
+                        artifacts=param_config.get("artifacts"),
+                    )
+                    input_captures[param_name] = capture
+                    logger.debug(
+                        f"Step '{step_name}' input '{param_name}' has capture setting: {capture}"
+                    )
+
+            # Parse output capture settings
+            output_captures = {}
+            outputs_config = capture_config.get("outputs", {})
+            for output_name, output_config in outputs_config.items():
+                if isinstance(output_config, dict):
+                    # Convert dict config to Capture object
+                    capture = Capture(
+                        mode=output_config.get("mode", "metadata"),
+                        sample_rate=output_config.get("sample_rate"),
+                        max_bytes=output_config.get("max_bytes"),
+                        redact=output_config.get("redact"),
+                        artifacts=output_config.get("artifacts"),
+                    )
+                    output_captures[output_name] = capture
+                    logger.debug(
+                        f"Step '{step_name}' output '{output_name}' has capture setting: {capture}"
+                    )
+
+            # Store parsed configuration
+            input_captures_typed: Dict[str, Optional[Capture]] = input_captures
+            output_captures_typed: Dict[str, Optional[Capture]] = (
+                output_captures
+            )
+            step_overrides: Dict[str, Dict[str, Optional[Capture]]] = {
+                "inputs": input_captures_typed,
+                "outputs": output_captures_typed,
+            }
+            self._step_capture_overrides[step_name] = step_overrides
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to parse capture configuration for step '{step_name}': {e}"
+            )
+            # Continue without configuration - this is not a critical failure
+            self._step_capture_overrides[step_name] = {
+                "inputs": {},
+                "outputs": {},
+            }
 
     def _build_execution_order(self) -> None:
         """Build the execution order based on step dependencies.
@@ -379,6 +580,15 @@ class DirectExecutionEngine:
                 step_duration = time.time() - step_start_time
                 steps_executed += 1
 
+                # Call result callback with raw output before serialization
+                if self.result_callback:
+                    try:
+                        self.result_callback(step_name, output, True)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to call result callback for step {step_name}: {e}"
+                        )
+
                 logger.info(
                     f"Step '{step_name}' completed in {step_duration:.3f}s"
                 )
@@ -403,6 +613,15 @@ class DirectExecutionEngine:
 
             except Exception as e:
                 step_duration = time.time() - step_start_time
+
+                # Call result callback for failed step
+                if self.result_callback:
+                    try:
+                        self.result_callback(step_name, None, False)
+                    except Exception as callback_error:
+                        logger.warning(
+                            f"Failed to call result callback for failed step {step_name}: {callback_error}"
+                        )
 
                 # Send step failed event
                 if event_builder and self.event_callback:
@@ -507,8 +726,6 @@ class DirectExecutionEngine:
                 f"Step class or entrypoint not found for '{step_name}'"
             )
             return {}
-
-        import inspect
 
         try:
             # Use getfullargspec like ZenML's StepRunner does
@@ -689,3 +906,13 @@ class DirectExecutionEngine:
             }
 
         return step_info
+
+    def get_step_capture_overrides(
+        self,
+    ) -> Dict[str, Dict[str, Dict[str, Optional[Capture]]]]:
+        """Get parsed capture annotations for all steps.
+
+        Returns:
+            Dictionary mapping step names to their input/output capture annotations
+        """
+        return self._step_capture_overrides.copy()

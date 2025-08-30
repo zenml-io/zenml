@@ -215,7 +215,7 @@ async def root() -> str:
             <h2>Quick Start</h2>
             <p>Execute your pipeline:</p>
             <div class="code">
-curl -X POST "http://localhost:8000/invoke" \\<br>
+curl -X POST "http://localhost:8001/invoke" \\<br>
 &nbsp;&nbsp;-H "Content-Type: application/json" \\<br>
 &nbsp;&nbsp;-d '{{"parameters": {{"your_param": "value"}}}}'
             </div>
@@ -263,6 +263,7 @@ async def invoke_pipeline(
                 parameters=request.parameters,
                 run_name=request.run_name,
                 timeout=request.timeout,
+                capture_override=request.capture_override,
             )
 
             # Return 202 Accepted with job information
@@ -278,6 +279,7 @@ async def invoke_pipeline(
                 parameters=request.parameters,
                 run_name=request.run_name,
                 timeout=request.timeout,
+                capture_override=request.capture_override,
             )
 
             return PipelineResponse(**result)
@@ -562,7 +564,6 @@ async def stream_job_events(job_id: str) -> StreamingResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
 @app.get("/concurrency/stats")
 async def concurrency_stats() -> Dict[str, Any]:
     """Get current concurrency and execution statistics.
@@ -671,7 +672,7 @@ async def service_status() -> ServiceStatus:
         configuration={
             "deployment_id": os.getenv("ZENML_PIPELINE_DEPLOYMENT_ID"),
             "host": os.getenv("ZENML_SERVICE_HOST", "0.0.0.0"),
-            "port": int(os.getenv("ZENML_SERVICE_PORT", "8000")),
+            "port": int(os.getenv("ZENML_SERVICE_PORT", "8001")),
             "log_level": os.getenv("ZENML_LOG_LEVEL", "INFO"),
         },
     )
@@ -701,7 +702,7 @@ if __name__ == "__main__":
 
     # Configuration from environment variables
     host = os.getenv("ZENML_SERVICE_HOST", "0.0.0.0")
-    port = int(os.getenv("ZENML_SERVICE_PORT", "8000"))
+    port = int(os.getenv("ZENML_SERVICE_PORT", "8001"))
     workers = int(os.getenv("ZENML_SERVICE_WORKERS", "1"))
     log_level = os.getenv("ZENML_LOG_LEVEL", "info").lower()
 
