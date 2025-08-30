@@ -296,7 +296,7 @@ zenml login <your-workspace-name> --api-key
 Service accounts and API keys at the workspace level are deprecated and will be removed in the future. You can migrate them to the organization level by following these steps:
 
 1. Create a new service account in the organization. Make sure to use the exact same username as the old service account, if you want to preserve the assigned resources, but be aware that all workspaces will share this service account.
-2. [Assign Organization and Workspace roles](../roles.md) to the new service account. At a minimum, you should assign the Organization Member role and the Workspace Admin role to the service account for it to be equivalent to the old service account. It is, however, recommended to assign only the roles and permissions that are actually needed.
+2. [Assign Organization and Workspace roles](./roles.md) to the new service account. At a minimum, you should assign the Organization Member role and the Workspace Admin role to the service account for it to be equivalent to the old service account. It is, however, recommended to assign only the roles and permissions that are actually needed.
 3. (Optional) Delete all API keys for the old service account.
 
 
