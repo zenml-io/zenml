@@ -24,7 +24,7 @@ Which base URL should you call?
 - Workspace/OSS API: your server or workspace URL (e.g., `https://<workspace-id>.zenml.io`).
 - ZenML Pro management API: `https://cloudapi.zenml.io`.
 
-In ZenML Pro, use organization‑level service accounts and API keys (workspace‑level service accounts are deprecated). Org‑level service accounts can be used for both the Workspace API and the Pro management API. Alternatively, you can use short‑lived user API tokens. See [ZenML Pro Organization Service Accounts](../../../getting-started/zenml-pro/service-accounts.md).
+In ZenML Pro, use organization‑level service accounts and API keys (workspace‑level service accounts are deprecated). Org‑level service accounts can be used for both the Workspace API and the Pro management API. Alternatively, you can use short‑lived user API tokens. See [ZenML Pro Organization Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts).
 {% endhint %}
 
 ## Common pitfalls
