@@ -24,6 +24,8 @@ ReDoc (`/redoc`), on the other hand, offers a more static and visually appealing
 
 ## Accessing the ZenML OSS API
 
+**For OSS users**: The `server_url` is the root URL of your ZenML server deployment.
+
 If you are using the ZenML OSS server API using the methods displayed above, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, you can use one of the methods documented in the following sections.
 
 {% hint style="info" %}

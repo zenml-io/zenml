@@ -19,10 +19,9 @@ ZenML Pro includes two distinct APIs:
 1. **Workspace API**: This is similar to the [OSS API](../../oss-api/oss-api/) but includes additional endpoints like Run Templates. Each workspace in ZenML Pro has its own API.
 2. **ZenML Pro API**: This is the management API for ZenML Pro and handles organization-level resources like workspaces, users, and roles.
 
-### Server URLs
+### Server URL
 
-* **For OSS users**: The `server_url` is the root URL of your ZenML server deployment.
-* **For Pro users**: The `server_url` for the Workspace API is the URL of your workspace, which can be found in the ZenML Pro dashboard:
+For Pro users, the `server_url` for the Workspace API is the URL of your workspace, which can be found in the ZenML Pro dashboard:
 
 **Note:** The workspace URL can be found in the ZenML Pro dashboard and typically looks like `https://1bfe8d94-zenml.cloudinfra.zenml.io`.
 
@@ -36,6 +35,7 @@ The ZenML Pro API is a RESTful API that follows OpenAPI 3.1.0 specifications. It
 
 * Workspace management
 * Organization management
+* Project management
 * User management
 * Role-based access control (RBAC)
 * Authentication and authorization
@@ -90,6 +90,18 @@ To generate a new API token for the ZenML Pro API:
 * As an alternative to API tokens, you can use [service accounts and API keys](./#programmatic-access-with-service-accounts-and-api-keys) for long-term access.
 {% endhint %}
 
+### Programmatic access with service accounts and API keys
+
+{% hint style="warning" %}
+**Deprecation of workspace level service accounts and API keys**
+
+* ZenML Pro workspace level service accounts and API keys are deprecated and will be removed in a future version.
+* Please use ZenML Pro organization level service accounts and API keys instead (see [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts))
+* Follow the migration guide in [Migration of workspace level service accounts](https://docs.zenml.io/pro/core-concepts/service-accounts#migration-of-workspace-level-service-accounts) to learn how to migrate from your existing service accounts.
+{% endhint %}
+
+Organization‑level service accounts and API keys can be used to authenticate to the ZenML Pro API and to obtain short‑lived tokens for the Workspace API across all workspaces. See [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts) for setup and examples.
+
 {% hint style="warning" %}
 Which credentials should you use?
 
@@ -98,18 +110,6 @@ Which credentials should you use?
 
 See the high‑level overview: [Connect to a server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml#choose-how-to-connect).
 {% endhint %}
-
-### Programmatic access with service accounts and API keys
-
-{% hint style="warning" %}
-**Deprecation of workspace level service accounts and API keys**
-
-* ZenML Pro workspace level service accounts and API keys are deprecated and will be removed in a future version.
-* Please use ZenML Pro organization level service accounts and API keys instead (see [Service Accounts](../../../getting-started/zenml-pro/service-accounts.md))
-* Follow the migration guide in [Migration of workspace level service accounts](../../../getting-started/zenml-pro/service-accounts.md#migration-of-workspace-level-service-accounts) to learn how to migrate from your existing service accounts.
-{% endhint %}
-
-Organization‑level service accounts and API keys can be used to authenticate to the ZenML Pro API and to obtain short‑lived tokens for the Workspace API across all workspaces. See [Service Accounts](../../../getting-started/zenml-pro/service-accounts.md) for setup and examples.
 
 ## Workspace API Authentication
 
@@ -126,12 +126,12 @@ The **Workspace API** is different from the ZenML Pro API and supports different
 
 ### Workspace API Authentication Methods
 
-Programmatic access to the ZenML Pro workspace API is achieved mostly the same way as the ZenML OSS server API. This is because the Workspace API in ZenML Pro is an extension of the OSS API with some additional endpoints like Run Templates. The only exception is that workspace level service accounts and API keys are disabled and organization level service accounts and API keys are used instead (see [Service Accounts](../../../getting-started/zenml-pro/service-accounts.md)).
+Programmatic access to the ZenML Pro workspace API is achieved mostly the same way as the ZenML OSS server API. This is because the Workspace API in ZenML Pro is an extension of the OSS API with some additional endpoints like Run Templates. The only exception is that workspace level service accounts and API keys are disabled and organization level service accounts and API keys are used instead (see [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts)).
 
 You can use one of these two methods to authenticate with your workspace API:
 
 * [Generate and use temporary API tokens](../../oss-api/oss-api/#using-a-short-lived-api-token) (good for development and short-term tasks)
-* [Create a ZenML Pro service account and use its API key](../../../getting-started/zenml-pro/service-accounts.md) (recommended for production automation and run template triggering)
+* [Create a ZenML Pro service account and use its API key](https://docs.zenml.io/pro/core-concepts/service-accounts) (recommended for production automation and run template triggering)
 
 When making requests to the Workspace API, make sure to use your workspace URL as the base URL. This is different from the ZenML Pro API URL (cloudapi.zenml.io), which is used for organization-level operations.
 
