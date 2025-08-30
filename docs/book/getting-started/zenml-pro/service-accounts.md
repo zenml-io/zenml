@@ -265,11 +265,11 @@ See the [API documentation](https://docs.zenml.io/api-reference/pro-api/getting-
 
 It is also possible to authenticate as the service account using the OpenAPI UI available at https://cloudapi.zenml.io:
 
-![OpenAPI UI authentication](../../../.gitbook/assets/pro-service-account-auth-01.png)
+![OpenAPI UI authentication](../../.gitbook/assets/pro-service-account-auth-01.png)
 
 The session token is stored as a cookie, which essentially authenticates your entire OpenAPI UI session. Not only that, but you can now open https://cloud.zenml.io and navigate your organization and its resources as the service account.
 
-![ZenML Pro UI authentication](../../../.gitbook/assets/pro-service-account-auth-02.png)
+![ZenML Pro UI authentication](../../.gitbook/assets/pro-service-account-auth-02.png)
 
 ### Workspace access
 
