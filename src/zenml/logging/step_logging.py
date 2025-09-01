@@ -414,7 +414,7 @@ def generate_page_info(
     else:
         files = [logs_uri]
 
-    page_positions = {}
+    page_positions = {1: FilePosition(file_index=0, position=0)}
     total_entries = 0
     entries_in_current_page = 0
     current_page = 1
@@ -436,19 +436,17 @@ def generate_page_info(
                         continue
 
                     if _entry_matches_filters(log_entry, level, search):
-                        if entries_in_current_page == 0:
-                            page_positions[current_page] = FilePosition(
-                                file_index=file_index,
-                                position=file.tell(),
-                            )
-
-                        total_entries += 1
                         entries_in_current_page += 1
 
                         # If we've filled the current page, move to next page
                         if entries_in_current_page >= page_size:
                             current_page += 1
                             entries_in_current_page = 0
+
+                            page_positions[current_page] = FilePosition(
+                                file_index=file_index,
+                                position=file.tell(),
+                            )
 
         except Exception as e:
             logger.warning(f"Error reading file {file_path}: {e}")
@@ -496,8 +494,6 @@ def fetch_log_records(
         List of log entries.
 
     Raises:
-        DoesNotExistException: If the artifact does not exist in the artifact store.
-        FileNotFoundError: If the log file does not exist in the artifact store.
         ValueError: If page navigation is not possible without from_position.
     """
     artifact_store = _load_artifact_store(
@@ -551,45 +547,60 @@ def _fetch_from_position(
     level: int,
     search: Optional[str],
 ) -> List[LogEntry]:
-    """Fetch log entries from a specific position."""
+    """Fetch log entries from a specific position.
+
+    Args:
+        artifact_store: The artifact store in which the artifact is stored.
+        files: The list of files to search in.
+        from_position: The position to start from.
+        count: The number of entries to return.
+        level: The level of the entries to return.
+        search: The search string to filter the entries by.
+
+    Returns:
+        List of log entries.
+
+    Raises:
+        Exception: If there is an error fetching the log entries.
+    """
     entries = []
     entries_collected = 0
 
     try:
-        target_file = files[from_position.file_index]
+        _files_to_search = files[from_position.file_index :]
 
-        with artifact_store.open(target_file, "r") as file:
-            file.seek(from_position.position)
+        for file_index, file in enumerate(_files_to_search):
+            with artifact_store.open(file, "r") as file:
+                # If it is the first file, we seek to the position
+                if file_index == 0:
+                    file.seek(from_position.position)
+                # Otherwise, we seek to the beginning of the file
+                else:
+                    file.seek(0, os.SEEK_SET)
 
-            while entries_collected < count:
-                line = file.readline()
-                if not line:
-                    # Try to move to next file if we're in a directory
-                    if from_position.file_index + 1 < len(files):
-                        file.close()
-                        from_position = FilePosition(
-                            file_index=from_position.file_index + 1, position=0
-                        )
-                        target_file = files[from_position.file_index]
-                        file = artifact_store.open(target_file, "r")
-                        continue
-                    else:
+                while True:
+                    line = file.readline()
+                    if not line:
                         break
 
-                line_text = line.rstrip("\n\r")
-                if not line_text.strip():
-                    continue
+                    line_text = line.rstrip("\n\r")
+                    if not line_text.strip():
+                        continue
 
-                log_entry = parse_log_entry(line_text)
-                if not log_entry:
-                    continue
+                    log_entry = parse_log_entry(line_text)
+                    if not log_entry:
+                        continue
 
-                if _entry_matches_filters(log_entry, level, search):
-                    entries.append(log_entry)
-                    entries_collected += 1
+                    if _entry_matches_filters(log_entry, level, search):
+                        entries.append(log_entry)
+                        entries_collected += 1
+
+                    if entries_collected >= count:
+                        return entries
 
     except Exception as e:
         logger.warning(f"Position-based fetching failed: {e}")
+        raise
 
     return entries
 
@@ -602,7 +613,22 @@ def _fetch_page(
     level: int,
     search: Optional[str],
 ) -> List[LogEntry]:
-    """Fetch log entries from a specific page."""
+    """Fetch log entries from a specific page.
+
+    Args:
+        artifact_store: The artifact store in which the artifact is stored.
+        files: The list of files to search in.
+        page: The page number to return.
+        count: The number of entries to return.
+        level: The level of the entries to return.
+        search: The search string to filter the entries by.
+
+    Returns:
+        List of log entries.
+
+    Raises:
+        Exception: If there is an error fetching the log entries.
+    """
     entries = []
     total_entries_found = 0
     entries_collected = 0

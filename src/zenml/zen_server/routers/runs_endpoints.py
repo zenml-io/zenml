@@ -584,7 +584,6 @@ def run_logs_info(
 
     Raises:
         KeyError: If no logs are found for the specified source.
-        HTTPException: If runner logs are requested (not supported yet).
     """
     store = zen_store()
 
