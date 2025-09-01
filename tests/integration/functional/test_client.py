@@ -751,6 +751,12 @@ def test_getting_deployments(clean_client):
     with pytest.raises(KeyError):
         clean_client.get_deployment(str(uuid4()))
 
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            project=clean_client.active_project.id,
+            name="pipeline_name",
+        )
+    )
     request = PipelineDeploymentRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
@@ -758,6 +764,7 @@ def test_getting_deployments(clean_client):
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline=pipeline.id,
     )
     response = clean_client.zen_store.create_deployment(request)
 

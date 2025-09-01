@@ -19,10 +19,6 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.models import (
     PipelineBuildResponse,
     PipelineBuildResponseBody,
-    RunTemplateResponse,
-    RunTemplateResponseBody,
-    RunTemplateResponseMetadata,
-    RunTemplateResponseResources,
 )
 from zenml.zen_server.deployment_execution.utils import (
     deployment_request_from_source_deployment,
@@ -33,7 +29,7 @@ def test_creating_deployment_request_from_template(
     clean_client_with_run, mocker
 ):
     mocker.patch(
-        "zenml.zen_server.template_execution.utils.zen_store",
+        "zenml.zen_server.deployment_execution.utils.zen_store",
         return_value=clean_client_with_run.zen_store,
     )
 
@@ -53,24 +49,8 @@ def test_creating_deployment_request_from_template(
     )
     deployment.metadata.build = build
 
-    template_response = RunTemplateResponse(
-        id=uuid4(),
-        name="template",
-        body=RunTemplateResponseBody(
-            user_id=deployment.user_id,
-            project_id=deployment.project_id,
-            created=datetime.utcnow(),
-            updated=datetime.utcnow(),
-            runnable=True,
-        ),
-        metadata=RunTemplateResponseMetadata(),
-        resources=RunTemplateResponseResources(
-            source_deployment=deployment, tags=[]
-        ),
-    )
-
     with does_not_raise():
         deployment_request_from_source_deployment(
-            source_deployment=template_response,
+            source_deployment=deployment,
             config=PipelineRunConfiguration(),
         )
