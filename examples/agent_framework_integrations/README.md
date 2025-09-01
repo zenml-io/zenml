@@ -56,7 +56,7 @@ python run.py
 | [Autogen](autogen/) | 🤝 Multi-Agent | Multi-agent conversations, Role-based collaboration | autogen, openai |
 | [AWS Strands](aws-strands/) | ⚡ Simple | Direct agent calls, Built-in tools | aws-agents, bedrock |
 | [CrewAI](crewai/) | 👥 Crews | Agent crews, Task delegation | crewai, openai |
-| [Google ADK](google-adk/) | 🧠 Gemini | Google AI agents, Gemini models | google-adk, gemini |
+| [Google ADK](google_adk/) | 🔮 Gemini | Gemini-powered agents with tool calling | google-adk, gemini |
 | [Haystack](haystack/) | 🔍 RAG | Retrieval pipelines, Document processing | haystack, openai |
 | [LangChain](langchain/) | 🔗 Chains | Runnable chains, Tool composition | langchain, openai |
 | [LangGraph](langgraph/) | 🕸️ Graphs | ReAct agents, Graph workflows | langgraph, openai |
@@ -109,7 +109,7 @@ def agent_pipeline() -> str:
 ### Simple Execution
 - **AWS Strands**: Direct callable interface with `agent(query)`
 - **PydanticAI**: Clean `agent.run_sync(query)` API
-- **Google ADK**: Gemini-powered agents with simple calls
+- **Google ADK**: `agent.run(query)` API
 
 ### Advanced Orchestration
 - **LangChain**: Composable chains with tool integration
@@ -194,4 +194,5 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 
 ---
 
-*This collection demonstrates the power and flexibility of ZenML for orchestrating diverse agent frameworks in production environments.*
+*This collection demonstrates the power and flexibility of ZenML for
+orchestrating diverse agent frameworks in production environments.*

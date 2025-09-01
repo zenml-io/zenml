@@ -5,11 +5,74 @@ demonstrating how to integrate the CrewAI framework with ZenML for orchestration
 and artifact management.
 """
 
+import os
 from typing import Annotated, Any, Dict
 
-from crewai_agent import crew
+from crewai import Agent, Crew, Task
+from crewai.tools import tool
 
 from zenml import ExternalArtifact, pipeline, step
+from zenml.config import DockerSettings, PythonPackageInstaller
+
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    requirements="requirements.txt",  # relative to the pipeline directory
+    environment={
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    },
+)
+
+
+@tool("Weather Checker Tool")
+def get_weather(city: str) -> str:
+    """Get weather for a given city."""
+    return f"Current weather in {city}: Sunny, 22°C (72°F), light breeze"
+
+
+# Weather Specialist Agent
+weather_checker = Agent(
+    role="Weather Specialist",
+    goal="Check weather conditions for a given city: {city}",
+    backstory="You are a meteorology expert who provides accurate weather updates. When you get weather information, you immediately report it clearly.",
+    tools=[get_weather],
+    verbose=True,
+    max_iter=5,
+)
+
+
+# Travel Advisor Agent
+travel_advisor = Agent(
+    role="Travel Advisor",
+    goal="Give practical travel advice based on weather conditions for {city}",
+    backstory="You are an experienced travel advisor who helps people prepare for their trips.",
+    verbose=True,
+    max_iter=5,
+)
+
+
+# Task 1: Check weather with parameterized city
+check_weather_task = Task(
+    description="Check the current weather in {city} and provide a weather report.",
+    expected_output="A clear statement of the current weather conditions in {city} including temperature and conditions",
+    agent=weather_checker,
+)
+
+
+# Task 2: Packing advice based on weather
+packing_advice_task = Task(
+    description="Based on the weather report for {city}, provide 3-5 specific items to pack for the trip.",
+    expected_output="A list of 3-5 specific items to pack based on the weather conditions",
+    agent=travel_advisor,
+    context=[check_weather_task],
+)
+
+
+# PanAgent will discover this 'crew' variable
+crew = Crew(
+    agents=[weather_checker, travel_advisor],
+    tasks=[check_weather_task, packing_advice_task],
+    verbose=True,
+)
 
 
 @step
@@ -59,7 +122,7 @@ def format_travel_results(
     return formatted.strip()
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings}, enable_cache=False)
 def crewai_travel_pipeline() -> str:
     """ZenML pipeline that orchestrates the CrewAI travel planning system.
 
