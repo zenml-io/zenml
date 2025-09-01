@@ -435,6 +435,8 @@ def generate_page_info(
                     if not log_entry:
                         continue
 
+                    total_entries += 1
+
                     if _entry_matches_filters(log_entry, level, search):
                         entries_in_current_page += 1
 

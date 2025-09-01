@@ -23,6 +23,7 @@ from fastapi.responses import StreamingResponse
 from zenml.constants import (
     API,
     DOWNLOAD_TOKEN,
+    LOGS,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -551,7 +552,7 @@ def run_logs(
 
 
 @router.get(
-    "/{run_id}/logs/info",
+    "/{run_id}" + LOGS + "/info",
     responses={
         401: error_response,
         404: error_response,
@@ -559,7 +560,7 @@ def run_logs(
     },
 )
 @async_fastapi_endpoint_wrapper
-def run_logs_info(
+def get_run_logs_info(
     run_id: UUID,
     source: str,
     page_size: int = DEFAULT_PAGE_SIZE,
