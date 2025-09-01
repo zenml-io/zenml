@@ -600,28 +600,28 @@ class PipelineServingService:
                         if (
                             pipeline_capture_settings.mode != "full"
                         ):  # Only set if different from default
-                            code_override[
-                                "mode"
-                            ] = pipeline_capture_settings.mode
+                            code_override["mode"] = (
+                                pipeline_capture_settings.mode
+                            )
                         if pipeline_capture_settings.sample_rate is not None:
-                            code_override[
-                                "sample_rate"
-                            ] = pipeline_capture_settings.sample_rate
+                            code_override["sample_rate"] = (
+                                pipeline_capture_settings.sample_rate
+                            )
                         if pipeline_capture_settings.max_bytes is not None:
-                            code_override[
-                                "max_bytes"
-                            ] = pipeline_capture_settings.max_bytes
+                            code_override["max_bytes"] = (
+                                pipeline_capture_settings.max_bytes
+                            )
                         if pipeline_capture_settings.redact is not None:
-                            code_override[
-                                "redact"
-                            ] = pipeline_capture_settings.redact
+                            code_override["redact"] = (
+                                pipeline_capture_settings.redact
+                            )
                         if (
                             pipeline_capture_settings.retention_days
                             is not None
                         ):
-                            code_override[
-                                "retention_days"
-                            ] = pipeline_capture_settings.retention_days
+                            code_override["retention_days"] = (
+                                pipeline_capture_settings.retention_days
+                            )
 
                         # Extract per-value overrides for later use
                         if pipeline_capture_settings.inputs:
@@ -632,9 +632,9 @@ class PipelineServingService:
                             if isinstance(
                                 pipeline_capture_settings.outputs, str
                             ):
-                                pipeline_per_value_overrides[
-                                    "outputs"
-                                ] = pipeline_capture_settings.outputs
+                                pipeline_per_value_overrides["outputs"] = (
+                                    pipeline_capture_settings.outputs
+                                )
                             else:
                                 pipeline_per_value_overrides["outputs"] = dict(
                                     pipeline_capture_settings.outputs

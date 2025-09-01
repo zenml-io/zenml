@@ -24,14 +24,14 @@ logger = get_logger(__name__)
 
 # Thread-safe serving context variable
 # This replaces the dangerous global monkey patching in DirectExecutionEngine
-serving_step_context_var: ContextVar[
-    Optional["ServingStepContext"]
-] = ContextVar("serving_step_context", default=None)
+serving_step_context_var: ContextVar[Optional["ServingStepContext"]] = (
+    ContextVar("serving_step_context", default=None)
+)
 
 # Job-level context for tracking execution across steps
-serving_job_context_var: ContextVar[
-    Optional["ServingJobContext"]
-] = ContextVar("serving_job_context", default=None)
+serving_job_context_var: ContextVar[Optional["ServingJobContext"]] = (
+    ContextVar("serving_job_context", default=None)
+)
 
 
 class ServingStepContext:

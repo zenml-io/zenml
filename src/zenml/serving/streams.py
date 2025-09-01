@@ -45,9 +45,9 @@ class EventStream:
         self.buffer_size = buffer_size
 
         # Create memory object stream for event passing
-        self._send_stream: Optional[
-            MemoryObjectSendStream[ServingEvent]
-        ] = None
+        self._send_stream: Optional[MemoryObjectSendStream[ServingEvent]] = (
+            None
+        )
         self._receive_stream: Optional[
             MemoryObjectReceiveStream[ServingEvent]
         ] = None

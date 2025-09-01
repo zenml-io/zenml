@@ -1,6 +1,6 @@
 """Dependency injection container for ZenML serving."""
 
-import asyncio
+import time
 from typing import Optional
 from uuid import uuid4
 
@@ -153,7 +153,7 @@ class RequestContext:
     def __init__(self) -> None:
         """Initialize request context with unique ID and start time."""
         self.request_id = str(uuid4())
-        self.start_time = asyncio.get_running_loop().time()
+        self.start_time = time.time()
 
 
 def get_request_context() -> RequestContext:

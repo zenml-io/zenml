@@ -93,9 +93,9 @@ class ServingExecutionManager:
 
         # Executor for running sync functions
         if self.config.executor_type == ExecutorType.PROCESS:
-            self._executor: Union[
-                ProcessPoolExecutor, ThreadPoolExecutor
-            ] = ProcessPoolExecutor(max_workers=self.config.max_concurrency)
+            self._executor: Union[ProcessPoolExecutor, ThreadPoolExecutor] = (
+                ProcessPoolExecutor(max_workers=self.config.max_concurrency)
+            )
         else:
             self._executor = ThreadPoolExecutor(
                 max_workers=self.config.max_concurrency
