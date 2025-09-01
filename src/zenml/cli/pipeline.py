@@ -371,6 +371,7 @@ def create_run_template(
 @enhanced_list_options(
     PipelineFilter,
     default_columns=[
+        "id",
         "name",
         "latest_run_status",
         "latest_run_id",
@@ -604,7 +605,15 @@ def runs() -> None:
 
 @enhanced_list_options(
     PipelineRunFilter,
-    default_columns=["name", "status", "pipeline", "user", "stack", "created"],
+    default_columns=[
+        "id",
+        "name",
+        "status",
+        "pipeline",
+        "user",
+        "stack",
+        "created",
+    ],
 )
 @runs.command("list", help="List all registered pipeline runs.")
 def list_pipeline_runs(**kwargs: Any) -> None:
