@@ -720,6 +720,13 @@ def test_listing_deployments(clean_client):
     deployments = clean_client.list_deployments()
     assert len(deployments) == 0
 
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            project=clean_client.active_project.id,
+            name="pipeline_name",
+        )
+    )
+
     request = PipelineDeploymentRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
@@ -727,6 +734,7 @@ def test_listing_deployments(clean_client):
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline=pipeline.id,
     )
     response = clean_client.zen_store.create_deployment(request)
 
@@ -764,6 +772,12 @@ def test_deleting_deployments(clean_client):
     with pytest.raises(KeyError):
         clean_client.delete_deployment(str(uuid4()))
 
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            project=clean_client.active_project.id,
+            name="pipeline_name",
+        )
+    )
     request = PipelineDeploymentRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
@@ -771,6 +785,7 @@ def test_deleting_deployments(clean_client):
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline=pipeline.id,
     )
     response = clean_client.zen_store.create_deployment(request)
 
@@ -796,19 +811,6 @@ def test_get_run_fails_for_non_existent_run(clean_client: Client):
     """Test that `get_run()` raises a `KeyError` for non-existent runs."""
     with pytest.raises(KeyError):
         clean_client.get_pipeline_run("non_existent_run")
-
-
-def test_get_unlisted_runs(clean_client: Client, connected_two_step_pipeline):
-    """Test that listing unlisted runs works."""
-    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
-    pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step,
-        step_2=int_plus_one_test_step,
-    )
-    pipeline_instance()
-    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
-    pipeline_instance.with_options(unlisted=True)()
-    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 1
 
 
 class ClientCrudTestConfig(BaseModel):
