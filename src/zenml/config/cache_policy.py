@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Cache policy."""
 
-from typing import Any, Union
+from typing import Any, List, Optional, Union
 
 from pydantic import BaseModel, BeforeValidator, Field
 from typing_extensions import Annotated
@@ -44,6 +44,10 @@ class CachePolicy(BaseModel):
         default=True,
         description="Whether to include the artifact IDs in the cache key.",
     )
+    ignored_inputs: Optional[List[str]] = Field(
+        default=None,
+        description="List of input names to ignore in the cache key.",
+    )
 
     @classmethod
     def default(cls) -> "CachePolicy":
@@ -57,6 +61,7 @@ class CachePolicy(BaseModel):
             include_step_parameters=True,
             include_artifact_values=True,
             include_artifact_ids=True,
+            ignored_inputs=None,
         )
 
     @classmethod
