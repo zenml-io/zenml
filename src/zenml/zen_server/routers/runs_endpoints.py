@@ -40,7 +40,7 @@ from zenml.logging.step_logging import (
     LogInfo,
     _entry_matches_filters,
     fetch_log_records,
-    generate_log_info,
+    generate_page_info,
     parse_log_entry,
     stream_log_records,
 )
@@ -628,13 +628,14 @@ def run_logs_info(
                 total_pages=total_pages,
                 level=level,
                 search=search,
+                page_positions={},  # No page positions for workload logs yet
             )
 
     # Handle logs from log collection
     if run.log_collection:
         for log_entry in run.log_collection:
             if log_entry.source == source:
-                return generate_log_info(
+                return generate_page_info(
                     zen_store=store,
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,

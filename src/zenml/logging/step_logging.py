@@ -15,7 +15,6 @@
 
 import asyncio
 import logging
-import math
 import os
 import queue
 import re
@@ -148,7 +147,7 @@ class LogInfo(BaseModel):
     search: Optional[str] = Field(
         default=None, description="Search filter used"
     )
-    page_positions: Dict[str, Dict[str, int]] = Field(
+    page_positions: Dict[int, FilePosition] = Field(
         description="Dictionary mapping page numbers to their start positions",
         default_factory=dict,
     )
@@ -726,66 +725,6 @@ def _entry_matches_filters(
             return False
 
     return True
-
-
-def generate_log_info(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
-    logs_uri: str,
-    page_size: int = DEFAULT_PAGE_SIZE,
-    level: int = LoggingLevels.INFO.value,
-    search: Optional[str] = None,
-) -> LogInfo:
-    """Generate LogInfo.
-
-    This function provides basic log statistics by counting entries and calculating
-    page totals.
-
-    Args:
-        zen_store: The store in which the artifact is stored.
-        artifact_store_id: The ID of the artifact store.
-        logs_uri: The URI of the log file or directory.
-        page_size: Number of entries per page.
-        level: Log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
-
-    Returns:
-        LogInfo with just the essential counts.
-
-    Raises:
-        DoesNotExistException: If the artifact does not exist in the artifact store.
-        FileNotFoundError: If the log file does not exist in the artifact store.
-    """
-    total_entries = 0
-
-    # Simple counting - no byte tracking needed
-    for line in _stream_logs_line_by_line(
-        zen_store=zen_store,
-        artifact_store_id=artifact_store_id,
-        logs_uri=logs_uri,
-    ):
-        if not line.strip():
-            continue
-
-        log_entry = parse_log_entry(line)
-        if not log_entry:
-            continue
-
-        # Check if this entry matches our filters
-        if _entry_matches_filters(log_entry, level, search):
-            total_entries += 1
-
-    total_pages = (
-        math.ceil(total_entries / page_size) if total_entries > 0 else 0
-    )
-
-    return LogInfo(
-        page_size=page_size,
-        total_entries=total_entries,
-        total_pages=total_pages,
-        level=level,
-        search=search,
-    )
 
 
 def stream_log_records(
