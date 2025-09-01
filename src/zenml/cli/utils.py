@@ -2850,25 +2850,6 @@ def requires_mac_env_var_warning() -> bool:
     return False
 
 
-# CLI Formatting Utilities
-# -------------------------
-# Centralized utilities to reduce code duplication in CLI list commands
-
-
-def to_print_full(model: Any) -> Dict[str, Any]:
-    """Generic function to convert any model to full format for JSON/YAML output.
-
-    This replaces the repetitive _*_to_print_full functions across CLI files.
-
-    Args:
-        model: Any Pydantic model instance
-
-    Returns:
-        Dictionary with properly serialized data for JSON/YAML output
-    """
-    return model.model_dump(mode="json")  # type: ignore[no-any-return]
-
-
 def prepare_data_from_responses(
     items: List[AnyResponse],
     enrichment_func: Optional[
@@ -2928,20 +2909,6 @@ def prepare_data_from_responses(
         formatted_data.append(item_data)
 
     return formatted_data
-
-
-def format_date_for_table(date_obj: Any) -> str:
-    """Standard date formatting for table display.
-
-    Args:
-        date_obj: DateTime object to format
-
-    Returns:
-        Formatted date string (YYYY-MM-DD)
-    """
-    if hasattr(date_obj, "strftime"):
-        return date_obj.strftime("%Y-%m-%d")  # type: ignore[no-any-return]
-    return str(date_obj) if date_obj else ""
 
 
 def format_boolean_indicator(value: bool) -> str:

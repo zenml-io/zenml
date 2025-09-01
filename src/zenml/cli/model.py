@@ -416,7 +416,7 @@ def list_model_versions(**kwargs: Any) -> None:
     def enrichment_func(
         item: ModelVersionResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Enrich the model version data with the model name.
+        """Enrich the model version data with the model name and stage formatting.
 
         Args:
             item: The model version response.
@@ -426,9 +426,39 @@ def list_model_versions(**kwargs: Any) -> None:
             The enriched result dictionary.
         """
         result["version"] = result.pop("name")
+
+        # Get stage value for formatting
+        stage_value = str(item.stage).lower() if item.stage else ""
+        model_name = item.model.name
+        version_name = result["version"]
+        stage_display = str(item.stage) if item.stage else ""
+
+        # Apply stage-based formatting
+        if stage_value == "production":
+            # Format with green dot at beginning, green model name and version
+            formatted_model = (
+                f"[green]●[/green] [bold green]{model_name}[/bold green]"
+            )
+            formatted_version = f"[bold green]{version_name}[/bold green]"
+            formatted_stage = f"[bold green]{stage_display}[/bold green]"
+        elif stage_value == "staging":
+            # Format with orange dot at beginning, orange name and version
+            formatted_model = f"[bright_yellow]●[/bright_yellow] [bright_yellow]{model_name}[/bright_yellow]"
+            formatted_version = (
+                f"[bright_yellow]{version_name}[/bright_yellow]"
+            )
+            formatted_stage = f"[bright_yellow]{stage_display}[/bright_yellow]"
+        else:
+            # For other stages (development, archived, etc.), keep default format
+            formatted_model = model_name
+            formatted_version = version_name
+            formatted_stage = stage_display
+
         result.update(
             {
-                "model": item.model.name,
+                "model": formatted_model,
+                "version": formatted_version,
+                "stage": formatted_stage,
                 "tags": ", ".join(tag.name for tag in item.tags)
                 if item.tags
                 else "",

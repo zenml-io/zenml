@@ -118,86 +118,6 @@ def zenml_table(
         raise ValueError(f"Unsupported output format: {output_format}")
 
 
-def _apply_model_version_formatting(
-    data: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """Apply special formatting for model version tables when rendering to table.
-
-    This function detects model version data and applies visual formatting for
-    different stages:
-    - Production: Green dot and bold text
-    - Staging: Orange dot and text
-    Only applies formatting for table output - JSON/YAML output remains clean.
-
-    Args:
-        data: List of data dictionaries to format
-
-    Returns:
-        List of formatted data dictionaries with model version formatting applied
-    """
-    if not data or not isinstance(data, list):
-        return data
-
-    # Check if this looks like model version data (has '__stage_value__' field)
-    if not any(
-        isinstance(row, dict) and "__stage_value__" in row for row in data
-    ):
-        return data
-
-    formatted_data = []
-    for row in data:
-        if not isinstance(row, dict):
-            formatted_data.append(row)
-            continue
-
-        # Create a copy to avoid modifying original data
-        formatted_row = dict(row)
-
-        # Apply formatting based on stage
-        stage_value = row.get("__stage_value__", "") or ""
-        stage_display = row.get("stage", "") or ""
-
-        # Ensure stage_value is a string before calling lower()
-        if not isinstance(stage_value, str):
-            stage_value = str(stage_value) if stage_value is not None else ""
-        stage_value = stage_value.lower()
-
-        if stage_value == "production":
-            # Format with green dot at beginning, green model name and version
-            model_name = row.get("model", "")
-            version_name = row.get("version", "")
-            formatted_row["model"] = (
-                f"[green]●[/green] [bold green]{model_name}[/bold green]"
-            )
-            formatted_row["version"] = (
-                f"[bold green]{version_name}[/bold green]"
-            )
-            formatted_row["stage"] = (
-                f"[bold green]{stage_display}[/bold green]"
-            )
-        elif stage_value == "staging":
-            # Format with orange dot at beginning, orange name and version
-            model_name = row.get("model", "")
-            version_name = row.get("version", "")
-            formatted_row["model"] = (
-                f"[bright_yellow]●[/bright_yellow] "
-                f"[bright_yellow]{model_name}[/bright_yellow]"
-            )
-            formatted_row["version"] = (
-                f"[bright_yellow]{version_name}[/bright_yellow]"
-            )
-            formatted_row["stage"] = (
-                f"[bright_yellow]{stage_display}[/bright_yellow]"
-            )
-        # For other stages (development, archived, etc.), keep default format
-
-        # Remove the __stage_value__ field as it's just for formatting logic
-        formatted_row.pop("__stage_value__", None)
-        formatted_data.append(formatted_row)
-
-    return formatted_data
-
-
 def _prepare_data(
     data: List[Dict[str, Any]],
     columns: Optional[List[str]] = None,
@@ -445,9 +365,6 @@ def _render_table(
 
     if not prepared_data:
         return ""
-
-    # Apply special formatting for model version tables
-    prepared_data = _apply_model_version_formatting(prepared_data)
 
     # Get headers - use columns if specified, otherwise all keys
     headers = columns if columns else list(prepared_data[0].keys())
