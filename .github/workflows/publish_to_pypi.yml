@@ -23,21 +23,19 @@ jobs:
         uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.9'
-      - name: Install Poetry
-        uses: snok/install-poetry@v1.3.4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          version: 0.8.14
       - name: Include latest dashboard
         run: bash scripts/install-dashboard.sh
-      - name: Build package
-        run: poetry build
-      - name: Mint token
-        id: mint
-        uses: tschm/token-mint-action@v1.0.2
-      - name: Publish the package with poetry
+      - name: Verify version
         run: |-
-          if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ];
-          then poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}';
-          else echo "Version mismatch between src/zenml/VERSION and branch tag" && exit 1;
+          if [ "$(cat src/zenml/VERSION)" != "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ]; then
+            echo "Version mismatch between src/zenml/VERSION and git tag"
+            exit 1
           fi
+      - name: Build package
+        run: bash scripts/build-python-packages.sh
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

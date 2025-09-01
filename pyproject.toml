@@ -41,6 +41,8 @@ include = ["src/zenml", "*.txt", "*.sh", "*.md"]
 zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
+# If you're modifying any of the core dependencies, make sure to update
+# `pyproject-slim.toml` as well.
 alembic = { version = ">=1.8.1,<=1.15.2" }
 bcrypt = { version = "4.0.1" }
 click = "^8.0.1,<=8.2.1"

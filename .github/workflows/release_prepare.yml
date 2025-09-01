@@ -81,8 +81,8 @@ jobs:
       # Update the README, pyproject.toml, version and helm files
       - name: Update main files
         run: |
-          sed -i "s/${{ needs.fetch-versions.outputs.old_version }}/${{ needs.fetch-versions.outputs.new_version }}/g" README.md pyproject.toml src/zenml/VERSION helm/Chart.yaml helm/README.md
-          git add README.md pyproject.toml src/zenml/VERSION helm/Chart.yaml helm/README.md
+          sed -i "s/${{ needs.fetch-versions.outputs.old_version }}/${{ needs.fetch-versions.outputs.new_version }}/g" README.md pyproject.toml pyproject-slim.toml src/zenml/VERSION helm/Chart.yaml helm/README.md
+          git add README.md pyproject.toml pyproject-slim.toml src/zenml/VERSION helm/Chart.yaml helm/README.md
       # Update the Quickstart references
       - name: Replace the references in the quickstart example
         run: |
