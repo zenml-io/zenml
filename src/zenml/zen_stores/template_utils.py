@@ -145,7 +145,9 @@ def generate_config_schema(
     experiment_trackers = []
     step_operators = []
 
-    settings_fields: Dict[str, Any] = {"resources": (ResourceSettings, None)}
+    settings_fields: Dict[str, Any] = {
+        "resources": (Optional[ResourceSettings], None)
+    }
     for component in stack.components:
         if not component.flavor_schema:
             continue

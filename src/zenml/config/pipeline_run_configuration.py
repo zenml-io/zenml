@@ -45,13 +45,13 @@ class PipelineRunConfiguration(
     build: Union[PipelineBuildBase, UUID, None] = Field(
         default=None, union_mode="left_to_right"
     )
-    steps: Dict[str, StepConfigurationUpdate] = {}
-    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
+    steps: Optional[Dict[str, StepConfigurationUpdate]] = None
+    settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = None
     tags: Optional[List[Union[str, Tag]]] = None
-    extra: Dict[str, Any] = {}
+    extra: Optional[Dict[str, Any]] = None
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
     failure_hook_source: Optional[SourceWithValidator] = None
     success_hook_source: Optional[SourceWithValidator] = None
-    substitutions: Dict[str, str] = {}
+    substitutions: Optional[Dict[str, str]] = None
