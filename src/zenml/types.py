@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Custom ZenML types."""
 
-from typing import TYPE_CHECKING, Callable, Union
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 if TYPE_CHECKING:
     from types import FunctionType
@@ -21,6 +21,9 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
 
     HookSpecification = Union[str, Source, FunctionType, Callable[..., None]]
+    InitHookSpecification = Union[
+        str, Source, FunctionType, Callable[..., Any]
+    ]
 
 
 class HTMLString(str):

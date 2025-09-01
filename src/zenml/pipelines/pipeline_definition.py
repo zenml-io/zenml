@@ -110,7 +110,7 @@ if TYPE_CHECKING:
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
     from zenml.models import ArtifactVersionResponse
-    from zenml.types import HookSpecification
+    from zenml.types import HookSpecification, InitHookSpecification
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -143,6 +143,8 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_init: Optional["InitHookSpecification"] = None,
+        on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
@@ -168,6 +170,13 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            on_init: Callback function to run on initialization of the pipeline.
+                Can be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`) if the function returns a
+                value, it will be stored as the pipeline state.
+            on_cleanup: Callback function to run on cleanup of the pipeline. Can
+                be a function with no arguments, or a source path to such a
+                function with no arguments (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
@@ -191,6 +200,8 @@ class Pipeline:
                 extra=extra,
                 on_failure=on_failure,
                 on_success=on_success,
+                on_init=on_init,
+                on_cleanup=on_cleanup,
                 model=model,
                 retry=retry,
                 substitutions=substitutions,
@@ -312,6 +323,8 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_init: Optional["InitHookSpecification"] = None,
+        on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         parameters: Optional[Dict[str, Any]] = None,
@@ -347,6 +360,13 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            on_init: Callback function to run on initialization of the pipeline.
+                Can be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`) if the function returns a
+                value, it will be stored as the pipeline state.
+            on_cleanup: Callback function to run on cleanup of the pipeline. Can
+                be a function with no arguments, or a source path to such a
+                function with no arguments (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `extra` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -370,6 +390,16 @@ class Pipeline:
             # string of on_success hook function to be used for this pipeline
             success_hook_source = resolve_and_validate_hook(on_success)
 
+        init_hook_source = None
+        if on_init:
+            # string of on_init hook function to be used for this pipeline
+            init_hook_source = resolve_and_validate_hook(on_init)
+
+        cleanup_hook_source = None
+        if on_cleanup:
+            # string of on_cleanup hook function to be used for this pipeline
+            cleanup_hook_source = resolve_and_validate_hook(on_cleanup)
+
         if merge and tags and self._configuration.tags:
             # Merge tags explicitly here as the recursive update later only
             # merges dicts
@@ -387,6 +417,8 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "init_hook_source": init_hook_source,
+                "cleanup_hook_source": cleanup_hook_source,
                 "model": model,
                 "retry": retry,
                 "parameters": parameters,
