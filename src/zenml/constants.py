@@ -450,8 +450,8 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 # orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 
-# pipeline server constants
-PIPELINE_SERVER_DOCKER_IMAGE_KEY = "pipeline_server"
+# deployer constants
+DEPLOYER_DOCKER_IMAGE_KEY = "deployer"
 
 # Secret constants
 SECRET_VALUES = "values"

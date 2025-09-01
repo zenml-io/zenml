@@ -67,12 +67,12 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
         )
+        from zenml.deployers import DockerDeployerFlavor
         from zenml.image_builders import LocalImageBuilderFlavor
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
         )
-        from zenml.pipeline_servers import DockerPipelineServerFlavor
 
         flavors = [
             LocalArtifactStoreFlavor,
@@ -84,7 +84,7 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
             LocalImageBuilderFlavor,
-            DockerPipelineServerFlavor,
+            DockerDeployerFlavor,
         ]
         return flavors
 

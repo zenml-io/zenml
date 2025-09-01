@@ -24,6 +24,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
+from zenml.deployers.base_deployer import BaseDeployer
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import (
@@ -34,7 +35,6 @@ from zenml.models import (
     PipelineRunFilter,
     ScheduleFilter,
 )
-from zenml.pipeline_servers.base_pipeline_server import BasePipelineServer
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
@@ -424,8 +424,8 @@ def serve_pipeline(
         )
 
         if attach:
-            pipeline_server = BasePipelineServer.get_active_pipeline_server()
-            for log in pipeline_server.get_pipeline_endpoint_logs(
+            deployer = BaseDeployer.get_active_deployer()
+            for log in deployer.get_pipeline_endpoint_logs(
                 endpoint_name_or_id=endpoint.id,
                 follow=True,
             ):

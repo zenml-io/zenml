@@ -926,6 +926,7 @@ def generate_access_token(
     expires_in: Optional[int] = None,
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
+    deployment_id: Optional[UUID] = None,
 ) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
@@ -944,6 +945,7 @@ def generate_access_token(
             expire.
         schedule_id: The ID of the schedule to scope the token to.
         pipeline_run_id: The ID of the pipeline run to scope the token to.
+        deployment_id: The ID of the pipeline deployment to scope the token to.
 
     Returns:
         An authentication response with an access token.
@@ -1019,6 +1021,7 @@ def generate_access_token(
         api_key_id=api_key.id if api_key else None,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
+        deployment_id=deployment_id,
         # Set the session ID if this is a cross-site request
         session_id=session_id,
     ).encode(expires=expires)

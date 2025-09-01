@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base class for all ZenML pipeline servers."""
+"""Base class for all ZenML deployers."""
 
 import time
 from abc import ABC, abstractmethod
@@ -50,52 +50,50 @@ logger = get_logger(__name__)
 DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT = 300
 
 
-class PipelineServerError(Exception):
-    """Base class for pipeline server errors."""
+class DeployerError(Exception):
+    """Base class for deployer errors."""
 
 
-class PipelineEndpointAlreadyExistsError(
-    EntityExistsError, PipelineServerError
-):
+class PipelineEndpointAlreadyExistsError(EntityExistsError, DeployerError):
     """Error raised when a pipeline endpoint already exists."""
 
 
-class PipelineEndpointNotFoundError(KeyError, PipelineServerError):
+class PipelineEndpointNotFoundError(KeyError, DeployerError):
     """Error raised when a pipeline endpoint is not found."""
 
 
-class PipelineEndpointDeploymentError(PipelineServerError):
+class PipelineEndpointDeploymentError(DeployerError):
     """Error raised when a pipeline endpoint deployment fails."""
 
 
-class PipelineEndpointDeploymentTimeoutError(PipelineServerError):
+class PipelineEndpointDeploymentTimeoutError(DeployerError):
     """Error raised when a pipeline endpoint deployment times out."""
 
 
-class PipelineEndpointDeprovisionError(PipelineServerError):
+class PipelineEndpointDeprovisionError(DeployerError):
     """Error raised when a pipeline endpoint deletion fails."""
 
 
-class PipelineEndpointDeletionTimeoutError(PipelineServerError):
+class PipelineEndpointDeletionTimeoutError(DeployerError):
     """Error raised when a pipeline endpoint deletion times out."""
 
 
-class PipelineLogsNotFoundError(KeyError, PipelineServerError):
+class PipelineLogsNotFoundError(KeyError, DeployerError):
     """Error raised when pipeline logs are not found."""
 
 
-class PipelineEndpointServerMismatchError(PipelineServerError):
-    """Error raised when a pipeline endpoint is not managed by this pipeline server."""
+class PipelineEndpointDeployerMismatchError(DeployerError):
+    """Error raised when a pipeline endpoint is not managed by this deployer."""
 
 
-class BasePipelineServerConfig(StackComponentConfig):
-    """Base config for all pipeline servers."""
+class BaseDeployerConfig(StackComponentConfig):
+    """Base config for all deployers."""
 
 
-class BasePipelineServer(StackComponent, ABC):
-    """Base class for all ZenML pipeline servers.
+class BaseDeployer(StackComponent, ABC):
+    """Base class for all ZenML deployers.
 
-    The pipeline server serves three major purposes:
+    The deployer serves three major purposes:
 
     1. It contains all the stack related configuration attributes required to
     interact with the remote pipeline serving tool, service or platform (e.g.
@@ -107,45 +105,45 @@ class BasePipelineServer(StackComponent, ABC):
 
     3. It acts as a ZenML pipeline endpoint registry, where every pipeline
     endpoint is stored as a database entity through the ZenML Client. This
-    allows the pipeline server to keep track of all externally running pipeline
+    allows the deployer to keep track of all externally running pipeline
     endpoints and to manage their lifecycle.
     """
 
     @property
-    def config(self) -> BasePipelineServerConfig:
-        """Returns the `BasePipelineServerConfig` config.
+    def config(self) -> BaseDeployerConfig:
+        """Returns the `BaseDeployerConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(BasePipelineServerConfig, self._config)
+        return cast(BaseDeployerConfig, self._config)
 
     @classmethod
-    def get_active_pipeline_server(cls) -> "BasePipelineServer":
-        """Get the pipeline server registered in the active stack.
+    def get_active_deployer(cls) -> "BaseDeployer":
+        """Get the deployer registered in the active stack.
 
         Returns:
-            The pipeline server registered in the active stack.
+            The deployer registered in the active stack.
 
         Raises:
-            TypeError: if a pipeline server is not part of the
+            TypeError: if a deployer is not part of the
                 active stack.
         """
         client = Client()
-        pipeline_server = client.active_stack.pipeline_server
-        if not pipeline_server or not isinstance(pipeline_server, cls):
+        deployer = client.active_stack.deployer
+        if not deployer or not isinstance(deployer, cls):
             raise TypeError(
                 "The active stack needs to have a pipeline "
                 "server component registered to be able to deploy pipelines. "
-                "You can create a new stack with a pipeline server component "
+                "You can create a new stack with a deployer component "
                 "or update your active stack to add this component, e.g.:\n\n"
-                "  `zenml pipeline-server register ...`\n"
-                "  `zenml stack register <STACK-NAME> -ps ...`\n"
+                "  `zenml deployer register ...`\n"
+                "  `zenml stack register <STACK-NAME> -D ...`\n"
                 "  or:\n"
-                "  `zenml stack update -ps ...`\n\n"
+                "  `zenml stack update -D ...`\n\n"
             )
 
-        return pipeline_server
+        return deployer
 
     def _update_pipeline_endpoint(
         self,
@@ -167,30 +165,27 @@ class BasePipelineServer(StackComponent, ABC):
             PipelineEndpointUpdate.from_operational_state(operational_state),
         )
 
-    def _check_pipeline_endpoint_server(
+    def _check_pipeline_endpoint_deployer(
         self, endpoint: PipelineEndpointResponse
     ) -> None:
-        """Check if the pipeline endpoint is managed by this pipeline server.
+        """Check if the pipeline endpoint is managed by this deployer.
 
         Args:
             endpoint: The pipeline endpoint to check.
 
         Raises:
-            PipelineEndpointServerMismatchError: if the pipeline endpoint is not
-                managed by this pipeline server.
+            PipelineEndpointDeployerMismatchError: if the pipeline endpoint is
+                not managed by this deployer.
         """
-        if (
-            endpoint.pipeline_server_id
-            and endpoint.pipeline_server_id != self.id
-        ):
-            pipeline_server = endpoint.pipeline_server
-            assert pipeline_server, "Pipeline server not found"
-            raise PipelineEndpointServerMismatchError(
+        if endpoint.deployer_id and endpoint.deployer_id != self.id:
+            deployer = endpoint.deployer
+            assert deployer, "Deployer not found"
+            raise PipelineEndpointDeployerMismatchError(
                 f"Pipeline endpoint with name '{endpoint.name}' in project "
                 f"{endpoint.project_id} "
-                f"is not managed by this pipeline server ({self.name}). "
-                "Please switch to the correct pipeline server in your stack "
-                f"({pipeline_server.name}) and try again."
+                f"is not managed by this deployer ({self.name}). "
+                "Please switch to the correct deployer in your stack "
+                f"({deployer.name}) and try again."
             )
 
     def serve_pipeline(
@@ -203,7 +198,7 @@ class BasePipelineServer(StackComponent, ABC):
         """Serve a pipeline as an HTTP endpoint.
 
         The serve_pipeline method is the main entry point for serving
-        pipelines using the pipeline server. It is used to serve a pipeline
+        pipelines using the deployer. It is used to serve a pipeline
         deployment as an HTTP endpoint, or update an existing pipeline endpoint
         instance with the same name. The method returns a
         PipelineEndpointResponse object that is a representation of the
@@ -226,17 +221,13 @@ class BasePipelineServer(StackComponent, ABC):
             PipelineEndpointDeploymentError: if the pipeline deployment fails.
             PipelineEndpointDeploymentTimeoutError: if the pipeline endpoint
                 deployment times out while waiting to become operational.
-            PipelineServerError: if an unexpected error occurs.
+            DeployerError: if an unexpected error occurs.
 
         Returns:
             The PipelineEndpointResponse object representing the deployed
             pipeline endpoint.
         """
         client = Client()
-
-        environment = get_config_environment_vars()
-        # TODO: separate secrets from environment
-        secrets: Optional[Dict[str, str]] = None
 
         # TODO: get timeout from config
         timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
@@ -251,7 +242,7 @@ class BasePipelineServer(StackComponent, ABC):
             name=endpoint_name,
             project=deployment.project_id,
             pipeline_deployment_id=deployment.id,
-            pipeline_server_id=self.id,  # This pipeline server's ID
+            deployer_id=self.id,  # This deployer's ID
         )
 
         try:
@@ -274,12 +265,12 @@ class BasePipelineServer(StackComponent, ABC):
                 )
             except KeyError:
                 # Not supposed to happen, but just in case
-                raise PipelineServerError(
+                raise DeployerError(
                     f"A pipeline endpoint with name '{endpoint_name}' already "
                     "exists, but it cannot be found"
                 )
 
-            self._check_pipeline_endpoint_server(endpoint)
+            self._check_pipeline_endpoint_deployer(endpoint)
 
             if endpoint.pipeline_deployment_id != deployment.id:
                 # The deployment has been updated
@@ -305,6 +296,10 @@ class BasePipelineServer(StackComponent, ABC):
                 "deployment"
             )
 
+        environment, secrets = get_config_environment_vars(
+            deployment_id=endpoint.id,
+        )
+
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
         )
@@ -321,14 +316,14 @@ class BasePipelineServer(StackComponent, ABC):
             raise PipelineEndpointDeploymentError(
                 f"Failed to deploy pipeline endpoint {endpoint_name}: {e}"
             ) from e
-        except PipelineServerError as e:
+        except DeployerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Failed to deploy pipeline endpoint {endpoint_name}: {e}"
             ) from e
         except Exception as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Unexpected error while deploying pipeline endpoint for "
                 f"{endpoint_name}: {e}"
             ) from e
@@ -385,7 +380,7 @@ class BasePipelineServer(StackComponent, ABC):
 
         Raises:
             PipelineEndpointNotFoundError: if the pipeline endpoint is not found.
-            PipelineServerError: if an unexpected error occurs.
+            DeployerError: if an unexpected error occurs.
         """
         client = Client()
         try:
@@ -398,7 +393,7 @@ class BasePipelineServer(StackComponent, ABC):
                 f"not found in project {project}"
             )
 
-        self._check_pipeline_endpoint_server(endpoint)
+        self._check_pipeline_endpoint_deployer(endpoint)
 
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
@@ -412,14 +407,14 @@ class BasePipelineServer(StackComponent, ABC):
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
                 f"not found in project {project}"
             )
-        except PipelineServerError as e:
+        except DeployerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Failed to refresh pipeline endpoint {endpoint_name_or_id}: {e}"
             ) from e
         except Exception as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Unexpected error while refreshing pipeline endpoint for "
                 f"{endpoint_name_or_id}: {e}"
             ) from e
@@ -444,8 +439,8 @@ class BasePipelineServer(StackComponent, ABC):
 
         Raises:
             PipelineEndpointNotFoundError: if the pipeline endpoint is not found
-                or is not managed by this pipeline server.
-            PipelineServerError: if an unexpected error occurs.
+                or is not managed by this deployer.
+            DeployerError: if an unexpected error occurs.
         """
         client = Client()
         try:
@@ -458,7 +453,7 @@ class BasePipelineServer(StackComponent, ABC):
                 f"not found in project {project}"
             )
 
-        self._check_pipeline_endpoint_server(endpoint)
+        self._check_pipeline_endpoint_deployer(endpoint)
 
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
@@ -473,14 +468,14 @@ class BasePipelineServer(StackComponent, ABC):
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
                 f"not found in project {project}"
             )
-        except PipelineServerError as e:
+        except DeployerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Failed to delete pipeline endpoint {endpoint_name_or_id}: {e}"
             ) from e
         except Exception as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Unexpected error while deleting pipeline endpoint for "
                 f"{endpoint_name_or_id}: {e}"
             ) from e
@@ -548,7 +543,7 @@ class BasePipelineServer(StackComponent, ABC):
 
         Raises:
             PipelineEndpointNotFoundError: if the pipeline endpoint is not found.
-            PipelineServerError: if an unexpected error occurs.
+            DeployerError: if an unexpected error occurs.
         """
         client = Client()
         try:
@@ -561,16 +556,16 @@ class BasePipelineServer(StackComponent, ABC):
                 f"not found in project {project}"
             )
 
-        self._check_pipeline_endpoint_server(endpoint)
+        self._check_pipeline_endpoint_deployer(endpoint)
 
         try:
             return self.do_get_pipeline_endpoint_logs(endpoint, follow, tail)
-        except PipelineServerError as e:
-            raise PipelineServerError(
+        except DeployerError as e:
+            raise DeployerError(
                 f"Failed to get logs for pipeline endpoint {endpoint_name_or_id}: {e}"
             ) from e
         except Exception as e:
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Unexpected error while getting logs for pipeline endpoint for "
                 f"{endpoint_name_or_id}: {e}"
             ) from e
@@ -587,7 +582,7 @@ class BasePipelineServer(StackComponent, ABC):
     ) -> PipelineEndpointOperationalState:
         """Abstract method to serve a pipeline as an HTTP endpoint.
 
-        Concrete pipeline server subclasses must implement the following
+        Concrete deployer subclasses must implement the following
         functionality in this method:
 
         - Create the actual pipeline endpoint infrastructure (e.g.,
@@ -604,9 +599,9 @@ class BasePipelineServer(StackComponent, ABC):
         state of the deployed pipeline endpoint.
 
         Note that the pipeline endpoint infrastructure is not required to be
-        deployed immediately. The pipeline server can return a
+        deployed immediately. The deployer can return a
         PipelineEndpointOperationalState with a status of
-        PipelineEndpointStatus.DEPLOYING, and the base pipeline server will poll
+        PipelineEndpointStatus.DEPLOYING, and the base deployer will poll
         the pipeline endpoint infrastructure by calling the
         `do_get_pipeline_endpoint` method until it is ready or it times out.
 
@@ -618,7 +613,7 @@ class BasePipelineServer(StackComponent, ABC):
             secrets: A dictionary of secret environment variables to set
                 on the pipeline endpoint. These secret environment variables
                 should not be exposed as regular environment variables on the
-                pipeline server.
+                deployer.
 
         Returns:
             The PipelineEndpointOperationalState object representing the
@@ -627,7 +622,7 @@ class BasePipelineServer(StackComponent, ABC):
         Raises:
             PipelineEndpointDeploymentError: if the pipeline endpoint deployment
                 fails.
-            PipelineServerError: if an unexpected error occurs.
+            DeployerError: if an unexpected error occurs.
         """
 
     @abstractmethod
@@ -647,7 +642,7 @@ class BasePipelineServer(StackComponent, ABC):
         Raises:
             PipelineEndpointNotFoundError: if no pipeline endpoint is found
                 corresponding to the provided PipelineEndpointResponse.
-            PipelineServerError: if the pipeline endpoint information cannot
+            DeployerError: if the pipeline endpoint information cannot
                 be retrieved for any other reason or if an unexpected error
                 occurs.
         """
@@ -674,7 +669,7 @@ class BasePipelineServer(StackComponent, ABC):
                 corresponding to the provided PipelineEndpointResponse.
             PipelineLogsNotFoundError: if the pipeline endpoint logs are not
                 found.
-            PipelineServerError: if the pipeline endpoint logs cannot
+            DeployerError: if the pipeline endpoint logs cannot
                 be retrieved for any other reason or if an unexpected error
                 occurs.
         """
@@ -686,7 +681,7 @@ class BasePipelineServer(StackComponent, ABC):
     ) -> Optional[PipelineEndpointOperationalState]:
         """Abstract method to deprovision a pipeline endpoint.
 
-        Concrete pipeline server subclasses must implement the following
+        Concrete deployer subclasses must implement the following
         functionality in this method:
 
         - Deprovision the actual pipeline endpoint infrastructure (e.g.,
@@ -698,9 +693,9 @@ class BasePipelineServer(StackComponent, ABC):
         completed before the call returns.
 
         Note that the pipeline endpoint infrastructure is not required to be
-        deleted immediately. The pipeline server can return a
+        deleted immediately. The deployer can return a
         PipelineEndpointOperationalState with a status of
-        PipelineEndpointStatus.DELETING, and the base pipeline server will poll
+        PipelineEndpointStatus.DELETING, and the base deployer will poll
         the pipeline endpoint infrastructure by calling the
         `do_get_pipeline_endpoint` method until it is deleted or it times out.
 
@@ -717,12 +712,12 @@ class BasePipelineServer(StackComponent, ABC):
                 corresponding to the provided PipelineEndpointResponse.
             PipelineEndpointDeprovisionError: if the pipeline endpoint
                 deprovision fails.
-            PipelineServerError: if an unexpected error occurs.
+            DeployerError: if an unexpected error occurs.
         """
 
 
-class BasePipelineServerFlavor(Flavor):
-    """Base class for pipeline server flavors."""
+class BaseDeployerFlavor(Flavor):
+    """Base class for deployer flavors."""
 
     @property
     def type(self) -> StackComponentType:
@@ -731,18 +726,18 @@ class BasePipelineServerFlavor(Flavor):
         Returns:
             The flavor type.
         """
-        return StackComponentType.PIPELINE_SERVER
+        return StackComponentType.DEPLOYER
 
     @property
-    def config_class(self) -> Type[BasePipelineServerConfig]:
-        """Returns `BasePipelineServerConfig` config class.
+    def config_class(self) -> Type[BaseDeployerConfig]:
+        """Returns `BaseDeployerConfig` config class.
 
         Returns:
                 The config class.
         """
-        return BasePipelineServerConfig
+        return BaseDeployerConfig
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[BasePipelineServer]:
-        """The class that implements the pipeline server."""
+    def implementation_class(self) -> Type[BaseDeployer]:
+        """The class that implements the deployer."""

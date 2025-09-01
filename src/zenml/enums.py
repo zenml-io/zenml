@@ -143,7 +143,7 @@ class StackComponentType(StrEnum):
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
-    PIPELINE_SERVER = "pipeline_server"
+    DEPLOYER = "deployer"
 
     @property
     def plural(self) -> str:

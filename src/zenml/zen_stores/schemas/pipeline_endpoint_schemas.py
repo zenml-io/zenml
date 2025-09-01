@@ -107,15 +107,15 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         back_populates="pipeline_endpoints",
     )
 
-    pipeline_server_id: Optional[UUID] = build_foreign_key_field(
+    deployer_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
-        source_column="pipeline_server_id",
+        source_column="deployer_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
     )
-    pipeline_server: Optional["StackComponentSchema"] = Relationship()
+    deployer: Optional["StackComponentSchema"] = Relationship()
 
     @classmethod
     def get_query_options(
@@ -145,7 +145,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
                     joinedload(
                         jl_arg(PipelineEndpointSchema.pipeline_deployment)
                     ),
-                    joinedload(jl_arg(PipelineEndpointSchema.pipeline_server)),
+                    joinedload(jl_arg(PipelineEndpointSchema.deployer)),
                 ]
             )
 
@@ -180,7 +180,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = PipelineEndpointResponseMetadata(
                 pipeline_deployment_id=self.pipeline_deployment_id,
-                pipeline_server_id=self.pipeline_server_id,
+                deployer_id=self.deployer_id,
                 endpoint_metadata=json.loads(self.endpoint_metadata),
             )
 
@@ -191,9 +191,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
                 pipeline_deployment=self.pipeline_deployment.to_model()
                 if self.pipeline_deployment
                 else None,
-                pipeline_server=self.pipeline_server.to_model()
-                if self.pipeline_server
-                else None,
+                deployer=self.deployer.to_model() if self.deployer else None,
             )
 
         return PipelineEndpointResponse(
@@ -245,5 +243,5 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             user_id=request.user,
             status=PipelineEndpointStatus.UNKNOWN.value,
             pipeline_deployment_id=request.pipeline_deployment_id,
-            pipeline_server_id=request.pipeline_server_id,
+            deployer_id=request.deployer_id,
         )

@@ -4015,7 +4015,7 @@ class RestZenStore(BaseZenStore):
         expires_in: Optional[int] = None,
         schedule_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
+        deployment_id: Optional[UUID] = None,
     ) -> str:
         """Get an API token.
 
@@ -4024,7 +4024,7 @@ class RestZenStore(BaseZenStore):
             expires_in: The time in seconds until the token expires.
             schedule_id: The ID of the schedule to get a token for.
             pipeline_run_id: The ID of the pipeline run to get a token for.
-            step_run_id: The ID of the step run to get a token for.
+            deployment_id: The ID of the deployment to get a token for.
 
         Returns:
             The API token.
@@ -4041,8 +4041,8 @@ class RestZenStore(BaseZenStore):
             params["schedule_id"] = schedule_id
         if pipeline_run_id:
             params["pipeline_run_id"] = pipeline_run_id
-        if step_run_id:
-            params["step_run_id"] = step_run_id
+        if deployment_id:
+            params["deployment_id"] = deployment_id
         response_body = self.get(API_TOKEN, params=params)
         if not isinstance(response_body, str):
             raise ValueError(

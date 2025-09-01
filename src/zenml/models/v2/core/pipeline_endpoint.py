@@ -68,9 +68,9 @@ class PipelineEndpointRequest(ProjectScopedRequest):
         title="The pipeline deployment ID.",
         description="The ID of the pipeline deployment being served by this endpoint.",
     )
-    pipeline_server_id: UUID = Field(
-        title="The pipeline server ID.",
-        description="The ID of the pipeline server component managing this endpoint.",
+    deployer_id: UUID = Field(
+        title="The deployer ID.",
+        description="The ID of the deployer component managing this endpoint.",
     )
 
 
@@ -147,10 +147,10 @@ class PipelineEndpointResponseMetadata(ProjectScopedResponseMetadata):
         title="The pipeline deployment ID.",
         description="The ID of the pipeline deployment being served by this endpoint.",
     )
-    pipeline_server_id: Optional[UUID] = Field(
+    deployer_id: Optional[UUID] = Field(
         default=None,
-        title="The pipeline server ID.",
-        description="The ID of the pipeline server component managing this endpoint.",
+        title="The deployer ID.",
+        description="The ID of the deployer component managing this endpoint.",
     )
     endpoint_metadata: Dict[str, Any] = Field(
         title="The metadata of the pipeline endpoint.",
@@ -165,10 +165,10 @@ class PipelineEndpointResponseResources(ProjectScopedResponseResources):
         title="The pipeline deployment.",
         description="The pipeline deployment being served by this endpoint.",
     )
-    pipeline_server: Optional["ComponentResponse"] = Field(
+    deployer: Optional["ComponentResponse"] = Field(
         default=None,
-        title="The pipeline server.",
-        description="The pipeline server component managing this endpoint.",
+        title="The deployer.",
+        description="The deployer component managing this endpoint.",
     )
 
 
@@ -227,13 +227,13 @@ class PipelineEndpointResponse(
         return self.get_metadata().pipeline_deployment_id
 
     @property
-    def pipeline_server_id(self) -> Optional[UUID]:
-        """The pipeline server ID.
+    def deployer_id(self) -> Optional[UUID]:
+        """The deployer ID.
 
         Returns:
-            The pipeline server ID.
+            The deployer ID.
         """
-        return self.get_metadata().pipeline_server_id
+        return self.get_metadata().deployer_id
 
     @property
     def endpoint_metadata(self) -> Dict[str, Any]:
@@ -254,13 +254,13 @@ class PipelineEndpointResponse(
         return self.get_resources().pipeline_deployment
 
     @property
-    def pipeline_server(self) -> Optional["ComponentResponse"]:
-        """The pipeline server.
+    def deployer(self) -> Optional["ComponentResponse"]:
+        """The deployer.
 
         Returns:
-            The pipeline server.
+            The deployer.
         """
-        return self.get_resources().pipeline_server
+        return self.get_resources().deployer
 
 
 # ------------------ Filter Model ------------------
@@ -286,8 +286,8 @@ class PipelineEndpointFilter(ProjectScopedFilter):
         description="Pipeline deployment ID associated with the endpoint.",
         union_mode="left_to_right",
     )
-    pipeline_server_id: Optional[Union[UUID, str]] = Field(
+    deployer_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Pipeline server ID managing the endpoint.",
+        description="Deployer ID managing the endpoint.",
         union_mode="left_to_right",
     )

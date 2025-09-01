@@ -5004,9 +5004,9 @@ class SqlZenStore(BaseZenStore):
             self._get_reference_schema_by_id(
                 resource=pipeline_endpoint,
                 reference_schema=StackComponentSchema,
-                reference_id=pipeline_endpoint.pipeline_server_id,
+                reference_id=pipeline_endpoint.deployer_id,
                 session=session,
-                reference_type="pipeline server",
+                reference_type="deployer",
             )
             pipeline_endpoint_schema = PipelineEndpointSchema.from_request(
                 pipeline_endpoint

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the ZenML local Docker pipeline server."""
+"""Implementation of the ZenML Docker deployer."""
 
 import copy
 import os
@@ -37,6 +37,18 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.deployers.base_deployer import (
+    BaseDeployerConfig,
+    BaseDeployerFlavor,
+    DeployerError,
+    PipelineEndpointDeploymentError,
+    PipelineEndpointDeprovisionError,
+    PipelineEndpointNotFoundError,
+    PipelineLogsNotFoundError,
+)
+from zenml.deployers.containerized_deployer import (
+    ContainerizedDeployer,
+)
 from zenml.entrypoints.base_entrypoint_configuration import (
     DEPLOYMENT_ID_OPTION,
 )
@@ -45,18 +57,6 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineEndpointOperationalState,
     PipelineEndpointResponse,
-)
-from zenml.pipeline_servers.base_pipeline_server import (
-    BasePipelineServerConfig,
-    BasePipelineServerFlavor,
-    PipelineEndpointDeploymentError,
-    PipelineEndpointDeprovisionError,
-    PipelineEndpointNotFoundError,
-    PipelineLogsNotFoundError,
-    PipelineServerError,
-)
-from zenml.pipeline_servers.containerized_pipeline_server import (
-    ContainerizedPipelineServer,
 )
 from zenml.serving.entrypoint_configuration import (
     PORT_OPTION,
@@ -133,8 +133,8 @@ class DockerPipelineEndpointMetadata(BaseModel):
         return cls.model_validate(endpoint.endpoint_metadata)
 
 
-class DockerPipelineServer(ContainerizedPipelineServer):
-    """Pipeline server responsible for serving pipelines locally using Docker."""
+class DockerDeployer(ContainerizedDeployer):
+    """Deployer responsible for serving pipelines locally using Docker."""
 
     # TODO:
 
@@ -148,21 +148,21 @@ class DockerPipelineServer(ContainerizedPipelineServer):
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """Settings class for the Local Docker pipeline server.
+        """Settings class for the Docker deployer.
 
         Returns:
             The settings class.
         """
-        return DockerPipelineServerSettings
+        return DockerDeployerSettings
 
     @property
-    def config(self) -> "DockerPipelineServerConfig":
-        """Returns the `DockerPipelineServerConfig` config.
+    def config(self) -> "DockerDeployerConfig":
+        """Returns the `DockerDeployerConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(DockerPipelineServerConfig, self._config)
+        return cast(DockerDeployerConfig, self._config)
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -194,7 +194,7 @@ class DockerPipelineServer(ContainerizedPipelineServer):
         allocate_port_if_busy: bool = True,
         range: Tuple[int, int] = (8000, 65535),
     ) -> int:
-        """Search for a free TCP port for the Docker pipeline server.
+        """Search for a free TCP port for the Docker deployer.
 
         If a list of preferred TCP port values is explicitly requested, they
         will be checked in order.
@@ -309,7 +309,7 @@ class DockerPipelineServer(ContainerizedPipelineServer):
             secrets: A dictionary of secret environment variables to set
                 on the pipeline endpoint. These secret environment variables
                 should not be exposed as regular environment variables on the
-                pipeline server.
+                deployer.
 
         Returns:
             The PipelineEndpointOperationalState object representing the
@@ -318,7 +318,7 @@ class DockerPipelineServer(ContainerizedPipelineServer):
         Raises:
             PipelineEndpointDeploymentError: if the pipeline endpoint deployment
                 fails.
-            PipelineServerError: if an unexpected error occurs.
+            DeployerError: if an unexpected error occurs.
         """
         deployment = endpoint.pipeline_deployment
         assert deployment, "Pipeline deployment not found"
@@ -330,7 +330,7 @@ class DockerPipelineServer(ContainerizedPipelineServer):
         environment.update(secrets)
 
         settings = cast(
-            DockerPipelineServerSettings,
+            DockerDeployerSettings,
             self.get_settings(deployment),
         )
 
@@ -485,7 +485,7 @@ class DockerPipelineServer(ContainerizedPipelineServer):
         Raises:
             PipelineEndpointNotFoundError: if no pipeline endpoint is found
                 corresponding to the provided PipelineEndpointResponse.
-            PipelineServerError: if the pipeline endpoint information cannot
+            DeployerError: if the pipeline endpoint information cannot
                 be retrieved for any other reason or if an unexpected error
                 occurs.
         """
@@ -524,7 +524,7 @@ class DockerPipelineServer(ContainerizedPipelineServer):
                 corresponding to the provided PipelineEndpointResponse.
             PipelineLogsNotFoundError: if the pipeline endpoint logs are not
                 found.
-            PipelineServerError: if the pipeline endpoint logs cannot
+            DeployerError: if the pipeline endpoint logs cannot
                 be retrieved for any other reason or if an unexpected error
                 occurs.
         """
@@ -585,17 +585,17 @@ class DockerPipelineServer(ContainerizedPipelineServer):
                 f"Logs for pipeline endpoint '{endpoint.name}' not found: {e}"
             )
         except docker_errors.APIError as e:
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Docker API error while retrieving logs for pipeline endpoint "
                 f"'{endpoint.name}': {e}"
             )
         except docker_errors.DockerException as e:
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Docker error while retrieving logs for pipeline endpoint "
                 f"'{endpoint.name}': {e}"
             )
         except Exception as e:
-            raise PipelineServerError(
+            raise DeployerError(
                 f"Unexpected error while retrieving logs for pipeline endpoint "
                 f"'{endpoint.name}': {e}"
             )
@@ -643,8 +643,8 @@ class DockerPipelineServer(ContainerizedPipelineServer):
         return state
 
 
-class DockerPipelineServerSettings(BaseSettings):
-    """Local Docker pipeline server settings.
+class DockerDeployerSettings(BaseSettings):
+    """Docker deployer settings.
 
     Attributes:
         port: The port to serve the pipeline endpoint on.
@@ -662,10 +662,8 @@ class DockerPipelineServerSettings(BaseSettings):
     run_args: Dict[str, Any] = {}
 
 
-class DockerPipelineServerConfig(
-    BasePipelineServerConfig, DockerPipelineServerSettings
-):
-    """Local Docker pipeline server config."""
+class DockerDeployerConfig(BaseDeployerConfig, DockerDeployerSettings):
+    """Docker deployer config."""
 
     @property
     def is_local(self) -> bool:
@@ -677,8 +675,8 @@ class DockerPipelineServerConfig(
         return True
 
 
-class DockerPipelineServerFlavor(BasePipelineServerFlavor):
-    """Flavor for the local Docker pipeline server."""
+class DockerDeployerFlavor(BaseDeployerFlavor):
+    """Flavor for the Docker deployer."""
 
     @property
     def name(self) -> str:
@@ -717,19 +715,19 @@ class DockerPipelineServerFlavor(BasePipelineServerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/docker.png"
 
     @property
-    def config_class(self) -> Type[BasePipelineServerConfig]:
+    def config_class(self) -> Type[BaseDeployerConfig]:
         """Config class for the base orchestrator flavor.
 
         Returns:
             The config class.
         """
-        return DockerPipelineServerConfig
+        return DockerDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["DockerPipelineServer"]:
+    def implementation_class(self) -> Type["DockerDeployer"]:
         """Implementation class for this flavor.
 
         Returns:
             Implementation class for this flavor.
         """
-        return DockerPipelineServer
+        return DockerDeployer

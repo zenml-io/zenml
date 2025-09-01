@@ -199,10 +199,12 @@ def main() -> None:
                     SkypilotBaseOrchestratorSettings,
                     orchestrator.get_settings(step),
                 )
-                env = get_config_environment_vars()
+                env, secrets = get_config_environment_vars()
                 env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
                     orchestrator_run_id
                 )
+                # For now, we don't support separating secrets from environment
+                env.update(secrets)
 
                 # Create the Docker run command
                 run_command = create_docker_run_command(

@@ -3537,7 +3537,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         pipeline_deployment_id: Optional[Union[str, UUID]] = None,
-        pipeline_server_id: Optional[Union[str, UUID]] = None,
+        deployer_id: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
         status: Optional[PipelineEndpointStatus] = None,
         url: Optional[str] = None,
@@ -3557,7 +3557,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the endpoint to filter by.
             project: The project name/ID to filter by.
             pipeline_deployment_id: The id of the deployment to filter by.
-            pipeline_server_id: The id of the pipeline server to filter by.
+            deployer_id: The id of the deployer to filter by.
             status: The status of the endpoint to filter by.
             url: The url of the endpoint to filter by.
             user: Filter by user name/ID.
@@ -3580,7 +3580,7 @@ class Client(metaclass=ClientMetaClass):
                 user=user,
                 name=name,
                 pipeline_deployment_id=pipeline_deployment_id,
-                pipeline_server_id=pipeline_server_id,
+                deployer_id=deployer_id,
                 status=status,
                 url=url,
             ),
@@ -3617,8 +3617,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: Name/ID/ID prefix of the endpoint to deprovision.
             project: The project name/ID to filter by.
         """
-        from zenml.pipeline_servers.base_pipeline_server import (
-            BasePipelineServer,
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
         )
         from zenml.stack.stack_component import StackComponent
 
@@ -3627,22 +3627,22 @@ class Client(metaclass=ClientMetaClass):
             project=project,
             hydrate=False,
         )
-        if endpoint.pipeline_server:
+        if endpoint.deployer:
             # Instantiate and deprovision the endpoint through the pipeline
             # server
 
             try:
-                pipeline_server = cast(
-                    BasePipelineServer,
-                    StackComponent.from_model(endpoint.pipeline_server),
+                deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(endpoint.deployer),
                 )
             except ImportError:
                 raise NotImplementedError(
-                    f"Pipeline server '{endpoint.pipeline_server.name}' could "
+                    f"Deployer '{endpoint.deployer.name}' could "
                     f"not be instantiated. This is likely because the pipeline "
                     f"server's dependencies are not installed."
                 )
-            pipeline_server.deprovision_pipeline_endpoint(
+            deployer.deprovision_pipeline_endpoint(
                 endpoint_name_or_id=endpoint.id
             )
             logger.info(
@@ -3666,8 +3666,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: Name/ID/ID prefix of the endpoint to refresh.
             project: The project name/ID to filter by.
         """
-        from zenml.pipeline_servers.base_pipeline_server import (
-            BasePipelineServer,
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
         )
         from zenml.stack.stack_component import StackComponent
 
@@ -3676,25 +3676,25 @@ class Client(metaclass=ClientMetaClass):
             project=project,
             hydrate=False,
         )
-        if endpoint.pipeline_server:
+        if endpoint.deployer:
             try:
-                pipeline_server = cast(
-                    BasePipelineServer,
-                    StackComponent.from_model(endpoint.pipeline_server),
+                deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(endpoint.deployer),
                 )
             except ImportError:
                 raise NotImplementedError(
-                    f"Pipeline server '{endpoint.pipeline_server.name}' could "
+                    f"Deployer '{endpoint.deployer.name}' could "
                     f"not be instantiated. This is likely because the pipeline "
                     f"server's dependencies are not installed."
                 )
-            return pipeline_server.refresh_pipeline_endpoint(
+            return deployer.refresh_pipeline_endpoint(
                 endpoint_name_or_id=endpoint.id
             )
         else:
             raise NotImplementedError(
                 f"Pipeline endpoint '{endpoint.name}' is no longer managed by "
-                "a pipeline server. This is likely because the pipeline server "
+                "a deployer. This is likely because the deployer "
                 "was deleted. Please delete the pipeline endpoint instead."
             )
 
@@ -3716,8 +3716,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A generator that yields the logs of the pipeline endpoint.
         """
-        from zenml.pipeline_servers.base_pipeline_server import (
-            BasePipelineServer,
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
         )
         from zenml.stack.stack_component import StackComponent
 
@@ -3726,19 +3726,19 @@ class Client(metaclass=ClientMetaClass):
             project=project,
             hydrate=False,
         )
-        if endpoint.pipeline_server:
+        if endpoint.deployer:
             try:
-                pipeline_server = cast(
-                    BasePipelineServer,
-                    StackComponent.from_model(endpoint.pipeline_server),
+                deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(endpoint.deployer),
                 )
             except ImportError:
                 raise NotImplementedError(
-                    f"Pipeline server '{endpoint.pipeline_server.name}' could "
+                    f"Deployer '{endpoint.deployer.name}' could "
                     f"not be instantiated. This is likely because the pipeline "
                     f"server's dependencies are not installed."
                 )
-            return pipeline_server.get_pipeline_endpoint_logs(
+            return deployer.get_pipeline_endpoint_logs(
                 endpoint_name_or_id=endpoint.id,
                 follow=follow,
                 tail=tail,
@@ -3746,7 +3746,7 @@ class Client(metaclass=ClientMetaClass):
         else:
             raise NotImplementedError(
                 f"Pipeline endpoint '{endpoint.name}' is no longer managed by "
-                "a pipeline server. This is likely because the pipeline server "
+                "a deployer. This is likely because the deployer "
                 "was deleted. Please delete the pipeline endpoint instead."
             )
 
