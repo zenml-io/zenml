@@ -1117,7 +1117,15 @@ def list_service_connectors(
     def enrichment_func(
         item: ServiceConnectorResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Add active status and connector-specific formatting."""
+        """Add active status and connector-specific formatting.
+
+        Args:
+            item: The service connector response.
+            result: The result dictionary.
+
+        Returns:
+            The result dictionary.
+        """
         is_active = item.id in active_connector_ids
 
         result.update(

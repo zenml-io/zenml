@@ -519,23 +519,15 @@ def list_schedules(**kwargs: Any) -> None:
         )
         return result
 
-    # Handle both paginated and non-paginated responses
-    if hasattr(schedules, "items"):
-        schedule_list = list(schedules.items)  # type: ignore[misc]
-        page = schedules  # schedules is a Page object
-    else:
-        schedule_list = list(schedules)  # type: ignore[arg-type]
-        page = None  # schedules is just a list, no pagination
-
     # Use centralized data preparation
     schedule_data = prepare_data_from_responses(
-        schedule_list, enrichment_func=enrichment_func
+        schedules.items, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
     cli_utils.handle_table_output(
         data=schedule_data,
-        page=page,
+        page=schedules,
         **table_kwargs,
     )
 
