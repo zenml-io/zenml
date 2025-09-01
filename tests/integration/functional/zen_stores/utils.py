@@ -711,7 +711,7 @@ class ModelContext:
                     )
                 )
 
-        pipeline_model = client.zen_store.create_pipeline(
+        self.pipeline = client.zen_store.create_pipeline(
             PipelineRequest(
                 name=sample_name("pipeline"),
                 project=ws.id,
@@ -746,7 +746,7 @@ class ModelContext:
                 PipelineDeploymentRequest(
                     project=ws.id,
                     stack=stack.id,
-                    pipeline=pipeline_model.id,
+                    pipeline=self.pipeline.id,
                     run_name_template="",
                     pipeline_configuration={"name": "pipeline_name"},
                     client_version="0.12.3",
@@ -794,6 +794,7 @@ class ModelContext:
             client.zen_store.delete_run(run.id)
         for deployment in self.deployments:
             client.delete_deployment(str(deployment.id))
+        client.zen_store.delete_pipeline(self.pipeline.id)
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
