@@ -47,7 +47,7 @@ To use the Vertex orchestrator, we need:
 
 ### GCP credentials and permissions
 
-This part is without doubt the most involved part of using the Vertex orchestrator. In order to run pipelines on Vertex AI, you need to have a GCP user account and/or one or more GCP service accounts set up with proper permissions, depending on whether you wish to practice [the principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege) and distribute permissions across multiple service accounts.
+This part is without doubt the most involved part of using the Vertex orchestrator. In order to run pipelines on Vertex AI, you need to have a GCP user account and/or one or more GCP service accounts set up with proper permissions, depending on whether you wish to practice [the principle of least privilege](https://cloud.google.com/iam/docs/using-iam-securely) and distribute permissions across multiple service accounts.
 
 You also have three different options to provide credentials to the orchestrator:
 
