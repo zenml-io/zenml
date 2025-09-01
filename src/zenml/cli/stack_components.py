@@ -188,7 +188,15 @@ def generate_stack_component_list_command(
         def enrichment_func(
             item: ComponentResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
-            """Enrich the component data with the user name."""
+            """Enrich the component data with the user name.
+
+            Args:
+                item: The component response.
+                result: The result dictionary.
+
+            Returns:
+                The enriched result dictionary.
+            """
             result.update(
                 {"flavor": item.flavor_name if item.flavor_name else ""}
             )
@@ -747,7 +755,12 @@ def generate_stack_component_flavor_list_command(
     def list_stack_component_flavor_command(
         ctx: click.Context, /, **kwargs: Any
     ) -> None:
-        """Lists the flavors for a single type of stack component."""
+        """Lists the flavors for a single type of stack component.
+
+        Args:
+            ctx: The click context.
+            kwargs: The keyword arguments.
+        """
         table_kwargs = cli_utils.extract_table_options(kwargs)
 
         client = Client()
@@ -765,7 +778,15 @@ def generate_stack_component_flavor_list_command(
         def enrichment_func(
             item: FlavorResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
-            """Enrich the flavor data with the user name."""
+            """Enrich the flavor data with the user name.
+
+            Args:
+                item: The flavor response.
+                result: The result dictionary.
+
+            Returns:
+                The enriched result dictionary.
+            """
             result.update(
                 {"integration": item.integration if item.integration else ""}
             )

@@ -77,7 +77,15 @@ def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
             def enrichment_func(
                 item: ProjectResponse, result: Dict[str, Any]
             ) -> Dict[str, Any]:
-                """Enrich the project data with the display name."""
+                """Enrich the project data with the display name.
+
+                Args:
+                    item: The project response.
+                    result: The result dictionary.
+
+                Returns:
+                    The enriched result dictionary.
+                """
                 result.update({"description": item.description})
                 return result
 

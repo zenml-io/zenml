@@ -33,7 +33,7 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.models import UserFilter
+from zenml.models import UserFilter, UserResponse
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -114,38 +114,48 @@ def list_users(**kwargs: Any) -> None:
 
     # Create enrichment function for active user indicator
     def enrichment_func(
-        user: Any, current_data: Dict[str, Any]
+        item: UserResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Add active user information for display."""
-        is_active_user = user.id == active_user_id
+        """Add active user information for display.
+
+        Args:
+            item: The user response.
+            result: The current data dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
+        is_active_user = item.id == active_user_id
 
         # For many users, the name field contains the email and email field is null
-        display_name = user.name
-        display_email = user.email or ""
+        display_name = item.name
+        display_email = item.email or ""
 
         # If name looks like an email and email is empty, separate them nicely
-        if "@" in user.name and not user.email:
-            display_name = user.full_name or user.name.split("@")[0]
-            display_email = user.name
+        if "@" in item.name and not item.email:
+            display_name = item.full_name or item.name.split("@")[0]
+            display_email = item.name
 
-        enrichments = {
-            "display_name": display_name,
-            "display_email": display_email,
-            "role": "admin" if user.is_admin else "user",
-            "active": format_boolean_indicator(user.active),
-        }
+        result.update(
+            {
+                "display_name": display_name,
+                "display_email": display_email,
+                "role": "admin" if item.is_admin else "user",
+                "active": format_boolean_indicator(item.active),
+            }
+        )
 
         # If this is the active user, format the name for visual distinction
         if is_active_user:
-            enrichments["name"] = (
+            result["name"] = (
                 f"[green]●[/green] [bold green]{display_name}[/bold green] (you)"
             )
         else:
-            enrichments["name"] = display_name
+            result["name"] = display_name
 
-        enrichments["email"] = display_email
+        result["email"] = display_email
 
-        return enrichments
+        return result
 
     # Use centralized data preparation with enrichment
     user_data = prepare_data_from_responses(

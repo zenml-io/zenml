@@ -80,7 +80,15 @@ def list_models(**kwargs: Any) -> None:
     def enrichment_func(
         item: ModelResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Enrich the model data with the latest version name."""
+        """Enrich the model data with the latest version name.
+
+        Args:
+            item: The model response.
+            result: The result dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
         result.update(
             {
                 "latest_version_name": item.latest_version_name,
@@ -422,7 +430,15 @@ def list_model_versions(**kwargs: Any) -> None:
     def enrichment_func(
         item: ModelVersionResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Enrich the model version data with the model name."""
+        """Enrich the model version data with the model name.
+
+        Args:
+            item: The model version response.
+            result: The result dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
         result["version"] = result.pop("name")
         result.update(
             {

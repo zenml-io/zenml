@@ -63,6 +63,7 @@ from zenml.models import (
     ServiceConnectorResourcesInfo,
     StackFilter,
     StackRequest,
+    StackResponse,
 )
 from zenml.models.v2.core.service_connector import (
     ServiceConnectorRequest,
@@ -965,53 +966,63 @@ def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
 
     # Enrichment function to add active stack information and component details
     def enrichment_func(
-        stack: Any, current_data: Dict[str, Any]
+        item: StackResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Add active status, component count, and specific component names for default columns."""
+        """Add active status, component count, and specific component names for default columns.
+
+        Args:
+            item: The stack response.
+            result: The current data dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
         from zenml.enums import StackComponentType
 
         active_stack_id = client.active_stack_model.id
-        is_active = stack.id == active_stack_id
+        is_active = item.id == active_stack_id
 
-        enrichments = {
-            "is_active": is_active,
-            "active_indicator": "✓" if is_active else "",
-            "components": len(stack.components)
-            if hasattr(stack, "components")
-            else 0,
-        }
+        result.update(
+            {
+                "is_active": is_active,
+                "active_indicator": "✓" if is_active else "",
+                "components": len(item.components)
+                if hasattr(item, "components")
+                else 0,
+            }
+        )
 
         # Add specific component names for default columns
-        if hasattr(stack, "components") and stack.components:
+        if hasattr(item, "components") and item.components:
             # Orchestrator
-            if StackComponentType.ORCHESTRATOR in stack.components:
-                enrichments["orchestrator"] = stack.components[
+            if StackComponentType.ORCHESTRATOR in item.components:
+                result["orchestrator"] = item.components[
                     StackComponentType.ORCHESTRATOR
                 ][0].name
             else:
-                enrichments["orchestrator"] = "-"
+                result["orchestrator"] = "-"
 
             # Artifact Store
-            if StackComponentType.ARTIFACT_STORE in stack.components:
-                enrichments["artifact_store"] = stack.components[
+            if StackComponentType.ARTIFACT_STORE in item.components:
+                result["artifact_store"] = item.components[
                     StackComponentType.ARTIFACT_STORE
                 ][0].name
             else:
-                enrichments["artifact_store"] = "-"
+                result["artifact_store"] = "-"
         else:
-            enrichments["orchestrator"] = "-"
-            enrichments["artifact_store"] = "-"
+            result["orchestrator"] = "-"
+            result["artifact_store"] = "-"
 
         # Add owner info - use current_data user name or fallback
-        enrichments["owner"] = current_data.get("user", "-")
+        result["owner"] = result.get("user", "-")
 
         # Apply green formatting for active stack name
-        if is_active and "name" in current_data:
-            enrichments["name"] = (
-                f"[green]●[/green] [bold green]{current_data['name']}[/bold green] (active)"
+        if is_active and "name" in result:
+            result["name"] = (
+                f"[green]●[/green] [bold green]{result['name']}[/bold green] (active)"
             )
 
-        return enrichments
+        return result
 
     # Prepare data based on output format with enrichment
     output_format = (

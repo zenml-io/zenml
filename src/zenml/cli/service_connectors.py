@@ -1119,35 +1119,37 @@ def list_service_connectors(
             ]
         )
 
-    def enrich_connector_data(
-        connector: Any, current_data: Dict[str, Any]
+    def enrichment_func(
+        item: ServiceConnectorResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Add active status and connector-specific formatting."""
-        is_active = connector.id in active_connector_ids
+        is_active = item.id in active_connector_ids
 
-        enrichments = {
-            "is_active": is_active,
-            "active_indicator": "✓" if is_active else "",
-        }
+        result.update(
+            {
+                "is_active": is_active,
+                "active_indicator": "✓" if is_active else "",
+            }
+        )
 
         # Add formatted resource types with emojis
-        if hasattr(connector, "resource_types"):
-            enrichments["resource_types"] = _format_resource_types_with_emojis(
-                connector.resource_types, connector.type
+        if hasattr(item, "resource_types"):
+            result["resource_types"] = _format_resource_types_with_emojis(
+                item.resource_types, item.type
             )
 
         # Add type with emoji and short name
-        if hasattr(connector, "type"):
+        if hasattr(item, "type"):
             emoji, short_name = _get_connector_type_emoji_and_short_name(
-                connector.type
+                item.type
             )
-            enrichments["type_display"] = f"{emoji} {short_name}"
+            result["type_display"] = f"{emoji} {short_name}"
 
-        return enrichments
+        return result
 
     # Use centralized data preparation with enrichment
     connector_data = prepare_data_from_responses(
-        connectors.items, output_format, enrich_connector_data
+        connectors.items, output_format, enrichment_func
     )
 
     # Handle table output with enhanced system

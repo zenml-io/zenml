@@ -194,7 +194,15 @@ def list_secrets(**kwargs: Any) -> None:
         def enrichment_func(
             item: SecretResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
-            """Enrich the secret data with the scope."""
+            """Enrich the secret data with the scope.
+
+            Args:
+                item: The secret response.
+                result: The result dictionary.
+
+            Returns:
+                The enriched result dictionary.
+            """
             result.update({"scope": "private" if item.private else "public"})
             return result
 

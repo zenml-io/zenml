@@ -443,7 +443,15 @@ def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
         def enrichment_func(
             item: APIKeyResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
-            """Enrich the API key data with the active status."""
+            """Enrich the API key data with the active status.
+
+            Args:
+                item: The API key response.
+                result: The result dictionary.
+
+            Returns:
+                The enriched result dictionary.
+            """
             result.update({"active": item.active})
             return result
 

@@ -403,7 +403,15 @@ def list_pipelines(**kwargs: Any) -> None:
     def enrichment_func(
         item: PipelineResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Enrich the pipeline data with the user name."""
+        """Enrich the pipeline data with the user name.
+
+        Args:
+            item: The pipeline response.
+            result: The result dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
         result.update(
             {
                 "latest_run_status": item.latest_run_status or "",
@@ -503,7 +511,15 @@ def list_schedules(**kwargs: Any) -> None:
     def enrichment_func(
         item: ScheduleResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Enrich the schedule data with the user name."""
+        """Enrich the schedule data with the user name.
+
+        Args:
+            item: The schedule response.
+            result: The result dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
         result.update(
             {
                 "active": item.active,
@@ -637,7 +653,15 @@ def list_pipeline_runs(**kwargs: Any) -> None:
         def enrichment_func(
             item: PipelineRunResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
-            """Enrich the pipeline run data with the user name."""
+            """Enrich the pipeline run data with the user name.
+
+            Args:
+                item: The pipeline run response.
+                result: The result dictionary.
+
+            Returns:
+                The enriched result dictionary.
+            """
             result.update(
                 {
                     "pipeline": item.pipeline.name if item.pipeline else "",
@@ -828,7 +852,15 @@ def list_pipeline_builds(**kwargs: Any) -> None:
         def enrichment_func(
             item: PipelineBuildResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
-            """Enrich the pipeline build data with the user name."""
+            """Enrich the pipeline build data with the user name.
+
+            Args:
+                item: The pipeline build response.
+                result: The result dictionary.
+
+            Returns:
+                The enriched result dictionary.
+            """
             result.update(
                 {
                     "pipeline_name": item.pipeline.name

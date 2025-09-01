@@ -186,7 +186,15 @@ def list_artifact_versions(**kwargs: Any) -> None:
     def enrichment_func(
         item: ArtifactVersionResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Enrich the artifact version data with the artifact name."""
+        """Enrich the artifact version data with the artifact name.
+
+        Args:
+            item: The artifact version response.
+            result: The result dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
         result.update({"name": item.artifact.name})
         return result
 
