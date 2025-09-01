@@ -12,10 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Secrets Store implementation."""
+
 try:
-    import sqlalchemy
+    import sqlalchemy  # noqa
 except ImportError:
-    raise ImportError("Slim client of ZenML only supports connecting to Rest servers, not to remote or local databases.")
+    raise ImportError(
+        "It seems like you've installed the `zenml-slim` package but are "
+        "trying to use ZenML with a local database. The slim client package "
+        "only supports connecting to servers.\n"
+        "* If you want to use ZenML in a local setup, please install the "
+        "`zenml` package instead, e.g. using `pip install zenml`\n"
+        "* If you want to connect to a server, run `zenml login <URL>`"
+    ) from None
 
 from typing import (
     TYPE_CHECKING,

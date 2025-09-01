@@ -14,9 +14,15 @@
 """SQL Zen Store implementation."""
 
 try:
-    import sqlalchemy
+    import sqlalchemy  # noqa
 except ImportError:
-    raise ImportError("Slim client of ZenML only supports connecting to Rest servers, not to remote or local databases.")
+    raise ImportError(
+        "It seems like you've installed the `zenml-slim` package but are "
+        "trying to use ZenML with a local database. The slim client package "
+        "only supports connecting to servers. If you want to use ZenML in a "
+        "local setup, please install the `zenml` package instead, e.g. using "
+        "`pip install zenml`."
+    ) from None
 
 import base64
 import inspect

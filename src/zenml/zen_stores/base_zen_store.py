@@ -207,7 +207,7 @@ class BaseZenStore(
 
         if RestZenStoreConfiguration.supports_url_scheme(url):
             return StoreType.REST
-        
+
         try:
             from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
         except ImportError:
@@ -257,10 +257,10 @@ class BaseZenStore(
         Returns:
             The default store configuration.
         """
-        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
         from zenml.zen_stores.secrets_stores.sql_secrets_store import (
             SqlSecretsStoreConfiguration,
         )
+        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(
             type=StoreType.SQL,
@@ -397,7 +397,6 @@ class BaseZenStore(
             is_sql_zen_store = False
         else:
             is_sql_zen_store = isinstance(self, SqlZenStore)
-        
 
         server_config = ServerConfiguration.get_server_config()
         deployment_type = server_config.deployment_type
