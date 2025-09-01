@@ -6,6 +6,8 @@
 
 Capture policies control what gets recorded when a served pipeline handles a request. ZenML supports five capture modes that provide different levels of observability while balancing privacy, performance, and storage costs.
 
+Looking to learn how to run and consume the Serving API (sync, async, streaming), configure service options, and when to prefer Serving vs orchestrators? See the how-to guide: [Serving Pipelines](./serving.md).
+
 ### The Five Capture Modes
 
 | Mode | Description | Use Case |
