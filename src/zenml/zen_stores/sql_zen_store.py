@@ -5162,7 +5162,7 @@ class SqlZenStore(BaseZenStore):
             if not template.hidden:
                 # Also update the name and description of the underlying
                 # deployment
-                deployment.name = template.name
+                deployment.version = template.name
                 deployment.description = template.description
                 session.add(deployment)
 

@@ -25,7 +25,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, SorterOps
-from zenml.models import Page
+from zenml.models import Page, PipelineRequest
 from zenml.orchestrators import cache_utils
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.steps import step
@@ -219,11 +219,15 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_pipeline_deployment_request_model,
     sample_pipeline_run_request_model,
     sample_step_request_model,
-    create_pipeline_model,
 ):
     """Tests that the latest step run with the same cache key is used for
     caching."""
-    pipeline = create_pipeline_model()
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            name="sample_pipeline",
+            project=clean_client.active_project.id,
+        )
+    )
     sample_step_request_model.cache_key = "cache_key"
     sample_step_request_model.project = clean_client.active_project.id
     sample_pipeline_deployment_request_model.project = (
@@ -232,6 +236,7 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_pipeline_deployment_request_model.stack = (
         clean_client.active_stack.id
     )
+    sample_pipeline_deployment_request_model.pipeline = pipeline.id
     sample_pipeline_run_request_model.project = clean_client.active_project.id
     sample_pipeline_run_request_model.pipeline = pipeline.id
 
