@@ -95,7 +95,7 @@ def generate_cache_key(
 
     # Input artifacts
     for name, artifact_version in input_artifacts.items():
-        if name in cache_policy.ignored_inputs:
+        if name in (cache_policy.ignored_inputs or []):
             continue
 
         hash_.update(name.encode())
