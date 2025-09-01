@@ -29,6 +29,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
+from zenml.exceptions import IllegalOperationError
 from zenml.logging.step_logging import (
     DEFAULT_PAGE_SIZE,
     FilePosition,
@@ -270,10 +271,10 @@ def get_step_status(
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
     step_id: UUID,
-    page: int = 1,
     count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
+    page: Optional[int] = None,
     from_file_index: Optional[int] = None,
     from_position: Optional[int] = None,
     _: AuthContext = Security(authorize),
@@ -283,8 +284,8 @@ def get_step_logs(
     This endpoint supports optimized navigation modes:
 
     - page=1: Returns the latest entries (first page)
-    - page=N with from_position: Direct navigation to page N starting from position
     - page=N without from_position: Requires using page index endpoint first
+    - with from_position: Direct navigation to the page starting from position
 
     For efficient navigation to arbitrary pages, use the /logs/info endpoint
     to get page positions, then use those positions with this endpoint.
@@ -472,8 +473,8 @@ def download_step_logs(
     store = zen_store()
 
     if step.logs is None:
-        raise HTTPException(
-            status_code=404, detail="No logs available for this step"
+        raise IllegalOperationError(
+            f"No logs are available for step '{step.id}'."
         )
 
     log_generator = stream_log_records(
