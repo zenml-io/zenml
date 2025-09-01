@@ -47,6 +47,8 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[SourceWithValidator] = None
     success_hook_source: Optional[SourceWithValidator] = None
+    init_hook_source: Optional[SourceWithValidator] = None
+    cleanup_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
