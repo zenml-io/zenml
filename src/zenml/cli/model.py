@@ -32,8 +32,10 @@ from zenml.models import (
     ModelFilter,
     ModelResponse,
     ModelVersionArtifactFilter,
+    ModelVersionArtifactResponse,
     ModelVersionFilter,
     ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunResponse,
     ModelVersionResponse,
 )
 from zenml.utils.dict_utils import remove_none_values
@@ -72,11 +74,6 @@ def list_models(**kwargs: Any) -> None:
         cli_utils.declare("No models found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
     def enrichment_func(
         item: ModelResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -98,7 +95,7 @@ def list_models(**kwargs: Any) -> None:
         return result
 
     model_data = cli_utils.prepare_data_from_responses(
-        models.items, output_format, enrichment_func=enrichment_func
+        models.items, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
@@ -204,7 +201,7 @@ def register_model(
             registry.
     """
     try:
-        model = Client().create_model(
+        Client().create_model(
             **remove_none_values(
                 dict(
                     name=name,
@@ -222,9 +219,6 @@ def register_model(
         )
     except (EntityExistsError, ValueError) as e:
         cli_utils.error(str(e))
-
-    model_data = prepare_data_from_responses([model], "table")
-    cli_utils.print_table(model_data)
 
 
 @model.command("update", help="Update an existing model.")
@@ -354,10 +348,7 @@ def update_model(
             save_models_to_registry=save_models_to_registry,
         )
     )
-    model = Client().update_model(model_name_or_id=model_id, **update_dict)
-
-    model_data = prepare_data_from_responses([model], "table")
-    cli_utils.print_table(model_data)
+    Client().update_model(model_name_or_id=model_id, **update_dict)
 
 
 @model.command("delete", help="Delete an existing model.")
@@ -422,11 +413,6 @@ def list_model_versions(**kwargs: Any) -> None:
         cli_utils.declare("No model versions found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
     def enrichment_func(
         item: ModelVersionResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -452,7 +438,7 @@ def list_model_versions(**kwargs: Any) -> None:
         return result
 
     model_version_data = cli_utils.prepare_data_from_responses(
-        model_versions.items, output_format, enrichment_func=enrichment_func
+        model_versions.items, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
@@ -546,11 +532,6 @@ def update_model_version(
         )
     except RuntimeError:
         if not force:
-            model_version_data = prepare_data_from_responses(
-                [model_version], "table"
-            )
-            cli_utils.print_table(model_version_data)
-
             confirmation = cli_utils.confirmation(
                 "Are you sure you want to change the status of model "
                 f"version '{model_version_name_or_number_or_id}' to "
@@ -570,8 +551,6 @@ def update_model_version(
                 force=True,
                 description=description,
             )
-    model_version_data = prepare_data_from_responses([model_version], "table")
-    cli_utils.print_table(model_version_data)
 
 
 @version.command("delete", help="Delete an existing model version.")
@@ -665,25 +644,26 @@ def _print_artifacts_links_generic(
         cli_utils.declare(f"No {type_} linked to the model version found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
+    def enrichment_func(
+        item: ModelVersionArtifactResponse, result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Enrich the model version artifact link data with the model version name.
 
-    # Handle both paginated and non-paginated responses
-    link_list = links.items if hasattr(links, "items") else links
+        Args:
+            item: The model version artifact link response.
+            result: The result dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
+        result["artifact_version"] = item.artifact_version.id
+        return result
 
     # Use centralized data preparation
     link_data = cli_utils.prepare_data_from_responses(
-        link_list,  # type: ignore[arg-type]
-        output_format,
+        links.items,
+        enrichment_func=enrichment_func,
     )
-
-    # Set title for table output
-    if output_format == "table":
-        table_kwargs["title"] = (
-            f"{type_.title()} linked to model version `{model_version.name}[{model_version.number}]`"
-        )
 
     # Handle table output with enhanced system and pagination
     cli_utils.handle_table_output(
@@ -797,6 +777,9 @@ def list_model_version_pipeline_runs(
             provided, the latest version is used.
         **kwargs: Keyword arguments to filter runs.
     """
+    # Extract table options from kwargs
+    table_kwargs = cli_utils.extract_table_options(kwargs)
+
     model_version_response_model = Client().get_model_version(
         model_name_or_id=model_name,
         model_version_name_or_number_or_id=model_version,
@@ -811,7 +794,24 @@ def list_model_version_pipeline_runs(
         cli_utils.declare("No pipeline runs attached to model version found.")
         return
 
-    cli_utils.title(
-        f"Pipeline runs linked to the model version `{model_version_response_model.name}[{model_version_response_model.number}]`:"
+    def enrichment_func(
+        item: ModelVersionPipelineRunResponse, result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Enrich the model version pipeline run link data with the model version name.
+
+        Args:
+            item: The model version pipeline run link response.
+            result: The result dictionary.
+
+        Returns:
+            The enriched result dictionary.
+        """
+        result["pipeline_run"] = item.pipeline_run.id
+        return result
+
+    run_data = prepare_data_from_responses(
+        runs.items, enrichment_func=enrichment_func
     )
-    cli_utils.print_pydantic_models(runs)
+
+    # Use centralized table output with pagination
+    cli_utils.handle_table_output(run_data, page=runs, **table_kwargs)

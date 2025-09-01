@@ -210,22 +210,9 @@ def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
             cli_utils.declare("No service accounts found.")
             return
 
-        # Prepare data based on output format
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-
-        # Handle both paginated and non-paginated responses
-        account_list = (
-            service_accounts.items
-            if hasattr(service_accounts, "items")
-            else service_accounts
-        )
-
         # Use centralized data preparation
         service_account_data = prepare_data_from_responses(
-            account_list,  # type: ignore[arg-type]
-            output_format,
+            service_accounts.items
         )
 
         # Handle table output with enhanced system
@@ -435,11 +422,6 @@ def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
             cli_utils.declare("No API keys found.")
             return
 
-        # Prepare data based on output format
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-
         def enrichment_func(
             item: APIKeyResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
@@ -457,7 +439,7 @@ def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
 
         # Use centralized data preparation
         api_key_data = prepare_data_from_responses(
-            api_keys.items, output_format, enrichment_func=enrichment_func
+            api_keys.items, enrichment_func=enrichment_func
         )
 
         # Handle table output with enhanced system

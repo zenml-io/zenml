@@ -1024,13 +1024,8 @@ def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
 
         return result
 
-    # Prepare data based on output format with enrichment
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
     stack_data = prepare_data_from_responses(
-        stacks.items, output_format, enrichment_func=enrichment_func
+        stacks.items, enrichment_func=enrichment_func
     )
 
     # Use centralized table output with pagination

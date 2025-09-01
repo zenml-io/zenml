@@ -62,17 +62,6 @@ def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
             except Exception:
                 active_project = []
 
-            # Prepare data based on output format
-            output_format = (
-                table_kwargs.get("output")
-                or cli_utils.get_default_output_format()
-            )
-
-            # Handle both paginated and non-paginated responses
-            project_list = (
-                projects.items if hasattr(projects, "items") else projects
-            )
-
             # Use centralized data preparation
             def enrichment_func(
                 item: ProjectResponse, result: Dict[str, Any]
@@ -90,8 +79,7 @@ def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
                 return result
 
             project_data = prepare_data_from_responses(
-                list(project_list),  # type: ignore[arg-type]
-                output_format,
+                projects.items,
                 enrichment_func=enrichment_func,
             )
 

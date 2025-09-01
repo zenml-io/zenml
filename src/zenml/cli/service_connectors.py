@@ -1102,11 +1102,6 @@ def list_service_connectors(
         cli_utils.declare("No service connectors found for the given filters.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
     # Get active connector IDs from current stack for enrichment
     active_stack = client.active_stack_model
     active_connector_ids: List[UUID] = []
@@ -1149,7 +1144,7 @@ def list_service_connectors(
 
     # Use centralized data preparation with enrichment
     connector_data = prepare_data_from_responses(
-        connectors.items, output_format, enrichment_func
+        connectors.items, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system

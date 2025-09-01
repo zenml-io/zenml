@@ -102,14 +102,7 @@ def list_users(**kwargs: Any) -> None:
         cli_utils.declare("No users found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-    user_data = []
-
     # Handle both paginated and non-paginated responses
-    user_list = users.items if hasattr(users, "items") else users
     active_user_id = client.active_user.id
 
     # Create enrichment function for active user indicator
@@ -159,8 +152,7 @@ def list_users(**kwargs: Any) -> None:
 
     # Use centralized data preparation with enrichment
     user_data = prepare_data_from_responses(
-        list(user_list),  # type: ignore[arg-type]
-        output_format,
+        users.items,
         enrichment_func=enrichment_func,
     )
 

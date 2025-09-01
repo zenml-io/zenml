@@ -59,19 +59,8 @@ def list_tags(**kwargs: Any) -> None:
         cli_utils.declare("No tags found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
-    # Handle both paginated and non-paginated responses
-    tag_list = tags.items if hasattr(tags, "items") else tags
-
     # Use centralized data preparation
-    tag_data = prepare_data_from_responses(
-        list(tag_list),  # type: ignore[arg-type]
-        output_format,
-    )
+    tag_data = prepare_data_from_responses(tags.items)
 
     # Handle table output with enhanced system and pagination
     cli_utils.handle_table_output(data=tag_data, page=tags, **table_kwargs)

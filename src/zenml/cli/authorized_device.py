@@ -82,13 +82,8 @@ def list_authorized_devices(**kwargs: Any) -> None:
             cli_utils.declare("No authorized devices found.")
             return
 
-        # Prepare data based on output format
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-
         # Use centralized data preparation
-        device_data = prepare_data_from_responses(devices.items, output_format)
+        device_data = prepare_data_from_responses(devices.items)
 
         # Handle table output with enhanced system and pagination
         cli_utils.handle_table_output(

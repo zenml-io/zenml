@@ -63,11 +63,6 @@ def list_artifacts(**kwargs: Any) -> None:
         cli_utils.declare("No artifacts found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
     def enrichment_func(
         item: ArtifactResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -89,7 +84,7 @@ def list_artifacts(**kwargs: Any) -> None:
         return result
 
     artifact_data = cli_utils.prepare_data_from_responses(
-        artifacts.items, output_format, enrichment_func=enrichment_func
+        artifacts.items, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
@@ -178,11 +173,6 @@ def list_artifact_versions(**kwargs: Any) -> None:
         cli_utils.declare("No artifact versions found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
     def enrichment_func(
         item: ArtifactVersionResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -199,7 +189,7 @@ def list_artifact_versions(**kwargs: Any) -> None:
         return result
 
     artifact_version_data = cli_utils.prepare_data_from_responses(
-        artifact_versions.items, output_format, enrichment_func=enrichment_func
+        artifact_versions.items, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination

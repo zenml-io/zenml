@@ -186,11 +186,6 @@ def list_secrets(**kwargs: Any) -> None:
             cli_utils.declare("No secrets found.")
             return
 
-        # Prepare data based on output format
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-
         def enrichment_func(
             item: SecretResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
@@ -208,7 +203,7 @@ def list_secrets(**kwargs: Any) -> None:
 
         # Use centralized data preparation
         secret_data = cli_utils.prepare_data_from_responses(
-            secrets.items, output_format, enrichment_func=enrichment_func
+            secrets.items, enrichment_func=enrichment_func
         )
 
         # Handle table output with enhanced system and pagination

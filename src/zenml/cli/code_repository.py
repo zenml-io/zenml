@@ -211,14 +211,8 @@ def list_code_repositories(**kwargs: Any) -> None:
             cli_utils.declare("No code repositories found.")
             return
 
-        # Prepare data based on output format
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-        repo_data = []
-
         # Use centralized data preparation
-        repo_data = prepare_data_from_responses(repos.items, output_format)
+        repo_data = prepare_data_from_responses(repos.items)
 
         # Handle table output with enhanced system
         cli_utils.handle_table_output(

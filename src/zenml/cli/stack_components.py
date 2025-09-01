@@ -180,11 +180,6 @@ def generate_stack_component_list_command(
             cli_utils.declare("No components found.")
             return
 
-        # Prepare data based on output format
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-
         def enrichment_func(
             item: ComponentResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
@@ -205,7 +200,6 @@ def generate_stack_component_list_command(
         # Use centralized data preparation
         component_data = prepare_data_from_responses(
             components.items,
-            output_format,
             enrichment_func=enrichment_func,
         )
 
@@ -771,10 +765,6 @@ def generate_stack_component_flavor_list_command(
             cli_utils.declare("No flavors found.")
             return
 
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-
         def enrichment_func(
             item: FlavorResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
@@ -794,7 +784,7 @@ def generate_stack_component_flavor_list_command(
 
         # Use centralized data preparation
         flavor_data = prepare_data_from_responses(
-            flavors.items, output_format, enrichment_func=enrichment_func
+            flavors.items, enrichment_func=enrichment_func
         )
 
         # Handle table output with pagination and default columns

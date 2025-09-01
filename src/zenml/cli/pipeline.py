@@ -395,11 +395,6 @@ def list_pipelines(**kwargs: Any) -> None:
         cli_utils.declare("No pipelines found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
     def enrichment_func(
         item: PipelineResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -426,7 +421,7 @@ def list_pipelines(**kwargs: Any) -> None:
 
     # Use centralized data preparation
     pipeline_data = prepare_data_from_responses(
-        pipelines.items, output_format, enrichment_func=enrichment_func
+        pipelines.items, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
@@ -503,11 +498,6 @@ def list_schedules(**kwargs: Any) -> None:
         cli_utils.declare("No schedules found.")
         return
 
-    # Prepare data based on output format
-    output_format = (
-        table_kwargs.get("output") or cli_utils.get_default_output_format()
-    )
-
     def enrichment_func(
         item: ScheduleResponse, result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -539,7 +529,7 @@ def list_schedules(**kwargs: Any) -> None:
 
     # Use centralized data preparation
     schedule_data = prepare_data_from_responses(
-        schedule_list, output_format, enrichment_func=enrichment_func
+        schedule_list, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
@@ -645,11 +635,6 @@ def list_pipeline_runs(**kwargs: Any) -> None:
             cli_utils.declare("No pipeline runs found.")
             return
 
-        # Prepare data based on output format
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-
         def enrichment_func(
             item: PipelineRunResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
@@ -674,7 +659,7 @@ def list_pipeline_runs(**kwargs: Any) -> None:
 
         # Use centralized data preparation
         pipeline_run_data = prepare_data_from_responses(
-            pipeline_runs.items, output_format, enrichment_func=enrichment_func
+            pipeline_runs.items, enrichment_func=enrichment_func
         )
 
         # Handle table output with enhanced system and pagination
@@ -844,11 +829,6 @@ def list_pipeline_builds(**kwargs: Any) -> None:
             cli_utils.declare("No pipeline builds found.")
             return
 
-        # Prepare data based on output format
-        output_format = (
-            table_kwargs.get("output") or cli_utils.get_default_output_format()
-        )
-
         def enrichment_func(
             item: PipelineBuildResponse, result: Dict[str, Any]
         ) -> Dict[str, Any]:
@@ -875,7 +855,6 @@ def list_pipeline_builds(**kwargs: Any) -> None:
         # Use centralized data preparation
         pipeline_build_data = prepare_data_from_responses(
             pipeline_builds.items,
-            output_format,
             enrichment_func=enrichment_func,
         )
 

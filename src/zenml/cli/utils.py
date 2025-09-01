@@ -108,6 +108,8 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
@@ -2868,8 +2870,7 @@ def to_print_full(model: Any) -> Dict[str, Any]:
 
 
 def prepare_data_from_responses(
-    items: List[Any],
-    output_format: str,
+    items: List[AnyResponse],
     enrichment_func: Optional[
         Callable[[Any, Dict[str, Any]], Dict[str, Any]]
     ] = None,
@@ -2884,7 +2885,6 @@ def prepare_data_from_responses(
 
     Args:
         items: List of BaseResponse instances to format
-        output_format: The desired output format ("table", "json", "yaml", "tsv", etc.)
         enrichment_func: Optional function to add/modify fields
                         Takes the item and current result dict, returns dict of fields to merge
 
@@ -2903,7 +2903,7 @@ def prepare_data_from_responses(
 
         # Take name if it exists (some responses have name, others don't)
         if hasattr(item, "name"):
-            item_data["name"] = item.name
+            item_data["name"] = getattr(item, "name")
 
         # Take all body fields (core entity data)
         if item.body is not None:
