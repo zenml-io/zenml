@@ -57,6 +57,7 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.container_registries import BaseContainerRegistry
     from zenml.data_validators import BaseDataValidator
+    from zenml.deployers import BaseDeployer
     from zenml.experiment_trackers.base_experiment_tracker import (
         BaseExperimentTracker,
     )
@@ -71,7 +72,6 @@ if TYPE_CHECKING:
         PipelineRunResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
-    from zenml.deployers import BaseDeployer
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
     from zenml.utils import secret_utils
@@ -219,13 +219,13 @@ class Stack:
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
         from zenml.data_validators import BaseDataValidator
+        from zenml.deployers import BaseDeployer
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
-        from zenml.deployers import BaseDeployer
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -315,9 +315,7 @@ class Stack:
             _raise_type_error(model_registry, BaseModelRegistry)
 
         deployer = components.get(StackComponentType.DEPLOYER)
-        if deployer is not None and not isinstance(
-            deployer, BaseDeployer
-        ):
+        if deployer is not None and not isinstance(deployer, BaseDeployer):
             _raise_type_error(deployer, BaseDeployer)
 
         return Stack(

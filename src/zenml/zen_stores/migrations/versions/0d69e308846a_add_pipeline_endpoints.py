@@ -43,9 +43,7 @@ def upgrade() -> None:
             sqlmodel.sql.sqltypes.GUID(),
             nullable=True,
         ),
-        sa.Column(
-            "deployer_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-        ),
+        sa.Column("deployer_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.ForeignKeyConstraint(
             ["pipeline_deployment_id"],
             ["pipeline_deployment.id"],

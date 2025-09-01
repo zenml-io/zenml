@@ -23,12 +23,12 @@ from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import (
     DEPLOYER_DOCKER_IMAGE_KEY,
 )
+from zenml.deployers.base_deployer import BaseDeployer
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineDeploymentBase,
     PipelineDeploymentResponse,
 )
-from zenml.deployers.base_deployer import BaseDeployer
 
 logger = get_logger(__name__)
 
@@ -67,8 +67,7 @@ class ContainerizedDeployer(BaseDeployer, ABC):
             raise RuntimeError("Pipeline deployment does not have a build. ")
         if DEPLOYER_DOCKER_IMAGE_KEY not in deployment.build.images:
             raise RuntimeError(
-                "Pipeline deployment build does not have a deployer "
-                "image. "
+                "Pipeline deployment build does not have a deployer image. "
             )
         return deployment.build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
 

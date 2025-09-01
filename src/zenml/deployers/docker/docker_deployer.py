@@ -37,6 +37,18 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.deployers.base_deployer import (
+    BaseDeployerConfig,
+    BaseDeployerFlavor,
+    DeployerError,
+    PipelineEndpointDeploymentError,
+    PipelineEndpointDeprovisionError,
+    PipelineEndpointNotFoundError,
+    PipelineLogsNotFoundError,
+)
+from zenml.deployers.containerized_deployer import (
+    ContainerizedDeployer,
+)
 from zenml.entrypoints.base_entrypoint_configuration import (
     DEPLOYMENT_ID_OPTION,
 )
@@ -45,18 +57,6 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineEndpointOperationalState,
     PipelineEndpointResponse,
-)
-from zenml.deployers.base_deployer import (
-    BaseDeployerConfig,
-    BaseDeployerFlavor,
-    PipelineEndpointDeploymentError,
-    PipelineEndpointDeprovisionError,
-    PipelineEndpointNotFoundError,
-    PipelineLogsNotFoundError,
-    DeployerError,
-)
-from zenml.deployers.containerized_deployer import (
-    ContainerizedDeployer,
 )
 from zenml.serving.entrypoint_configuration import (
     PORT_OPTION,
@@ -662,9 +662,7 @@ class DockerDeployerSettings(BaseSettings):
     run_args: Dict[str, Any] = {}
 
 
-class DockerDeployerConfig(
-    BaseDeployerConfig, DockerDeployerSettings
-):
+class DockerDeployerConfig(BaseDeployerConfig, DockerDeployerSettings):
     """Docker deployer config."""
 
     @property

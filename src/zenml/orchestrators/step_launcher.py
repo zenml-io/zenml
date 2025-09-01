@@ -466,9 +466,13 @@ class StepLauncher:
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
-        environment = orchestrator_utils.get_config_environment_vars(
+        environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
         )
+        # TODO: for now, we don't support separate secrets from environment
+        # in the step operator environment
+        environment.update(secrets)
+
         environment[ENV_ZENML_STEP_OPERATOR] = "True"
         logger.info(
             "Using step operator `%s` to run step `%s`.",

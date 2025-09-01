@@ -191,9 +191,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
                 pipeline_deployment=self.pipeline_deployment.to_model()
                 if self.pipeline_deployment
                 else None,
-                deployer=self.deployer.to_model()
-                if self.deployer
-                else None,
+                deployer=self.deployer.to_model() if self.deployer else None,
             )
 
         return PipelineEndpointResponse(

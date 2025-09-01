@@ -54,9 +54,7 @@ class DeployerError(Exception):
     """Base class for deployer errors."""
 
 
-class PipelineEndpointAlreadyExistsError(
-    EntityExistsError, DeployerError
-):
+class PipelineEndpointAlreadyExistsError(EntityExistsError, DeployerError):
     """Error raised when a pipeline endpoint already exists."""
 
 
@@ -179,10 +177,7 @@ class BaseDeployer(StackComponent, ABC):
             PipelineEndpointDeployerMismatchError: if the pipeline endpoint is
                 not managed by this deployer.
         """
-        if (
-            endpoint.deployer_id
-            and endpoint.deployer_id != self.id
-        ):
+        if endpoint.deployer_id and endpoint.deployer_id != self.id:
             deployer = endpoint.deployer
             assert deployer, "Deployer not found"
             raise PipelineEndpointDeployerMismatchError(
@@ -233,10 +228,6 @@ class BaseDeployer(StackComponent, ABC):
             pipeline endpoint.
         """
         client = Client()
-
-        environment = get_config_environment_vars()
-        # TODO: separate secrets from environment
-        secrets: Optional[Dict[str, str]] = None
 
         # TODO: get timeout from config
         timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
@@ -304,6 +295,10 @@ class BaseDeployer(StackComponent, ABC):
                 f"Pipeline endpoint {endpoint_name} has no associated pipeline "
                 "deployment"
             )
+
+        environment, secrets = get_config_environment_vars(
+            deployment_id=endpoint.id,
+        )
 
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,

@@ -241,10 +241,14 @@ class BaseOrchestrator(StackComponent, ABC):
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
-        environment = get_config_environment_vars(
+        environment, secrets = get_config_environment_vars(
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
         )
+
+        # TODO: for now, we don't support separate secrets from environment
+        # in the orchestrator environment
+        environment.update(secrets)
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
