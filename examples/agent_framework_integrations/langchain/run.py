@@ -4,11 +4,21 @@ This pipeline demonstrates how to integrate LangChain chains with ZenML
 for orchestration and artifact management.
 """
 
+import os
 from typing import Annotated, Any, Dict
 
 from langchain_agent import chain
 
 from zenml import ExternalArtifact, pipeline, step
+from zenml.config import DockerSettings, PythonPackageInstaller
+
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    requirements="requirements.txt",  # relative to the pipeline directory
+    environment={
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    },
+)
 
 
 @step
@@ -66,7 +76,7 @@ Summary:
     return formatted.strip()
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings}, enable_cache=False)
 def langchain_summarization_pipeline() -> str:
     """ZenML pipeline that orchestrates the LangChain document summarization.
 
