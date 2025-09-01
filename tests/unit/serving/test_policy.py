@@ -16,7 +16,7 @@
 import os
 from unittest import mock
 
-from zenml.serving.policy import (
+from zenml.deployers.serving.policy import (
     ArtifactCaptureMode,
     CapturePolicy,
     CapturePolicyMode,

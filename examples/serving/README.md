@@ -44,10 +44,10 @@ ZenML serving supports multiple ways to start the service:
 ### Option 1: Modern Command-Line Arguments (Recommended)
 ```bash
 # Basic usage with deployment ID
-python -m zenml.serving --deployment_id <your-deployment-id>
+python -m zenml.deployers.serving --deployment_id <your-deployment-id>
 
 # With custom configuration
-python -m zenml.serving \
+python -m zenml.deployers.serving \
   --deployment_id <your-deployment-id> \
   --host 0.0.0.0 \
   --port 8080 \
@@ -62,14 +62,14 @@ export ZENML_SERVICE_HOST=0.0.0.0      # Optional
 export ZENML_SERVICE_PORT=8080          # Optional  
 export ZENML_SERVICE_WORKERS=2          # Optional
 export ZENML_LOG_LEVEL=debug            # Optional
-python -m zenml.serving
+python -m zenml.deployers.serving
 ```
 
 ### Option 3: Advanced Entrypoint Configuration (For Integration)
 ```bash
 # Using the serving entrypoint configuration class directly
-python -m zenml.serving \
-  --entrypoint_config_source zenml.serving.entrypoint_configuration.ServingEntrypointConfiguration \
+python -m zenml.deployers.serving \
+  --entrypoint_config_source zenml.deployers.serving.entrypoint_configuration.ServingEntrypointConfiguration \
   --deployment_id <your-deployment-id> \
   --host 0.0.0.0 \
   --port 8080
@@ -109,18 +109,18 @@ It will print a deployment ID like: `12345678-1234-5678-9abc-123456789abc`.
 
 **Modern Command-Line Arguments (Recommended):**
 ```bash
-python -m zenml.serving --deployment_id your_deployment_id_from_step_1
+python -m zenml.deployers.serving --deployment_id your_deployment_id_from_step_1
 ```
 
 **Legacy Environment Variable Method:**
 ```bash
 export ZENML_PIPELINE_DEPLOYMENT_ID=your_deployment_id_from_step_1
-python -m zenml.serving
+python -m zenml.deployers.serving
 ```
 
 **Custom Configuration:**
 ```bash
-python -m zenml.serving --deployment_id your_id --host 0.0.0.0 --port 8080 --workers 2 --log_level debug
+python -m zenml.deployers.serving --deployment_id your_id --host 0.0.0.0 --port 8080 --workers 2 --log_level debug
 ```
 
 Service starts on `http://localhost:8000` (or your custom port)
@@ -181,13 +181,13 @@ python chat_agent_pipeline.py
 
 **Modern Command-Line Arguments (Recommended):**
 ```bash
-python -m zenml.serving --deployment_id f770327d-4ce0-4a6c-8033-955c2e990736
+python -m zenml.deployers.serving --deployment_id f770327d-4ce0-4a6c-8033-955c2e990736
 ```
 
 **Legacy Environment Variable Method:**
 ```bash
 export ZENML_PIPELINE_DEPLOYMENT_ID=f770327d-4ce0-4a6c-8033-955c2e990736  
-python -m zenml.serving
+python -m zenml.deployers.serving
 ```
 
 ### Step 3: Test Streaming Chat (Multiple Methods)

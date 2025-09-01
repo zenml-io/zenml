@@ -21,6 +21,22 @@ from uuid import UUID
 from zenml.artifacts.utils import save_artifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
+from zenml.deployers.serving.capture import (
+    Capture,
+    EffectiveCapture,
+    ValueCapturePlan,
+    overlay_capture,
+    should_capture_value_artifacts,
+    should_capture_value_payload,
+)
+from zenml.deployers.serving.events import EventType, ServingEvent
+from zenml.deployers.serving.policy import (
+    CapturePolicy,
+    CapturePolicyMode,
+    redact_fields,
+    should_capture_payloads,
+    truncate_payload,
+)
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
@@ -32,22 +48,6 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-)
-from zenml.serving.capture import (
-    Capture,
-    EffectiveCapture,
-    ValueCapturePlan,
-    overlay_capture,
-    should_capture_value_artifacts,
-    should_capture_value_payload,
-)
-from zenml.serving.events import EventType, ServingEvent
-from zenml.serving.policy import (
-    CapturePolicy,
-    CapturePolicyMode,
-    redact_fields,
-    should_capture_payloads,
-    truncate_payload,
 )
 from zenml.utils import string_utils
 from zenml.utils.time_utils import utc_now
@@ -189,7 +189,7 @@ class TrackingManager:
             overrides: Dict with "inputs" and/or "outputs" keys mapping to mode strings
                       or dicts of {param_name: mode_string}
         """
-        from zenml.serving.capture import Capture
+        from zenml.deployers.serving.capture import Capture
 
         normalized_overrides: Dict[str, Dict[str, Capture]] = {
             "inputs": {},
@@ -245,7 +245,7 @@ class TrackingManager:
             Effective capture policy for the step
         """
         if step_name in self._step_mode_overrides:
-            from zenml.serving.policy import (
+            from zenml.deployers.serving.policy import (
                 CapturePolicyMode,
                 derive_artifacts_from_mode,
             )

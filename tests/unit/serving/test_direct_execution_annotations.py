@@ -16,8 +16,8 @@
 from typing import Annotated
 from unittest.mock import Mock, patch
 
-from zenml.serving.capture import Capture
-from zenml.serving.direct_execution import DirectExecutionEngine
+from zenml.deployers.serving.capture import Capture
+from zenml.deployers.serving.direct_execution import DirectExecutionEngine
 
 
 class MockStepClass:
@@ -173,7 +173,7 @@ class TestDirectExecutionEngineAnnotations:
         assert overrides["inputs"] == {}
         assert overrides["outputs"] == {}
 
-    @patch("zenml.serving.direct_execution.logger")
+    @patch("zenml.deployers.serving.direct_execution.logger")
     def test_parse_annotation_warning_on_failure(self, mock_logger):
         """Test that parsing failures are logged as warnings."""
         # Create a step class that will cause an exception during parsing
@@ -182,7 +182,7 @@ class TestDirectExecutionEngineAnnotations:
 
         # Make inspect.signature raise an exception
         with patch(
-            "zenml.serving.direct_execution.inspect.signature",
+            "zenml.deployers.serving.direct_execution.inspect.signature",
             side_effect=Exception("Test error"),
         ):
             # Create a mock engine

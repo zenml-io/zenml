@@ -88,22 +88,22 @@ When no settings-level per-value policies are defined, ZenML falls back to type 
 
 ```python
 from typing import Annotated
-from zenml.serving import Cap
+from zenml.deployers.serving import Capture
 
 @step
 def analyze_weather(
-    city: Annotated[str, Cap.full],      # safe to log
-    token: Annotated[str, Cap.none],     # never log  
-) -> Annotated[str, Cap.sampled()]:      # use global sampling
+    city: Annotated[str, Capture.FULL],      # safe to log
+    token: Annotated[str, Capture.OFF],     # never log  
+) -> Annotated[str, Capture.SAMPLED()]:      # use global sampling
     return get_weather(city, token)
 ```
 
-**Available `Cap` constants:**
-- `Cap.full` - Always capture
-- `Cap.none` - Never capture  
-- `Cap.metadata` - Metadata only
-- `Cap.errors_only` - Only on failures
-- `Cap.sampled()` - Use global sampling decision
+**Available `Capture` constants:**
+- `Capture.FULL` - Always capture
+- `Capture.OFF` - Never capture  
+- `Capture.METADATA` - Metadata only
+- `Capture.ERRORS_ONLY` - Only on failures
+- `Capture.SAMPLED()` - Use global sampling decision
 
 ---
 
@@ -270,13 +270,13 @@ Type annotations provide a clean way to mark individual parameters:
 
 ```python
 from typing import Annotated
-from zenml.serving import Cap
+from zenml.deployers.serving import Capture
 
 @step
 def api_call(
-    public_endpoint: Annotated[str, Cap.full],
-    api_key: Annotated[str, Cap.none],
-) -> Annotated[str, Cap.metadata]:
+    public_endpoint: Annotated[str, Capture.FULL],
+    api_key: Annotated[str, Capture.OFF],
+) -> Annotated[str, Capture.METADATA]:
     return call_api(public_endpoint, api_key)
 ```
 

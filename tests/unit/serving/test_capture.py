@@ -17,8 +17,7 @@ from typing import Annotated
 
 import pytest
 
-from zenml.serving.capture import (
-    Cap,
+from zenml.deployers.serving.capture import (
     Capture,
     CaptureMode,
     EffectiveCapture,
@@ -27,7 +26,7 @@ from zenml.serving.capture import (
     should_capture_value_artifacts,
     should_capture_value_payload,
 )
-from zenml.serving.policy import (
+from zenml.deployers.serving.policy import (
     ArtifactCaptureMode,
     CapturePolicy,
     CapturePolicyMode,
@@ -356,43 +355,43 @@ class TestIntegrationScenarios:
 class TestCapConstants:
     """Test the Cap convenience constants for simple annotation syntax."""
 
-    def test_cap_full(self):
-        """Test Cap.full constant."""
-        assert Cap.full.mode == CaptureMode.FULL
-        assert Cap.full.sample_rate is None
-        assert Cap.full.artifacts is None
+    def test_capture_constants_full(self):
+        """Test Capture.FULL constant."""
+        assert Capture.FULL.mode == CaptureMode.FULL
+        assert Capture.FULL.sample_rate is None
+        assert Capture.FULL.artifacts is None
 
-    def test_cap_none(self):
-        """Test Cap.none constant."""
-        assert Cap.none.mode == CaptureMode.NONE
-        assert Cap.none.sample_rate is None
-        assert Cap.none.artifacts is None
+    def test_capture_constants_none(self):
+        """Test Capture.OFF constant."""
+        assert Capture.OFF.mode == CaptureMode.NONE
+        assert Capture.OFF.sample_rate is None
+        assert Capture.OFF.artifacts is None
 
-    def test_cap_metadata(self):
-        """Test Cap.metadata constant."""
-        assert Cap.metadata.mode == CaptureMode.METADATA
-        assert Cap.metadata.sample_rate is None
-        assert Cap.metadata.artifacts is None
+    def test_capture_constants_metadata(self):
+        """Test Capture.METADATA constant."""
+        assert Capture.METADATA.mode == CaptureMode.METADATA
+        assert Capture.METADATA.sample_rate is None
+        assert Capture.METADATA.artifacts is None
 
-    def test_cap_errors_only(self):
-        """Test Cap.errors_only constant."""
-        assert Cap.errors_only.mode == CaptureMode.ERRORS_ONLY
-        assert Cap.errors_only.sample_rate is None
-        assert Cap.errors_only.artifacts is None
+    def test_capture_constants_errors_only(self):
+        """Test Capture.ERRORS_ONLY constant."""
+        assert Capture.ERRORS_ONLY.mode == CaptureMode.ERRORS_ONLY
+        assert Capture.ERRORS_ONLY.sample_rate is None
+        assert Capture.ERRORS_ONLY.artifacts is None
 
-    def test_cap_sampled(self):
-        """Test Cap.sampled() constant."""
-        sampled = Cap.sampled()
+    def test_capture_constants_sampled(self):
+        """Test Capture.SAMPLED() constant."""
+        sampled = Capture.SAMPLED()
         assert sampled.mode == CaptureMode.SAMPLED
         assert sampled.sample_rate is None  # No per-value rate
         assert sampled.artifacts is None
 
-    def test_cap_annotation_usage(self):
+    def test_capture_constants_annotation_usage(self):
         """Test Cap constants work with type annotations."""
         # These should work with parse_capture_annotation
-        full_annotation = Annotated[str, Cap.full]
-        none_annotation = Annotated[str, Cap.none]
-        sampled_annotation = Annotated[str, Cap.sampled()]
+        full_annotation = Annotated[str, Capture.FULL]
+        none_annotation = Annotated[str, Capture.OFF]
+        sampled_annotation = Annotated[str, Capture.SAMPLED()]
 
         parsed_full = parse_capture_annotation(full_annotation)
         parsed_none = parse_capture_annotation(none_annotation)

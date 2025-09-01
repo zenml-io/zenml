@@ -33,12 +33,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
 from starlette.status import HTTP_429_TOO_MANY_REQUESTS
 
-from zenml.logger import get_logger
-from zenml.serving.concurrency import (
+from zenml.deployers.serving.concurrency import (
     ServingExecutionManager,
     TooManyRequestsError,
 )
-from zenml.serving.dependencies import (
+from zenml.deployers.serving.dependencies import (
     RequestContext,
     get_execution_manager,
     get_job_registry,
@@ -48,8 +47,8 @@ from zenml.serving.dependencies import (
     initialize_container,
     shutdown_container,
 )
-from zenml.serving.jobs import JobRegistry, JobStatus
-from zenml.serving.models import (
+from zenml.deployers.serving.jobs import JobRegistry, JobStatus
+from zenml.deployers.serving.models import (
     DeploymentInfo,
     ExecutionMetrics,
     HealthResponse,
@@ -59,8 +58,9 @@ from zenml.serving.models import (
     PipelineResponse,
     ServiceStatus,
 )
-from zenml.serving.service import PipelineServingService
-from zenml.serving.streams import StreamManager
+from zenml.deployers.serving.service import PipelineServingService
+from zenml.deployers.serving.streams import StreamManager
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -494,7 +494,7 @@ if __name__ == "__main__":
     logger.info(f"Starting FastAPI server on {host}:{port}")
 
     uvicorn.run(
-        "zenml.serving.app:app",
+        "zenml.deployers.serving.app:app",
         host=host,
         port=port,
         workers=workers,

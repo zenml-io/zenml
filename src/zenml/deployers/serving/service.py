@@ -21,23 +21,27 @@ from typing import Any, AsyncGenerator, Dict, Optional, Union
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.integrations.registry import integration_registry
-from zenml.logger import get_logger
-from zenml.models import PipelineDeploymentResponse
-from zenml.serving.concurrency import (
+from zenml.deployers.serving.concurrency import (
     TooManyRequestsError,
 )
-from zenml.serving.direct_execution import DirectExecutionEngine
-from zenml.serving.events import EventType, ServingEvent, create_event_builder
-from zenml.serving.jobs import (
+from zenml.deployers.serving.direct_execution import DirectExecutionEngine
+from zenml.deployers.serving.events import (
+    EventType,
+    ServingEvent,
+    create_event_builder,
+)
+from zenml.deployers.serving.jobs import (
     JobStatus,
 )
-from zenml.serving.policy import (
+from zenml.deployers.serving.policy import (
     get_endpoint_default_policy,
     resolve_effective_policy,
     should_create_runs,
 )
-from zenml.serving.tracking import TrackingManager
+from zenml.deployers.serving.tracking import TrackingManager
+from zenml.integrations.registry import integration_registry
+from zenml.logger import get_logger
+from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 
@@ -285,7 +289,7 @@ class PipelineServingService:
             raise RuntimeError("Service not properly initialized")
 
         # Get dependencies from container
-        from zenml.serving.dependencies import get_container
+        from zenml.deployers.serving.dependencies import get_container
 
         container = get_container()
         execution_manager = container.get_execution_manager()
@@ -441,7 +445,7 @@ class PipelineServingService:
             raise RuntimeError("Service not properly initialized")
 
         # Get dependencies from container
-        from zenml.serving.dependencies import get_container
+        from zenml.deployers.serving.dependencies import get_container
 
         container = get_container()
         execution_manager = container.get_execution_manager()
@@ -567,7 +571,7 @@ class PipelineServingService:
 
         try:
             # Get dependencies from container
-            from zenml.serving.dependencies import get_container
+            from zenml.deployers.serving.dependencies import get_container
 
             container = get_container()
             job_registry = container.get_job_registry()
@@ -670,7 +674,7 @@ class PipelineServingService:
                     os.getenv("ZENML_SERVING_CREATE_RUNS", "true").lower()
                     == "false"
                 ):
-                    from zenml.serving.policy import (
+                    from zenml.deployers.serving.policy import (
                         ArtifactCaptureMode,
                         CapturePolicy,
                         CapturePolicyMode,
@@ -889,7 +893,7 @@ class PipelineServingService:
             raise RuntimeError("Service not properly initialized")
 
         # Get dependencies from container
-        from zenml.serving.dependencies import get_container
+        from zenml.deployers.serving.dependencies import get_container
 
         container = get_container()
         execution_manager = container.get_execution_manager()

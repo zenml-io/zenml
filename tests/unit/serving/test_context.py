@@ -20,7 +20,7 @@ from typing import Optional
 
 import pytest
 
-from zenml.serving.context import (
+from zenml.deployers.serving.context import (
     ServingStepContext,
     get_serving_job_context,
     get_serving_step_context,

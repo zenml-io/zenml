@@ -21,12 +21,12 @@ from zenml import pipeline, step
 from zenml.config import DockerSettings
 
 # Import enums for type-safe capture mode configuration
-from zenml.serving.policy import CapturePolicyMode as CaptureMode
+from zenml.deployers.serving.policy import CapturePolicyMode as CaptureMode
 
 # Note: You can use either approach:
 # 1. String literals: "full", "metadata", "sampled", "errors_only", "none"
 # 2. Type-safe enums: CaptureMode.FULL, CaptureMode.METADATA, etc.
-# 3. Cap constants: Cap.full, Cap.metadata, etc. (returns Capture objects)
+# 3. Capture constants: Capture.FULL, Capture.METADATA, etc.
 # This example demonstrates the type-safe enum approach
 
 docker_settings = DockerSettings(
@@ -247,4 +247,4 @@ if __name__ == "__main__":
     print(f"📋 Deployment ID: {deployment.id}")
     print("\n🚀 To serve this pipeline:")
     print(f"   export ZENML_PIPELINE_DEPLOYMENT_ID={deployment.id}")
-    print("   python -m zenml.serving")
+    print("   python -m zenml.deployers.serving")

@@ -18,15 +18,17 @@ enabling real-time execution of ML pipelines, AI agents, and multi-agent systems
 through HTTP/WebSocket APIs.
 
 For capture mode configuration, use:
-    from zenml.serving.policy import CapturePolicyMode  # Enum values
-    from zenml.serving.capture import Cap  # Convenience constants and Capture class
+    from zenml.deployers.serving.policy import CapturePolicyMode  # Enum values
+    from zenml.deployers.serving.capture import Capture  # Main capture class with constants
 """
 
 try:
-    from zenml.serving.service import PipelineServingService
+    from zenml.deployers.serving.service import PipelineServingService
+    from zenml.deployers.serving.capture import Capture
     
     __all__ = [
         "PipelineServingService",
+        "Capture",
     ]
         
 except ImportError:

@@ -32,11 +32,14 @@ from typing import (
     cast,
 )
 
+from zenml.deployers.serving.capture import Capture
+from zenml.deployers.serving.context import (
+    serving_job_context,
+    serving_step_context,
+)
+from zenml.deployers.serving.events import EventBuilder, ServingEvent
 from zenml.logger import get_logger
 from zenml.orchestrators.topsort import topsorted_layers
-from zenml.serving.capture import Capture
-from zenml.serving.context import serving_job_context, serving_step_context
-from zenml.serving.events import EventBuilder, ServingEvent
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
@@ -52,10 +55,6 @@ class CancellationToken(Protocol):
     def is_set(self) -> bool:
         """Check if cancellation has been requested."""
         ...
-
-
-# ServingStepContext has been moved to zenml.serving.context
-# This class is now deprecated and will be removed
 
 
 class DirectExecutionEngine:
@@ -318,7 +317,8 @@ class DirectExecutionEngine:
                         mode=param_config.get("mode", "metadata"),
                         sample_rate=param_config.get("sample_rate"),
                         max_bytes=param_config.get("max_bytes"),
-                        redact=param_config.get("redact"),
+                        redact_patterns=param_config.get("redact_patterns")
+                        or param_config.get("redact"),
                         artifacts=param_config.get("artifacts"),
                     )
                     input_captures[param_name] = capture
@@ -336,7 +336,8 @@ class DirectExecutionEngine:
                         mode=output_config.get("mode", "metadata"),
                         sample_rate=output_config.get("sample_rate"),
                         max_bytes=output_config.get("max_bytes"),
-                        redact=output_config.get("redact"),
+                        redact_patterns=output_config.get("redact_patterns")
+                        or output_config.get("redact"),
                         artifacts=output_config.get("artifacts"),
                     )
                     output_captures[output_name] = capture

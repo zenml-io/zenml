@@ -51,7 +51,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         return [
             "python",
             "-m",
-            "zenml.serving",
+            "zenml.deployers.serving",
         ]
 
     @classmethod
@@ -144,7 +144,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         try:
             # Start the FastAPI server
             uvicorn.run(
-                "zenml.serving.app:app",
+                "zenml.deployers.serving.app:app",
                 host=host,
                 port=port,
                 workers=workers,

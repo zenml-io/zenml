@@ -18,7 +18,7 @@ import time
 
 import pytest
 
-from zenml.serving.concurrency import (
+from zenml.deployers.serving.concurrency import (
     ServingConcurrencyConfig,
     ServingExecutionManager,
     TooManyRequestsError,

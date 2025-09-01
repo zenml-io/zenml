@@ -14,7 +14,7 @@ Control how input parameters are captured in run metadata:
 
 ```python
 from typing import Annotated
-from zenml.serving.capture import Capture
+from zenml.deployers.serving.capture import Capture
 
 @step
 def process_data(
@@ -292,7 +292,7 @@ def new_pipeline():
 
 ### Annotations Not Working
 
-1. **Check import**: Ensure `from zenml.serving.capture import Capture`
+1. **Check import**: Ensure `from zenml.deployers.serving.capture import Capture`
 2. **Verify syntax**: Use `Annotated[Type, Capture(...)]` format
 3. **Check logs**: Look for parsing warnings in DirectExecutionEngine logs
 

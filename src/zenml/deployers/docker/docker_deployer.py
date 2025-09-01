@@ -49,6 +49,10 @@ from zenml.deployers.base_deployer import (
 from zenml.deployers.containerized_deployer import (
     ContainerizedDeployer,
 )
+from zenml.deployers.serving.entrypoint_configuration import (
+    PORT_OPTION,
+    ServingEntrypointConfiguration,
+)
 from zenml.entrypoints.base_entrypoint_configuration import (
     DEPLOYMENT_ID_OPTION,
 )
@@ -57,10 +61,6 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineEndpointOperationalState,
     PipelineEndpointResponse,
-)
-from zenml.serving.entrypoint_configuration import (
-    PORT_OPTION,
-    ServingEntrypointConfiguration,
 )
 from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils

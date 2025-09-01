@@ -5,13 +5,13 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from zenml.serving.app import app
-from zenml.serving.dependencies import (
+from zenml.deployers.serving.app import app
+from zenml.deployers.serving.dependencies import (
     get_job_registry,
     get_pipeline_service,
 )
-from zenml.serving.jobs import JobRegistry
-from zenml.serving.service import PipelineServingService
+from zenml.deployers.serving.jobs import JobRegistry
+from zenml.deployers.serving.service import PipelineServingService
 
 
 class MockPipelineServingService(PipelineServingService):

@@ -18,19 +18,19 @@ from uuid import uuid4
 
 import pytest
 
+from zenml.deployers.serving.events import EventType, ServingEvent
+from zenml.deployers.serving.policy import (
+    ArtifactCaptureMode,
+    CapturePolicy,
+    CapturePolicyMode,
+)
+from zenml.deployers.serving.tracking import TrackingManager
 from zenml.enums import ExecutionStatus
 from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRunResponse,
     StepRunResponse,
 )
-from zenml.serving.events import EventType, ServingEvent
-from zenml.serving.policy import (
-    ArtifactCaptureMode,
-    CapturePolicy,
-    CapturePolicyMode,
-)
-from zenml.serving.tracking import TrackingManager
 
 
 @pytest.fixture
@@ -56,7 +56,7 @@ def mock_deployment():
 @pytest.fixture
 def mock_client():
     """Create a mock ZenML client."""
-    with patch("zenml.serving.tracking.Client") as mock_client_class:
+    with patch("zenml.deployers.serving.tracking.Client") as mock_client_class:
         mock_client = Mock()
         mock_client_class.return_value = mock_client
 
@@ -75,7 +75,7 @@ class TestTrackingManager:
         """Test TrackingManager initialization when tracking is disabled."""
         policy = CapturePolicy(mode=CapturePolicyMode.NONE)
 
-        with patch("zenml.serving.tracking.Client"):
+        with patch("zenml.deployers.serving.tracking.Client"):
             manager = TrackingManager(
                 deployment=mock_deployment, policy=policy, create_runs=False
             )
@@ -89,7 +89,7 @@ class TestTrackingManager:
         """Test TrackingManager initialization when tracking is enabled."""
         policy = CapturePolicy(mode=CapturePolicyMode.METADATA)
 
-        with patch("zenml.serving.tracking.Client"):
+        with patch("zenml.deployers.serving.tracking.Client"):
             manager = TrackingManager(
                 deployment=mock_deployment, policy=policy, create_runs=True
             )
@@ -104,7 +104,7 @@ class TestTrackingManager:
         # Test non-sampled mode
         policy = CapturePolicy(mode=CapturePolicyMode.METADATA)
 
-        with patch("zenml.serving.tracking.Client"):
+        with patch("zenml.deployers.serving.tracking.Client"):
             manager = TrackingManager(
                 deployment=mock_deployment, policy=policy, create_runs=True
             )
@@ -115,8 +115,11 @@ class TestTrackingManager:
         policy = CapturePolicy(mode=CapturePolicyMode.SAMPLED, sample_rate=0.5)
 
         with (
-            patch("zenml.serving.tracking.Client"),
-            patch("zenml.serving.tracking.random.random", return_value=0.3),
+            patch("zenml.deployers.serving.tracking.Client"),
+            patch(
+                "zenml.deployers.serving.tracking.random.random",
+                return_value=0.3,
+            ),
         ):
             manager = TrackingManager(
                 deployment=mock_deployment, policy=policy, create_runs=True
@@ -126,8 +129,11 @@ class TestTrackingManager:
 
         # Test sampled mode not triggered
         with (
-            patch("zenml.serving.tracking.Client"),
-            patch("zenml.serving.tracking.random.random", return_value=0.7),
+            patch("zenml.deployers.serving.tracking.Client"),
+            patch(
+                "zenml.deployers.serving.tracking.random.random",
+                return_value=0.7,
+            ),
         ):
             manager = TrackingManager(
                 deployment=mock_deployment, policy=policy, create_runs=True
@@ -163,7 +169,7 @@ class TestTrackingManager:
         )
 
         with patch(
-            "zenml.serving.tracking.string_utils.format_name_template",
+            "zenml.deployers.serving.tracking.string_utils.format_name_template",
             return_value="test-run",
         ):
             result = manager.start_pipeline(params={"test": "value"})
@@ -185,7 +191,7 @@ class TestTrackingManager:
         )
 
         with patch(
-            "zenml.serving.tracking.string_utils.format_name_template",
+            "zenml.deployers.serving.tracking.string_utils.format_name_template",
             return_value="test-run",
         ):
             manager.start_pipeline(
@@ -213,7 +219,7 @@ class TestTrackingManager:
         )
 
         with patch(
-            "zenml.serving.tracking.string_utils.format_name_template",
+            "zenml.deployers.serving.tracking.string_utils.format_name_template",
             return_value="test-run",
         ):
             result = manager.start_pipeline()
@@ -307,7 +313,7 @@ class TestTrackingManager:
         # Mock save_artifact
         with (
             patch(
-                "zenml.serving.tracking.save_artifact"
+                "zenml.deployers.serving.tracking.save_artifact"
             ) as mock_save_artifact,
             patch("time.time", return_value=1005.0),
         ):
@@ -352,7 +358,7 @@ class TestTrackingManager:
 
         with (
             patch(
-                "zenml.serving.tracking.save_artifact"
+                "zenml.deployers.serving.tracking.save_artifact"
             ) as mock_save_artifact,
             patch("time.time", return_value=1005.0),
         ):
@@ -395,7 +401,7 @@ class TestTrackingManager:
         }
 
         with patch(
-            "zenml.serving.tracking.publish_pipeline_run_status_update"
+            "zenml.deployers.serving.tracking.publish_pipeline_run_status_update"
         ) as mock_publish:
             manager.complete_pipeline(
                 success=True,
@@ -427,7 +433,7 @@ class TestTrackingManager:
         manager.is_sampled = True
 
         with patch(
-            "zenml.serving.tracking.publish_pipeline_run_status_update"
+            "zenml.deployers.serving.tracking.publish_pipeline_run_status_update"
         ) as mock_publish:
             manager.complete_pipeline(
                 success=True,

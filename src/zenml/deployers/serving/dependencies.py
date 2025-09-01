@@ -4,11 +4,11 @@ import time
 from typing import Optional
 from uuid import uuid4
 
+from zenml.deployers.serving.concurrency import ServingExecutionManager
+from zenml.deployers.serving.jobs import JobRegistry, JobStatus
+from zenml.deployers.serving.service import PipelineServingService
+from zenml.deployers.serving.streams import StreamManager
 from zenml.logger import get_logger
-from zenml.serving.concurrency import ServingExecutionManager
-from zenml.serving.jobs import JobRegistry, JobStatus
-from zenml.serving.service import PipelineServingService
-from zenml.serving.streams import StreamManager
 
 logger = get_logger(__name__)
 

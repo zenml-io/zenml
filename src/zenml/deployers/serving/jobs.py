@@ -15,11 +15,12 @@
 
 import asyncio
 import threading
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, Optional
 from uuid import uuid4
+
+from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger
 
@@ -36,15 +37,16 @@ class JobStatus(str, Enum):
     CANCELED = "canceled"
 
 
-@dataclass
-class JobMetadata:
+class JobMetadata(BaseModel):
     """Metadata for a serving job."""
+
+    model_config = {"arbitrary_types_allowed": True}  # Allow threading.Event
 
     job_id: str
     status: JobStatus
     parameters: Dict[str, Any]
     run_name: Optional[str] = None
-    created_at: datetime = field(
+    created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
     started_at: Optional[datetime] = None
@@ -55,35 +57,31 @@ class JobMetadata:
     pipeline_name: Optional[str] = None
     steps_executed: int = 0
 
-    # Cancellation support
-    cancellation_token: threading.Event = field(
-        default_factory=threading.Event
+    # Cancellation support - exclude from serialization since it's not serializable
+    cancellation_token: threading.Event = Field(
+        default_factory=threading.Event,
+        exclude=True,  # Don't include in serialization/dict conversion
     )
     canceled_by: Optional[str] = None
     cancel_reason: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert job metadata to dictionary for API responses."""
-        return {
-            "job_id": self.job_id,
-            "status": self.status.value,
-            "parameters": self.parameters,
-            "run_name": self.run_name,
-            "created_at": self.created_at.isoformat(),
-            "started_at": self.started_at.isoformat()
-            if self.started_at
-            else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
-            "error": self.error,
-            "result": self.result,
-            "execution_time": self.execution_time,
-            "pipeline_name": self.pipeline_name,
-            "steps_executed": self.steps_executed,
-            "canceled_by": self.canceled_by,
-            "cancel_reason": self.cancel_reason,
-        }
+        # Use Pydantic's model_dump but with custom datetime serialization for backward compatibility
+        data = self.model_dump(exclude={"cancellation_token"}, mode="json")
+
+        # Convert datetime fields to ISO format (preserving existing behavior)
+        if data.get("created_at"):
+            data["created_at"] = self.created_at.isoformat()
+        if data.get("started_at") and self.started_at:
+            data["started_at"] = self.started_at.isoformat()
+        if data.get("completed_at") and self.completed_at:
+            data["completed_at"] = self.completed_at.isoformat()
+
+        # Ensure status is a string value (not enum object)
+        data["status"] = self.status.value
+
+        return data
 
 
 class JobRegistry:

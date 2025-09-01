@@ -15,9 +15,9 @@
 
 from unittest.mock import Mock
 
-from zenml.serving.capture import Capture, CaptureMode
-from zenml.serving.policy import CapturePolicy, CapturePolicyMode
-from zenml.serving.tracking import TrackingManager
+from zenml.deployers.serving.capture import Capture, CaptureMode
+from zenml.deployers.serving.policy import CapturePolicy, CapturePolicyMode
+from zenml.deployers.serving.tracking import TrackingManager
 
 
 class TestPrecedenceIntegration:
@@ -202,7 +202,7 @@ class TestPrecedenceIntegration:
         assert step_policy.mode == CapturePolicyMode.METADATA
 
         # Check that artifacts is correctly derived
-        from zenml.serving.policy import ArtifactCaptureMode
+        from zenml.deployers.serving.policy import ArtifactCaptureMode
 
         assert (
             step_policy.artifacts == ArtifactCaptureMode.NONE

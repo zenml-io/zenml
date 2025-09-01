@@ -25,8 +25,8 @@ from anyio.streams.memory import (
     MemoryObjectSendStream,
 )
 
+from zenml.deployers.serving.events import ServingEvent
 from zenml.logger import get_logger
-from zenml.serving.events import ServingEvent
 
 logger = get_logger(__name__)
 
@@ -402,7 +402,7 @@ async def stream_events_as_sse(
         AsyncGenerator of SSE-formatted strings
     """
     # Get stream manager from dependency injection container
-    from zenml.serving.dependencies import get_container
+    from zenml.deployers.serving.dependencies import get_container
 
     container = get_container()
     stream_manager = container.get_stream_manager()
