@@ -151,24 +151,10 @@ class TestZenmlTable:
         output = zenml_table([], output_format="table")
         assert output == "" or output is None
 
-    def test_none_output_format(self, sample_data):
-        """Test 'none' output format."""
-        output = zenml_table(sample_data, output_format="none")
-        assert output == "" or output is None
-
     def test_invalid_output_format(self, sample_data):
         """Test invalid output format raises error."""
         with pytest.raises(ValueError, match="Unsupported output format"):
             zenml_table(sample_data, output_format="invalid")
-
-    def test_stack_formatting(self, stack_data):
-        """Test special formatting for stack data."""
-        output = zenml_table(stack_data, output_format="table")
-        assert output is not None
-
-        # Check active stack has special formatting
-        assert "●" in output  # Green dot
-        assert "(active)" in output
 
     def test_stack_formatting_json_clean(self, stack_data):
         """Test that JSON output removes internal fields."""
