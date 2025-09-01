@@ -892,41 +892,37 @@ class TrackingManager:
         if not self.create_runs or self.policy.mode == CapturePolicyMode.NONE:
             return
 
+        event_type = event.event_type
+        step_name = event.step_name
+
         try:
-            if event.event_type == EventType.PIPELINE_STARTED:
+            if event_type == EventType.PIPELINE_STARTED:
                 # Pipeline start is handled explicitly in start_pipeline
                 pass
-            elif (
-                event.event_type == EventType.STEP_STARTED and event.step_name
-            ):
-                self.start_step(event.step_name)
-            elif (
-                event.event_type == EventType.STEP_COMPLETED
-                and event.step_name
-            ):
+            elif event_type == EventType.STEP_STARTED and step_name:
+                self.start_step(step_name)
+            elif event_type == EventType.STEP_COMPLETED and step_name:
                 # Note: step completion is now handled primarily by result_callback
                 # This is kept for backward compatibility but should be a no-op
                 # if result_callback is also handling the same step
                 pass
-            elif event.event_type == EventType.STEP_FAILED and event.step_name:
+            elif event_type == EventType.STEP_FAILED and step_name:
                 # Note: step failure is now handled primarily by result_callback
                 # This is kept for backward compatibility but should be a no-op
                 # if result_callback is also handling the same step
                 pass
-            elif event.event_type in [
+            elif event_type in [
                 EventType.PIPELINE_COMPLETED,
                 EventType.PIPELINE_FAILED,
             ]:
                 # IMPORTANT: Pipeline completion is strictly single-source from service.py
                 # after engine.execute() returns. TrackingManager must ignore these events
                 # to prevent double finalization and ensure exact timing/exception context.
-                logger.debug(
-                    f"Ignoring {event.event_type} - handled by service.py"
-                )
+                logger.debug(f"Ignoring {event_type} - handled by service.py")
                 return
         except Exception as e:
             logger.warning(
-                f"Failed to handle tracking event {event.event_type}: {e}"
+                f"Failed to handle tracking event {event_type}: {e}"
             )
 
     def handle_step_result(

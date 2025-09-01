@@ -215,9 +215,9 @@ class DirectExecutionEngine:
                     step_capture_settings.mode
                     and step_capture_settings.mode != "full"
                 ):
-                    self._step_mode_overrides[step_name] = (
-                        step_capture_settings.mode
-                    )
+                    self._step_mode_overrides[
+                        step_name
+                    ] = step_capture_settings.mode
 
                 # Convert new format to legacy format for processing
                 if step_capture_settings.inputs:
@@ -251,9 +251,9 @@ class DirectExecutionEngine:
                             for param_config in capture_config[
                                 section
                             ].values():
-                                param_config["max_bytes"] = (
-                                    step_capture_settings.max_bytes
-                                )
+                                param_config[
+                                    "max_bytes"
+                                ] = step_capture_settings.max_bytes
 
                 if step_capture_settings.redact is not None:
                     for section in ["inputs", "outputs"]:
@@ -261,9 +261,9 @@ class DirectExecutionEngine:
                             for param_config in capture_config[
                                 section
                             ].values():
-                                param_config["redact"] = (
-                                    step_capture_settings.redact
-                                )
+                                param_config[
+                                    "redact"
+                                ] = step_capture_settings.redact
             else:
                 # Fallback to legacy serving.capture format
                 serving_settings = step_settings.get("serving")
@@ -337,9 +337,9 @@ class DirectExecutionEngine:
 
             # Store parsed configuration
             input_captures_typed: Dict[str, Optional[Capture]] = input_captures
-            output_captures_typed: Dict[str, Optional[Capture]] = (
-                output_captures
-            )
+            output_captures_typed: Dict[
+                str, Optional[Capture]
+            ] = output_captures
             step_overrides: Dict[str, Dict[str, Optional[Capture]]] = {
                 "inputs": input_captures_typed,
                 "outputs": output_captures_typed,

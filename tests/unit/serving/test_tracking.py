@@ -24,7 +24,7 @@ from zenml.models import (
     PipelineRunResponse,
     StepRunResponse,
 )
-from zenml.serving.models import StreamEvent
+from zenml.serving.events import EventType, ServingEvent
 from zenml.serving.policy import (
     ArtifactCaptureMode,
     CapturePolicy,
@@ -454,8 +454,11 @@ class TestTrackingManager:
 
         # Mock the start_step method
         with patch.object(manager, "start_step") as mock_start_step:
-            event = StreamEvent(
-                event="step_started", step_name="test_step", data={}
+            event = ServingEvent(
+                event_type=EventType.STEP_STARTED,
+                job_id="test-job-123",
+                step_name="test_step",
+                data={},
             )
 
             manager.handle_event(event)
@@ -471,8 +474,9 @@ class TestTrackingManager:
         )
 
         with patch.object(manager, "complete_step") as mock_complete_step:
-            event = StreamEvent(
-                event="step_completed",
+            event = ServingEvent(
+                event_type=EventType.STEP_COMPLETED,
+                job_id="test-job-123",
                 step_name="test_step",
                 data={"output": {"result": "success"}},
             )
@@ -494,7 +498,11 @@ class TestTrackingManager:
         )
 
         with patch.object(manager, "start_step") as mock_start_step:
-            event = StreamEvent(event="step_started", step_name="test_step")
+            event = ServingEvent(
+                event_type=EventType.STEP_STARTED,
+                job_id="test-job-123",
+                step_name="test_step",
+            )
 
             manager.handle_event(event)
 

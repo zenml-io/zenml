@@ -93,9 +93,9 @@ class ServingExecutionManager:
 
         # Executor for running sync functions
         if self.config.executor_type == ExecutorType.PROCESS:
-            self._executor: Union[ProcessPoolExecutor, ThreadPoolExecutor] = (
-                ProcessPoolExecutor(max_workers=self.config.max_concurrency)
-            )
+            self._executor: Union[
+                ProcessPoolExecutor, ThreadPoolExecutor
+            ] = ProcessPoolExecutor(max_workers=self.config.max_concurrency)
         else:
             self._executor = ThreadPoolExecutor(
                 max_workers=self.config.max_concurrency
@@ -310,37 +310,3 @@ class TooManyRequestsError(Exception):
     """Exception raised when service is overloaded and cannot accept more requests."""
 
     pass
-
-
-# Global execution manager instance
-_execution_manager: Optional[ServingExecutionManager] = None
-
-
-def get_execution_manager() -> ServingExecutionManager:
-    """Get the global execution manager instance.
-
-    Returns:
-        Global ServingExecutionManager instance
-    """
-    global _execution_manager
-    if _execution_manager is None:
-        _execution_manager = ServingExecutionManager()
-    return _execution_manager
-
-
-def set_execution_manager(manager: ServingExecutionManager) -> None:
-    """Set a custom execution manager (useful for testing).
-
-    Args:
-        manager: Custom execution manager instance
-    """
-    global _execution_manager
-    _execution_manager = manager
-
-
-async def shutdown_execution_manager() -> None:
-    """Shutdown the global execution manager."""
-    global _execution_manager
-    if _execution_manager is not None:
-        await _execution_manager.shutdown()
-        _execution_manager = None

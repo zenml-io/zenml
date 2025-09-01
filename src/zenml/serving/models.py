@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pydantic models for pipeline serving API."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
@@ -78,28 +78,6 @@ class PipelineResponse(BaseModel):
         default=None,
         description="Additional execution metadata including step count, "
         "artifacts created, etc.",
-    )
-
-
-class StreamEvent(BaseModel):
-    """Model for streaming pipeline execution events."""
-
-    event: str = Field(
-        description="Event type: 'step_started', 'step_completed', 'pipeline_completed', 'error'"
-    )
-    step_name: Optional[str] = Field(
-        default=None, description="Name of the step if event is step-related"
-    )
-    data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Event-specific data such as step outputs or progress",
-    )
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        description="When the event occurred",
-    )
-    error: Optional[str] = Field(
-        default=None, description="Error message if event represents a failure"
     )
 
 

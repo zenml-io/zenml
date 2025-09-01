@@ -26,22 +26,17 @@ from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
 from zenml.serving.concurrency import (
     TooManyRequestsError,
-    get_execution_manager,
 )
 from zenml.serving.direct_execution import DirectExecutionEngine
 from zenml.serving.events import EventType, ServingEvent, create_event_builder
 from zenml.serving.jobs import (
     JobStatus,
-    get_job_registry,
 )
 from zenml.serving.policy import (
     get_endpoint_default_policy,
     resolve_effective_policy,
     should_create_runs,
 )
-
-# StreamEvent is deprecated, using ServingEvent instead
-from zenml.serving.streams import get_stream_manager, get_stream_manager_sync
 from zenml.serving.tracking import TrackingManager
 
 logger = get_logger(__name__)
@@ -289,9 +284,12 @@ class PipelineServingService:
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
 
-        # Get execution manager and job registry
-        execution_manager = get_execution_manager()
-        job_registry = get_job_registry()
+        # Get dependencies from container
+        from zenml.serving.dependencies import get_container
+
+        container = get_container()
+        execution_manager = container.get_execution_manager()
+        job_registry = container.get_job_registry()
 
         # Create job for tracking
         job_id = job_registry.create_job(
@@ -442,9 +440,12 @@ class PipelineServingService:
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
 
-        # Get execution manager and job registry
-        execution_manager = get_execution_manager()
-        job_registry = get_job_registry()
+        # Get dependencies from container
+        from zenml.serving.dependencies import get_container
+
+        container = get_container()
+        execution_manager = container.get_execution_manager()
+        job_registry = container.get_job_registry()
 
         # Create job for tracking
         job_id = job_registry.create_job(
@@ -565,12 +566,12 @@ class PipelineServingService:
         deployment = self.deployment  # Local var for type narrowing
 
         try:
-            # Get job registry using sync version for worker thread
-            # TODO: move this to serving execution manager and keep this function agnostic of job management.
-            job_registry = get_job_registry()
+            # Get dependencies from container
+            from zenml.serving.dependencies import get_container
 
-            # Get stream manager reference (should be initialized from main thread)
-            stream_manager = get_stream_manager_sync()
+            container = get_container()
+            job_registry = container.get_job_registry()
+            stream_manager = container.get_stream_manager()
 
             # Setup tracking manager if enabled
             tracking_manager = None
@@ -599,28 +600,28 @@ class PipelineServingService:
                         if (
                             pipeline_capture_settings.mode != "full"
                         ):  # Only set if different from default
-                            code_override["mode"] = (
-                                pipeline_capture_settings.mode
-                            )
+                            code_override[
+                                "mode"
+                            ] = pipeline_capture_settings.mode
                         if pipeline_capture_settings.sample_rate is not None:
-                            code_override["sample_rate"] = (
-                                pipeline_capture_settings.sample_rate
-                            )
+                            code_override[
+                                "sample_rate"
+                            ] = pipeline_capture_settings.sample_rate
                         if pipeline_capture_settings.max_bytes is not None:
-                            code_override["max_bytes"] = (
-                                pipeline_capture_settings.max_bytes
-                            )
+                            code_override[
+                                "max_bytes"
+                            ] = pipeline_capture_settings.max_bytes
                         if pipeline_capture_settings.redact is not None:
-                            code_override["redact"] = (
-                                pipeline_capture_settings.redact
-                            )
+                            code_override[
+                                "redact"
+                            ] = pipeline_capture_settings.redact
                         if (
                             pipeline_capture_settings.retention_days
                             is not None
                         ):
-                            code_override["retention_days"] = (
-                                pipeline_capture_settings.retention_days
-                            )
+                            code_override[
+                                "retention_days"
+                            ] = pipeline_capture_settings.retention_days
 
                         # Extract per-value overrides for later use
                         if pipeline_capture_settings.inputs:
@@ -631,9 +632,9 @@ class PipelineServingService:
                             if isinstance(
                                 pipeline_capture_settings.outputs, str
                             ):
-                                pipeline_per_value_overrides["outputs"] = (
-                                    pipeline_capture_settings.outputs
-                                )
+                                pipeline_per_value_overrides[
+                                    "outputs"
+                                ] = pipeline_capture_settings.outputs
                             else:
                                 pipeline_per_value_overrides["outputs"] = dict(
                                     pipeline_capture_settings.outputs
@@ -887,10 +888,13 @@ class PipelineServingService:
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
 
-        # Get execution manager, job registry, and stream manager
-        execution_manager = get_execution_manager()
-        job_registry = get_job_registry()
-        stream_manager = await get_stream_manager()
+        # Get dependencies from container
+        from zenml.serving.dependencies import get_container
+
+        container = get_container()
+        execution_manager = container.get_execution_manager()
+        job_registry = container.get_job_registry()
+        stream_manager = container.get_stream_manager()
 
         # Create job for tracking
         job_id = job_registry.create_job(

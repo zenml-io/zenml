@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, Optional
 
 from fastapi import (
+    Depends,
     FastAPI,
     HTTPException,
     Query,
@@ -34,15 +35,20 @@ from starlette.status import HTTP_429_TOO_MANY_REQUESTS
 
 from zenml.logger import get_logger
 from zenml.serving.concurrency import (
+    ServingExecutionManager,
     TooManyRequestsError,
+)
+from zenml.serving.dependencies import (
+    RequestContext,
     get_execution_manager,
-    shutdown_execution_manager,
-)
-from zenml.serving.jobs import (
-    JobStatus,
     get_job_registry,
-    shutdown_job_registry,
+    get_pipeline_service,
+    get_request_context,
+    get_stream_manager,
+    initialize_container,
+    shutdown_container,
 )
+from zenml.serving.jobs import JobRegistry, JobStatus
 from zenml.serving.models import (
     DeploymentInfo,
     ExecutionMetrics,
@@ -54,88 +60,55 @@ from zenml.serving.models import (
     ServiceStatus,
 )
 from zenml.serving.service import PipelineServingService
-from zenml.serving.streams import get_stream_manager, shutdown_stream_manager
+from zenml.serving.streams import StreamManager
 
 logger = get_logger(__name__)
 
-# Global service instance
-# TODO: Improve global state management
-# Issue: Using global variables for service state is not ideal for production
-# Solutions:
-# 1. Use FastAPI dependency injection with a singleton pattern
-# 2. Store state in app.state which is the FastAPI recommended approach
-# 3. Consider using contextvars for request-scoped state
-pipeline_service: Optional[PipelineServingService] = None
+# Track service start time
 service_start_time: Optional[float] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Manage application lifespan - startup and shutdown."""
-    global pipeline_service, service_start_time
+    """Manage application lifespan."""
+    global service_start_time
+
+    # Check for test mode
+    if os.getenv("ZENML_SERVING_TEST_MODE", "false").lower() == "true":
+        logger.info("🧪 Running in test mode - skipping initialization")
+        service_start_time = time.time()
+        yield
+        return
 
     # Startup
     logger.info("🚀 Starting ZenML Pipeline Serving service...")
     service_start_time = time.time()
 
-    # Get deployment ID from environment variable
     deployment_id = os.getenv("ZENML_PIPELINE_DEPLOYMENT_ID")
     if not deployment_id:
         raise ValueError(
-            "ZENML_PIPELINE_DEPLOYMENT_ID environment variable is required. "
-            "Please set it to the UUID of your pipeline deployment."
+            "ZENML_PIPELINE_DEPLOYMENT_ID environment variable is required"
         )
 
     try:
-        # Initialize the pipeline service
-        pipeline_service = PipelineServingService(deployment_id)
-        await pipeline_service.initialize()
-
-        # Set up job status change callback to close streams on job completion
-        job_registry = get_job_registry()
-        stream_manager = await get_stream_manager()
-
-        def close_stream_on_job_completion(
-            job_id: str, status: JobStatus
-        ) -> None:
-            """Close job stream when job reaches final state."""
-            try:
-                # Use thread-safe method to close stream (works from any thread)
-                stream_manager.close_stream_threadsafe(job_id)
-                logger.debug(
-                    f"Scheduled stream closure for job {job_id} (status: {status.value})"
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to schedule stream closure for job {job_id}: {e}"
-                )
-
-        job_registry.set_status_change_callback(close_stream_on_job_completion)
-
+        await initialize_container(deployment_id)
         logger.info("✅ Pipeline serving service initialized successfully")
-
     except Exception as e:
-        logger.error(f"❌ Failed to initialize pipeline service: {str(e)}")
+        logger.error(f"❌ Failed to initialize: {e}")
         raise
 
     yield
 
     # Shutdown
     logger.info("🛑 Shutting down ZenML Pipeline Serving service...")
-
-    # Shutdown all services
-    await shutdown_execution_manager()
-    await shutdown_job_registry()
-    await shutdown_stream_manager()
-
-    pipeline_service = None
+    await shutdown_container()
 
 
 # Create FastAPI application
 app = FastAPI(
     title="ZenML Pipeline Serving",
-    description="Serve ZenML pipelines as FastAPI endpoints for real-time execution",
-    version="0.1.0",
+    description="Serve ZenML pipelines as FastAPI endpoints",
+    version="0.2.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -152,27 +125,11 @@ app.add_middleware(
 )
 
 
-def get_service() -> PipelineServingService:
-    """Get the global pipeline service instance.
-
-    Returns:
-        The initialized pipeline service
-
-    Raises:
-        HTTPException: If service is not initialized
-    """
-    if not pipeline_service:
-        raise HTTPException(
-            status_code=503,
-            detail="Pipeline service not initialized. Check service startup logs.",
-        )
-    return pipeline_service
-
-
 @app.get("/", response_class=HTMLResponse)
-async def root() -> str:
-    """Root endpoint with service information and documentation links."""
-    service = get_service()
+async def root(
+    service: PipelineServingService = Depends(get_pipeline_service),
+) -> str:
+    """Root endpoint with service information."""
     info = service.get_service_info()
 
     html_content = f"""
@@ -184,13 +141,11 @@ async def root() -> str:
             body {{ font-family: Arial, sans-serif; margin: 40px; }}
             .header {{ color: #2563eb; }}
             .section {{ margin: 20px 0; }}
-            .code {{ background: #f3f4f6; padding: 10px; border-radius: 4px; }}
             .status {{ padding: 5px 10px; border-radius: 4px; background: #10b981; color: white; }}
         </style>
     </head>
     <body>
         <h1 class="header">🚀 ZenML Pipeline Serving</h1>
-        
         <div class="section">
             <h2>Service Status</h2>
             <p>Status: <span class="status">Running</span></p>
@@ -198,33 +153,9 @@ async def root() -> str:
             <p>Steps: {len(info["pipeline"]["steps"])}</p>
             <p>Uptime: {info["service"]["uptime"]:.1f}s</p>
         </div>
-        
-        <div class="section">
-            <h2>Available Endpoints</h2>
-            <ul>
-                <li><strong>POST /invoke</strong> - Execute pipeline synchronously</li>
-                <li><strong>WebSocket /stream</strong> - Execute pipeline with streaming updates</li>
-                <li><strong>GET /health</strong> - Health check</li>
-                <li><strong>GET /info</strong> - Pipeline information and schema</li>
-                <li><strong>GET /metrics</strong> - Execution metrics</li>
-                <li><strong>GET /status</strong> - Detailed service status</li>
-            </ul>
-        </div>
-        
-        <div class="section">
-            <h2>Quick Start</h2>
-            <p>Execute your pipeline:</p>
-            <div class="code">
-curl -X POST "http://localhost:8001/invoke" \\<br>
-&nbsp;&nbsp;-H "Content-Type: application/json" \\<br>
-&nbsp;&nbsp;-d '{{"parameters": {{"your_param": "value"}}}}'
-            </div>
-        </div>
-        
         <div class="section">
             <h2>Documentation</h2>
             <p><a href="/docs">📖 Interactive API Documentation</a></p>
-            <p><a href="/redoc">📋 ReDoc Documentation</a></p>
         </div>
     </body>
     </html>
@@ -236,53 +167,30 @@ curl -X POST "http://localhost:8001/invoke" \\<br>
 async def invoke_pipeline(
     request: PipelineRequest,
     mode: str = Query("sync", description="Execution mode: 'sync' or 'async'"),
+    service: PipelineServingService = Depends(get_pipeline_service),
+    context: RequestContext = Depends(get_request_context),
 ) -> PipelineResponse:
-    """Execute pipeline synchronously or asynchronously.
-
-    This endpoint executes the configured ZenML pipeline with the provided
-    parameters. In sync mode, it waits for completion and returns results.
-    In async mode, it returns immediately with a job ID for polling.
-
-    Args:
-        request: Pipeline execution request containing parameters and options
-        mode: Execution mode - 'sync' for synchronous, 'async' for asynchronous
-
-    Returns:
-        Pipeline execution response with results (sync) or job info (async)
-    """
-    service = get_service()
-
+    """Execute pipeline with dependency injection."""
     logger.info(
-        f"Received pipeline execution request (mode={mode}): {request.model_dump()}"
+        f"[{context.request_id}] Pipeline execution request (mode={mode})"
     )
 
     try:
         if mode.lower() == "async":
-            # Async mode - submit execution and return immediately
             result = await service.submit_pipeline(
                 parameters=request.parameters,
                 run_name=request.run_name,
                 timeout=request.timeout,
                 capture_override=request.capture_override,
             )
-
-            # Return 202 Accepted with job information
-            return PipelineResponse(
-                success=result.get("success", True),
-                job_id=result.get("job_id"),
-                message=result.get("message", "Pipeline execution submitted"),
-                metadata=result.get("metadata", {}),
-            )
         else:
-            # Sync mode - wait for completion
             result = await service.execute_pipeline(
                 parameters=request.parameters,
                 run_name=request.run_name,
                 timeout=request.timeout,
                 capture_override=request.capture_override,
             )
-
-            return PipelineResponse(**result)
+        return PipelineResponse(**result)
 
     except TooManyRequestsError as e:
         raise HTTPException(
@@ -291,36 +199,21 @@ async def invoke_pipeline(
             headers={"Retry-After": "60"},
         )
     except Exception as e:
-        logger.error(f"Pipeline execution failed: {str(e)}")
+        logger.error(f"[{context.request_id}] Pipeline execution failed: {e}")
         return PipelineResponse(
             success=False, error=f"Internal server error: {str(e)}"
         )
 
 
 @app.websocket("/stream")
-async def stream_pipeline(websocket: WebSocket) -> None:
-    """Execute pipeline with streaming updates via WebSocket.
-
-    This endpoint provides real-time updates during pipeline execution,
-    including step-by-step progress and final results.
-
-    TODO: Improve WebSocket implementation
-    Issues:
-    - No reconnection handling
-    - No heartbeat/ping-pong mechanism
-    - No message queuing for disconnected clients
-
-    Solutions:
-    1. Implement reconnection logic with session IDs
-    2. Add ping/pong frames for connection health monitoring
-    3. Use Redis or similar for message persistence during disconnections
-    4. Implement exponential backoff for client reconnections
-    """
+async def stream_pipeline(
+    websocket: WebSocket,
+    service: PipelineServingService = Depends(get_pipeline_service),
+) -> None:
+    """Execute pipeline with streaming updates via WebSocket."""
     await websocket.accept()
-    service = get_service()
 
     try:
-        # Receive execution request
         data = await websocket.receive_json()
         request = PipelineRequest(**data)
 
@@ -328,7 +221,6 @@ async def stream_pipeline(websocket: WebSocket) -> None:
             f"Received streaming pipeline request: {request.model_dump()}"
         )
 
-        # Execute pipeline with streaming updates
         async for event in service.execute_pipeline_streaming(
             parameters=request.parameters, run_name=request.run_name
         ):
@@ -337,7 +229,7 @@ async def stream_pipeline(websocket: WebSocket) -> None:
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected")
     except Exception as e:
-        logger.error(f"Streaming execution failed: {str(e)}")
+        logger.error(f"Streaming execution failed: {e}")
         try:
             await websocket.send_json(
                 {
@@ -347,144 +239,97 @@ async def stream_pipeline(websocket: WebSocket) -> None:
                 }
             )
         except Exception:
-            pass  # Connection might be closed
+            pass
     finally:
         try:
             await websocket.close()
         except Exception:
-            pass  # Connection might already be closed
-
-
-# New async job management endpoints
+            pass
 
 
 @app.get("/jobs/{job_id}")
-async def get_job_status(job_id: str) -> Dict[str, Any]:
-    """Get status and results of a specific job.
-
-    Args:
-        job_id: Job ID to get status for
-
-    Returns:
-        Job status information including results if completed
-    """
+async def get_job_status(
+    job_id: str,
+    job_registry: JobRegistry = Depends(get_job_registry),
+    context: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Get status and results of a specific job."""
     try:
-        job_registry = get_job_registry()
         job = job_registry.get_job(job_id)
-
         if not job:
-            raise HTTPException(
-                status_code=404, detail=f"Job {job_id} not found"
-            )
-
+            raise HTTPException(404, f"Job {job_id} not found")
         return job.to_dict()
-
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to get job status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"[{context.request_id}] Failed to get job status: {e}")
+        raise HTTPException(500, str(e))
 
 
 @app.post("/jobs/{job_id}/cancel")
 async def cancel_job(
-    job_id: str, reason: Optional[str] = None
+    job_id: str,
+    reason: Optional[str] = None,
+    job_registry: JobRegistry = Depends(get_job_registry),
+    context: RequestContext = Depends(get_request_context),
 ) -> Dict[str, Any]:
-    """Cancel a running job.
-
-    Args:
-        job_id: Job ID to cancel
-        reason: Optional reason for cancellation
-
-    Returns:
-        Cancellation confirmation
-    """
+    """Cancel a running job."""
     try:
-        job_registry = get_job_registry()
         cancelled = job_registry.cancel_job(job_id, reason=reason)
-
         if not cancelled:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Job {job_id} could not be cancelled (not found or already completed)",
-            )
-
+            raise HTTPException(400, f"Job {job_id} could not be cancelled")
         return {
             "message": f"Job {job_id} cancelled successfully",
             "cancelled": True,
         }
-
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to cancel job: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"[{context.request_id}] Failed to cancel job: {e}")
+        raise HTTPException(500, str(e))
 
 
 @app.get("/jobs")
 async def list_jobs(
     status: Optional[str] = Query(None, description="Filter by job status"),
     limit: int = Query(100, description="Maximum number of jobs to return"),
+    job_registry: JobRegistry = Depends(get_job_registry),
+    context: RequestContext = Depends(get_request_context),
 ) -> Dict[str, Any]:
-    """List jobs with optional filtering.
-
-    Args:
-        status: Optional status filter (pending, running, completed, failed, canceled)
-        limit: Maximum number of jobs to return
-
-    Returns:
-        List of jobs matching the criteria
-    """
+    """List jobs with optional filtering."""
     try:
-        job_registry = get_job_registry()
-
         status_filter = None
         if status:
             try:
                 status_filter = JobStatus(status.lower())
             except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid status '{status}'. Must be one of: pending, running, completed, failed, canceled",
-                )
+                raise HTTPException(400, f"Invalid status '{status}'")
 
         jobs = job_registry.list_jobs(status_filter=status_filter, limit=limit)
         return {"jobs": jobs, "total": len(jobs)}
-
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to list jobs: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"[{context.request_id}] Failed to list jobs: {e}")
+        raise HTTPException(500, str(e))
 
 
 @app.get("/stream/{job_id}")
-async def stream_job_events(job_id: str) -> StreamingResponse:
-    """Stream events for a specific job using Server-Sent Events.
-
-    Args:
-        job_id: Job ID to stream events for
-
-    Returns:
-        SSE stream of job events
-    """
+async def stream_job_events(
+    job_id: str,
+    job_registry: JobRegistry = Depends(get_job_registry),
+    stream_manager: StreamManager = Depends(get_stream_manager),
+) -> StreamingResponse:
+    """Stream events for a specific job using Server-Sent Events."""
     try:
-        # Check if job exists
-        job_registry = get_job_registry()
         job = job_registry.get_job(job_id)
-
         if not job:
-            raise HTTPException(
-                status_code=404, detail=f"Job {job_id} not found"
-            )
+            raise HTTPException(404, f"Job {job_id} not found")
 
-        # Create SSE stream with proper formatting and heartbeats
         async def event_stream() -> AsyncGenerator[str, None]:
             try:
-                stream_manager = await get_stream_manager()
-
-                # SSE retry interval (5 seconds)
                 yield "retry: 5000\n\n"
 
-                # Send initial connection event with correct SSE formatting
                 initial_data = {
                     "job_id": job_id,
                     "status": job.status.value,
@@ -493,34 +338,10 @@ async def stream_job_events(job_id: str) -> StreamingResponse:
                 }
                 yield f"event: connected\ndata: {json.dumps(initial_data)}\n\n"
 
-                # Track last activity for heartbeat timing
-                import time
-
-                last_activity = time.time()
-                heartbeat_interval = 30  # Send heartbeat every 30 seconds
-
-                # Stream events with timeout for heartbeats
                 async for event in stream_manager.subscribe_to_job(job_id):
-                    current_time = time.time()
-
-                    # Send heartbeat if too much time has passed
-                    if current_time - last_activity > heartbeat_interval:
-                        heartbeat_data = {
-                            "type": "heartbeat",
-                            "timestamp": datetime.now(
-                                timezone.utc
-                            ).isoformat(),
-                            "job_id": job_id,
-                        }
-                        yield f"event: heartbeat\ndata: {json.dumps(heartbeat_data)}\n\n"
-                        last_activity = current_time
-
-                    # Send actual event with proper SSE formatting
                     event_data = event.to_dict()
                     yield f"event: {event.event_type.value}\ndata: {json.dumps(event_data)}\n\n"
-                    last_activity = current_time
 
-                    # Break on final events
                     if event.event_type.value in [
                         "pipeline_completed",
                         "pipeline_failed",
@@ -528,22 +349,9 @@ async def stream_job_events(job_id: str) -> StreamingResponse:
                     ]:
                         break
 
-                # Send final completion message
-                final_data = {
-                    "type": "stream_closed",
-                    "message": "Event stream completed",
-                    "job_id": job_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                }
-                yield f"event: stream_closed\ndata: {json.dumps(final_data)}\n\n"
-
             except Exception as e:
                 logger.error(f"Error in SSE stream for job {job_id}: {e}")
-                error_data = {
-                    "error": str(e),
-                    "job_id": job_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                }
+                error_data = {"error": str(e), "job_id": job_id}
                 yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
 
         return StreamingResponse(
@@ -553,54 +361,42 @@ async def stream_job_events(job_id: str) -> StreamingResponse:
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
                 "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Cache-Control",
             },
         )
-
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to create SSE stream: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, str(e))
 
 
 @app.get("/concurrency/stats")
-async def concurrency_stats() -> Dict[str, Any]:
-    """Get current concurrency and execution statistics.
-
-    Returns:
-        Dictionary with concurrency statistics
-    """
+async def concurrency_stats(
+    execution_manager: ServingExecutionManager = Depends(
+        get_execution_manager
+    ),
+    job_registry: JobRegistry = Depends(get_job_registry),
+    stream_manager: StreamManager = Depends(get_stream_manager),
+) -> Dict[str, Any]:
+    """Get current concurrency and execution statistics."""
     try:
-        execution_manager = get_execution_manager()
-        job_registry = get_job_registry()
-        stream_manager = await get_stream_manager()
-
         return {
             "execution": execution_manager.get_stats(),
             "jobs": job_registry.get_stats(),
-            "streams": stream_manager.get_stats(),
+            "streams": await stream_manager.get_stats(),
         }
-
     except Exception as e:
         logger.error(f"Failed to get concurrency stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, str(e))
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    """Service health check endpoint.
-
-    Returns current service health status, uptime, and basic information
-    about the served pipeline.
-    """
-    service = get_service()
-
+async def health_check(
+    service: PipelineServingService = Depends(get_pipeline_service),
+) -> HealthResponse:
+    """Service health check endpoint."""
     if not service.is_healthy():
-        raise HTTPException(
-            status_code=503,
-            detail="Service is unhealthy - deployment not loaded",
-        )
+        raise HTTPException(503, "Service is unhealthy")
 
     info = service.get_service_info()
     uptime = time.time() - service_start_time if service_start_time else 0
@@ -615,13 +411,10 @@ async def health_check() -> HealthResponse:
 
 
 @app.get("/info", response_model=InfoResponse)
-async def pipeline_info() -> InfoResponse:
-    """Get detailed pipeline information and parameter schema.
-
-    Returns comprehensive information about the served pipeline including
-    step definitions, parameter schema, and deployment details.
-    """
-    service = get_service()
+async def pipeline_info(
+    service: PipelineServingService = Depends(get_pipeline_service),
+) -> InfoResponse:
+    """Get detailed pipeline information and parameter schema."""
     info = service.get_service_info()
 
     return InfoResponse(
@@ -639,31 +432,24 @@ async def pipeline_info() -> InfoResponse:
 
 
 @app.get("/metrics", response_model=ExecutionMetrics)
-async def execution_metrics() -> ExecutionMetrics:
-    """Get pipeline execution metrics and statistics.
-
-    Returns detailed metrics about pipeline executions including success rates,
-    execution times, and recent activity.
-    """
-    service = get_service()
+async def execution_metrics(
+    service: PipelineServingService = Depends(get_pipeline_service),
+) -> ExecutionMetrics:
+    """Get pipeline execution metrics and statistics."""
     metrics = service.get_execution_metrics()
-
     return ExecutionMetrics(**metrics)
 
 
 @app.get("/status", response_model=ServiceStatus)
-async def service_status() -> ServiceStatus:
-    """Get detailed service status information.
-
-    Returns comprehensive status including service configuration, deployment
-    information, and runtime details.
-    """
-    service = get_service()
+async def service_status(
+    service: PipelineServingService = Depends(get_pipeline_service),
+) -> ServiceStatus:
+    """Get detailed service status information."""
     info = service.get_service_info()
 
     return ServiceStatus(
         service_name="ZenML Pipeline Serving",
-        version="0.1.0",
+        version="0.2.0",
         deployment_id=info["service"]["deployment_id"],
         status="running" if service.is_healthy() else "unhealthy",
         started_at=datetime.fromtimestamp(service_start_time, tz=timezone.utc)
@@ -673,7 +459,6 @@ async def service_status() -> ServiceStatus:
             "deployment_id": os.getenv("ZENML_PIPELINE_DEPLOYMENT_ID"),
             "host": os.getenv("ZENML_SERVICE_HOST", "0.0.0.0"),
             "port": int(os.getenv("ZENML_SERVICE_PORT", "8001")),
-            "log_level": os.getenv("ZENML_LOG_LEVEL", "INFO"),
         },
     )
 

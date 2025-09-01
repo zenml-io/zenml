@@ -19,7 +19,7 @@ through HTTP/WebSocket APIs.
 
 For capture mode configuration, use:
     from zenml.serving.policy import CapturePolicyMode  # Enum values
-    from zenml.serving.capture import Cap  # Convenience constants
+    from zenml.serving.capture import Cap  # Convenience constants and Capture class
 """
 
 try:

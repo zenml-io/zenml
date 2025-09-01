@@ -45,9 +45,9 @@ class EventStream:
         self.buffer_size = buffer_size
 
         # Create memory object stream for event passing
-        self._send_stream: Optional[MemoryObjectSendStream[ServingEvent]] = (
-            None
-        )
+        self._send_stream: Optional[
+            MemoryObjectSendStream[ServingEvent]
+        ] = None
         self._receive_stream: Optional[
             MemoryObjectReceiveStream[ServingEvent]
         ] = None
@@ -389,51 +389,6 @@ class StreamManager:
                 logger.info(f"Cleaned up {len(streams_to_remove)} old streams")
 
 
-# Global stream manager instance
-_stream_manager: Optional[StreamManager] = None
-
-
-def get_stream_manager_sync() -> Optional[StreamManager]:
-    """Get the global stream manager instance synchronously.
-
-    Returns:
-        Global StreamManager instance if available, None otherwise
-    """
-    global _stream_manager
-    return _stream_manager
-
-
-async def get_stream_manager() -> StreamManager:
-    """Get the global stream manager instance.
-
-    Returns:
-        Global StreamManager instance
-    """
-    global _stream_manager
-    if _stream_manager is None:
-        _stream_manager = StreamManager()
-        await _stream_manager.start_cleanup_task()
-    return _stream_manager
-
-
-def set_stream_manager(manager: StreamManager) -> None:
-    """Set a custom stream manager (useful for testing).
-
-    Args:
-        manager: Custom stream manager instance
-    """
-    global _stream_manager
-    _stream_manager = manager
-
-
-async def shutdown_stream_manager() -> None:
-    """Shutdown the global stream manager."""
-    global _stream_manager
-    if _stream_manager is not None:
-        await _stream_manager.stop_cleanup_task()
-        _stream_manager = None
-
-
 @asynccontextmanager
 async def stream_events_as_sse(
     job_id: str,
@@ -446,7 +401,11 @@ async def stream_events_as_sse(
     Yields:
         AsyncGenerator of SSE-formatted strings
     """
-    stream_manager = await get_stream_manager()
+    # Get stream manager from dependency injection container
+    from zenml.serving.dependencies import get_container
+
+    container = get_container()
+    stream_manager = container.get_stream_manager()
 
     async def sse_generator() -> AsyncGenerator[str, None]:
         try:
