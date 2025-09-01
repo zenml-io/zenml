@@ -1,2 +1,0 @@
-google-adk>=1.6.1
-zenml>=0.84.3
