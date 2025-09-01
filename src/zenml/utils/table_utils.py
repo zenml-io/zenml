@@ -42,13 +42,11 @@ Guidelines for CLI Command Integration:
 1. Always use zenml_table() instead of custom table formatting
 2. Pass pagination metadata for paginated responses
 3. Use consistent column naming (lowercase with underscores)
-4. Include "__is_active__" field for stack data to enable special formatting
-5. Status-like columns will be automatically colorized
+4. Status-like columns will be automatically colorized
 
 Internal Field Conventions:
 - Fields starting with "__" are considered internal and removed from
   non-table outputs
-- "__is_active__" triggers special stack formatting (green dot, bold text)
 """
 
 import json
@@ -118,59 +116,6 @@ def zenml_table(
         )
     else:
         raise ValueError(f"Unsupported output format: {output_format}")
-
-
-def _apply_stack_formatting(
-    data: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """Apply special formatting for stack tables when rendering to table format.
-
-    This function detects stack data and applies visual formatting for active
-    stacks. Only applies formatting for table output - JSON/YAML output
-    remains clean.
-
-    Args:
-        data: List of data dictionaries to format
-
-    Returns:
-        List of formatted data dictionaries with stack formatting applied
-    """
-    if not data or not isinstance(data, list):
-        return data
-
-    # Check if this looks like stack data (has '__is_active__' field)
-    if not any(
-        isinstance(row, dict) and "__is_active__" in row for row in data
-    ):
-        return data
-
-    formatted_data = []
-    for row in data:
-        if not isinstance(row, dict):
-            formatted_data.append(row)
-            continue
-
-        # Create a copy to avoid modifying original data
-        formatted_row = dict(row)
-
-        # Apply formatting for active stacks
-        if row.get("__is_active__", False):
-            # Format name with green dot and active indicator
-            name = row.get("name", "")
-            formatted_row["name"] = (
-                f"[green]●[/green] [bold green]{name}[/bold green] (active)"
-            )
-
-            # Apply bold formatting to other fields
-            for key, value in formatted_row.items():
-                if key not in ["name", "__is_active__"] and value is not None:
-                    formatted_row[key] = f"[bold]{value}[/bold]"
-
-        # Remove the __is_active__ field as it's just for formatting logic
-        formatted_row.pop("__is_active__", None)
-        formatted_data.append(formatted_row)
-
-    return formatted_data
 
 
 def _apply_model_version_formatting(
@@ -501,8 +446,7 @@ def _render_table(
     if not prepared_data:
         return ""
 
-    # Apply special formatting for stack tables and model version tables
-    prepared_data = _apply_stack_formatting(prepared_data)
+    # Apply special formatting for model version tables
     prepared_data = _apply_model_version_formatting(prepared_data)
 
     # Get headers - use columns if specified, otherwise all keys
@@ -582,6 +526,7 @@ def _render_table(
         is_labels_column = header.lower() == "labels"
         is_resource_name_column = header.lower() == "resource name"
         is_name_column = header.lower() == "name"
+        is_id_column = header.lower() == "id" or header.lower().endswith("_id")
 
         if (
             no_truncate
@@ -589,6 +534,7 @@ def _render_table(
             or is_labels_column
             or is_resource_name_column
             or is_name_column
+            or is_id_column
         ):
             # Show full content, allow wrapping
             overflow = "fold"
@@ -608,7 +554,8 @@ def _render_table(
             or is_resources_column
             or is_labels_column
             or is_resource_name_column
-            or is_name_column,
+            or is_name_column
+            or is_id_column,
         )
 
         # Special width adjustments for service connector table columns

@@ -24,6 +24,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     enhanced_list_options,
     is_sorted_or_filtered,
+    prepare_data_from_responses,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -137,166 +138,6 @@ def _format_resource_types_with_emojis(
         result += f"\n+{len(resource_types) - 5} more"
 
     return result
-
-
-def _service_connector_to_print(
-    connector: ServiceConnectorResponse,
-    active_connector_ids: Optional[List[UUID]] = None,
-) -> Dict[str, Any]:
-    """Convert a service connector response to a dictionary for table display.
-
-    For table output, keep it compact with essential connector information.
-    Full details are available in JSON/YAML output formats.
-
-    Args:
-        connector: Service connector response
-        active_connector_ids: List of active connector IDs for marking active status
-
-    Returns:
-        Dictionary containing formatted connector data for table display
-    """
-    # Safely extract connector type information
-    connector_type = getattr(connector, "connector_type", None)
-
-    # Get connector type ID for mapping
-    if isinstance(connector_type, str):
-        connector_type_id = connector_type
-    elif connector_type and hasattr(connector_type, "connector_type"):
-        connector_type_id = connector_type.connector_type
-    else:
-        connector_type_id = "unknown"
-
-    # Get emoji and short name
-    emoji, short_name = _get_connector_type_emoji_and_short_name(
-        connector_type_id
-    )
-
-    # Get resource types from the connector type
-    resource_types = []
-    if connector_type and hasattr(connector_type, "resource_types"):
-        resource_types = [
-            rt.resource_type for rt in connector_type.resource_types
-        ]
-
-    # Format resources with emojis
-    resources_display = _format_resource_types_with_emojis(
-        resource_types, connector_type_id
-    )
-
-    # Check if connector is active
-    is_active = (
-        active_connector_ids is not None
-        and connector.id in active_connector_ids
-    )
-
-    # Get resource name information
-    resource_name = ""
-
-    # First, try the resource_id field directly
-    if hasattr(connector, "resource_id") and connector.resource_id:
-        resource_name = connector.resource_id
-
-    # If no resource_id, try to extract from configuration
-    if (
-        not resource_name
-        and hasattr(connector, "configuration")
-        and connector.configuration
-    ):
-        config = connector.configuration
-
-        # Handle different configuration object types
-        if hasattr(config, "model_dump"):
-            # Pydantic model - convert to dict
-            config_dict = config.model_dump()
-        elif hasattr(config, "dict"):
-            # Pydantic v1 model
-            config_dict = config.dict()
-        elif hasattr(config, "__dict__"):
-            # Regular object
-            config_dict = config.__dict__
-        elif isinstance(config, dict):
-            # Already a dictionary
-            config_dict = config
-        else:
-            config_dict = {}
-
-        # Check common resource name fields in order of preference
-        potential_fields = [
-            "resource_name",
-            "resource_id",
-            "name",
-            "cluster_name",
-            "bucket_name",
-            "registry_name",
-            "instance_name",
-            "database_name",
-            "queue_name",
-            "topic_name",
-            "function_name",
-            "service_name",
-        ]
-
-        for field in potential_fields:
-            if field in config_dict and config_dict[field]:
-                resource_name = str(config_dict[field])
-                break
-
-    # If still no resource name found, check if this is a multi-resource connector
-    if not resource_name:
-        # For multi-resource connectors, we might show "Multiple" or resource count
-        if resource_types and len(resource_types) > 1:
-            resource_name = f"Multiple ({len(resource_types)})"
-        elif resource_types and len(resource_types) == 1:
-            resource_name = (
-                "Any " + resource_types[0].replace("-", " ").title()
-            )
-
-    # Get owner information
-    owner = ""
-    if hasattr(connector, "user") and connector.user:
-        owner = (
-            connector.user.name
-            if hasattr(connector.user, "name")
-            else str(connector.user)
-        )
-
-    # Get expiration information
-    expiration = ""
-    if hasattr(connector, "expires_at") and connector.expires_at:
-        expiration = connector.expires_at.strftime("%Y-%m-%d")
-
-    # Get labels information
-    labels = ""
-    if hasattr(connector, "labels") and connector.labels:
-        # Format labels as key=value pairs, one per line
-        label_items = list(connector.labels.items())
-        formatted_labels = [f"{k}={v}" for k, v in label_items]
-        labels = "\n".join(formatted_labels)
-
-    return {
-        "name": connector.name,
-        "type": f"{emoji} {short_name}",
-        "resource types": resources_display,
-        "resource name": resource_name,
-        "owner": owner,
-        "expires": expiration,
-        "labels": labels,
-        "__is_active__": is_active,  # Internal field for active formatting
-    }
-
-
-def _service_connector_to_print_full(
-    connector: ServiceConnectorResponse,
-) -> Dict[str, Any]:
-    """Convert service connector response to complete dictionary for JSON/YAML.
-
-    Args:
-        connector: Service connector response
-
-    Returns:
-        Complete dictionary containing all connector data
-    """
-    return connector.model_dump(mode="json")
 
 
 # Service connectors
@@ -1219,12 +1060,14 @@ def register_service_connector(
         )
 
 
+@enhanced_list_options(
+    ServiceConnectorFilter,
+    default_columns=["id", "name", "type_display", "resource_types", "user"],
+)
 @service_connector.command(
     "list",
-    help="""List available service connectors.
-""",
+    help="""List available service connectors.""",
 )
-@enhanced_list_options(ServiceConnectorFilter)
 @click.option(
     "--label",
     "-l",
@@ -1264,33 +1107,48 @@ def list_service_connectors(
         table_kwargs.get("output") or cli_utils.get_default_output_format()
     )
 
-    # Get active connector IDs from current stack for table display
+    # Get active connector IDs from current stack for enrichment
+    active_stack = client.active_stack_model
     active_connector_ids: List[UUID] = []
-    if output_format == "table":
-        active_stack = client.active_stack_model
-        for components in active_stack.components.values():
-            active_connector_ids.extend(
-                [
-                    component.connector.id
-                    for component in components
-                    if component.connector
-                ]
-            )
-    connector_data = []
+    for components in active_stack.components.values():
+        active_connector_ids.extend(
+            [
+                component.connector.id
+                for component in components
+                if component.connector
+            ]
+        )
 
-    for connector in connectors.items:
-        if output_format == "table":
-            # Use compact format for table display with active connector info
-            connector_data.append(
-                _service_connector_to_print(connector, active_connector_ids)
-            )
-        else:
-            # Use full format for JSON/YAML/TSV output
-            connector_data.append(_service_connector_to_print_full(connector))
+    def enrich_connector_data(
+        connector: Any, current_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Add active status and connector-specific formatting."""
+        is_active = connector.id in active_connector_ids
 
-    # Sort connectors to show active ones first (only for table format)
-    if output_format == "table":
-        connector_data.sort(key=lambda x: not x.get("__is_active__", False))
+        enrichments = {
+            "is_active": is_active,
+            "active_indicator": "✓" if is_active else "",
+        }
+
+        # Add formatted resource types with emojis
+        if hasattr(connector, "resource_types"):
+            enrichments["resource_types"] = _format_resource_types_with_emojis(
+                connector.resource_types, connector.type
+            )
+
+        # Add type with emoji and short name
+        if hasattr(connector, "type"):
+            emoji, short_name = _get_connector_type_emoji_and_short_name(
+                connector.type
+            )
+            enrichments["type_display"] = f"{emoji} {short_name}"
+
+        return enrichments
+
+    # Use centralized data preparation with enrichment
+    connector_data = prepare_data_from_responses(
+        connectors.items, output_format, enrich_connector_data
+    )
 
     # Handle table output with enhanced system
     cli_utils.handle_table_output(

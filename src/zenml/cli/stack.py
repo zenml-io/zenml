@@ -43,7 +43,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
     _component_display_name,
-    is_sorted_or_filtered,
+    prepare_data_from_responses,
     print_model_url,
 )
 from zenml.client import Client
@@ -80,70 +80,6 @@ if TYPE_CHECKING:
     from zenml.models import StackResponse
 
 logger = get_logger(__name__)
-
-
-def _prepare_stack_table_data(
-    client: "Client",
-    stacks: List["StackResponse"],
-    show_active: bool = False,
-) -> List[Dict[str, Any]]:
-    """Convert stack data to table-friendly format.
-
-    Args:
-        client: ZenML client instance
-        stacks: List of stack responses
-        show_active: Whether to show active stack indicator
-
-    Returns:
-        List of dictionaries suitable for table rendering
-    """
-    stack_data = []
-
-    # Always reorder stacks to show active stack first
-    stacks = list(stacks)
-    active_stack = client.active_stack_model
-
-    # Ensure active stack is in the list
-    if active_stack.id not in [s.id for s in stacks]:
-        stacks.append(active_stack)
-
-    # Always put active stack first
-    stacks = [s for s in stacks if s.id == active_stack.id] + [
-        s for s in stacks if s.id != active_stack.id
-    ]
-
-    active_stack_model_id = client.active_stack_model.id
-    for stack in stacks:
-        is_active = stack.id == active_stack_model_id
-
-        if stack.user:
-            user_name = stack.user.name
-        else:
-            user_name = "-"
-
-        # Create clean data structure with consistent field ordering
-        stack_info = {
-            "name": stack.name,
-            "owner": user_name,
-            "components": len(stack.components),
-        }
-
-        # Add component details (keeping the most important ones)
-        if StackComponentType.ORCHESTRATOR in stack.components:
-            stack_info["orchestrator"] = stack.components[
-                StackComponentType.ORCHESTRATOR
-            ][0].name
-        if StackComponentType.ARTIFACT_STORE in stack.components:
-            stack_info["artifact_store"] = stack.components[
-                StackComponentType.ARTIFACT_STORE
-            ][0].name
-
-        # Store active status separately for table formatting (not in JSON/YAML)
-        stack_info["__is_active__"] = is_active
-
-        stack_data.append(stack_info)
-
-    return stack_data
 
 
 # Stacks
@@ -601,7 +537,7 @@ def register_stack(
                     connectors.add(conn_.name)
         for connector in connectors:
             delete_commands.append(
-                "zenml service-connector delete " + connector
+                f"zenml service-connector delete {connector}"
             )
     for each in created_objects:
         if comps_ := created_stack.components[StackComponentType(each)]:
@@ -996,7 +932,17 @@ def rename_stack(
 
 
 @stack.command("list")
-@cli_utils.enhanced_list_options(StackFilter)
+@cli_utils.enhanced_list_options(
+    StackFilter,
+    default_columns=[
+        "id",
+        "name",
+        "owner",
+        "components",
+        "orchestrator",
+        "artifact_store",
+    ],
+)
 @click.pass_context
 def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements.
@@ -1017,11 +963,63 @@ def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
         cli_utils.declare("No stacks found.")
         return
 
-    # Convert stacks to table-friendly format
-    stack_data = _prepare_stack_table_data(
-        client=client,
-        stacks=stacks.items,
-        show_active=not is_sorted_or_filtered(ctx),
+    # Enrichment function to add active stack information and component details
+    def enrichment_func(
+        stack: Any, current_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Add active status, component count, and specific component names for default columns."""
+        from zenml.enums import StackComponentType
+
+        active_stack_id = client.active_stack_model.id
+        is_active = stack.id == active_stack_id
+
+        enrichments = {
+            "is_active": is_active,
+            "active_indicator": "✓" if is_active else "",
+            "components": len(stack.components)
+            if hasattr(stack, "components")
+            else 0,
+        }
+
+        # Add specific component names for default columns
+        if hasattr(stack, "components") and stack.components:
+            # Orchestrator
+            if StackComponentType.ORCHESTRATOR in stack.components:
+                enrichments["orchestrator"] = stack.components[
+                    StackComponentType.ORCHESTRATOR
+                ][0].name
+            else:
+                enrichments["orchestrator"] = "-"
+
+            # Artifact Store
+            if StackComponentType.ARTIFACT_STORE in stack.components:
+                enrichments["artifact_store"] = stack.components[
+                    StackComponentType.ARTIFACT_STORE
+                ][0].name
+            else:
+                enrichments["artifact_store"] = "-"
+        else:
+            enrichments["orchestrator"] = "-"
+            enrichments["artifact_store"] = "-"
+
+        # Add owner info - use current_data user name or fallback
+        enrichments["owner"] = current_data.get("user", "-")
+
+        # Apply green formatting for active stack name
+        if is_active and "name" in current_data:
+            enrichments["name"] = (
+                f"[green]●[/green] [bold green]{current_data['name']}[/bold green] (active)"
+            )
+
+        return enrichments
+
+    # Prepare data based on output format with enrichment
+    output_format = (
+        table_kwargs.get("output") or cli_utils.get_default_output_format()
+    )
+
+    stack_data = prepare_data_from_responses(
+        stacks.items, output_format, enrichment_func=enrichment_func
     )
 
     # Use centralized table output with pagination

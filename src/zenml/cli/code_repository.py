@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with code repositories."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import click
 
@@ -21,8 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     enhanced_list_options,
-    format_date_for_table,
-    prepare_list_data,
+    prepare_data_from_responses,
 )
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
@@ -34,29 +33,6 @@ from zenml.models import CodeRepositoryFilter
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
-
-
-def _code_repository_to_print(repo: Any) -> Dict[str, Any]:
-    """Convert a code repository response to a dictionary for table display.
-
-    Args:
-        repo: Code repository response object
-
-    Returns:
-        Dictionary containing formatted repository data for table display
-    """
-    return {
-        "name": repo.name,
-        "type": repo.source.type
-        if hasattr(repo, "source") and repo.source
-        else "Unknown",
-        "url": repo.source.url
-        if hasattr(repo, "source")
-        and repo.source
-        and hasattr(repo.source, "url")
-        else "",
-        "created": format_date_for_table(repo.created),
-    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -215,8 +191,10 @@ def describe_code_repository(name_id_or_prefix: str) -> None:
         )
 
 
+@enhanced_list_options(
+    CodeRepositoryFilter, default_columns=["name", "type", "url", "created"]
+)
 @code_repository.command("list", help="List all connected code repositories.")
-@enhanced_list_options(CodeRepositoryFilter)
 def list_code_repositories(**kwargs: Any) -> None:
     """List all connected code repositories.
 
@@ -240,9 +218,7 @@ def list_code_repositories(**kwargs: Any) -> None:
         repo_data = []
 
         # Use centralized data preparation
-        repo_data = prepare_list_data(
-            repos.items, output_format, _code_repository_to_print
-        )
+        repo_data = prepare_data_from_responses(repos.items, output_format)
 
         # Handle table output with enhanced system
         cli_utils.handle_table_output(

@@ -21,8 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     enhanced_list_options,
-    format_date_for_table,
-    prepare_list_data,
+    prepare_data_from_responses,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -42,86 +41,20 @@ from zenml.utils.dict_utils import remove_none_values
 logger = get_logger(__name__)
 
 
-def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
-    """Convert a model response to a dictionary suitable for table display.
-
-    For table output, keep it ultra-compact with only core information.
-    Full details including tags and description are available in JSON/YAML
-    output formats.
-
-    Args:
-        model: Model response object
-
-    Returns:
-        Dictionary containing formatted model data for table display
-    """
-    return {
-        "name": model.name,
-        "latest_version": model.latest_version_name or "-",
-        "updated": format_date_for_table(model.updated),
-    }
-
-
-def _model_to_print_full(model: ModelResponse) -> Dict[str, Any]:
-    """Convert model response to complete dictionary for JSON/YAML.
-
-    Args:
-        model: Model response object
-
-    Returns:
-        Complete dictionary containing all model data
-    """
-    return model.model_dump(mode="json")
-
-
-def _model_version_to_print(
-    model_version: ModelVersionResponse,
-) -> Dict[str, Any]:
-    """Convert model version response to dictionary for table display.
-
-    For table output, keep it compact with essential information and visual
-    stage indicators. Full details including ID, description, and run_metadata
-    are available in JSON/YAML output formats.
-
-    Args:
-        model_version: Model version response object
-
-    Returns:
-        Dictionary containing formatted model version data for table display
-    """
-    return {
-        "model": model_version.model.name,
-        "version": model_version.name or f"#{model_version.number}",
-        "stage": model_version.stage or "",
-        "tags": [t.name for t in model_version.tags]
-        if model_version.tags
-        else [],
-        "updated": format_date_for_table(model_version.updated),
-        # Internal field for stage formatting (removed from non-table outputs)
-        "__stage_value__": model_version.stage or "",
-    }
-
-
-def _model_version_to_print_full(
-    model_version: ModelVersionResponse,
-) -> Dict[str, Any]:
-    """Convert model version response to complete dictionary for JSON/YAML.
-
-    Args:
-        model_version: Model version response object
-
-    Returns:
-        Complete dictionary containing all model version data
-    """
-    return model_version.model_dump(mode="json")
-
-
 @cli.group(cls=TagGroup, tag=CliCategories.MODEL_CONTROL_PLANE)
 def model() -> None:
     """Interact with models and model versions in the Model Control Plane."""
 
 
-@enhanced_list_options(ModelFilter)
+@enhanced_list_options(
+    ModelFilter,
+    default_columns=[
+        "name",
+        "latest_version_name",
+        "latest_version_id",
+        "updated",
+    ],
+)
 @model.command("list", help="List models with filter.")
 def list_models(**kwargs: Any) -> None:
     """List models with filter in the Model Control Plane.
@@ -143,11 +76,21 @@ def list_models(**kwargs: Any) -> None:
     output_format = (
         table_kwargs.get("output") or cli_utils.get_default_output_format()
     )
-    model_data = []
 
-    # Use centralized data preparation
-    model_data = prepare_list_data(
-        models.items, output_format, _model_to_print, _model_to_print_full
+    def enrichment_func(
+        item: ModelResponse, result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Enrich the model data with the latest version name."""
+        result.update(
+            {
+                "latest_version_name": item.latest_version_name,
+                "latest_version_id": item.latest_version_id,
+            }
+        )
+        return result
+
+    model_data = cli_utils.prepare_data_from_responses(
+        models.items, output_format, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
@@ -272,7 +215,8 @@ def register_model(
     except (EntityExistsError, ValueError) as e:
         cli_utils.error(str(e))
 
-    cli_utils.print_table([_model_to_print(model)])
+    model_data = prepare_data_from_responses([model], "table")
+    cli_utils.print_table(model_data)
 
 
 @model.command("update", help="Update an existing model.")
@@ -404,7 +348,8 @@ def update_model(
     )
     model = Client().update_model(model_name_or_id=model_id, **update_dict)
 
-    cli_utils.print_table([_model_to_print(model)])
+    model_data = prepare_data_from_responses([model], "table")
+    cli_utils.print_table(model_data)
 
 
 @model.command("delete", help="Delete an existing model.")
@@ -448,7 +393,10 @@ def version() -> None:
     """Interact with model versions in the Model Control Plane."""
 
 
-@enhanced_list_options(ModelVersionFilter)
+@enhanced_list_options(
+    ModelVersionFilter,
+    default_columns=["model", "version", "stage", "tags", "updated"],
+)
 @version.command("list", help="List model versions with filter.")
 def list_model_versions(**kwargs: Any) -> None:
     """List model versions with filter in the Model Control Plane.
@@ -470,14 +418,25 @@ def list_model_versions(**kwargs: Any) -> None:
     output_format = (
         table_kwargs.get("output") or cli_utils.get_default_output_format()
     )
-    model_version_data = []
 
-    # Use centralized data preparation
-    model_version_data = prepare_list_data(
-        model_versions.items,
-        output_format,
-        _model_version_to_print,
-        _model_version_to_print_full,
+    def enrichment_func(
+        item: ModelVersionResponse, result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Enrich the model version data with the model name."""
+        result["version"] = result.pop("name")
+        result.update(
+            {
+                "model": item.model.name,
+                "tags": ", ".join(tag.name for tag in item.tags)
+                if item.tags
+                else "",
+                "updated": item.updated,
+            }
+        )
+        return result
+
+    model_version_data = cli_utils.prepare_data_from_responses(
+        model_versions.items, output_format, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
@@ -571,7 +530,10 @@ def update_model_version(
         )
     except RuntimeError:
         if not force:
-            cli_utils.print_table([_model_version_to_print(model_version)])
+            model_version_data = prepare_data_from_responses(
+                [model_version], "table"
+            )
+            cli_utils.print_table(model_version_data)
 
             confirmation = cli_utils.confirmation(
                 "Are you sure you want to change the status of model "
@@ -592,7 +554,8 @@ def update_model_version(
                 force=True,
                 description=description,
             )
-    cli_utils.print_table([_model_version_to_print(model_version)])
+    model_version_data = prepare_data_from_responses([model_version], "table")
+    cli_utils.print_table(model_version_data)
 
 
 @version.command("delete", help="Delete an existing model version.")
@@ -638,90 +601,6 @@ def delete_model_version(
         cli_utils.declare(
             f"Model version '{model_version_name_or_number_or_id}' deleted from model '{model_name_or_id}'."
         )
-
-
-def _artifact_link_to_print(link: Any) -> Dict[str, Any]:
-    """Convert an artifact link response to a dictionary for table display.
-
-    For table output, keep it compact with essential link information.
-    Full details are available in JSON/YAML output formats.
-
-    Args:
-        link: Artifact link response object
-
-    Returns:
-        Dictionary containing formatted artifact link data for table display
-    """
-    return {
-        "artifact_version": link.artifact_version.name
-        if hasattr(link, "artifact_version") and link.artifact_version
-        else "",
-        "created": link.created.strftime("%Y-%m-%d %H:%M:%S")
-        if hasattr(link, "created") and link.created
-        else "",
-    }
-
-
-def _artifact_link_to_print_full(link: Any) -> Dict[str, Any]:
-    """Convert artifact link response to complete dictionary for JSON/YAML.
-
-    Args:
-        link: Artifact link response object
-
-    Returns:
-        Complete dictionary containing all artifact link data
-    """
-    return link.model_dump(mode="json")  # type: ignore[no-any-return]
-
-
-def _pipeline_run_link_to_print(link: Any) -> Dict[str, Any]:
-    """Convert a pipeline run link response to a dictionary for table display.
-
-    For table output, keep it compact with essential link information.
-    Full details are available in JSON/YAML output formats.
-
-    Args:
-        link: Pipeline run link response object
-
-    Returns:
-        Dictionary containing formatted pipeline run link data for table display
-    """
-    return {
-        "name": link.pipeline_run.name
-        if hasattr(link, "pipeline_run") and link.pipeline_run
-        else "",
-        "pipeline_name": link.pipeline_run.pipeline.name
-        if hasattr(link, "pipeline_run")
-        and link.pipeline_run
-        and hasattr(link.pipeline_run, "pipeline")
-        and link.pipeline_run.pipeline
-        else "",
-        "status": link.pipeline_run.status.value
-        if hasattr(link, "pipeline_run")
-        and link.pipeline_run
-        and hasattr(link.pipeline_run, "status")
-        and hasattr(link.pipeline_run.status, "value")
-        else str(link.pipeline_run.status)
-        if hasattr(link, "pipeline_run")
-        and link.pipeline_run
-        and hasattr(link.pipeline_run, "status")
-        else "",
-        "created": link.created.strftime("%Y-%m-%d %H:%M:%S")
-        if hasattr(link, "created") and link.created
-        else "",
-    }
-
-
-def _pipeline_run_link_to_print_full(link: Any) -> Dict[str, Any]:
-    """Convert pipeline run link response to complete dictionary for JSON/YAML.
-
-    Args:
-        link: Pipeline run link response object
-
-    Returns:
-        Complete dictionary containing all pipeline run link data
-    """
-    return link.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 def _print_artifacts_links_generic(
@@ -779,11 +658,9 @@ def _print_artifacts_links_generic(
     link_list = links.items if hasattr(links, "items") else links
 
     # Use centralized data preparation
-    link_data = prepare_list_data(
+    link_data = cli_utils.prepare_data_from_responses(
         link_list,  # type: ignore[arg-type]
         output_format,
-        _artifact_link_to_print,
-        _artifact_link_to_print_full,
     )
 
     # Set title for table output

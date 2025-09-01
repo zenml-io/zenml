@@ -22,8 +22,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     enhanced_list_options,
     format_boolean_indicator,
-    format_date_for_table,
-    prepare_list_data,
+    prepare_data_from_responses,
 )
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -34,51 +33,7 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.models import UserFilter, UserResponse
-
-
-def _user_to_print(user: UserResponse) -> Dict[str, Any]:
-    """Convert a user response to a dictionary suitable for table display.
-
-    For table output, keep it compact with essential user information.
-    Full details are available in JSON/YAML output formats.
-
-    Args:
-        user: User response object
-
-    Returns:
-        Dictionary containing formatted user data for table display
-    """
-    # For many users, the name field contains the email and email field is null
-    display_name = user.name
-    display_email = user.email or ""
-
-    # If name looks like an email and email is empty, separate them nicely
-    if "@" in user.name and not user.email:
-        display_name = user.full_name or user.name.split("@")[0]
-        display_email = user.name
-
-    return {
-        "name": display_name,
-        "email": display_email,
-        "role": "admin" if user.is_admin else "user",
-        "active": format_boolean_indicator(user.active),
-        "created": format_date_for_table(user.created),
-        # Internal field for active user formatting (will be set during processing)
-        "__is_active__": False,
-    }
-
-
-def _user_to_print_full(user: UserResponse) -> Dict[str, Any]:
-    """Convert user response to complete dictionary for JSON/YAML.
-
-    Args:
-        user: User response object
-
-    Returns:
-        Complete dictionary containing all user data
-    """
-    return user.model_dump(mode="json")
+from zenml.models import UserFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -126,7 +81,10 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-@enhanced_list_options(UserFilter)
+@enhanced_list_options(
+    UserFilter,
+    default_columns=["id", "name", "email", "role", "active", "created"],
+)
 def list_users(**kwargs: Any) -> None:
     """List all users.
 
@@ -154,18 +112,46 @@ def list_users(**kwargs: Any) -> None:
     user_list = users.items if hasattr(users, "items") else users
     active_user_id = client.active_user.id
 
-    # Create a custom table formatter that includes active user indicator
-    def user_table_formatter(user: Any) -> Dict[str, Any]:
-        user_dict = _user_to_print(user)
-        user_dict["__is_active__"] = user.id == active_user_id
-        return user_dict
+    # Create enrichment function for active user indicator
+    def enrichment_func(
+        user: Any, current_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Add active user information for display."""
+        is_active_user = user.id == active_user_id
 
-    # Use centralized data preparation with custom formatter
-    user_data = prepare_list_data(
-        user_list,  # type: ignore[arg-type]
+        # For many users, the name field contains the email and email field is null
+        display_name = user.name
+        display_email = user.email or ""
+
+        # If name looks like an email and email is empty, separate them nicely
+        if "@" in user.name and not user.email:
+            display_name = user.full_name or user.name.split("@")[0]
+            display_email = user.name
+
+        enrichments = {
+            "display_name": display_name,
+            "display_email": display_email,
+            "role": "admin" if user.is_admin else "user",
+            "active": format_boolean_indicator(user.active),
+        }
+
+        # If this is the active user, format the name for visual distinction
+        if is_active_user:
+            enrichments["name"] = (
+                f"[green]●[/green] [bold green]{display_name}[/bold green] (you)"
+            )
+        else:
+            enrichments["name"] = display_name
+
+        enrichments["email"] = display_email
+
+        return enrichments
+
+    # Use centralized data preparation with enrichment
+    user_data = prepare_data_from_responses(
+        list(user_list),  # type: ignore[arg-type]
         output_format,
-        user_table_formatter,
-        _user_to_print_full,
+        enrichment_func=enrichment_func,
     )
 
     # Handle table output with enhanced system and pagination

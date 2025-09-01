@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with tags."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 from uuid import UUID
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import enhanced_list_options, prepare_list_data
+from zenml.cli.utils import enhanced_list_options, prepare_data_from_responses
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, ColorVariants
@@ -34,45 +34,14 @@ from zenml.utils.dict_utils import remove_none_values
 logger = get_logger(__name__)
 
 
-def _tag_to_print(tag: Any) -> Dict[str, Any]:
-    """Convert a tag response to a dictionary suitable for table display.
-
-    For table output, keep it compact with essential tag information.
-    Full details are available in JSON/YAML output formats.
-
-    Args:
-        tag: Tag response object
-
-    Returns:
-        Dictionary containing formatted tag data for table display
-    """
-    return {
-        "name": tag.name,
-        "color": tag.color,
-        "exclusive": "Yes" if tag.exclusive else "No",
-        "username": tag.user.name if tag.user else "",
-        "created": tag.created.strftime("%Y-%m-%d %H:%M:%S"),
-    }
-
-
-def _tag_to_print_full(tag: Any) -> Dict[str, Any]:
-    """Convert tag response to complete dictionary for JSON/YAML.
-
-    Args:
-        tag: Tag response object
-
-    Returns:
-        Complete dictionary containing all tag data
-    """
-    return tag.model_dump(mode="json")  # type: ignore[no-any-return]
-
-
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def tag() -> None:
     """Interact with tags."""
 
 
-@enhanced_list_options(TagFilter)
+@enhanced_list_options(
+    TagFilter, default_columns=["id", "name", "color", "created"]
+)
 @tag.command("list", help="List tags with filter.")
 def list_tags(**kwargs: Any) -> None:
     """List tags with filter.
@@ -99,11 +68,9 @@ def list_tags(**kwargs: Any) -> None:
     tag_list = tags.items if hasattr(tags, "items") else tags
 
     # Use centralized data preparation
-    tag_data = prepare_list_data(
-        tag_list,  # type: ignore[arg-type]
+    tag_data = prepare_data_from_responses(
+        list(tag_list),  # type: ignore[arg-type]
         output_format,
-        _tag_to_print,
-        _tag_to_print_full,
     )
 
     # Handle table output with enhanced system and pagination

@@ -21,52 +21,16 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     enhanced_list_options,
-    format_boolean_indicator,
-    format_date_for_table,
-    prepare_list_data,
+    prepare_data_from_responses,
 )
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.logger import get_logger
-from zenml.models import APIKeyFilter, ServiceAccountFilter
+from zenml.models import APIKeyFilter, APIKeyResponse, ServiceAccountFilter
 
 logger = get_logger(__name__)
-
-
-def _service_account_to_print(service_account: Any) -> Dict[str, Any]:
-    """Convert a service account response to a dictionary for table display.
-
-    Args:
-        service_account: Service account response object
-
-    Returns:
-        Dictionary containing formatted service account data for table display
-    """
-    return {
-        "name": service_account.name,
-        "description": service_account.description or "",
-        "active": format_boolean_indicator(service_account.active),
-        "created": format_date_for_table(service_account.created),
-    }
-
-
-def _api_key_to_print(api_key: Any) -> Dict[str, Any]:
-    """Convert an API key response to a dictionary suitable for table display.
-
-    Args:
-        api_key: API key response object
-
-    Returns:
-        Dictionary containing formatted API key data for table display
-    """
-    return {
-        "name": api_key.name,
-        "description": api_key.description or "",
-        "active": format_boolean_indicator(api_key.active),
-        "created": format_date_for_table(api_key.created),
-    }
 
 
 def _create_api_key(
@@ -224,7 +188,10 @@ def describe_service_account(service_account_name_or_id: str) -> None:
 
 
 @service_account.command("list")
-@enhanced_list_options(ServiceAccountFilter)
+@enhanced_list_options(
+    ServiceAccountFilter,
+    default_columns=["id", "name", "description", "active", "created"],
+)
 @click.pass_context
 def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all service accounts.
@@ -256,10 +223,9 @@ def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
         )
 
         # Use centralized data preparation
-        service_account_data = prepare_list_data(
+        service_account_data = prepare_data_from_responses(
             account_list,  # type: ignore[arg-type]
             output_format,
-            _service_account_to_print,
         )
 
         # Handle table output with enhanced system
@@ -439,8 +405,11 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
         )
 
 
+@enhanced_list_options(
+    APIKeyFilter,
+    default_columns=["id", "name", "description", "active", "created"],
+)
 @api_key.command("list", help="List all API keys.")
-@enhanced_list_options(APIKeyFilter)
 @click.pass_obj
 def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
     """List all API keys.
@@ -471,9 +440,16 @@ def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
             table_kwargs.get("output") or cli_utils.get_default_output_format()
         )
 
+        def enrichment_func(
+            item: APIKeyResponse, result: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            """Enrich the API key data with the active status."""
+            result.update({"active": item.active})
+            return result
+
         # Use centralized data preparation
-        api_key_data = prepare_list_data(
-            api_keys.items, output_format, _api_key_to_print
+        api_key_data = prepare_data_from_responses(
+            api_keys.items, output_format, enrichment_func=enrichment_func
         )
 
         # Handle table output with enhanced system

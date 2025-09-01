@@ -21,7 +21,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import enhanced_list_options, prepare_list_data
+from zenml.cli.utils import enhanced_list_options, prepare_data_from_responses
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
@@ -29,166 +29,19 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildBase,
     PipelineBuildFilter,
+    PipelineBuildResponse,
     PipelineFilter,
     PipelineResponse,
     PipelineRunFilter,
+    PipelineRunResponse,
     ScheduleFilter,
+    ScheduleResponse,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
-
-
-def _schedule_to_print(schedule: Any) -> Dict[str, Any]:
-    """Convert a schedule response to a dictionary for table display.
-
-    For table output, keep it compact with essential schedule information.
-    Full details are available in JSON/YAML output formats.
-
-    Args:
-        schedule: Schedule response object
-
-    Returns:
-        Dictionary containing formatted schedule data for table display
-    """
-    return {
-        "name": schedule.name,
-        "active": "✓" if schedule.active else "✗",
-        "cron_expression": schedule.cron_expression or "",
-        "created": schedule.created.strftime("%Y-%m-%d"),
-    }
-
-
-def _schedule_to_print_full(schedule: Any) -> Dict[str, Any]:
-    """Convert schedule response to complete dictionary for JSON/YAML.
-
-    Args:
-        schedule: Schedule response object
-
-    Returns:
-        Complete dictionary containing all schedule data
-    """
-    return schedule.model_dump(mode="json")  # type: ignore[no-any-return]
-
-
-def _pipeline_run_to_print(run: Any) -> Dict[str, Any]:
-    """Convert a pipeline run response to a dictionary for table display.
-
-    For table output, keep it compact with essential run information.
-    Full details are available in JSON/YAML output formats.
-
-    Args:
-        run: Pipeline run response object
-
-    Returns:
-        Dictionary containing formatted run data for table display
-    """
-    return {
-        "name": run.name,
-        "pipeline_name": run.pipeline.name
-        if hasattr(run, "pipeline") and run.pipeline
-        else "Unknown",
-        "status": run.status.value
-        if hasattr(run.status, "value")
-        else str(run.status),
-        "created": run.created.strftime("%Y-%m-%d"),
-    }
-
-
-def _pipeline_run_to_print_full(run: Any) -> Dict[str, Any]:
-    """Convert pipeline run response to complete dictionary for JSON/YAML.
-
-    Args:
-        run: Pipeline run response object
-
-    Returns:
-        Complete dictionary containing all run data
-    """
-    return run.model_dump(mode="json")  # type: ignore[no-any-return]
-
-
-def _pipeline_build_to_print(build: Any) -> Dict[str, Any]:
-    """Convert a pipeline build response to a dictionary for table display.
-
-    For table output, keep it compact with essential build information.
-    Full details are available in JSON/YAML output formats.
-
-    Args:
-        build: Pipeline build response object
-
-    Returns:
-        Dictionary containing formatted build data for table display
-    """
-    return {
-        "pipeline_name": build.pipeline.name
-        if hasattr(build, "pipeline") and build.pipeline
-        else "Unknown",
-        "zenml_version": build.zenml_version or "",
-        "stack_name": build.stack.name
-        if hasattr(build, "stack") and build.stack
-        else "Unknown",
-        "created": build.created.strftime("%Y-%m-%d"),
-    }
-
-
-def _pipeline_build_to_print_full(build: Any) -> Dict[str, Any]:
-    """Convert pipeline build response to complete dictionary for JSON/YAML.
-
-    Args:
-        build: Pipeline build response object
-
-    Returns:
-        Complete dictionary containing all build data
-    """
-    return build.model_dump(mode="json")  # type: ignore[no-any-return]
-
-
-def _pipeline_to_print(pipeline: PipelineResponse) -> Dict[str, Any]:
-    """Convert a pipeline response to a dictionary suitable for table display.
-
-    Args:
-        pipeline: The pipeline response object to convert.
-
-    Returns:
-        A dictionary with pipeline information formatted for table display.
-    """
-    # Get the latest run information from resources
-    latest_run_status = None
-    latest_run_user = None
-    if pipeline.latest_run_status:
-        latest_run_status = pipeline.latest_run_status.value
-    if (
-        hasattr(pipeline, "get_resources")
-        and pipeline.get_resources().latest_run_user
-    ):
-        user = pipeline.get_resources().latest_run_user
-        if user:
-            latest_run_user = user.name
-
-    return {
-        "name": pipeline.name,
-        "latest_run_status": latest_run_status or "",
-        "latest_run_user": latest_run_user or "",
-        "tags": [t.name for t in pipeline.tags] if pipeline.tags else [],
-        "description": pipeline.get_metadata().description or ""
-        if pipeline.metadata
-        else "",
-        "created": pipeline.created.strftime("%Y-%m-%d %H:%M:%S"),
-    }
-
-
-def _pipeline_to_print_full(pipeline: PipelineResponse) -> Dict[str, Any]:
-    """Convert pipeline response to complete dictionary for JSON/YAML.
-
-    Args:
-        pipeline: Pipeline response object
-
-    Returns:
-        Complete dictionary containing all pipeline data
-    """
-    return pipeline.model_dump(mode="json")
 
 
 def _import_pipeline(source: str) -> Pipeline:
@@ -515,8 +368,17 @@ def create_run_template(
     cli_utils.declare(f"Created run template `{template.id}`.")
 
 
+@enhanced_list_options(
+    PipelineFilter,
+    default_columns=[
+        "name",
+        "latest_run_status",
+        "latest_run_id",
+        "tags",
+        "created",
+    ],
+)
 @pipeline.command("list", help="List all registered pipelines.")
-@enhanced_list_options(PipelineFilter)
 def list_pipelines(**kwargs: Any) -> None:
     """List all registered pipelines.
 
@@ -538,12 +400,25 @@ def list_pipelines(**kwargs: Any) -> None:
         table_kwargs.get("output") or cli_utils.get_default_output_format()
     )
 
+    def enrichment_func(
+        item: PipelineResponse, result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Enrich the pipeline data with the user name."""
+        result.update(
+            {
+                "latest_run_status": item.latest_run_status or "",
+                "latest_run_id": item.latest_run_id or "",
+                "tags": ", ".join(tag.name for tag in item.tags)
+                if item.tags
+                else "",
+                "created": item.created,
+            }
+        )
+        return result
+
     # Use centralized data preparation
-    pipeline_data = prepare_list_data(
-        pipelines.items,
-        output_format,
-        _pipeline_to_print,
-        _pipeline_to_print_full,
+    pipeline_data = prepare_data_from_responses(
+        pipelines.items, output_format, enrichment_func=enrichment_func
     )
 
     # Handle table output with enhanced system and pagination
@@ -597,8 +472,11 @@ def schedule() -> None:
     """Commands for pipeline run schedules."""
 
 
+@enhanced_list_options(
+    ScheduleFilter,
+    default_columns=["name", "active", "cron_expression", "user", "created"],
+)
 @schedule.command("list", help="List all pipeline schedules.")
-@enhanced_list_options(ScheduleFilter)
 def list_schedules(**kwargs: Any) -> None:
     """List all pipeline schedules.
 
@@ -621,23 +499,32 @@ def list_schedules(**kwargs: Any) -> None:
     output_format = (
         table_kwargs.get("output") or cli_utils.get_default_output_format()
     )
-    schedule_data = []
+
+    def enrichment_func(
+        item: ScheduleResponse, result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Enrich the schedule data with the user name."""
+        result.update(
+            {
+                "active": item.active,
+                "cron_expression": item.cron_expression,
+                "user": item.user.name if item.user else "",
+            }
+        )
+        return result
 
     # Handle both paginated and non-paginated responses
     if hasattr(schedules, "items"):
-        schedule_list = schedules.items
+        schedule_list = list(schedules.items)  # type: ignore[misc]
         page = schedules  # schedules is a Page object
     else:
-        schedule_list = schedules  # type: ignore[assignment]
+        schedule_list = list(schedules)  # type: ignore[arg-type]
         page = None  # schedules is just a list, no pagination
 
-    for schedule in schedule_list:
-        if output_format == "table":
-            # Use compact format for table display
-            schedule_data.append(_schedule_to_print(schedule))
-        else:
-            # Use full format for JSON/YAML/TSV output
-            schedule_data.append(_schedule_to_print_full(schedule))
+    # Use centralized data preparation
+    schedule_data = prepare_data_from_responses(
+        schedule_list, output_format, enrichment_func=enrichment_func
+    )
 
     # Handle table output with enhanced system and pagination
     cli_utils.handle_table_output(
@@ -717,8 +604,11 @@ def runs() -> None:
     """Commands for pipeline runs."""
 
 
+@enhanced_list_options(
+    PipelineRunFilter,
+    default_columns=["name", "status", "pipeline", "user", "stack", "created"],
+)
 @runs.command("list", help="List all registered pipeline runs.")
-@enhanced_list_options(PipelineRunFilter)
 def list_pipeline_runs(**kwargs: Any) -> None:
     """List all registered pipeline runs for the filter.
 
@@ -744,12 +634,23 @@ def list_pipeline_runs(**kwargs: Any) -> None:
             table_kwargs.get("output") or cli_utils.get_default_output_format()
         )
 
+        def enrichment_func(
+            item: PipelineRunResponse, result: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            """Enrich the pipeline run data with the user name."""
+            result.update(
+                {
+                    "pipeline": item.pipeline.name if item.pipeline else "",
+                    "user": item.user.name if item.user else "",
+                    "stack": item.stack.name if item.stack else "",
+                }
+            )
+
+            return result
+
         # Use centralized data preparation
-        pipeline_run_data = prepare_list_data(
-            pipeline_runs.items,
-            output_format,
-            _pipeline_run_to_print,
-            _pipeline_run_to_print_full,
+        pipeline_run_data = prepare_data_from_responses(
+            pipeline_runs.items, output_format, enrichment_func=enrichment_func
         )
 
         # Handle table output with enhanced system and pagination
@@ -888,8 +789,17 @@ def builds() -> None:
     """Commands for pipeline builds."""
 
 
+@enhanced_list_options(
+    PipelineBuildFilter,
+    default_columns=[
+        "id",
+        "pipeline_name",
+        "zenml_version",
+        "stack_name",
+        "created",
+    ],
+)
 @builds.command("list", help="List all pipeline builds.")
-@enhanced_list_options(PipelineBuildFilter)
 def list_pipeline_builds(**kwargs: Any) -> None:
     """List all pipeline builds for the filter.
 
@@ -915,12 +825,26 @@ def list_pipeline_builds(**kwargs: Any) -> None:
             table_kwargs.get("output") or cli_utils.get_default_output_format()
         )
 
+        def enrichment_func(
+            item: PipelineBuildResponse, result: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            """Enrich the pipeline build data with the user name."""
+            result.update(
+                {
+                    "pipeline_name": item.pipeline.name
+                    if item.pipeline
+                    else "",
+                    "zenml_version": item.zenml_version,
+                    "stack_name": item.stack.name if item.stack else "",
+                }
+            )
+            return result
+
         # Use centralized data preparation
-        pipeline_build_data = prepare_list_data(
+        pipeline_build_data = prepare_data_from_responses(
             pipeline_builds.items,
             output_format,
-            _pipeline_build_to_print,
-            _pipeline_build_to_print_full,
+            enrichment_func=enrichment_func,
         )
 
         # Handle table output with enhanced system and pagination

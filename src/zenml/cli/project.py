@@ -22,30 +22,13 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     check_zenml_pro_project_availability,
     enhanced_list_options,
-    format_date_for_table,
     is_sorted_or_filtered,
-    prepare_list_data,
+    prepare_data_from_responses,
 )
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.models import ProjectFilter
-
-
-def _project_to_print(project: Any) -> Dict[str, Any]:
-    """Convert a project response to a dictionary suitable for table display.
-
-    Args:
-        project: Project response object
-
-    Returns:
-        Dictionary containing formatted project data for table display
-    """
-    return {
-        "name": project.name,
-        "description": project.description or "",
-        "created": format_date_for_table(project.created),
-    }
+from zenml.models import ProjectFilter, ProjectResponse
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -53,8 +36,10 @@ def project() -> None:
     """Commands for project management."""
 
 
+@enhanced_list_options(
+    ProjectFilter, default_columns=["name", "description", "created"]
+)
 @project.command("list")
-@enhanced_list_options(ProjectFilter)
 @click.pass_context
 def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all projects.
@@ -89,10 +74,17 @@ def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
             )
 
             # Use centralized data preparation
-            project_data = prepare_list_data(
-                project_list,  # type: ignore[arg-type]
+            def enrichment_func(
+                item: ProjectResponse, result: Dict[str, Any]
+            ) -> Dict[str, Any]:
+                """Enrich the project data with the display name."""
+                result.update({"description": item.description})
+                return result
+
+            project_data = prepare_data_from_responses(
+                list(project_list),  # type: ignore[arg-type]
                 output_format,
-                _project_to_print,
+                enrichment_func=enrichment_func,
             )
 
             # Handle table output with enhanced system

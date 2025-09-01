@@ -1497,55 +1497,6 @@ def replace_emojis(text: str) -> str:
     return text
 
 
-def print_stacks_table(
-    client: "Client",
-    stacks: Sequence["StackResponse"],
-    show_active: bool = False,
-) -> None:
-    """Print a prettified list of all stacks supplied to this method.
-
-    Args:
-        client: Repository instance
-        stacks: List of stacks
-        show_active: Flag to decide whether to append the active stack on the
-            top of the list.
-    """
-    stack_dicts = []
-
-    stacks = list(stacks)
-    active_stack = client.active_stack_model
-    if show_active:
-        if active_stack.id not in [s.id for s in stacks]:
-            stacks.append(active_stack)
-
-        stacks = [s for s in stacks if s.id == active_stack.id] + [
-            s for s in stacks if s.id != active_stack.id
-        ]
-
-    active_stack_model_id = client.active_stack_model.id
-    for stack in stacks:
-        is_active = stack.id == active_stack_model_id
-
-        if stack.user:
-            user_name = stack.user.name
-        else:
-            user_name = "-"
-
-        stack_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
-            "STACK NAME": stack.name,
-            "STACK ID": stack.id,
-            "OWNER": user_name,
-            **{
-                component_type.upper(): components[0].name
-                for component_type, components in stack.components.items()
-            },
-        }
-        stack_dicts.append(stack_config)
-
-    print_table(stack_dicts)
-
-
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
@@ -2507,7 +2458,9 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     return inner_decorator
 
 
-def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
+def enhanced_list_options(
+    filter_model: Type[BaseFilter], default_columns: Optional[List[str]] = None
+) -> Callable[[F], F]:
     """Enhanced decorator that adds both filter options and table formatting options.
 
     This decorator extends the functionality of `list_options` by adding
@@ -2516,6 +2469,8 @@ def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
 
     Args:
         filter_model: The filter model based on which to decorate the function.
+        default_columns: Optional list of column names to use as defaults when
+                        --columns is not specified and output format is table.
 
     Returns:
         The inner decorator that adds both filter and table options.
@@ -2524,6 +2479,11 @@ def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     def inner_decorator(func: F) -> F:
         # First apply the existing list_options
         func = list_options(filter_model)(func)
+
+        # Build help text for columns option
+        columns_help = "Comma-separated list of columns to display."
+        if default_columns:
+            columns_help += f" Defaults to: {', '.join(default_columns)}"
 
         # Add table formatting options in reverse order
         # (Click applies decorators in reverse order)
@@ -2543,7 +2503,8 @@ def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
             click.option(
                 "--columns",
                 type=str,
-                help="Comma-separated list of columns to display.",
+                default=",".join(default_columns) if default_columns else "",
+                help=columns_help,
             ),
             click.option(
                 "--output",
@@ -2557,27 +2518,6 @@ def enhanced_list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
         # Apply table options
         for option in table_options:
             func = option(func)
-
-        # Enhance docstring with table options information
-        table_help = (
-            "\n\n**Table Output Options:**\n\n"
-            "This command supports multiple output formats and table customization:\n\n"
-            "- **--output/-o**: Choose from 'table' (default), 'json', 'yaml', 'tsv', or 'none'\n"
-            "- **--columns**: Select specific columns to display (comma-separated)\n"
-            "- **--no-truncate**: Show full values without truncation\n"
-            "- **--no-color**: Disable colored output\n\n"
-            "Examples:\n"
-            "  zenml <resource> list --output json\n"
-            "  zenml <resource> list --columns id,name,status\n"
-            "  zenml <resource> list --no-truncate --no-color\n"
-        )
-
-        if func.__doc__:
-            func.__doc__ = func.__doc__ + table_help
-        else:
-            func.__doc__ = (
-                "List resources with enhanced table options." + table_help
-            )
 
         return func
 
@@ -2595,14 +2535,18 @@ def get_default_output_format() -> str:
     return os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
 
 
-def extract_table_options(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+def extract_table_options(
+    kwargs: Dict[str, Any], func: Optional[Any] = None
+) -> Dict[str, Any]:
     """Extract table-specific options from kwargs dictionary.
 
     This function separates table formatting options from other CLI options
-    for use with handle_table_output function.
+    for use with handle_table_output function. It also automatically includes
+    default columns if they were specified in the enhanced_list_options decorator.
 
     Args:
         kwargs: Dictionary of CLI options including table formatting options
+        func: Optional function object to extract default columns from
 
     Returns:
         Dictionary containing only table formatting options
@@ -2619,6 +2563,10 @@ def extract_table_options(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         if key in kwargs:
             table_kwargs[key] = kwargs.pop(key)
 
+    # Add default columns from decorator if available
+    if func and hasattr(func, "_default_columns") and func._default_columns:
+        table_kwargs["default_columns"] = func._default_columns
+
     return table_kwargs
 
 
@@ -2629,6 +2577,7 @@ def handle_table_output(
     no_truncate: bool = False,
     no_color: bool = False,
     page: Optional["Page[Any]"] = None,
+    default_columns: Optional[List[str]] = None,
     **kwargs: Any,
 ) -> None:
     """Handle table output formatting for CLI commands.
@@ -2639,10 +2588,12 @@ def handle_table_output(
     Args:
         data: List of dictionaries to render
         output: Output format (table, json, yaml, tsv, none). If None, uses default.
-        columns: Comma-separated column names
+        columns: Comma-separated column names. If None and default_columns provided,
+                uses default_columns for table output.
         no_truncate: Whether to disable truncation
         no_color: Whether to disable colored output
         page: Optional Page object for pagination metadata in JSON/YAML output
+        default_columns: Default columns to use when columns is None and output is table
         **kwargs: Additional formatting options
     """
     from zenml.utils.table_utils import zenml_table
@@ -2651,12 +2602,15 @@ def handle_table_output(
     if output is None:
         output = get_default_output_format()
 
-    # Parse columns from comma-separated string
+    # Parse columns from comma-separated string or use defaults for table output
     column_list = None
     if columns:
         column_list = [
             col.strip() for col in columns.split(",") if col.strip()
         ]
+    elif default_columns and output == "table":
+        # Use default columns only for table output
+        column_list = default_columns
 
     # Handle pagination for JSON/YAML output formats
     pagination_info = None
@@ -2894,70 +2848,6 @@ def requires_mac_env_var_warning() -> bool:
     return False
 
 
-def _prepare_stack_table_data(
-    client: "Client",
-    stacks: List["StackResponse"],
-    show_active: bool = False,
-) -> List[Dict[str, Any]]:
-    """Convert stack data to table-friendly format.
-
-    Args:
-        client: ZenML client instance
-        stacks: List of stack responses
-        show_active: Whether to show active stack indicator
-
-    Returns:
-        List of dictionaries suitable for table rendering
-    """
-    stack_data = []
-
-    # Reorder stacks to show active stack first if requested
-    stacks = list(stacks)
-    active_stack = client.active_stack_model
-    if show_active:
-        if active_stack.id not in [s.id for s in stacks]:
-            stacks.append(active_stack)
-
-        stacks = [s for s in stacks if s.id == active_stack.id] + [
-            s for s in stacks if s.id != active_stack.id
-        ]
-
-    active_stack_model_id = client.active_stack_model.id
-    for stack in stacks:
-        is_active = stack.id == active_stack_model_id
-
-        if stack.user:
-            user_name = stack.user.name
-        else:
-            user_name = "-"
-
-        # Create stack name with active indicator
-        stack_name = stack.name
-        if is_active:
-            stack_name = f"[bold]{stack.name} (active)[/bold]"
-
-        # Create improved stack data structure
-        stack_info = {
-            "name": stack_name,
-            "owner": user_name,
-            "components": len(stack.components),
-        }
-
-        # Add component details (keeping the most important ones)
-        if StackComponentType.ORCHESTRATOR in stack.components:
-            stack_info["orchestrator"] = stack.components[
-                StackComponentType.ORCHESTRATOR
-            ][0].name
-        if StackComponentType.ARTIFACT_STORE in stack.components:
-            stack_info["artifact_store"] = stack.components[
-                StackComponentType.ARTIFACT_STORE
-            ][0].name
-
-        stack_data.append(stack_info)
-
-    return stack_data
-
-
 # CLI Formatting Utilities
 # -------------------------
 # Centralized utilities to reduce code duplication in CLI list commands
@@ -2977,39 +2867,65 @@ def to_print_full(model: Any) -> Dict[str, Any]:
     return model.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
-def prepare_list_data(
+def prepare_data_from_responses(
     items: List[Any],
     output_format: str,
-    table_formatter: Callable[[Any], Dict[str, Any]],
-    full_formatter: Optional[Callable[[Any], Dict[str, Any]]] = None,
+    enrichment_func: Optional[
+        Callable[[Any, Dict[str, Any]], Dict[str, Any]]
+    ] = None,
 ) -> List[Dict[str, Any]]:
-    """Prepare list data based on output format.
+    """Prepare data from BaseResponse instances with targeted field extraction.
 
-    This centralizes the format-aware data preparation logic used across
-    all CLI list commands.
+    ZenML responses have a structured format:
+    - Top-level fields: id, name (extracted)
+    - Body: Core entity data (all fields extracted)
+    - Metadata: Domain-specific data (IGNORED as requested)
+    - Resources: Related entities - user.name extracted, others included
 
     Args:
-        items: List of model instances to format
+        items: List of BaseResponse instances to format
         output_format: The desired output format ("table", "json", "yaml", "tsv", etc.)
-        table_formatter: Function to format items for table and TSV display
-        full_formatter: Optional function to format items for full output (JSON/YAML).
-                       If None, uses to_print_full.
+        enrichment_func: Optional function to add/modify fields
+                        Takes the item and current result dict, returns dict of fields to merge
 
     Returns:
-        List of formatted dictionaries ready for output
+        List of formatted dictionaries with flattened structure for column access
     """
     if not items:
         return []
 
-    if full_formatter is None:
-        full_formatter = to_print_full
-
     formatted_data = []
     for item in items:
-        if output_format in ("table", "tsv"):
-            formatted_data.append(table_formatter(item))
-        else:
-            formatted_data.append(full_formatter(item))
+        item_data = {}
+
+        # Take ID (guaranteed on BaseIdentifiedResponse)
+        item_data["id"] = item.id
+
+        # Take name if it exists (some responses have name, others don't)
+        if hasattr(item, "name"):
+            item_data["name"] = item.name
+
+        # Take all body fields (core entity data)
+        if item.body is not None:
+            body_data = item.body.model_dump(mode="json")
+            item_data.update(body_data)
+
+        # Handle resources - only extract user.name, ignore all other resources
+        if item.resources is not None:
+            resources_data = item.resources.model_dump(mode="json")
+
+            # Only extract user.name if user exists
+            if "user" in resources_data and resources_data["user"] is not None:
+                user_obj = resources_data["user"]
+                if isinstance(user_obj, dict) and "name" in user_obj:
+                    item_data["user"] = user_obj["name"]
+
+        # Apply enrichment - now gets both item and current result for modification
+        if enrichment_func:
+            enrichments = enrichment_func(item, item_data)
+            item_data.update(enrichments)
+
+        formatted_data.append(item_data)
 
     return formatted_data
 

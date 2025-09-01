@@ -13,16 +13,15 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with authorized devices."""
 
-from typing import Any, Dict
+from typing import Any
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    format_date_for_table,
-    list_options,
-    prepare_list_data,
+    enhanced_list_options,
+    prepare_data_from_responses,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -31,26 +30,6 @@ from zenml.logger import get_logger
 from zenml.models import OAuthDeviceFilter
 
 logger = get_logger(__name__)
-
-
-def _authorized_device_to_print(device: Any) -> Dict[str, Any]:
-    """Convert an authorized device response to a dictionary for table display.
-
-    Args:
-        device: Authorized device response object
-
-    Returns:
-        Dictionary containing formatted device data for table display
-    """
-    return {
-        "status": device.status.value
-        if hasattr(device.status, "value")
-        else str(device.status),
-        "ip_address": device.ip_address or "",
-        "hostname": device.hostname or "",
-        "os": device.os or "",
-        "created": format_date_for_table(device.created),
-    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -80,10 +59,13 @@ def describe_authorized_device(id_or_prefix: str) -> None:
     )
 
 
+@enhanced_list_options(
+    OAuthDeviceFilter,
+    default_columns=["status", "ip_address", "hostname", "os", "created"],
+)
 @authorized_device.command(
     "list", help="List all authorized devices for the current user."
 )
-@list_options(OAuthDeviceFilter)
 def list_authorized_devices(**kwargs: Any) -> None:
     """List all authorized devices.
 
@@ -106,9 +88,7 @@ def list_authorized_devices(**kwargs: Any) -> None:
         )
 
         # Use centralized data preparation
-        device_data = prepare_list_data(
-            devices.items, output_format, _authorized_device_to_print
-        )
+        device_data = prepare_data_from_responses(devices.items, output_format)
 
         # Handle table output with enhanced system and pagination
         cli_utils.handle_table_output(

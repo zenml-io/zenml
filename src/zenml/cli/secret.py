@@ -27,9 +27,7 @@ from zenml.cli.utils import (
     enhanced_list_options,
     error,
     expand_argument_value_from_file,
-    format_date_for_table,
     parse_name_and_extra_arguments,
-    prepare_list_data,
     pretty_print_secret,
     validate_keys,
     warning,
@@ -45,22 +43,6 @@ from zenml.logger import get_logger
 from zenml.models import SecretFilter, SecretResponse
 
 logger = get_logger(__name__)
-
-
-def _secret_to_print(secret: SecretResponse) -> Dict[str, Any]:
-    """Convert a secret response to a dictionary for table display.
-
-    Args:
-        secret: Secret response object
-
-    Returns:
-        Dictionary containing formatted secret data for table display
-    """
-    return {
-        "name": secret.name,
-        "scope": "private" if secret.private else "public",
-        "created": format_date_for_table(secret.created),
-    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -179,10 +161,12 @@ def create_secret(
         error(f"Centralized secrets management is disabled: {str(e)}")
 
 
+@enhanced_list_options(
+    SecretFilter, default_columns=["name", "scope", "user", "created"]
+)
 @secret.command(
     "list", help="List all registered secrets that match the filter criteria."
 )
-@enhanced_list_options(SecretFilter)
 def list_secrets(**kwargs: Any) -> None:
     """List all secrets that fulfill the filter criteria.
 
@@ -207,9 +191,16 @@ def list_secrets(**kwargs: Any) -> None:
             table_kwargs.get("output") or cli_utils.get_default_output_format()
         )
 
+        def enrichment_func(
+            item: SecretResponse, result: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            """Enrich the secret data with the scope."""
+            result.update({"scope": "private" if item.private else "public"})
+            return result
+
         # Use centralized data preparation
-        secret_data = prepare_list_data(
-            secrets.items, output_format, _secret_to_print
+        secret_data = cli_utils.prepare_data_from_responses(
+            secrets.items, output_format, enrichment_func=enrichment_func
         )
 
         # Handle table output with enhanced system and pagination
