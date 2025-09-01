@@ -38,7 +38,6 @@ from zenml.logging.step_logging import (
     FilePosition,
     LogEntry,
     LogInfo,
-    PageResponse,
     _entry_matches_filters,
     fetch_log_records,
     generate_log_info,
@@ -457,11 +456,10 @@ def run_logs(
     seek_file_index: Optional[int] = None,
     seek_position: Optional[int] = None,
     _: AuthContext = Security(authorize),
-) -> PageResponse:
-    """Get log entries with navigation pointers for efficient pagination.
+) -> List[LogEntry]:
+    """Get log entries for efficient pagination.
 
-    This endpoint returns both the log entries for the requested page and position
-    information for seamless navigation to previous and next pages.
+    This endpoint returns the log entries for the requested page.
 
     Args:
         run_id: ID of the pipeline run.
@@ -474,7 +472,7 @@ def run_logs(
         seek_position: Optional position within file for efficient seeking.
 
     Returns:
-        PageResponse with entries and navigation pointers.
+        List of log entries.
 
     Raises:
         KeyError: If no logs are found for the specified source.
@@ -528,15 +526,7 @@ def run_logs(
                     ):
                         matching_entries.append(log_record)
 
-            # Runner logs don't support FilePosition seeking yet, but we still return PageResponse
-            total_pages = math.ceil(entries_found / count) if entries_found > 0 else 0
-            
-            return PageResponse(
-                entries=matching_entries,
-                page_starts=FilePosition(file_index=0, position=0),  # Basic position for runner logs
-                prev_page_starts=FilePosition(file_index=0, position=0) if page > 1 else None,
-                next_page_starts=FilePosition(file_index=0, position=0) if page < total_pages else None,
-            )
+            return matching_entries
 
     # Handle logs from log collection
     if run.log_collection:
@@ -551,7 +541,7 @@ def run_logs(
                         count=count,
                         level=level,
                         search=search,
-                        seek_position=parsed_seek_position,
+                        from_position=parsed_seek_position,
                     )
                 except ValueError as e:
                     raise HTTPException(status_code=400, detail=str(e)) from e
@@ -626,7 +616,11 @@ def run_logs_info(
                 if _entry_matches_filters(log_record, level, search):
                     total_entries += 1
 
-            total_pages = math.ceil(total_entries / page_size) if total_entries > 0 else 0
+            total_pages = (
+                math.ceil(total_entries / page_size)
+                if total_entries > 0
+                else 0
+            )
 
             return LogInfo(
                 page_size=page_size,

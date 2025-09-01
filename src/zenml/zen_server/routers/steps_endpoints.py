@@ -34,9 +34,8 @@ from zenml.logging.step_logging import (
     FilePosition,
     LogEntry,
     LogInfo,
-    PageResponse,
     fetch_log_records,
-    generate_log_info,
+    generate_page_info,
     stream_log_records,
 )
 from zenml.models import (
@@ -261,7 +260,12 @@ def get_step_status(
 
 @router.get(
     "/{step_id}" + LOGS,
-    responses={400: error_response, 401: error_response, 404: error_response, 422: error_response},
+    responses={
+        400: error_response,
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
@@ -270,62 +274,68 @@ def get_step_logs(
     count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
-    seek_file_index: Optional[int] = None,
-    seek_position: Optional[int] = None,
+    from_file_index: Optional[int] = None,
+    from_position: Optional[int] = None,
     _: AuthContext = Security(authorize),
-) -> PageResponse:
-    """Get log entries with navigation pointers for efficient pagination.
+) -> List[LogEntry]:
+    """Get log entries for efficient pagination.
 
-    This endpoint returns both the log entries for the requested page and position
-    information for seamless navigation to previous and next pages.
+    This endpoint supports optimized navigation modes:
+
+    - page=1: Returns the latest entries (first page)
+    - page=N with from_position: Direct navigation to page N starting from position
+    - page=N without from_position: Requires using page index endpoint first
+
+    For efficient navigation to arbitrary pages, use the /logs/info endpoint
+    to get page positions, then use those positions with this endpoint.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        page: The page number to return (1-indexed). Negative values supported (-1 = last page).
+        page: The page number to return (1-indexed).
         count: The number of log entries to return per page.
         level: Log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
-        seek_file_index: Optional file index for efficient seeking.
-        seek_position: Optional position within file for efficient seeking.
+        from_file_index: Optional file index to start the page from.
+        from_position: Optional position within file to start the page from.
 
     Returns:
-        PageResponse with entries and navigation pointers.
+        List of log entries.
 
     Raises:
-        HTTPException: If no logs are available for this step.
+        HTTPException: If no logs are available for this step or invalid navigation.
     """
     step = zen_store().get_run_step(step_id, hydrate=True)
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.READ)
 
     store = zen_store()
-    logs = step.logs
-    if logs is None:
+
+    # Verify that logs are available for this step
+    if step.logs is None:
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
 
     # Construct FilePosition if both parameters provided
-    parsed_seek_position = None
-    if seek_file_index is not None and seek_position is not None:
-        parsed_seek_position = FilePosition(
-            file_index=seek_file_index,
-            position=seek_position,
+    parsed_from_position = None
+    if from_file_index is not None and from_position is not None:
+        parsed_from_position = FilePosition(
+            file_index=from_file_index,
+            position=from_position,
         )
 
     try:
         return fetch_log_records(
             zen_store=store,
-            artifact_store_id=logs.artifact_store_id,
-            logs_uri=logs.uri,
+            artifact_store_id=step.logs.artifact_store_id,
+            logs_uri=step.logs.uri,
             page=page,
             count=count,
             level=level,
             search=search,
-            seek_position=parsed_seek_position,
+            from_position=parsed_from_position,
         )
     except ValueError as e:
-        # Handle negative page out of bounds
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -341,10 +351,10 @@ def get_step_logs_info(
     search: Optional[str] = None,
     _: AuthContext = Security(authorize),
 ) -> LogInfo:
-    """Get pagination information for step logs.
+    """Get pagination information and page positions for step logs.
 
-    This endpoint provides basic log statistics without position tracking for
-    efficient total count retrieval.
+    This endpoint scans the log file and returns a dictionary mapping
+    page numbers to their start positions, enabling efficient navigation.
 
     Args:
         step_id: ID of the step for which to get the logs info.
@@ -353,7 +363,8 @@ def get_step_logs_info(
         search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        LogInfo object with pagination metadata.
+        Dictionary with page indices as keys and FilePosition objects as values.
+        Format: {"1": {"file_index": 0, "position": 123}, "2": {...}, ...}
 
     Raises:
         HTTPException: If no logs are available for this step.
@@ -369,7 +380,7 @@ def get_step_logs_info(
             status_code=404, detail="No logs available for this step"
         )
 
-    return generate_log_info(
+    return generate_page_info(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,
         logs_uri=logs.uri,
@@ -459,15 +470,16 @@ def download_step_logs(
 
     step = zen_store().get_run_step(step_id, hydrate=True)
     store = zen_store()
-    logs = step.logs
-    if logs is None:
+
+    if step.logs is None:
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
+
     log_generator = stream_log_records(
         zen_store=store,
-        artifact_store_id=logs.artifact_store_id,
-        logs_uri=logs.uri,
+        artifact_store_id=step.logs.artifact_store_id,
+        logs_uri=step.logs.uri,
         format_string=format_string,
     )
     return StreamingResponse(
