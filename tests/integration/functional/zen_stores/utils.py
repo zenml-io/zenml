@@ -1409,7 +1409,7 @@ action_crud_test_config = CrudTestConfig(
         name=sample_name("blupus_feeder"),
         description="Feeds blupus when he meows.",
         service_account_id=uuid.uuid4(),  # will be overridden in create()
-        configuration={"template_id": uuid.uuid4()},
+        configuration={"deployment_id": uuid.uuid4()},
         plugin_subtype=PluginSubType.PIPELINE_RUN,
         flavor="builtin",
         project=uuid.uuid4(),
@@ -1420,7 +1420,9 @@ action_crud_test_config = CrudTestConfig(
     supported_zen_stores=(RestZenStore,),
     conditional_entities={
         "service_account_id": deepcopy(service_account_crud_test_config),
-        "configuration.template_id": deepcopy(run_template_test_config),
+        "configuration.deployment_id": deepcopy(
+            remote_deployment_crud_test_config
+        ),
     },
 )
 trigger_crud_test_config = CrudTestConfig(
