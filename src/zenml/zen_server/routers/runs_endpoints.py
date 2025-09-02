@@ -477,6 +477,7 @@ def run_logs(
 
     Raises:
         KeyError: If no logs are found for the specified source.
+        ValueError: If from_file_index and from_position are used for runner logs.
     """
     store = zen_store()
 
@@ -537,19 +538,16 @@ def run_logs(
     if run.log_collection:
         for log_entry in run.log_collection:
             if log_entry.source == source:
-                try:
-                    return fetch_log_records(
-                        zen_store=store,
-                        artifact_store_id=log_entry.artifact_store_id,
-                        logs_uri=log_entry.uri,
-                        page=page,
-                        count=count,
-                        level=level,
-                        search=search,
-                        from_position=parsed_seek_position,
-                    )
-                except ValueError as e:
-                    raise HTTPException(status_code=400, detail=str(e)) from e
+                return fetch_log_records(
+                    zen_store=store,
+                    artifact_store_id=log_entry.artifact_store_id,
+                    logs_uri=log_entry.uri,
+                    page=page,
+                    count=count,
+                    level=level,
+                    search=search,
+                    from_position=parsed_seek_position,
+                )
 
     # If no logs found for the specified source, raise an error
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")

@@ -305,7 +305,7 @@ def get_step_logs(
         List of log entries.
 
     Raises:
-        HTTPException: If no logs are available for this step or invalid navigation.
+        KeyError: If no logs are available for this step or invalid navigation.
     """
     step = zen_store().get_run_step(step_id, hydrate=True)
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
@@ -365,23 +365,20 @@ def get_step_logs_info(
         Format: {"1": {"file_index": 0, "position": 123}, "2": {...}, ...}
 
     Raises:
-        HTTPException: If no logs are available for this step.
+        KeyError: If no logs are available for this step.
     """
     step = zen_store().get_run_step(step_id, hydrate=True)
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.READ)
 
     store = zen_store()
-    logs = step.logs
-    if logs is None:
-        raise HTTPException(
-            status_code=404, detail="No logs available for this step"
-        )
+    if step.logs is None:
+        raise KeyError("No logs available for this step.")
 
     return generate_log_info(
         zen_store=store,
-        artifact_store_id=logs.artifact_store_id,
-        logs_uri=logs.uri,
+        artifact_store_id=step.logs.artifact_store_id,
+        logs_uri=step.logs.uri,
         page_size=page_size,
         level=level,
         search=search,
@@ -458,7 +455,7 @@ def download_step_logs(
         A string containing all log entries, either raw or formatted.
 
     Raises:
-        HTTPException: If no logs are available for this step.
+        KeyError: If no logs are available for this step.
     """
     verify_download_token(
         token=token,
@@ -470,7 +467,7 @@ def download_step_logs(
     store = zen_store()
 
     if step.logs is None:
-        raise IllegalOperationError(
+        raise KeyError(
             f"No logs are available for step '{step.id}'."
         )
 
