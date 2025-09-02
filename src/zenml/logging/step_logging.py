@@ -553,8 +553,8 @@ def _fetch_from_position(
     try:
         _files_to_search = files[from_position.file_index :]
 
-        for file_index, file in enumerate(_files_to_search):
-            with artifact_store.open(file, "r") as file:
+        for file_index, file_path in enumerate(_files_to_search):
+            with artifact_store.open(file_path, "r") as file:
                 # If it is the first file, we seek to the position
                 if file_index == 0:
                     file.seek(from_position.position)
