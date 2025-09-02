@@ -153,24 +153,6 @@ class LogInfo(BaseModel):
     )
 
 
-class PageIndexEntry(BaseModel):
-    """Information about a single page in the log pagination."""
-
-    page: int = Field(description="Page number (1-indexed)")
-    start_position: FilePosition = Field(description="Where this page starts")
-
-
-class PageIndexResponse(BaseModel):
-    """Response containing pagination index for efficient navigation."""
-
-    total_entries: int = Field(description="Total number of log entries")
-    total_pages: int = Field(description="Total number of pages")
-    page_size: int = Field(description="Number of entries per page")
-    page_positions: List[PageIndexEntry] = Field(
-        description="Start positions for each page"
-    )
-
-
 class ArtifactStoreHandler(logging.Handler):
     """Handler that writes log messages to artifact store storage."""
 
@@ -375,7 +357,7 @@ def prepare_logs_uri(
     return sanitize_remote_path(logs_uri)
 
 
-def generate_page_info(
+def generate_log_info(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
@@ -397,7 +379,7 @@ def generate_page_info(
         search: Optional search string. Only returns messages containing this string.
 
     Returns:
-        PageIndexResponse with page positions and metadata.
+        LogInfo: LogInfo object with page positions and metadata.
     """
     artifact_store = _load_artifact_store(
         zen_store=zen_store, artifact_store_id=artifact_store_id

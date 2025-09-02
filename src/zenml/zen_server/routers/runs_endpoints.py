@@ -41,7 +41,7 @@ from zenml.logging.step_logging import (
     LogInfo,
     _entry_matches_filters,
     fetch_log_records,
-    generate_page_info,
+    generate_log_info,
     parse_log_entry,
     stream_log_records,
 )
@@ -450,12 +450,12 @@ def stop_run(
 def run_logs(
     run_id: UUID,
     source: str,
-    page: int = 1,
     count: int = DEFAULT_PAGE_SIZE,
     level: int = LoggingLevels.INFO.value,
     search: Optional[str] = None,
-    seek_file_index: Optional[int] = None,
-    seek_position: Optional[int] = None,
+    page: Optional[int] = None,
+    from_file_index: Optional[int] = None,
+    from_position: Optional[int] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
     """Get log entries for efficient pagination.
@@ -469,8 +469,8 @@ def run_logs(
         count: The number of log entries to return per page.
         level: Log level filter. Returns messages at this level and above.
         search: Optional search string. Only returns messages containing this string.
-        seek_file_index: Optional file index for efficient seeking.
-        seek_position: Optional position within file for efficient seeking.
+        from_file_index: Optional file index for efficient seeking.
+        from_position: Optional position within file for efficient seeking.
 
     Returns:
         List of log entries.
@@ -488,21 +488,25 @@ def run_logs(
 
     # Construct FilePosition if both parameters provided
     parsed_seek_position = None
-    if seek_file_index is not None and seek_position is not None:
+    if from_file_index is not None and from_position is not None:
         parsed_seek_position = FilePosition(
-            file_index=seek_file_index,
-            position=seek_position,
+            file_index=from_file_index,
+            position=from_position,
         )
 
     # Handle runner logs from workload manager
     if run.deployment_id and source == "runner":
+        if parsed_seek_position:
+            raise ValueError(
+                "from_file_index and from_position cannot be used for runner logs."
+            )
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
             workload_logs = workload_manager().get_logs(
                 workload_id=deployment.id
             )
 
-            start_index = (page - 1) * count
+            start_index = (page - 1) * count if page is not None else 0
             end_index = start_index + count
 
             matching_entries = []
@@ -635,7 +639,7 @@ def get_run_logs_info(
     if run.log_collection:
         for log_entry in run.log_collection:
             if log_entry.source == source:
-                return generate_page_info(
+                return generate_log_info(
                     zen_store=store,
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,

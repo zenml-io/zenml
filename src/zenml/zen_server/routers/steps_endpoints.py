@@ -36,7 +36,7 @@ from zenml.logging.step_logging import (
     LogEntry,
     LogInfo,
     fetch_log_records,
-    generate_page_info,
+    generate_log_info,
     stream_log_records,
 )
 from zenml.models import (
@@ -283,9 +283,11 @@ def get_step_logs(
 
     This endpoint supports optimized navigation modes:
 
-    - page=1: Returns the latest entries (first page)
-    - page=N without from_position: Requires using page index endpoint first
-    - with from_position: Direct navigation to the page starting from position
+    - page=1: Returns the first page
+    - page=N: Returns the Nth page
+    - with from_position: Returns the page starting from the position
+
+    page and from_position cannot be used together.
 
     For efficient navigation to arbitrary pages, use the /logs/info endpoint
     to get page positions, then use those positions with this endpoint.
@@ -313,9 +315,7 @@ def get_step_logs(
 
     # Verify that logs are available for this step
     if step.logs is None:
-        raise HTTPException(
-            status_code=404, detail="No logs available for this step"
-        )
+        raise KeyError("No logs available for this step.")
 
     # Construct FilePosition if both parameters provided
     parsed_from_position = None
@@ -325,19 +325,16 @@ def get_step_logs(
             position=from_position,
         )
 
-    try:
-        return fetch_log_records(
-            zen_store=store,
-            artifact_store_id=step.logs.artifact_store_id,
-            logs_uri=step.logs.uri,
-            page=page,
-            count=count,
-            level=level,
-            search=search,
-            from_position=parsed_from_position,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return fetch_log_records(
+        zen_store=store,
+        artifact_store_id=step.logs.artifact_store_id,
+        logs_uri=step.logs.uri,
+        page=page,
+        count=count,
+        level=level,
+        search=search,
+        from_position=parsed_from_position,
+    )
 
 
 @router.get(
@@ -381,7 +378,7 @@ def get_step_logs_info(
             status_code=404, detail="No logs available for this step"
         )
 
-    return generate_page_info(
+    return generate_log_info(
         zen_store=store,
         artifact_store_id=logs.artifact_store_id,
         logs_uri=logs.uri,
