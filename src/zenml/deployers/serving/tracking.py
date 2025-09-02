@@ -14,6 +14,8 @@
 """Pipeline run and artifact tracking for served pipelines."""
 
 # Removed random import - now using deterministic sampling
+import io
+import logging
 import time
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
@@ -438,14 +440,33 @@ class TrackingManager:
                 run_request
             )
 
+            # Optionally attach pipeline log handler under capture policy
+            if self._should_capture_logs():
+                self._attach_pipeline_log_handler()
+
+            # Add code metadata if available (lightweight)
+            code_meta: Dict[str, Any] = {}
+            try:
+                if getattr(self.deployment, "code_reference", None):
+                    ref = self.deployment.code_reference
+                    code_meta["code_reference"] = {
+                        "repository": getattr(ref.code_repository, "name", None),
+                        "commit": getattr(ref, "commit", None),
+                        "subdirectory": getattr(ref, "subdirectory", None),
+                    }
+                if getattr(self.deployment, "code_path", None):
+                    code_meta["code_path"] = str(self.deployment.code_path)
+            except Exception:
+                pass
+
             # Log initial metadata separately after run creation
             from zenml.utils.metadata_utils import log_metadata
 
             try:
-                log_metadata(
-                    metadata=metadata,
-                    run_id_name_or_prefix=self.pipeline_run.id,
-                )
+                merged = dict(metadata)
+                if code_meta:
+                    merged.update(code_meta)
+                log_metadata(metadata=merged, run_id_name_or_prefix=self.pipeline_run.id)
             except Exception as e:
                 logger.warning(f"Failed to log initial run metadata: {e}")
 
@@ -519,6 +540,24 @@ class TrackingManager:
                     :1000
                 ]  # Truncate long errors
 
+            # Optionally finalize and persist pipeline logs
+            if hasattr(self, "_pipeline_log_handler") and hasattr(self, "_pipeline_log_buffer"):
+                if self._pipeline_log_handler is not None and self._pipeline_log_buffer is not None:
+                    try:
+                        self._detach_pipeline_log_handler()
+                        log_text = self._pipeline_log_buffer.getvalue()
+                        if log_text and self._should_capture_logs():
+                            av = save_artifact(
+                                data=log_text,
+                                name=f"pipeline::{self.pipeline_run.name}::logs",
+                                version=None,
+                                tags=[f"invocation:{self.invocation_id}", "serving_pipeline_logs"],
+                                materializer=None,
+                            )
+                            metadata["pipeline_logs_artifact_id"] = str(av.id)
+                    except Exception as e:
+                        logger.warning(f"Failed to persist pipeline logs: {e}")
+
             # Add results preview if policy allows and successful
             if (
                 success
@@ -568,7 +607,7 @@ class TrackingManager:
     def start_step(
         self,
         step_name: str,
-        step_config: Optional[Step] = None,
+        step_config: Optional[Step] = None,  # Reserved for future use
     ) -> Optional[UUID]:
         """Start tracking a step run.
 
@@ -595,6 +634,10 @@ class TrackingManager:
 
             step_run = self.client.zen_store.create_run_step(step_request)
             self.step_runs[step_name] = step_run
+
+            # Attach per-step log handler if capture policy allows
+            if self._should_capture_logs():
+                self._attach_step_log_handler(step_name)
 
             logger.debug(f"Created step run: {step_name} ({step_run.id})")
             return step_run.id
@@ -655,9 +698,13 @@ class TrackingManager:
             # Handle artifacts with per-output capture control
             outputs_map = {}
             if output is not None:
-                if isinstance(output, dict):
-                    # Handle multiple named outputs
-                    for output_name, output_value in output.items():
+                if isinstance(output, tuple):
+                    # Handle multiple outputs returned as tuple
+                    # Map them to output names from step config if available
+                    output_names = self._get_output_names(
+                        step_config, len(output)
+                    )
+                    for output_name, output_value in zip(output_names, output):
                         effective_capture = (
                             self._get_effective_capture_for_value(
                                 step_name, output_name, "output"
@@ -675,33 +722,71 @@ class TrackingManager:
                                 step_config=step_config,
                                 is_error=not success,
                                 output_name=output_name,
+                                is_tuple_element=True,
                             )
                             outputs_map.update(single_output_map)
                 else:
-                    # Handle single output
-                    effective_capture = self._get_effective_capture_for_value(
-                        step_name, "output", "output"
-                    )
-                    should_persist = should_capture_value_artifacts(
-                        effective_capture,
-                        is_error=not success,
-                        is_sampled=self.is_sampled,
-                    )
-                    if should_persist:
-                        outputs_map = self._persist_step_outputs(
-                            step_name=step_name,
-                            output=output,
-                            step_config=step_config,
-                            is_error=not success,
+                    # Determine declared outputs to align with orchestrator semantics
+                    declared = self._get_declared_output_names(step_config)
+                    if len(declared) <= 1:
+                        # Single output (dicts remain a single value)
+                        out_name = declared[0] if declared else "output"
+                        effective_capture = self._get_effective_capture_for_value(
+                            step_name, out_name, "output"
                         )
+                        if should_capture_value_artifacts(
+                            effective_capture,
+                            is_error=not success,
+                            is_sampled=self.is_sampled,
+                        ):
+                            outputs_map = self._persist_step_outputs(
+                                step_name=step_name,
+                                output=output,
+                                step_config=step_config,
+                                is_error=not success,
+                                output_name=out_name,
+                            )
+                    else:
+                        # Multiple declared outputs: support dict by name
+                        if isinstance(output, dict):
+                            for out_name in declared:
+                                if out_name not in output:
+                                    logger.warning(
+                                        f"Output dict missing expected key '{out_name}' for step {step_name}"
+                                    )
+                                    continue
+                                out_val = output[out_name]
+                                effective_capture = self._get_effective_capture_for_value(
+                                    step_name, out_name, "output"
+                                )
+                                if should_capture_value_artifacts(
+                                    effective_capture,
+                                    is_error=not success,
+                                    is_sampled=self.is_sampled,
+                                ):
+                                    single_map = self._persist_step_outputs(
+                                        step_name=step_name,
+                                        output={out_name: out_val},
+                                        step_config=step_config,
+                                        is_error=not success,
+                                        output_name=out_name,
+                                    )
+                                    outputs_map.update(single_map)
+                        else:
+                            logger.warning(
+                                f"Unexpected return type for multi-output step {step_name}: {type(output).__name__}"
+                            )
 
             # Add output preview to metadata with per-output capture control
             if success and output is not None:
                 captured_outputs = {}
 
-                if isinstance(output, dict):
-                    # Handle multiple named outputs
-                    for output_name, output_value in output.items():
+                if isinstance(output, tuple):
+                    # Handle multiple outputs returned as tuple
+                    output_names = self._get_output_names(
+                        step_config, len(output)
+                    )
+                    for output_name, output_value in zip(output_names, output):
                         effective_capture = (
                             self._get_effective_capture_for_value(
                                 step_name, output_name, "output"
@@ -720,19 +805,37 @@ class TrackingManager:
                                 "previews_saved_outputs"
                             ] += 1
                 else:
-                    # Handle single output
-                    effective_capture = self._get_effective_capture_for_value(
-                        step_name, "output", "output"
-                    )
-                    should_capture_preview = should_capture_value_payload(
-                        effective_capture, self.is_sampled
-                    )
-                    if should_capture_preview:
-                        redacted_output = redact_fields(
-                            {"output": output}, effective_capture.redact
-                        )["output"]
-                        captured_outputs["output"] = redacted_output
-                        self._capture_counters["previews_saved_outputs"] += 1
+                    declared = self._get_declared_output_names(step_config)
+                    if len(declared) <= 1:
+                        out_name = declared[0] if declared else "output"
+                        effective_capture = self._get_effective_capture_for_value(
+                            step_name, out_name, "output"
+                        )
+                        if should_capture_value_payload(
+                            effective_capture, self.is_sampled
+                        ):
+                            redacted_output = redact_fields(
+                                {out_name: output}, effective_capture.redact
+                            )[out_name]
+                            captured_outputs[out_name] = redacted_output
+                            self._capture_counters["previews_saved_outputs"] += 1
+                    else:
+                        if isinstance(output, dict):
+                            for out_name in declared:
+                                if out_name not in output:
+                                    continue
+                                out_val = output[out_name]
+                                effective_capture = self._get_effective_capture_for_value(
+                                    step_name, out_name, "output"
+                                )
+                                if should_capture_value_payload(
+                                    effective_capture, self.is_sampled
+                                ):
+                                    redacted_value = redact_fields(
+                                        {out_name: out_val}, effective_capture.redact
+                                    )[out_name]
+                                    captured_outputs[out_name] = redacted_value
+                                    self._capture_counters["previews_saved_outputs"] += 1
 
                 if captured_outputs:
                     metadata["output_preview"] = truncate_payload(
@@ -766,6 +869,23 @@ class TrackingManager:
             from zenml.utils.metadata_utils import log_metadata
 
             try:
+                # Optionally finalize logs and persist as artifact, add to metadata
+                if step_name in self._step_log_handlers and step_name in self._step_log_buffers:
+                    try:
+                        self._detach_step_log_handler(step_name)
+                        log_text = self._step_log_buffers.get(step_name, io.StringIO()).getvalue()
+                        if log_text and self._should_capture_logs():
+                            av = save_artifact(
+                                data=log_text,
+                                name=f"{step_name}::logs",
+                                version=None,
+                                tags=[f"invocation:{self.invocation_id}", "serving_step_logs"],
+                                materializer=None,
+                            )
+                            metadata["logs_artifact_id"] = str(av.id)
+                    except Exception as e:
+                        logger.warning(f"Failed to persist logs for step {step_name}: {e}")
+
                 log_metadata(metadata=metadata, step_id=step_run.id)
             except Exception as e:
                 logger.warning(f"Failed to log step metadata: {e}")
@@ -785,6 +905,7 @@ class TrackingManager:
         step_config: Optional[Step] = None,
         is_error: bool = False,
         output_name: Optional[str] = None,
+        is_tuple_element: bool = False,
     ) -> Dict[str, Union[str, UUID]]:
         """Persist step outputs as artifacts and return outputs mapping.
 
@@ -794,6 +915,7 @@ class TrackingManager:
             step_config: Step configuration for materializer resolution
             is_error: Whether this is for a failed step
             output_name: Specific output name when handling named outputs
+            is_tuple_element: Whether this output is part of a tuple (multiple outputs)
 
         Returns:
             Dictionary mapping output names to artifact version IDs
@@ -816,8 +938,8 @@ class TrackingManager:
                     materializers = output_materializers
 
             # Handle different output types
-            if isinstance(output, dict):
-                # Multiple named outputs
+            if isinstance(output, dict) and is_tuple_element:
+                # This dict is part of a tuple element, iterate through its items
                 for output_name, output_value in output.items():
                     # output_name from dict.items() is guaranteed to be str, not None
                     assert output_name is not None
@@ -846,14 +968,17 @@ class TrackingManager:
                             f"Failed to save artifact {artifact_name}: {e}"
                         )
             else:
-                # Single output
-                artifact_name = f"{step_name}::output"
+                # Single output (including dicts that are single outputs)
+                # Use provided output_name or declared single name if available
+                declared_names = self._get_declared_output_names(step_config)
+                single_name = output_name or (declared_names[0] if declared_names else "output")
+                artifact_name = f"{step_name}::{single_name}"
                 if is_error:
                     artifact_name += "::error"
 
                 try:
                     # Try to get materializer for single output
-                    single_materializer = materializers.get("output") or (
+                    single_materializer = materializers.get(single_name) or (
                         list(materializers.values())[0]
                         if materializers
                         else None
@@ -869,7 +994,7 @@ class TrackingManager:
                         ],
                         materializer=single_materializer,
                     )
-                    outputs_map["output"] = str(artifact_version.id)
+                    outputs_map[single_name] = str(artifact_version.id)
                     self._capture_counters["artifacts_saved_count"] += 1
                 except Exception as e:
                     logger.warning(
@@ -882,6 +1007,102 @@ class TrackingManager:
             )
 
         return outputs_map
+
+    def _get_output_names(
+        self, step_config: Optional[Step], num_outputs: int
+    ) -> List[str]:
+        """Get output names for tuple outputs.
+
+        Args:
+            step_config: Step configuration
+            num_outputs: Number of outputs in the tuple
+
+        Returns:
+            List of output names
+        """
+        output_names = []
+
+        # Try to get output names from step configuration
+        if step_config and hasattr(step_config.config, "outputs"):
+            outputs = step_config.config.outputs
+            if outputs:
+                # Use configured output names if available
+                output_names = list(outputs.keys())
+
+        # If we don't have enough names, generate default ones
+        if len(output_names) < num_outputs:
+            for i in range(len(output_names), num_outputs):
+                output_names.append(f"output_{i}")
+
+        return output_names[:num_outputs]
+
+    # --- Internal helpers: log capture under capture policy ---
+
+    def _should_capture_logs(self) -> bool:
+        """Decide if logs should be captured under the capture policy.
+
+        Align with payload capture decision to avoid extra knobs.
+        """
+        try:
+            return should_capture_payloads(self.policy, self.is_sampled)
+        except Exception:
+            return False
+
+    def _attach_pipeline_log_handler(self) -> None:
+        if getattr(self, "_pipeline_log_handler", None) is not None:
+            return
+        buf = io.StringIO()
+        handler = logging.StreamHandler(buf)
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logging.getLogger().addHandler(handler)
+        self._pipeline_log_buffer = buf
+        self._pipeline_log_handler = handler
+
+    def _detach_pipeline_log_handler(self) -> None:
+        handler = getattr(self, "_pipeline_log_handler", None)
+        if handler is None:
+            return
+        try:
+            logging.getLogger().removeHandler(handler)
+        finally:
+            self._pipeline_log_handler = None
+
+    def _attach_step_log_handler(self, step_name: str) -> None:
+        if step_name in self._step_log_handlers:
+            return
+        buf = io.StringIO()
+        handler = logging.StreamHandler(buf)
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter(f"{step_name} | %(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logging.getLogger().addHandler(handler)
+        self._step_log_buffers[step_name] = buf
+        self._step_log_handlers[step_name] = handler
+
+    def _detach_step_log_handler(self, step_name: str) -> None:
+        handler = self._step_log_handlers.pop(step_name, None)
+        if handler is None:
+            return
+        try:
+            logging.getLogger().removeHandler(handler)
+        finally:
+            pass
+
+    def _get_declared_output_names(self, step_config: Optional[Step]) -> List[str]:
+        """Return only declared output names (no synthetic defaults).
+
+        Returns empty list if unknown (treated as single unnamed output).
+        """
+        try:
+            if step_config and hasattr(step_config.config, "outputs"):
+                outputs = step_config.config.outputs
+                if outputs:
+                    return list(outputs.keys())
+            return []
+        except Exception:
+            return []
 
     def handle_event(self, event: ServingEvent) -> None:
         """Handle streaming events for tracking purposes.
