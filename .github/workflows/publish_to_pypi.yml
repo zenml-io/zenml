@@ -36,6 +36,6 @@ jobs:
             exit 1
           fi
       - name: Build package
-        run: bash scripts/build-python-packages.sh
+        run: uv build
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
