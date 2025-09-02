@@ -147,14 +147,14 @@ class StepConfigurationUpdate(StrictBaseModel):
     enable_step_logs: Optional[bool] = None
     step_operator: Optional[Union[bool, str]] = None
     experiment_tracker: Optional[Union[bool, str]] = None
-    parameters: Dict[str, Any] = {}
-    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
-    extra: Dict[str, Any] = {}
+    parameters: Optional[Dict[str, Any]] = None
+    settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = None
+    extra: Optional[Dict[str, Any]] = None
     failure_hook_source: Optional[SourceWithValidator] = None
     success_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
     retry: Optional[StepRetryConfig] = None
-    substitutions: Dict[str, str] = {}
+    substitutions: Optional[Dict[str, str]] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
@@ -195,6 +195,10 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
+    parameters: Dict[str, Any] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
+    extra: Dict[str, Any] = {}
+    substitutions: Dict[str, str] = {}
     caching_parameters: Mapping[str, Any] = {}
     external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
     model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}

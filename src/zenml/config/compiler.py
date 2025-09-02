@@ -482,7 +482,7 @@ class Compiler:
         )
 
         parameters_to_ignore = (
-            set(step_config.parameters) if step_config else set()
+            set(step_config.parameters or {}) if step_config else set()
         )
         step_configuration_overrides = invocation.finalize(
             parameters_to_ignore=parameters_to_ignore
