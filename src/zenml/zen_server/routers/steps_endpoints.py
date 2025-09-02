@@ -16,7 +16,7 @@
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, Security
 from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
@@ -29,7 +29,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
-from zenml.exceptions import IllegalOperationError
 from zenml.logging.step_logging import (
     DEFAULT_PAGE_SIZE,
     FilePosition,
@@ -467,9 +466,7 @@ def download_step_logs(
     store = zen_store()
 
     if step.logs is None:
-        raise KeyError(
-            f"No logs are available for step '{step.id}'."
-        )
+        raise KeyError(f"No logs are available for step '{step.id}'.")
 
     log_generator = stream_log_records(
         zen_store=store,

@@ -17,7 +17,7 @@ import math
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, Security
 from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
