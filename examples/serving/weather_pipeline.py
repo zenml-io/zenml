@@ -21,6 +21,7 @@ from zenml import pipeline, step
 from zenml.config import DockerSettings
 
 # Import enums for type-safe capture mode configuration
+from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.deployers.serving.policy import CapturePolicyMode as CaptureMode
 
 # Note: You can use either approach:
@@ -32,6 +33,8 @@ from zenml.deployers.serving.policy import CapturePolicyMode as CaptureMode
 docker_settings = DockerSettings(
     requirements=["openai"],
     environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
+    # prevent_build_reuse=True,
+    python_package_installer=PythonPackageInstaller.UV,
 )
 
 
@@ -210,6 +213,11 @@ Analysis: Rule-based AI (LLM unavailable)"""
             "mode": CaptureMode.FULL,  # Type-safe enum value
             "max_bytes": 32768,  # Increased for better artifact storage
             "redact": ["password", "token", "key", "secret", "api_key"],
+        },
+        "deployer.gcp": {
+            "allow_unauthenticated": True,
+            "location": "us-central1",
+            "min_instances": 0,
         },
     }
 )

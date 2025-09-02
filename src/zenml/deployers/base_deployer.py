@@ -345,13 +345,18 @@ class BaseDeployer(StackComponent, ABC):
                     f"Deployment of pipeline endpoint {endpoint_name} "
                     f"timed out after {timeout} seconds"
                 )
-            logger.debug(
-                f"pipeline endpoint {endpoint_name} is not yet running. "
+            logger.info(
+                f"Pipeline endpoint {endpoint_name} is not yet running. "
                 f"Waiting for {sleep_time} seconds..."
             )
             time.sleep(sleep_time)
-            endpoint_state = self.do_get_pipeline_endpoint(endpoint)
-            endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
+            try:
+                endpoint_state = self.do_get_pipeline_endpoint(endpoint)
+                endpoint = self._update_pipeline_endpoint(
+                    endpoint, endpoint_state
+                )
+            except PipelineEndpointNotFoundError:
+                endpoint_state.status = PipelineEndpointStatus.UNKNOWN
 
         if endpoint_state.status != PipelineEndpointStatus.RUNNING:
             raise PipelineEndpointDeploymentError(
@@ -390,7 +395,7 @@ class BaseDeployer(StackComponent, ABC):
         except KeyError:
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"not found"
             )
 
         self._check_pipeline_endpoint_deployer(endpoint)
@@ -405,7 +410,7 @@ class BaseDeployer(StackComponent, ABC):
             self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"is not currently deployed or has been deleted"
             )
         except DeployerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
@@ -450,7 +455,7 @@ class BaseDeployer(StackComponent, ABC):
         except KeyError:
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"not found"
             )
 
         self._check_pipeline_endpoint_deployer(endpoint)
@@ -466,7 +471,7 @@ class BaseDeployer(StackComponent, ABC):
             client.delete_pipeline_endpoint(endpoint.id)
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"not found"
             )
         except DeployerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
@@ -499,8 +504,8 @@ class BaseDeployer(StackComponent, ABC):
                     f"Deletion of pipeline endpoint {endpoint_name_or_id} "
                     f"timed out after {timeout} seconds"
                 )
-            logger.debug(
-                f"pipeline endpoint {endpoint_name_or_id} is not yet deleted. "
+            logger.info(
+                f"Pipeline endpoint {endpoint_name_or_id} is not yet deleted. "
                 f"Waiting for {sleep_time} seconds..."
             )
             time.sleep(sleep_time)
@@ -553,7 +558,7 @@ class BaseDeployer(StackComponent, ABC):
         except KeyError:
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"not found"
             )
 
         self._check_pipeline_endpoint_deployer(endpoint)

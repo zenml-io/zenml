@@ -204,6 +204,7 @@ def get_config_environment_vars(
                 token_type=APITokenType.WORKLOAD,
                 deployment_id=deployment_id,
             )
+            secrets[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = new_api_token
         elif api_token:
             # For all other cases, the pipeline run environment is configured
             # with the current access token.

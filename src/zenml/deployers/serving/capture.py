@@ -115,6 +115,7 @@ class Capture(BaseModel):
         **kwargs: Any,
     ) -> None:
         """Initialize Capture with backward compatibility for positional args.
+
         Supports both:
         - New style: Capture(mode="full", max_bytes=2048)
         - Old style: Capture("full", max_bytes=2048).
