@@ -35,23 +35,71 @@ class PipelineRunConfiguration(
 ):
     """Class for pipeline run configurations."""
 
-    run_name: Optional[str] = None
-    enable_cache: Optional[bool] = None
-    enable_artifact_metadata: Optional[bool] = None
-    enable_artifact_visualization: Optional[bool] = None
-    enable_step_logs: Optional[bool] = None
-    enable_pipeline_logs: Optional[bool] = None
-    schedule: Optional[Schedule] = None
-    build: Union[PipelineBuildBase, UUID, None] = Field(
-        default=None, union_mode="left_to_right"
+    run_name: Optional[str] = Field(
+        default=None, description="The name of the pipeline run."
     )
-    steps: Optional[Dict[str, StepConfigurationUpdate]] = None
-    settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = None
-    tags: Optional[List[Union[str, Tag]]] = None
-    extra: Optional[Dict[str, Any]] = None
-    model: Optional[Model] = None
-    parameters: Optional[Dict[str, Any]] = None
-    retry: Optional[StepRetryConfig] = None
-    failure_hook_source: Optional[SourceWithValidator] = None
-    success_hook_source: Optional[SourceWithValidator] = None
-    substitutions: Optional[Dict[str, str]] = None
+    enable_cache: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable cache for all steps of the pipeline "
+        "run.",
+    )
+    enable_artifact_metadata: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable metadata for the output artifacts of "
+        "all steps of the pipeline run.",
+    )
+    enable_artifact_visualization: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable visualizations for the output "
+        "artifacts of all steps of the pipeline run.",
+    )
+    enable_step_logs: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable logs for all steps of the pipeline run.",
+    )
+    enable_pipeline_logs: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable pipeline logs for the pipeline run.",
+    )
+    schedule: Optional[Schedule] = Field(
+        default=None, description="The schedule on which to run the pipeline."
+    )
+    build: Union[PipelineBuildBase, UUID, None] = Field(
+        default=None,
+        union_mode="left_to_right",
+        description="The build to use for the pipeline run.",
+    )
+    steps: Optional[Dict[str, StepConfigurationUpdate]] = Field(
+        default=None,
+        description="Configurations for the steps of the pipeline run.",
+    )
+    settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = Field(
+        default=None, description="Settings for the pipeline run."
+    )
+    tags: Optional[List[Union[str, Tag]]] = Field(
+        default=None, description="Tags to apply to the pipeline run."
+    )
+    extra: Optional[Dict[str, Any]] = Field(
+        default=None, description="Extra configurations for the pipeline run."
+    )
+    model: Optional[Model] = Field(
+        default=None, description="The model to use for the pipeline run."
+    )
+    parameters: Optional[Dict[str, Any]] = Field(
+        default=None, description="Parameters for the pipeline function."
+    )
+    retry: Optional[StepRetryConfig] = Field(
+        default=None,
+        description="The retry configuration for all steps of the pipeline run.",
+    )
+    failure_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The failure hook source for all steps of the pipeline run.",
+    )
+    success_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The success hook source for all steps of the pipeline run.",
+    )
+    substitutions: Optional[Dict[str, str]] = Field(
+        default=None, description="The substitutions for the pipeline run."
+    )

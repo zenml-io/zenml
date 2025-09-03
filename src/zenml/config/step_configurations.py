@@ -26,6 +26,7 @@ from typing import (
 
 from pydantic import (
     ConfigDict,
+    Field,
     SerializeAsAny,
     field_validator,
     model_validator,
@@ -141,20 +142,64 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 class StepConfigurationUpdate(StrictBaseModel):
     """Class for step configuration updates."""
 
-    enable_cache: Optional[bool] = None
-    enable_artifact_metadata: Optional[bool] = None
-    enable_artifact_visualization: Optional[bool] = None
-    enable_step_logs: Optional[bool] = None
-    step_operator: Optional[Union[bool, str]] = None
-    experiment_tracker: Optional[Union[bool, str]] = None
-    parameters: Optional[Dict[str, Any]] = None
-    settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = None
-    extra: Optional[Dict[str, Any]] = None
-    failure_hook_source: Optional[SourceWithValidator] = None
-    success_hook_source: Optional[SourceWithValidator] = None
-    model: Optional[Model] = None
-    retry: Optional[StepRetryConfig] = None
-    substitutions: Optional[Dict[str, str]] = None
+    enable_cache: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable cache for the step.",
+    )
+    enable_artifact_metadata: Optional[bool] = Field(
+        default=None,
+        description="Whether to store metadata for the output artifacts of "
+        "the step.",
+    )
+    enable_artifact_visualization: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable visualizations for the output "
+        "artifacts of the step.",
+    )
+    enable_step_logs: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable logs for the step.",
+    )
+    step_operator: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="The step operator to use for the step.",
+    )
+    experiment_tracker: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="The experiment tracker to use for the step.",
+    )
+    parameters: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Parameters for the step function.",
+    )
+    settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = Field(
+        default=None,
+        description="Settings for the step.",
+    )
+    extra: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Extra configurations for the step.",
+    )
+    failure_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The failure hook source for the step.",
+    )
+    success_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The success hook source for the step.",
+    )
+    model: Optional[Model] = Field(
+        default=None,
+        description="The model to use for the step.",
+    )
+    retry: Optional[StepRetryConfig] = Field(
+        default=None,
+        description="The retry configuration for the step.",
+    )
+    substitutions: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="The substitutions for the step.",
+    )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
