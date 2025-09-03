@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -747,7 +747,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         steps.append(step)
 
                     # Build a reverse DAG (step_name -> list of downstream steps)
-                    reverse_dag = {}
+                    reverse_dag: Dict[str, List[str]] = {}
                     for step in steps:
                         step_name = step.config.name
                         reverse_dag[step_name] = []
@@ -772,8 +772,17 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
                     # Recursively find all downstream steps of failed steps
                     def find_all_downstream_steps(
-                        step_name: str, visited: set
-                    ) -> set:
+                        step_name: str, visited: Set[str]
+                    ) -> Set[str]:
+                        """Find all downstream steps of a given step.
+
+                        Args:
+                            step_name: The name of the step to find the downstream steps of.
+                            visited: The set of steps that have already been visited.
+
+                        Returns:
+                            The set of downstream steps.
+                        """
                         if step_name in visited:
                             return set()
                         visited.add(step_name)
