@@ -190,7 +190,7 @@ def generate_config_schema(
             continue
 
         if field_info.annotation == Optional[SourceWithValidator]:
-            generic_step_fields[key] = (Optional[str], None)
+            generic_step_fields[key] = (Optional[str], field_info)
         else:
             generic_step_fields[key] = (field_info.annotation, field_info)
 
@@ -272,7 +272,7 @@ def generate_config_schema(
             continue
 
         if field_info.annotation == Optional[SourceWithValidator]:
-            top_level_fields[key] = (Optional[str], None)
+            top_level_fields[key] = (Optional[str], field_info)
         else:
             top_level_fields[key] = (field_info.annotation, field_info)
 
