@@ -45,7 +45,6 @@ from zenml.constants import (
 )
 from zenml.enums import (
     AuthScheme,
-    ExecutionStatus,
     OAuthDeviceStatus,
     OnboardingStep,
 )

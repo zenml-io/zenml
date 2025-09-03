@@ -5833,7 +5833,9 @@ class SqlZenStore(BaseZenStore):
                 include_full_metadata=include_full_metadata,
             )
 
-    def _check_if_completed(self,run_id:UUID) -> Tuple[bool, Optional[datetime]]:
+    def _check_if_completed(
+        self, run_id: UUID
+    ) -> Tuple[bool, Optional[datetime]]:
         """Check if a pipeline run is completed.
 
         Args:
@@ -8944,9 +8946,11 @@ class SqlZenStore(BaseZenStore):
                     f"Cannot create step '{step_run.name}' for pipeline in "
                     f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
                 )
-            
+
             if run.status == ExecutionStatus.FAILED:
-                execution_mode = run.get_pipeline_configuration().execution_mode
+                execution_mode = (
+                    run.get_pipeline_configuration().execution_mode
+                )
 
                 if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
                     raise IllegalOperationError(
