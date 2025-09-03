@@ -31,18 +31,13 @@ There are many options to use a deployed Airflow server:
 
 If you're not using the ZenML GCP Terraform module to deploy Airflow, there are some additional Python packages that you'll need to install in the Python environment of your Airflow server:
 
-* `pydantic~=2.7.1`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate configuration files.
+* `pydantic~=2.11.1`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate configuration files.
 * `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending on which Airflow operator you'll be using to run your pipeline steps. Check out [this section](airflow.md#using-different-airflow-operators) for more information on supported operators.
 
 ### How to use it
 
 To use the Airflow orchestrator, we need:
 
-*   The ZenML `airflow` integration installed. If you haven't done so, run
-
-    ```shell
-    zenml integration install airflow
-    ```
 * [Docker](https://docs.docker.com/get-docker/) installed and running.
 * The orchestrator registered and part of our active stack:
 
@@ -65,14 +60,14 @@ python -m venv airflow_server_environment
 source airflow_server_environment/bin/activate
 
 # Install the Airflow server dependencies
-pip install "apache-airflow==2.4.0" "apache-airflow-providers-docker<3.8.0" "pydantic~=2.7.1"
+pip install "apache-airflow==3.0.6" "apache-airflow-providers-docker==4.4.0" "pydantic~=2.11.1"
 ```
 
 Before starting the local Airflow server, we can set a few environment variables to configure it:
 
 * `AIRFLOW_HOME`: This variable defines the location where the Airflow server stores its database and configuration files. The default value is `~/airflow`.
 * `AIRFLOW__CORE__DAGS_FOLDER`: This variable defines the location where the Airflow server looks for DAG files. The default value is `<AIRFLOW_HOME>/dags`.
-* `AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL`: This variable controls how often the Airflow scheduler checks for new or updated DAGs. By default, the scheduler will check for new DAGs every 30 seconds. This variable can be used to increase or decrease the frequency of the checks, depending on the specific needs of your pipeline.
+* `AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL`: This variable controls how often the Airflow dag processor checks for new or updated DAGs. By default, the scheduler will check for new DAGs every 300 seconds. This variable can be used to increase or decrease the frequency of the checks, depending on the specific needs of your pipeline.
 
 {% hint style="warning" %}
 When running this on MacOS, you might need to set the `no_proxy` environment variable to prevent crashes due to a bug in Airflow (see [this page](https://github.com/apache/airflow/issues/28487) for more information):
