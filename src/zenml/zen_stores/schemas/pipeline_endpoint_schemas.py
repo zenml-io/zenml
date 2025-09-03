@@ -86,6 +86,10 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         default=None,
         sa_column=Column(TEXT, nullable=True),
     )
+    auth_key: Optional[str] = Field(
+        default=None,
+        sa_column=Column(TEXT, nullable=True),
+    )
     endpoint_metadata: str = Field(
         default="{}",
         sa_column=Column(
@@ -182,6 +186,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
                 pipeline_deployment_id=self.pipeline_deployment_id,
                 deployer_id=self.deployer_id,
                 endpoint_metadata=json.loads(self.endpoint_metadata),
+                auth_key=self.auth_key,
             )
 
         resources = None
@@ -244,4 +249,5 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             status=PipelineEndpointStatus.UNKNOWN.value,
             pipeline_deployment_id=request.pipeline_deployment_id,
             deployer_id=request.deployer_id,
+            auth_key=request.auth_key,
         )

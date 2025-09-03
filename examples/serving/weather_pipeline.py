@@ -23,6 +23,7 @@ from zenml.config import DockerSettings
 # Import enums for type-safe capture mode configuration
 from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.deployers.serving.policy import CapturePolicyMode as CaptureMode
+from zenml.steps.step_context import get_step_context
 
 # Note: You can use either approach:
 # 1. String literals: "full", "metadata", "sampled", "errors_only", "none"
@@ -33,9 +34,41 @@ from zenml.deployers.serving.policy import CapturePolicyMode as CaptureMode
 docker_settings = DockerSettings(
     requirements=["openai"],
     environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
-    # prevent_build_reuse=True,
+    prevent_build_reuse=True,
     python_package_installer=PythonPackageInstaller.UV,
 )
+
+
+class PipelineState:
+    """Pipeline state."""
+
+    def __init__(self) -> None:
+        """Initialize the pipeline state."""
+        self.openai_client = None
+
+        try:
+            # Try to use OpenAI API if available
+            import os
+
+            try:
+                import openai
+            except ImportError:
+                raise ImportError("OpenAI package not available")
+
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ImportError("OpenAI API key not found")
+
+            self.client = openai.OpenAI(api_key=api_key)
+        except Exception as e:
+            print(f"Error initializing OpenAI client: {e}")
+
+
+def init_hook() -> PipelineState:
+    """Initialize the pipeline."""
+    print("Initializing the pipeline...")
+
+    return PipelineState()
 
 
 @step(
@@ -87,8 +120,19 @@ def analyze_weather_with_llm(weather_data: Dict[str, float], city: str) -> str:
     humidity = weather_data["humidity"]
     wind = weather_data["wind_speed"]
 
-    # Create a prompt for the LLM
-    weather_prompt = f"""You are a weather expert AI assistant. Analyze the following weather data for {city} and provide detailed insights and recommendations.
+    step_context = get_step_context()
+    pipeline_state = step_context.pipeline_state
+
+    client = None
+    if pipeline_state:
+        assert isinstance(pipeline_state, PipelineState), (
+            "Pipeline state is not a PipelineState"
+        )
+        client = pipeline_state.client
+
+    if client:
+        # Create a prompt for the LLM
+        weather_prompt = f"""You are a weather expert AI assistant. Analyze the following weather data for {city} and provide detailed insights and recommendations.
 
 Weather Data:
 - City: {city}
@@ -104,21 +148,6 @@ Please provide:
 5. Any weather warnings or tips
 
 Keep your response concise but informative."""
-
-    try:
-        # Try to use OpenAI API if available
-        import os
-
-        try:
-            import openai
-        except ImportError:
-            raise ImportError("OpenAI package not available")
-
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ImportError("OpenAI API key not found")
-
-        client = openai.OpenAI(api_key=api_key)
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -143,9 +172,9 @@ Keep your response concise but informative."""
 Raw Data: {temp:.1f}°C, {humidity}% humidity, {wind:.1f} km/h wind
 Powered by: OpenAI GPT-3.5-turbo"""
 
-    except Exception as e:
+    else:
         # Fallback to rule-based analysis if LLM fails
-        print(f"LLM analysis failed ({e}), using fallback...")
+        print("LLM not available, using fallback...")
 
         # Enhanced rule-based analysis
         if temp < 0:
@@ -206,6 +235,7 @@ Analysis: Rule-based AI (LLM unavailable)"""
 
 
 @pipeline(
+    on_init=init_hook,
     settings={
         "docker": docker_settings,
         # Pipeline-level defaults using new simplified syntax with type-safe enums
@@ -219,7 +249,7 @@ Analysis: Rule-based AI (LLM unavailable)"""
             "location": "us-central1",
             "min_instances": 0,
         },
-    }
+    },
 )
 def weather_agent_pipeline(city: str = "London") -> str:
     """Weather agent pipeline demonstrating step-level capture annotations.

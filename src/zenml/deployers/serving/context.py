@@ -43,17 +43,24 @@ class ServingStepContext:
     executions.
     """
 
-    def __init__(self, step_name: str, job_id: Optional[str] = None):
+    def __init__(
+        self,
+        step_name: str,
+        job_id: Optional[str] = None,
+        pipeline_state: Optional[Any] = None,
+    ):
         """Initialize serving step context.
 
         Args:
             step_name: Name of the step being executed
             job_id: Optional job ID for tracking across steps
+            pipeline_state: Optional pipeline state for the pipeline
         """
         self.step_name = step_name
         self.job_id = job_id or str(uuid4())
         self._metadata: Dict[str, Any] = {}
         self._created_at = None
+        self.pipeline_state = pipeline_state
 
     def add_output_metadata(self, metadata: Dict[str, Any]) -> None:
         """Add metadata for step outputs (stored in context for serving).
@@ -126,7 +133,9 @@ class ServingJobContext:
 
 @contextmanager
 def serving_step_context(
-    step_name: str, job_id: Optional[str] = None
+    step_name: str,
+    job_id: Optional[str] = None,
+    pipeline_state: Optional[Any] = None,
 ) -> Generator[ServingStepContext, None, None]:
     """Context manager for thread-safe step execution in serving.
 
@@ -136,6 +145,7 @@ def serving_step_context(
     Args:
         step_name: Name of the step being executed
         job_id: Optional job ID for cross-step tracking
+        pipeline_state: Optional pipeline state for the pipeline
 
     Yields:
         ServingStepContext for this step execution
@@ -151,7 +161,9 @@ def serving_step_context(
         step_context = job_context.get_step_context(step_name)
         job_context.current_step = step_name
     else:
-        step_context = ServingStepContext(step_name=step_name, job_id=job_id)
+        step_context = ServingStepContext(
+            step_name=step_name, job_id=job_id, pipeline_state=pipeline_state
+        )
 
     # Set context variables
     job_token = None

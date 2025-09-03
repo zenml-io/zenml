@@ -111,6 +111,7 @@ class StepContext(metaclass=SingletonMetaClass):
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
         output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
+        pipeline_state: Optional[Any] = None,
     ) -> None:
         """Initialize the context of the currently running step.
 
@@ -123,6 +124,7 @@ class StepContext(metaclass=SingletonMetaClass):
                 context is used in.
             output_artifact_configs: The outputs' ArtifactConfigs of the step that this
                 context is used in.
+            pipeline_state: Optional pipeline state for the pipeline
 
         Raises:
             StepContextError: If the keys of the output materializers and
@@ -145,6 +147,7 @@ class StepContext(metaclass=SingletonMetaClass):
         )
 
         self.step_name = self.step_run.name
+        self.pipeline_state = pipeline_state
 
         # set outputs
         if output_materializers.keys() != output_artifact_uris.keys():

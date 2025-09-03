@@ -40,6 +40,7 @@ from zenml.constants import (
 from zenml.deployers.base_deployer import (
     BaseDeployerConfig,
     BaseDeployerFlavor,
+    BaseDeployerSettings,
     DeployerError,
     PipelineEndpointDeploymentError,
     PipelineEndpointDeprovisionError,
@@ -50,6 +51,7 @@ from zenml.deployers.containerized_deployer import (
     ContainerizedDeployer,
 )
 from zenml.deployers.serving.entrypoint_configuration import (
+    AUTH_KEY_OPTION,
     PORT_OPTION,
     ServingEntrypointConfiguration,
 )
@@ -344,6 +346,7 @@ class DockerDeployer(ContainerizedDeployer):
             **{
                 DEPLOYMENT_ID_OPTION: deployment.id,
                 PORT_OPTION: 8000,
+                AUTH_KEY_OPTION: endpoint.auth_key,
             }
         )
 
@@ -643,7 +646,7 @@ class DockerDeployer(ContainerizedDeployer):
         return state
 
 
-class DockerDeployerSettings(BaseSettings):
+class DockerDeployerSettings(BaseDeployerSettings):
     """Docker deployer settings.
 
     Attributes:

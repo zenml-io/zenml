@@ -32,6 +32,7 @@ PORT_OPTION = "port"
 WORKERS_OPTION = "workers"
 LOG_LEVEL_OPTION = "log_level"
 CREATE_RUNS_OPTION = "create_runs"
+AUTH_KEY_OPTION = "auth_key"
 
 
 class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -68,6 +69,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
             WORKERS_OPTION,
             LOG_LEVEL_OPTION,
             CREATE_RUNS_OPTION,
+            AUTH_KEY_OPTION,
         }
 
     @classmethod
@@ -98,6 +100,8 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
             str(kwargs.get(LOG_LEVEL_OPTION, "info")),
             f"--{CREATE_RUNS_OPTION}",
             str(kwargs.get(CREATE_RUNS_OPTION, "false")),
+            f"--{AUTH_KEY_OPTION}",
+            str(kwargs.get(AUTH_KEY_OPTION, None)),
         ]
 
         return base_args + serving_args
@@ -118,6 +122,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
             self.entrypoint_args.get(CREATE_RUNS_OPTION, "false").lower()
             == "true"
         )
+        auth_key = self.entrypoint_args.get(AUTH_KEY_OPTION, None)
 
         deployment = self.load_deployment()
 
@@ -128,6 +133,8 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         os.environ["ZENML_PIPELINE_DEPLOYMENT_ID"] = deployment_id
         if create_runs:
             os.environ["ZENML_SERVING_CREATE_RUNS"] = "true"
+        if auth_key:
+            os.environ["ZENML_SERVING_AUTH_KEY"] = auth_key
 
         logger.info("🚀 Starting ZenML Pipeline Serving...")
         logger.info(f"   Deployment ID: {deployment_id}")

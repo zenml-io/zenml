@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML deployers."""
 
+import secrets
+import string
 import time
 from abc import ABC, abstractmethod
 from typing import (
@@ -27,6 +29,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.config.base_settings import BaseSettings
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -84,6 +87,14 @@ class PipelineLogsNotFoundError(KeyError, DeployerError):
 
 class PipelineEndpointDeployerMismatchError(DeployerError):
     """Error raised when a pipeline endpoint is not managed by this deployer."""
+
+
+class BaseDeployerSettings(BaseSettings):
+    """Base settings for all deployers."""
+
+    auth_key: Optional[str] = None
+    generate_auth_key: bool = False
+    lcm_timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
 
 
 class BaseDeployerConfig(StackComponentConfig):
@@ -188,6 +199,19 @@ class BaseDeployer(StackComponent, ABC):
                 f"({deployer.name}) and try again."
             )
 
+    def _generate_auth_key(self, key_length: int = 32) -> str:
+        """Generate an authentication key.
+
+        Args:
+            key_length: The length of the authentication key.
+
+        Returns:
+            The generated authentication key.
+        """
+        # Generate a secure random string with letters, digits and special chars
+        alphabet = string.ascii_letters + string.digits
+        return "".join(secrets.choice(alphabet) for _ in range(key_length))
+
     def serve_pipeline(
         self,
         deployment: PipelineDeploymentResponse,
@@ -229,8 +253,15 @@ class BaseDeployer(StackComponent, ABC):
         """
         client = Client()
 
-        # TODO: get timeout from config
-        timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
+        settings = cast(
+            BaseDeployerSettings,
+            self.get_settings(deployment),
+        )
+
+        timeout = settings.lcm_timeout
+        auth_key = settings.auth_key
+        if not auth_key and settings.generate_auth_key:
+            auth_key = self._generate_auth_key()
 
         logger.debug(
             f"Deploying pipeline endpoint {endpoint_name} with "
@@ -243,6 +274,7 @@ class BaseDeployer(StackComponent, ABC):
             project=deployment.project_id,
             pipeline_deployment_id=deployment.id,
             deployer_id=self.id,  # This deployer's ID
+            auth_key=auth_key,
         )
 
         try:
@@ -273,12 +305,27 @@ class BaseDeployer(StackComponent, ABC):
             self._check_pipeline_endpoint_deployer(endpoint)
 
             if endpoint.pipeline_deployment_id != deployment.id:
+                endpoint_update = PipelineEndpointUpdate(
+                    pipeline_deployment_id=deployment.id,
+                )
+                if (
+                    endpoint.auth_key
+                    and not auth_key
+                    or not endpoint.auth_key
+                    and auth_key
+                ):
+                    # Key was either added or removed
+                    endpoint_update.auth_key = auth_key
+                elif endpoint.auth_key != auth_key and (
+                    settings.auth_key or not settings.generate_auth_key
+                ):
+                    # Key was changed and not because of re-generation
+                    endpoint_update.auth_key = auth_key
+
                 # The deployment has been updated
                 endpoint = client.zen_store.update_pipeline_endpoint(
                     endpoint.id,
-                    PipelineEndpointUpdate(
-                        pipeline_deployment_id=deployment.id,
-                    ),
+                    endpoint_update,
                 )
 
             logger.debug(

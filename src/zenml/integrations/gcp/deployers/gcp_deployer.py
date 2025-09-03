@@ -43,6 +43,7 @@ from zenml.deployers.base_deployer import (
 )
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.serving.entrypoint_configuration import (
+    AUTH_KEY_OPTION,
     PORT_OPTION,
     ServingEntrypointConfiguration,
 )
@@ -949,6 +950,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             **{
                 DEPLOYMENT_ID_OPTION: deployment.id,
                 PORT_OPTION: settings.port,
+                AUTH_KEY_OPTION: endpoint.auth_key,
             }
         )
 

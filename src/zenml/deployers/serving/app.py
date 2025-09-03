@@ -33,6 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
 from starlette.status import HTTP_429_TOO_MANY_REQUESTS
 
+from zenml.deployers.serving.auth import BearerTokenAuthMiddleware
 from zenml.deployers.serving.concurrency import (
     ServingExecutionManager,
     TooManyRequestsError,
@@ -123,6 +124,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Add authentication middleware
+# This middleware will protect all endpoints except root, health, info, metrics,
+# and status
+app.add_middleware(BearerTokenAuthMiddleware)
 
 
 @app.get("/", response_class=HTMLResponse)

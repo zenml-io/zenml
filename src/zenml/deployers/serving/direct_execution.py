@@ -880,8 +880,11 @@ class DirectExecutionEngine:
         Returns:
             The output of the step execution
         """
+        from zenml.deployers.serving.dependencies import get_pipeline_service
+
         # Use thread-safe serving step context
-        with serving_step_context(step_name):
+        pipeline_state = get_pipeline_service().pipeline_state
+        with serving_step_context(step_name, pipeline_state=pipeline_state):
             try:
                 # Get the entrypoint function directly from the step class and call it
                 logger.debug(

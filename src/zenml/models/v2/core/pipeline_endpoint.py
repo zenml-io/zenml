@@ -72,6 +72,11 @@ class PipelineEndpointRequest(ProjectScopedRequest):
         title="The deployer ID.",
         description="The ID of the deployer component managing this endpoint.",
     )
+    auth_key: Optional[str] = Field(
+        default=None,
+        title="The auth key of the pipeline endpoint.",
+        description="The auth key of the pipeline endpoint.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -100,6 +105,10 @@ class PipelineEndpointUpdate(BaseUpdate):
     endpoint_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The new metadata of the pipeline endpoint.",
+    )
+    auth_key: Optional[str] = Field(
+        default=None,
+        title="The new auth key of the pipeline endpoint.",
     )
 
     @classmethod
@@ -154,6 +163,11 @@ class PipelineEndpointResponseMetadata(ProjectScopedResponseMetadata):
     )
     endpoint_metadata: Dict[str, Any] = Field(
         title="The metadata of the pipeline endpoint.",
+    )
+    auth_key: Optional[str] = Field(
+        default=None,
+        title="The auth key of the pipeline endpoint.",
+        description="The auth key of the pipeline endpoint.",
     )
 
 
@@ -243,6 +257,15 @@ class PipelineEndpointResponse(
             The metadata of the pipeline endpoint.
         """
         return self.get_metadata().endpoint_metadata
+
+    @property
+    def auth_key(self) -> Optional[str]:
+        """The auth key of the pipeline endpoint.
+
+        Returns:
+            The auth key of the pipeline endpoint.
+        """
+        return self.get_metadata().auth_key
 
     @property
     def pipeline_deployment(self) -> Optional["PipelineDeploymentResponse"]:
