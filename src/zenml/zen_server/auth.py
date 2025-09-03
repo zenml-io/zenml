@@ -409,9 +409,9 @@ def authenticate_credentials(
             # to avoid unnecessary database queries.
 
             @cache_result(expiry=30)
-            def check_if_pipeline_run_completed(
+            def check_if_pipeline_run_in_progress(
                 pipeline_run_id: UUID,
-            ) -> Tuple[bool, Optional[datetime]]:
+            ) -> Tuple[Optional[bool], Optional[datetime]]:
                 """Get the status of a pipeline run.
 
                 Args:
@@ -422,18 +422,19 @@ def authenticate_credentials(
                     run does not exist.
                 """
                 try:
-                    return zen_store()._check_if_completed(pipeline_run_id)
+                    return zen_store()._check_if_run_in_progress(pipeline_run_id)
                 except KeyError:
-                    return False, None
+                    return None, None
 
             (
-                pipeline_run_completed,
+                pipeline_run_in_progress,
                 pipeline_run_end_time,
-            ) = check_if_pipeline_run_completed(decoded_token.pipeline_run_id)
-            if not pipeline_run_completed:
+            ) = check_if_pipeline_run_in_progress(decoded_token.pipeline_run_id)
+
+            if pipeline_run_in_progress is None:
                 error = (
-                    f"Authentication error: error retrieving token pipeline run "
-                    f"{decoded_token.pipeline_run_id}"
+                    f"Authentication error: error retrieving token. Pipeline run "
+                    f"{decoded_token.pipeline_run_id} does not exist."
                 )
                 logger.error(error)
                 raise CredentialsNotValid(error)
@@ -442,7 +443,7 @@ def authenticate_credentials(
                 ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
                 DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
             )
-            if pipeline_run_completed:
+            if not pipeline_run_in_progress:
                 if leeway < 0:
                     # The token should never expire, we don't need to check
                     # the end time.

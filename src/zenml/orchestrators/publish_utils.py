@@ -85,6 +85,9 @@ def publish_step_run_status_update(
 
     if end_time is not None and not status.is_finished:
         raise ValueError("End time cannot be set for a non-finished step run.")
+    
+    if end_time is None and status.is_finished:
+        end_time = utc_now()
 
     step_run = Client().zen_store.update_run_step(
         step_run_id=step_run_id,
@@ -151,6 +154,9 @@ def publish_pipeline_run_status_update(
     Returns:
         The updated pipeline run.
     """
+    if end_time is not None and not status.is_finished:
+        raise ValueError("End time cannot be set for a non-finished run.")
+
     if end_time is None and status.is_finished:
         end_time = utc_now()
 

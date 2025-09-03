@@ -99,6 +99,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True, default=None)
+    in_progress: bool = Field(nullable=False)
     status: str = Field(nullable=False)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
@@ -331,6 +332,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             status=request.status.value,
+            in_progress=True if request.status.is_finished else False,
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
@@ -540,6 +542,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             updated=self.updated,
             deployment_id=self.deployment_id,
             model_version_id=self.model_version_id,
+            in_progress=self.in_progress,
         )
         metadata = None
         if include_metadata:
@@ -620,7 +623,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         if run_update.status:
             self.status = run_update.status.value
-            self.end_time = run_update.end_time
+
+            if run_update.status.is_finished:
+                self.end_time = run_update.end_time
+
+            self.in_progress = self._check_if_run_in_progress()
 
         self.updated = utc_now()
         return self
@@ -682,6 +689,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
         self.status = request.status.value
+        self.in_progress = True if request.status.is_finished else False
 
         self.updated = utc_now()
 
@@ -695,32 +703,32 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         return self.status == ExecutionStatus.INITIALIZING.value
 
-    def _check_if_completed(self) -> Tuple[bool, Optional[datetime]]:
-        """Checks whether the run has finished.
+    def _check_if_run_in_progress(self) -> bool:
+        """Checks whether the run is in progress.
 
         Returns:
             A tuple containing:
-            - Whether the run has finished executing
+            - Whether the run is in progress
             - The end time if the run has finished, None otherwise
         """
         run_status = ExecutionStatus(self.status)
 
+        # Unfinished states are in progress
         if not run_status.is_finished:
-            return False, None
+            return True
 
+        # Among finished states, only failed runs can be in progress
         if run_status == ExecutionStatus.FAILED:
             execution_mode = self.get_pipeline_configuration().execution_mode
 
+            # Fail fast and stop on failure are not in progress
             if execution_mode in [
                 ExecutionMode.FAIL_FAST,
                 ExecutionMode.STOP_ON_FAILURE,
             ]:
-                is_completed = all(
-                    ExecutionStatus(s.status).is_finished
-                    for s in self.step_runs
-                )
-                return is_completed, self.end_time if is_completed else None
+                return False
 
+            # Continue on failure is in progress
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
                 if self.deployment:
                     # Get all step configurations
@@ -794,25 +802,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     for step_name in remaining_steps:
                         if step_name in step_run_statuses:
                             if not step_run_statuses[step_name].is_finished:
-                                return False, None
+                                return False
                         else:
                             # Step hasn't started yet
-                            return False, None
+                            return False
 
-                    return True, self.end_time
+                    return True
                 else:
                     # No deployment, fallback to basic check
-                    is_completed = all(
-                        ExecutionStatus(s.status).is_finished
+                    in_progress = any(
+                        not ExecutionStatus(s.status).is_finished
                         for s in self.step_runs
                     )
-                    return (
-                        is_completed,
-                        self.end_time if is_completed else None,
-                    )
+                    return in_progress        
 
-        # For successful runs or other execution modes, use basic check
-        is_completed = all(
-            ExecutionStatus(s.status).is_finished for s in self.step_runs
-        )
-        return is_completed, self.end_time if is_completed else None
+        # Any other finished state is in not progress
+        return False

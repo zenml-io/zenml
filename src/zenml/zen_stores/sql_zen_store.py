@@ -5833,13 +5833,17 @@ class SqlZenStore(BaseZenStore):
                 include_full_metadata=include_full_metadata,
             )
 
-    def _check_if_completed(
+    def _check_if_run_in_progress(
         self, run_id: UUID
     ) -> Tuple[bool, Optional[datetime]]:
-        """Check if a pipeline run is completed.
+        """Check if a pipeline run is in progress.
 
         Args:
             run_id: The ID of the pipeline run to check.
+
+        Returns:
+            A tuple containing the in_progress flag and the end time 
+            of the pipeline run.
         """
         with Session(self.engine) as session:
             run = self._get_schema_by_id(
@@ -5847,7 +5851,7 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-            return run._check_if_completed()
+            return run.in_progress, run.end_time
 
     def _replace_placeholder_run(
         self,
