@@ -104,8 +104,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -272,6 +272,15 @@ class BaseStep:
         return inspect.getsource(self.source_object)
 
     @property
+    def source_code_cache_value(self) -> str:
+        """The source code cache value of this step.
+
+        Returns:
+            The source code cache value of this step.
+        """
+        return self.source_code
+
+    @property
     def docstring(self) -> Optional[str]:
         """The docstring of this step.
 
@@ -288,9 +297,9 @@ class BaseStep:
             A dictionary containing the caching parameters
         """
         parameters = {
-            CODE_HASH_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
-                self.source_object
-            )
+            CODE_HASH_PARAMETER_NAME: hashlib.sha256(
+                self.source_code_cache_value.encode("utf-8")
+            ).hexdigest()
         }
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
@@ -594,8 +603,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -728,8 +737,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
