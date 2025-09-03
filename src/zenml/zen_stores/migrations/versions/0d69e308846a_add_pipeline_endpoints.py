@@ -33,6 +33,7 @@ def upgrade() -> None:
             "status", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
         sa.Column("url", sa.TEXT(), nullable=True),
+        sa.Column("auth_key", sa.TEXT(), nullable=True),
         sa.Column(
             "endpoint_metadata",
             sa.String(length=16777215).with_variant(mysql.MEDIUMTEXT, "mysql"),

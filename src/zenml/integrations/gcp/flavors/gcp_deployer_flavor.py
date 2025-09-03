@@ -17,10 +17,10 @@ from typing import TYPE_CHECKING, Dict, Optional, Type
 
 from pydantic import Field
 
-from zenml.config.base_settings import BaseSettings
 from zenml.deployers.base_deployer import (
     BaseDeployerConfig,
     BaseDeployerFlavor,
+    BaseDeployerSettings,
 )
 from zenml.integrations.gcp import (
     GCP_DEPLOYER_FLAVOR,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from zenml.integrations.gcp.deployers import GCPDeployer
 
 
-class GCPDeployerSettings(BaseSettings):
+class GCPDeployerSettings(BaseDeployerSettings):
     """Settings for the GCP Cloud Run deployer."""
 
     location: str = Field(

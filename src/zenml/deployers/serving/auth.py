@@ -16,8 +16,9 @@
 import os
 from typing import Awaitable, Callable, Set
 
-from fastapi import HTTPException, Request, Response
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 from starlette.status import HTTP_401_UNAUTHORIZED
 from starlette.types import ASGIApp
 
@@ -82,10 +83,7 @@ class BearerTokenAuthMiddleware(BaseHTTPMiddleware):
             call_next: Next middleware/handler in the chain
 
         Returns:
-            HTTP response
-
-        Raises:
-            HTTPException: For authentication failures
+            HTTP response (either successful or 401 Unauthorized)
         """
         # Early return for unprotected endpoints
         if self._is_unprotected_endpoint(request.url.path):
@@ -102,10 +100,8 @@ class BearerTokenAuthMiddleware(BaseHTTPMiddleware):
                 f"Unauthorized access attempt to {request.url.path} - "
                 "missing Authorization header"
             )
-            raise HTTPException(
-                status_code=HTTP_401_UNAUTHORIZED,
-                detail="Authorization header required",
-                headers={"WWW-Authenticate": "Bearer"},
+            return self._create_unauthorized_response(
+                "Authorization header required"
             )
 
         # Extract and validate bearer token
@@ -114,10 +110,8 @@ class BearerTokenAuthMiddleware(BaseHTTPMiddleware):
                 f"Unauthorized access attempt to {request.url.path} - "
                 "invalid Authorization format"
             )
-            raise HTTPException(
-                status_code=HTTP_401_UNAUTHORIZED,
-                detail="Invalid authorization format. Expected: Bearer <token>",
-                headers={"WWW-Authenticate": "Bearer"},
+            return self._create_unauthorized_response(
+                "Invalid authorization format. Expected: Bearer <token>"
             )
 
         token = auth_header[7:]  # Remove "Bearer " prefix
@@ -126,10 +120,8 @@ class BearerTokenAuthMiddleware(BaseHTTPMiddleware):
                 f"Unauthorized access attempt to {request.url.path} - "
                 "invalid token"
             )
-            raise HTTPException(
-                status_code=HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication token",
-                headers={"WWW-Authenticate": "Bearer"},
+            return self._create_unauthorized_response(
+                "Invalid authentication token"
             )
 
         # Token is valid, proceed with request
@@ -154,3 +146,18 @@ class BearerTokenAuthMiddleware(BaseHTTPMiddleware):
             return True
 
         return False
+
+    def _create_unauthorized_response(self, detail: str) -> JSONResponse:
+        """Create a standardized 401 Unauthorized response.
+
+        Args:
+            detail: Error message to include in response
+
+        Returns:
+            JSONResponse with 401 status and proper headers
+        """
+        return JSONResponse(
+            status_code=HTTP_401_UNAUTHORIZED,
+            content={"detail": detail},
+            headers={"WWW-Authenticate": "Bearer"},
+        )

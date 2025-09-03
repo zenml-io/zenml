@@ -248,6 +248,7 @@ Analysis: Rule-based AI (LLM unavailable)"""
             "allow_unauthenticated": True,
             "location": "us-central1",
             "min_instances": 0,
+            "generate_auth_key": True,
         },
     },
 )

@@ -43,19 +43,6 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
     """
 
     @classmethod
-    def get_entrypoint_command(cls) -> List[str]:
-        """Returns command that runs the serving entrypoint module.
-
-        Returns:
-            Command to run the serving entrypoint
-        """
-        return [
-            "python",
-            "-m",
-            "zenml.deployers.serving",
-        ]
-
-    @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
         """Gets all options required for serving entrypoint.
 
