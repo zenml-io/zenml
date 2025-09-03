@@ -208,6 +208,7 @@ class Compiler:
                 model=config.model,
                 retry=config.retry,
                 parameters=config.parameters,
+                cache_policy=config.cache_policy,
             )
 
         configured_step_configs = config.steps or {}

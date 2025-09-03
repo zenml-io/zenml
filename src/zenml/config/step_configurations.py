@@ -38,6 +38,7 @@ from zenml.artifacts.external_artifact_config import (
 )
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
+from zenml.config.cache_policy import CachePolicy, CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source, SourceWithValidator
@@ -200,6 +201,10 @@ class StepConfigurationUpdate(StrictBaseModel):
         default=None,
         description="The substitutions for the step.",
     )
+    cache_policy: Optional[CachePolicyWithValidator] = Field(
+        default=None,
+        description="The cache policy for the step.",
+    )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
@@ -249,6 +254,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
     client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+    cache_policy: CachePolicyWithValidator = CachePolicy.default()
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -340,6 +346,7 @@ class StepConfiguration(PartialStepConfiguration):
                 "success_hook_source",
                 "retry",
                 "substitutions",
+                "cache_policy",
             },
             exclude_none=True,
         )
@@ -352,6 +359,7 @@ class StepConfiguration(PartialStepConfiguration):
                     "success_hook_source",
                     "retry",
                     "substitutions",
+                    "cache_policy",
                 },
                 exclude_none=True,
             )
