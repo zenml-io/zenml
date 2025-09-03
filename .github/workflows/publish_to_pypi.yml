@@ -6,6 +6,7 @@ jobs:
   publish_to_pypi:
     name: Publish Python 🐍 package 📦 to PyPI
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       # This permission is required for trusted publishing.
       id-token: write
