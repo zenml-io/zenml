@@ -5401,10 +5401,15 @@ class SqlZenStore(BaseZenStore):
                     step_id = step_run.id
                     metadata["status"] = step_run.status
 
-                    if step_run.end_time and step_run.start_time:
-                        metadata["duration"] = (
-                            step_run.end_time - step_run.start_time
-                        ).total_seconds()
+                    if step_run.start_time:
+                        metadata["start_time"] = (
+                            step_run.start_time.isoformat()
+                        )
+
+                        if step_run.end_time:
+                            metadata["duration"] = (
+                                step_run.end_time - step_run.start_time
+                            ).total_seconds()
 
                 step_node = helper.add_step_node(
                     node_id=helper.get_step_node_id(name=step_name),
