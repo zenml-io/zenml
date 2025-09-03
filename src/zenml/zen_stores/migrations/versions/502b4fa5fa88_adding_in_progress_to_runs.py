@@ -25,21 +25,19 @@ def upgrade() -> None:
             sa.Column("in_progress", sa.Boolean(), nullable=True)
         )
 
-    # Update existing records based on execution status
-    finished_statuses = [
-        status.value for status in ExecutionStatus if status.is_finished
-    ]
+    finished_statuses = ", ".join(
+        f"'{status}'" for status in ExecutionStatus if status.is_finished
+    )
 
     connection = op.get_bind()
     connection.execute(
-        sa.text("""
+        sa.text(f"""
             UPDATE pipeline_run 
             SET in_progress = CASE 
-                WHEN status IN :finished_statuses THEN false 
+                WHEN status IN ({finished_statuses}) THEN false 
                 ELSE true 
             END
-        """),
-        {"finished_statuses": tuple(finished_statuses)},
+        """)
     )
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:

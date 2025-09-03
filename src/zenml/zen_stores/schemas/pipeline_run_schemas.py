@@ -332,7 +332,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             status=request.status.value,
-            in_progress=True if request.status.is_finished else False,
+            in_progress=not request.status.is_finished,
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
@@ -689,7 +689,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
         self.status = request.status.value
-        self.in_progress = True if request.status.is_finished else False
+        self.in_progress = not request.status.is_finished
 
         self.updated = utc_now()
 
