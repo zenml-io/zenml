@@ -649,7 +649,7 @@ def _fetch_page(
 
         except Exception as e:
             logger.warning(f"Error reading file {file_path}: {e}")
-            continue
+            raise
 
     return entries
 

@@ -3161,14 +3161,12 @@ def test_logs_are_recorded_properly(clean_client):
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
-        assert any(
-            "log" in record.message for record in step1_logs_content.items
-        )
+        assert any("log" in record.message for record in step1_logs_content)
 
         # Step 2 does not have logs!
         assert any(
             "Step `int_plus_one_test_step` has started." in record.message
-            for record in step2_logs_content.items
+            for record in step2_logs_content
         )
 
 
