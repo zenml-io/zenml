@@ -19,6 +19,7 @@ from typing import Awaitable, Callable, Set
 from fastapi import HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.status import HTTP_401_UNAUTHORIZED
+from starlette.types import ASGIApp
 
 from zenml.logger import get_logger
 
@@ -50,7 +51,7 @@ class BearerTokenAuthMiddleware(BaseHTTPMiddleware):
     all endpoints remain accessible.
     """
 
-    def __init__(self, app) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         """Initialize authentication middleware.
 
         Args:
