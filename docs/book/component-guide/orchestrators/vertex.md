@@ -47,7 +47,7 @@ To use the Vertex orchestrator, we need:
 
 ### GCP credentials and permissions
 
-This part is without doubt the most involved part of using the Vertex orchestrator. In order to run pipelines on Vertex AI, you need to have a GCP user account and/or one or more GCP service accounts set up with proper permissions, depending on whether you wish to practice [the principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege) and distribute permissions across multiple service accounts.
+This part is without doubt the most involved part of using the Vertex orchestrator. In order to run pipelines on Vertex AI, you need to have a GCP user account and/or one or more GCP service accounts set up with proper permissions, depending on whether you wish to practice [the principle of least privilege](https://cloud.google.com/iam/docs/using-iam-securely) and distribute permissions across multiple service accounts.
 
 You also have three different options to provide credentials to the orchestrator:
 
@@ -131,6 +131,28 @@ The following GCP service accounts are needed:
    * permissions to create a Google Cloud Function (e.g. with the [`Cloud Functions Developer Role`](https://cloud.google.com/functions/docs/reference/iam/roles#cloudfunctions.developer)).
    * the [Storage Object Creator Role](https://cloud.google.com/iam/docs/understanding-roles#storage.objectCreator) to be able to write the pipeline JSON file to the artifact store directly (NOTE: not needed if the Artifact Store is configured with credentials or is linked to Service Connector).
 2. a "workload" service account that has permissions to run a Vertex AI pipeline, (e.g. [the `Vertex AI Service Agent` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.serviceAgent)).
+
+{% hint style="info" %}
+**Alternative: Custom Roles for Maximum Security** 
+
+For even more granular control, you can create custom roles instead of using the predefined roles:
+
+**Client Service Account Custom Permissions:**
+- `aiplatform.pipelineJobs.create`
+- `aiplatform.pipelineJobs.get` 
+- `aiplatform.pipelineJobs.list`
+- `cloudfunctions.functions.create`
+- `storage.objects.create` (for artifact store access)
+
+**Workload Service Account Custom Permissions:**
+- `aiplatform.customJobs.create`
+- `aiplatform.customJobs.get`
+- `aiplatform.customJobs.list`
+- `storage.objects.get`
+- `storage.objects.create`
+
+This provides the absolute minimum permissions required for Vertex AI pipeline operations.
+{% endhint %}
 
 A key is also needed for the "client" service account. You can create a key for this service account and download it to your local machine (e.g. in a `connectors-vertex-ai-workload.json` file).
 

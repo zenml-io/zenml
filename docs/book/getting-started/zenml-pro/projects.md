@@ -5,11 +5,11 @@ icon: clipboard-list
 
 # Projects
 
-Projects in ZenML Pro provide a logical subdivision within workspaces, allowing you to organize and manage your MLOps resources more effectively. Each project acts as an isolated environment within a workspace, with its own set of pipelines, artifacts, models, and access controls.
+Projects in ZenML Pro provide a logical subdivision within workspaces, allowing you to organize and manage your MLOps resources more effectively. Each project acts as an isolated environment within a workspace, with its own set of pipelines, artifacts, models, and access controls. This isolation is particularly valuable when working with both traditional ML models and AI agent systems, allowing teams to separate different types of experiments and workflows.
 
 ## Understanding Projects
 
-Projects help you organize your ML work and resources. You can use projects to separate different initiatives, teams, or experiments while sharing common resources across your workspace.
+Projects help you organize your ML work and resources. You can use projects to separate different initiatives, teams, or experiments while sharing common resources across your workspace. This includes separating traditional ML experiments from AI agent development work.
 
 Projects offer several key benefits:
 
@@ -17,6 +17,7 @@ Projects offer several key benefits:
 2. **Granular Access Control**: Define specific roles and permissions at the project level
 3. **Team Organization**: Align projects with specific teams or initiatives within your organization
 4. **Resource Management**: Track and manage resources specific to each project independently
+5. **Experiment Separation**: Isolate different types of AI development work (ML vs agents vs multi-modal systems)
 
 ## Using Projects with the CLI
 
@@ -112,14 +113,17 @@ Projects provide isolation for various MLOps resources:
    * Create projects based on logical boundaries (e.g., use cases, teams, or products)
    * Use clear naming conventions for projects
    * Document project purposes and ownership
+   * Separate traditional ML and agent development where needed
 2. **Access Control**
    * Start with default roles before creating custom ones
    * Regularly audit project access and permissions
    * Use teams for easier member management
+   * Implement stricter controls for production agent systems
 3. **Resource Management**
    * Monitor resource usage within projects
    * Set up appropriate quotas and limits
    * Clean up unused resources regularly
+   * Track LLM API costs per project for agent development
 4. **Documentation**
    * Maintain project-specific documentation
    * Document custom roles and their purposes

@@ -141,13 +141,19 @@ These parameters make it an ideal candidate for external triggering scenarios wh
 ## Method 1: Using Run Templates (ZenML Pro)
 
 {% hint style="success" %}
-This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://zenml.io/book-your-demo) to get access.
 {% endhint %}
 
 {% hint style="info" %}
 **Important: Workspace API vs ZenML Pro API**
 
 Run Templates use your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). This distinction is crucial for authentication - you'll need Workspace API credentials (like service accounts), not ZenML Pro API tokens.
+{% endhint %}
+
+{% hint style="success" %}
+Production authentication (ZenML Pro)
+
+For production automation in Pro (triggering run templates from CI/CD or external systems), prefer **organization‑level service accounts and API keys** over temporary user tokens. Set `ZENML_STORE_URL` to your workspace URL and `ZENML_STORE_API_KEY` to your org service account API key. See [Pro Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts).
 {% endhint %}
 
 [Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
@@ -745,6 +751,31 @@ You can extend this API to support additional features:
 3. **Webhook Notifications**: Implement callbacks when pipelines complete
 4. **Advanced Authentication**: Implement JWT or OAuth2 for better security
 5. **Pipeline Scheduling**: Add endpoints to schedule pipeline runs
+
+### Handling Concurrent Pipeline Execution
+
+{% hint style="warning" %}
+**Important Limitation: ZenML Prevents Concurrent Pipeline Execution**
+
+ZenML's current implementation uses shared global state (like active stack and active pipeline), which prevents running multiple pipelines concurrently in the same process. If you attempt to trigger multiple pipelines simultaneously, subsequent calls will be blocked with the error:
+
+```
+Preventing execution of pipeline '<pipeline_name>'. If this is not intended behavior, make sure to unset the environment variable 'ZENML_PREVENT_PIPELINE_EXECUTION'.
+```
+{% endhint %}
+
+The FastAPI example above uses threading, but due to ZenML's architecture, concurrent pipeline execution will fail. For production environments that need to handle concurrent pipeline requests, consider deploying your pipeline triggers through container orchestration platforms.
+
+#### Recommended Solutions for Concurrent Execution
+
+For production deployments, consider using:
+
+1. **Kubernetes Jobs**: Deploy each pipeline execution as a separate Kubernetes Job for resource management and scaling
+2. **Docker Containers**: Use a container orchestration platform like Docker Swarm or ECS to run separate container instances
+3. **Cloud Container Services**: Leverage services like AWS ECS, Google Cloud Run, or Azure Container Instances
+4. **Serverless Functions**: Deploy pipeline triggers as serverless functions (AWS Lambda, Azure Functions, etc.)
+
+These approaches ensure each pipeline runs in its own isolated environment, avoiding the concurrency limitations of ZenML's shared state architecture.
 
 ### Security Considerations
 

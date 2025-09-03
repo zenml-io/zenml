@@ -49,12 +49,12 @@ class HuggingfaceIntegration(Integration):
             A list of requirements.
         """
         requirements = [
-            "datasets>=2.16.0",
+            "datasets>=2.16.0,<4.0.0",
             "huggingface_hub>0.19.0",
             "accelerate",
             "bitsandbytes>=0.41.3",
             "peft",
-            "transformers",
+            "transformers<4.55.0",
         ]
 
         # Add the pandas integration requirements

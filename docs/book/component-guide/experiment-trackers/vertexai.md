@@ -53,10 +53,22 @@ zenml stack register custom_stack -e vertex_experiment_tracker ... --set
 
 Integrating and using a Vertex AI Experiment Tracker in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Google Cloud Platform is through a [GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the Vertex AI Experiment Tracker with other remote stack components also running in GCP.
 
-> **Note**: Regardless of your chosen authentication method, you must grant your account the necessary roles to use Vertex AI Experiment Tracking.
+> **Note**: Regardless of your chosen authentication method, you must grant your account the necessary permissions to use Vertex AI Experiment Tracking. Follow the principle of least privilege:
 >
+> **Recommended Approach:**
 > * `roles/aiplatform.user` role on your project, which allows you to create, manage, and track your experiments within Vertex AI.
-> * `roles/storage.objectAdmin` role on your GCS bucket, granting the ability to read and write experiment artifacts, such as models and datasets, to the storage bucket.
+> * `roles/storage.objectAdmin` role **scoped to specific GCS buckets** rather than project-wide, granting the ability to read and write experiment artifacts, such as models and datasets, to those storage buckets.
+>
+> **Alternative - Custom Role with Minimal Permissions:**
+> For maximum security, create a custom role with only these specific permissions:
+> - `aiplatform.experiments.create`
+> - `aiplatform.experiments.get`
+> - `aiplatform.experiments.list`
+> - `aiplatform.experiments.update`
+> - `storage.objects.create`
+> - `storage.objects.get`
+> - `storage.objects.list`
+> - `storage.buckets.get`
 
 {% tabs %}
 {% tab title="Implicit Authentication" %}

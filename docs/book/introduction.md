@@ -16,7 +16,7 @@ layout:
 
 # Welcome to ZenML
 
-ZenML is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
+ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's one platform to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
 
 ### Getting Started
 
@@ -24,4 +24,4 @@ ZenML is an extensible, open-source MLOps framework for creating portable, produ
 
 ### Guides
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Starter Guide</strong></td><td>Get started with ZenML fundamentals and set up your first pipeline</td><td><a href=".gitbook/assets/starter.png">starter.png</a></td><td><a href="https://app.gitbook.com/s/75OYotLPi8TviSrtZTJZ/starter-guide">Starter guide</a></td></tr><tr><td><strong>Production Guide</strong></td><td>Move your ML pipelines from development to production</td><td><a href=".gitbook/assets/prod.png">prod.png</a></td><td><a href="https://app.gitbook.com/s/75OYotLPi8TviSrtZTJZ/production-guide">Production guide</a></td></tr><tr><td><strong>LLMOps Guide</strong></td><td>Build and deploy Large Language Model pipelines</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="https://app.gitbook.com/s/75OYotLPi8TviSrtZTJZ/llmops-guide">LLMOps guide</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Starter Guide</strong></td><td>Get started with ZenML fundamentals and set up your first pipeline</td><td><a href=".gitbook/assets/starter.png">starter.png</a></td><td><a href="https://docs.zenml.io/user-guides/starter-guide">Starter guide</a></td></tr><tr><td><strong>Production Guide</strong></td><td>Move your ML pipelines from development to production</td><td><a href=".gitbook/assets/prod.png">prod.png</a></td><td><a href="https://docs.zenml.io/user-guides/production-guide">Production guide</a></td></tr><tr><td><strong>LLMOps Guide</strong></td><td>Build and deploy Large Language Model pipelines</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="https://docs.zenml.io/user-guides/llmops-guide">LLMOps guide</a></td></tr></tbody></table>

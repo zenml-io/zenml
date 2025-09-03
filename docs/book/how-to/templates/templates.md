@@ -8,7 +8,7 @@ icon: print
 In ZenML, pipeline templates (also known as "Run Templates") are pre-defined, parameterized configurations for your pipelines that can be easily executed from various interfaces - including the Python SDK, CLI, ZenML dashboard, or REST API. Think of them as blueprints for your pipeline runs, ready to be customized on the fly.
 
 {% hint style="success" %}
-Pipeline Templates are a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
+Run Templates are a [ZenML Pro](https://zenml.io/pro)-only feature.
 {% endhint %}
 
 ## Real-world Use Case
@@ -197,7 +197,10 @@ curl -X 'POST' \
 ```
 
 {% hint style="info" %}
-Learn how to get a bearer token for the curl commands [here](https://docs.zenml.io/api-reference/pro-api/getting-started#programmatic-access-with-api-tokens).
+Learn how to get a bearer token for the curl commands:
+
+- For Workspace/OSS API: use [temporary API tokens](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token) or [service accounts + API keys](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
+- For Pro management API (`cloudapi.zenml.io`): use [Pro API tokens](https://docs.zenml.io/api-reference/pro-api/getting-started#programmatic-access-with-api-tokens).
 {% endhint %}
 
 ## Advanced Usage: Running Templates from Other Pipelines

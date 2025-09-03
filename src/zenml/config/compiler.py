@@ -206,6 +206,7 @@ class Compiler:
                 tags=config.tags,
                 extra=config.extra,
                 model=config.model,
+                retry=config.retry,
                 parameters=config.parameters,
             )
 
@@ -453,9 +454,9 @@ class Compiler:
         Returns:
             The compiled step.
         """
-        # Copy the invocation (including its referenced step) before we apply
-        # the step configuration which is exclusive to this invocation.
-        invocation = copy.deepcopy(invocation)
+        # Copy the step before we apply the step configuration which is
+        # exclusive to this invocation.
+        invocation.step = copy.deepcopy(invocation.step)
 
         step = invocation.step
         if step_config:
@@ -556,7 +557,16 @@ class Compiler:
 
         for name, step in steps.items():
             step_operator = step.config.step_operator
-            if step_operator and step_operator not in available_step_operators:
+            if step_operator is True:
+                if not available_step_operators:
+                    raise StackValidationError(
+                        f"Step `{name}` requires a step operator, but no step "
+                        f"operators are configured in the stack '{stack.name}'."
+                    )
+            elif (
+                isinstance(step_operator, str)
+                and step_operator not in available_step_operators
+            ):
                 raise StackValidationError(
                     f"Step `{name}` requires step operator "
                     f"'{step_operator}' which is not configured in "
@@ -565,8 +575,15 @@ class Compiler:
                 )
 
             experiment_tracker = step.config.experiment_tracker
-            if (
-                experiment_tracker
+            if experiment_tracker is True:
+                if not available_experiment_trackers:
+                    raise StackValidationError(
+                        f"Step `{name}` requires an experiment tracker, but no "
+                        f"experiment trackers are configured in the stack "
+                        f"'{stack.name}'."
+                    )
+            elif (
+                isinstance(experiment_tracker, str)
                 and experiment_tracker not in available_experiment_trackers
             ):
                 raise StackValidationError(

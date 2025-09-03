@@ -1,302 +1,362 @@
 <div align="center">
-  <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">Beyond The Demo: Production-Grade AI Systems</h1>
-  <h3 align="center">ZenML brings battle-tested MLOps practices to your AI applications, handling evaluation, monitoring, and deployment at scale</h3>
-</div>
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-
-<div align="center">
 
   <!-- PROJECT LOGO -->
   <br />
     <a href="https://zenml.io">
-      <img alt="ZenML Logo" src="docs/book/.gitbook/assets/header.png" alt="ZenML Logo">
+      <img src="docs/book/.gitbook/assets/header.png" alt="ZenML Header">
     </a>
   <br />
+  <div align="center">
+    <h3 align="center">Your unified toolkit for shipping everything from decision trees to complex AI agents, built on the MLOps principles you already trust.</h3>
+  </div>
 
   [![PyPi][pypi-shield]][pypi-url]
   [![PyPi][pypiversion-shield]][pypi-url]
   [![PyPi][downloads-shield]][downloads-url]
   [![Contributors][contributors-shield]][contributors-url]
   [![License][license-shield]][license-url]
-  <!-- [![Build][build-shield]][build-url] -->
-  <!-- [![CodeCov][codecov-shield]][codecov-url] -->
 
 </div>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-
 [pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?color=281158
-
 [pypi-url]: https://pypi.org/project/zenml/
-
 [pypiversion-shield]: https://img.shields.io/pypi/v/zenml?color=361776
-
-[downloads-shield]: https://img.shields.io/pypi/dm/zenml?color=431D93
-
+[downloads-shield]: https://img.shields.io/pepy/dt/zenml?color=431D93
 [downloads-url]: https://pypi.org/project/zenml/
-
-[codecov-shield]: https://img.shields.io/codecov/c/gh/zenml-io/zenml?color=7A3EF4
-
-[codecov-url]: https://codecov.io/gh/zenml-io/zenml
-
 [contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=7A3EF4
-
 [contributors-url]: https://github.com/zenml-io/zenml/graphs/contributors
-
 [license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=9565F6
-
 [license-url]: https://github.com/zenml-io/zenml/blob/main/LICENSE
 
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-
-[linkedin-url]: https://www.linkedin.com/company/zenml/
-
-[twitter-shield]: https://img.shields.io/twitter/follow/zenml_io?style=for-the-badge
-
-[twitter-url]: https://twitter.com/zenml_io
-
-[slack-shield]: https://img.shields.io/badge/-Slack-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-
-[slack-url]: https://zenml.io/slack-invite
-
-[build-shield]: https://img.shields.io/github/workflow/status/zenml-io/zenml/Build,%20Lint,%20Unit%20&%20Integration%20Test/develop?logo=github&style=for-the-badge
-
-[build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
+<div align="center">
+<p>
+    <a href="https://zenml.io/features">Features</a> •
+    <a href="https://zenml.io/roadmap">Roadmap</a> •
+    <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a> •
+    <a href="https://zenml.io/pro">Sign up for ZenML Pro</a> •
+    <a href="https://www.zenml.io/blog">Blog</a> •
+    <a href="https://zenml.io/podcast">Podcast</a>
+    <br />
+    <br />
+    🎉 For the latest release, see the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
+</p>
+</div>
 
 ---
 
-Need help with documentation? Visit our [docs site](https://docs.zenml.io) for comprehensive guides and tutorials, or browse the [SDK reference](https://sdkdocs.zenml.io/) to find specific functions and classes.
+ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's one platform to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
 
-## ⭐️ Show Your Support
 
-If you find ZenML helpful or interesting, please consider giving us a star on GitHub. Your support helps promote the project and lets others know that it's worth checking out. 
+## 🚨 The Problem: MLOps Works for Models, But What About AI?
 
-Thank you for your support! 🌟
+![No MLOps for modern AI](docs/book/.gitbook/assets/readme_problem.png)
 
-[![Star this project](https://img.shields.io/github/stars/zenml-io/zenml?style=social)](https://github.com/zenml-io/zenml/stargazers)
+You're an ML engineer. You've perfected deploying `scikit-learn` models and wrangling PyTorch jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
 
-## 🤸 Quickstart
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb)
+- **The Adaptation Struggle:** Your MLOps habits (rigorous testing, versioning, CI/CD) don’t map cleanly onto agent development. How do you version a prompt? How do you regression test a non-deterministic system? The tools that gave you confidence for models now create friction for agents.
 
-[Install ZenML](https://docs.zenml.io/getting-started/installation) via [PyPI](https://pypi.org/project/zenml/). Python 3.9 - 3.12 is required:
+- **The Divided Stack:** To cope, teams are building a second, parallel stack just for LLM-based systems. Now you’re maintaining two sets of tools, two deployment pipelines, and two mental models. Your classical models live in one world, your agents in another. It's expensive, complex, and slows everyone down.
 
-```bash
-pip install "zenml[server]" notebook
+- **The Broken Feedback Loop:** Getting an agent from your local environment to production is a slow, painful journey. By the time you get feedback on performance, cost, or quality, the requirements have already changed. Iteration is a guessing game, not a data-driven process.
+
+## 💡 The Solution: One Framework for your Entire AI Stack
+
+Stop maintaining two separate worlds. ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It’s one platform to develop, evaluate, and deploy your entire AI portfolio.
+
+```python
+# Morning: Your sklearn pipeline is still versioned and reproducible.
+train_and_deploy_classifier()
+
+# Afternoon: Your new agent evaluation pipeline uses the same logic.
+evaluate_and_deploy_agent()
+
+# Same platform. Same principles. New possibilities.
 ```
 
-Take a tour with the guided quickstart by running:
+With ZenML, you're not replacing your knowledge; you're extending it. Use the pipelines and practices you already know to version, test, deploy, and monitor everything from classic models to the most advanced agents.
 
-```bash
-zenml go
-```
+## 💻 See It In Action: Multi-Agent Architecture Comparison
 
-## 🪄 From Prototype to Production: AI Made Simple
+**The Challenge:** Your team built three different customer service agents. Which one should go to production? With ZenML, you can build a reproducible pipeline to test them on real data and make a data-driven decision, with full observability via Langgraph, LiteLLM & Langfuse.
 
-### Create AI pipelines with minimal code changes
-
-ZenML is an open-source framework that handles MLOps and LLMOps for engineers scaling AI beyond prototypes. Automate evaluation loops, track performance, and deploy updates across 100s of pipelines—all while your RAG apps run like clockwork.
+https://github.com/user-attachments/assets/edeb314c-fe07-41ba-b083-cd9ab11db4a7
 
 ```python
 from zenml import pipeline, step
+from zenml.types import HTMLString
+import pandas as pd
 
 @step
-def load_rag_documents() -> dict:
-    # Load and chunk documents for RAG pipeline
-    documents = extract_web_content(url="https://www.zenml.io/")
-    return {"chunks": chunk_documents(documents)}
+def load_real_conversations() -> pd.DataFrame:
+    """Load customer service queries for testing."""
+    return load_customer_queries()
 
 @step
-def generate_embeddings(data: dict) -> None:
-    # Generate embeddings for RAG pipeline
-    embeddings = embed_documents(data['chunks'])
-    return {"embeddings": embeddings}
+def train_intent_classifier(queries: pd.DataFrame):
+    """Train a scikit-learn classifier alongside your agents."""
+    return train_sklearn_pipeline(queries)
 
 @step
-def index_generator(
-    embeddings: dict,
-) -> str:
-    # Generate index for RAG pipeline
-    index = create_index(embeddings)
-    return index.id
+def load_prompts() -> dict:
+    """Load prompts as versioned ZenML artifacts."""
+    return load_agent_prompts_from_files()
+
+@step
+def run_architecture_comparison(queries: pd.DataFrame, classifier, prompts: dict) -> tuple:
+    """Test three different agent architectures on the same data."""
+    architectures = {
+        "single_agent": SingleAgentRAG(prompts),
+        "multi_specialist": MultiSpecialistAgents(prompts), 
+        "langgraph_workflow": LangGraphAgent(prompts)  # Real LangGraph implementation!
+    }
     
+    # ZenML automatically versions agent code, prompts, and configurations
+    # LiteLLM provides unified access to 100+ LLM providers
+    # Langgraph orchestrates a multi-agent graph
+    # Langfuse tracks costs, performance, and traces for full observability
+    results = test_all_architectures(queries, architectures)
+    mermaid_diagram = generate_langgraph_visualization()
+    
+    return results, mermaid_diagram
+
+@step
+def evaluate_and_decide(queries: pd.DataFrame, results: dict) -> HTMLString:
+    """Generate beautiful HTML report with winner selection."""
+    return create_styled_comparison_report(results)
 
 @pipeline
-def rag_pipeline() -> str:
-    documents = load_rag_documents()
-    embeddings = generate_embeddings(documents)
-    index = index_generator(embeddings)
-    return index
+def compare_agent_architectures():
+    """Data-driven agent architecture decisions with full MLOps tracking."""
+    queries = load_real_conversations()
+    prompts = load_prompts()  # Prompts as versioned artifacts
+    classifier = train_intent_classifier(queries)
+    results, viz = run_architecture_comparison(queries, classifier, prompts)
+    report = evaluate_and_decide(queries, results)
+
+if __name__ == "__main__":
+    compare_agent_architectures()
+    # 🎯 Rich visualizations automatically appear in ZenML dashboard
 ```
-![Running a ZenML pipeline](docs/book/.gitbook/assets/readme_simple_pipeline.gif)
 
-### Easily provision an MLOps stack or reuse your existing infrastructure
+**🚀 [See the complete working example →](examples/agent_comparison/)**
+Prefer a smaller end-to-end template? Check out the [Minimal Agent Production](examples/minimal_agent_production/) example — a lightweight document analysis service with pipelines, evaluation, and a simple web UI.
 
-The framework is a gentle entry point for practitioners to build complex ML pipelines with little knowledge required of the underlying infrastructure complexity. ZenML pipelines can be run on AWS, GCP, Azure, Airflow, Kubeflow and even on Kubernetes without having to change any code or know underlying internals. 
+**The Result:** A clear winner is selected based on data, not opinions. You have full lineage from the test data and agent versions to the final report and deployment decision.
 
-ZenML provides different features to aid people to get started quickly on a remote setting as well. If you want to deploy a remote stack from scratch on your selected cloud provider, you can use the 1-click deployment feature either through the dashboard:
+![Development lifecycle](docs/book/.gitbook/assets/readme_development_lifecycle.png)
 
-![Running a ZenML pipeline](docs/book/.gitbook/assets/one-click-deployment.gif)
+## 🚀 Get Started (5 minutes)
 
-Or, through our CLI command:
+### 🏗️ Architecture Overview
+
+ZenML uses a **client-server architecture** with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)) for pipeline visualization and management:
+
+- **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
+- **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
 
 ```bash
-zenml stack deploy --provider aws
+# Install ZenML with server capabilities
+pip install "zenml[server]"
+
+# Install required dependencies
+pip install scikit-learn openai numpy
+
+# Initialize your ZenML repository
+zenml init
+
+# Start local server or connect to a remote one
+zenml login
+
+# Set OpenAI API key (optional)
+export OPENAI_API_KEY=sk-svv....
 ```
 
-Alternatively, if the necessary pieces of infrastructure are already deployed, you can register a cloud stack seamlessly through the stack wizard:
+### Your First Pipeline (2 minutes)
 
+```python
+# simple_pipeline.py
+from zenml import pipeline, step
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from typing import Tuple
+from typing_extensions import Annotated
+import numpy as np
+
+@step
+def create_dataset() -> Tuple[
+    Annotated[np.ndarray, "X_train"],
+    Annotated[np.ndarray, "X_test"], 
+    Annotated[np.ndarray, "y_train"],
+    Annotated[np.ndarray, "y_test"]
+]:
+    """Generate a simple classification dataset."""
+    X, y = make_classification(n_samples=100, n_features=4, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    return X_train, X_test, y_train, y_test
+
+@step
+def train_model(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestClassifier:
+    """Train a simple sklearn model."""
+    model = RandomForestClassifier(n_estimators=10, random_state=42)
+    model.fit(X_train, y_train)
+    return model
+
+@step
+def evaluate_model(model: RandomForestClassifier, X_test: np.ndarray, y_test: np.ndarray) -> float:
+    """Evaluate the model accuracy."""
+    predictions = model.predict(X_test)
+    return accuracy_score(y_test, predictions)
+
+@step
+def generate_summary(accuracy: float) -> str:
+    """Use OpenAI to generate a model summary."""
+    import openai
+
+    client = openai.OpenAI()  # Set OPENAI_API_KEY environment variable
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{
+            "role": "user", 
+            "content": f"Write a brief summary of a ML model with {accuracy:.2%} accuracy."
+        }],
+        max_tokens=50
+    )
+    return response.choices[0].message.content
+
+@pipeline
+def simple_ml_pipeline():
+    """A simple pipeline combining sklearn and OpenAI."""
+    X_train, X_test, y_train, y_test = create_dataset()
+    model = train_model(X_train, y_train)
+    accuracy = evaluate_model(model, X_test, y_test)
+    try:
+        import openai  # noqa: F401
+        generate_summary(accuracy)
+    except ImportError:
+        print("OpenAI is not installed. Skipping summary generation.")
+
+
+if __name__ == "__main__":
+    result = simple_ml_pipeline()
+```
+
+Run it:
 ```bash
-zenml stack register <STACK_NAME> --provider aws
+export OPENAI_API_KEY="your-api-key-here"
+python simple_pipeline.py
 ```
 
-Read more about [ZenML stacks](https://docs.zenml.io/user-guide/production-guide/understand-stacks).
+## 🗣️ Chat With Your Pipelines: ZenML MCP Server
 
-### Run workloads easily on your production infrastructure
+Stop clicking through dashboards to understand your ML workflows. The **[ZenML MCP Server](https://github.com/zenml-io/mcp-zenml)** lets you query your pipelines, analyze runs, and trigger deployments using natural language through Claude Desktop, Cursor, or any MCP-compatible client.
 
-Once you have your MLOps stack configured, you can easily run workloads on it:
-
-```bash
-zenml stack set <STACK_NAME>
-python run.py
+```
+💬 "Which pipeline runs failed this week and why?"
+📊 "Show me accuracy metrics for all my customer churn models"  
+🚀 "Trigger the latest fraud detection pipeline with production data"
 ```
 
-```python
-from zenml.config import ResourceSettings, DockerSettings
+**Quick Setup:**
+1. Download the `.dxt` file from [zenml-io/mcp-zenml](https://github.com/zenml-io/mcp-zenml)
+2. Drag it into Claude Desktop settings
+3. Add your ZenML server URL and API key
+4. Start chatting with your ML infrastructure
 
-@step(
-  settings={
-    "resources": ResourceSettings(memory="16GB", gpu_count="1", cpu_count="8"),
-    "docker": DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")
-  }
-)
-def training(...):
-	...
-```
+The MCP (Model Context Protocol) integration transforms your ZenML metadata into conversational insights, making pipeline debugging and analysis as easy as asking a question. Perfect for teams who want to democratize access to ML operations without requiring dashboard expertise.
 
-![Workloads with ZenML](docs/book/.gitbook/assets/readme_compute.gif)
+## 📚 Learn More
 
-### Track models, pipeline, and artifacts
+### 🖼️ Getting Started Resources
 
-Create a complete lineage of who, where, and what data and models are produced.
+The best way to learn about ZenML is through our comprehensive documentation and tutorials:
 
-You'll be able to find out who produced which model, at what time, with which data, and on which version of the code. This guarantees full reproducibility and auditability.
+- **[Your First AI Pipeline](https://docs.zenml.io/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
+- **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
+- **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
+- **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
 
-```python
-from zenml import Model
-
-@step(model=Model(name="rag_llm", tags=["staging"]))
-def deploy_rag(index_id: str) -> str:
-    deployment_id = deploy_to_endpoint(index_id)
-    return deployment_id
-```
-
-![Exploring ZenML Models](docs/book/.gitbook/assets/readme_mcp.gif)
-
-## 🚀 Key LLMOps Capabilities
-
-### Continual RAG Improvement
-**Build production-ready retrieval systems**  
-
-<div align="center">
-  <img src="docs/book/.gitbook/assets/rag_zenml_home.png" width="800" alt="RAG Pipeline">
-</div>
-
-ZenML tracks document ingestion, embedding versions, and query patterns. Implement feedback loops and:
-- Fix your RAG logic based on production logs
-- Automatically re-ingest updated documents
-- A/B test different embedding models
-- Monitor retrieval quality metrics
-
-### Reproducible Model Fine-Tuning
-**Confidence in model updates**
-
-<div align="center">
-  <img src="docs/book/.gitbook/assets/finetune_zenml_home.png" width="800" alt="Finetuning Pipeline">
-</div>
-
-Maintain full lineage of SLM/LLM training runs:
-- Version training data and hyperparameters
-- Track performance across iterations
-- Automatically promote validated models
-- Roll back to previous versions if needed
-
-### Purpose built for machine learning with integrations to your favorite tools
-
-While ZenML brings a lot of value out of the box, it also integrates into your existing tooling and infrastructure without you having to be locked in.
-
-```python
-from bentoml._internal.bento import bento
-
-@step(on_failure=alert_slack, experiment_tracker="mlflow")
-def train_and_deploy(training_df: pd.DataFrame) -> bento.Bento
-	mlflow.autolog()
-	...
-	return bento
-```
-
-![Exploring ZenML Integrations](docs/book/.gitbook/assets/readme_integrations.gif)
-
-## 🔄 Your LLM Framework Isn't Enough for Production
-
-While tools like LangChain and LlamaIndex help you **build** LLM workflows, ZenML helps you **productionize** them by adding:
-
-✅ **Artifact Tracking** - Every vector store index, fine-tuned model, and evaluation result versioned automatically  
-✅ **Pipeline History** - See exactly what code/data produced each version of your RAG system  
-✅ **Stage Promotion** - Move validated pipelines from staging → production with one click  
-
-## 🖼️ Learning
-
-The best way to learn about ZenML is the [docs](https://docs.zenml.io/). We recommend beginning with the [Starter Guide](https://docs.zenml.io/user-guide/starter-guide) to get up and running quickly.
-
-If you are a visual learner, this 11-minute video tutorial is also a great start:
+For visual learners, start with this 11-minute introduction:
 
 [![Introductory Youtube Video](docs/book/.gitbook/assets/readme_youtube_thumbnail.png)](https://www.youtube.com/watch?v=wEVwIkDvUPs)
 
-And finally, here are some other examples and use cases for inspiration:
+### 📖 Production Examples
 
-1. [E2E Batch Inference](examples/e2e/): Feature engineering, training, and inference pipelines for tabular machine learning.
-2. [Basic NLP with BERT](examples/e2e_nlp/): Feature engineering, training, and inference focused on NLP.
-3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/zenml-support-agent): Using Langchain to create a simple RAG pipeline.
-4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
-5. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
+1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
+2. **[Minimal Agent Production](examples/minimal_agent_production/)** - Document analysis service with pipelines, evaluation, and web UI
+3. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
+4. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
+5. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
+6. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
 
+### 🏢 Deployment Options
 
-## 📚 Learn from Books
+**For Teams:**
+- **[Self-hosted](https://docs.zenml.io/getting-started/deploying-zenml)** - Deploy on your infrastructure with Helm/Docker
+- **[ZenML Pro](https://cloud.zenml.io/?utm_source=readme)** - Managed service with enterprise support (free trial)
+
+**Infrastructure Requirements:**
+- Docker (or Kubernetes for production)
+- Object storage (S3/GCS/Azure)
+- MySQL-compatible database (MySQL 8.0+ or MariaDB)
+- _[Complete requirements](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm)_
+
+### 🎓 Books & Resources
 
 <div align="center">
   <a href="https://www.amazon.com/LLM-Engineers-Handbook-engineering-production/dp/1836200072">
-    <img src="docs/book/.gitbook/assets/llm_engineering_handbook_cover.jpg" alt="LLM Engineer's Handbook Cover" width="200"/></img>
-  </a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://www.amazon.com/-/en/Andrew-McMahon/dp/1837631964">
-    <img src="docs/book/.gitbook/assets/ml_engineering_with_python.jpg" alt="Machine Learning Engineering with Python Cover" width="200"/></img>
+    <img src="docs/book/.gitbook/assets/llm_engineering_handbook_cover.jpg" alt="LLM Engineer's Handbook Cover" width="200"/>
   </a>
-  </br></br>
+  <a href="https://www.amazon.com/-/en/Andrew-McMahon/dp/1837631964">
+    <img src="docs/book/.gitbook/assets/ml_engineering_with_python.jpg" alt="Machine Learning Engineering with Python Cover" width="200"/>
+  </a>
 </div>
 
-ZenML is featured in these comprehensive guides to modern MLOps and LLM engineering. Learn how to build production-ready machine learning systems with real-world examples and best practices.
+ZenML is featured in these comprehensive guides to production AI systems.
 
-## 🔋 Deploy ZenML
+## 🤝 Join ML Engineers Building the Future of AI
 
-For full functionality ZenML should be deployed on the cloud to
-enable collaborative features as the central MLOps interface for teams.
+**Contribute:**
+- 🌟 [Star us on GitHub](https://github.com/zenml-io/zenml/stargazers) - Help others discover ZenML
+- 🤝 [Contributing Guide](CONTRIBUTING.md) - Start with [`good-first-issue`](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22)
+- 💻 [Write Integrations](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/README.md) - Add your favorite tools
 
-Read more about various deployment options [here](https://docs.zenml.io/getting-started/deploying-zenml).
+**Stay Updated:**
+- 🗺 [Public Roadmap](https://zenml.io/roadmap) - See what's coming next
+- 📰 [Blog](https://zenml.io/blog) - Best practices and case studies
+- 🎙 [Slack](https://zenml.io/slack) - Talk with AI practitioners
 
-Or, sign up for [ZenML Pro to get a fully managed server on a free trial](https://cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link).
+## ❓ FAQs from ML Engineers Like You
 
-## Use ZenML with VS Code
+**Q: "Do I need to rewrite my agents or models to use ZenML?"**
 
-ZenML has a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode) that allows you to inspect your stacks and pipeline runs directly from your editor. The extension also allows you to switch your stacks without needing to type any CLI commands.
+A: No. Wrap your existing code in a `@step`. Keep using `scikit-learn`, PyTorch, LangGraph, LlamaIndex, or raw API calls. ZenML orchestrates your tools, it doesn't replace them.
+
+**Q: "How is this different from LangSmith/Langfuse?"**
+
+A: They provide excellent observability for LLM applications. We orchestrate the **full MLOps lifecycle for your entire AI stack**. With ZenML, you manage both your classical ML models and your AI agents in one unified framework, from development and evaluation all the way to production deployment.
+
+**Q: "Can I use my existing MLflow/W&B setup?"**
+
+A: Yes! ZenML integrates with both [MLflow](https://docs.zenml.io/stacks/experiment-trackers/mlflow) and [Weights & Biases](https://docs.zenml.io/stacks/experiment-trackers/wandb). Your experiments, our pipelines.
+
+**Q: "Is this just MLflow with extra steps?"**
+
+A: No. MLflow tracks experiments. We orchestrate the entire development process – from training and evaluation to deployment and monitoring – for both models and agents.
+
+**Q: "How do I configure ZenML with Kubernetes?"**
+
+A: ZenML integrates with Kubernetes through the native Kubernetes orchestrator, Kubeflow, and other K8s-based orchestrators. See our [Kubernetes orchestrator guide](https://docs.zenml.io/stacks/orchestrators/kubernetes) and [Kubeflow guide](https://docs.zenml.io/stacks/orchestrators/kubeflow), plus [deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm).
+
+**Q: "What about cost? I can't afford another platform."**
+
+A: ZenML's open-source version is free forever. You likely already have the required infrastructure (like a Kubernetes cluster and object storage). We just help you make better use of it for MLOps.
+
+### 🛠 VS Code Extension
+
+Manage pipelines directly from your editor:
 
 <details>
   <summary>🖥️ VS Code Extension in Action!</summary>
@@ -305,87 +365,9 @@ ZenML has a [VS Code extension](https://marketplace.visualstudio.com/items?itemN
 </div>
 </details>
 
-## 🗺 Roadmap
-
-ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a regularly updated source of truth for the ZenML community to understand where the product is going in the short, medium, and long term.
-
-ZenML is managed by a [core team](https://zenml.io/company) of developers that are responsible for making key decisions and incorporating feedback from the community. The team oversees feedback via various channels,
-and you can directly influence the roadmap as follows:
-
-- Ask questions and share your thoughts on the [Discussions board](https://zenml.io/discussion).
-- Start a thread in our [Slack channel](https://zenml.io/slack).
-- [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our GitHub repo.
-
-## 🙌 Contributing and Community
-
-We would love to develop ZenML together with our community! The best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22) and open up a Pull Request! 
-
-If you
-would like to contribute, please review our [Contributing
-Guide](CONTRIBUTING.md) for all relevant details.
-
-## 🆘 Getting Help
-
-The first point of call should
-be [our Slack group](https://zenml.io/slack/).
-Ask your questions about bugs or specific use cases, and someone from
-the [core team](https://zenml.io/company) will respond.
-Or, if you
-prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
-our GitHub repo.
-
-## 📚 LLM-focused Learning Resources
-
-1. [LL Complete Guide - Full RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) - Document ingestion, embedding management, and query serving
-2. [LLM Fine-Tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/zencoder) - From data prep to deployed model
-3. [LLM Agents Example](https://github.com/zenml-io/zenml-projects/tree/main/zenml-support-agent) - Track conversation quality and tool usage
-
-## 🤖 AI-Friendly Documentation with llms.txt
-
-ZenML implements the llms.txt standard to make our documentation more accessible to AI assistants and LLMs. Our implementation includes:
-
-- Base documentation at [zenml.io/llms.txt](https://zenml.io/llms.txt) with core user guides
-- Specialized files for different documentation aspects:
-  - [Component guides](https://zenml.io/component-guide.txt) for integration details
-  - [How-to guides](https://zenml.io/how-to-guides.txt) for practical implementations
-  - [Complete documentation corpus](https://zenml.io/llms-full.txt) for comprehensive access
-
-This structured approach helps AI tools better understand and utilize ZenML's documentation, enabling more accurate code suggestions and improved documentation search.
+Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode).
 
 ## 📜 License
 
-ZenML is distributed under the terms of the Apache License Version 2.0.
-A complete version of the license is available in the [LICENSE](LICENSE) file in
-this repository. Any contribution made to this project will be licensed under
-the Apache License Version 2.0.
-
-<div>
-<p align="left">
-    <div align="left">
-      Join our <a href="https://zenml.io/slack" target="_blank">
-      <img width="18" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
-    <b>Slack Community</b> </a> and be part of the ZenML family.
-    </div>
-    <br />
-    <a href="https://zenml.io/features">Features</a>
-    ·
-    <a href="https://zenml.io/roadmap">Roadmap</a>
-    ·
-    <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
-    ·
-    <a href="https://zenml.io/pro">Sign up for ZenML Pro</a>
-    ·
-    <a href="https://www.zenml.io/blog">Read Blog</a>
-    ·
-    <a href="https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22">Contribute to Open Source</a>
-    ·
-    <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
-    <br />
-    <br />
-    🎉 Version 0.83.1 is out. Check out the release notes
-    <a href="https://github.com/zenml-io/zenml/releases">here</a>.
-    <br />
-    🖥️ Download our VS Code Extension <a href="https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode">here</a>.
-    <br />
-  </p>
-</div>
+ZenML is distributed under the terms of the Apache License Version 2.0. See
+[LICENSE](LICENSE) for details.

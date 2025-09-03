@@ -57,7 +57,7 @@ Here's an approach you can take that is a good balance between convenience and s
 If you follow this approach, you can keep your data scientists free from the hassle of figuring out the best authentication mechanisms for the different cloud services, having to manage credentials locally, and keep your cloud accounts safe, while still giving them the freedom to run their experiments in the cloud.
 
 {% hint style="info" %}
-Please note that restricting permissions for users through roles is a ZenML Pro feature. You can read more about it [here](https://docs.zenml.io/pro/core-concepts/roles). Sign up for a free trial here: https://cloud.zenml.io/.
+Please note that restricting permissions for users through roles is a ZenML Pro feature. You can read more about it [here](https://docs.zenml.io/pro/core-concepts/roles). Sign up for a free trial here: https://zenml.io/pro.
 {% endhint %}
 
 ## How to deploy and manage stacks
@@ -85,4 +85,4 @@ Here is a full list of all stack components currently supported in ZenML, with a
 
 You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`.
 
-<table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Component Flavors</strong></td><td>How to write a custom stack component flavor</td><td><a href=".gitbook/assets/flavors.png">flavors.png</a></td><td><a href="https://app.gitbook.com/s/5aBlTJNbVDkrxJp7J1J9/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component">Implement a custom stack component</a></td></tr><tr><td><strong>Custom orchestrator guide</strong></td><td>Learn how to develop a custom orchestrator</td><td><a href=".gitbook/assets/custom-orchestrator.png">custom-orchestrator.png</a></td><td><a href="orchestrators/custom.md">custom.md</a></td></tr></tbody></table>
+<table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Component Flavors</strong></td><td>How to write a custom stack component flavor</td><td><a href=".gitbook/assets/flavors.png">flavors.png</a></td><td><a href="https://docs.zenml.io/stacks/contribute/custom-stack-component">Implement a custom stack component</a></td></tr><tr><td><strong>Custom orchestrator guide</strong></td><td>Learn how to develop a custom orchestrator</td><td><a href=".gitbook/assets/custom-orchestrator.png">custom-orchestrator.png</a></td><td><a href="orchestrators/custom.md">custom.md</a></td></tr></tbody></table>

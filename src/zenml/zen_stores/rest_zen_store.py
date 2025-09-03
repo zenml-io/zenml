@@ -128,6 +128,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken
 from zenml.login.credentials_store import get_credentials_store
+from zenml.login.pro.client import ZenMLProClient
 from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.pro.utils import (
     get_troubleshooting_instructions,
@@ -420,7 +421,12 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         if api_key := data.pop("api_key", None):
             credentials_store = get_credentials_store()
-            credentials_store.set_api_key(url, api_key)
+            if api_key.startswith("ZENPROKEY_"):
+                credentials_store.set_api_key(
+                    ZENML_PRO_API_URL, api_key, is_zenml_pro=True
+                )
+            else:
+                credentials_store.set_api_key(url, api_key)
 
         return data
 
@@ -2413,10 +2419,21 @@ class RestZenStore(BaseZenStore):
             response_model=ServiceConnectorResponse,
         )
         self._populate_connector_type(connector_model)
+        # Call this to properly split the secrets from the configuration
+        try:
+            connector_model.validate_configuration()
+        except ValueError as e:
+            logger.error(
+                f"Error validating connector configuration for "
+                f"{connector_model.name}: {e}"
+            )
         return connector_model
 
     def get_service_connector(
-        self, service_connector_id: UUID, hydrate: bool = True
+        self,
+        service_connector_id: UUID,
+        hydrate: bool = True,
+        expand_secrets: bool = False,
     ) -> ServiceConnectorResponse:
         """Gets a specific service connector.
 
@@ -2424,6 +2441,8 @@ class RestZenStore(BaseZenStore):
             service_connector_id: The ID of the service connector to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: Flag deciding whether to include the secrets
+                associated with the service connector.
 
         Returns:
             The requested service connector, if it was found.
@@ -2432,15 +2451,25 @@ class RestZenStore(BaseZenStore):
             resource_id=service_connector_id,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponse,
-            params={"expand_secrets": False, "hydrate": hydrate},
+            params={"hydrate": hydrate, "expand_secrets": expand_secrets},
         )
         self._populate_connector_type(connector_model)
+        if expand_secrets:
+            try:
+                # Call this to properly split the secrets from the configuration
+                connector_model.validate_configuration()
+            except ValueError as e:
+                logger.error(
+                    f"Error validating connector configuration for "
+                    f"{connector_model.name}: {e}"
+                )
         return connector_model
 
     def list_service_connectors(
         self,
         filter_model: ServiceConnectorFilter,
         hydrate: bool = False,
+        expand_secrets: bool = False,
     ) -> Page[ServiceConnectorResponse]:
         """List all service connectors.
 
@@ -2449,6 +2478,8 @@ class RestZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: Flag deciding whether to include the secrets
+                associated with the service connector.
 
         Returns:
             A page of all service connectors.
@@ -2457,9 +2488,19 @@ class RestZenStore(BaseZenStore):
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponse,
             filter_model=filter_model,
-            params={"expand_secrets": False, "hydrate": hydrate},
+            params={"hydrate": hydrate, "expand_secrets": expand_secrets},
         )
         self._populate_connector_type(*connector_models.items)
+        if expand_secrets:
+            # Call this to properly split the secrets from the configuration
+            for connector_model in connector_models.items:
+                try:
+                    connector_model.validate_configuration()
+                except ValueError as e:
+                    logger.error(
+                        f"Error validating connector configuration for "
+                        f"{connector_model.name}: {e}"
+                    )
         return connector_models
 
     def update_service_connector(
@@ -2499,6 +2540,14 @@ class RestZenStore(BaseZenStore):
             route=SERVICE_CONNECTORS,
         )
         self._populate_connector_type(connector_model)
+        # Call this to properly split the secrets from the configuration
+        try:
+            connector_model.validate_configuration()
+        except ValueError as e:
+            logger.error(
+                f"Error validating connector configuration for "
+                f"{connector_model.name}: {e}"
+            )
         return connector_model
 
     def delete_service_connector(self, service_connector_id: UUID) -> None:
@@ -2665,6 +2714,14 @@ class RestZenStore(BaseZenStore):
 
         connector = ServiceConnectorResponse.model_validate(response_body)
         self._populate_connector_type(connector)
+        # Call this to properly split the secrets from the configuration
+        try:
+            connector.validate_configuration()
+        except ValueError as e:
+            logger.error(
+                f"Error validating connector configuration for connector client "
+                f"{connector.name}: {e}"
+            )
         return connector
 
     def list_service_connector_resources(
@@ -2711,7 +2768,9 @@ class RestZenStore(BaseZenStore):
 
             # Retrieve the resource list locally
             assert resources.id is not None
-            connector = self.get_service_connector(resources.id)
+            connector = self.get_service_connector(
+                resources.id, expand_secrets=True
+            )
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=connector
@@ -4131,17 +4190,22 @@ class RestZenStore(BaseZenStore):
                 if not pro_api_url:
                     pro_api_url = ZENML_PRO_API_URL
 
-                pro_token = credentials_store.get_pro_token(
-                    pro_api_url, allow_expired=True
+                pro_credentials = credentials_store.get_pro_credentials(
+                    pro_api_url
                 )
-                if not pro_token:
+                if not pro_credentials:
                     raise CredentialsNotValid(
                         "You need to be logged in to ZenML Pro in order to "
                         f"access the ZenML Pro server '{self.url}'. Please run "
                         "'zenml login' to log in or choose a different server."
                     )
 
-                elif pro_token.expired:
+                elif pro_credentials.has_valid_token:
+                    assert pro_credentials.api_token is not None
+                    pro_token = pro_credentials.api_token
+                elif pro_credentials.can_refresh_token:
+                    pro_token = ZenMLProClient(pro_api_url).authenticate()
+                else:
                     raise CredentialsNotValid(
                         "Your ZenML Pro login session has expired. "
                         "Please log in again using 'zenml login'."
@@ -4162,7 +4226,7 @@ class RestZenStore(BaseZenStore):
                 elif token.expired:
                     raise CredentialsNotValid(
                         "Your authentication to the current server has expired. "
-                        "Please log in again using 'zenml login --url "
+                        "Please log in again using 'zenml login "
                         f"{self.url}'."
                     )
 

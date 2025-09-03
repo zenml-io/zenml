@@ -148,6 +148,7 @@ from zenml.models import (
     RunTemplateUpdate,
     ScheduleFilter,
     ScheduleResponse,
+    ScheduleUpdate,
     SecretFilter,
     SecretRequest,
     SecretResponse,
@@ -201,6 +202,7 @@ from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+    from zenml.orchestrators import BaseOrchestrator
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.services.service import ServiceConfig
     from zenml.stack import Stack
@@ -3806,6 +3808,74 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
+    def _get_orchestrator_for_schedule(
+        self, schedule: ScheduleResponse
+    ) -> Optional["BaseOrchestrator"]:
+        """Get the orchestrator for a schedule.
+
+        Args:
+            schedule: The schedule to get the orchestrator for.
+
+        Returns:
+            The orchestrator for the schedule.
+        """
+        from zenml.orchestrators import BaseOrchestrator
+
+        if not schedule.orchestrator_id:
+            return None
+
+        try:
+            orchestrator_model = self.get_stack_component(
+                component_type=StackComponentType.ORCHESTRATOR,
+                name_id_or_prefix=schedule.orchestrator_id,
+            )
+        except KeyError:
+            return None
+
+        return cast(
+            BaseOrchestrator, BaseOrchestrator.from_model(orchestrator_model)
+        )
+
+    def update_schedule(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        cron_expression: Optional[str] = None,
+    ) -> ScheduleResponse:
+        """Update a schedule.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the schedule to update.
+            cron_expression: The new cron expression for the schedule.
+
+        Returns:
+            The updated schedule.
+        """
+        schedule = self.get_schedule(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=self.active_project.id,
+        )
+
+        orchestrator = self._get_orchestrator_for_schedule(schedule)
+        if not orchestrator:
+            logger.warning(
+                "Unable to find orchestrator for schedule, skipping update."
+            )
+            return schedule
+        elif not orchestrator.supports_schedule_updates:
+            logger.warning(
+                "Orchestrator does not support schedule updates, skipping "
+                "update."
+            )
+            return schedule
+
+        update = ScheduleUpdate(cron_expression=cron_expression)
+        orchestrator.update_schedule(schedule, update)
+        return self.zen_store.update_schedule(
+            schedule_id=schedule.id,
+            schedule_update=update,
+        )
+
     def delete_schedule(
         self,
         name_id_or_prefix: Union[str, UUID],
@@ -3823,11 +3893,21 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
             project=project,
         )
-        logger.warning(
-            f"Deleting schedule '{name_id_or_prefix}'... This will only delete "
-            "the reference of the schedule from ZenML. Please make sure to "
-            "manually stop/delete this schedule in your orchestrator as well!"
-        )
+
+        orchestrator = self._get_orchestrator_for_schedule(schedule)
+        if not orchestrator:
+            logger.warning(
+                "Unable to find orchestrator for schedule. Will only delete "
+                "the schedule reference from ZenML."
+            )
+        elif not orchestrator.supports_schedule_deletion:
+            logger.warning(
+                "Orchestrator does not support schedule deletion. Will only "
+                "delete the schedule reference from ZenML."
+            )
+        else:
+            orchestrator.delete_schedule(schedule)
+
         self.zen_store.delete_schedule(schedule_id=schedule.id)
 
     # ----------------------------- Pipeline runs ------------------------------
@@ -4051,6 +4131,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_id: Optional[Union[str, UUID]] = None,
         model: Optional[Union[UUID, str]] = None,
         run_metadata: Optional[List[str]] = None,
+        exclude_retried: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -4077,6 +4158,7 @@ class Client(metaclass=ClientMetaClass):
             code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
             run_metadata: Filter by run metadata.
+            exclude_retried: Whether to exclude retried step runs.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4105,6 +4187,7 @@ class Client(metaclass=ClientMetaClass):
             model_version_id=model_version_id,
             model=model,
             run_metadata=run_metadata,
+            exclude_retried=exclude_retried,
         )
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,
@@ -4352,7 +4435,7 @@ class Client(metaclass=ClientMetaClass):
         version: Optional[Union[str, int]] = None,
         version_number: Optional[int] = None,
         artifact_store_id: Optional[Union[str, UUID]] = None,
-        type: Optional[ArtifactType] = None,
+        type: Optional[Union[ArtifactType, str]] = None,
         data_type: Optional[str] = None,
         uri: Optional[str] = None,
         materializer: Optional[str] = None,
@@ -5500,17 +5583,18 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
-        load_secrets: bool = False,
         hydrate: bool = True,
+        expand_secrets: bool = False,
     ) -> ServiceConnectorResponse:
         """Fetches a registered service connector.
 
         Args:
             name_id_or_prefix: The id of the service connector to fetch.
             allow_name_prefix_match: If True, allow matching by name prefix.
-            load_secrets: If True, load the secrets for the service connector.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: If True, expand the secrets for the service
+                connector.
 
         Returns:
             The registered service connector.
@@ -5521,24 +5605,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             hydrate=hydrate,
+            expand_secrets=expand_secrets,
         )
-
-        if load_secrets and connector.secret_id:
-            client = Client()
-            try:
-                secret = client.get_secret(
-                    name_id_or_prefix=connector.secret_id,
-                    allow_partial_id_match=False,
-                    allow_partial_name_match=False,
-                )
-            except KeyError as err:
-                logger.error(
-                    "Unable to retrieve secret values associated with "
-                    f"service connector '{connector.name}': {err}"
-                )
-            else:
-                # Add secret values to connector configuration
-                connector.secrets.update(secret.values)
 
         return connector
 
@@ -5558,8 +5626,8 @@ class Client(metaclass=ClientMetaClass):
         resource_id: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
-        secret_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
+        expand_secrets: bool = False,
     ) -> Page[ServiceConnectorResponse]:
         """Lists all registered service connectors.
 
@@ -5580,10 +5648,10 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name/ID.
             name: The name of the service connector to filter by.
             labels: The labels of the service connector to filter by.
-            secret_id: Filter by the id of the secret that is referenced by the
-                service connector.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            expand_secrets: If True, expand the secrets for the service
+                connectors.
 
         Returns:
             A page of service connectors.
@@ -5603,11 +5671,11 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             labels=labels,
-            secret_id=secret_id,
         )
         return self.zen_store.list_service_connectors(
             filter_model=connector_filter_model,
             hydrate=hydrate,
+            expand_secrets=expand_secrets,
         )
 
     def update_service_connector(
@@ -5691,7 +5759,9 @@ class Client(metaclass=ClientMetaClass):
         connector_model = self.get_service_connector(
             name_id_or_prefix,
             allow_name_prefix_match=False,
-            load_secrets=True,
+            # We need the existing secrets only if a new configuration is not
+            # provided.
+            expand_secrets=configuration is None,
         )
 
         connector_instance: Optional[ServiceConnector] = None
@@ -5736,23 +5806,16 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Validate and configure the resources
-        if configuration is not None:
+        connector_update.validate_and_configure_resources(
+            connector_type=connector,
+            resource_types=resource_types,
+            resource_id=resource_id,
             # The supplied configuration is a drop-in replacement for the
-            # existing configuration and secrets
-            connector_update.validate_and_configure_resources(
-                connector_type=connector,
-                resource_types=resource_types,
-                resource_id=resource_id,
-                configuration=configuration,
-            )
-        else:
-            connector_update.validate_and_configure_resources(
-                connector_type=connector,
-                resource_types=resource_types,
-                resource_id=resource_id,
-                configuration=connector_model.configuration,
-                secrets=connector_model.secrets,
-            )
+            # existing configuration
+            configuration=configuration
+            if configuration is not None
+            else connector_model.configuration,
+        )
 
         # Add the labels
         if labels is not None:
@@ -5912,6 +5975,12 @@ class Client(metaclass=ClientMetaClass):
                 list_resources=list_resources,
             )
         else:
+            # Get the service connector model, with full secrets
+            service_connector = self.get_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                expand_secrets=True,
+            )
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=service_connector
@@ -6034,6 +6103,12 @@ class Client(metaclass=ClientMetaClass):
                 # server-side implementation may not be able to do so
                 connector_client.verify()
         else:
+            # Get the service connector model, with full secrets
+            service_connector = self.get_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                expand_secrets=True,
+            )
             connector_instance = (
                 service_connector_registry.instantiate_connector(
                     model=service_connector
@@ -6428,9 +6503,15 @@ class Client(metaclass=ClientMetaClass):
         if model_version_name_or_number_or_id is None:
             model_version_name_or_number_or_id = ModelStages.LATEST
 
-        if isinstance(model_version_name_or_number_or_id, UUID):
+        if is_valid_uuid(model_version_name_or_number_or_id):
+            assert not isinstance(model_version_name_or_number_or_id, int)
+            model_version_id = (
+                UUID(model_version_name_or_number_or_id)
+                if isinstance(model_version_name_or_number_or_id, str)
+                else model_version_name_or_number_or_id
+            )
             return self.zen_store.get_model_version(
-                model_version_id=model_version_name_or_number_or_id,
+                model_version_id=model_version_id,
                 hydrate=hydrate,
             )
         elif isinstance(model_version_name_or_number_or_id, int):
@@ -7258,19 +7339,24 @@ class Client(metaclass=ClientMetaClass):
     def create_service_account(
         self,
         name: str,
+        full_name: Optional[str] = None,
         description: str = "",
     ) -> ServiceAccountResponse:
         """Create a new service account.
 
         Args:
             name: The name of the service account.
+            full_name: The display name of the service account.
             description: The description of the service account.
 
         Returns:
             The created service account.
         """
         service_account = ServiceAccountRequest(
-            name=name, description=description, active=True
+            name=name,
+            full_name=full_name or "",
+            description=description,
+            active=True,
         )
         created_service_account = self.zen_store.create_service_account(
             service_account=service_account

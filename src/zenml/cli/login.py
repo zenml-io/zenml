@@ -22,6 +22,10 @@ from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 import click
+from pydantic import BaseModel
+from rich.panel import Panel
+from rich.prompt import Prompt
+from rich.text import Text
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
@@ -44,6 +48,77 @@ from zenml.utils.server_utils import (
 )
 
 logger = get_logger(__name__)
+
+
+class LoginMethod(BaseModel):
+    """Login method class."""
+
+    name: str
+    description: str
+    help: str
+
+
+possible_login_methods = [
+    LoginMethod(
+        name="local",
+        description="Login to a local server",
+        help="(zenml login --local)",
+    ),
+    LoginMethod(
+        name="pro",
+        description="Login to ZenML Pro",
+        help="(https://cloud.zenml.io)",
+    ),
+    LoginMethod(
+        name="cloud",
+        description="Login to a cloud server",
+        help="(custom URL)",
+    ),
+]
+
+
+def _display_login_menu() -> LoginMethod:
+    """Display an interactive login menu and return the user's choice.
+
+    Returns:
+        The selected login method enum value.
+    """
+    title_text = Text("ZenML Login", style="bold cyan")
+
+    options_text = Text()
+    options_text.append("Choose your login method:\n\n", style="dim")
+
+    for i, login_method in enumerate(possible_login_methods):
+        options_text.append(f"{i + 1}. ", style="bold purple")
+        options_text.append(
+            f"{login_method.description}"
+            + " " * (25 - len(login_method.description)),
+            style="white",
+        )
+        options_text.append(f"{login_method.help}", style="dim")
+        if i < len(possible_login_methods) - 1:
+            options_text.append("\n")
+
+    panel = Panel(
+        options_text,
+        title=title_text,
+        border_style="white dim",
+        padding=(1, 2),
+        width=60,
+    )
+
+    console.print(panel)
+
+    # Get user choice with validation
+    while True:
+        choice = Prompt.ask(
+            "[bold]Enter your choice[/bold]",
+            choices=list(
+                str(i) for i in range(1, len(possible_login_methods) + 1)
+            ),
+            default="2",
+        )
+        return possible_login_methods[int(choice) - 1]
 
 
 def start_local_server(
@@ -179,7 +254,7 @@ def connect_to_server(
             # flow.
             cli_utils.declare(f"Authenticating to ZenML server '{url}'...")
         else:
-            if refresh or not credentials_store.has_valid_authentication(url):
+            if refresh or not credentials_store.has_valid_credentials(url):
                 cli_utils.declare(
                     f"Authenticating to ZenML server '{url}' using the web "
                     "login..."
@@ -256,6 +331,17 @@ def connect_to_pro_server(
 
     server_id, server_url, server_name = None, None, None
     login = False
+    credentials_store = get_credentials_store()
+
+    if api_key and api_key.startswith("ZENPROKEY_"):
+        if not pro_server:
+            raise ValueError(
+                "You must provide the name of the ZenML Pro server when "
+                "connecting with a ZenML Pro API key."
+            )
+        credentials_store.set_api_key(pro_api_url, api_key, is_zenml_pro=True)
+        api_key = None
+
     if not pro_server:
         login = True
         if api_key:
@@ -276,8 +362,7 @@ def connect_to_pro_server(
     else:
         server_url = pro_server
 
-    credentials_store = get_credentials_store()
-    if not credentials_store.has_valid_pro_authentication(pro_api_url):
+    if not credentials_store.has_valid_pro_credentials(pro_api_url):
         # Without valid ZenML Pro credentials, we can only connect to a ZenML
         # Pro server with an API key and we also need to know the URL of the
         # server to connect to.
@@ -300,10 +385,9 @@ def connect_to_pro_server(
 
     if login or refresh:
         # If we reached this point, then we need to start a new login flow.
-        # We also need to remove all existing API tokens associated with the
-        # target ZenML Pro API, otherwise they will continue to be used after
-        # the re-login flow.
-        credentials_store.clear_all_pro_tokens()
+        # We also need to remove all existing credentials, otherwise they will
+        # continue to be used after the re-login flow.
+        credentials_store.clear_all_credentials()
         try:
             token = web_login(
                 pro_api_url=pro_api_url,
@@ -424,7 +508,7 @@ def connect_to_pro_server(
         )
 
     cli_utils.declare(
-        f"Connecting to ZenML Pro server: {server.name} [{str(server.id)}] "
+        f"Connecting to ZenML Pro server: '{server.name}' [{str(server.id)}] "
     )
 
     connect_to_server(
@@ -435,7 +519,7 @@ def connect_to_pro_server(
     # ZenML Pro workspace object.
     credentials_store.update_server_info(server.url, server)
 
-    cli_utils.declare(f"Connected to ZenML Pro server: {server.name}.")
+    cli_utils.success(f"✔ Connected to ZenML Pro server: {server.name}.")
 
 
 def is_pro_server(
@@ -523,8 +607,10 @@ def _fail_if_authentication_environment_variables_set() -> None:
     on the current client state:
 
       * if the client is not connected to a non-local ZenML server, the command
-        will take the user to the ZenML Pro login / signup page to authenticate
-        and connect to a ZenML Pro server.
+        will display an interactive menu with three login options:
+        1. Login to a local server (equivalent to `zenml login --local`)
+        2. Login to ZenML Pro (https://cloud.zenml.io)
+        3. Login to a custom cloud server (you'll be prompted for the URL)
 
       * if the client is already connected to a non-local ZenML server, the
         command triggers a new web login flow with the same server. This allows
@@ -781,10 +867,21 @@ def login(
         )
         return
 
+    api_key_value: Optional[str] = None
+    if api_key:
+        # Read the API key from the user
+        api_key_value = click.prompt(
+            "Please enter the API key for the ZenML server",
+            type=str,
+            hide_input=True,
+        )
+        if api_key_value and api_key_value.startswith("ZENPROKEY_"):
+            pro = True
+
     if pro:
         connect_to_pro_server(
             pro_server=server,
-            refresh=True,
+            api_key=api_key_value,
             pro_api_url=pro_api_url,
             verify_ssl=ssl_ca_cert
             if ssl_ca_cert is not None
@@ -799,15 +896,6 @@ def login(
     if store_cfg.type == StoreType.REST:
         if not connected_to_local_server():
             current_non_local_server = store_cfg.url
-
-    api_key_value: Optional[str] = None
-    if api_key:
-        # Read the API key from the user
-        api_key_value = click.prompt(
-            "Please enter the API key for the ZenML server",
-            type=str,
-            hide_input=True,
-        )
 
     verify_ssl: Union[str, bool] = (
         ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
@@ -895,20 +983,66 @@ def login(
             )
     else:
         # If no server argument is provided, and the client is not currently
-        # connected to any non-local server, we default to logging in to ZenML
-        # Pro.
-        cli_utils.declare(
-            "No server argument was provided. Logging to ZenML Pro...\n"
-            "Hint: You can run 'zenml login --local' to start a local ZenML "
-            "server and connect to it or 'zenml login <server-url>' to connect "
-            "to a specific ZenML server. If you wish to login to a ZenML Pro "
-            "server, you can run 'zenml login --pro'."
-        )
-        connect_to_pro_server(
-            api_key=api_key_value,
-            pro_api_url=pro_api_url,
-            verify_ssl=verify_ssl,
-        )
+        # connected to any non-local server, show the interactive login menu.
+        login_method = _display_login_menu()
+
+        if login_method.name == "local":
+            # Start a local ZenML server and connect to it
+            start_local_server(
+                docker=docker,
+                ip_address=ip_address,
+                port=port,
+                blocking=blocking,
+                image=image,
+                ngrok_token=ngrok_token,
+                restart=restart,
+            )
+        elif login_method.name == "pro":
+            # Connect to ZenML Pro
+            connect_to_pro_server(
+                api_key=api_key_value,
+                pro_api_url=pro_api_url,
+                verify_ssl=verify_ssl,
+            )
+        elif login_method.name == "cloud":
+            # Get custom server URL from user
+            console.print()
+            server_url = Prompt.ask(
+                "[bold]Enter the ZenML server URL[/bold]", default="http/https"
+            )
+
+            if not server_url.strip():
+                cli_utils.error("Server URL cannot be empty.")
+                return
+
+            # Validate URL format
+            if not re.match(r"^https?://", server_url):
+                cli_utils.error(
+                    "Invalid URL format. Please provide a URL starting with "
+                    "http:// or https://"
+                )
+                return
+
+            # Connect to the custom server
+            # First, try to discover if the server is a ZenML Pro server or not
+            server_is_pro, server_pro_api_url = is_pro_server(server_url)
+            if server_is_pro:
+                connect_to_pro_server(
+                    pro_server=server_url,
+                    api_key=api_key_value,
+                    refresh=True,  # Force refresh for manually entered URLs
+                    # Prefer the pro API URL extracted from the server info if
+                    # available
+                    pro_api_url=server_pro_api_url or pro_api_url,
+                    verify_ssl=verify_ssl,
+                )
+            else:
+                connect_to_server(
+                    url=server_url,
+                    api_key=api_key_value,
+                    verify_ssl=verify_ssl,
+                    refresh=True,  # Force refresh for manually entered URLs
+                )
 
 
 @cli.command(
@@ -1003,7 +1137,7 @@ def logout(
 
         pro_api_url = pro_api_url or ZENML_PRO_API_URL
         pro_api_url = pro_api_url.rstrip("/")
-        if credentials_store.has_valid_pro_authentication(pro_api_url):
+        if credentials_store.get_pro_credentials(pro_api_url):
             credentials_store.clear_pro_credentials(pro_api_url)
             cli_utils.declare("Logged out from ZenML Pro.")
         else:
@@ -1018,7 +1152,7 @@ def logout(
             if credentials and credentials.pro_api_url == pro_api_url:
                 gc.set_default_store()
 
-            credentials_store.clear_all_pro_tokens(pro_api_url)
+            credentials_store.clear_all_credentials()
             cli_utils.declare("Logged out from all ZenML Pro servers.")
         return
 
