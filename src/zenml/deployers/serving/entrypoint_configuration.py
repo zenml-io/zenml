@@ -88,7 +88,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
             f"--{CREATE_RUNS_OPTION}",
             str(kwargs.get(CREATE_RUNS_OPTION, "false")),
             f"--{AUTH_KEY_OPTION}",
-            str(kwargs.get(AUTH_KEY_OPTION, None)),
+            str(kwargs.get(AUTH_KEY_OPTION, "")),
         ]
 
         return base_args + serving_args

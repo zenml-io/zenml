@@ -192,11 +192,12 @@ class BaseDeployer(StackComponent, ABC):
             deployer = endpoint.deployer
             assert deployer, "Deployer not found"
             raise PipelineEndpointDeployerMismatchError(
-                f"Pipeline endpoint with name '{endpoint.name}' in project "
-                f"{endpoint.project_id} "
-                f"is not managed by this deployer ({self.name}). "
+                f"The existing pipeline endpoint with name '{endpoint.name}' "
+                f"in project {endpoint.project_id} "
+                f"is not managed by the active deployer stack component "
+                f"({deployer.name}). "
                 "Please switch to the correct deployer in your stack "
-                f"({deployer.name}) and try again."
+                f"({self.name}) and try again or use a different endpoint name."
             )
 
     def _generate_auth_key(self, key_length: int = 32) -> str:
