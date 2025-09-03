@@ -664,6 +664,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._configure_store(default_store_cfg)
         logger.debug("Using the default store for the global config.")
 
+    @property
     def uses_local_store(self) -> bool:
         """Check if the global configuration uses a local store.
 
@@ -671,6 +672,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             `True` if the global configuration uses a local store.
         """
         return self.store_configuration.url.startswith("sqlite://")
+
+    @property
+    def uses_sql_store(self) -> bool:
+        """Check if the global configuration uses a SQL store.
+
+        Returns:
+            If the global configuration uses a SQL store.
+        """
+        return self.store_configuration.type == StoreType.SQL
 
     def set_store(
         self,
