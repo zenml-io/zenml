@@ -5693,6 +5693,8 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a run with the same name already exists or
                 a log entry with the same source already exists within the
                 scope of the same pipeline run.
+            KeyError: If the run requires a model version that doesn't exist and
+                can not be created.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
         self._get_reference_schema_by_id(
@@ -5763,9 +5765,16 @@ class SqlZenStore(BaseZenStore):
                     f"within the scope of the same pipeline run '{new_run.id}'."
                 )
 
-        if model_version_id := self._get_or_create_model_version_for_run(
-            new_run
-        ):
+        try:
+            model_version_id = self._get_or_create_model_version_for_run(
+                new_run
+            )
+        except KeyError as e:
+            session.delete(new_run)
+            session.commit()
+            raise e
+
+        if model_version_id:
             new_run.model_version_id = model_version_id
             session.add(new_run)
             session.commit()

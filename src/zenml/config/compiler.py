@@ -208,6 +208,8 @@ class Compiler:
                 model=config.model,
                 retry=config.retry,
                 parameters=config.parameters,
+                cache_policy=config.cache_policy,
+                execution_mode=config.execution_mode,
             )
 
         invalid_step_configs = set(config.steps) - set(pipeline.invocations)
