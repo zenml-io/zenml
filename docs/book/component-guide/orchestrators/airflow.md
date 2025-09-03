@@ -67,7 +67,7 @@ Before starting the local Airflow server, we can set a few environment variables
 
 * `AIRFLOW_HOME`: This variable defines the location where the Airflow server stores its database and configuration files. The default value is `~/airflow`.
 * `AIRFLOW__CORE__DAGS_FOLDER`: This variable defines the location where the Airflow server looks for DAG files. The default value is `<AIRFLOW_HOME>/dags`.
-* `AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL`: This variable controls how often the Airflow dag processor checks for new or updated DAGs. By default, the scheduler will check for new DAGs every 300 seconds. This variable can be used to increase or decrease the frequency of the checks, depending on the specific needs of your pipeline.
+* `AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL`: This variable controls how often the Airflow dag processor checks for new or updated DAGs. By default, the dag processor will check for new DAGs every 300 seconds. This variable can be used to increase or decrease the frequency of the checks.
 
 {% hint style="warning" %}
 When running this on MacOS, you might need to set the `no_proxy` environment variable to prevent crashes due to a bug in Airflow (see [this page](https://github.com/apache/airflow/issues/28487) for more information):
@@ -150,9 +150,7 @@ scheduled_pipeline()
 Airflow comes with its own UI that you can use to find further details about your pipeline runs, such as the logs of your steps. For local Airflow, you can find the Airflow UI at [http://localhost:8080](http://localhost:8080) by default.
 
 {% hint style="info" %}
-If you cannot see the Airflow UI credentials in the console, you can find the password in `<AIRFLOW_HOME>/standalone_admin_password.txt`. `AIRFLOW_HOME` will usually be `~/airflow` unless you've manually configured it with the `AIRFLOW_HOME` environment variable. You can always run `airflow info` to figure out the directory for the active environment.
-
-The username will always be `admin`.
+If you cannot see the Airflow UI credentials in the console, you can find the password in `<AIRFLOW_HOME>/simple_auth_manager_passwords.json.generated`. `AIRFLOW_HOME` will usually be `~/airflow` unless you've manually configured it with the `AIRFLOW_HOME` environment variable. You can always run `airflow info` to figure out the directory for the active environment.
 {% endhint %}
 
 #### Additional configuration
