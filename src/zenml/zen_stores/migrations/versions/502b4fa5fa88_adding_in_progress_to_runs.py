@@ -24,10 +24,12 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("in_progress", sa.Boolean(), nullable=True)
         )
-    
+
     # Update existing records based on execution status
-    finished_statuses = [status.value for status in ExecutionStatus if status.is_finished]
-    
+    finished_statuses = [
+        status.value for status in ExecutionStatus if status.is_finished
+    ]
+
     connection = op.get_bind()
     connection.execute(
         sa.text("""
@@ -37,11 +39,13 @@ def upgrade() -> None:
                 ELSE true 
             END
         """),
-        {"finished_statuses": tuple(finished_statuses)}
+        {"finished_statuses": tuple(finished_statuses)},
     )
-    
+
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
-        batch_op.alter_column("in_progress", existing_type=sa.Boolean(), nullable=False)
+        batch_op.alter_column(
+            "in_progress", existing_type=sa.Boolean(), nullable=False
+        )
 
 
 def downgrade() -> None:

@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -814,7 +814,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         not ExecutionStatus(s.status).is_finished
                         for s in self.step_runs
                     )
-                    return in_progress        
+                    return in_progress
 
         # Any other finished state is in not progress
         return False

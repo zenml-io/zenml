@@ -85,7 +85,7 @@ def publish_step_run_status_update(
 
     if end_time is not None and not status.is_finished:
         raise ValueError("End time cannot be set for a non-finished step run.")
-    
+
     if end_time is None and status.is_finished:
         end_time = utc_now()
 

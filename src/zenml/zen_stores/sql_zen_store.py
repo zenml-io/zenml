@@ -5842,7 +5842,7 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to check.
 
         Returns:
-            A tuple containing the in_progress flag and the end time 
+            A tuple containing the in_progress flag and the end time
             of the pipeline run.
         """
         with Session(self.engine) as session:

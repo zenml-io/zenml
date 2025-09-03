@@ -422,14 +422,18 @@ def authenticate_credentials(
                     run does not exist.
                 """
                 try:
-                    return zen_store()._check_if_run_in_progress(pipeline_run_id)
+                    return zen_store()._check_if_run_in_progress(
+                        pipeline_run_id
+                    )
                 except KeyError:
                     return None, None
 
             (
                 pipeline_run_in_progress,
                 pipeline_run_end_time,
-            ) = check_if_pipeline_run_in_progress(decoded_token.pipeline_run_id)
+            ) = check_if_pipeline_run_in_progress(
+                decoded_token.pipeline_run_id
+            )
 
             if pipeline_run_in_progress is None:
                 error = (
