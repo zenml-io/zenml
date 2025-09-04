@@ -2251,9 +2251,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
     """
     from zenml.enums import ExecutionStatus
 
-    if status == ExecutionStatus.INITIALIZING:
-        return ":hourglass_flowing_sand:"
-    if status == ExecutionStatus.PROVISIONING:
+    if status in {ExecutionStatus.INITIALIZING, ExecutionStatus.PROVISIONING}:
         return ":hourglass_flowing_sand:"
     if status == ExecutionStatus.FAILED:
         return ":x:"
