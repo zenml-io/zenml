@@ -635,40 +635,6 @@ class PipelineServingService:
             },
         }
 
-    # No direct execution engine here; we rely on the orchestrator
-
-    class _SimpleEvent(BaseModel):
-        event: str = Field(description="Event type")
-        message: Optional[str] = None
-        timestamp: str = Field(
-            default_factory=lambda: datetime.now(timezone.utc).isoformat()
-        )
-
-    async def execute_pipeline_streaming(
-        self, parameters: Dict[str, Any], run_name: Optional[str] = None
-    ) -> AsyncGenerator[_SimpleEvent, None]:
-        """Execute pipeline with minimal streaming updates."""
-        if not self.deployment:
-            raise RuntimeError("Service not properly initialized")
-
-        yield self._SimpleEvent(
-            event="pipeline_started", message="Execution started"
-        )
-        try:
-            result = await self.execute_pipeline(
-                parameters=parameters, run_name=run_name
-            )
-            if result.get("success"):
-                yield self._SimpleEvent(
-                    event="pipeline_completed", message="Execution completed"
-                )
-            else:
-                yield self._SimpleEvent(
-                    event="pipeline_failed", message=result.get("error")
-                )
-        except Exception as e:  # noqa: BLE001
-            yield self._SimpleEvent(event="pipeline_failed", message=str(e))
-
     def _update_execution_stats(
         self, success: bool, execution_time: float
     ) -> None:
