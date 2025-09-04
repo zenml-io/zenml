@@ -41,14 +41,16 @@ from zenml.deployers.base_deployer import (
     BaseDeployerConfig,
     BaseDeployerFlavor,
     BaseDeployerSettings,
+)
+from zenml.deployers.containerized_deployer import (
+    ContainerizedDeployer,
+)
+from zenml.deployers.exceptions import (
     DeployerError,
     PipelineEndpointDeploymentError,
     PipelineEndpointDeprovisionError,
     PipelineEndpointNotFoundError,
     PipelineLogsNotFoundError,
-)
-from zenml.deployers.containerized_deployer import (
-    ContainerizedDeployer,
 )
 from zenml.deployers.serving.entrypoint_configuration import (
     AUTH_KEY_OPTION,

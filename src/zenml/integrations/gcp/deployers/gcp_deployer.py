@@ -34,14 +34,14 @@ from google.protobuf.json_format import MessageToDict
 from pydantic import BaseModel
 
 from zenml.config.base_settings import BaseSettings
-from zenml.deployers.base_deployer import (
+from zenml.deployers.containerized_deployer import ContainerizedDeployer
+from zenml.deployers.exceptions import (
     DeployerError,
     PipelineEndpointDeploymentError,
     PipelineEndpointDeprovisionError,
     PipelineEndpointNotFoundError,
     PipelineLogsNotFoundError,
 )
-from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.serving.entrypoint_configuration import (
     AUTH_KEY_OPTION,
     PORT_OPTION,

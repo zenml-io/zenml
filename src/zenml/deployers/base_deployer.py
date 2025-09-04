@@ -30,6 +30,16 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
+from zenml.deployers.exceptions import (
+    DeployerError,
+    PipelineEndpointAlreadyExistsError,
+    PipelineEndpointDeletionTimeoutError,
+    PipelineEndpointDeployerMismatchError,
+    PipelineEndpointDeploymentError,
+    PipelineEndpointDeploymentTimeoutError,
+    PipelineEndpointDeprovisionError,
+    PipelineEndpointNotFoundError,
+)
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -51,42 +61,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT = 300
-
-
-class DeployerError(Exception):
-    """Base class for deployer errors."""
-
-
-class PipelineEndpointAlreadyExistsError(EntityExistsError, DeployerError):
-    """Error raised when a pipeline endpoint already exists."""
-
-
-class PipelineEndpointNotFoundError(KeyError, DeployerError):
-    """Error raised when a pipeline endpoint is not found."""
-
-
-class PipelineEndpointDeploymentError(DeployerError):
-    """Error raised when a pipeline endpoint deployment fails."""
-
-
-class PipelineEndpointDeploymentTimeoutError(DeployerError):
-    """Error raised when a pipeline endpoint deployment times out."""
-
-
-class PipelineEndpointDeprovisionError(DeployerError):
-    """Error raised when a pipeline endpoint deletion fails."""
-
-
-class PipelineEndpointDeletionTimeoutError(DeployerError):
-    """Error raised when a pipeline endpoint deletion times out."""
-
-
-class PipelineLogsNotFoundError(KeyError, DeployerError):
-    """Error raised when pipeline logs are not found."""
-
-
-class PipelineEndpointDeployerMismatchError(DeployerError):
-    """Error raised when a pipeline endpoint is not managed by this deployer."""
 
 
 class BaseDeployerSettings(BaseSettings):
