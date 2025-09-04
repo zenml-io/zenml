@@ -54,7 +54,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         """
         return super().get_entrypoint_arguments(**kwargs) + [
             f"--{PLACEHOLDER_RUN_ID_OPTION}",
-            kwargs[PLACEHOLDER_RUN_ID_OPTION],
+            str(kwargs[PLACEHOLDER_RUN_ID_OPTION]),
         ]
 
     def run(self) -> None:

@@ -2253,6 +2253,8 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
     if status == ExecutionStatus.INITIALIZING:
         return ":hourglass_flowing_sand:"
+    if status == ExecutionStatus.PROVISIONING:
+        return ":hourglass_flowing_sand:"
     if status == ExecutionStatus.FAILED:
         return ":x:"
     if status == ExecutionStatus.RUNNING:
