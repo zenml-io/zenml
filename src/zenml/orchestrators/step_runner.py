@@ -129,7 +129,16 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
         """
-        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
+        # Store step_run_info for effective config access
+        self._step_run_info = step_run_info
+        tracking_disabled = is_tracking_disabled(
+            step_run_info.pipeline.settings
+            if hasattr(step_run_info, "pipeline") and step_run_info.pipeline
+            else None
+        )
+
+
+        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False) or tracking_disabled:
             step_logging_enabled = False
         else:
             enabled_on_step = step_run.config.enable_step_logs
@@ -142,11 +151,6 @@ class StepRunner:
 
         logs_context = nullcontext()
         # Resolve tracking toggle once for the step context
-        tracking_disabled = is_tracking_disabled(
-            step_run_info.pipeline.settings
-            if hasattr(step_run_info, "pipeline") and step_run_info.pipeline
-            else None
-        )
 
         if (
             step_logging_enabled
@@ -266,17 +270,25 @@ class StepRunner:
                             )
 
                         # Store and publish outputs only if tracking enabled
-                        output_data = self._validate_outputs(
-                            return_values, output_annotations
-                        )
-
-                        # For serve mode, store outputs in tap for in-memory handoff
-                        if tracking_disabled:
-                            from zenml.orchestrators.utils import (
-                                tap_store_step_outputs,
+                        try:
+                            logger.debug(f"Validating outputs for step: return_values={return_values}, annotations={list(output_annotations.keys()) if output_annotations else 'None'}")
+                            output_data = self._validate_outputs(
+                                return_values, output_annotations
                             )
+                            logger.debug(f"Validated outputs: {list(output_data.keys()) if output_data else 'No outputs'}")
+                        except Exception as e:
+                            logger.error(f"Error validating outputs: {e}")
+                            raise
 
-                            tap_store_step_outputs(
+                        # For serve mode, store outputs in request buffer for in-memory handoff
+                        if tracking_disabled:
+                            from zenml.orchestrators.serving_buffer import (
+                                store_step_outputs,
+                            )
+                            
+                            logger.debug(f"Storing outputs for step '{step_run_info.config.name}': {list(output_data.keys()) if output_data else 'No outputs'}")
+
+                            store_step_outputs(
                                 step_run_info.config.name, output_data
                             )
 
@@ -366,7 +378,15 @@ class StepRunner:
 
         step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance = copy.deepcopy(step_instance)
-        step_instance._configuration = self._step.config
+
+        # Use effective config from step_run_info (includes serving overrides)
+        effective_config = getattr(self, "_step_run_info", None)
+        if effective_config:
+            step_instance._configuration = effective_config.config
+        else:
+            # Fallback to original config if no step_run_info available
+            step_instance._configuration = self._step.config
+
         return step_instance
 
     def _load_output_materializers(

@@ -121,11 +121,27 @@ def is_tracking_enabled(
         Whether tracking should be enabled.
     """
     if not pipeline_settings:
+        # Check for serving default when no pipeline settings
+        import os
+
+        serving_default = (
+            os.getenv("ZENML_SERVING_CAPTURE_DEFAULT", "").strip().lower()
+        )
+        if serving_default in {"none", "off", "false", "0", "disabled"}:
+            return False
         return True
 
     try:
         capture_value = pipeline_settings.get("capture")
         if capture_value is None:
+            # Check for serving default when capture setting is missing
+            import os
+
+            serving_default = (
+                os.getenv("ZENML_SERVING_CAPTURE_DEFAULT", "").strip().lower()
+            )
+            if serving_default in {"none", "off", "false", "0", "disabled"}:
+                return False
             return True
         if isinstance(capture_value, bool):
             return capture_value

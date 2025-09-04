@@ -266,20 +266,7 @@ class StepLauncher:
                 artifact_store_id=self._stack.artifact_store.id,
             )
 
-        # In no-capture, disable caching to minimize DB lookups
-        original_step_cache = self._step.config.enable_cache
-        original_pipeline_cache = (
-            self._deployment.pipeline_configuration.enable_cache
-        )
-        if tracking_disabled:
-            try:
-                self._step.config.enable_cache = False
-            except Exception:
-                pass
-            try:
-                self._deployment.pipeline_configuration.enable_cache = False
-            except Exception:
-                pass
+        # In no-capture, caching will be disabled via effective config
         with logs_context:
             if run_was_created and not tracking_disabled:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
@@ -324,25 +311,58 @@ class StepLauncher:
                     # Create a minimal stand-in that preserves input structure for tap mechanism
                     from uuid import uuid4
 
-                    from zenml.models import StepRunResponse
+                    from zenml.models.v2.core.step_run import (
+                        StepRunResponse,
+                        StepRunResponseBody,
+                        StepRunResponseMetadata,
+                        StepRunResponseResources,
+                    )
+
+                    client = Client()
+                    current_time = utc_now()
+
+                    # Create proper body object with all required fields
+                    body = StepRunResponseBody(
+                        status=ExecutionStatus.RUNNING,
+                        version=1,  # Default version
+                        is_retriable=False,  # Not retriable in run-only mode
+                        start_time=current_time,
+                        substitutions={},
+                        # Required by base classes
+                        project_id=client.active_project.id,
+                        user_id=client.active_user.id
+                        if client.active_user
+                        else None,
+                        created=current_time,
+                        updated=current_time,
+                    )
+
+                    # Create proper metadata object with required config and spec
+                    metadata = StepRunResponseMetadata(
+                        config=self._step.config,
+                        spec=self._step.spec,
+                        deployment_id=self._deployment.id,
+                        pipeline_run_id=pipeline_run.id,
+                    )
+
+                    # Create proper resources object
+                    resources = StepRunResponseResources(
+                        inputs={},  # Empty since we skip populate_request in no-capture
+                        outputs={},
+                    )
 
                     step_run = StepRunResponse(
                         id=uuid4(),  # Use unique ID to avoid conflicts
                         name=self._step_name,
-                        pipeline_run_id=pipeline_run.id,
-                        project_id=pipeline_run.project_id,
-                        status=ExecutionStatus.RUNNING,
-                        start_time=utc_now(),
-                        inputs={},  # Empty since we skip populate_request in no-capture
-                        outputs={},
-                        logs=None,
-                        docstring=None,
-                        source_code=None,
-                        cache_key=None,  # No cache key needed in no-capture
-                        original_step_run_id=None,
-                        exception_info=None,
-                        execution_id=None,
-                        model_version=None,
+                        body=body,
+                        metadata=metadata,
+                        resources=resources,
+                        project=client.active_project.id,
+                        created=current_time,
+                        updated=current_time,
+                        user=client.active_user.id
+                        if client.active_user
+                        else None,
                     )
                     self._step_run = step_run
                 else:
@@ -405,18 +425,6 @@ class StepLauncher:
                             model_version=model_version,
                         )
 
-        # Restore caching flags
-        try:
-            self._step.config.enable_cache = original_step_cache
-        except Exception:
-            pass
-        try:
-            self._deployment.pipeline_configuration.enable_cache = (
-                original_pipeline_cache
-            )
-        except Exception:
-            pass
-
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
 
@@ -424,6 +432,74 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
+        from zenml.orchestrators import utils as orchestrator_utils
+
+        # In no-capture mode, skip DB writes and create minimal in-memory placeholder
+        if orchestrator_utils.is_tracking_disabled(
+            self._deployment.pipeline_configuration.settings
+        ):
+            from uuid import uuid4
+
+            start_time = utc_now()
+            run_name = string_utils.format_name_template(
+                name_template=self._deployment.run_name_template,
+                substitutions=self._deployment.pipeline_configuration.finalize_substitutions(
+                    start_time=start_time,
+                ),
+            )
+
+            logger.debug(
+                "Creating in-memory pipeline run placeholder %s", run_name
+            )
+
+            # Create minimal in-memory placeholder (no DB write)
+            from zenml.models.v2.core.pipeline_run import (
+                PipelineRunResponseBody,
+                PipelineRunResponseMetadata,
+                PipelineRunResponseResources,
+            )
+
+            client = Client()
+
+            # Create proper metadata object with required config field
+            metadata = PipelineRunResponseMetadata(
+                config=self._deployment.pipeline_configuration,
+                start_time=start_time,
+                run_metadata={},
+                client_environment=get_run_environment_dict(),
+                orchestrator_environment=get_run_environment_dict(),
+            )
+
+            # Create proper body object with all required fields
+            body = PipelineRunResponseBody(
+                status=ExecutionStatus.RUNNING,
+                deployment_id=self._deployment.id,
+                # Required by base classes
+                project_id=client.active_project.id,
+                user_id=client.active_user.id if client.active_user else None,
+                created=start_time,
+                updated=start_time,
+            )
+
+            # Create proper resources object
+            resources = PipelineRunResponseResources(
+                tags=[],
+            )
+
+            placeholder_run = PipelineRunResponse(
+                id=uuid4(),
+                name=run_name,
+                body=body,
+                metadata=metadata,
+                resources=resources,
+                project=client.active_project.id,
+                created=start_time,
+                updated=start_time,
+                user=client.active_user.id if client.active_user else None,
+            )
+            return placeholder_run, True
+
+        # Normal mode: Create actual pipeline run in DB
         start_time = utc_now()
         run_name = string_utils.format_name_template(
             name_template=self._deployment.run_name_template,
@@ -465,9 +541,44 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
-        # Prepare step run information.
+        # Create effective step config with serving overrides and no-capture optimizations
+        from zenml.orchestrators import serving_overrides
+        from zenml.orchestrators import utils as orchestrator_utils
+
+        effective_step_config = self._step.config.model_copy(deep=True)
+
+        # Apply serving overrides if any
+        if serving_overrides.has_overrides():
+            step_overrides = serving_overrides.get_step_parameters(
+                self._step_name
+            )
+            if step_overrides:
+                # Merge override parameters into effective config
+                current_params = effective_step_config.parameters or {}
+                effective_step_config = effective_step_config.model_copy(
+                    update={"parameters": {**current_params, **step_overrides}}
+                )
+
+        # In no-capture mode, disable caching and step operators for speed
+        tracking_disabled = orchestrator_utils.is_tracking_disabled(
+            self._deployment.pipeline_configuration.settings
+        )
+        if tracking_disabled:
+            effective_step_config = effective_step_config.model_copy(
+                update={
+                    "enable_cache": False,
+                    "step_operator": None,
+                    "retry": effective_step_config.retry.model_copy(
+                        update={"max_retries": 0, "delay": 0, "backoff": 1}
+                    )
+                    if effective_step_config.retry
+                    else None,
+                }
+            )
+
+        # Prepare step run information with effective config
         step_run_info = StepRunInfo(
-            config=self._step.config,
+            config=effective_step_config,
             pipeline=self._deployment.pipeline_configuration,
             run_name=pipeline_run.name,
             pipeline_step_name=self._step_name,
@@ -476,9 +587,15 @@ class StepLauncher:
             force_write_logs=force_write_logs,
         )
 
-        output_artifact_uris = output_utils.prepare_output_artifact_uris(
-            step_run=step_run, stack=self._stack, step=self._step
-        )
+        # In no-capture mode, skip artifact directory creation (FS writes)
+        if orchestrator_utils.is_tracking_disabled(
+            self._deployment.pipeline_configuration.settings
+        ):
+            output_artifact_uris = {}  # Empty dict, no FS writes
+        else:
+            output_artifact_uris = output_utils.prepare_output_artifact_uris(
+                step_run=step_run, stack=self._stack, step=self._step
+            )
 
         # Run the step.
         start_time = time.time()

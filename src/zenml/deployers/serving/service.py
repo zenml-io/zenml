@@ -27,9 +27,11 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
 from zenml.client import Client
+from zenml.config.step_configurations import Step
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
+from zenml.orchestrators import serving_buffer, serving_overrides
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.topsort import topsorted_layers
 from zenml.stack import Stack
@@ -108,22 +110,7 @@ class PipelineServingService:
             # Extract parameter schema for validation
             self.parameter_schema = self._extract_parameter_schema()
 
-            # Default serving to no-capture unless explicitly set
-            try:
-                current_settings = (
-                    self.deployment.pipeline_configuration.settings or {}
-                )
-                if "capture" not in current_settings:
-                    # Create new pipeline configuration with updated settings
-                    new_settings = {**current_settings, "capture": "none"}
-                    self.deployment.pipeline_configuration = (
-                        self.deployment.pipeline_configuration.model_copy(
-                            update={"settings": new_settings}
-                        )
-                    )
-            except Exception:
-                # Best-effort only; if settings are immutable or unavailable, continue
-                pass
+            # No model mutations - capture default handled by is_tracking_disabled fallback
 
             # Log successful initialization
             pipeline_name = self.deployment.pipeline_configuration.name
@@ -249,46 +236,57 @@ class PipelineServingService:
         logger.debug(f"Resolved parameters: {list(resolved.keys())}")
         return resolved
 
-    def _apply_parameter_overrides(self, params: Dict[str, Any]) -> None:
-        """Apply parameter overrides to the loaded deployment in-place.
+    def _inject_upstream_inputs_to_overrides(
+        self,
+        step_name: str,
+        step_cfg: Step,
+    ) -> None:
+        """Inject upstream outputs as serving overrides based on step.spec.inputs.
 
-        - Update `deployment.pipeline_configuration.parameters`
-        - For each step, override matching keys in `step.config.parameters`
+        Args:
+            step_name: Name of the step to inject inputs for
+            step_cfg: Step configuration to analyze for input requirements
         """
-        if not self.deployment:
-            return
+        injected_params = {}
 
-        # Update pipeline-level parameters using model_copy
-        pipeline_conf = self.deployment.pipeline_configuration
-        new_parameters = {
-            **(pipeline_conf.parameters or {}),
-            **params,
-        }
-        self.deployment.pipeline_configuration = pipeline_conf.model_copy(
-            update={"parameters": new_parameters}
-        )
-
-        # Propagate overrides into step parameters when keys match
-        for step_cfg in self.deployment.step_configurations.values():
-            step_params = step_cfg.config.parameters or {}
-            updated = False
-            for k, v in params.items():
-                if k in step_params:
-                    step_params[k] = v
-                    updated = True
-            if updated:
-                # Create new step config with updated parameters
-                step_cfg.config = step_cfg.config.model_copy(
-                    update={"parameters": step_params}
+        # Inject inputs from serving buffer based on step.spec.inputs
+        for arg_name, input_spec in step_cfg.spec.inputs.items():
+            if (
+                input_spec.step_name != "pipeline"
+            ):  # Skip pipeline-level params
+                upstream_outputs = serving_buffer.get_step_outputs(
+                    input_spec.step_name
                 )
+                if upstream_outputs:
+                    if input_spec.output_name in upstream_outputs:
+                        injected_params[arg_name] = upstream_outputs[
+                            input_spec.output_name
+                        ]
+                        logger.debug(
+                            f"Injected {input_spec.step_name}.{input_spec.output_name} -> {step_cfg.config.name}.{arg_name}"
+                        )
+                    elif len(upstream_outputs) == 1:
+                        # Single-output fallback: use the only available key
+                        only_key = next(iter(upstream_outputs.keys()))
+                        injected_params[arg_name] = upstream_outputs[only_key]
+                        logger.debug(
+                            f"Injected {input_spec.step_name}.{only_key} (fallback) -> {step_cfg.config.name}.{arg_name}"
+                        )
+
+        # Store injected parameters in serving overrides (no model mutation)
+        if injected_params:
+            serving_overrides.set_step_parameters(step_name, injected_params)
 
     def _build_pipeline_response(
-        self, tracking_disabled: bool
+        self,
+        tracking_disabled: bool,
+        return_contract: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Build the pipeline response with actual outputs.
 
         Args:
             tracking_disabled: Whether tracking is disabled
+            return_contract: Pipeline return contract mapping output names to step names
 
         Returns:
             Dictionary containing the pipeline outputs
@@ -309,30 +307,36 @@ class PipelineServingService:
         )
 
         if tracking_disabled:
-            # Use tap outputs directly (in-memory)
-            outputs = {}
-            if return_contract:
-                for output_name, step_name in return_contract.items():
-                    step_outputs = orchestrator_utils.tap_get_step_outputs(
-                        step_name
-                    )
-                    if step_outputs:
-                        # For simplicity, take the first output of the step
-                        first_output = next(iter(step_outputs.values()), None)
-                        if first_output is not None:
-                            outputs[output_name] = self._serialize_for_json(
-                                first_output
-                            )
-            else:
-                # Fallback: return all step outputs
-                all_tap_outputs = orchestrator_utils._serve_output_tap.get({})
-                for step_name, step_outputs in all_tap_outputs.items():
-                    for output_name, output_value in step_outputs.items():
-                        outputs[f"{step_name}_{output_name}"] = (
-                            self._serialize_for_json(output_value)
-                        )
-
-            return outputs
+            # Use serving buffer for fast execution - simplified approach
+            try:
+                # Get all outputs from buffer
+                all_outputs = serving_buffer.get_all_outputs()
+                logger.debug(f"All buffer contents: {all_outputs}")
+                
+                # For single-output pipelines, take the last step's first output
+                if all_outputs:
+                    # Get the last step's outputs (final step in pipeline)
+                    last_step_name = list(all_outputs.keys())[-1]
+                    last_step_outputs = all_outputs[last_step_name]
+                    
+                    if last_step_outputs:
+                        # Take the first output from the last step
+                        output_name = list(last_step_outputs.keys())[0]
+                        output_value = last_step_outputs[output_name]
+                        
+                        # Return as the pipeline result
+                        return {
+                            "result": self._serialize_for_json(output_value)
+                        }
+                
+                # Fallback if no outputs found
+                logger.warning("No outputs found in serving buffer")
+                return {"result": "No outputs generated"}
+                
+            except Exception as e:
+                logger.error(f"Error building pipeline response: {e}")
+                logger.error(f"Buffer contents: {serving_buffer.get_all_outputs()}")
+                return {"error": f"Failed to build response: {str(e)}"}
         else:
             # TODO: For full tracking mode, materialize artifacts and return
             return {
@@ -384,14 +388,32 @@ class PipelineServingService:
         start = time.time()
         logger.info("Starting pipeline execution")
         try:
+            # Resolve request parameters
             resolved_params = self._resolve_parameters(parameters)
-            self._apply_parameter_overrides(resolved_params)
 
-            # Clear tap for fresh request
-            orchestrator_utils.tap_clear()
+            # Get deployment and check if we're in no-capture mode
+            deployment = self.deployment
+            tracking_disabled = orchestrator_utils.is_tracking_disabled(
+                deployment.pipeline_configuration.settings
+            )
+
+            # Initialize serving infrastructure for fast execution
+            if tracking_disabled:
+                serving_buffer.initialize_request_buffer()
+                serving_overrides.initialize_serving_overrides()
+            else:
+                # Clear tap for tracked mode (fallback)
+                orchestrator_utils.tap_clear()
+
+            # Set serving capture default for this request (no model mutations needed)
+            import os
+
+            original_capture_default = os.environ.get(
+                "ZENML_SERVING_CAPTURE_DEFAULT"
+            )
+            os.environ["ZENML_SERVING_CAPTURE_DEFAULT"] = "none"
 
             # Build execution order using the production-tested topsort utility
-            deployment = self.deployment
             steps = deployment.step_configurations
             node_ids = list(steps.keys())
             parent_map: Dict[str, List[str]] = {
@@ -413,95 +435,90 @@ class PipelineServingService:
             )
             order: List[str] = [n for layer in layers for n in layer]
 
-            # In no-capture mode, disable step retries and step operators
-            if orchestrator_utils.is_tracking_disabled(
-                deployment.pipeline_configuration.settings
-            ):
-                for step_cfg in steps.values():
-                    try:
-                        if step_cfg.config.retry is not None:
-                            # Create new retry config with disabled settings
-                            new_retry = step_cfg.config.retry.model_copy(
-                                update={
-                                    "max_retries": 0,
-                                    "delay": 0,
-                                    "backoff": 1,
-                                }
-                            )
-                            step_cfg.config = step_cfg.config.model_copy(
-                                update={"retry": new_retry}
-                            )
-                    except Exception:
-                        pass
-                    try:
-                        # Create new config without step operator
-                        step_cfg.config = step_cfg.config.model_copy(
-                            update={"step_operator": None}
-                        )
-                    except Exception:
-                        pass
+            # No-capture optimizations handled by effective config in StepLauncher
 
             # Use orchestrator.run_step only (no full orchestrator.run)
             assert deployment.stack is not None
             stack = Stack.from_model(deployment.stack)
+
+            # Note: No artifact store override needed with tap mechanism
+
             orchestrator = stack.orchestrator
             # Ensure a stable run id for StepLauncher to reuse the same PipelineRun
             if hasattr(orchestrator, "_orchestrator_run_id"):
                 setattr(orchestrator, "_orchestrator_run_id", str(uuid4()))
 
-            # Prepare, run each step, inject inputs in no-capture, collect outputs, then cleanup
+            # Populate serving overrides for all steps (no model mutations)
+            if tracking_disabled and resolved_params:
+                # Apply global parameter overrides to all steps that use them
+                for step_name, step_cfg in steps.items():
+                    step_params = step_cfg.config.parameters or {}
+                    step_overrides = {
+                        k: v
+                        for k, v in resolved_params.items()
+                        if k in step_params
+                    }
+                    if step_overrides:
+                        serving_overrides.set_step_parameters(
+                            step_name, step_overrides
+                        )
+
+            # Prepare, run each step with input injection, then cleanup
             orchestrator._prepare_run(deployment=deployment)
             try:
-                tracking_disabled = orchestrator_utils.is_tracking_disabled(
-                    deployment.pipeline_configuration.settings
-                )
                 for step_name in order:
                     step_cfg = steps[step_name]
 
-                    # Inject upstream outputs as step parameters for in-memory handoff
+                    # In no-capture mode, inject upstream outputs via serving overrides
                     if tracking_disabled:
-                        for (
-                            arg_name,
-                            input_spec,
-                        ) in step_cfg.spec.inputs.items():
-                            if (
-                                input_spec.step_name != "pipeline"
-                            ):  # Skip pipeline-level params
-                                upstream_outputs = (
-                                    orchestrator_utils.tap_get_step_outputs(
-                                        input_spec.step_name
-                                    )
-                                )
-                                if (
-                                    upstream_outputs
-                                    and input_spec.output_name
-                                    in upstream_outputs
-                                ):
-                                    # Create new step config with injected parameters
-                                    current_params = (
-                                        step_cfg.config.parameters or {}
-                                    )
-                                    new_params = {
-                                        **current_params,
-                                        arg_name: upstream_outputs[
-                                            input_spec.output_name
-                                        ],
-                                    }
-                                    step_cfg.config = (
-                                        step_cfg.config.model_copy(
-                                            update={"parameters": new_params}
-                                        )
-                                    )
+                        try:
+                            logger.debug(
+                                f"[serve-nocapture] preparing injection for step '{step_name}'"
+                            )
+                        except Exception:
+                            pass
+                        self._inject_upstream_inputs_to_overrides(
+                            step_name, step_cfg
+                        )
 
+                    # Execute step (outputs automatically stored in buffer by StepRunner)
+                    # StepLauncher will read serving overrides and create effective config
                     orchestrator.run_step(step_cfg)
+
             finally:
                 orchestrator._cleanup_run()
-                # Clear tap to avoid memory leaks between requests
+                # Clear buffer/tap/overrides to avoid memory leaks between requests
                 if tracking_disabled:
+                    serving_buffer.clear_request_buffer()
+                    serving_overrides.clear_serving_overrides()
+                else:
                     orchestrator_utils.tap_clear()
 
-            # Build response with actual pipeline outputs
-            outputs = self._build_pipeline_response(tracking_disabled)
+                # Restore original capture default environment variable
+                if original_capture_default is None:
+                    os.environ.pop("ZENML_SERVING_CAPTURE_DEFAULT", None)
+                else:
+                    os.environ["ZENML_SERVING_CAPTURE_DEFAULT"] = (
+                        original_capture_default
+                    )
+
+            # Extract return contract and build response
+            return_contract = orchestrator_utils.extract_return_contract(
+                getattr(
+                    getattr(deployment.pipeline_configuration, "spec", None),
+                    "source",
+                    None,
+                )
+            )
+            try:
+                logger.debug(
+                    f"[serve-nocapture] response assembly: buffer keys={list(serving_buffer.get_all_outputs().keys())}"
+                )
+            except Exception:
+                pass
+            outputs = self._build_pipeline_response(
+                tracking_disabled, return_contract
+            )
 
             execution_time = time.time() - start
             self._update_execution_stats(True, execution_time)
