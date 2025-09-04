@@ -226,10 +226,19 @@ class StepLauncher:
             BaseException: If the step preparation or execution fails.
         """
         publish_utils.step_exception_info.set(None)
+        # Determine tracking toggle purely from pipeline settings
+        tracking_disabled = orchestrator_utils.is_tracking_disabled(
+            self._deployment.pipeline_configuration.settings
+            if self._deployment.pipeline_configuration.settings
+            else None
+        )
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
         # Enable or disable step logs storage
-        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
+        if (
+            handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False)
+            or tracking_disabled
+        ):
             step_logging_enabled = False
         else:
             step_logging_enabled = orchestrator_utils.is_setting_enabled(
@@ -240,7 +249,7 @@ class StepLauncher:
         logs_context = nullcontext()
         logs_model = None
 
-        if step_logging_enabled:
+        if step_logging_enabled and not tracking_disabled:
             # Configure the logs
             logs_uri = step_logging.prepare_logs_uri(
                 artifact_store=self._stack.artifact_store,
@@ -257,8 +266,22 @@ class StepLauncher:
                 artifact_store_id=self._stack.artifact_store.id,
             )
 
+        # In no-capture, disable caching to minimize DB lookups
+        original_step_cache = self._step.config.enable_cache
+        original_pipeline_cache = (
+            self._deployment.pipeline_configuration.enable_cache
+        )
+        if tracking_disabled:
+            try:
+                self._step.config.enable_cache = False
+            except Exception:
+                pass
+            try:
+                self._deployment.pipeline_configuration.enable_cache = False
+            except Exception:
+                pass
         with logs_context:
-            if run_was_created:
+            if run_was_created and not tracking_disabled:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
                     run_id=pipeline_run.id
                 )
@@ -282,7 +305,11 @@ class StepLauncher:
             step_run_request.logs = logs_model
 
             try:
-                request_factory.populate_request(request=step_run_request)
+                if not tracking_disabled:
+                    # Only populate in full tracking mode to avoid unnecessary DB IO
+                    request_factory.populate_request(request=step_run_request)
+                # In no-capture: skip populate_request entirely for max speed
+                # Our tap mechanism uses step.spec.inputs directly
             except BaseException as e:
                 logger.exception(f"Failed preparing step `{self._step_name}`.")
                 step_run_request.status = ExecutionStatus.FAILED
@@ -292,12 +319,41 @@ class StepLauncher:
                 )
                 raise
             finally:
-                step_run = Client().zen_store.create_run_step(step_run_request)
-                self._step_run = step_run
-                if model_version := step_run.model_version:
-                    step_run_utils.log_model_version_dashboard_url(
-                        model_version=model_version
+                if tracking_disabled:
+                    # Skip creating step runs in no-capture to minimize DB writes
+                    # Create a minimal stand-in that preserves input structure for tap mechanism
+                    from uuid import uuid4
+
+                    from zenml.models import StepRunResponse
+
+                    step_run = StepRunResponse(
+                        id=uuid4(),  # Use unique ID to avoid conflicts
+                        name=self._step_name,
+                        pipeline_run_id=pipeline_run.id,
+                        project_id=pipeline_run.project_id,
+                        status=ExecutionStatus.RUNNING,
+                        start_time=utc_now(),
+                        inputs={},  # Empty since we skip populate_request in no-capture
+                        outputs={},
+                        logs=None,
+                        docstring=None,
+                        source_code=None,
+                        cache_key=None,  # No cache key needed in no-capture
+                        original_step_run_id=None,
+                        exception_info=None,
+                        execution_id=None,
+                        model_version=None,
                     )
+                    self._step_run = step_run
+                else:
+                    step_run = Client().zen_store.create_run_step(
+                        step_run_request
+                    )
+                    self._step_run = step_run
+                    if model_version := step_run.model_version:
+                        step_run_utils.log_model_version_dashboard_url(
+                            model_version=model_version
+                        )
 
             if not step_run.status.is_finished:
                 logger.info(f"Step `{self._step_name}` has started.")
@@ -332,20 +388,34 @@ class StepLauncher:
                         self._step_name,
                         e,
                     )
-                    publish_utils.publish_failed_step_run(step_run.id)
+                    if not tracking_disabled:
+                        publish_utils.publish_failed_step_run(step_run.id)
                     raise
             else:
                 logger.info(
                     f"Using cached version of step `{self._step_name}`."
                 )
-                if (
-                    model_version := step_run.model_version
-                    or pipeline_run.model_version
-                ):
-                    step_run_utils.link_output_artifacts_to_model_version(
-                        artifacts=step_run.outputs,
-                        model_version=model_version,
-                    )
+                if not tracking_disabled:
+                    if (
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
+                    ):
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=step_run.outputs,
+                            model_version=model_version,
+                        )
+
+        # Restore caching flags
+        try:
+            self._step.config.enable_cache = original_step_cache
+        except Exception:
+            pass
+        try:
+            self._deployment.pipeline_configuration.enable_cache = (
+                original_pipeline_cache
+            )
+        except Exception:
+            pass
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.

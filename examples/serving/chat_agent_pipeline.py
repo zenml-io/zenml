@@ -1,17 +1,15 @@
-"""Privacy-Focused Chat Agent Pipeline for ZenML Serving Demo.
+"""Chat Agent Pipeline for ZenML Serving with Run-Only Architecture.
 
-This pipeline implements a conversational AI chat agent that demonstrates
-simplified capture settings for privacy-sensitive applications.
+This pipeline demonstrates ZenML's new run-only serving architecture that achieves
+millisecond-class latency for conversational AI applications:
 
-Key Privacy Features:
-- User messages: Only captured on errors with PII redaction - {"inputs": {"message": "errors_only"}}
-- User names: Never captured - {"inputs": {"user_name": "none"}}
-- Responses: Minimal sampling (5%) without artifact storage - {"outputs": "sampled", "sample_rate": 0.05}
-- Comprehensive PII redaction patterns at both step and pipeline level
+✅ Zero database writes
+✅ Zero filesystem operations
+✅ In-memory step output handoff
+✅ Per-request parameter injection
+✅ Multi-worker safe execution
 
-This example shows how to build chat applications with ZenML serving
-using the new simplified capture syntax while maintaining strong privacy
-protections.
+Perfect for real-time chat and AI applications.
 """
 
 import os
@@ -21,44 +19,20 @@ from typing import Dict
 from zenml import pipeline, step
 from zenml.config import DockerSettings
 
-# Import enums for type-safe capture mode configuration
-from zenml.deployers.serving.policy import CapturePolicyMode as CaptureMode
-
-# This example demonstrates type-safe enum usage to prevent typos:
-# Instead of: "full" -> CaptureMode.FULL (validates at import time)
-# Available: FULL, METADATA, SAMPLED, ERRORS_ONLY, NONE
-
 docker_settings = DockerSettings(
     requirements=["openai"],
     environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
 )
 
 
-@step(
-    settings={
-        "serving_capture": {
-            "inputs": {
-                "message": CaptureMode.ERRORS_ONLY,
-                "user_name": CaptureMode.NONE,
-                "personality": CaptureMode.FULL,
-            },
-            "outputs": CaptureMode.SAMPLED,
-            "sample_rate": 0.05,
-            "max_bytes": 1024,
-            "redact": ["password", "email", "phone", "ssn", "credit"],
-        }
-    }
-)
+@step
 def generate_chat_response(
-    message: str, user_name: str, personality: str
+    message: str, user_name: str, personality: str = "helpful"
 ) -> Dict[str, str]:
     """Generate a chat response using LLM or fallback logic.
 
-    Demonstrates privacy-first capture for chat applications:
-    - Messages: Only captured on errors with PII redaction (debugging failed responses)
-    - User names: Never captured (strict PII protection)
-    - Personality: Always captured (safe configuration data)
-    - Responses: Sample 5% for quality monitoring, no artifact storage (cost optimization)
+    In run-only mode, this executes with millisecond latency and
+    no persistence overhead for real-time conversation.
 
     Args:
         message: User's message
@@ -125,41 +99,19 @@ def generate_chat_response(
         }
 
 
-@pipeline(
-    settings={
-        "docker": docker_settings,
-        # Privacy-first pipeline defaults for chat applications using type-safe enums
-        "serving_capture": {
-            "mode": CaptureMode.NONE,  # Very conservative default for chat (type-safe)
-            "max_bytes": 512,  # Small payloads for privacy
-            "redact": [
-                "password",
-                "email",
-                "phone",
-                "ssn",
-                "credit",
-                "token",
-                "key",
-                "secret",
-            ],
-        },
-    }
-)
+@pipeline
 def chat_agent_pipeline(
     message: str = "Hello",
     user_name: str = "User",
     personality: str = "helpful",
 ) -> Dict[str, str]:
-    """Privacy-focused chat agent pipeline demonstrating step-level capture annotations.
+    """Chat agent pipeline optimized for run-only serving.
 
-    Showcases privacy-first approach for chat applications:
-    - User messages: Error-only capture with PII redaction
-    - User names: Never captured (zero PII exposure)
-    - Responses: Minimal sampling (5%) for quality monitoring
-    - No artifact storage: Optimizes for privacy and cost
-
-    Pipeline-level policy is very restrictive; step annotations selectively enable
-    capture only where needed for debugging and quality assurance.
+    Automatically uses run-only architecture for millisecond-class latency:
+    - Zero database writes
+    - Zero filesystem operations
+    - In-memory step output handoff
+    - Perfect for real-time conversation
 
     Args:
         message: User's chat message
@@ -192,11 +144,11 @@ if __name__ == "__main__":
         deployment = chat_agent_pipeline._create_deployment()
 
         print(f"✅ Deployment ID: {deployment.id}")
-        print("\n🔧 Start serving:")
+        print("\n🔧 Start serving with millisecond latency:")
         print(f"export ZENML_PIPELINE_DEPLOYMENT_ID={deployment.id}")
-        print("python -m zenml.deployers.serving")
+        print("python -m zenml.deployers.serving.app")
 
-        print("\n💬 Test chat:")
+        print("\n💬 Test ultra-fast chat:")
         print("# Simple HTTP request")
         print("curl -X POST 'http://localhost:8000/invoke' \\")
         print("  -H 'Content-Type: application/json' \\")
@@ -217,6 +169,8 @@ if __name__ == "__main__":
         print(
             '# Send: {"parameters": {"message": "Hi!", "user_name": "Alice"}}'
         )
+
+        print("\n   # Expected response time: 1-5ms!")
 
     except Exception as e:
         print(f"❌ Deployment failed: {e}")

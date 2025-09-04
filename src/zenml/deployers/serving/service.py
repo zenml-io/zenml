@@ -11,37 +11,28 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Core pipeline serving service implementation."""
+"""Core pipeline serving service implementation.
+
+This service defers all execution responsibilities to the orchestrator
+configured in the deployment stack. It only resolves request parameters,
+applies them to the loaded deployment, and triggers the orchestrator.
+"""
 
 import asyncio
-import os
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncGenerator, Dict, Optional, Union
-from uuid import UUID
+from typing import Any, AsyncGenerator, Dict, List, Optional
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 from zenml.client import Client
-from zenml.deployers.serving.concurrency import (
-    TooManyRequestsError,
-)
-from zenml.deployers.serving.direct_execution import DirectExecutionEngine
-from zenml.deployers.serving.events import (
-    EventType,
-    ServingEvent,
-    create_event_builder,
-)
-from zenml.deployers.serving.jobs import (
-    JobStatus,
-)
-from zenml.deployers.serving.policy import (
-    get_endpoint_default_policy,
-    resolve_effective_policy,
-    should_create_runs,
-)
-from zenml.deployers.serving.tracking import TrackingManager
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
+from zenml.orchestrators import utils as orchestrator_utils
+from zenml.orchestrators.topsort import topsorted_layers
+from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -116,6 +107,23 @@ class PipelineServingService:
 
             # Extract parameter schema for validation
             self.parameter_schema = self._extract_parameter_schema()
+
+            # Default serving to no-capture unless explicitly set
+            try:
+                current_settings = (
+                    self.deployment.pipeline_configuration.settings or {}
+                )
+                if "capture" not in current_settings:
+                    # Create new pipeline configuration with updated settings
+                    new_settings = {**current_settings, "capture": "none"}
+                    self.deployment.pipeline_configuration = (
+                        self.deployment.pipeline_configuration.model_copy(
+                            update={"settings": new_settings}
+                        )
+                    )
+            except Exception:
+                # Best-effort only; if settings are immutable or unavailable, continue
+                pass
 
             # Log successful initialization
             pipeline_name = self.deployment.pipeline_configuration.name
@@ -226,195 +234,309 @@ class PipelineServingService:
     def _resolve_parameters(
         self, request_params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Resolve and validate pipeline parameters.
-
-        Parameter resolution priority:
-        1. Request parameters (highest priority)
-        2. Deployment default parameters
-        3. Pipeline function defaults (handled by ZenML)
+        """Resolve pipeline parameters with request overrides.
 
         Args:
             request_params: Parameters provided in the API request
 
         Returns:
-            Dictionary of resolved parameters
-
-        Raises:
-            ValueError: If parameter validation fails
+            Dictionary of resolved parameters (deployment defaults overridden)
         """
-        # TODO: Maybe use FastAPI's parameter validation instead?
-        # Start with deployment defaults
-        deployment_params = {}
+        defaults: Dict[str, Any] = {}
         if self.deployment:
-            deployment_params = (
-                self.deployment.pipeline_configuration.parameters or {}
-            )
+            defaults = self.deployment.pipeline_configuration.parameters or {}
+        resolved = {**defaults, **(request_params or {})}
+        logger.debug(f"Resolved parameters: {list(resolved.keys())}")
+        return resolved
 
-        # Merge with request parameters (request takes priority)
-        resolved_params = {**deployment_params, **request_params}
+    def _apply_parameter_overrides(self, params: Dict[str, Any]) -> None:
+        """Apply parameter overrides to the loaded deployment in-place.
 
-        # TODO: Add parameter validation
-        # We could validate:
-        # 1. Required parameters are present
-        # 2. Parameter types match expected types
-        # 3. Parameter values are within valid ranges
-        # 4. Unknown parameters are flagged
+        - Update `deployment.pipeline_configuration.parameters`
+        - For each step, override matching keys in `step.config.parameters`
+        """
+        if not self.deployment:
+            return
 
-        # Log parameter keys only to avoid PII exposure in debug logs
-        logger.debug(f"Resolved parameters: {list(resolved_params.keys())}")
-        return resolved_params
+        # Update pipeline-level parameters using model_copy
+        pipeline_conf = self.deployment.pipeline_configuration
+        new_parameters = {
+            **(pipeline_conf.parameters or {}),
+            **params,
+        }
+        self.deployment.pipeline_configuration = pipeline_conf.model_copy(
+            update={"parameters": new_parameters}
+        )
+
+        # Propagate overrides into step parameters when keys match
+        for step_cfg in self.deployment.step_configurations.values():
+            step_params = step_cfg.config.parameters or {}
+            updated = False
+            for k, v in params.items():
+                if k in step_params:
+                    step_params[k] = v
+                    updated = True
+            if updated:
+                # Create new step config with updated parameters
+                step_cfg.config = step_cfg.config.model_copy(
+                    update={"parameters": step_params}
+                )
+
+    def _build_pipeline_response(
+        self, tracking_disabled: bool
+    ) -> Dict[str, Any]:
+        """Build the pipeline response with actual outputs.
+
+        Args:
+            tracking_disabled: Whether tracking is disabled
+
+        Returns:
+            Dictionary containing the pipeline outputs
+        """
+        if not self.deployment:
+            return {}
+
+        # Extract return contract from pipeline function
+        pipeline_spec = getattr(
+            self.deployment.pipeline_configuration, "spec", None
+        )
+        pipeline_source = (
+            getattr(pipeline_spec, "source", None) if pipeline_spec else None
+        )
+
+        return_contract = orchestrator_utils.extract_return_contract(
+            pipeline_source
+        )
+
+        if tracking_disabled:
+            # Use tap outputs directly (in-memory)
+            outputs = {}
+            if return_contract:
+                for output_name, step_name in return_contract.items():
+                    step_outputs = orchestrator_utils.tap_get_step_outputs(
+                        step_name
+                    )
+                    if step_outputs:
+                        # For simplicity, take the first output of the step
+                        first_output = next(iter(step_outputs.values()), None)
+                        if first_output is not None:
+                            outputs[output_name] = self._serialize_for_json(
+                                first_output
+                            )
+            else:
+                # Fallback: return all step outputs
+                all_tap_outputs = orchestrator_utils._serve_output_tap.get({})
+                for step_name, step_outputs in all_tap_outputs.items():
+                    for output_name, output_value in step_outputs.items():
+                        outputs[f"{step_name}_{output_name}"] = (
+                            self._serialize_for_json(output_value)
+                        )
+
+            return outputs
+        else:
+            # TODO: For full tracking mode, materialize artifacts and return
+            return {
+                "message": "Full tracking mode outputs not yet implemented"
+            }
+
+    def _serialize_for_json(self, value: Any) -> Any:
+        """Serialize a value for JSON response with proper numpy/pandas handling.
+
+        Args:
+            value: The value to serialize
+
+        Returns:
+            JSON-serializable representation of the value
+        """
+        try:
+            import json
+
+            # Handle common ML types that aren't JSON serializable
+            if hasattr(value, "tolist"):  # numpy arrays, pandas Series
+                return value.tolist()
+            elif hasattr(value, "to_dict"):  # pandas DataFrames
+                return value.to_dict()
+            elif hasattr(value, "__array__"):  # numpy-like arrays
+                import numpy as np
+
+                return np.asarray(value).tolist()
+
+            # Test if it's already JSON serializable
+            json.dumps(value)
+            return value
+        except (TypeError, ValueError, ImportError):
+            # Safe fallback with size limit for large objects
+            str_repr = str(value)
+            if len(str_repr) > 1000:  # Truncate very large objects
+                return f"{str_repr[:1000]}... [truncated, original length: {len(str_repr)}]"
+            return str_repr
 
     async def execute_pipeline(
         self,
         parameters: Dict[str, Any],
         run_name: Optional[str] = None,
         timeout: Optional[int] = 300,
-        capture_override: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Execute pipeline synchronously with given parameters using ExecutionManager.
-
-        Args:
-            parameters: Parameters to pass to pipeline execution
-            run_name: Optional custom name for the pipeline run
-            timeout: Maximum execution time in seconds
-            capture_override: Optional capture policy overrides for tracking
-
-        Returns:
-            Dictionary containing execution results and metadata
-
-        Raises:
-            TooManyRequestsError: If service is overloaded
-        """
+        """Execute pipeline synchronously by invoking BaseOrchestrator.run_step."""
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
 
-        # Get dependencies from container
-        from zenml.deployers.serving.dependencies import get_container
-
-        container = get_container()
-        execution_manager = container.get_execution_manager()
-        job_registry = container.get_job_registry()
-
-        # Create job for tracking
-        job_id = job_registry.create_job(
-            parameters=parameters,
-            run_name=run_name,
-            pipeline_name=self.deployment.pipeline_configuration.name,
-        )
-
-        logger.info(f"Starting pipeline execution: {job_id}")
-        # Log parameter keys only to avoid PII exposure
-        logger.info(f"Parameters: {list(parameters.keys())}")
-
+        start = time.time()
+        logger.info("Starting pipeline execution")
         try:
-            # Update job to running status
-            job_registry.update_job_status(job_id, JobStatus.RUNNING)
-
-            # Resolve parameters
             resolved_params = self._resolve_parameters(parameters)
+            self._apply_parameter_overrides(resolved_params)
 
-            # Execute with the execution manager (handles concurrency and timeout)
-            result = await execution_manager.execute_with_limits(
-                self._execute_pipeline_sync,
-                resolved_params,
-                job_id,
-                capture_override,
-                timeout=timeout,
-            )
+            # Clear tap for fresh request
+            orchestrator_utils.tap_clear()
 
-            # Calculate execution time from job metadata
-            job = job_registry.get_job(job_id)
-            execution_time = (
-                job.execution_time
-                if job and job.execution_time is not None
-                else 0.0
-            )
+            # Build execution order using the production-tested topsort utility
+            deployment = self.deployment
+            steps = deployment.step_configurations
+            node_ids = list(steps.keys())
+            parent_map: Dict[str, List[str]] = {
+                name: [
+                    p for p in steps[name].spec.upstream_steps if p in steps
+                ]
+                for name in node_ids
+            }
+            child_map: Dict[str, List[str]] = {name: [] for name in node_ids}
+            for child, parents in parent_map.items():
+                for p in parents:
+                    child_map[p].append(child)
 
-            # Update statistics
-            self._update_execution_stats(
-                success=True, execution_time=execution_time
+            layers = topsorted_layers(
+                nodes=node_ids,
+                get_node_id_fn=lambda n: n,
+                get_parent_nodes=lambda n: parent_map[n],
+                get_child_nodes=lambda n: child_map[n],
             )
+            order: List[str] = [n for layer in layers for n in layer]
+
+            # In no-capture mode, disable step retries and step operators
+            if orchestrator_utils.is_tracking_disabled(
+                deployment.pipeline_configuration.settings
+            ):
+                for step_cfg in steps.values():
+                    try:
+                        if step_cfg.config.retry is not None:
+                            # Create new retry config with disabled settings
+                            new_retry = step_cfg.config.retry.model_copy(
+                                update={
+                                    "max_retries": 0,
+                                    "delay": 0,
+                                    "backoff": 1,
+                                }
+                            )
+                            step_cfg.config = step_cfg.config.model_copy(
+                                update={"retry": new_retry}
+                            )
+                    except Exception:
+                        pass
+                    try:
+                        # Create new config without step operator
+                        step_cfg.config = step_cfg.config.model_copy(
+                            update={"step_operator": None}
+                        )
+                    except Exception:
+                        pass
+
+            # Use orchestrator.run_step only (no full orchestrator.run)
+            assert deployment.stack is not None
+            stack = Stack.from_model(deployment.stack)
+            orchestrator = stack.orchestrator
+            # Ensure a stable run id for StepLauncher to reuse the same PipelineRun
+            if hasattr(orchestrator, "_orchestrator_run_id"):
+                setattr(orchestrator, "_orchestrator_run_id", str(uuid4()))
+
+            # Prepare, run each step, inject inputs in no-capture, collect outputs, then cleanup
+            orchestrator._prepare_run(deployment=deployment)
+            try:
+                tracking_disabled = orchestrator_utils.is_tracking_disabled(
+                    deployment.pipeline_configuration.settings
+                )
+                for step_name in order:
+                    step_cfg = steps[step_name]
+
+                    # Inject upstream outputs as step parameters for in-memory handoff
+                    if tracking_disabled:
+                        for (
+                            arg_name,
+                            input_spec,
+                        ) in step_cfg.spec.inputs.items():
+                            if (
+                                input_spec.step_name != "pipeline"
+                            ):  # Skip pipeline-level params
+                                upstream_outputs = (
+                                    orchestrator_utils.tap_get_step_outputs(
+                                        input_spec.step_name
+                                    )
+                                )
+                                if (
+                                    upstream_outputs
+                                    and input_spec.output_name
+                                    in upstream_outputs
+                                ):
+                                    # Create new step config with injected parameters
+                                    current_params = (
+                                        step_cfg.config.parameters or {}
+                                    )
+                                    new_params = {
+                                        **current_params,
+                                        arg_name: upstream_outputs[
+                                            input_spec.output_name
+                                        ],
+                                    }
+                                    step_cfg.config = (
+                                        step_cfg.config.model_copy(
+                                            update={"parameters": new_params}
+                                        )
+                                    )
+
+                    orchestrator.run_step(step_cfg)
+            finally:
+                orchestrator._cleanup_run()
+                # Clear tap to avoid memory leaks between requests
+                if tracking_disabled:
+                    orchestrator_utils.tap_clear()
+
+            # Build response with actual pipeline outputs
+            outputs = self._build_pipeline_response(tracking_disabled)
+
+            execution_time = time.time() - start
+            self._update_execution_stats(True, execution_time)
             self.last_execution_time = datetime.now(timezone.utc)
-
-            logger.info(
-                f"✅ Pipeline execution completed in {execution_time:.2f}s"
-            )
-
             return {
                 "success": True,
-                "job_id": job_id,
-                "run_id": result.get("run_id"),
-                "results": result.get("output"),
+                "outputs": outputs,
                 "execution_time": execution_time,
                 "metadata": {
-                    "pipeline_name": result.get("pipeline_name"),
-                    "steps_executed": result.get("steps_executed", 0),
+                    "pipeline_name": self.deployment.pipeline_configuration.name,
                     "parameters_used": resolved_params,
-                    "job_id": job_id,
-                    "deployment_id": result.get("deployment_id"),
-                    "step_results": result.get("step_results", {}),
-                    "debug": result.get("debug", {}),
+                    "deployment_id": str(self.deployment.id),
+                    "steps_executed": len(order),
                 },
             }
-
-        except TooManyRequestsError:
-            # Clean up job
-            job_registry.update_job_status(
-                job_id, JobStatus.FAILED, error="Service overloaded"
-            )
-            raise
-
         except asyncio.TimeoutError:
-            # Update job and stats
-            execution_time = time.time() - (
-                job.created_at.timestamp() if job else time.time()
-            )
-            job_registry.update_job_status(
-                job_id,
-                JobStatus.FAILED,
-                error=f"Pipeline execution timed out after {timeout}s",
-                execution_time=execution_time,
-            )
-            self._update_execution_stats(
-                success=False, execution_time=execution_time
-            )
-
-            error_msg = f"Pipeline execution timed out after {timeout}s"
-            logger.error(f"❌ {error_msg}")
-
+            execution_time = time.time() - start
+            self._update_execution_stats(False, execution_time)
             return {
                 "success": False,
-                "job_id": job_id,
-                "error": error_msg,
+                "job_id": None,
+                "error": f"Pipeline execution timed out after {timeout}s",
                 "execution_time": execution_time,
-                "metadata": {"job_id": job_id},
+                "metadata": {},
             }
-
-        except Exception as e:
-            # Update job and stats
-            job = job_registry.get_job(job_id)
-            execution_time = time.time() - (
-                job.created_at.timestamp() if job else time.time()
-            )
-            job_registry.update_job_status(
-                job_id,
-                JobStatus.FAILED,
-                error=str(e),
-                execution_time=execution_time,
-            )
-            self._update_execution_stats(
-                success=False, execution_time=execution_time
-            )
-
-            error_msg = f"Pipeline execution failed: {str(e)}"
-            logger.error(f"❌ {error_msg}")
-
+        except Exception as e:  # noqa: BLE001
+            execution_time = time.time() - start
+            self._update_execution_stats(False, execution_time)
+            logger.error(f"❌ Pipeline execution failed: {e}")
             return {
                 "success": False,
-                "job_id": job_id,
-                "error": error_msg,
+                "job_id": None,
+                "error": str(e),
                 "execution_time": execution_time,
-                "metadata": {"job_id": job_id},
+                "metadata": {},
             }
 
     async def submit_pipeline(
@@ -422,541 +544,70 @@ class PipelineServingService:
         parameters: Dict[str, Any],
         run_name: Optional[str] = None,
         timeout: Optional[int] = 600,
-        capture_override: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Submit pipeline for asynchronous execution without blocking.
-
-        This method starts pipeline execution in the background and returns
-        immediately with job information for polling or streaming.
-
-        Args:
-            parameters: Parameters to pass to pipeline execution
-            run_name: Optional custom name for the pipeline run
-            timeout: Maximum execution time in seconds
-            capture_override: Optional capture policy overrides for tracking
-
-        Returns:
-            Dictionary containing job information for tracking
-
-        Raises:
-            TooManyRequestsError: If service is overloaded
-        """
+        """Submit pipeline for asynchronous execution using the orchestrator."""
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
 
-        # Get dependencies from container
-        from zenml.deployers.serving.dependencies import get_container
+        resolved_params = self._resolve_parameters(parameters)
 
-        container = get_container()
-        execution_manager = container.get_execution_manager()
-        job_registry = container.get_job_registry()
-
-        # Create job for tracking
-        job_id = job_registry.create_job(
-            parameters=parameters,
-            run_name=run_name,
-            pipeline_name=self.deployment.pipeline_configuration.name,
-        )
-
-        logger.info(f"Submitting pipeline for async execution: {job_id}")
-        # Log parameter keys only to avoid PII exposure
-        logger.info(f"Parameters: {list(parameters.keys())}")
-
-        try:
-            # Resolve parameters
-            resolved_params = self._resolve_parameters(parameters)
-
-            # Start execution in background without waiting
-            async def background_execution() -> None:
-                try:
-                    # Update job to running status
-                    job_registry.update_job_status(job_id, JobStatus.RUNNING)
-
-                    # Execute with the execution manager (handles concurrency and timeout)
-                    await execution_manager.execute_with_limits(
-                        self._execute_pipeline_sync,
-                        resolved_params,
-                        job_id,
-                        capture_override,
-                        timeout=timeout,
-                    )
-
-                    logger.info(
-                        f"✅ Async pipeline execution completed: {job_id}"
-                    )
-
-                except TooManyRequestsError:
-                    job_registry.update_job_status(
-                        job_id, JobStatus.FAILED, error="Service overloaded"
-                    )
-                    logger.error(
-                        f"❌ Async execution failed - overloaded: {job_id}"
-                    )
-
-                except asyncio.TimeoutError:
-                    job_registry.update_job_status(
-                        job_id,
-                        JobStatus.FAILED,
-                        error=f"Pipeline execution timed out after {timeout}s",
-                    )
-                    logger.error(f"❌ Async execution timed out: {job_id}")
-
-                except Exception as e:
-                    job_registry.update_job_status(
-                        job_id, JobStatus.FAILED, error=str(e)
-                    )
-                    logger.error(
-                        f"❌ Async execution failed: {job_id} - {str(e)}"
-                    )
-
-            # Start background task (fire and forget)
-            asyncio.create_task(background_execution())
-
-            return {
-                "success": True,
-                "job_id": job_id,
-                "message": "Pipeline execution submitted successfully",
-                "status": "submitted",
-                "metadata": {
-                    "job_id": job_id,
-                    "pipeline_name": self.deployment.pipeline_configuration.name,
-                    "parameters_used": resolved_params,
-                    "deployment_id": self.deployment_id,
-                    "poll_url": f"/jobs/{job_id}",
-                    "stream_url": f"/stream/{job_id}",
-                    "estimated_timeout": timeout,
-                },
-            }
-
-        except Exception as e:
-            # Update job as failed and clean up
-            job_registry.update_job_status(
-                job_id, JobStatus.FAILED, error=str(e)
-            )
-
-            error_msg = f"Failed to submit pipeline execution: {str(e)}"
-            logger.error(f"❌ {error_msg}")
-
-            return {
-                "success": False,
-                "job_id": job_id,
-                "error": error_msg,
-                "metadata": {"job_id": job_id},
-            }
-
-    def _execute_pipeline_sync(
-        self,
-        resolved_params: Dict[str, Any],
-        job_id: str,
-        capture_override: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """Execute pipeline synchronously using DirectExecutionEngine.
-
-        This method is called by the execution manager in a worker thread.
-
-        Args:
-            resolved_params: Resolved pipeline parameters
-            job_id: Job ID for tracking
-            capture_override: Optional capture policy overrides for tracking
-
-        Returns:
-            Pipeline execution results
-        """
-        start_time = time.time()
-
-        # Guard against None deployment
-        if self.deployment is None:
-            raise RuntimeError("Service not properly initialized")
-        deployment = self.deployment  # Local var for type narrowing
-
-        try:
-            # Get dependencies from container
-            from zenml.deployers.serving.dependencies import get_container
-
-            container = get_container()
-            job_registry = container.get_job_registry()
-            stream_manager = container.get_stream_manager()
-
-            # Setup tracking manager if enabled
-            tracking_manager = None
-            pipeline_per_value_overrides: Dict[
-                str, Union[str, Dict[str, str]]
-            ] = {}
-            # Always resolve policy first, then apply global off-switch
+        async def _background() -> None:
             try:
-                from zenml.utils.settings_utils import (
-                    get_pipeline_serving_capture_settings,
+                await self.execute_pipeline(
+                    parameters=resolved_params,
+                    run_name=run_name,
+                    timeout=timeout,
                 )
+            except Exception as e:  # noqa: BLE001
+                logger.error(f"Background execution failed: {e}")
 
-                # Extract pipeline-level capture settings using normalization
-                code_override: Optional[Dict[str, Any]] = None
-                pipeline_capture_settings = None
-                if deployment.pipeline_configuration.settings:
-                    pipeline_capture_settings = (
-                        get_pipeline_serving_capture_settings(
-                            deployment.pipeline_configuration.settings
-                        )
-                    )
-
-                    if pipeline_capture_settings:
-                        # Convert to legacy format for policy resolution (backward compatibility)
-                        code_override = {}
-                        if (
-                            pipeline_capture_settings.mode != "full"
-                        ):  # Only set if different from default
-                            code_override["mode"] = (
-                                pipeline_capture_settings.mode
-                            )
-                        if pipeline_capture_settings.sample_rate is not None:
-                            code_override["sample_rate"] = (
-                                pipeline_capture_settings.sample_rate
-                            )
-                        if pipeline_capture_settings.max_bytes is not None:
-                            code_override["max_bytes"] = (
-                                pipeline_capture_settings.max_bytes
-                            )
-                        if pipeline_capture_settings.redact is not None:
-                            code_override["redact"] = (
-                                pipeline_capture_settings.redact
-                            )
-                        if (
-                            pipeline_capture_settings.retention_days
-                            is not None
-                        ):
-                            code_override["retention_days"] = (
-                                pipeline_capture_settings.retention_days
-                            )
-
-                        # Extract per-value overrides for later use
-                        if pipeline_capture_settings.inputs:
-                            pipeline_per_value_overrides["inputs"] = dict(
-                                pipeline_capture_settings.inputs
-                            )
-                        if pipeline_capture_settings.outputs:
-                            if isinstance(
-                                pipeline_capture_settings.outputs, str
-                            ):
-                                pipeline_per_value_overrides["outputs"] = (
-                                    pipeline_capture_settings.outputs
-                                )
-                            else:
-                                pipeline_per_value_overrides["outputs"] = dict(
-                                    pipeline_capture_settings.outputs
-                                )
-
-                    # Fallback: check legacy format if no new format found
-                    if (
-                        not pipeline_capture_settings
-                        and "serving"
-                        in deployment.pipeline_configuration.settings
-                    ):
-                        serving_settings = (
-                            deployment.pipeline_configuration.settings[
-                                "serving"
-                            ]
-                        )
-                        if (
-                            isinstance(serving_settings, dict)
-                            and "capture" in serving_settings
-                        ):
-                            code_override = serving_settings["capture"]
-
-                # Resolve effective capture policy with all override levels
-                endpoint_default = get_endpoint_default_policy()
-                effective_policy = resolve_effective_policy(
-                    endpoint_default=endpoint_default,
-                    request_override=capture_override,
-                    code_override=code_override,
-                )
-
-                # Apply global off-switch (ops safeguard)
-                if (
-                    os.getenv("ZENML_SERVING_CREATE_RUNS", "true").lower()
-                    == "false"
-                ):
-                    from zenml.deployers.serving.policy import (
-                        ArtifactCaptureMode,
-                        CapturePolicy,
-                        CapturePolicyMode,
-                    )
-
-                    # Create new policy instead of mutating in place
-                    effective_policy = CapturePolicy(
-                        mode=CapturePolicyMode.NONE,
-                        artifacts=ArtifactCaptureMode.NONE,
-                        sample_rate=effective_policy.sample_rate,
-                        max_bytes=effective_policy.max_bytes,
-                        redact=effective_policy.redact,
-                        retention_days=effective_policy.retention_days,
-                    )
-
-                if should_create_runs(effective_policy):
-                    tracking_manager = TrackingManager(
-                        deployment=deployment,
-                        policy=effective_policy,
-                        create_runs=True,
-                        invocation_id=job_id,
-                    )
-
-                    # Set pipeline-level per-value overrides if present
-                    if pipeline_per_value_overrides:
-                        tracking_manager.set_pipeline_capture_overrides(
-                            pipeline_per_value_overrides
-                        )
-
-                    # Start pipeline tracking
-                    run_id = tracking_manager.start_pipeline(
-                        run_name=None,  # Will be auto-generated
-                        params=resolved_params,
-                    )
-                    if run_id:
-                        logger.info(f"Pipeline run tracking started: {run_id}")
-            except Exception as e:
-                logger.warning(f"Failed to initialize tracking manager: {e}")
-                tracking_manager = None
-
-            # Create combined event callback - no async operations in worker thread!
-            def event_callback(event: ServingEvent) -> None:
-                # Send to stream manager
-                if stream_manager:
-                    try:
-                        stream_manager.send_event_threadsafe(event)
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to send event from worker thread: {e}"
-                        )
-                else:
-                    logger.warning(
-                        "Stream manager not available for event sending"
-                    )
-
-                # Send to tracking manager
-                if tracking_manager:
-                    try:
-                        tracking_manager.handle_event(event)
-                    except Exception as e:
-                        logger.warning(f"Failed to handle tracking event: {e}")
-
-            # Create result callback for raw step outputs
-            def result_callback(
-                step_name: str, output: Any, success: bool
-            ) -> None:
-                if tracking_manager:
-                    try:
-                        # Get step config for better materializer resolution
-                        step_config = deployment.step_configurations.get(
-                            step_name
-                        )
-                        tracking_manager.handle_step_result(
-                            step_name, output, success, step_config
-                        )
-                    except Exception as e:
-                        logger.warning(f"Failed to handle step result: {e}")
-
-            # Get job for cancellation token using sync method
-            job = job_registry.get_job(job_id)
-            cancellation_token = job.cancellation_token if job else None
-
-            # Create direct execution engine
-            engine = DirectExecutionEngine(
-                deployment=deployment,
-                event_callback=event_callback,
-                result_callback=result_callback,
-                cancellation_token=cancellation_token,
-            )
-
-            # Get step capture overrides from engine for TrackingManager
-            if tracking_manager:
-                step_capture_overrides = engine.get_step_capture_overrides()
-                tracking_manager.set_step_capture_overrides(
-                    step_capture_overrides
-                )
-
-                # Get step mode overrides from engine for TrackingManager
-                step_mode_overrides = engine.get_step_mode_overrides()
-                tracking_manager.set_step_mode_overrides(step_mode_overrides)
-
-            # Execute pipeline
-            result = engine.execute(resolved_params, job_id=job_id)
-
-            execution_time = time.time() - start_time
-
-            # Complete pipeline tracking if enabled
-            if tracking_manager:
-                try:
-                    tracking_manager.complete_pipeline(
-                        success=True,
-                        execution_time=execution_time,
-                        steps_executed=len(engine._execution_order),
-                        results=result,
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to complete pipeline tracking: {e}"
-                    )
-
-            # Update job as completed using sync method - no async operations in worker thread!
-            job_registry.update_job_status(
-                job_id,
-                JobStatus.COMPLETED,
-                result=result,
-                execution_time=execution_time,
-                steps_executed=len(engine._execution_order),
-            )
-
-            return {
-                "output": result,
+        asyncio.create_task(_background())
+        return {
+            "success": True,
+            "job_id": None,
+            "message": "Pipeline execution submitted successfully",
+            "status": "submitted",
+            "metadata": {
+                "job_id": None,
                 "pipeline_name": self.deployment.pipeline_configuration.name,
-                "steps_executed": len(engine._execution_order),
-                "job_id": job_id,
+                "parameters_used": resolved_params,
                 "deployment_id": self.deployment_id,
-                "run_id": str(tracking_manager.pipeline_run.id)
-                if tracking_manager and tracking_manager.pipeline_run
-                else None,
-                "step_results": {},  # Could be enhanced to track individual step results
-                "debug": {},
-            }
+            },
+        }
 
-        except asyncio.CancelledError:
-            execution_time = time.time() - start_time
+    # No direct execution engine here; we rely on the orchestrator
 
-            # Complete pipeline tracking if enabled
-            if tracking_manager:
-                try:
-                    tracking_manager.complete_pipeline(
-                        success=False,
-                        error="Execution was cancelled",
-                        execution_time=execution_time,
-                        steps_executed=len(tracking_manager.step_runs)
-                        if hasattr(tracking_manager, "step_runs")
-                        else 0,
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to complete pipeline tracking on cancellation: {e}"
-                    )
-
-            # Use sync method - no async operations in worker thread!
-            job_registry.update_job_status(
-                job_id,
-                JobStatus.CANCELED,
-                error="Execution was cancelled",
-                execution_time=execution_time,
-            )
-            raise
-
-        except Exception as e:
-            execution_time = time.time() - start_time
-
-            # Complete pipeline tracking if enabled
-            if tracking_manager:
-                try:
-                    tracking_manager.complete_pipeline(
-                        success=False,
-                        error=str(e),
-                        execution_time=execution_time,
-                        steps_executed=len(tracking_manager.step_runs)
-                        if hasattr(tracking_manager, "step_runs")
-                        else 0,
-                    )
-                except Exception as track_e:
-                    logger.warning(
-                        f"Failed to complete pipeline tracking on error: {track_e}"
-                    )
-
-            # Use sync method - no async operations in worker thread!
-            job_registry.update_job_status(
-                job_id,
-                JobStatus.FAILED,
-                error=str(e),
-                execution_time=execution_time,
-            )
-            raise
-
-        finally:
-            # No cleanup needed for thread-safe sync implementation
-            pass
+    class _SimpleEvent(BaseModel):
+        event: str = Field(description="Event type")
+        message: Optional[str] = None
+        timestamp: str = Field(
+            default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        )
 
     async def execute_pipeline_streaming(
         self, parameters: Dict[str, Any], run_name: Optional[str] = None
-    ) -> AsyncGenerator[ServingEvent, None]:
-        """Execute pipeline with true streaming updates.
-
-        Args:
-            parameters: Parameters to pass to pipeline execution
-            run_name: Optional custom name for the pipeline run
-
-        Yields:
-            ServingEvent objects with real-time execution updates
-        """
+    ) -> AsyncGenerator[_SimpleEvent, None]:
+        """Execute pipeline with minimal streaming updates."""
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
 
-        # Get dependencies from container
-        from zenml.deployers.serving.dependencies import get_container
-
-        container = get_container()
-        execution_manager = container.get_execution_manager()
-        job_registry = container.get_job_registry()
-        stream_manager = container.get_stream_manager()
-
-        # Create job for tracking
-        job_id = job_registry.create_job(
-            parameters=parameters,
-            run_name=run_name,
-            pipeline_name=self.deployment.pipeline_configuration.name,
+        yield self._SimpleEvent(
+            event="pipeline_started", message="Execution started"
         )
-
-        logger.info(f"Starting streaming pipeline execution: {job_id}")
-
         try:
-            # Start the execution in background
-            execution_task = asyncio.create_task(
-                execution_manager.execute_with_limits(
-                    self._execute_pipeline_sync,
-                    self._resolve_parameters(parameters),
-                    job_id,
-                    timeout=600,  # Longer timeout for streaming
+            result = await self.execute_pipeline(
+                parameters=parameters, run_name=run_name
+            )
+            if result.get("success"):
+                yield self._SimpleEvent(
+                    event="pipeline_completed", message="Execution completed"
                 )
-            )
-
-            # Subscribe to events for this job
-            async for event in stream_manager.subscribe_to_job(job_id):
-                yield event
-
-                # If we get a pipeline completed, failed, or canceled event, we can stop
-                if event.event_type in [
-                    EventType.PIPELINE_COMPLETED,
-                    EventType.PIPELINE_FAILED,
-                    EventType.CANCELLATION_REQUESTED,
-                ]:
-                    break
-
-            # Wait for execution to complete and handle any remaining cleanup
-            try:
-                await execution_task
-            except Exception as e:
-                logger.error(f"Background execution failed: {e}")
-                # Error should have been captured in events already
-
-        except TooManyRequestsError:
-            # Send overload event
-            event_builder = create_event_builder(job_id)
-            error_event = event_builder.error(
-                "Service overloaded - too many concurrent requests"
-            )
-            yield error_event
-
-        except Exception as e:
-            logger.error(f"❌ Streaming execution failed: {str(e)}")
-            # Send error event
-            event_builder = create_event_builder(job_id)
-            error_event = event_builder.error(str(e))
-            yield error_event
-
-        finally:
-            # Close the stream for this job
-            await stream_manager.close_stream(job_id)
+            else:
+                yield self._SimpleEvent(
+                    event="pipeline_failed", message=result.get("error")
+                )
+        except Exception as e:  # noqa: BLE001
+            yield self._SimpleEvent(event="pipeline_failed", message=str(e))
 
     def _update_execution_stats(
         self, success: bool, execution_time: float

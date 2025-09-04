@@ -54,6 +54,7 @@ from zenml.orchestrators.publish_utils import (
 )
 from zenml.orchestrators.utils import (
     is_setting_enabled,
+    is_tracking_disabled,
 )
 from zenml.steps.step_context import StepContext, get_step_context
 from zenml.steps.utils import (
@@ -140,7 +141,18 @@ class StepRunner:
             )
 
         logs_context = nullcontext()
-        if step_logging_enabled and not redirected.get():
+        # Resolve tracking toggle once for the step context
+        tracking_disabled = is_tracking_disabled(
+            step_run_info.pipeline.settings
+            if hasattr(step_run_info, "pipeline") and step_run_info.pipeline
+            else None
+        )
+
+        if (
+            step_logging_enabled
+            and not redirected.get()
+            and not tracking_disabled
+        ):
             if step_run.logs:
                 logs_context = PipelineLogsStorageContext(  # type: ignore[assignment]
                     logs_uri=step_run.logs.uri,
@@ -231,13 +243,14 @@ class StepRunner:
                 raise
             finally:
                 try:
-                    step_run_metadata = self._stack.get_step_run_metadata(
-                        info=step_run_info,
-                    )
-                    publish_step_run_metadata(
-                        step_run_id=step_run_info.step_run_id,
-                        step_run_metadata=step_run_metadata,
-                    )
+                    if not tracking_disabled:
+                        step_run_metadata = self._stack.get_step_run_metadata(
+                            info=step_run_info,
+                        )
+                        publish_step_run_metadata(
+                            step_run_id=step_run_info.step_run_id,
+                            step_run_metadata=step_run_metadata,
+                        )
                     self._stack.cleanup_step_run(
                         info=step_run_info, step_failed=step_failed
                     )
@@ -252,26 +265,39 @@ class StepRunner:
                                 step_exception=None,
                             )
 
-                        # Store and publish the output artifacts of the step function.
+                        # Store and publish outputs only if tracking enabled
                         output_data = self._validate_outputs(
                             return_values, output_annotations
                         )
-                        artifact_metadata_enabled = is_setting_enabled(
-                            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-                        )
-                        artifact_visualization_enabled = is_setting_enabled(
-                            is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
-                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
-                        )
-                        output_artifacts = self._store_output_artifacts(
-                            output_data=output_data,
-                            output_artifact_uris=output_artifact_uris,
-                            output_materializers=output_materializers,
-                            output_annotations=output_annotations,
-                            artifact_metadata_enabled=artifact_metadata_enabled,
-                            artifact_visualization_enabled=artifact_visualization_enabled,
-                        )
+
+                        # For serve mode, store outputs in tap for in-memory handoff
+                        if tracking_disabled:
+                            from zenml.orchestrators.utils import (
+                                tap_store_step_outputs,
+                            )
+
+                            tap_store_step_outputs(
+                                step_run_info.config.name, output_data
+                            )
+
+                        output_artifacts = {}
+                        if not tracking_disabled:
+                            artifact_metadata_enabled = is_setting_enabled(
+                                is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                            )
+                            artifact_visualization_enabled = is_setting_enabled(
+                                is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                            )
+                            output_artifacts = self._store_output_artifacts(
+                                output_data=output_data,
+                                output_artifact_uris=output_artifact_uris,
+                                output_materializers=output_materializers,
+                                output_annotations=output_annotations,
+                                artifact_metadata_enabled=artifact_metadata_enabled,
+                                artifact_visualization_enabled=artifact_visualization_enabled,
+                            )
 
                         if (
                             model_version := step_run.model_version
@@ -291,17 +317,18 @@ class StepRunner:
                     )
                     StepContext._clear()  # Remove the step context singleton
 
-            # Update the status and output artifacts of the step run.
-            output_artifact_ids = {
-                output_name: [
-                    artifact.id,
-                ]
-                for output_name, artifact in output_artifacts.items()
-            }
-            publish_successful_step_run(
-                step_run_id=step_run_info.step_run_id,
-                output_artifact_ids=output_artifact_ids,
-            )
+            # Update the status and output artifacts of the step run only if tracking enabled
+            if not tracking_disabled:
+                output_artifact_ids = {
+                    output_name: [
+                        artifact.id,
+                    ]
+                    for output_name, artifact in output_artifacts.items()
+                }
+                publish_successful_step_run(
+                    step_run_id=step_run_info.step_run_id,
+                    output_artifact_ids=output_artifact_ids,
+                )
 
     def _evaluate_artifact_names_in_collections(
         self,
@@ -399,13 +426,45 @@ class StepRunner:
                     input_artifacts[arg], arg_type
                 )
             elif arg in self.configuration.parameters:
-                function_params[arg] = self.configuration.parameters[arg]
+                param_value = self.configuration.parameters[arg]
+                # Pydantic bridging: convert dict to Pydantic model if possible
+                function_params[arg] = self._maybe_convert_to_pydantic(
+                    param_value, arg_type
+                )
             else:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
                 )
 
         return function_params
+
+    def _maybe_convert_to_pydantic(self, value: Any, arg_type: Any) -> Any:
+        """Convert dict to Pydantic model if applicable for dual JSON/Pydantic support.
+
+        Args:
+            value: The parameter value (potentially a dict from JSON)
+            arg_type: The expected argument type annotation
+
+        Returns:
+            Converted Pydantic model or original value
+        """
+        # Only try conversion if value is dict and arg_type looks like Pydantic
+        if (
+            isinstance(value, dict)
+            and arg_type is not None
+            and hasattr(arg_type, "__bases__")
+        ):
+            try:
+                # Check if it's a Pydantic BaseModel subclass
+                from pydantic import BaseModel
+
+                if issubclass(arg_type, BaseModel):
+                    return arg_type(**value)  # Convert dict to Pydantic model
+            except (TypeError, ImportError, Exception):
+                # If conversion fails or Pydantic not available, use original value
+                pass
+
+        return value
 
     def _parse_hook_inputs(
         self,
