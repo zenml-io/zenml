@@ -35,6 +35,7 @@ from zenml.orchestrators import serving_buffer, serving_overrides
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.topsort import topsorted_layers
 from zenml.stack import Stack
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -59,6 +60,7 @@ class PipelineServingService:
         self.parameter_schema: Dict[str, Any] = {}
         self.service_start_time = time.time()
         self.last_execution_time: Optional[datetime] = None
+        self.pipeline_state: Optional[Any] = None
 
         # Execution statistics
         self.execution_stats: Dict[str, Any] = {
@@ -110,7 +112,8 @@ class PipelineServingService:
             # Extract parameter schema for validation
             self.parameter_schema = self._extract_parameter_schema()
 
-            # No model mutations - capture default handled by is_tracking_disabled fallback
+            # Execute the init hook, if present
+            self._execute_init_hook()
 
             # Log successful initialization
             pipeline_name = self.deployment.pipeline_configuration.name
@@ -131,6 +134,26 @@ class PipelineServingService:
 
             logger.error(f"   Traceback: {traceback.format_exc()}")
             raise
+
+    async def cleanup(self) -> None:
+        """Cleanup the service by executing the pipeline's cleanup hook, if present."""
+        if not self.deployment:
+            return
+
+        if self.deployment.pipeline_configuration.cleanup_hook_source:
+            logger.info("Executing pipeline's cleanup hook...")
+            try:
+                cleanup_hook = source_utils.load(
+                    self.deployment.pipeline_configuration.cleanup_hook_source
+                )
+            except Exception as e:
+                logger.exception(f"Failed to load the cleanup hook: {e}")
+                raise
+            try:
+                cleanup_hook()
+            except Exception as e:
+                logger.exception(f"Failed to execute cleanup hook: {e}")
+                raise
 
     def _extract_parameter_schema(self) -> Dict[str, Any]:
         """Extract parameter schema from pipeline deployment and function signature.
@@ -217,6 +240,26 @@ class PipelineServingService:
 
         logger.debug(f"Final extracted parameter schema: {schema}")
         return schema
+
+    def _execute_init_hook(self) -> None:
+        """Execute the pipeline's init hook, if present."""
+        if not self.deployment:
+            return
+
+        if self.deployment.pipeline_configuration.init_hook_source:
+            logger.info("Executing pipeline's init hook...")
+            try:
+                init_hook = source_utils.load(
+                    self.deployment.pipeline_configuration.init_hook_source
+                )
+            except Exception as e:
+                logger.exception(f"Failed to load the init hook: {e}")
+                raise
+            try:
+                self.pipeline_state = init_hook()
+            except Exception as e:
+                logger.exception(f"Failed to execute init hook: {e}")
+                raise
 
     def _resolve_parameters(
         self, request_params: Dict[str, Any]

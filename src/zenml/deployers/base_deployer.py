@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML deployers."""
 
+import secrets
+import string
 import time
 from abc import ABC, abstractmethod
 from typing import (
@@ -27,6 +29,17 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.config.base_settings import BaseSettings
+from zenml.deployers.exceptions import (
+    DeployerError,
+    PipelineEndpointAlreadyExistsError,
+    PipelineEndpointDeletionTimeoutError,
+    PipelineEndpointDeployerMismatchError,
+    PipelineEndpointDeploymentError,
+    PipelineEndpointDeploymentTimeoutError,
+    PipelineEndpointDeprovisionError,
+    PipelineEndpointNotFoundError,
+)
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -50,40 +63,12 @@ logger = get_logger(__name__)
 DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT = 300
 
 
-class DeployerError(Exception):
-    """Base class for deployer errors."""
+class BaseDeployerSettings(BaseSettings):
+    """Base settings for all deployers."""
 
-
-class PipelineEndpointAlreadyExistsError(EntityExistsError, DeployerError):
-    """Error raised when a pipeline endpoint already exists."""
-
-
-class PipelineEndpointNotFoundError(KeyError, DeployerError):
-    """Error raised when a pipeline endpoint is not found."""
-
-
-class PipelineEndpointDeploymentError(DeployerError):
-    """Error raised when a pipeline endpoint deployment fails."""
-
-
-class PipelineEndpointDeploymentTimeoutError(DeployerError):
-    """Error raised when a pipeline endpoint deployment times out."""
-
-
-class PipelineEndpointDeprovisionError(DeployerError):
-    """Error raised when a pipeline endpoint deletion fails."""
-
-
-class PipelineEndpointDeletionTimeoutError(DeployerError):
-    """Error raised when a pipeline endpoint deletion times out."""
-
-
-class PipelineLogsNotFoundError(KeyError, DeployerError):
-    """Error raised when pipeline logs are not found."""
-
-
-class PipelineEndpointDeployerMismatchError(DeployerError):
-    """Error raised when a pipeline endpoint is not managed by this deployer."""
+    auth_key: Optional[str] = None
+    generate_auth_key: bool = False
+    lcm_timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
 
 
 class BaseDeployerConfig(StackComponentConfig):
@@ -181,12 +166,26 @@ class BaseDeployer(StackComponent, ABC):
             deployer = endpoint.deployer
             assert deployer, "Deployer not found"
             raise PipelineEndpointDeployerMismatchError(
-                f"Pipeline endpoint with name '{endpoint.name}' in project "
-                f"{endpoint.project_id} "
-                f"is not managed by this deployer ({self.name}). "
+                f"The existing pipeline endpoint with name '{endpoint.name}' "
+                f"in project {endpoint.project_id} "
+                f"is not managed by the active deployer stack component "
+                f"({deployer.name}). "
                 "Please switch to the correct deployer in your stack "
-                f"({deployer.name}) and try again."
+                f"({self.name}) and try again or use a different endpoint name."
             )
+
+    def _generate_auth_key(self, key_length: int = 32) -> str:
+        """Generate an authentication key.
+
+        Args:
+            key_length: The length of the authentication key.
+
+        Returns:
+            The generated authentication key.
+        """
+        # Generate a secure random string with letters, digits and special chars
+        alphabet = string.ascii_letters + string.digits
+        return "".join(secrets.choice(alphabet) for _ in range(key_length))
 
     def serve_pipeline(
         self,
@@ -229,8 +228,15 @@ class BaseDeployer(StackComponent, ABC):
         """
         client = Client()
 
-        # TODO: get timeout from config
-        timeout: int = DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
+        settings = cast(
+            BaseDeployerSettings,
+            self.get_settings(deployment),
+        )
+
+        timeout = settings.lcm_timeout
+        auth_key = settings.auth_key
+        if not auth_key and settings.generate_auth_key:
+            auth_key = self._generate_auth_key()
 
         logger.debug(
             f"Deploying pipeline endpoint {endpoint_name} with "
@@ -243,6 +249,7 @@ class BaseDeployer(StackComponent, ABC):
             project=deployment.project_id,
             pipeline_deployment_id=deployment.id,
             deployer_id=self.id,  # This deployer's ID
+            auth_key=auth_key,
         )
 
         try:
@@ -273,12 +280,27 @@ class BaseDeployer(StackComponent, ABC):
             self._check_pipeline_endpoint_deployer(endpoint)
 
             if endpoint.pipeline_deployment_id != deployment.id:
+                endpoint_update = PipelineEndpointUpdate(
+                    pipeline_deployment_id=deployment.id,
+                )
+                if (
+                    endpoint.auth_key
+                    and not auth_key
+                    or not endpoint.auth_key
+                    and auth_key
+                ):
+                    # Key was either added or removed
+                    endpoint_update.auth_key = auth_key
+                elif endpoint.auth_key != auth_key and (
+                    settings.auth_key or not settings.generate_auth_key
+                ):
+                    # Key was changed and not because of re-generation
+                    endpoint_update.auth_key = auth_key
+
                 # The deployment has been updated
                 endpoint = client.zen_store.update_pipeline_endpoint(
                     endpoint.id,
-                    PipelineEndpointUpdate(
-                        pipeline_deployment_id=deployment.id,
-                    ),
+                    endpoint_update,
                 )
 
             logger.debug(
@@ -345,13 +367,18 @@ class BaseDeployer(StackComponent, ABC):
                     f"Deployment of pipeline endpoint {endpoint_name} "
                     f"timed out after {timeout} seconds"
                 )
-            logger.debug(
-                f"pipeline endpoint {endpoint_name} is not yet running. "
+            logger.info(
+                f"Pipeline endpoint {endpoint_name} is not yet running. "
                 f"Waiting for {sleep_time} seconds..."
             )
             time.sleep(sleep_time)
-            endpoint_state = self.do_get_pipeline_endpoint(endpoint)
-            endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
+            try:
+                endpoint_state = self.do_get_pipeline_endpoint(endpoint)
+                endpoint = self._update_pipeline_endpoint(
+                    endpoint, endpoint_state
+                )
+            except PipelineEndpointNotFoundError:
+                endpoint_state.status = PipelineEndpointStatus.UNKNOWN
 
         if endpoint_state.status != PipelineEndpointStatus.RUNNING:
             raise PipelineEndpointDeploymentError(
@@ -390,7 +417,7 @@ class BaseDeployer(StackComponent, ABC):
         except KeyError:
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"not found"
             )
 
         self._check_pipeline_endpoint_deployer(endpoint)
@@ -405,7 +432,7 @@ class BaseDeployer(StackComponent, ABC):
             self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"is not currently deployed or has been deleted"
             )
         except DeployerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
@@ -450,7 +477,7 @@ class BaseDeployer(StackComponent, ABC):
         except KeyError:
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"not found"
             )
 
         self._check_pipeline_endpoint_deployer(endpoint)
@@ -466,7 +493,7 @@ class BaseDeployer(StackComponent, ABC):
             client.delete_pipeline_endpoint(endpoint.id)
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"not found"
             )
         except DeployerError as e:
             self._update_pipeline_endpoint(endpoint, endpoint_state)
@@ -499,8 +526,8 @@ class BaseDeployer(StackComponent, ABC):
                     f"Deletion of pipeline endpoint {endpoint_name_or_id} "
                     f"timed out after {timeout} seconds"
                 )
-            logger.debug(
-                f"pipeline endpoint {endpoint_name_or_id} is not yet deleted. "
+            logger.info(
+                f"Pipeline endpoint {endpoint_name_or_id} is not yet deleted. "
                 f"Waiting for {sleep_time} seconds..."
             )
             time.sleep(sleep_time)
@@ -553,7 +580,7 @@ class BaseDeployer(StackComponent, ABC):
         except KeyError:
             raise PipelineEndpointNotFoundError(
                 f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-                f"not found in project {project}"
+                f"not found"
             )
 
         self._check_pipeline_endpoint_deployer(endpoint)

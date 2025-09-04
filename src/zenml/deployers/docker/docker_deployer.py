@@ -40,16 +40,20 @@ from zenml.constants import (
 from zenml.deployers.base_deployer import (
     BaseDeployerConfig,
     BaseDeployerFlavor,
+    BaseDeployerSettings,
+)
+from zenml.deployers.containerized_deployer import (
+    ContainerizedDeployer,
+)
+from zenml.deployers.exceptions import (
     DeployerError,
     PipelineEndpointDeploymentError,
     PipelineEndpointDeprovisionError,
     PipelineEndpointNotFoundError,
     PipelineLogsNotFoundError,
 )
-from zenml.deployers.containerized_deployer import (
-    ContainerizedDeployer,
-)
 from zenml.deployers.serving.entrypoint_configuration import (
+    AUTH_KEY_OPTION,
     PORT_OPTION,
     ServingEntrypointConfiguration,
 )
@@ -340,11 +344,15 @@ class DockerDeployer(ContainerizedDeployer):
 
         entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
 
+        entrypoint_kwargs = {
+            DEPLOYMENT_ID_OPTION: deployment.id,
+            PORT_OPTION: 8000,
+        }
+        if endpoint.auth_key:
+            entrypoint_kwargs[AUTH_KEY_OPTION] = endpoint.auth_key
+
         arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
-            **{
-                DEPLOYMENT_ID_OPTION: deployment.id,
-                PORT_OPTION: 8000,
-            }
+            **entrypoint_kwargs
         )
 
         # Add the local stores path as a volume mount
@@ -643,7 +651,7 @@ class DockerDeployer(ContainerizedDeployer):
         return state
 
 
-class DockerDeployerSettings(BaseSettings):
+class DockerDeployerSettings(BaseDeployerSettings):
     """Docker deployer settings.
 
     Attributes:

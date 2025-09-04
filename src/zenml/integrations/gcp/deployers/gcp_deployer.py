@@ -1,0 +1,1292 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation of the GCP Cloud Run deployer."""
+
+import re
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
+from uuid import UUID
+
+from google.api_core import exceptions as google_exceptions
+from google.cloud import run_v2, secretmanager
+from google.cloud.logging_v2 import Client as LoggingClient
+from google.protobuf.json_format import MessageToDict
+from pydantic import BaseModel
+
+from zenml.config.base_settings import BaseSettings
+from zenml.deployers.containerized_deployer import ContainerizedDeployer
+from zenml.deployers.exceptions import (
+    DeployerError,
+    PipelineEndpointDeploymentError,
+    PipelineEndpointDeprovisionError,
+    PipelineEndpointNotFoundError,
+    PipelineLogsNotFoundError,
+)
+from zenml.deployers.serving.entrypoint_configuration import (
+    AUTH_KEY_OPTION,
+    PORT_OPTION,
+    ServingEntrypointConfiguration,
+)
+from zenml.entrypoints.base_entrypoint_configuration import (
+    DEPLOYMENT_ID_OPTION,
+)
+from zenml.enums import PipelineEndpointStatus, StackComponentType
+from zenml.integrations.gcp.flavors.gcp_deployer_flavor import (
+    GCPDeployerConfig,
+    GCPDeployerSettings,
+)
+from zenml.integrations.gcp.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
+from zenml.logger import get_logger
+from zenml.models import (
+    PipelineEndpointOperationalState,
+    PipelineEndpointResponse,
+)
+from zenml.stack import StackValidator
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
+
+logger = get_logger(__name__)
+
+
+class CloudRunPipelineEndpointMetadata(BaseModel):
+    """Metadata for a Cloud Run pipeline endpoint."""
+
+    service_name: Optional[str] = None
+    service_url: Optional[str] = None
+    project_id: Optional[str] = None
+    location: Optional[str] = None
+    revision_name: Optional[str] = None
+    reconciling: Optional[bool] = None
+    service_status: Optional[Dict[str, Any]] = None
+    cpu: Optional[str] = None
+    memory: Optional[str] = None
+    min_instances: Optional[int] = None
+    max_instances: Optional[int] = None
+    concurrency: Optional[int] = None
+    timeout_seconds: Optional[int] = None
+    ingress: Optional[str] = None
+    vpc_connector: Optional[str] = None
+    service_account: Optional[str] = None
+    execution_environment: Optional[str] = None
+    port: Optional[int] = None
+    allow_unauthenticated: Optional[bool] = None
+    labels: Optional[Dict[str, str]] = None
+    annotations: Optional[Dict[str, str]] = None
+    environment_variables: Optional[Dict[str, str]] = None
+    traffic_allocation: Optional[Dict[str, int]] = None
+    created_time: Optional[str] = None
+    updated_time: Optional[str] = None
+    secrets: List[str] = []
+
+    @classmethod
+    def from_cloud_run_service(
+        cls,
+        service: run_v2.Service,
+        project_id: str,
+        location: str,
+        secrets: List[secretmanager.Secret],
+    ) -> "CloudRunPipelineEndpointMetadata":
+        """Create metadata from a Cloud Run service.
+
+        Args:
+            service: The Cloud Run service object.
+            project_id: The GCP project ID.
+            location: The GCP location.
+            secrets: The list of existing GCP Secret Manager secrets for the
+                pipeline endpoint.
+
+        Returns:
+            The metadata for the Cloud Run service.
+        """
+        # Extract container configuration from the service
+        container = None
+        if service.template and service.template.containers:
+            container = service.template.containers[0]
+
+        # Extract environment variables
+        env_vars = {}
+        if container and container.env:
+            env_vars = {env.name: env.value for env in container.env}
+
+        # Extract resource limits
+        cpu = None
+        memory = None
+        if container and container.resources and container.resources.limits:
+            cpu = container.resources.limits.get("cpu")
+            memory = container.resources.limits.get("memory")
+
+        # Extract scaling configuration
+        min_instances = None
+        max_instances = None
+        if service.template and service.template.scaling:
+            scaling = service.template.scaling
+            min_instances = scaling.min_instance_count
+            max_instances = scaling.max_instance_count
+
+        # Extract concurrency
+        concurrency = None
+        if service.template:
+            concurrency = service.template.max_instance_request_concurrency
+
+        # Extract timeout
+        timeout_seconds = None
+        if service.template and service.template.timeout:
+            timeout_seconds = service.template.timeout.seconds
+
+        # Extract ingress
+        ingress = None
+        if service.ingress:
+            ingress = str(service.ingress)
+
+        # Extract VPC connector
+        vpc_connector = None
+        if service.template and service.template.vpc_access:
+            vpc_connector = service.template.vpc_access.connector
+
+        # Extract service account
+        service_account = None
+        if service.template:
+            service_account = service.template.service_account
+
+        # Extract execution environment
+        execution_environment = None
+        if service.template and service.template.execution_environment:
+            execution_environment = str(service.template.execution_environment)
+
+        # Extract port
+        port = None
+        if container and container.ports:
+            port = container.ports[0].container_port
+
+        # Extract traffic allocation
+        traffic_allocation = {}
+        if service.traffic:
+            for traffic in service.traffic:
+                if traffic.revision:
+                    traffic_allocation[traffic.revision] = traffic.percent
+                elif traffic.tag:
+                    traffic_allocation[traffic.tag] = traffic.percent
+                else:
+                    traffic_allocation["LATEST"] = traffic.percent
+
+        return cls(
+            service_name=service.name.split("/")[-1] if service.name else None,
+            service_url=service.uri if hasattr(service, "uri") else None,
+            project_id=project_id,
+            location=location,
+            revision_name=(
+                service.template.revision
+                if service.template and service.template.revision
+                else None
+            ),
+            reconciling=service.reconciling,
+            service_status=MessageToDict(
+                service.terminal_condition._pb,
+            )
+            if service.terminal_condition
+            else None,
+            cpu=cpu,
+            memory=memory,
+            min_instances=min_instances,
+            max_instances=max_instances,
+            concurrency=concurrency,
+            timeout_seconds=timeout_seconds,
+            ingress=ingress,
+            vpc_connector=vpc_connector,
+            service_account=service_account,
+            execution_environment=execution_environment,
+            port=port,
+            allow_unauthenticated=True,  # Default assumption
+            labels=dict(service.labels) if service.labels else {},
+            annotations=dict(service.annotations)
+            if service.annotations
+            else {},
+            environment_variables=env_vars,
+            traffic_allocation=traffic_allocation,
+            created_time=(
+                service.create_time.isoformat()
+                if service.create_time
+                else None
+            ),
+            updated_time=(
+                service.update_time.isoformat()
+                if service.update_time
+                else None
+            ),
+            secrets=[secret.name for secret in secrets],
+        )
+
+    @classmethod
+    def from_endpoint(
+        cls, endpoint: PipelineEndpointResponse
+    ) -> "CloudRunPipelineEndpointMetadata":
+        """Create metadata from a pipeline endpoint.
+
+        Args:
+            endpoint: The pipeline endpoint to get the metadata for.
+
+        Returns:
+            The metadata for the pipeline endpoint.
+        """
+        return cls.model_validate(endpoint.endpoint_metadata)
+
+
+class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
+    """Deployer responsible for serving pipelines on GCP Cloud Run."""
+
+    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
+
+    _project_id: Optional[str] = None
+    _cloud_run_client: Optional[run_v2.ServicesClient] = None
+    _logging_client: Optional[LoggingClient] = None
+    _secret_manager_client: Optional[
+        secretmanager.SecretManagerServiceClient
+    ] = None
+
+    @property
+    def config(self) -> GCPDeployerConfig:
+        """Returns the `GCPDeployerConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(GCPDeployerConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the GCP deployer.
+
+        Returns:
+            The settings class.
+        """
+        return GCPDeployerSettings
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Ensures there is an image builder in the stack.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+        return StackValidator(
+            required_components={
+                StackComponentType.IMAGE_BUILDER,
+                StackComponentType.CONTAINER_REGISTRY,
+            }
+        )
+
+    @property
+    def project_id(self) -> str:
+        """Get the GCP project ID.
+
+        Returns:
+            The GCP project ID.
+        """
+        if self._project_id is None:
+            _, project_id = self._get_authentication()
+            self._project_id = project_id
+        return self._project_id
+
+    @property
+    def cloud_run_client(self) -> run_v2.ServicesClient:
+        """Get the Cloud Run client.
+
+        Returns:
+            The Cloud Run client.
+        """
+        if self._cloud_run_client is None:
+            credentials, _ = self._get_authentication()
+            self._cloud_run_client = run_v2.ServicesClient(
+                credentials=credentials
+            )
+        return self._cloud_run_client
+
+    @property
+    def logging_client(self) -> LoggingClient:
+        """Get the Cloud Logging client.
+
+        Returns:
+            The Cloud Logging client.
+        """
+        if self._logging_client is None:
+            credentials, project_id = self._get_authentication()
+            self._logging_client = LoggingClient(
+                project=project_id, credentials=credentials
+            )
+        return self._logging_client
+
+    @property
+    def secret_manager_client(
+        self,
+    ) -> secretmanager.SecretManagerServiceClient:
+        """Get the Secret Manager client.
+
+        Returns:
+            The Secret Manager client.
+        """
+        if self._secret_manager_client is None:
+            credentials, _ = self._get_authentication()
+            self._secret_manager_client = (
+                secretmanager.SecretManagerServiceClient(
+                    credentials=credentials
+                )
+            )
+        return self._secret_manager_client
+
+    def _sanitize_cloud_run_service_name(
+        self, name: str, random_suffix: str
+    ) -> str:
+        """Sanitize a name to comply with Cloud Run service naming requirements.
+
+        Cloud Run service name requirements (RFC 2181 DNS naming):
+        - Length: 1-63 characters
+        - Characters: lowercase letters (a-z), numbers (0-9), hyphens (-)
+        - Must start with a lowercase letter
+        - Cannot end with a hyphen
+        - Must be unique per region and project
+
+        Args:
+            name: The raw name to sanitize.
+            random_suffix: A random suffix to add to the name to ensure
+                uniqueness. Assumed to be valid.
+
+        Returns:
+            A sanitized name that complies with Cloud Run requirements.
+
+        Raises:
+            RuntimeError: If the random suffix is invalid.
+            ValueError: If the service name is invalid.
+        """
+        sanitized_suffix = re.sub(r"[^a-z0-9-]", "-", random_suffix.lower())
+        # The random suffix must be validInvalid random suffix
+        if sanitized_suffix != random_suffix:
+            raise RuntimeError(
+                f"Invalid random suffix: {random_suffix}. Must contain only "
+                "lowercase letters, numbers, and hyphens."
+            )
+
+        # Convert to lowercase and replace all disallowed characters with hyphens
+        sanitized = re.sub(r"[^a-z0-9-]", "-", name.lower())
+
+        # Remove consecutive hyphens
+        sanitized = re.sub(r"-+", "-", sanitized)
+
+        # Ensure it starts with a lowercase letter
+        if not sanitized or not sanitized[0].isalpha():
+            raise ValueError(
+                f"Invalid service name: {name}. Must start with a letter."
+            )
+
+        # Remove trailing hyphens
+        sanitized = sanitized.rstrip("-")
+
+        # Ensure we have at least one character after cleanup
+        if not sanitized:
+            raise ValueError(
+                f"Invalid service name: {name}. Must start with a letter."
+            )
+
+        # Truncate to 63 characters after adding the random suffix (Cloud Run
+        # limit)
+        if len(sanitized) > 63 - len(random_suffix) - 1:
+            sanitized = sanitized[: 63 - len(random_suffix) - 1]
+            # Make sure we don't end with a hyphen after truncation
+            sanitized = sanitized.rstrip("-")
+
+        # Final safety check - ensure we still have a valid name
+        if not sanitized or not sanitized[0].isalpha():
+            raise ValueError(
+                f"Invalid service name: {name}. Must start with a letter."
+            )
+
+        return f"{sanitized}-{random_suffix}"
+
+    def _get_service_name(
+        self, endpoint_name: str, endpoint_id: UUID, prefix: str
+    ) -> str:
+        """Get the Cloud Run service name for a pipeline endpoint.
+
+        Args:
+            endpoint_id: The pipeline endpoint ID.
+            endpoint_name: The pipeline endpoint name.
+            prefix: The prefix to use for the service name.
+
+        Returns:
+            The Cloud Run service name that complies with all naming requirements.
+        """
+        # Create a base name with endpoint name and ID for uniqueness
+        # Use first 8 characters of UUID to keep names manageable
+        endpoint_id_short = str(endpoint_id)[:8]
+        raw_name = f"{prefix}{endpoint_name}"
+
+        return self._sanitize_cloud_run_service_name(
+            raw_name, endpoint_id_short
+        )
+
+    def _sanitize_secret_name(self, name: str, random_suffix: str) -> str:
+        """Sanitize a name to comply with Secret Manager naming requirements.
+
+        Secret Manager secret name requirements:
+        - Length: 1-255 characters
+        - Characters: letters, numbers, hyphens, underscores
+        - Must start with a letter or underscore
+        - Cannot end with a hyphen
+
+        Args:
+            name: The raw name to sanitize.
+            random_suffix: A random suffix to add to the name to ensure
+                uniqueness.
+
+        Returns:
+            A sanitized name that complies with Secret Manager requirements.
+
+        Raises:
+            ValueError: If the secret name is invalid.
+        """
+        sanitized_suffix = re.sub(
+            r"[^a-zA-Z0-9_-]", "_", random_suffix.lower()
+        )
+        # The random suffix must be valid
+        if sanitized_suffix != random_suffix:
+            raise RuntimeError(
+                f"Invalid random suffix: {random_suffix}. Must contain only "
+                "letters, numbers, hyphens, and underscores."
+            )
+
+        # Convert to lowercase and replace disallowed characters with underscores
+        sanitized = re.sub(r"[^a-zA-Z0-9_-]", "_", name)
+
+        # Remove consecutive underscores and hyphens
+        sanitized = re.sub(r"[_-]+", "_", sanitized)
+
+        # Ensure it starts with a letter or underscore
+        if not sanitized or not (
+            sanitized[0].isalpha() or sanitized[0] == "_"
+        ):
+            raise ValueError(
+                f"Invalid secret name: {name}. Must start with a letter or "
+                "underscore."
+            )
+
+        # Remove trailing hyphens (underscores are allowed at the end)
+        sanitized = sanitized.rstrip("-")
+
+        # Ensure we have at least one character after cleanup
+        if not sanitized:
+            raise ValueError(
+                f"Invalid secret name: {name}. Must start with a letter or "
+                "underscore."
+            )
+
+        # Truncate to 255 characters (Secret Manager limit)
+        if len(sanitized) > 255 - len(random_suffix) - 1:
+            sanitized = sanitized[: 255 - len(random_suffix) - 1]
+            # Make sure we don't end with a hyphen after truncation
+            sanitized = sanitized.rstrip("-")
+
+        # Final safety check
+        if not sanitized or not (
+            sanitized[0].isalpha() or sanitized[0] == "_"
+        ):
+            raise ValueError(
+                f"Invalid secret name: {name}. Must start with a letter or "
+                "underscore."
+            )
+
+        return f"{sanitized}_{random_suffix}"
+
+    def _get_secret_name(
+        self,
+        endpoint_id: UUID,
+        env_var_name: str,
+        prefix: str,
+    ) -> str:
+        """Get the Secret Manager secret name for an environment variable.
+
+        Args:
+            endpoint_id: The pipeline endpoint ID.
+            env_var_name: The environment variable name.
+            prefix: The prefix to use for the secret name.
+
+        Returns:
+            The Secret Manager secret name.
+        """
+        # Create a unique secret name with prefix, endpoint ID, and env var name
+        endpoint_id_short = str(endpoint_id)[:8]
+        raw_name = f"{prefix}_{env_var_name}"
+
+        return self._sanitize_secret_name(raw_name, endpoint_id_short)
+
+    def _create_or_update_secret(
+        self,
+        secret_name: str,
+        secret_value: str,
+        project_id: str,
+        endpoint: PipelineEndpointResponse,
+    ) -> secretmanager.Secret:
+        """Create or update a secret in Secret Manager.
+
+        Args:
+            secret_name: The name of the secret.
+            secret_value: The value to store.
+            project_id: The GCP project ID.
+            endpoint: The pipeline endpoint.
+
+        Returns:
+            The full secret.
+
+        Raises:
+            DeployerError: If secret creation/update fails.
+        """
+        parent = f"projects/{project_id}"
+        secret_id = secret_name
+        secret_path = f"{parent}/secrets/{secret_id}"
+
+        try:
+            # Try to get the existing secret
+            try:
+                secret = self.secret_manager_client.get_secret(
+                    name=secret_path
+                )
+                logger.debug(
+                    f"Secret {secret_name} already exists, adding new version"
+                )
+            except google_exceptions.NotFound:
+                # Create the secret if it doesn't exist
+                logger.debug(f"Creating new secret {secret_name}")
+                secret = secretmanager.Secret(
+                    replication=secretmanager.Replication(
+                        automatic=secretmanager.Replication.Automatic()
+                    ),
+                    labels={
+                        "zenml-pipeline-endpoint-uuid": str(endpoint.id),
+                        "zenml-pipeline-endpoint-name": endpoint.name,
+                        "zenml-deployer-name": str(self.name),
+                        "zenml-deployer-id": str(self.id),
+                        "managed-by": "zenml",
+                    },
+                )
+                secret = self.secret_manager_client.create_secret(
+                    parent=parent, secret_id=secret_id, secret=secret
+                )
+
+            # Add the secret version
+            payload = secretmanager.SecretPayload(
+                data=secret_value.encode("utf-8")
+            )
+            version_response = self.secret_manager_client.add_secret_version(
+                parent=secret_path, payload=payload
+            )
+
+            logger.debug(f"Created secret version: {version_response.name}")
+            return secret
+
+        except google_exceptions.GoogleAPICallError as e:
+            raise DeployerError(
+                f"Failed to create/update secret {secret_name}: {e}"
+            )
+
+    def _get_secrets(
+        self, endpoint: PipelineEndpointResponse
+    ) -> List[secretmanager.Secret]:
+        """Get the existing GCP Secret Manager secrets for a pipeline endpoint.
+
+        Args:
+            endpoint: The pipeline endpoint.
+
+        Returns:
+            The list of existing GCP Secret Manager secrets for the
+            pipeline endpoint.
+        """
+        metadata = CloudRunPipelineEndpointMetadata.from_endpoint(endpoint)
+        secrets: List[secretmanager.Secret] = []
+        for secret_name in metadata.secrets:
+            # Try to get the existing secret
+            try:
+                secret = self.secret_manager_client.get_secret(
+                    name=secret_name
+                )
+                secrets.append(secret)
+            except google_exceptions.NotFound:
+                continue
+            except google_exceptions.GoogleAPICallError:
+                logger.exception(f"Failed to get secret {secret_name}")
+                continue
+        return secrets
+
+    def _delete_secret(self, secret_name: str, project_id: str) -> None:
+        """Delete a secret from Secret Manager.
+
+        Args:
+            secret_name: The name of the secret to delete.
+            project_id: The GCP project ID.
+        """
+        secret_path = f"projects/{project_id}/secrets/{secret_name}"
+        try:
+            self.secret_manager_client.delete_secret(name=secret_path)
+            logger.debug(f"Deleted secret {secret_path}")
+        except google_exceptions.NotFound:
+            logger.debug(f"Secret {secret_path} not found, skipping deletion")
+        except google_exceptions.GoogleAPICallError:
+            logger.exception(f"Failed to delete secret {secret_path}")
+
+    def _cleanup_endpoint_secrets(
+        self,
+        endpoint: PipelineEndpointResponse,
+    ) -> None:
+        """Clean up all secrets associated with a pipeline endpoint.
+
+        Args:
+            endpoint: The pipeline endpoint.
+            project_id: The GCP project ID.
+            settings: The deployer settings.
+        """
+        secrets = self._get_secrets(endpoint)
+
+        for secret in secrets:
+            _, project_id, _, secret_name = secret.name.split("/")
+            self._delete_secret(secret_name, project_id)
+
+    def _prepare_environment_variables(
+        self,
+        endpoint: PipelineEndpointResponse,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+        settings: GCPDeployerSettings,
+        project_id: str,
+    ) -> Tuple[List[run_v2.EnvVar], List[secretmanager.Secret]]:
+        """Prepare environment variables for Cloud Run, handling secrets appropriately.
+
+        Args:
+            endpoint: The pipeline endpoint.
+            environment: Regular environment variables.
+            secrets: Sensitive environment variables.
+            settings: The deployer settings.
+            project_id: The GCP project ID.
+
+        Returns:
+            Tuple containing:
+            - List of Cloud Run environment variable configurations.
+            - List of active Secret Manager secrets.
+        """
+        env_vars = []
+
+        # Handle regular environment variables
+        merged_env = {**settings.environment_variables, **environment}
+        for key, value in merged_env.items():
+            env_vars.append(run_v2.EnvVar(name=key, value=value))
+
+        # Handle secrets
+        active_secrets: List[secretmanager.Secret] = []
+        if secrets:
+            if settings.use_secret_manager:
+                # Store secrets in Secret Manager and reference them
+                for key, value in secrets.items():
+                    secret_name = self._get_secret_name(
+                        endpoint.id, key.lower(), settings.secret_name_prefix
+                    )
+
+                    try:
+                        # Create or update the secret
+                        active_secret = self._create_or_update_secret(
+                            secret_name, value, project_id, endpoint
+                        )
+
+                        # Create environment variable that references the secret
+                        env_var = run_v2.EnvVar(
+                            name=key,
+                            value_source=run_v2.EnvVarSource(
+                                secret_key_ref=run_v2.SecretKeySelector(
+                                    secret=secret_name, version="latest"
+                                )
+                            ),
+                        )
+                        env_vars.append(env_var)
+                        active_secrets.append(active_secret)
+
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to create secret for {key}, falling back "
+                            f"to direct env var: {e}"
+                        )
+                        # Fallback to direct environment variable
+                        env_vars.append(run_v2.EnvVar(name=key, value=value))
+
+                metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
+                    endpoint
+                )
+                # Delete GCP secrets that are no longer needed
+                active_secret_names = [
+                    secret.name for secret in active_secrets
+                ]
+                for existing_secret_name in metadata.secrets:
+                    if existing_secret_name not in active_secret_names:
+                        _, project_id, _, secret_name = (
+                            existing_secret_name.split("/")
+                        )
+                        self._delete_secret(secret_name, project_id)
+            else:
+                # Store secrets directly as environment variables (less secure)
+                logger.warning(
+                    "Storing secrets directly in environment variables. "
+                    "Consider enabling use_secret_manager for better security."
+                )
+                for key, value in secrets.items():
+                    env_vars.append(run_v2.EnvVar(name=key, value=value))
+
+        return env_vars, active_secrets
+
+    def _get_service_path(
+        self,
+        service_name: str,
+        project_id: str,
+        location: str,
+    ) -> str:
+        """Get the full Cloud Run service path.
+
+        Args:
+            service_name: The name of the Cloud Run service.
+            project_id: The GCP project ID.
+            location: The GCP location.
+
+        Returns:
+            The full Cloud Run service path.
+        """
+        return f"projects/{project_id}/locations/{location}/services/{service_name}"
+
+    def _get_cloud_run_service(
+        self, endpoint: PipelineEndpointResponse
+    ) -> Optional[run_v2.Service]:
+        """Get an existing Cloud Run service for a pipeline endpoint.
+
+        Args:
+            endpoint: The pipeline endpoint.
+
+        Returns:
+            The Cloud Run service, or None if it doesn't exist.
+        """
+        client = self.cloud_run_client
+
+        # Get location from the endpoint metadata or use default
+        existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
+            endpoint
+        )
+
+        if (
+            not existing_metadata.service_name
+            or not existing_metadata.location
+            or not existing_metadata.project_id
+        ):
+            return None
+
+        service_path = self._get_service_path(
+            existing_metadata.service_name,
+            existing_metadata.project_id,
+            existing_metadata.location,
+        )
+
+        try:
+            return client.get_service(name=service_path)
+        except google_exceptions.NotFound:
+            return None
+
+    def _get_service_operational_state(
+        self,
+        service: run_v2.Service,
+        project_id: str,
+        location: str,
+        secrets: List[secretmanager.Secret],
+    ) -> PipelineEndpointOperationalState:
+        """Get the operational state of a Cloud Run service.
+
+        Args:
+            service: The Cloud Run service.
+            project_id: The GCP project ID.
+            location: The GCP location.
+            secrets: The list of active Secret Manager secrets.
+
+        Returns:
+            The operational state of the Cloud Run service.
+        """
+        metadata = CloudRunPipelineEndpointMetadata.from_cloud_run_service(
+            service, project_id, location, secrets
+        )
+
+        state = PipelineEndpointOperationalState(
+            status=PipelineEndpointStatus.UNKNOWN,
+            metadata=metadata.model_dump(exclude_none=True),
+        )
+
+        # Map Cloud Run service status to ZenML status
+        if service.reconciling:
+            # This flag is set while the service is being reconciled
+            state.status = PipelineEndpointStatus.DEPLOYING
+        else:
+            if (
+                service.terminal_condition.state
+                == run_v2.Condition.State.CONDITION_SUCCEEDED
+            ):
+                state.status = PipelineEndpointStatus.RUNNING
+                state.url = service.uri
+            elif (
+                service.terminal_condition.state
+                == run_v2.Condition.State.CONDITION_FAILED
+            ):
+                state.status = PipelineEndpointStatus.ERROR
+            elif service.terminal_condition.state in [
+                run_v2.Condition.State.CONDITION_PENDING,
+                run_v2.Condition.State.CONDITION_RECONCILING,
+            ]:
+                state.status = PipelineEndpointStatus.DEPLOYING
+            else:
+                state.status = PipelineEndpointStatus.UNKNOWN
+
+        return state
+
+    def do_serve_pipeline(
+        self,
+        endpoint: PipelineEndpointResponse,
+        stack: "Stack",
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[Dict[str, str]] = None,
+    ) -> PipelineEndpointOperationalState:
+        """Serve a pipeline as a Cloud Run service.
+
+        Args:
+            endpoint: The pipeline endpoint to serve.
+            stack: The stack the pipeline will be served on.
+            environment: Environment variables to set.
+            secrets: Secret environment variables to set.
+
+        Returns:
+            The operational state of the deployed pipeline endpoint.
+
+        Raises:
+            PipelineEndpointDeploymentError: If the deployment fails.
+            DeployerError: If an unexpected error occurs.
+        """
+        deployment = endpoint.pipeline_deployment
+        assert deployment, "Pipeline deployment not found"
+
+        environment = environment or {}
+        secrets = secrets or {}
+
+        settings = cast(
+            GCPDeployerSettings,
+            self.get_settings(deployment),
+        )
+
+        client = self.cloud_run_client
+        project_id = self.project_id
+
+        service_name = self._get_service_name(
+            endpoint.name, endpoint.id, settings.service_name_prefix
+        )
+
+        service_path = self._get_service_path(
+            service_name, project_id, settings.location
+        )
+
+        # If a previous deployment of the same endpoint exists but with
+        # a different service name, location, or project, we need to clean up
+        # the old service.
+        existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
+            endpoint
+        )
+
+        if (
+            existing_metadata.service_name
+            and existing_metadata.location
+            and existing_metadata.project_id
+        ):
+            existing_service_path = self._get_service_path(
+                existing_metadata.service_name,
+                existing_metadata.project_id,
+                existing_metadata.location,
+            )
+            if existing_service_path != service_path:
+                try:
+                    self.do_deprovision_pipeline_endpoint(endpoint)
+                except PipelineEndpointNotFoundError:
+                    logger.warning(
+                        f"Pipeline endpoint '{endpoint.name}' not found, "
+                        f"skipping deprovision of existing Cloud Run service"
+                    )
+                except DeployerError as e:
+                    logger.warning(
+                        f"Failed to deprovision existing Cloud Run service for "
+                        f"pipeline endpoint '{endpoint.name}': {e}"
+                    )
+
+        # Get the container image
+        image = self.get_image(deployment)
+
+        # Prepare entrypoint and arguments
+        entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
+        arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
+            **{
+                DEPLOYMENT_ID_OPTION: deployment.id,
+                PORT_OPTION: settings.port,
+                AUTH_KEY_OPTION: endpoint.auth_key,
+            }
+        )
+
+        # Prepare environment variables with proper secret handling
+        env_vars, active_secrets = self._prepare_environment_variables(
+            endpoint, environment, secrets, settings, project_id
+        )
+
+        # Prepare resource requirements
+        resources = run_v2.ResourceRequirements(
+            limits={
+                "cpu": settings.cpu,
+                "memory": settings.memory,
+            }
+        )
+
+        # Prepare scaling configuration
+        scaling = run_v2.RevisionScaling(
+            min_instance_count=settings.min_instances,
+            max_instance_count=settings.max_instances,
+        )
+
+        # Prepare VPC access if specified
+        vpc_access = None
+        if settings.vpc_connector:
+            vpc_access = run_v2.VpcAccess(connector=settings.vpc_connector)
+
+        # Prepare container specification
+        container = run_v2.Container(
+            image=image,
+            command=entrypoint,
+            args=arguments,
+            env=env_vars,
+            resources=resources,
+            ports=[run_v2.ContainerPort(container_port=settings.port)],
+        )
+
+        # Prepare revision template
+        template = run_v2.RevisionTemplate(
+            labels=settings.labels,
+            annotations=settings.annotations,
+            scaling=scaling,
+            vpc_access=vpc_access,
+            max_instance_request_concurrency=settings.concurrency,
+            timeout=f"{settings.timeout_seconds}s",
+            service_account=settings.service_account,
+            containers=[container],
+            execution_environment=(
+                run_v2.ExecutionEnvironment.EXECUTION_ENVIRONMENT_GEN2
+                if settings.execution_environment == "gen2"
+                else run_v2.ExecutionEnvironment.EXECUTION_ENVIRONMENT_GEN1
+            ),
+        )
+
+        # Prepare traffic allocation
+        traffic = []
+        for revision, percent in settings.traffic_allocation.items():
+            if revision == "LATEST":
+                traffic.append(
+                    run_v2.TrafficTarget(
+                        type_=run_v2.TrafficTargetAllocationType.TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST,
+                        percent=percent,
+                    )
+                )
+            else:
+                traffic.append(
+                    run_v2.TrafficTarget(
+                        revision=revision,
+                        percent=percent,
+                    )
+                )
+
+        # Prepare ingress setting
+        ingress_mapping = {
+            "all": run_v2.IngressTraffic.INGRESS_TRAFFIC_ALL,
+            "internal": run_v2.IngressTraffic.INGRESS_TRAFFIC_INTERNAL_ONLY,
+            "internal-and-cloud-load-balancing": run_v2.IngressTraffic.INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER,
+        }
+        ingress = ingress_mapping.get(
+            settings.ingress, run_v2.IngressTraffic.INGRESS_TRAFFIC_ALL
+        )
+
+        # Create the service (name should NOT be set for CreateServiceRequest)
+        service = run_v2.Service(
+            labels={
+                **settings.labels,
+                "zenml-pipeline-endpoint-uuid": str(endpoint.id),
+                "zenml-pipeline-endpoint-name": endpoint.name,
+                "zenml-deployer-name": str(self.name),
+                "zenml-deployer-id": str(self.id),
+                "managed-by": "zenml",
+            },
+            annotations=settings.annotations,
+            template=template,
+            traffic=traffic,
+            ingress=ingress,
+            invoker_iam_disabled=settings.allow_unauthenticated,
+        )
+
+        try:
+            # Check if service already exists
+            existing_service = None
+            try:
+                existing_service = client.get_service(name=service_path)
+            except google_exceptions.NotFound:
+                pass
+
+            if existing_service:
+                # Update existing service - need to set the name for updates
+                service.name = service_path
+                logger.debug(
+                    f"Updating existing Cloud Run service for pipeline "
+                    f"endpoint '{endpoint.name}'"
+                )
+                client.update_service(service=service)
+            else:
+                # Create new service - name should NOT be set, use service_id instead
+                logger.debug(
+                    f"Creating new Cloud Run service for pipeline endpoint "
+                    f"'{endpoint.name}'"
+                )
+                parent = f"projects/{project_id}/locations/{settings.location}"
+                client.create_service(
+                    parent=parent, service=service, service_id=service_name
+                )
+                # Add the name for the operational state
+                service.name = service_path
+
+            return self._get_service_operational_state(
+                service, project_id, settings.location, active_secrets
+            )
+
+        except google_exceptions.GoogleAPICallError as e:
+            raise PipelineEndpointDeploymentError(
+                f"Failed to deploy Cloud Run service for pipeline endpoint "
+                f"'{endpoint.name}': {e}"
+            )
+        except Exception as e:
+            raise DeployerError(
+                f"Unexpected error while deploying pipeline endpoint "
+                f"'{endpoint.name}': {e}"
+            )
+
+    def do_get_pipeline_endpoint(
+        self,
+        endpoint: PipelineEndpointResponse,
+    ) -> PipelineEndpointOperationalState:
+        """Get information about a Cloud Run pipeline endpoint.
+
+        Args:
+            endpoint: The pipeline endpoint to get information about.
+
+        Returns:
+            The operational state of the pipeline endpoint.
+
+        Raises:
+            PipelineEndpointNotFoundError: If the endpoint is not found.
+            RuntimeError: If the project ID or location is not found in the
+                endpoint metadata.
+        """
+        service = self._get_cloud_run_service(endpoint)
+
+        if service is None:
+            raise PipelineEndpointNotFoundError(
+                f"Cloud Run service for pipeline endpoint '{endpoint.name}' "
+                "not found"
+            )
+
+        existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
+            endpoint
+        )
+
+        if not existing_metadata.project_id or not existing_metadata.location:
+            raise RuntimeError(
+                f"Project ID or location not found in endpoint metadata for "
+                f"pipeline endpoint '{endpoint.name}'"
+            )
+
+        existing_secrets = self._get_secrets(endpoint)
+
+        return self._get_service_operational_state(
+            service,
+            existing_metadata.project_id,
+            existing_metadata.location,
+            existing_secrets,
+        )
+
+    def do_get_pipeline_endpoint_logs(
+        self,
+        endpoint: PipelineEndpointResponse,
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Get the logs of a Cloud Run pipeline endpoint.
+
+        Args:
+            endpoint: The pipeline endpoint to get the logs of.
+            follow: If True, stream logs as they are written.
+            tail: Only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that yields the logs of the pipeline endpoint.
+
+        Raises:
+            PipelineEndpointNotFoundError: If the endpoint is not found.
+            PipelineLogsNotFoundError: If the logs are not found.
+            DeployerError: If an unexpected error occurs.
+            RuntimeError: If the service name is not found in the endpoint
+                metadata.
+        """
+        # If follow is requested, we would need to implement streaming
+        if follow:
+            raise NotImplementedError(
+                "Log following is not yet implemented for Cloud Run deployer"
+            )
+
+        service = self._get_cloud_run_service(endpoint)
+        if service is None:
+            raise PipelineEndpointNotFoundError(
+                f"Cloud Run service for pipeline endpoint '{endpoint.name}' not found"
+            )
+
+        try:
+            existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
+                endpoint
+            )
+            service_name = existing_metadata.service_name
+            if not service_name:
+                raise RuntimeError(
+                    f"Service name not found in endpoint metadata for "
+                    f"pipeline endpoint '{endpoint.name}'"
+                )
+
+            # Build the filter for Cloud Run logs
+            filter_str = f'resource.type="cloud_run_revision" AND resource.labels.service_name="{service_name}"'
+
+            # Get logs from Cloud Logging
+            entries = self.logging_client.list_entries(filter_=filter_str)
+
+            log_lines = []
+            for entry in entries:
+                if hasattr(entry, "payload") and entry.payload:
+                    timestamp = (
+                        entry.timestamp.isoformat() if entry.timestamp else ""
+                    )
+                    log_line = f"[{timestamp}] {entry.payload}"
+                    log_lines.append(log_line)
+
+            # Apply tail limit if specified
+            if tail is not None and tail > 0:
+                log_lines = log_lines[-tail:]
+
+            # Yield logs
+            for log_line in log_lines:
+                yield log_line
+
+        except google_exceptions.GoogleAPICallError as e:
+            raise PipelineLogsNotFoundError(
+                f"Failed to retrieve logs for pipeline endpoint '{endpoint.name}': {e}"
+            )
+        except Exception as e:
+            raise DeployerError(
+                f"Unexpected error while retrieving logs for pipeline endpoint '{endpoint.name}': {e}"
+            )
+
+    def do_deprovision_pipeline_endpoint(
+        self,
+        endpoint: PipelineEndpointResponse,
+    ) -> Optional[PipelineEndpointOperationalState]:
+        """Deprovision a Cloud Run pipeline endpoint.
+
+        Args:
+            endpoint: The pipeline endpoint to deprovision.
+
+        Returns:
+            The operational state of the deprovisioned endpoint, or None if
+            deletion is completed immediately.
+
+        Raises:
+            PipelineEndpointNotFoundError: If the endpoint is not found.
+            PipelineEndpointDeprovisionError: If the deprovision fails.
+            DeployerError: If an unexpected error occurs.
+            RuntimeError: If the service name, project ID or location is not
+                found in the endpoint metadata.
+        """
+        service = self._get_cloud_run_service(endpoint)
+        if service is None:
+            raise PipelineEndpointNotFoundError(
+                f"Cloud Run service for pipeline endpoint '{endpoint.name}' not found"
+            )
+
+        try:
+            existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
+                endpoint
+            )
+            if (
+                not existing_metadata.service_name
+                or not existing_metadata.project_id
+                or not existing_metadata.location
+            ):
+                raise RuntimeError(
+                    f"Service name, project ID or location not found in "
+                    f"endpoint metadata for pipeline endpoint '{endpoint.name}'"
+                )
+
+            service_path = self._get_service_path(
+                existing_metadata.service_name,
+                existing_metadata.project_id,
+                existing_metadata.location,
+            )
+
+            logger.debug(
+                f"Deleting Cloud Run service for pipeline endpoint '{endpoint.name}'"
+            )
+
+            # Delete the service
+            operation = self.cloud_run_client.delete_service(name=service_path)
+
+            # Wait for the operation to complete
+            operation.result(timeout=300)  # 5 minutes timeout
+
+            # Clean up associated secrets
+            self._cleanup_endpoint_secrets(endpoint)
+
+            # Return None to indicate immediate deletion
+            return None
+
+        except google_exceptions.NotFound:
+            raise PipelineEndpointNotFoundError(
+                f"Cloud Run service for pipeline endpoint '{endpoint.name}' not found"
+            )
+        except google_exceptions.GoogleAPICallError as e:
+            raise PipelineEndpointDeprovisionError(
+                f"Failed to delete Cloud Run service for pipeline endpoint '{endpoint.name}': {e}"
+            )
+        except Exception as e:
+            raise DeployerError(
+                f"Unexpected error while deleting pipeline endpoint '{endpoint.name}': {e}"
+            )
