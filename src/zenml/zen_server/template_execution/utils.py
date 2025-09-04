@@ -307,8 +307,8 @@ def run_template(
                     str(template.id),
                     str(placeholder_run.id),
                 )
-                run = zen_store().get_pipeline_run(placeholder_run.id)
-                if run.status == ExecutionStatus.INITIALIZING:
+                run_status, _ = zen_store().get_run_status(placeholder_run.id)
+                if run_status == ExecutionStatus.INITIALIZING:
                     # The run isn't in the provisioning status yet, which means
                     # the orchestrator wasn't able to submit the run. In this
                     # case, we can update the run to failed.

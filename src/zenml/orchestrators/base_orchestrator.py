@@ -312,10 +312,11 @@ class BaseOrchestrator(StackComponent, ABC):
                     environment=environment,
                     placeholder_run=placeholder_run,
                 )
-                publish_pipeline_run_status_update(
-                    pipeline_run_id=placeholder_run.id,
-                    status=ExecutionStatus.PROVISIONING,
-                )
+                if placeholder_run:
+                    publish_pipeline_run_status_update(
+                        pipeline_run_id=placeholder_run.id,
+                        status=ExecutionStatus.PROVISIONING,
+                    )
 
                 if submission_result:
                     if submission_result.metadata:
