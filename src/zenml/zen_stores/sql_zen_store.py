@@ -5966,9 +5966,9 @@ class SqlZenStore(BaseZenStore):
             .where(
                 and_(
                     PipelineRunSchema.status
-                    == ExecutionStatus.INITIALIZING.value,
+                    != ExecutionStatus.INITIALIZING.value,
                     PipelineRunSchema.status
-                    == ExecutionStatus.PROVISIONING.value,
+                    != ExecutionStatus.PROVISIONING.value,
                 )
             )
         ).first()
