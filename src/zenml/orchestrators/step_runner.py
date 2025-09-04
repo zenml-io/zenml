@@ -137,8 +137,10 @@ class StepRunner:
             else None
         )
 
-
-        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False) or tracking_disabled:
+        if (
+            handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False)
+            or tracking_disabled
+        ):
             step_logging_enabled = False
         else:
             enabled_on_step = step_run.config.enable_step_logs
@@ -269,30 +271,28 @@ class StepRunner:
                                 step_exception=None,
                             )
 
-                        # Store and publish outputs only if tracking enabled
+                        # Validate outputs
                         try:
-                            logger.debug(f"Validating outputs for step: return_values={return_values}, annotations={list(output_annotations.keys()) if output_annotations else 'None'}")
+                            logger.debug(
+                                f"Validating outputs for step: return_values={return_values}, annotations={list(output_annotations.keys()) if output_annotations else 'None'}"
+                            )
                             output_data = self._validate_outputs(
                                 return_values, output_annotations
                             )
-                            logger.debug(f"Validated outputs: {list(output_data.keys()) if output_data else 'No outputs'}")
+                            logger.debug(
+                                f"Validated outputs: {list(output_data.keys()) if output_data else 'No outputs'}"
+                            )
                         except Exception as e:
                             logger.error(f"Error validating outputs: {e}")
                             raise
 
-                        # For serve mode, store outputs in request buffer for in-memory handoff
-                        if tracking_disabled:
-                            from zenml.orchestrators.serving_buffer import (
-                                store_step_outputs,
-                            )
-                            
-                            logger.debug(f"Storing outputs for step '{step_run_info.config.name}': {list(output_data.keys()) if output_data else 'No outputs'}")
+                        # Capture outputs for response if this step is a return target
+                        self._capture_response_outputs(output_data)
 
-                            store_step_outputs(
-                                step_run_info.config.name, output_data
-                            )
-
+                        # Persist outputs minimally to enable downstream input resolution
                         output_artifacts = {}
+                        artifact_metadata_enabled = False
+                        artifact_visualization_enabled = False
                         if not tracking_disabled:
                             artifact_metadata_enabled = is_setting_enabled(
                                 is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
@@ -302,14 +302,14 @@ class StepRunner:
                                 is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
                                 is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
                             )
-                            output_artifacts = self._store_output_artifacts(
-                                output_data=output_data,
-                                output_artifact_uris=output_artifact_uris,
-                                output_materializers=output_materializers,
-                                output_annotations=output_annotations,
-                                artifact_metadata_enabled=artifact_metadata_enabled,
-                                artifact_visualization_enabled=artifact_visualization_enabled,
-                            )
+                        output_artifacts = self._store_output_artifacts(
+                            output_data=output_data,
+                            output_artifact_uris=output_artifact_uris,
+                            output_materializers=output_materializers,
+                            output_annotations=output_annotations,
+                            artifact_metadata_enabled=artifact_metadata_enabled,
+                            artifact_visualization_enabled=artifact_visualization_enabled,
+                        )
 
                         if (
                             model_version := step_run.model_version
@@ -329,18 +329,17 @@ class StepRunner:
                     )
                     StepContext._clear()  # Remove the step context singleton
 
-            # Update the status and output artifacts of the step run only if tracking enabled
-            if not tracking_disabled:
-                output_artifact_ids = {
-                    output_name: [
-                        artifact.id,
-                    ]
-                    for output_name, artifact in output_artifacts.items()
-                }
-                publish_successful_step_run(
-                    step_run_id=step_run_info.step_run_id,
-                    output_artifact_ids=output_artifact_ids,
-                )
+            # Update the status and output artifacts of the step run (always attach outputs)
+            output_artifact_ids = {
+                output_name: [
+                    artifact.id,
+                ]
+                for output_name, artifact in output_artifacts.items()
+            }
+            publish_successful_step_run(
+                step_run_id=step_run_info.step_run_id,
+                output_artifact_ids=output_artifact_ids,
+            )
 
     def _evaluate_artifact_names_in_collections(
         self,
@@ -654,6 +653,83 @@ class StepRunner:
                     )
             validated_outputs[output_name] = return_value
         return validated_outputs
+
+    def _capture_response_outputs(self, output_data: Dict[str, Any]) -> None:
+        """Capture outputs for response if this step is a return target.
+
+        Args:
+            output_data: Validated output data from the step
+        """
+        from zenml.orchestrators.utils import (
+            get_return_targets,
+            response_tap_set,
+        )
+
+        step_name = self._step.spec.pipeline_parameter_name
+        return_targets = get_return_targets()
+
+        if step_name not in return_targets:
+            return
+
+        expected_output_name = return_targets[step_name]
+
+        # Pick the output value
+        if expected_output_name and expected_output_name in output_data:
+            # Use specific expected output
+            value = output_data[expected_output_name]
+            output_name = expected_output_name
+        elif len(output_data) == 1:
+            # Single output fallback
+            output_name = list(output_data.keys())[0]
+            value = output_data[output_name]
+        else:
+            logger.warning(
+                f"Step '{step_name}' is a return target but no matching output found. "
+                f"Expected: '{expected_output_name}', Available: {list(output_data.keys())}"
+            )
+            return
+
+        logger.debug(
+            f"Capturing response output '{output_name}' from step '{step_name}': {type(value)}"
+        )
+
+        # Serialize for JSON response
+        serialized_value = self._serialize_for_json(value)
+
+        # Store in response tap
+        response_tap_set(output_name, serialized_value)
+
+    def _serialize_for_json(self, value: Any) -> Any:
+        """Serialize a value for JSON response with proper numpy/pandas handling.
+
+        Args:
+            value: The value to serialize
+
+        Returns:
+            JSON-serializable representation of the value
+        """
+        try:
+            import json
+
+            # Handle common ML types that aren't JSON serializable
+            if hasattr(value, "tolist"):  # numpy arrays, pandas Series
+                return value.tolist()
+            elif hasattr(value, "to_dict"):  # pandas DataFrames
+                return value.to_dict()
+            elif hasattr(value, "__array__"):  # numpy-like arrays
+                import numpy as np
+
+                return np.asarray(value).tolist()
+
+            # Test if it's already JSON serializable
+            json.dumps(value)
+            return value
+        except (TypeError, ValueError, ImportError):
+            # Safe fallback with size limit for large objects
+            str_repr = str(value)
+            if len(str_repr) > 1000:  # Truncate very large objects
+                return f"{str_repr[:1000]}... [truncated, original length: {len(str_repr)}]"
+            return str_repr
 
     def _store_output_artifacts(
         self,

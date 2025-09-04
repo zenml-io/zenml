@@ -203,6 +203,59 @@ def tap_clear() -> None:
     _serve_output_tap.set({})
 
 
+# Response tap for capturing pipeline outputs in-process
+_response_tap: ContextVar[Dict[str, Any]] = ContextVar(
+    "response_tap", default={}
+)
+_return_targets: ContextVar[Dict[str, Optional[str]]] = ContextVar(
+    "return_targets", default={}
+)
+
+
+def response_tap_set(output_name: str, value: Any) -> None:
+    """Set a response output value in the tap.
+
+    Args:
+        output_name: Name of the output in the response
+        value: The output value to store
+    """
+    current_tap = _response_tap.get({})
+    current_tap[output_name] = value
+    _response_tap.set(current_tap)
+
+
+def response_tap_get_all() -> Dict[str, Any]:
+    """Get all captured response outputs.
+
+    Returns:
+        Dictionary of captured outputs
+    """
+    return _response_tap.get({})
+
+
+def response_tap_clear() -> None:
+    """Clear the response tap for a fresh request."""
+    _response_tap.set({})
+
+
+def set_return_targets(targets: Dict[str, Optional[str]]) -> None:
+    """Set the return targets for this request.
+
+    Args:
+        targets: Mapping of step_name -> expected_output_name (or None for first)
+    """
+    _return_targets.set(targets)
+
+
+def get_return_targets() -> Dict[str, Optional[str]]:
+    """Get the return targets for this request.
+
+    Returns:
+        Mapping of step_name -> expected_output_name (or None for first)
+    """
+    return _return_targets.get({})
+
+
 def extract_return_contract(
     pipeline_source: Optional[str],
 ) -> Optional[Dict[str, str]]:
