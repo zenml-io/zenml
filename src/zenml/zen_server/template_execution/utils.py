@@ -222,7 +222,8 @@ def run_template(
 
     command = RunnerEntrypointConfiguration.get_entrypoint_command()
     args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
-        deployment_id=new_deployment.id
+        deployment_id=new_deployment.id,
+        placeholder_run_id=placeholder_run.id,
     )
 
     if build.python_version:
@@ -306,14 +307,20 @@ def run_template(
                     str(template.id),
                     str(placeholder_run.id),
                 )
-                zen_store().update_run(
-                    run_id=placeholder_run.id,
-                    run_update=PipelineRunUpdate(
-                        status=ExecutionStatus.FAILED,
-                        end_time=utc_now(),
-                    ),
-                )
-                raise
+                run = zen_store().get_pipeline_run(placeholder_run.id)
+                if run.status == ExecutionStatus.INITIALIZING:
+                    # The run isn't in the provisioning status yet, which means
+                    # the orchestrator wasn't able to submit the run. In this
+                    # case, we can update the run to failed.
+                    zen_store().update_run(
+                        run_id=placeholder_run.id,
+                        run_update=PipelineRunUpdate(
+                            status=ExecutionStatus.FAILED,
+                            status_reason="Failed to start template run.",
+                            end_time=utc_now(),
+                        ),
+                    )
+                    raise
 
     if sync:
         _task_with_analytics_and_error_handling()

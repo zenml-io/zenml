@@ -138,6 +138,7 @@ def publish_failed_pipeline_run(
 def publish_pipeline_run_status_update(
     pipeline_run_id: "UUID",
     status: ExecutionStatus,
+    status_reason: Optional[str] = None,
     end_time: Optional[datetime] = None,
 ) -> "PipelineRunResponse":
     """Publishes a pipeline run status update.
@@ -145,6 +146,7 @@ def publish_pipeline_run_status_update(
     Args:
         pipeline_run_id: The ID of the pipeline run to update.
         status: The new status for the pipeline run.
+        status_reason: The reason for the status of the pipeline run.
         end_time: The end time for the pipeline run. If None, will be set to current time
             for finished statuses.
 
@@ -158,6 +160,7 @@ def publish_pipeline_run_status_update(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
             status=status,
+            status_reason=status_reason,
             end_time=end_time,
         ),
     )

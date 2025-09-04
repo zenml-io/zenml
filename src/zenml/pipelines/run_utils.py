@@ -91,36 +91,6 @@ def create_placeholder_run(
     return run
 
 
-def get_placeholder_run(
-    deployment_id: UUID,
-) -> Optional["PipelineRunResponse"]:
-    """Get the placeholder run for a deployment.
-
-    Args:
-        deployment_id: ID of the deployment for which to get the placeholder
-            run.
-
-    Returns:
-        The placeholder run or `None` if there exists no placeholder run for the
-        deployment.
-    """
-    runs = Client().list_pipeline_runs(
-        sort_by="asc:created",
-        size=1,
-        deployment_id=deployment_id,
-        status=ExecutionStatus.INITIALIZING,
-        hydrate=True,
-    )
-    if len(runs.items) == 0:
-        return None
-
-    run = runs.items[0]
-    if run.orchestrator_run_id is None:
-        return run
-
-    return None
-
-
 def deploy_pipeline(
     deployment: "PipelineDeploymentResponse",
     stack: "Stack",

@@ -13,15 +13,49 @@
 #  permissions and limitations under the License.
 """Runner entrypoint configuration."""
 
+from typing import Any, List, Set
+from uuid import UUID
+
 from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.pipelines.run_utils import deploy_pipeline, get_placeholder_run
+from zenml.pipelines.run_utils import deploy_pipeline
+
+PLACEHOLDER_RUN_ID_OPTION = "placeholder_run_id"
 
 
 class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
     """Runner entrypoint configuration."""
+
+    @classmethod
+    def get_entrypoint_options(cls) -> Set[str]:
+        """Gets all options required for running with this configuration.
+
+        Returns:
+            The superclass options as well as an option for the name of the
+            step to run.
+        """
+        return super().get_entrypoint_options() | {PLACEHOLDER_RUN_ID_OPTION}
+
+    @classmethod
+    def get_entrypoint_arguments(
+        cls,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Gets all arguments that the entrypoint command should be called with.
+
+        Args:
+            **kwargs: Kwargs, must include the placeholder run id.
+
+        Returns:
+            The superclass arguments as well as arguments for the placeholder
+            run id.
+        """
+        return super().get_entrypoint_arguments(**kwargs) + [
+            f"--{PLACEHOLDER_RUN_ID_OPTION}",
+            kwargs[PLACEHOLDER_RUN_ID_OPTION],
+        ]
 
     def run(self) -> None:
         """Run the entrypoint configuration.
@@ -30,11 +64,14 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         to the entrypoint configuration.
         """
         deployment = self.load_deployment()
+        placeholder_run_id = UUID(
+            self.entrypoint_args[PLACEHOLDER_RUN_ID_OPTION]
+        )
+        placeholder_run = Client().get_pipeline_run(placeholder_run_id)
 
         stack = Client().active_stack
         assert deployment.stack and stack.id == deployment.stack.id
 
-        placeholder_run = get_placeholder_run(deployment_id=deployment.id)
         deploy_pipeline(
             deployment=deployment,
             stack=stack,
