@@ -240,13 +240,13 @@ Analysis: Rule-based AI (LLM unavailable)"""
         "docker": docker_settings,
         # Pipeline-level defaults using new simplified syntax with type-safe enums
         "serving_capture": {
-            "mode": CaptureMode.FULL,  # Type-safe enum value
+            "mode": CaptureMode.NONE,  # "mode": CaptureMode.FULL,  # Type-safe enum value
             "max_bytes": 32768,  # Increased for better artifact storage
             "redact": ["password", "token", "key", "secret", "api_key"],
         },
         "deployer.gcp": {
             "allow_unauthenticated": True,
-            "location": "us-central1",
+            # "location": "us-central1",
             "min_instances": 0,
             "generate_auth_key": True,
         },
