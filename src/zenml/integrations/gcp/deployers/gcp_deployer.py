@@ -259,6 +259,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
     CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
 
+    _credentials: Optional[Any] = None
     _project_id: Optional[str] = None
     _cloud_run_client: Optional[run_v2.ServicesClient] = None
     _logging_client: Optional[LoggingClient] = None
@@ -298,6 +299,30 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             }
         )
 
+    def _get_credentials_and_project_id(self) -> Tuple[Any, str]:
+        """Get GCP credentials and project ID.
+
+        Returns:
+            A tuple containing the credentials and project ID.
+
+        Raises:
+            RuntimeError: If the service connector returns an unexpected type.
+        """
+        # Check if we need to refresh the credentials (e.g., connector expired)
+        if (
+            self._credentials is not None
+            and self._project_id is not None
+            and not self.connector_has_expired()
+        ):
+            return self._credentials, self._project_id
+
+        # Use the existing _get_authentication method from GoogleCredentialsMixin
+        credentials, project_id = self._get_authentication()
+
+        self._credentials = credentials
+        self._project_id = project_id
+        return credentials, project_id
+
     @property
     def project_id(self) -> str:
         """Get the GCP project ID.
@@ -305,10 +330,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The GCP project ID.
         """
-        if self._project_id is None:
-            _, project_id = self._get_authentication()
-            self._project_id = project_id
-        return self._project_id
+        _, project_id = self._get_credentials_and_project_id()
+        return project_id
 
     @property
     def cloud_run_client(self) -> run_v2.ServicesClient:
@@ -317,8 +340,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The Cloud Run client.
         """
-        if self._cloud_run_client is None:
-            credentials, _ = self._get_authentication()
+        if self._cloud_run_client is None or self.connector_has_expired():
+            credentials, _ = self._get_credentials_and_project_id()
             self._cloud_run_client = run_v2.ServicesClient(
                 credentials=credentials
             )
@@ -331,8 +354,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The Cloud Logging client.
         """
-        if self._logging_client is None:
-            credentials, project_id = self._get_authentication()
+        if self._logging_client is None or self.connector_has_expired():
+            credentials, project_id = self._get_credentials_and_project_id()
             self._logging_client = LoggingClient(
                 project=project_id, credentials=credentials
             )
@@ -347,8 +370,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The Secret Manager client.
         """
-        if self._secret_manager_client is None:
-            credentials, _ = self._get_authentication()
+        if self._secret_manager_client is None or self.connector_has_expired():
+            credentials, _ = self._get_credentials_and_project_id()
             self._secret_manager_client = (
                 secretmanager.SecretManagerServiceClient(
                     credentials=credentials
@@ -788,8 +811,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The Cloud Run service, or None if it doesn't exist.
         """
-        client = self.cloud_run_client
-
         # Get location from the endpoint metadata or use default
         existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
             endpoint
@@ -809,7 +830,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         )
 
         try:
-            return client.get_service(name=service_path)
+            return self.cloud_run_client.get_service(name=service_path)
         except google_exceptions.NotFound:
             return None
 
@@ -899,7 +920,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             self.get_settings(deployment),
         )
 
-        client = self.cloud_run_client
         project_id = self.project_id
 
         service_name = self._get_service_name(
@@ -1054,7 +1074,9 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             # Check if service already exists
             existing_service = None
             try:
-                existing_service = client.get_service(name=service_path)
+                existing_service = self.cloud_run_client.get_service(
+                    name=service_path
+                )
             except google_exceptions.NotFound:
                 pass
 
@@ -1065,7 +1087,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                     f"Updating existing Cloud Run service for pipeline "
                     f"endpoint '{endpoint.name}'"
                 )
-                client.update_service(service=service)
+                self.cloud_run_client.update_service(service=service)
             else:
                 # Create new service - name should NOT be set, use service_id instead
                 logger.debug(
@@ -1073,7 +1095,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                     f"'{endpoint.name}'"
                 )
                 parent = f"projects/{project_id}/locations/{settings.location}"
-                client.create_service(
+                self.cloud_run_client.create_service(
                     parent=parent, service=service, service_id=service_name
                 )
                 # Add the name for the operational state
@@ -1167,21 +1189,24 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 "Log following is not yet implemented for Cloud Run deployer"
             )
 
-        service = self._get_cloud_run_service(endpoint)
-        if service is None:
-            raise PipelineEndpointNotFoundError(
-                f"Cloud Run service for pipeline endpoint '{endpoint.name}' not found"
-            )
-
         try:
             existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
                 endpoint
             )
             service_name = existing_metadata.service_name
             if not service_name:
-                raise RuntimeError(
-                    f"Service name not found in endpoint metadata for "
-                    f"pipeline endpoint '{endpoint.name}'"
+                assert endpoint.pipeline_deployment, (
+                    "Pipeline deployment not set for endpoint"
+                )
+                settings = cast(
+                    GCPDeployerSettings,
+                    self.get_settings(endpoint.pipeline_deployment),
+                )
+                # We rely on the running service name, if a service is currently
+                # active. If not, we fall back to the service name generated
+                # from the current configuration.
+                service_name = self._get_service_name(
+                    endpoint.name, endpoint.id, settings.service_name_prefix
                 )
 
             # Build the filter for Cloud Run logs

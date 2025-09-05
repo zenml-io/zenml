@@ -280,7 +280,11 @@ if __name__ == "__main__":
     import uvicorn
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--deployment_id", help="Pipeline deployment ID")
+    parser.add_argument(
+        "--deployment_id",
+        default=os.getenv("ZENML_PIPELINE_DEPLOYMENT_ID"),
+        help="Pipeline deployment ID",
+    )
     parser.add_argument(
         "--host", default=os.getenv("ZENML_SERVICE_HOST", "0.0.0.0")
     )
@@ -297,10 +301,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_level", default=os.getenv("ZENML_LOG_LEVEL", "info").lower()
     )
+    parser.add_argument(
+        "--auth_key", default=os.getenv("ZENML_SERVING_AUTH_KEY", "")
+    )
     args = parser.parse_args()
 
     if args.deployment_id:
         os.environ["ZENML_PIPELINE_DEPLOYMENT_ID"] = args.deployment_id
+    if args.auth_key:
+        os.environ["ZENML_SERVING_AUTH_KEY"] = args.auth_key
 
     logger.info(f"Starting FastAPI server on {args.host}:{args.port}")
 

@@ -221,6 +221,11 @@ Analysis: Rule-based AI (LLM unavailable)"""
             "min_instances": 0,
             "generate_auth_key": True,
         },
+        "deployer.aws": {
+            "allow_unauthenticated": True,
+            "min_instances": 0,
+            "generate_auth_key": True,
+        },
     },
 )
 def weather_agent_pipeline(city: str = "London") -> str:
