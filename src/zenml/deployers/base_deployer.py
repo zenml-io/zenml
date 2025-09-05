@@ -30,6 +30,10 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import (
+    ENV_ZENML_ACTIVE_PROJECT_ID,
+    ENV_ZENML_ACTIVE_STACK_ID,
+)
 from zenml.deployers.exceptions import (
     DeployerError,
     PipelineEndpointAlreadyExistsError,
@@ -359,6 +363,12 @@ class BaseDeployer(StackComponent, ABC):
             deployment_id=endpoint.id,
         )
 
+        # Make sure to use the correct active stack/project which correspond
+        # to the supplied stack and deployment, which may be different from the
+        # active stack/project
+        environment[ENV_ZENML_ACTIVE_STACK_ID] = str(stack.id)
+        environment[ENV_ZENML_ACTIVE_PROJECT_ID] = str(deployment.project_id)
+
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
         )
@@ -420,7 +430,9 @@ class BaseDeployer(StackComponent, ABC):
         if endpoint_state.status != PipelineEndpointStatus.RUNNING:
             raise PipelineEndpointDeploymentError(
                 f"Failed to deploy pipeline endpoint {endpoint.name}: "
-                f"Operational state: {endpoint_state.status}"
+                f"The endpoint's operational state is {endpoint_state.status}. "
+                "Please check the status or logs of the endpoint for more "
+                "information."
             )
 
         return endpoint

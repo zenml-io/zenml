@@ -3611,6 +3611,7 @@ class Client(metaclass=ClientMetaClass):
         from zenml.deployers.base_deployer import (
             BaseDeployer,
         )
+        from zenml.stack.stack import Stack
         from zenml.stack.stack_component import StackComponent
 
         endpoint: Optional[PipelineEndpointResponse] = None
@@ -3627,7 +3628,7 @@ class Client(metaclass=ClientMetaClass):
                 raise
 
         stack = Client().active_stack
-        deployer = stack.deployer
+        deployer: Optional[BaseDeployer] = None
 
         if deployment_id:
             deployment = self.get_deployment(
@@ -3662,19 +3663,26 @@ class Client(metaclass=ClientMetaClass):
                         f"server's dependencies are not installed."
                     )
 
+        if deployment.stack and deployment.stack.id != stack.id:
+            # We really need to use the original stack for which the deployment
+            # was created for to provision the endpoint, otherwise the endpoint
+            # might not have the correct dependencies installed.
+            stack = Stack.from_model(deployment.stack)
+
         if not deployer:
-            raise ValueError(
-                "No deployer was found in your active stack. Please add a "
-                "deployer to your stack to be able to provision a pipeline "
-                "endpoint."
-            )
+            if stack.deployer:
+                deployer = stack.deployer
+            else:
+                raise ValueError(
+                    f"No deployer was found in the deployment's stack "
+                    f"'{stack.name}' or in your active stack. Please add a "
+                    "deployer to your stack to be able to provision a pipeline "
+                    "endpoint."
+                )
         else:
             # Provision the endpoint through the deployer
             endpoint = deployer.provision_pipeline_endpoint(
                 deployment=deployment,
-                # TODO: for an existing endpoint, the active stack might not
-                # contain the deployer associated with the endpoint, which might
-                # lead to unexpected behavior.
                 stack=stack,
                 endpoint_name_or_id=endpoint_name_or_id,
                 replace=True,
