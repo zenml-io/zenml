@@ -316,7 +316,7 @@ def run_template(
                         run_id=placeholder_run.id,
                         run_update=PipelineRunUpdate(
                             status=ExecutionStatus.FAILED,
-                            status_reason="Failed to start template run.",
+                            status_reason="Failed to start run.",
                             end_time=utc_now(),
                         ),
                     )
