@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pydantic import SerializeAsAny, field_validator
 
-from zenml.config.constants import DOCKER_SETTINGS_KEY
+from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
@@ -27,7 +27,7 @@ from zenml.utils.tag_utils import Tag
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
-    from zenml.config import DockerSettings
+    from zenml.config import DockerSettings, ResourceSettings
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 
@@ -119,3 +119,20 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
             DOCKER_SETTINGS_KEY, {}
         )
         return DockerSettings.model_validate(model_or_dict)
+
+    @property
+    def resource_settings(self) -> "ResourceSettings":
+        """Resource settings of this step configuration.
+
+        Returns:
+            The resource settings of this step configuration.
+        """
+        from zenml.config import ResourceSettings
+
+        model_or_dict: SettingsOrDict = self.settings.get(
+            RESOURCE_SETTINGS_KEY, {}
+        )
+
+        if isinstance(model_or_dict, BaseSettings):
+            model_or_dict = model_or_dict.model_dump()
+        return ResourceSettings.model_validate(model_or_dict)

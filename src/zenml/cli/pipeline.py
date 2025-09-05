@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import click
 
@@ -356,6 +356,15 @@ def run_pipeline(
     required=False,
     help="Attach to the pipeline endpoint logs.",
 )
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the pipeline to be deployed.",
+)
 def deploy_pipeline(
     source: str,
     endpoint_name: str,
@@ -364,6 +373,7 @@ def deploy_pipeline(
     build_path_or_id: Optional[str] = None,
     prevent_build_reuse: bool = False,
     attach: bool = False,
+    timeout: Optional[int] = None,
 ) -> None:
     """Deploy a pipeline for online inference.
 
@@ -378,6 +388,8 @@ def deploy_pipeline(
         prevent_build_reuse: If True, prevents automatic reusing of previous
             builds.
         attach: If True, attach to the pipeline endpoint logs.
+        timeout: The maximum time in seconds to wait for the pipeline to be
+            deployed.
     """
     if not Client().root:
         cli_utils.warning(
@@ -1115,6 +1127,62 @@ def refresh_pipeline_endpoint(
                 "metadata",
             },
         )
+
+
+@endpoint.command("invoke", context_settings={"ignore_unknown_options": True})
+@click.argument("endpoint_name_or_id", type=str, required=True)
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the pipeline endpoint to be "
+    "invoked.",
+)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def invoke_pipeline_endpoint(
+    endpoint_name_or_id: str,
+    args: List[str],
+    timeout: Optional[int] = None,
+) -> None:
+    """Call a pipeline endpoint with arguments.
+
+    Args:
+        endpoint_name_or_id: The name or ID of the pipeline endpoint to call.
+        args: The arguments to pass to the pipeline endpoint call.
+        timeout: The maximum time in seconds to wait for the pipeline endpoint
+            to be invoked.
+    """
+    from zenml.deployers.utils import call_pipeline_endpoint
+
+    # Parse the given args
+    args = list(args)
+    args.append(endpoint_name_or_id)
+
+    name_or_id, parsed_args = cli_utils.parse_name_and_extra_arguments(
+        args,
+        expand_args=True,
+        name_mandatory=True,
+    )
+    assert name_or_id is not None
+
+    try:
+        response = call_pipeline_endpoint(
+            endpoint_name_or_id=name_or_id,
+            timeout=timeout or 300,  # 5 minute timeout
+            project=None,
+            **parsed_args,
+        )
+
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Invoked pipeline endpoint '{name_or_id}' with response:"
+        )
+        print(json.dumps(response, indent=2))
 
 
 @endpoint.command("logs")

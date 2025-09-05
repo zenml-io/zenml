@@ -852,12 +852,15 @@ class Stack:
         self,
         deployment: "PipelineDeploymentResponse",
         endpoint_name: str,
+        timeout: Optional[int] = None,
     ) -> "PipelineEndpointResponse":
         """Serves a pipeline on this stack.
 
         Args:
             deployment: The pipeline deployment.
             endpoint_name: The name of the endpoint to serve the pipeline on.
+            timeout: The maximum time in seconds to wait for the pipeline to be
+                deployed.
         """
         if not self.deployer:
             raise RuntimeError(
@@ -869,6 +872,7 @@ class Stack:
             deployment=deployment,
             stack=self,
             endpoint_name_or_id=endpoint_name,
+            timeout=timeout,
         )
 
     def _get_active_components_for_step(

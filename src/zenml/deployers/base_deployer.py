@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT = 300
+DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT = 600
 
 
 class BaseDeployerSettings(BaseSettings):
@@ -409,14 +409,16 @@ class BaseDeployer(StackComponent, ABC):
             PipelineEndpointStatus.RUNNING,
             PipelineEndpointStatus.ERROR,
         ]:
-            if time.time() - start_time > timeout:
+            elapsed_time = int(time.time() - start_time)
+            if elapsed_time > timeout:
                 raise PipelineEndpointDeploymentTimeoutError(
                     f"Deployment of pipeline endpoint {endpoint.name} "
                     f"timed out after {timeout} seconds"
                 )
             logger.info(
-                f"Pipeline endpoint {endpoint.name} is not yet running. "
-                f"Waiting for {sleep_time} seconds..."
+                f"Pipeline endpoint {endpoint.name} is still not running after "
+                f"{elapsed_time} seconds. Waiting for max "
+                f"{timeout - elapsed_time} seconds..."
             )
             time.sleep(sleep_time)
             try:
@@ -577,14 +579,16 @@ class BaseDeployer(StackComponent, ABC):
             PipelineEndpointStatus.ABSENT,
             PipelineEndpointStatus.ERROR,
         ]:
-            if time.time() - start_time > timeout:
+            elapsed_time = int(time.time() - start_time)
+            if elapsed_time > timeout:
                 raise PipelineEndpointDeletionTimeoutError(
                     f"Deprovisioning of pipeline endpoint {endpoint_name_or_id} "
                     f"timed out after {timeout} seconds"
                 )
             logger.info(
-                f"Pipeline endpoint {endpoint_name_or_id} is not yet deprovisioned. "
-                f"Waiting for {sleep_time} seconds..."
+                f"Pipeline endpoint {endpoint_name_or_id} is still not "
+                f"deprovisioned after {elapsed_time} seconds. Waiting for max "
+                f"{timeout - elapsed_time} seconds..."
             )
             time.sleep(sleep_time)
             try:

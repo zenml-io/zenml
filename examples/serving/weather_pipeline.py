@@ -21,6 +21,7 @@ from zenml.config import DockerSettings
 
 # Import enums for type-safe capture mode configuration
 from zenml.config.docker_settings import PythonPackageInstaller
+from zenml.config.resource_settings import ResourceSettings
 from zenml.steps.step_context import get_step_context
 
 # Note: You can use either approach:
@@ -218,14 +219,19 @@ Analysis: Rule-based AI (LLM unavailable)"""
         "deployer.gcp": {
             "allow_unauthenticated": True,
             # "location": "us-central1",
-            "min_instances": 0,
             "generate_auth_key": True,
         },
         "deployer.aws": {
             "allow_unauthenticated": True,
-            "min_instances": 0,
             "generate_auth_key": True,
         },
+        "resources": ResourceSettings(
+            memory="1GB",
+            cpu_count=1,
+            min_replicas=1,
+            max_replicas=5,
+            max_concurrency=10,
+        ),
     },
 )
 def weather_agent_pipeline(city: str = "London") -> str:

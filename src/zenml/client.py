@@ -3679,18 +3679,18 @@ class Client(metaclass=ClientMetaClass):
                     "deployer to your stack to be able to provision a pipeline "
                     "endpoint."
                 )
-        else:
-            # Provision the endpoint through the deployer
-            endpoint = deployer.provision_pipeline_endpoint(
-                deployment=deployment,
-                stack=stack,
-                endpoint_name_or_id=endpoint_name_or_id,
-                replace=True,
-                timeout=timeout,
-            )
-            logger.info(
-                f"Provisioned pipeline endpoint with name '{endpoint.name}'.",
-            )
+
+        # Provision the endpoint through the deployer
+        endpoint = deployer.provision_pipeline_endpoint(
+            deployment=deployment,
+            stack=stack,
+            endpoint_name_or_id=endpoint_name_or_id,
+            replace=True,
+            timeout=timeout,
+        )
+        logger.info(
+            f"Provisioned pipeline endpoint with name '{endpoint.name}'.",
+        )
 
         return endpoint
 

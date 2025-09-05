@@ -33,6 +33,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from pydantic import BaseModel
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.resource_settings import ResourceSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.exceptions import (
     DeployerError,
@@ -65,6 +66,18 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
+
+# Default resource and scaling configuration constants
+# These are used when ResourceSettings are not provided in the pipeline configuration
+DEFAULT_CPU = "0.25 vCPU"
+DEFAULT_MEMORY = "0.5 GB"
+DEFAULT_MIN_SIZE = 1
+DEFAULT_MAX_SIZE = 25
+DEFAULT_MAX_CONCURRENCY = 100
+
+# AWS App Runner limits
+AWS_APP_RUNNER_MAX_SIZE = 1000
+AWS_APP_RUNNER_MAX_CONCURRENCY = 1000
 
 
 class AppRunnerPipelineEndpointMetadata(BaseModel):
@@ -779,14 +792,18 @@ class AWSDeployer(ContainerizedDeployer):
     def _create_or_update_auto_scaling_config(
         self,
         config_name: str,
-        settings: AWSDeployerSettings,
+        min_size: int,
+        max_size: int,
+        max_concurrency: int,
         endpoint: PipelineEndpointResponse,
     ) -> str:
         """Create or update an AutoScalingConfiguration for App Runner.
 
         Args:
             config_name: The name for the auto-scaling configuration.
-            settings: The deployer settings containing scaling parameters.
+            min_size: Minimum number of instances.
+            max_size: Maximum number of instances.
+            max_concurrency: Maximum concurrent requests per instance.
             endpoint: The pipeline endpoint.
 
         Returns:
@@ -824,12 +841,9 @@ class AWSDeployer(ContainerizedDeployer):
 
                     # Check if update is needed
                     if (
-                        existing_config["MaxConcurrency"]
-                        == settings.auto_scaling_max_concurrency
-                        and existing_config["MaxSize"]
-                        == settings.auto_scaling_max_size
-                        and existing_config["MinSize"]
-                        == settings.auto_scaling_min_size
+                        existing_config["MaxConcurrency"] == max_concurrency
+                        and existing_config["MaxSize"] == max_size
+                        and existing_config["MinSize"] == min_size
                     ):
                         logger.debug(
                             f"Auto-scaling configuration {existing_arn} is up to date"
@@ -852,9 +866,9 @@ class AWSDeployer(ContainerizedDeployer):
             response = (
                 self.app_runner_client.create_auto_scaling_configuration(
                     AutoScalingConfigurationName=config_name,
-                    MaxConcurrency=settings.auto_scaling_max_concurrency,
-                    MaxSize=settings.auto_scaling_max_size,
-                    MinSize=settings.auto_scaling_min_size,
+                    MaxConcurrency=max_concurrency,
+                    MaxSize=max_size,
+                    MinSize=min_size,
                     Tags=tags,
                 )
             )
@@ -1128,6 +1142,149 @@ class AWSDeployer(ContainerizedDeployer):
         # can be handled as service updates with new revisions
         return False
 
+    def _convert_resource_settings_to_aws_format(
+        self,
+        resource_settings: ResourceSettings,
+    ) -> Tuple[str, str]:
+        """Convert ResourceSettings to AWS App Runner resource format.
+
+        AWS App Runner only supports specific CPU-memory combinations.
+        This method selects the best combination that meets the requirements.
+
+        Args:
+            resource_settings: The resource settings from pipeline configuration.
+
+        Returns:
+            Tuple of (cpu, memory) in AWS App Runner format.
+        """
+        # Get requested resources
+        requested_cpu = resource_settings.cpu_count
+        requested_memory_gb = None
+        if resource_settings.memory is not None:
+            requested_memory_gb = resource_settings.get_memory(unit="GB")
+
+        # Select the best CPU-memory combination
+        cpu, memory = self._select_aws_cpu_memory_combination(
+            requested_cpu, requested_memory_gb
+        )
+
+        return cpu, memory
+
+    def _select_aws_cpu_memory_combination(
+        self,
+        requested_cpu: Optional[float],
+        requested_memory_gb: Optional[float],
+    ) -> Tuple[str, str]:
+        """Select the best AWS App Runner CPU-memory combination.
+
+        AWS App Runner only supports these specific combinations:
+        - 0.25 vCPU: 0.5 GB, 1 GB
+        - 0.5 vCPU: 1 GB
+        - 1 vCPU: 2 GB, 3 GB, 4 GB
+        - 2 vCPU: 4 GB, 6 GB
+        - 4 vCPU: 8 GB, 10 GB, 12 GB
+
+        Args:
+            requested_cpu: Requested CPU count (can be None)
+            requested_memory_gb: Requested memory in GB (can be None)
+
+        Returns:
+            Tuple of (cpu, memory) that best matches requirements
+        """
+        # Define valid AWS App Runner combinations (CPU -> [valid memory options])
+        valid_combinations = [
+            # (cpu_value, cpu_string, memory_value, memory_string)
+            (0.25, "0.25 vCPU", 0.5, "0.5 GB"),
+            (0.25, "0.25 vCPU", 1.0, "1 GB"),
+            (0.5, "0.5 vCPU", 1.0, "1 GB"),
+            (1.0, "1 vCPU", 2.0, "2 GB"),
+            (1.0, "1 vCPU", 3.0, "3 GB"),
+            (1.0, "1 vCPU", 4.0, "4 GB"),
+            (2.0, "2 vCPU", 4.0, "4 GB"),
+            (2.0, "2 vCPU", 6.0, "6 GB"),
+            (4.0, "4 vCPU", 8.0, "8 GB"),
+            (4.0, "4 vCPU", 10.0, "10 GB"),
+            (4.0, "4 vCPU", 12.0, "12 GB"),
+        ]
+
+        # If no specific requirements, use default
+        if requested_cpu is None and requested_memory_gb is None:
+            return DEFAULT_CPU, DEFAULT_MEMORY
+
+        # Find the best combination that satisfies both CPU and memory requirements
+        best_combination = None
+        best_score = float("inf")  # Lower is better
+
+        for cpu_val, cpu_str, mem_val, mem_str in valid_combinations:
+            # Check if this combination meets the requirements
+            cpu_ok = requested_cpu is None or cpu_val >= requested_cpu
+            mem_ok = (
+                requested_memory_gb is None or mem_val >= requested_memory_gb
+            )
+
+            if cpu_ok and mem_ok:
+                # Calculate "waste" score (how much over-provisioning)
+                cpu_waste = (
+                    0 if requested_cpu is None else (cpu_val - requested_cpu)
+                )
+                mem_waste = (
+                    0
+                    if requested_memory_gb is None
+                    else (mem_val - requested_memory_gb)
+                )
+
+                # Prioritize CPU requirements, then memory
+                score = cpu_waste * 10 + mem_waste
+
+                if score < best_score:
+                    best_score = score
+                    best_combination = (cpu_str, mem_str)
+
+        # If no combination satisfies requirements, use the highest available
+        if best_combination is None:
+            # Use the maximum available combination
+            return "4 vCPU", "12 GB"
+
+        return best_combination
+
+    def _convert_scaling_settings_to_aws_format(
+        self,
+        resource_settings: ResourceSettings,
+    ) -> Tuple[int, int, int]:
+        """Convert ResourceSettings scaling to AWS App Runner format.
+
+        Args:
+            resource_settings: The resource settings from pipeline configuration.
+
+        Returns:
+            Tuple of (min_size, max_size, max_concurrency) for AWS App Runner.
+        """
+        min_size = DEFAULT_MIN_SIZE
+        if resource_settings.min_replicas is not None:
+            min_size = max(
+                1, resource_settings.min_replicas
+            )  # AWS App Runner min is 1
+
+        max_size = DEFAULT_MAX_SIZE
+        if resource_settings.max_replicas is not None:
+            # ResourceSettings uses 0 to mean "no limit"
+            # AWS App Runner needs a specific value, so we use the platform maximum
+            if resource_settings.max_replicas == 0:
+                max_size = AWS_APP_RUNNER_MAX_SIZE
+            else:
+                max_size = min(
+                    resource_settings.max_replicas, AWS_APP_RUNNER_MAX_SIZE
+                )
+
+        max_concurrency = DEFAULT_MAX_CONCURRENCY
+        if resource_settings.max_concurrency is not None:
+            max_concurrency = min(
+                resource_settings.max_concurrency,
+                AWS_APP_RUNNER_MAX_CONCURRENCY,
+            )
+
+        return min_size, max_size, max_concurrency
+
     def do_serve_pipeline(
         self,
         endpoint: PipelineEndpointResponse,
@@ -1159,6 +1316,18 @@ class AWSDeployer(ContainerizedDeployer):
         settings = cast(
             AWSDeployerSettings,
             self.get_settings(deployment),
+        )
+
+        resource_settings = deployment.pipeline_configuration.resource_settings
+
+        # Convert ResourceSettings to AWS App Runner format with fallbacks
+        cpu, memory = self._convert_resource_settings_to_aws_format(
+            resource_settings,
+        )
+        min_size, max_size, max_concurrency = (
+            self._convert_scaling_settings_to_aws_format(
+                resource_settings,
+            )
         )
 
         client = self.app_runner_client
@@ -1258,8 +1427,8 @@ class AWSDeployer(ContainerizedDeployer):
             )
 
         instance_configuration = {
-            "Cpu": settings.cpu,
-            "Memory": settings.memory,
+            "Cpu": cpu,
+            "Memory": memory,
         }
         # Only add InstanceRoleArn if it's actually provided
         if settings.instance_role_arn:
@@ -1280,7 +1449,11 @@ class AWSDeployer(ContainerizedDeployer):
             endpoint.name, endpoint.id
         )
         auto_scaling_config_arn = self._create_or_update_auto_scaling_config(
-            auto_scaling_config_name, settings, endpoint
+            auto_scaling_config_name,
+            min_size,
+            max_size,
+            max_concurrency,
+            endpoint,
         )
 
         health_check_configuration = {

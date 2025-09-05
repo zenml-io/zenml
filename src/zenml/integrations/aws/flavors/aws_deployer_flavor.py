@@ -50,41 +50,6 @@ class AWSDeployerSettings(BaseDeployerSettings):
         "conflicts.",
     )
 
-    # Resource configuration
-    cpu: str = Field(
-        default="0.25 vCPU",
-        description="CPU allocation for the App Runner service. "
-        "Options: '0.25 vCPU', '0.5 vCPU', '1 vCPU', '2 vCPU', '4 vCPU'.",
-    )
-
-    memory: str = Field(
-        default="0.5 GB",
-        description="Memory allocation for the App Runner service. "
-        "Options: '0.5 GB', '1 GB', '2 GB', '3 GB', '4 GB', '6 GB', '8 GB', '10 GB', '12 GB'.",
-    )
-
-    # Scaling configuration
-    auto_scaling_max_concurrency: int = Field(
-        default=100,
-        ge=1,
-        le=1000,
-        description="Maximum number of concurrent requests per instance.",
-    )
-
-    auto_scaling_max_size: int = Field(
-        default=25,
-        ge=1,
-        le=1000,
-        description="Maximum number of instances that can be created.",
-    )
-
-    auto_scaling_min_size: int = Field(
-        default=1,
-        ge=1,
-        le=1000,
-        description="Minimum number of instances to keep running.",
-    )
-
     # Health check configuration
     health_check_grace_period_seconds: int = Field(
         default=20,

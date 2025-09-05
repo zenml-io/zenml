@@ -108,8 +108,9 @@ def call_pipeline_endpoint(
         headers["ZenML-Pipeline-Run-Name"] = step_context.pipeline_run.name
 
     # Serialize kwargs to JSON
+    params = dict(parameters=kwargs)
     try:
-        payload = json.dumps(kwargs) if kwargs else "{}"
+        payload = json.dumps(params)
     except (TypeError, ValueError) as e:
         raise PipelineEndpointHTTPError(
             f"Failed to serialize request data to JSON: {e}"

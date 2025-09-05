@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Cloud Run deployer."""
 
+import math
 import re
 from typing import (
     TYPE_CHECKING,
@@ -34,6 +35,7 @@ from google.protobuf.json_format import MessageToDict
 from pydantic import BaseModel
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.resource_settings import ResourceSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.exceptions import (
     DeployerError,
@@ -69,6 +71,17 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
+
+# Default resource and scaling configuration constants
+# These are used when ResourceSettings are not provided in the pipeline configuration
+DEFAULT_CPU = "1"
+DEFAULT_MEMORY = "2Gi"
+DEFAULT_MIN_INSTANCES = 1
+DEFAULT_MAX_INSTANCES = 100
+DEFAULT_CONCURRENCY = 80
+
+# GCP Cloud Run limits
+GCP_CLOUD_RUN_MAX_INSTANCES = 1000
 
 
 class CloudRunPipelineEndpointMetadata(BaseModel):
@@ -887,6 +900,160 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         return state
 
+    def _convert_resource_settings_to_gcp_format(
+        self,
+        resource_settings: ResourceSettings,
+    ) -> Tuple[str, str]:
+        """Convert ResourceSettings to GCP Cloud Run resource format.
+
+        Args:
+            resource_settings: The resource settings from pipeline configuration.
+
+        Returns:
+            Tuple of (cpu, memory) in GCP Cloud Run format.
+        """
+        # Convert CPU count to GCP format
+        cpu = DEFAULT_CPU
+        if resource_settings.cpu_count is not None:
+            cpu_count = resource_settings.cpu_count
+
+            # GCP Cloud Run CPU constraints:
+            # - Fractional CPUs: 0.08 to < 1.0 (in increments of 0.01)
+            # - Integer CPUs: 1, 2, 4, 6, or 8 (no fractional values allowed >= 1.0)
+            if cpu_count < 1.0:
+                # For values < 1.0, allow fractional CPUs
+                # Ensure minimum is 0.08 and round to 2 decimal places
+                cpu_count = max(0.08, round(cpu_count, 2))
+                cpu = str(cpu_count)
+            else:
+                # For values >= 1.0, round up to the nearest valid integer
+                # Valid values: 1, 2, 4, 6, 8
+                valid_cpu_values = [1, 2, 4, 6, 8]
+                rounded_cpu = math.ceil(cpu_count)
+
+                # Find the smallest valid CPU value that satisfies the requirement
+                for valid_cpu in valid_cpu_values:
+                    if valid_cpu >= rounded_cpu:
+                        cpu = str(valid_cpu)
+                        break
+                else:
+                    # If requested CPU exceeds maximum, use maximum
+                    cpu = str(valid_cpu_values[-1])
+
+        # Convert memory to GCP format with CPU validation
+        memory = DEFAULT_MEMORY
+        memory_value_gib = None
+
+        if resource_settings.memory is not None:
+            # Get memory value in GiB for processing
+            memory_value_gib = resource_settings.get_memory(unit="GiB")
+
+        # Validate and adjust memory based on CPU requirements before string conversion
+        final_memory_gib = self._validate_memory_for_cpu(cpu, memory_value_gib)
+
+        # Convert final memory value to GCP format
+        if final_memory_gib is not None:
+            if final_memory_gib == int(final_memory_gib):
+                memory = f"{int(final_memory_gib)}Gi"
+            else:
+                memory = f"{final_memory_gib:.1f}Gi"
+
+        return cpu, memory
+
+    def _validate_memory_for_cpu(
+        self, cpu: str, memory_gib: Optional[float]
+    ) -> Optional[float]:
+        """Validate and adjust memory allocation based on CPU requirements.
+
+        GCP Cloud Run has minimum memory requirements per CPU configuration:
+        - 1 CPU: 128 MiB minimum (0.125 GiB)
+        - 2 CPU: 128 MiB minimum (0.125 GiB)
+        - 4 CPU: 2 GiB minimum
+        - 6 CPU: 4 GiB minimum
+        - 8 CPU: 4 GiB minimum
+
+        Args:
+            cpu: CPU allocation as string (e.g., "1", "2", "4")
+            memory_gib: Memory allocation in GiB (e.g., 2.0, 0.5, None)
+
+        Returns:
+            Adjusted memory allocation in GiB that meets minimum requirements, or None if no memory specified
+        """
+        if memory_gib is None:
+            # No memory specified, return None to use default
+            return None
+
+        # Define minimum memory requirements per CPU (in GiB)
+        min_memory_per_cpu_gib = {
+            1: 0.125,  # 128 MiB = 0.125 GiB
+            2: 0.125,  # 128 MiB = 0.125 GiB
+            4: 2.0,  # 2 GiB
+            6: 4.0,  # 4 GiB
+            8: 4.0,  # 4 GiB
+        }
+
+        # Handle fractional CPUs (< 1.0) - use minimum for 1 CPU
+        try:
+            cpu_float = float(cpu)
+            if cpu_float < 1.0:
+                cpu_int = 1
+            else:
+                cpu_int = int(cpu_float)
+        except (ValueError, TypeError):
+            # Fallback to 1 CPU if parsing fails
+            cpu_int = 1
+
+        # Get minimum required memory for this CPU configuration
+        required_memory_gib = min_memory_per_cpu_gib.get(cpu_int, 0.125)
+
+        # Return the maximum of current memory and required minimum
+        return max(memory_gib, required_memory_gib)
+
+    def _convert_scaling_settings_to_gcp_format(
+        self,
+        resource_settings: ResourceSettings,
+    ) -> Tuple[int, int]:
+        """Convert ResourceSettings scaling to GCP Cloud Run format.
+
+        Args:
+            resource_settings: The resource settings from pipeline configuration.
+
+        Returns:
+            Tuple of (min_instances, max_instances) for GCP Cloud Run.
+        """
+        min_instances = DEFAULT_MIN_INSTANCES
+        if resource_settings.min_replicas is not None:
+            min_instances = resource_settings.min_replicas
+
+        max_instances = DEFAULT_MAX_INSTANCES
+        if resource_settings.max_replicas is not None:
+            # ResourceSettings uses 0 to mean "no limit"
+            # GCP Cloud Run needs a specific value, so we use the platform maximum
+            if resource_settings.max_replicas == 0:
+                max_instances = GCP_CLOUD_RUN_MAX_INSTANCES
+            else:
+                max_instances = resource_settings.max_replicas
+
+        return min_instances, max_instances
+
+    def _convert_concurrency_settings_to_gcp_format(
+        self,
+        resource_settings: ResourceSettings,
+    ) -> int:
+        """Convert ResourceSettings concurrency to GCP Cloud Run format.
+
+        Args:
+            resource_settings: The resource settings from pipeline configuration.
+
+        Returns:
+            The concurrency setting for GCP Cloud Run.
+        """
+        concurrency = DEFAULT_CONCURRENCY
+        if resource_settings.max_concurrency is not None:
+            concurrency = resource_settings.max_concurrency
+
+        return concurrency
+
     def do_serve_pipeline(
         self,
         endpoint: PipelineEndpointResponse,
@@ -918,6 +1085,21 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         settings = cast(
             GCPDeployerSettings,
             self.get_settings(deployment),
+        )
+
+        resource_settings = deployment.pipeline_configuration.resource_settings
+
+        # Convert ResourceSettings to GCP Cloud Run format with fallbacks
+        cpu, memory = self._convert_resource_settings_to_gcp_format(
+            resource_settings,
+        )
+        min_instances, max_instances = (
+            self._convert_scaling_settings_to_gcp_format(
+                resource_settings,
+            )
+        )
+        concurrency = self._convert_concurrency_settings_to_gcp_format(
+            resource_settings,
         )
 
         project_id = self.project_id
@@ -982,15 +1164,15 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         # Prepare resource requirements
         resources = run_v2.ResourceRequirements(
             limits={
-                "cpu": settings.cpu,
-                "memory": settings.memory,
+                "cpu": cpu,
+                "memory": memory,
             }
         )
 
         # Prepare scaling configuration
         scaling = run_v2.RevisionScaling(
-            min_instance_count=settings.min_instances,
-            max_instance_count=settings.max_instances,
+            min_instance_count=min_instances,
+            max_instance_count=max_instances,
         )
 
         # Prepare VPC access if specified
@@ -1014,7 +1196,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             annotations=settings.annotations,
             scaling=scaling,
             vpc_access=vpc_access,
-            max_instance_request_concurrency=settings.concurrency,
+            max_instance_request_concurrency=concurrency,
             timeout=f"{settings.timeout_seconds}s",
             service_account=settings.service_account,
             containers=[container],
