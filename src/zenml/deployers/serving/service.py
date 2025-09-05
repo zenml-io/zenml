@@ -582,6 +582,8 @@ class PipelineServingService:
             logger.debug(f"Pipeline source: {pipeline_source}")
             logger.debug(f"Return contract: {contract}")
 
+            return_targets: Dict[str, Optional[str]] = {}
+
             if contract:
                 # Use return contract: step_name -> expected_output_name
                 return_targets = {
@@ -594,7 +596,7 @@ class PipelineServingService:
                 terminal_steps = []
 
                 # Find terminal steps (no downstream dependencies)
-                for step_name, step_config in step_configs.items():
+                for step_name, _ in step_configs.items():
                     has_downstream = any(
                         step_name in other_config.spec.upstream_steps
                         for other_name, other_config in step_configs.items()
