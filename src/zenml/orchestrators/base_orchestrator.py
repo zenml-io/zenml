@@ -516,6 +516,7 @@ class BaseOrchestrator(StackComponent, ABC):
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
+            status_reason="Manual stop requested.",
         )
 
         # Now call the concrete implementation
