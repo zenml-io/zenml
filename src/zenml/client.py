@@ -3642,12 +3642,12 @@ class Client(metaclass=ClientMetaClass):
             )
         else:
             # Use the current deployment
-            deployment = endpoint.pipeline_deployment
-            if not deployment:
+            if not endpoint.pipeline_deployment:
                 raise ValueError(
                     f"Pipeline endpoint '{endpoint.name}' has no associated "
                     "deployment."
                 )
+            deployment = endpoint.pipeline_deployment
 
             if endpoint.deployer:
                 try:
