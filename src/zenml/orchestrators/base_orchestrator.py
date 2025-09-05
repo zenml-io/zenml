@@ -35,7 +35,11 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import RunMonitoringError, RunStoppedException
+from zenml.exceptions import (
+    IllegalOperationError,
+    RunMonitoringError,
+    RunStoppedException,
+)
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
@@ -490,6 +494,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
                 class does not implement this logic.
+            IllegalOperationError: If the run has no orchestrator run id yet.
         """
         # Check if the orchestrator supports cancellation
         if (
@@ -499,6 +504,12 @@ class BaseOrchestrator(StackComponent, ABC):
             raise NotImplementedError(
                 f"The '{self.__class__.__name__}' orchestrator does not "
                 "support stopping pipeline runs."
+            )
+
+        if not run.orchestrator_run_id:
+            raise IllegalOperationError(
+                "Cannot stop a pipeline run that has no orchestrator run id "
+                "yet."
             )
 
         # Update pipeline status to STOPPING before calling concrete implementation

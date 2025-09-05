@@ -613,6 +613,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if run_update.status_reason:
                     self.status_reason = run_update.status_reason
 
+        if run_update.orchestrator_run_id:
+            self.orchestrator_run_id = run_update.orchestrator_run_id
+
         self.updated = utc_now()
         return self
 

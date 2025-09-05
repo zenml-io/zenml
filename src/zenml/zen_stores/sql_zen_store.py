@@ -6157,6 +6157,9 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a log entry with the same source already
                 exists within the scope of the same pipeline run.
+            IllegalOperationError: If the orchestrator run id is being updated
+                on a non-placeholder run or if the orchestrator run id is
+                already set and is different from the new orchestrator run id.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
@@ -6165,6 +6168,24 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
+
+            if run_update.orchestrator_run_id:
+                if not existing_run.is_placeholder_run():
+                    raise IllegalOperationError(
+                        "Cannot update the orchestrator run id of a pipeline "
+                        "run that is not a placeholder run."
+                    )
+
+                if (
+                    existing_run.orchestrator_run_id
+                    and existing_run.orchestrator_run_id
+                    != run_update.orchestrator_run_id
+                ):
+                    raise IllegalOperationError(
+                        "Pipeline run already has a different orchestrator run "
+                        f"id. Existing: {existing_run.orchestrator_run_id}, "
+                        f"New: {run_update.orchestrator_run_id}"
+                    )
 
             existing_run.update(run_update=run_update)
             session.add(existing_run)
