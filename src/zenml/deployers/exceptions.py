@@ -64,5 +64,9 @@ class PipelineEndpointDeployerMismatchError(DeployerError):
     """Error raised when a pipeline endpoint is not managed by this deployer."""
 
 
+class PipelineEndpointDeploymentMismatchError(DeployerError):
+    """Error raised when a pipeline endpoint deployment does not match the current deployer."""
+
+
 class PipelineEndpointHTTPError(DeployerError):
     """Error raised when an HTTP request to a pipeline endpoint fails."""

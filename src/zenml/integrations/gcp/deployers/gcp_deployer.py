@@ -864,7 +864,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         # Map Cloud Run service status to ZenML status
         if service.reconciling:
             # This flag is set while the service is being reconciled
-            state.status = PipelineEndpointStatus.DEPLOYING
+            state.status = PipelineEndpointStatus.PENDING
         else:
             if (
                 service.terminal_condition.state
@@ -881,7 +881,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 run_v2.Condition.State.CONDITION_PENDING,
                 run_v2.Condition.State.CONDITION_RECONCILING,
             ]:
-                state.status = PipelineEndpointStatus.DEPLOYING
+                state.status = PipelineEndpointStatus.PENDING
             else:
                 state.status = PipelineEndpointStatus.UNKNOWN
 

@@ -637,10 +637,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         *args: Any,
         **kwargs: Any,
     ) -> PipelineEndpointResponse:
-        """Serve the pipeline for online inference.
+        """Deploy the pipeline for online inference.
 
         Args:
-            endpoint_name: The name of the endpoint to serve the pipeline on.
+            endpoint_name: The name of the endpoint used to deploy the pipeline.
             *args: Pipeline entrypoint input arguments.
             **kwargs: Pipeline entrypoint input keyword arguments.
 

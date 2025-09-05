@@ -865,8 +865,10 @@ class Stack:
                 "deployer to the stack in order to serve a pipeline."
             )
 
-        return self.deployer.serve_pipeline(
-            deployment=deployment, stack=self, endpoint_name=endpoint_name
+        return self.deployer.provision_pipeline_endpoint(
+            deployment=deployment,
+            stack=self,
+            endpoint_name_or_id=endpoint_name,
         )
 
     def _get_active_components_for_step(

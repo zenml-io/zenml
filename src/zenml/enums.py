@@ -472,8 +472,7 @@ class PipelineEndpointStatus(StrEnum):
     """Status of a pipeline endpoint."""
 
     UNKNOWN = "unknown"
-    DEPLOYING = "deploying"
+    PENDING = "pending"
     RUNNING = "running"
-    DELETING = "deleting"
-    DELETED = "deleted"
+    ABSENT = "absent"
     ERROR = "error"

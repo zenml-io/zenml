@@ -1065,14 +1065,16 @@ class AWSDeployer(ContainerizedDeployer):
         ]:
             state.status = PipelineEndpointStatus.ERROR
         elif service_status in ["CREATING", "UPDATING"]:
-            state.status = PipelineEndpointStatus.DEPLOYING
+            state.status = PipelineEndpointStatus.PENDING
         elif service_status == "RUNNING":
             state.status = PipelineEndpointStatus.RUNNING
             state.url = service.get("ServiceUrl")
+            if state.url and not state.url.startswith("https://"):
+                state.url = f"https://{state.url}"
         elif service_status in ["DELETING"]:
-            state.status = PipelineEndpointStatus.DELETING
+            state.status = PipelineEndpointStatus.PENDING
         elif service_status in ["DELETED"]:
-            state.status = PipelineEndpointStatus.DELETED
+            state.status = PipelineEndpointStatus.ABSENT
         elif service_status == "PAUSED":
             state.status = (
                 PipelineEndpointStatus.ERROR
