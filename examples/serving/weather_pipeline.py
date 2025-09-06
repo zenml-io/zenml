@@ -213,6 +213,7 @@ Analysis: Rule-based AI (LLM unavailable)"""
 
 @pipeline(
     on_init=init_hook,
+    capture="realtime",
     settings={
         "docker": docker_settings,
         "deployer.gcp": {

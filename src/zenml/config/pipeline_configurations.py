@@ -42,6 +42,9 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     enable_pipeline_logs: Optional[bool] = None
+    # Capture policy mode for execution semantics (e.g., BATCH, REALTIME, OFF, CUSTOM)
+    # Capture policy can be a mode string or a dict with options
+    capture: Optional[Union[str, Dict[str, Any]]] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
@@ -84,6 +87,44 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
+
+    @field_validator("capture")
+    @classmethod
+    def validate_capture_mode(
+        cls, value: Optional[Union[str, Dict[str, Any]]]
+    ) -> Optional[Union[str, Dict[str, Any]]]:
+        """Validates the capture mode.
+
+        Args:
+            value: The capture mode to validate.
+
+        Returns:
+            The validated capture mode.
+        """
+        if value is None:
+            return value
+        if isinstance(value, dict):
+            mode = value.get("mode")
+            if mode is None:
+                # default to BATCH if mode not provided
+                value = {**value, "mode": "BATCH"}
+                mode = "BATCH"
+            allowed = {"BATCH", "REALTIME", "OFF", "CUSTOM"}
+            if str(mode).upper() not in allowed:
+                raise ValueError(
+                    f"Invalid capture mode '{mode}'. Allowed: {sorted(allowed)}"
+                )
+            # normalize mode to upper
+            value = {**value, "mode": str(mode).upper()}
+            return value
+        else:
+            allowed = {"BATCH", "REALTIME", "OFF", "CUSTOM"}
+            v = str(value).upper()
+            if v not in allowed:
+                raise ValueError(
+                    f"Invalid capture mode '{value}'. Allowed: {sorted(allowed)}"
+                )
+            return v
 
     @field_validator("name")
     @classmethod

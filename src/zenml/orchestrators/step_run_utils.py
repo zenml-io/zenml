@@ -20,6 +20,7 @@ from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
+from zenml.execution.step_runtime import BaseStepRuntime, DefaultStepRuntime
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
@@ -30,7 +31,7 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
 )
-from zenml.orchestrators import cache_utils, input_utils, utils
+from zenml.orchestrators import utils
 from zenml.stack import Stack
 from zenml.utils import pagination_utils
 from zenml.utils.time_utils import utc_now
@@ -46,6 +47,8 @@ class StepRunRequestFactory:
         deployment: "PipelineDeploymentResponse",
         pipeline_run: "PipelineRunResponse",
         stack: "Stack",
+        runtime: Optional[BaseStepRuntime] = None,
+        skip_code_capture: bool = False,
     ) -> None:
         """Initialize the object.
 
@@ -54,10 +57,14 @@ class StepRunRequestFactory:
             pipeline_run: The pipeline run for which to create step run
                 requests.
             stack: The stack on which the pipeline run is happening.
+            runtime: The runtime to use for the step run requests.
+            skip_code_capture: Whether to skip code/docstring capture.
         """
         self.deployment = deployment
         self.pipeline_run = pipeline_run
         self.stack = stack
+        self.runtime: BaseStepRuntime = runtime or DefaultStepRuntime()
+        self.skip_code_capture = skip_code_capture
 
     def has_caching_enabled(self, invocation_id: str) -> bool:
         """Check if the step has caching enabled.
@@ -112,7 +119,7 @@ class StepRunRequestFactory:
         """
         step = self.deployment.step_configurations[request.name]
 
-        input_artifacts = input_utils.resolve_step_inputs(
+        input_artifacts = self.runtime.resolve_step_inputs(
             step=step,
             pipeline_run=self.pipeline_run,
             step_runs=step_runs,
@@ -126,7 +133,7 @@ class StepRunRequestFactory:
             name: [artifact.id] for name, artifact in input_artifacts.items()
         }
 
-        cache_key = cache_utils.generate_cache_key(
+        cache_key = self.runtime.compute_cache_key(
             step=step,
             input_artifact_ids=input_artifact_ids,
             artifact_store=self.stack.artifact_store,
@@ -134,13 +141,14 @@ class StepRunRequestFactory:
         )
         request.cache_key = cache_key
 
-        (
-            docstring,
-            source_code,
-        ) = self._get_docstring_and_source_code(invocation_id=request.name)
+        if not self.skip_code_capture:
+            (
+                docstring,
+                source_code,
+            ) = self._get_docstring_and_source_code(invocation_id=request.name)
 
-        request.docstring = docstring
-        request.source_code = source_code
+            request.docstring = docstring
+            request.source_code = source_code
         request.code_hash = step.config.parameters.get(
             CODE_HASH_PARAMETER_NAME
         )
@@ -151,7 +159,7 @@ class StepRunRequestFactory:
         )
 
         if cache_enabled:
-            if cached_step_run := cache_utils.get_cached_step_run(
+            if cached_step_run := self.runtime.get_cached_step_run(
                 cache_key=cache_key
             ):
                 request.inputs = {

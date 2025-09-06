@@ -40,6 +40,7 @@ from zenml.constants import (
 )
 from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
+from zenml.execution.step_runtime import BaseStepRuntime, DefaultStepRuntime
 from zenml.logger import get_logger
 from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -49,7 +50,6 @@ from zenml.models.v2.core.step_run import (
 )
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
-    publish_successful_step_run,
     step_exception_info,
 )
 from zenml.orchestrators.utils import (
@@ -90,15 +90,24 @@ logger = get_logger(__name__)
 class StepRunner:
     """Class to run steps."""
 
-    def __init__(self, step: "Step", stack: "Stack"):
+    def __init__(
+        self,
+        step: "Step",
+        stack: "Stack",
+        runtime: Optional[BaseStepRuntime] = None,
+    ):
         """Initializes the step runner.
 
         Args:
             step: The step to run.
             stack: The stack on which the step should run.
+            runtime: The runtime to use for the step run.
         """
         self._step = step
         self._stack = stack
+        # Initialize runtime behind an opt-in flag to preserve behavior
+        # Always have a runtime to avoid branching; default to behavior-parity runtime
+        self._runtime: BaseStepRuntime = runtime or DefaultStepRuntime()
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -213,6 +222,8 @@ class StepRunner:
 
             step_failed = False
             try:
+                if self._runtime is not None:
+                    self._runtime.on_step_start()
                 return_values = step_instance.call_entrypoint(
                     **function_params
                 )
@@ -253,10 +264,16 @@ class StepRunner:
                         step_run_metadata = self._stack.get_step_run_metadata(
                             info=step_run_info,
                         )
-                        publish_step_run_metadata(
-                            step_run_id=step_run_info.step_run_id,
-                            step_run_metadata=step_run_metadata,
-                        )
+                        if self._runtime is not None:
+                            self._runtime.publish_step_run_metadata(
+                                step_run_id=step_run_info.step_run_id,
+                                step_run_metadata=step_run_metadata,
+                            )
+                        else:
+                            publish_step_run_metadata(
+                                step_run_id=step_run_info.step_run_id,
+                                step_run_metadata=step_run_metadata,
+                            )
                     self._stack.cleanup_step_run(
                         info=step_run_info, step_failed=step_failed
                     )
@@ -302,14 +319,24 @@ class StepRunner:
                                 is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
                                 is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
                             )
-                        output_artifacts = self._store_output_artifacts(
-                            output_data=output_data,
-                            output_artifact_uris=output_artifact_uris,
-                            output_materializers=output_materializers,
-                            output_annotations=output_annotations,
-                            artifact_metadata_enabled=artifact_metadata_enabled,
-                            artifact_visualization_enabled=artifact_visualization_enabled,
-                        )
+                        if self._runtime is not None:
+                            output_artifacts = self._runtime.store_output_artifacts(
+                                output_data=output_data,
+                                output_artifact_uris=output_artifact_uris,
+                                output_materializers=output_materializers,
+                                output_annotations=output_annotations,
+                                artifact_metadata_enabled=artifact_metadata_enabled,
+                                artifact_visualization_enabled=artifact_visualization_enabled,
+                            )
+                        else:
+                            output_artifacts = self._store_output_artifacts(
+                                output_data=output_data,
+                                output_artifact_uris=output_artifact_uris,
+                                output_materializers=output_materializers,
+                                output_annotations=output_annotations,
+                                artifact_metadata_enabled=artifact_metadata_enabled,
+                                artifact_visualization_enabled=artifact_visualization_enabled,
+                            )
 
                         if (
                             model_version := step_run.model_version
@@ -336,10 +363,14 @@ class StepRunner:
                 ]
                 for output_name, artifact in output_artifacts.items()
             }
-            publish_successful_step_run(
+            self._runtime.publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids=output_artifact_ids,
             )
+            # Ensure updates are flushed at end of step unless disabled
+            self._runtime.on_step_end()
+            if self._runtime.should_flush_on_step_end():
+                self._runtime.flush()
 
     def _evaluate_artifact_names_in_collections(
         self,
@@ -441,9 +472,16 @@ class StepRunner:
             arg_type = resolve_type_annotation(arg_type)
 
             if arg in input_artifacts:
-                function_params[arg] = self._load_input_artifact(
-                    input_artifacts[arg], arg_type
-                )
+                if self._runtime is not None:
+                    function_params[arg] = self._runtime.load_input_artifact(
+                        artifact=input_artifacts[arg],
+                        data_type=arg_type,
+                        stack=self._stack,
+                    )
+                else:
+                    function_params[arg] = self._load_input_artifact(
+                        input_artifacts[arg], arg_type
+                    )
             elif arg in self.configuration.parameters:
                 param_value = self.configuration.parameters[arg]
                 # Pydantic bridging: convert dict to Pydantic model if possible

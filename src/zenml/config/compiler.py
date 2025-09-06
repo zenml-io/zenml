@@ -202,6 +202,7 @@ class Compiler:
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
                 enable_pipeline_logs=config.enable_pipeline_logs,
+                capture=config.capture,
                 settings=config.settings,
                 tags=config.tags,
                 extra=config.extra,
@@ -209,6 +210,30 @@ class Compiler:
                 retry=config.retry,
                 parameters=config.parameters,
             )
+
+        # Apply additional defaults based on capture mode
+        try:
+            capture_cfg = pipeline.configuration.capture
+            mode_str = None
+            if isinstance(capture_cfg, str):
+                mode_str = capture_cfg.upper()
+            elif isinstance(capture_cfg, dict):
+                mode = capture_cfg.get("mode")
+                if isinstance(mode, str):
+                    mode_str = mode.upper()
+            if mode_str == "OFF":
+                # Disable overhead while keeping correctness
+                with pipeline.__suppress_configure_warnings__():
+                    pipeline.configure(
+                        enable_cache=False,
+                        enable_artifact_metadata=False,
+                        enable_artifact_visualization=False,
+                        enable_step_logs=False,
+                        enable_pipeline_logs=False,
+                    )
+        except Exception:
+            # Non-fatal; leave configuration as-is
+            pass
 
         invalid_step_configs = set(config.steps) - set(pipeline.invocations)
         if invalid_step_configs:

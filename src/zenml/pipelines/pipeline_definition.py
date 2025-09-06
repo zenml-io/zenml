@@ -148,6 +148,7 @@ class Pipeline:
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        capture: Optional[Any] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -180,6 +181,7 @@ class Pipeline:
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
+            capture: Capture policy for the pipeline.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -205,6 +207,7 @@ class Pipeline:
                 model=model,
                 retry=retry,
                 substitutions=substitutions,
+                capture=capture,
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -330,6 +333,7 @@ class Pipeline:
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
+        capture: Optional[Any] = None,
     ) -> Self:
         """Configures the pipeline.
 
@@ -376,6 +380,7 @@ class Pipeline:
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
+            capture: Capture policy for the pipeline.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -405,6 +410,13 @@ class Pipeline:
             # merges dicts
             tags = self._configuration.tags + tags
 
+        # Normalize capture to upper-case string if provided
+        if capture is not None:
+            try:
+                capture = str(capture).upper()
+            except Exception:
+                capture = str(capture)
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -423,6 +435,7 @@ class Pipeline:
                 "retry": retry,
                 "parameters": parameters,
                 "substitutions": substitutions,
+                "capture": capture,
             }
         )
         if not self.__suppress_warnings_flag__:

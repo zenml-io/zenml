@@ -41,6 +41,8 @@ class PipelineRunConfiguration(
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     enable_pipeline_logs: Optional[bool] = None
+    # Optional override for capture per run: mode string or dict with options
+    capture: Optional[Union[str, Dict[str, Any]]] = None
     schedule: Optional[Schedule] = None
     build: Union[PipelineBuildBase, UUID, None] = Field(
         default=None, union_mode="left_to_right"

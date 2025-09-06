@@ -308,10 +308,23 @@ def main() -> None:
             for owner_reference in owner_references:
                 owner_reference.controller = False
 
+        # Build a runtime for request factory using capture mode from config
+        try:
+            from zenml.execution.capture_policy import CapturePolicy
+            from zenml.execution.factory import get_runtime
+
+            mode_cfg = getattr(
+                deployment.pipeline_configuration, "capture", None
+            )
+            _runtime = get_runtime(CapturePolicy.from_value(mode_cfg))
+        except Exception:
+            _runtime = None
+
         step_run_request_factory = StepRunRequestFactory(
             deployment=deployment,
             pipeline_run=pipeline_run,
             stack=active_stack,
+            runtime=_runtime,
         )
         step_runs = {}
 

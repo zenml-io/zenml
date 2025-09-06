@@ -62,6 +62,7 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    capture: Optional[Dict[str, Any]] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
 
@@ -83,6 +84,7 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    capture: Optional[Dict[str, Any]] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -113,6 +115,7 @@ def pipeline(
         model: configuration of the model in the Model Control Plane.
         retry: Retry configuration for the pipeline steps.
         substitutions: Extra placeholders to use in the name templates.
+        capture: Capture policy for the pipeline.
 
     Returns:
         A pipeline instance.
@@ -138,6 +141,7 @@ def pipeline(
             model=model,
             retry=retry,
             substitutions=substitutions,
+            capture=capture,
         )
 
         p.__doc__ = func.__doc__
