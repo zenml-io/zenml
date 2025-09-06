@@ -42,6 +42,11 @@ from typing_extensions import Self
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
+from zenml.capture.config import (
+    BatchCapture,
+    Capture,
+    RealtimeCapture,
+)
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -148,7 +153,9 @@ class Pipeline:
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
-        capture: Optional[Any] = None,
+        capture: Optional[
+            Union[Capture, BatchCapture, RealtimeCapture]
+        ] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -181,7 +188,8 @@ class Pipeline:
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
-            capture: Capture policy for the pipeline.
+            capture: Capture policy for the pipeline (typed only): Capture,
+                BatchCapture or RealtimeCapture.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -333,7 +341,9 @@ class Pipeline:
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
-        capture: Optional[Any] = None,
+        capture: Optional[
+            Union[Capture, BatchCapture, RealtimeCapture]
+        ] = None,
     ) -> Self:
         """Configures the pipeline.
 
@@ -380,7 +390,8 @@ class Pipeline:
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
-            capture: Capture policy for the pipeline.
+            capture: Capture policy for the pipeline (typed only). Use
+                BatchCapture/RealtimeCapture or omit entirely to use sensible defaults.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -410,12 +421,16 @@ class Pipeline:
             # merges dicts
             tags = self._configuration.tags + tags
 
-        # Normalize capture to upper-case string if provided
+        # Directly store typed capture config
+        cap_norm = None
         if capture is not None:
-            try:
-                capture = str(capture).upper()
-            except Exception:
-                capture = str(capture)
+            if not isinstance(
+                capture, (Capture, BatchCapture, RealtimeCapture)
+            ):
+                raise ValueError(
+                    "'capture' must be a Capture, BatchCapture or RealtimeCapture."
+                )
+            cap_norm = capture
 
         values = dict_utils.remove_none_values(
             {
@@ -435,7 +450,7 @@ class Pipeline:
                 "retry": retry,
                 "parameters": parameters,
                 "substitutions": substitutions,
-                "capture": capture,
+                "capture": cap_norm,
             }
         )
         if not self.__suppress_warnings_flag__:

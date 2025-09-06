@@ -16,11 +16,14 @@ title: Pipeline Serving Overview
 - Use your normal `@pipeline` and `@step` definitions.
 - No serving-specific changes required.
 
-2) Choose a capture configuration (recommended)
-- Low-latency, non-blocking tracking (serving-friendly):
-  - `@pipeline(capture={"mode": "REALTIME", "flush_on_step_end": false})`
-- Pure in-memory execution (no runs, no artifacts):
-  - `@pipeline(capture={"mode": "REALTIME", "runs": "off"})`
+2) Choose capture only when you need to change defaults
+- You don’t need to set capture in most cases:
+  - Normal runs default to Batch.
+  - Serving defaults to Realtime (non-blocking).
+- Optional tweaks (typed API only):
+  - Low-latency, non-blocking (explicit): `@pipeline(capture=Capture())`
+  - Blocking realtime (serving): `@pipeline(capture=Capture(flush_on_step_end=True))`
+  - Pure in-memory (serving only): `@pipeline(capture=Capture(memory_only=True))`
 
 3) Deploy the serving service with your preferred deployer and call the FastAPI endpoint.
 
@@ -36,61 +39,49 @@ title: Pipeline Serving Overview
     - Async server updates by default; in serving, defaults to non-blocking responses (tracking finishes in background).
   - Use when: You need low-latency serving with observability.
 
-- OFF
-  - Behavior: Lightweight tracking.
-    - Persists artifacts but skips metadata/logs/visualizations/caching for reduced overhead.
-  - Use when: You need a smaller footprint while preserving artifacts for downstream consumers.
-
 - Memory-only (special case inside REALTIME)
-  - Configure: `capture={"mode": "REALTIME", "runs": "off"}` or `capture={"mode": "REALTIME", "persistence": "memory"}`
   - Behavior: Pure in-memory execution:
     - No pipeline runs or step runs, no artifacts, no server calls.
     - Steps exchange data in-process; response returns immediately.
   - Use when: Maximum speed (prototyping, ultra-low-latency paths) without lineage.
+  - Note: Outside serving contexts, `memory_only=True` is ignored with a warning and standard execution proceeds.
 
 ## Where To Configure Capture
 
-- In code (recommended)
-  - `@pipeline(capture="REALTIME")`
-  - `@pipeline(capture={"mode": "REALTIME", "flush_on_step_end": false})`
+- In code (typed only)
+  - `@pipeline(capture=Capture())`
+  - `@pipeline(capture=Capture(flush_on_step_end=False))`
 
 - In run config YAML
 ```yaml
-capture: REALTIME
-
-# or
-
-capture:
-  mode: REALTIME
-  flush_on_step_end: false
+capture: REALTIME  # or BATCH
 ```
 
 - Environment (fallbacks)
-  - `ZENML_CAPTURE_MODE=BATCH|REALTIME|OFF|CUSTOM`
-  - Serving defaults leverage `ZENML_SERVING_CAPTURE_DEFAULT` when capture is not set (used internally to reduce tracking overhead).
+  - `ZENML_CAPTURE_MODE=BATCH|REALTIME`
+  - Serving sets `ZENML_SERVING_CAPTURE_DEFAULT` internally to switch default to Realtime when capture is not set.
 
 ## Best Practices
 
 - Most users (serving-ready)
-  - `capture={"mode": "REALTIME", "flush_on_step_end": false}`
+  - `@pipeline(capture=Capture())`
   - Good balance of immediate response and production tracking.
 
 - Maximum speed (no tracking at all)
-  - `capture={"mode": "REALTIME", "runs": "off"}` (pure in-memory)
+  - `@pipeline(capture=Capture(memory_only=True))`
   - Great for tests, benchmarks, or hot paths where lineage is not needed.
 
 - Compliance or rich lineage
-  - `capture="BATCH"` or fine-tune REALTIME with `flush_on_step_end: true`, `logs: "all"`, `metadata: true`.
+  - Use Batch (default in non-serving) or set: `@pipeline(capture=Capture(flush_on_step_end=True))`.
 
 ## FAQ (Essentials)
 
 - Does serving always create pipeline runs?
-  - BATCH/REALTIME/OFF: Yes (OFF reduces overhead of metadata/logs).
-  - Memory-only (REALTIME with `runs: off`): No; executes purely in memory.
+  - Batch/Realtime: Yes.
+  - Memory-only (Realtime with `memory_only=True`): No; executes purely in memory.
 
 - Will serving block responses to flush tracking?
-  - REALTIME in serving defaults to non-blocking (returns immediately), unless you explicitly set `flush_on_step_end: true`.
+  - Realtime in serving defaults to non-blocking (returns immediately), unless you set `flush_on_step_end=True`.
 
 - Is memory-only safe for production?
   - Yes for stateless, speed-critical paths. Note: No lineage or persisted artifacts.
-

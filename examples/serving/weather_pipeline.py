@@ -12,17 +12,22 @@ millisecond-class latency by automatically optimizing execution:
 Perfect for real-time inference and AI applications.
 """
 
+import logging
 import os
 import random
 from typing import Dict
 
 from zenml import pipeline, step
+from zenml.capture.config import Capture
 from zenml.config import DockerSettings
 
 # Import enums for type-safe capture mode configuration
 from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.config.resource_settings import ResourceSettings
 from zenml.steps.step_context import get_step_context
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Note: You can use either approach:
 # 1. String literals: "full", "metadata", "sampled", "errors_only", "none"
@@ -70,7 +75,7 @@ def init_hook() -> PipelineState:
     return PipelineState()
 
 
-@step
+@step(enable_cache=False)
 def get_weather(city: str) -> Dict[str, float]:
     """Simulate getting weather data for a city.
 
@@ -87,13 +92,14 @@ def get_weather(city: str) -> Dict[str, float]:
     }
 
 
-@step
+@step(enable_cache=False)
 def analyze_weather_with_llm(weather_data: Dict[str, float], city: str) -> str:
     """Use LLM to analyze weather and provide intelligent recommendations.
 
     In run-only mode, this step receives weather data via in-memory handoff
     and returns analysis with no database or filesystem writes.
     """
+    import time
     temp = weather_data["temperature"]
     humidity = weather_data["humidity"]
     wind = weather_data["wind_speed"]
@@ -103,11 +109,12 @@ def analyze_weather_with_llm(weather_data: Dict[str, float], city: str) -> str:
 
     client = None
     if pipeline_state:
+        logger.debug("Pipeline state is a PipelineState")
         assert isinstance(pipeline_state, PipelineState), (
             "Pipeline state is not a PipelineState"
         )
         client = pipeline_state.client
-
+    logger.debug("Client is %s", client)
     if client:
         # Create a prompt for the LLM
         weather_prompt = f"""You are a weather expert AI assistant. Analyze the following weather data for {city} and provide detailed insights and recommendations.
@@ -126,9 +133,10 @@ Please provide:
 5. Any weather warnings or tips
 
 Keep your response concise but informative."""
-
+        logger.info("[LLM] Starting OpenAI request for city=%s", city)
+        t0 = time.perf_counter()
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-5-mini",
             messages=[
                 {
                     "role": "system",
@@ -136,9 +144,9 @@ Keep your response concise but informative."""
                 },
                 {"role": "user", "content": weather_prompt},
             ],
-            max_tokens=300,
-            temperature=0.7,
         )
+        dt = time.perf_counter() - t0
+        logger.info("[LLM] OpenAI request finished in %.3fs", dt)
 
         llm_analysis = response.choices[0].message.content
 
@@ -213,8 +221,8 @@ Analysis: Rule-based AI (LLM unavailable)"""
 
 
 @pipeline(
+    capture=Capture(memory_only=True),
     on_init=init_hook,
-    capture="realtime",
     settings={
         "docker": docker_settings,
         "deployer.gcp": {
@@ -265,6 +273,8 @@ if __name__ == "__main__":
 
     # Create deployment without running
     deployment = weather_agent_pipeline._create_deployment()
+
+    weather_agent_pipeline()
 
     print("\n✅ Pipeline deployed for run-only serving!")
     print(f"📋 Deployment ID: {deployment.id}")

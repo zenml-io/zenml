@@ -55,19 +55,25 @@ class RealtimeStepRuntime(DefaultStepRuntime):
         """
         super().__init__()
         # Simple LRU cache with TTL
-        self._cache: "OrderedDict[str, Tuple[Any, float]]" = OrderedDict()
+        self._cache: OrderedDict[str, Tuple[Any, float]] = OrderedDict()
         self._lock = threading.RLock()
         # Event queue: (kind, args, kwargs)
         Event = Tuple[str, Tuple[Any, ...], Dict[str, Any]]
-        self._q: "queue.Queue[Event]" = queue.Queue()
+        self._q: queue.Queue[Event] = queue.Queue()
         self._worker: Optional[threading.Thread] = None
         self._stop = threading.Event()
         self._errors_since_last_flush: int = 0
         self._total_errors: int = 0
         self._last_error: Optional[BaseException] = None
+        self._error_reported: bool = False
+        self._last_report_ts: float = 0.0
         self._logger = get_logger(__name__)
         self._queued_count: int = 0
         self._processed_count: int = 0
+        # Metrics: cache and op latencies
+        self._cache_hits: int = 0
+        self._cache_misses: int = 0
+        self._op_latencies: List[float] = []
         # Tunables via env: TTL seconds and max entries
         # Options precedence: explicit args > env > defaults
         if ttl_seconds is not None:
@@ -75,19 +81,44 @@ class RealtimeStepRuntime(DefaultStepRuntime):
         else:
             try:
                 self._ttl_seconds = int(
-                    os.getenv("ZENML_RT_CACHE_TTL_SECONDS", "300")
+                    os.getenv("ZENML_RT_CACHE_TTL_SECONDS", "60")
                 )
             except Exception:
-                self._ttl_seconds = 300
+                self._ttl_seconds = 60
         if max_entries is not None:
             self._max_entries = int(max_entries)
         else:
             try:
                 self._max_entries = int(
-                    os.getenv("ZENML_RT_CACHE_MAX_ENTRIES", "1024")
+                    os.getenv("ZENML_RT_CACHE_MAX_ENTRIES", "256")
                 )
             except Exception:
-                self._max_entries = 1024
+                self._max_entries = 256
+        # Circuit breaker controls
+        try:
+            self._cb_threshold = float(
+                os.getenv("ZENML_RT_CB_ERR_THRESHOLD", "0.1")
+            )
+            self._cb_min_events = int(
+                os.getenv("ZENML_RT_CB_MIN_EVENTS", "100")
+            )
+            self._cb_open_seconds = float(
+                os.getenv("ZENML_RT_CB_OPEN_SECONDS", "300")
+            )
+        except Exception:
+            self._cb_threshold = 0.1
+            self._cb_min_events = 100
+            self._cb_open_seconds = 300.0
+        self._cb_errors_window: int = 0
+        self._cb_total_window: int = 0
+        self._cb_open_until_ts: float = 0.0
+        # Error report interval (seconds)
+        try:
+            self._err_report_interval = float(
+                os.getenv("ZENML_RT_ERR_REPORT_INTERVAL", "15")
+            )
+        except Exception:
+            self._err_report_interval = 15.0
         # Flush behavior (can be disabled for serving non-blocking)
         self._flush_on_step_end: bool = True
 
@@ -98,14 +129,17 @@ class RealtimeStepRuntime(DefaultStepRuntime):
             return
 
         def _run() -> None:
+            idle_sleep = 0.05
             while not self._stop.is_set():
                 try:
-                    kind, args, kwargs = self._q.get(timeout=0.1)
+                    kind, args, kwargs = self._q.get(timeout=idle_sleep)
                 except queue.Empty:
                     # Opportunistic cache sweep: evict expired from head
                     self._sweep_expired()
+                    idle_sleep = min(idle_sleep * 2.0, 2.0)
                     continue
                 try:
+                    start = time.time()
                     if kind == "pipeline_metadata":
                         publish_utils.publish_pipeline_run_metadata(
                             *args, **kwargs
@@ -131,7 +165,21 @@ class RealtimeStepRuntime(DefaultStepRuntime):
                 finally:
                     with self._lock:
                         self._processed_count += 1
+                        # Update circuit breaker window
+                        self._cb_total_window += 1
+                        if self._last_error is not None:
+                            self._cb_errors_window += 1
+                        # Record latency (bounded sample)
+                        try:
+                            self._op_latencies.append(
+                                max(0.0, time.time() - start)
+                            )
+                            if len(self._op_latencies) > 512:
+                                self._op_latencies = self._op_latencies[-256:]
+                        except Exception:
+                            pass
                     self._q.task_done()
+                    idle_sleep = 0.01
 
         self._worker = threading.Thread(
             target=_run, name="zenml-realtime-runtime", daemon=True
@@ -169,6 +217,7 @@ class RealtimeStepRuntime(DefaultStepRuntime):
                 if now <= expires_at:
                     # Touch entry for LRU
                     self._cache.move_to_end(key)
+                    self._cache_hits += 1
                     return value
                 else:
                     # Expired
@@ -176,6 +225,7 @@ class RealtimeStepRuntime(DefaultStepRuntime):
                         del self._cache[key]
                     except KeyError:
                         pass
+            self._cache_misses += 1
 
         # Fallback to default loading
         return super().load_input_artifact(
@@ -246,7 +296,13 @@ class RealtimeStepRuntime(DefaultStepRuntime):
             pipeline_run_id: The pipeline run ID.
             pipeline_run_metadata: The pipeline run metadata.
         """
-        # Enqueue for async processing
+        # Inline if circuit open, else enqueue
+        if self._should_process_inline():
+            publish_utils.publish_pipeline_run_metadata(
+                pipeline_run_id=pipeline_run_id,
+                pipeline_run_metadata=pipeline_run_metadata,
+            )
+            return
         self._q.put(
             (
                 "pipeline_metadata",
@@ -272,6 +328,11 @@ class RealtimeStepRuntime(DefaultStepRuntime):
             step_run_id: The step run ID.
             step_run_metadata: The step run metadata.
         """
+        if self._should_process_inline():
+            publish_utils.publish_step_run_metadata(
+                step_run_id=step_run_id, step_run_metadata=step_run_metadata
+            )
+            return
         self._q.put(
             (
                 "step_metadata",
@@ -297,6 +358,12 @@ class RealtimeStepRuntime(DefaultStepRuntime):
             step_run_id: The step run ID.
             output_artifact_ids: The output artifact IDs.
         """
+        if self._should_process_inline():
+            publish_utils.publish_successful_step_run(
+                step_run_id=step_run_id,
+                output_artifact_ids=output_artifact_ids,
+            )
+            return
         self._q.put(
             (
                 "step_success",
@@ -320,6 +387,9 @@ class RealtimeStepRuntime(DefaultStepRuntime):
         Args:
             step_run_id: The step run ID.
         """
+        if self._should_process_inline():
+            publish_utils.publish_failed_step_run(step_run_id)
+            return
         self._q.put(("step_failed", (), {"step_run_id": step_run_id}))
         with self._lock:
             self._queued_count += 1
@@ -368,6 +438,7 @@ class RealtimeStepRuntime(DefaultStepRuntime):
                 count = self._errors_since_last_flush
                 last = self._last_error
                 self._errors_since_last_flush = 0
+                self._error_reported = True
                 raise RuntimeError(
                     f"Realtime runtime encountered {count} error(s) while publishing. Last error: {last}"
                 )
@@ -421,10 +492,26 @@ class RealtimeStepRuntime(DefaultStepRuntime):
             failed_total = self._total_errors
             ttl_seconds = getattr(self, "_ttl_seconds", None)
             max_entries = getattr(self, "_max_entries", None)
+            cache_hits = self._cache_hits
+            cache_misses = self._cache_misses
+            latencies = list(self._op_latencies)
         try:
             depth = self._q.qsize()
         except Exception:
             depth = 0
+        # Compute simple percentiles
+        p50 = p95 = p99 = 0.0
+        if latencies:
+            s = sorted(latencies)
+            n = len(s)
+            p50 = s[int(0.5 * (n - 1))]
+            p95 = s[int(0.95 * (n - 1))]
+            p99 = s[int(0.99 * (n - 1))]
+        hit_rate = (
+            float(cache_hits) / float(cache_hits + cache_misses)
+            if (cache_hits + cache_misses) > 0
+            else 0.0
+        )
         return {
             "queued": queued,
             "processed": processed,
@@ -432,25 +519,67 @@ class RealtimeStepRuntime(DefaultStepRuntime):
             "queue_depth": depth,
             "ttl_seconds": ttl_seconds,
             "max_entries": max_entries,
+            "cache_hits": cache_hits,
+            "cache_misses": cache_misses,
+            "cache_hit_rate": hit_rate,
+            "op_latency_p50_s": p50,
+            "op_latency_p95_s": p95,
+            "op_latency_p99_s": p99,
         }
+
+    # Surface background errors even when not flushing
+    def check_async_errors(self) -> None:
+        """Log and mark any background errors on an interval."""
+        with self._lock:
+            if self._last_error:
+                now = time.time()
+                if (not self._error_reported) or (
+                    now - self._last_report_ts > self._err_report_interval
+                ):
+                    self._logger.error(
+                        "Background realtime runtime error: %s",
+                        self._last_error,
+                    )
+                    self._error_reported = True
+                    self._last_report_ts = now
 
     # --- internal helpers ---
     def _sweep_expired(self) -> None:
-        """Remove expired entries from the head (LRU) side."""
+        """Remove expired entries from the head (LRU) side with a time budget."""
+        deadline = time.time() + 0.003
         with self._lock:
-            now = time.time()
-            # Pop from head while expired
-            keys = list(self._cache.keys())
-            for k in keys[:32]:  # limit per sweep to bound work
+            while time.time() < deadline:
                 try:
-                    value, expires_at = self._cache[k]
+                    key = next(iter(self._cache))
+                except StopIteration:
+                    break
+                try:
+                    _, expires_at = self._cache[key]
                 except KeyError:
                     continue
-                if now > expires_at:
-                    try:
-                        del self._cache[k]
-                    except KeyError:
-                        pass
-                else:
-                    # Stop at first non-expired near head
+                if time.time() <= expires_at:
                     break
+                try:
+                    del self._cache[key]
+                except KeyError:
+                    pass
+
+    def _should_process_inline(self) -> bool:
+        """Return True if circuit breaker is open and we should publish inline."""
+        with self._lock:
+            now = time.time()
+            if now < self._cb_open_until_ts:
+                return True
+            total = self._cb_total_window
+            errors = self._cb_errors_window
+            if total >= self._cb_min_events:
+                err_rate = (float(errors) / float(total)) if total > 0 else 0.0
+                if err_rate >= self._cb_threshold:
+                    self._cb_open_until_ts = now + self._cb_open_seconds
+                    self._logger.warning(
+                        "Realtime runtime circuit opened for %.0fs due to error rate %.2f",
+                        self._cb_open_seconds,
+                        err_rate,
+                    )
+                    return True
+            return False

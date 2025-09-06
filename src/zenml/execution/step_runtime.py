@@ -494,8 +494,10 @@ class OffStepRuntime(DefaultStepRuntime):
 class MemoryStepRuntime(BaseStepRuntime):
     """Pure in-memory execution runtime: no server calls, no persistence."""
 
+    # Global registry keyed by run_id to isolate concurrent runs
     _STORE: Dict[str, Dict[Tuple[str, str], Any]] = {}
-    _LOCK: Any = threading.RLock()  # initialized at class load
+    _RUN_LOCKS: Dict[str, Any] = {}
+    _GLOBAL_LOCK: Any = threading.RLock()  # protects registry structures
 
     @staticmethod
     def make_handle_id(run_id: str, step_name: str, output_name: str) -> str:
@@ -554,6 +556,7 @@ class MemoryStepRuntime(BaseStepRuntime):
         super().__init__()
         self._ctx_run_id: Optional[str] = None
         self._ctx_substitutions: Dict[str, str] = {}
+        self._active_run_ids: set[str] = set()
 
     def set_context(
         self, *, run_id: str, substitutions: Optional[Dict[str, str]] = None
@@ -566,9 +569,18 @@ class MemoryStepRuntime(BaseStepRuntime):
         """
         self._ctx_run_id = run_id
         self._ctx_substitutions = substitutions or {}
+        try:
+            if run_id:
+                self._active_run_ids.add(run_id)
+        except Exception:
+            pass
 
     def resolve_step_inputs(
-        self, *, step, pipeline_run, step_runs=None
+        self,
+        *,
+        step: "Step",
+        pipeline_run: "PipelineRunResponse",
+        step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
     ) -> Dict[str, Any]:
         """Resolve step inputs by constructing in-memory handles.
 
@@ -614,7 +626,12 @@ class MemoryStepRuntime(BaseStepRuntime):
         if not isinstance(handle_id_any, str):
             raise ValueError("Invalid memory handle id")
         run_id, step_name, output_name = self.parse_handle_id(handle_id_any)
-        with MemoryStepRuntime._LOCK:
+        # Use per-run lock to avoid cross-run interference
+        with MemoryStepRuntime._GLOBAL_LOCK:
+            rlock = MemoryStepRuntime._RUN_LOCKS.setdefault(
+                run_id, threading.RLock()
+            )
+        with rlock:
             return MemoryStepRuntime._STORE.get(run_id, {}).get(
                 (step_name, output_name)
             )
@@ -646,9 +663,18 @@ class MemoryStepRuntime(BaseStepRuntime):
 
         ctx = get_step_context()
         run_id = str(getattr(ctx.pipeline_run, "id", "local"))
+        try:
+            if run_id:
+                self._active_run_ids.add(run_id)
+        except Exception:
+            pass
         step_name = str(getattr(ctx.step_run, "name", "step"))
         handles: Dict[str, Any] = {}
-        with MemoryStepRuntime._LOCK:
+        with MemoryStepRuntime._GLOBAL_LOCK:
+            rlock = MemoryStepRuntime._RUN_LOCKS.setdefault(
+                run_id, threading.RLock()
+            )
+        with rlock:
             rr = MemoryStepRuntime._STORE.setdefault(run_id, {})
             for output_name, value in output_data.items():
                 rr[(step_name, output_name)] = value
@@ -748,3 +774,27 @@ class MemoryStepRuntime(BaseStepRuntime):
     def shutdown(self) -> None:
         """Shutdown the memory runtime."""
         return
+
+    def __del__(self) -> None:  # noqa: D401
+        """Best-effort cleanup of per-run memory when GC collects the runtime."""
+        try:
+            for run_id in list(self._active_run_ids):
+                try:
+                    self.reset(run_id)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    # --- Unified path helpers ---
+    def reset(self, run_id: str) -> None:
+        """Clear all in-memory data associated with a specific run.
+
+        Args:
+            run_id: The run id to clear.
+        """
+        with MemoryStepRuntime._GLOBAL_LOCK:
+            try:
+                MemoryStepRuntime._STORE.pop(run_id, None)
+            finally:
+                MemoryStepRuntime._RUN_LOCKS.pop(run_id, None)

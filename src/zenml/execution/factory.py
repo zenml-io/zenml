@@ -15,12 +15,11 @@
 
 from typing import Callable, Dict, Optional
 
-from zenml.execution.capture_policy import CaptureMode, CapturePolicy
+from zenml.capture.config import CaptureMode, CapturePolicy
 from zenml.execution.step_runtime import (
     BaseStepRuntime,
     DefaultStepRuntime,
     MemoryStepRuntime,
-    OffStepRuntime,
 )
 
 # Registry of runtime builders keyed by capture mode
@@ -49,9 +48,13 @@ def get_runtime(policy: Optional[CapturePolicy]) -> BaseStepRuntime:
     """
     policy = policy or CapturePolicy()
     builder = _RUNTIME_REGISTRY.get(policy.mode)
-    if builder is not None:
-        return builder(policy)
-    return DefaultStepRuntime()
+    if builder is None:
+        raise ValueError(
+            f"No runtime registered for capture mode: {policy.mode}. "
+            "Expected one of: "
+            + ", ".join(m.name for m in _RUNTIME_REGISTRY.keys())
+        )
+    return builder(policy)
 
 
 # Register default builders
@@ -67,11 +70,6 @@ def _build_default(_: CapturePolicy) -> BaseStepRuntime:
     return DefaultStepRuntime()
 
 
-def _build_off(_: CapturePolicy) -> BaseStepRuntime:
-    """Build the off runtime (lightweight: persist artifacts, skip metadata)."""
-    return OffStepRuntime()
-
-
 def _build_realtime(policy: CapturePolicy) -> BaseStepRuntime:
     """Build the realtime runtime.
 
@@ -84,10 +82,15 @@ def _build_realtime(policy: CapturePolicy) -> BaseStepRuntime:
     # Import here to avoid circular imports
     from zenml.execution.realtime_runtime import RealtimeStepRuntime
 
-    # If runs are off or persistence is memory/off, use memory runtime
+    # If memory_only flagged, or legacy runs/persistence indicate memory-only, use memory runtime
+    memory_only = bool(policy.get_option("memory_only", False))
     runs_opt = str(policy.get_option("runs", "on")).lower()
     persistence = str(policy.get_option("persistence", "async")).lower()
-    if runs_opt in {"off", "false", "0"} or persistence in {"memory", "off"}:
+    if (
+        memory_only
+        or runs_opt in {"off", "false", "0"}
+        or persistence in {"memory", "off"}
+    ):
         return MemoryStepRuntime()
 
     ttl = policy.get_option("ttl_seconds")
@@ -96,6 +99,4 @@ def _build_realtime(policy: CapturePolicy) -> BaseStepRuntime:
 
 
 register_runtime(CaptureMode.BATCH, _build_default)
-register_runtime(CaptureMode.CUSTOM, _build_default)
-register_runtime(CaptureMode.OFF, _build_off)
 register_runtime(CaptureMode.REALTIME, _build_realtime)

@@ -19,6 +19,8 @@ applies them to the loaded deployment, and triggers the orchestrator.
 """
 
 import asyncio
+import json
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
@@ -327,15 +329,20 @@ class PipelineServingService:
         try:
             # Resolve request parameters
             resolved_params = self._resolve_parameters(parameters)
+            # Expose resolved params to launcher/runner via env for memory-only path
+            os.environ["ZENML_SERVING_REQUEST_PARAMS"] = json.dumps(
+                resolved_params
+            )
+            # Expose pipeline state via serving context var
+            from zenml.orchestrators import utils as _orch_utils
+
+            _orch_utils.set_pipeline_state(self.pipeline_state)
 
             # Get deployment and check if we're in no-capture mode
             deployment = self.deployment
             _ = orchestrator_utils.is_tracking_disabled(
                 deployment.pipeline_configuration.settings
             )
-
-            # Set serving capture default for this request (no model mutations needed)
-            import os
 
             original_capture_default = os.environ.get(
                 "ZENML_SERVING_CAPTURE_DEFAULT"
@@ -374,8 +381,9 @@ class PipelineServingService:
 
             orchestrator = stack.orchestrator
             # Ensure a stable run id for StepLauncher to reuse the same PipelineRun
+            run_uuid = str(uuid4())
             if hasattr(orchestrator, "_orchestrator_run_id"):
-                setattr(orchestrator, "_orchestrator_run_id", str(uuid4()))
+                setattr(orchestrator, "_orchestrator_run_id", run_uuid)
 
             # No serving overrides population in local orchestrator path
 
@@ -394,6 +402,21 @@ class PipelineServingService:
                     os.environ["ZENML_SERVING_CAPTURE_DEFAULT"] = (
                         original_capture_default
                     )
+                # Clear request params env and shared runtime state
+                os.environ.pop("ZENML_SERVING_REQUEST_PARAMS", None)
+                from zenml.orchestrators.utils import set_pipeline_state
+
+                set_pipeline_state(None)
+                try:
+                    from zenml.orchestrators.runtime_manager import (
+                        clear_shared_runtime,
+                        reset_memory_runtime_for_run,
+                    )
+
+                    reset_memory_runtime_for_run(run_uuid)
+                    clear_shared_runtime()
+                except Exception:
+                    pass
 
             # Get captured outputs from response tap
             outputs = orchestrator_utils.response_tap_get_all()

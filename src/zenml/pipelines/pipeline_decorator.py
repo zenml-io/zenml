@@ -25,6 +25,11 @@ from typing import (
     overload,
 )
 
+from zenml.capture.config import (
+    BatchCapture,
+    Capture,
+    RealtimeCapture,
+)
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -62,7 +67,7 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-    capture: Optional[Dict[str, Any]] = None,
+    capture: Optional[Union[Capture, BatchCapture, RealtimeCapture]] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
 
@@ -84,7 +89,7 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-    capture: Optional[Dict[str, Any]] = None,
+    capture: Optional[Union[Capture, BatchCapture, RealtimeCapture]] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -115,7 +120,7 @@ def pipeline(
         model: configuration of the model in the Model Control Plane.
         retry: Retry configuration for the pipeline steps.
         substitutions: Extra placeholders to use in the name templates.
-        capture: Capture policy for the pipeline.
+        capture: Capture policy for the pipeline (typed only).
 
     Returns:
         A pipeline instance.
@@ -123,6 +128,16 @@ def pipeline(
 
     def inner_decorator(func: "F") -> "Pipeline":
         from zenml.pipelines.pipeline_definition import Pipeline
+
+        # Directly store typed capture config
+        cap = capture
+        cap_val: Optional[Union[Capture, BatchCapture, RealtimeCapture]] = None
+        if cap is not None:
+            if not isinstance(cap, (Capture, BatchCapture, RealtimeCapture)):
+                raise ValueError(
+                    "'capture' must be a Capture, BatchCapture or RealtimeCapture."
+                )
+            cap_val = cap
 
         p = Pipeline(
             name=name or func.__name__,
@@ -141,7 +156,7 @@ def pipeline(
             model=model,
             retry=retry,
             substitutions=substitutions,
-            capture=capture,
+            capture=cap_val,
         )
 
         p.__doc__ = func.__doc__

@@ -18,6 +18,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pydantic import SerializeAsAny, field_validator
 
+from zenml.capture.config import (
+    BatchCapture,
+    Capture,
+    CaptureConfig,
+    RealtimeCapture,
+)
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
@@ -42,9 +48,8 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     enable_pipeline_logs: Optional[bool] = None
-    # Capture policy mode for execution semantics (e.g., BATCH, REALTIME, OFF, CUSTOM)
-    # Capture policy can be a mode string or a dict with options
-    capture: Optional[Union[str, Dict[str, Any]]] = None
+    # Capture policy for execution semantics (typed only)
+    capture: Optional[CaptureConfig] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
@@ -91,40 +96,16 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     @field_validator("capture")
     @classmethod
     def validate_capture_mode(
-        cls, value: Optional[Union[str, Dict[str, Any]]]
-    ) -> Optional[Union[str, Dict[str, Any]]]:
-        """Validates the capture mode.
-
-        Args:
-            value: The capture mode to validate.
-
-        Returns:
-            The validated capture mode.
-        """
+        cls, value: Optional[CaptureConfig]
+    ) -> Optional[CaptureConfig]:
+        """Validates the capture config (typed only)."""
         if value is None:
             return value
-        if isinstance(value, dict):
-            mode = value.get("mode")
-            if mode is None:
-                # default to BATCH if mode not provided
-                value = {**value, "mode": "BATCH"}
-                mode = "BATCH"
-            allowed = {"BATCH", "REALTIME", "OFF", "CUSTOM"}
-            if str(mode).upper() not in allowed:
-                raise ValueError(
-                    f"Invalid capture mode '{mode}'. Allowed: {sorted(allowed)}"
-                )
-            # normalize mode to upper
-            value = {**value, "mode": str(mode).upper()}
+        if isinstance(value, (Capture, BatchCapture, RealtimeCapture)):
             return value
-        else:
-            allowed = {"BATCH", "REALTIME", "OFF", "CUSTOM"}
-            v = str(value).upper()
-            if v not in allowed:
-                raise ValueError(
-                    f"Invalid capture mode '{value}'. Allowed: {sorted(allowed)}"
-                )
-            return v
+        raise ValueError(
+            "'capture' must be a typed Capture, BatchCapture, or RealtimeCapture."
+        )
 
     @field_validator("name")
     @classmethod

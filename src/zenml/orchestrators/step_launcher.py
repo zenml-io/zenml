@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
+import json
+import os
 import signal
 import time
 from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
+from zenml.capture.config import CapturePolicy
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
@@ -29,8 +32,8 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
-from zenml.execution.capture_policy import CapturePolicy
 from zenml.execution.factory import get_runtime
+from zenml.execution.step_runtime import MemoryStepRuntime
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
@@ -43,6 +46,14 @@ from zenml.models import (
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
+from zenml.orchestrators.run_entity_manager import (
+    DefaultRunEntityManager,
+    MemoryRunEntityManager,
+    RunEntityManager,
+)
+from zenml.orchestrators.runtime_manager import (
+    get_or_create_shared_memory_runtime,
+)
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.utils import exception_utils, string_utils
@@ -217,7 +228,7 @@ class StepLauncher:
             signal.signal(signal.SIGINT, signal_handler)
         except ValueError as e:
             # This happens when not in the main thread
-            logger.debug(f"Cannot register signal handlers: {e}")
+            logger.debug("Cannot register signal handlers: %s", e)
             # Continue without signal handling - the step will still run
 
     def launch(self) -> None:
@@ -243,27 +254,36 @@ class StepLauncher:
         runtime = get_runtime(capture_policy)
         # Store for later use
         self._runtime = runtime
-        runs_opt = str(capture_policy.get_option("runs", "on")).lower()
-        persistence = str(
-            capture_policy.get_option("persistence", "async")
-        ).lower()
-        memory_only = runs_opt in {"off", "false", "0"} or persistence in {
-            "memory",
-            "off",
-        }
+        # Serving context detection
+        in_serving_ctx = os.getenv("ZENML_SERVING_CAPTURE_DEFAULT") is not None
+        memory_only = bool(capture_policy.get_option("memory_only", False))
+        # Debug messages to clarify behavior
+        if capture_policy.mode.name == "REALTIME" and not in_serving_ctx:
+            logger.warning(
+                "REALTIME mode enabled outside serving (development). Performance/ordering may vary."
+            )
+        if memory_only and not in_serving_ctx:
+            # Ignore memory_only outside serving: fall back to normal (Batch/Realtime) behavior
+            logger.warning(
+                "memory_only=True requested outside serving; ignoring and proceeding with standard execution."
+            )
+            memory_only = False
 
-        if memory_only:
-            self._launch_memory_only()
-            return
-        pipeline_run, run_was_created = self._create_or_reuse_run()
+        # Select entity manager and, if memory-only, set up shared runtime
+        is_memory_only_path = memory_only and in_serving_ctx
+        # Declare entity manager type for typing
+        entity_manager: RunEntityManager
+        if is_memory_only_path:
+            try:
+                shared = get_or_create_shared_memory_runtime()
+                self._runtime = shared
+            except Exception:
+                pass
+            entity_manager = MemoryRunEntityManager(self)
+        else:
+            entity_manager = DefaultRunEntityManager(self)
 
-        # runtime already constructed above; configure flush behavior
-        # Default for serving (REALTIME): do not flush at step end unless user specifies
-        import os as _os
-
-        in_serving_ctx = (
-            _os.getenv("ZENML_SERVING_CAPTURE_DEFAULT") is not None
-        )
+        pipeline_run, run_was_created = entity_manager.create_or_reuse_run()
         if (
             capture_policy.mode.name == "REALTIME"
             and "flush_on_step_end"
@@ -336,17 +356,19 @@ class StepLauncher:
         code_opt = capture_policy.get_option("code", True)
         code_enabled = str(code_opt).lower() not in {"false", "0", "off"}
 
-        request_factory = step_run_utils.StepRunRequestFactory(
-            deployment=self._deployment,
-            pipeline_run=pipeline_run,
-            stack=self._stack,
-            runtime=runtime,
-            skip_code_capture=not code_enabled,
-        )
-        step_run_request = request_factory.create_request(
-            invocation_id=self._step_name
-        )
-        step_run_request.logs = logs_model
+        # Prepare step run creation
+        if isinstance(entity_manager, DefaultRunEntityManager):
+            request_factory = step_run_utils.StepRunRequestFactory(
+                deployment=self._deployment,
+                pipeline_run=pipeline_run,
+                stack=self._stack,
+                runtime=runtime,
+                skip_code_capture=not code_enabled,
+            )
+            step_run_request = request_factory.create_request(
+                invocation_id=self._step_name
+            )
+            step_run_request.logs = logs_model
 
         # If this step has upstream dependencies and runtime uses non-blocking
         # publishes, ensure previous step updates are flushed so input
@@ -364,24 +386,30 @@ class StepLauncher:
 
         try:
             # Always populate request to ensure proper input/output flow
-            request_factory.populate_request(request=step_run_request)
+            if isinstance(entity_manager, DefaultRunEntityManager):
+                request_factory.populate_request(request=step_run_request)
 
             # In no-capture mode, force fresh execution (bypass cache)
             if tracking_disabled:
-                step_run_request.original_step_run_id = None
-                step_run_request.outputs = {}
-                step_run_request.status = ExecutionStatus.RUNNING
+                if isinstance(entity_manager, DefaultRunEntityManager):
+                    step_run_request.original_step_run_id = None
+                    step_run_request.outputs = {}
+                    step_run_request.status = ExecutionStatus.RUNNING
         except BaseException as e:
-            logger.exception(f"Failed preparing step `{self._step_name}`.")
-            step_run_request.status = ExecutionStatus.FAILED
-            step_run_request.end_time = utc_now()
-            step_run_request.exception_info = (
-                exception_utils.collect_exception_information(e)
-            )
+            logger.exception("Failed preparing step `%s`.", self._step_name)
+            if isinstance(entity_manager, DefaultRunEntityManager):
+                step_run_request.status = ExecutionStatus.FAILED
+                step_run_request.end_time = utc_now()
+                step_run_request.exception_info = (
+                    exception_utils.collect_exception_information(e)
+                )
             raise
         finally:
-            # Always create real step run for proper input/output flow
-            step_run = Client().zen_store.create_run_step(step_run_request)
+            # Create step run (DB-backed or stubbed)
+            if isinstance(entity_manager, DefaultRunEntityManager):
+                step_run = entity_manager.create_step_run(step_run_request)
+            else:
+                step_run = entity_manager.create_step_run(None)
             self._step_run = step_run
             if not tracking_disabled and (
                 model_version := step_run.model_version
@@ -422,9 +450,25 @@ class StepLauncher:
                     e,
                 )
                 if not tracking_disabled:
-                    runtime.publish_failed_step_run(step_run_id=step_run.id)
+                    # Delegate finalization to entity manager (DB-backed or no-op)
+                    try:
+                        entity_manager.finalize_step_run_failed(step_run.id)
+                    except Exception:
+                        try:
+                            runtime.publish_failed_step_run(
+                                step_run_id=step_run.id
+                            )
+                        except Exception:
+                            pass
                     if runtime.should_flush_on_step_end():
                         runtime.flush()
+                    else:
+                        try:
+                            getattr(
+                                runtime, "check_async_errors", lambda: None
+                            )()
+                        except Exception:
+                            pass
                 raise
         else:
             logger.info(f"Using cached version of step `{self._step_name}`.")
@@ -440,6 +484,18 @@ class StepLauncher:
                 # Ensure any queued updates are flushed for cached path (if enabled)
                 if runtime.should_flush_on_step_end():
                     runtime.flush()
+                else:
+                    try:
+                        getattr(runtime, "check_async_errors", lambda: None)()
+                    except Exception:
+                        pass
+        # Notify entity manager of successful completion (default no-op)
+        try:
+            entity_manager.finalize_step_run_success(
+                step_run.id, step_run.outputs
+            )
+        except Exception:
+            pass
         # Ensure runtime shutdown after launch
         try:
             metrics = {}
@@ -457,7 +513,7 @@ class StepLauncher:
                     metrics.get("queue_depth"),
                 )
         except Exception as e:
-            logger.debug(f"Runtime shutdown/metrics retrieval error: {e}")
+            logger.debug("Runtime shutdown/metrics retrieval error: %s", e)
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
@@ -509,8 +565,6 @@ class StepLauncher:
             force_write_logs: The context for the step logs.
         """
         # Create effective step config with serving overrides and no-capture optimizations
-        from zenml.orchestrators import utils as orchestrator_utils
-
         effective_step_config = self._step.config.model_copy(deep=True)
 
         # In no-capture mode, disable caching and step operators for speed
@@ -530,6 +584,26 @@ class StepLauncher:
                 }
             )
 
+        # Merge request-level parameters (serving) for memory-only runtime
+        runtime = getattr(self, "_runtime", None)
+        if isinstance(runtime, MemoryStepRuntime):
+            try:
+                req_env = os.getenv("ZENML_SERVING_REQUEST_PARAMS")
+                req_params = json.loads(req_env) if req_env else {}
+                if not req_params:
+                    req_params = (
+                        self._deployment.pipeline_configuration.parameters
+                        or {}
+                    )
+                if req_params:
+                    merged = dict(effective_step_config.parameters or {})
+                    merged.update(req_params)
+                    effective_step_config = effective_step_config.model_copy(
+                        update={"parameters": merged}
+                    )
+            except Exception:
+                pass
+
         # Prepare step run information with effective config
         step_run_info = StepRunInfo(
             config=effective_step_config,
@@ -541,10 +615,21 @@ class StepLauncher:
             force_write_logs=force_write_logs,
         )
 
-        # Always prepare output URIs for proper artifact flow
-        output_artifact_uris = output_utils.prepare_output_artifact_uris(
-            step_run=step_run, stack=self._stack, step=self._step
-        )
+        # Prepare output URIs
+        if isinstance(runtime, MemoryStepRuntime):
+            # Build memory:// URIs from declared outputs (no FS writes)
+            run_id = str(
+                getattr(pipeline_run, "id", self._orchestrator_run_id)
+            )
+            output_names = list(self._step.config.outputs.keys())
+            output_artifact_uris = {
+                name: f"memory://{run_id}/{self._step_name}/{name}"
+                for name in output_names
+            }
+        else:
+            output_artifact_uris = output_utils.prepare_output_artifact_uris(
+                step_run=step_run, stack=self._stack, step=self._step
+            )
 
         # Run the step.
         start_time = time.time()
@@ -559,11 +644,19 @@ class StepLauncher:
                     step_run_info=step_run_info,
                 )
             else:
+                # Resolve inputs via runtime in memory-only; otherwise use server-resolved inputs
+                if isinstance(runtime, MemoryStepRuntime):
+                    input_artifacts = runtime.resolve_step_inputs(
+                        step=self._step, pipeline_run=pipeline_run
+                    )
+                else:
+                    input_artifacts = step_run.regular_inputs
+
                 self._run_step_without_step_operator(
                     pipeline_run=pipeline_run,
                     step_run=step_run,
                     step_run_info=step_run_info,
-                    input_artifacts=step_run.regular_inputs,
+                    input_artifacts=input_artifacts,
                     output_artifact_uris=output_artifact_uris,
                 )
         except:  # noqa: E722
@@ -578,16 +671,18 @@ class StepLauncher:
             f"`{string_utils.get_human_readable_time(duration)}`."
         )
 
-        # If runtime is non-blocking and there are downstream steps depending
-        # on this step, flush now so that downstream input resolution sees
-        # this step's outputs on the server.
-        runtime = getattr(self, "_runtime", None)
+        # If runtime is non-blocking, consider a best-effort flush at step end.
+        # - If there are downstream steps, flush to ensure server has updates
+        # - If no downstream (leaf step), flush in serving to publish outputs so UI shows previews immediately
         if runtime is not None and not runtime.should_flush_on_step_end():
             has_downstream = any(
                 self._step_name in cfg.spec.upstream_steps
                 for name, cfg in self._deployment.step_configurations.items()
             )
-            if has_downstream:
+            should_flush = has_downstream or (
+                os.getenv("ZENML_SERVING_CAPTURE_DEFAULT") is not None
+            )
+            if should_flush:
                 try:
                     runtime.flush()
                 except Exception as e:
@@ -635,7 +730,19 @@ class StepLauncher:
                 self._deployment.pipeline_configuration, "capture", None
             )
             if mode_cfg:
-                environment["ZENML_CAPTURE_MODE"] = str(mode_cfg).upper()
+                # If typed capture with explicit mode, export it; unified Capture has no mode
+                try:
+                    from zenml.capture.config import (
+                        BatchCapture,
+                        RealtimeCapture,
+                    )
+
+                    if isinstance(mode_cfg, RealtimeCapture):
+                        environment["ZENML_CAPTURE_MODE"] = "REALTIME"
+                    elif isinstance(mode_cfg, BatchCapture):
+                        environment["ZENML_CAPTURE_MODE"] = "BATCH"
+                except Exception:
+                    pass
                 environment["ZENML_ENABLE_STEP_RUNTIME"] = "true"
         except Exception:
             pass
@@ -675,99 +782,6 @@ class StepLauncher:
         runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,
-            input_artifacts=input_artifacts,
-            output_artifact_uris=output_artifact_uris,
-            step_run_info=step_run_info,
-        )
-
-    def _launch_memory_only(self) -> None:
-        """Launch the step in pure memory-only mode (no runs, no persistence)."""
-        from dataclasses import dataclass
-        from typing import Any
-
-        from zenml.config.step_run_info import StepRunInfo
-        from zenml.execution.step_runtime import MemoryStepRuntime
-        from zenml.utils.time_utils import utc_now
-
-        run_id = self._orchestrator_run_id
-        start_time = utc_now()
-        substitutions = (
-            self._deployment.pipeline_configuration.finalize_substitutions(
-                start_time=start_time
-            )
-        )
-
-        @dataclass
-        class _Cfg:
-            tags: Any = None
-
-        @dataclass
-        class _PipelineRunStub:
-            id: str
-            model_version: Any = None
-            pipeline: Any = None
-            config: Any = _Cfg()
-
-        @dataclass
-        class _StepCfg:
-            substitutions: Any
-            outputs: Any
-
-        @dataclass
-        class _StepRunStub:
-            id: str
-            name: str
-            model_version: Any
-            config: Any
-            is_retriable: bool = True
-
-        pipeline_run_stub = _PipelineRunStub(id=run_id)
-        step_run_stub = _StepRunStub(
-            id=run_id,  # valid UUID string preferred
-            name=self._step_name,
-            model_version=None,
-            config=_StepCfg(
-                substitutions=substitutions, outputs=self._step.config.outputs
-            ),
-            is_retriable=True,
-        )
-
-        # Build URIs from declared outputs (no imports needed)
-        output_names = list(self._step.config.outputs.keys())
-        output_artifact_uris = {
-            name: f"memory://{run_id}/{self._step_name}/{name}"
-            for name in output_names
-        }
-
-        # Resolve inputs via runtime to avoid duplication
-        if isinstance(self._runtime, MemoryStepRuntime):
-            self._runtime.set_context(
-                run_id=run_id, substitutions=substitutions
-            )
-            input_artifacts = self._runtime.resolve_step_inputs(
-                step=self._step, pipeline_run=pipeline_run_stub
-            )
-        else:
-            input_artifacts = {}
-
-        runner = StepRunner(
-            step=self._step, stack=self._stack, runtime=self._runtime
-        )
-        step_run_info = StepRunInfo(
-            config=self._step.config,
-            pipeline=self._deployment.pipeline_configuration,
-            run_name=self._deployment.run_name_template,
-            pipeline_step_name=self._step_name,
-            run_id=run_id,
-            step_run_id=step_run_stub.id,
-            force_write_logs=lambda: None,
-        )
-
-        from typing import Any, cast
-
-        runner.run(
-            pipeline_run=cast(Any, pipeline_run_stub),
-            step_run=cast(Any, step_run_stub),
             input_artifacts=input_artifacts,
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,

@@ -198,6 +198,22 @@ def tap_get_step_outputs(step_name: str) -> Optional[Dict[str, Any]]:
     return _serve_output_tap.get({}).get(step_name)
 
 
+# Serve pipeline state context
+_serve_pipeline_state: ContextVar[Optional[Any]] = ContextVar(
+    "serve_pipeline_state", default=None
+)
+
+
+def set_pipeline_state(state: Optional[Any]) -> None:
+    """Set pipeline state for serving context."""
+    _serve_pipeline_state.set(state)
+
+
+def get_pipeline_state() -> Optional[Any]:
+    """Get pipeline state for serving context."""
+    return _serve_pipeline_state.get(None)
+
+
 def tap_clear() -> None:
     """Clear the serve tap for a fresh request."""
     _serve_output_tap.set({})

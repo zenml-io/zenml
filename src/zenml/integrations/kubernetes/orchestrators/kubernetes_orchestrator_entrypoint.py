@@ -310,7 +310,7 @@ def main() -> None:
 
         # Build a runtime for request factory using capture mode from config
         try:
-            from zenml.execution.capture_policy import CapturePolicy
+            from zenml.capture.config import CapturePolicy
             from zenml.execution.factory import get_runtime
 
             mode_cfg = getattr(

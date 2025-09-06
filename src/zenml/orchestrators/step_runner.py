@@ -26,6 +26,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    cast,
 )
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
@@ -116,6 +117,10 @@ class StepRunner:
         Returns:
             The step configuration.
         """
+        # Prefer effective config from step_run_info if available (serving overrides)
+        effective = getattr(self, "_step_run_info", None)
+        if effective:
+            return cast(StepConfiguration, effective.config)
         return self._step.config
 
     def run(
@@ -203,6 +208,9 @@ class StepRunner:
 
             # Initialize the step context singleton
             StepContext._clear()
+            # Pass pipeline state if serving provided one
+            from zenml.orchestrators import utils as _orch_utils
+
             step_context = StepContext(
                 pipeline_run=pipeline_run,
                 step_run=step_run,
@@ -211,6 +219,7 @@ class StepRunner:
                 output_artifact_configs={
                     k: v.artifact_config for k, v in output_annotations.items()
                 },
+                pipeline_state=_orch_utils.get_pipeline_state(),
             )
 
             # Parse the inputs for the entrypoint function.
