@@ -647,13 +647,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def serve(
         self,
         endpoint_name: str,
+        timeout: Optional[int] = None,
         *args: Any,
         **kwargs: Any,
     ) -> PipelineEndpointResponse:
-        """Serve the pipeline for online inference.
+        """Deploy the pipeline for online inference.
 
         Args:
-            endpoint_name: The name of the endpoint to serve the pipeline on.
+            endpoint_name: The name of the endpoint used to deploy the pipeline.
+            timeout: The maximum time in seconds to wait for the pipeline to be
+                deployed.
             *args: Pipeline entrypoint input arguments.
             **kwargs: Pipeline entrypoint input keyword arguments.
 
@@ -674,6 +677,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return stack.serve_pipeline(
                 deployment=deployment,
                 endpoint_name=endpoint_name,
+                timeout=timeout,
             )
         except RunMonitoringError as e:
             # Don't mark the run as failed if the error happened during monitoring

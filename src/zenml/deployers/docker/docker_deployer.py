@@ -280,13 +280,13 @@ class DockerDeployer(ContainerizedDeployer):
         elif metadata.container_status == "exited":
             state.status = PipelineEndpointStatus.ERROR
         elif metadata.container_status in ["created", "restarting", "paused"]:
-            state.status = PipelineEndpointStatus.DEPLOYING
+            state.status = PipelineEndpointStatus.PENDING
         elif metadata.container_status == "dead":
             state.status = PipelineEndpointStatus.ERROR
         elif metadata.container_status == "removing":
-            state.status = PipelineEndpointStatus.DELETING
+            state.status = PipelineEndpointStatus.PENDING
         elif metadata.container_status == "exited":
-            state.status = PipelineEndpointStatus.DELETED
+            state.status = PipelineEndpointStatus.ABSENT
         elif metadata.container_status == "dead":
             state.status = PipelineEndpointStatus.ERROR
 
@@ -645,9 +645,9 @@ class DockerDeployer(ContainerizedDeployer):
             )
 
         state = self._get_container_operational_state(container)
-        # Report a DELETING state to indicate that the deletion is in progress
+        # Report a PENDING state to indicate that the deletion is in progress
         # and force the base class
-        state.status = PipelineEndpointStatus.DELETING
+        state.status = PipelineEndpointStatus.PENDING
         return state
 
 

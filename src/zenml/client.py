@@ -3587,35 +3587,126 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
-    def delete_pipeline_endpoint(
+    def provision_pipeline_endpoint(
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
-    ) -> None:
-        """Delete a pipeline endpoint.
+        deployment_id: Optional[Union[str, UUID]] = None,
+        timeout: Optional[int] = None,
+    ) -> PipelineEndpointResponse:
+        """Provision a pipeline endpoint.
 
         Args:
-            name_id_or_prefix: Name/ID/ID prefix of the endpoint to delete.
+            name_id_or_prefix: Name/ID/ID prefix of the endpoint to provision.
             project: The project name/ID to filter by.
+            deployment_id: The ID of the deployment to use. If not provided,
+                the previous deployment configured for the endpoint will be
+                used.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be provisioned.
+
+        Returns:
+            The provisioned pipeline endpoint.
         """
-        endpoint = self.get_pipeline_endpoint(
-            name_id_or_prefix=name_id_or_prefix,
-            project=project,
-            hydrate=False,
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
         )
-        self.zen_store.delete_pipeline_endpoint(endpoint_id=endpoint.id)
-        logger.info("Deleted pipeline endpoint with name '%s'.", endpoint.name)
+        from zenml.stack.stack import Stack
+        from zenml.stack.stack_component import StackComponent
+
+        endpoint: Optional[PipelineEndpointResponse] = None
+        endpoint_name_or_id = name_id_or_prefix
+        try:
+            endpoint = self.get_pipeline_endpoint(
+                name_id_or_prefix=name_id_or_prefix,
+                project=project,
+                hydrate=True,
+            )
+            endpoint_name_or_id = endpoint.id
+        except KeyError:
+            if isinstance(name_id_or_prefix, UUID):
+                raise
+
+        stack = Client().active_stack
+        deployer: Optional[BaseDeployer] = None
+
+        if deployment_id:
+            deployment = self.get_deployment(
+                id_or_prefix=deployment_id,
+                project=project,
+                hydrate=True,
+            )
+        elif not endpoint:
+            raise KeyError(
+                f"Pipeline endpoint with name '{name_id_or_prefix}' was not "
+                "found and no deployment ID was provided."
+            )
+        else:
+            # Use the current deployment
+            if not endpoint.pipeline_deployment:
+                raise ValueError(
+                    f"Pipeline endpoint '{endpoint.name}' has no associated "
+                    "deployment."
+                )
+            deployment = endpoint.pipeline_deployment
+
+            if endpoint.deployer:
+                try:
+                    deployer = cast(
+                        BaseDeployer,
+                        StackComponent.from_model(endpoint.deployer),
+                    )
+                except ImportError:
+                    raise NotImplementedError(
+                        f"Deployer '{endpoint.deployer.name}' could "
+                        f"not be instantiated. This is likely because the pipeline "
+                        f"server's dependencies are not installed."
+                    )
+
+        if deployment.stack and deployment.stack.id != stack.id:
+            # We really need to use the original stack for which the deployment
+            # was created for to provision the endpoint, otherwise the endpoint
+            # might not have the correct dependencies installed.
+            stack = Stack.from_model(deployment.stack)
+
+        if not deployer:
+            if stack.deployer:
+                deployer = stack.deployer
+            else:
+                raise ValueError(
+                    f"No deployer was found in the deployment's stack "
+                    f"'{stack.name}' or in your active stack. Please add a "
+                    "deployer to your stack to be able to provision a pipeline "
+                    "endpoint."
+                )
+
+        # Provision the endpoint through the deployer
+        endpoint = deployer.provision_pipeline_endpoint(
+            deployment=deployment,
+            stack=stack,
+            endpoint_name_or_id=endpoint_name_or_id,
+            replace=True,
+            timeout=timeout,
+        )
+        logger.info(
+            f"Provisioned pipeline endpoint with name '{endpoint.name}'.",
+        )
+
+        return endpoint
 
     def deprovision_pipeline_endpoint(
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
+        timeout: Optional[int] = None,
     ) -> None:
         """Deprovision a pipeline endpoint.
 
         Args:
             name_id_or_prefix: Name/ID/ID prefix of the endpoint to deprovision.
             project: The project name/ID to filter by.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deprovisioned.
         """
         from zenml.deployers.base_deployer import (
             BaseDeployer,
@@ -3643,17 +3734,93 @@ class Client(metaclass=ClientMetaClass):
                     f"server's dependencies are not installed."
                 )
             deployer.deprovision_pipeline_endpoint(
-                endpoint_name_or_id=endpoint.id
+                endpoint_name_or_id=endpoint.id,
+                timeout=timeout,
             )
             logger.info(
                 "Deprovisioned pipeline endpoint with name '%s'.",
                 endpoint.name,
             )
         else:
-            self.zen_store.delete_pipeline_endpoint(endpoint_id=endpoint.id)
             logger.info(
-                "Deleted pipeline endpoint with name '%s'.", endpoint.name
+                f"Pipeline endpoint with name '{endpoint.name}' is no longer "
+                "managed by a deployer. This is likely because the deployer "
+                "was deleted. Please delete the pipeline endpoint instead.",
             )
+
+    def delete_pipeline_endpoint(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        force: bool = False,
+        timeout: Optional[int] = None,
+    ) -> None:
+        """Deprovision and delete a pipeline endpoint.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the endpoint to delete.
+            project: The project name/ID to filter by.
+            force: If True, force the deletion even if the endpoint cannot be
+                deprovisioned.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deprovisioned.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated.
+        """
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
+        )
+        from zenml.stack.stack_component import StackComponent
+
+        endpoint = self.get_pipeline_endpoint(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        if endpoint.deployer:
+            # Instantiate and deprovision the endpoint through the pipeline
+            # server
+
+            try:
+                deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(endpoint.deployer),
+                )
+            except ImportError as e:
+                msg = (
+                    f"Deployer '{endpoint.deployer.name}' could "
+                    f"not be instantiated. This is likely because the pipeline "
+                    f"server's dependencies are not installed: {e}"
+                )
+                if force:
+                    logger.warning(msg + " Forcing deletion.")
+                    self.zen_store.delete_pipeline_endpoint(
+                        endpoint_id=endpoint.id
+                    )
+                else:
+                    raise NotImplementedError(msg)
+            except Exception as e:
+                msg = (
+                    f"Failed to instantiate deployer '{endpoint.deployer.name}'."
+                    f"Error: {e}"
+                )
+                if force:
+                    logger.warning(msg + " Forcing deletion.")
+                    self.zen_store.delete_pipeline_endpoint(
+                        endpoint_id=endpoint.id
+                    )
+                else:
+                    raise NotImplementedError(msg)
+            else:
+                deployer.delete_pipeline_endpoint(
+                    endpoint_name_or_id=endpoint.id,
+                    force=force,
+                    timeout=timeout,
+                )
+        else:
+            self.zen_store.delete_pipeline_endpoint(endpoint_id=endpoint.id)
+        logger.info("Deleted pipeline endpoint with name '%s'.", endpoint.name)
 
     def refresh_pipeline_endpoint(
         self,

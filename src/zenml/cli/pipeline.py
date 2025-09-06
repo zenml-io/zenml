@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import click
 
@@ -302,8 +302,8 @@ def run_pipeline(
 
 
 @pipeline.command(
-    "serve",
-    help="Serve a pipeline. The SOURCE argument needs to be an "
+    "deploy",
+    help="Deploy a pipeline. The SOURCE argument needs to be an "
     "importable source path resolving to a ZenML pipeline instance, e.g. "
     "`my_module.my_pipeline_instance`.",
 )
@@ -314,7 +314,7 @@ def run_pipeline(
     "endpoint_name",
     type=str,
     required=True,
-    help="Name of the endpoint to serve the pipeline on.",
+    help="Name of the endpoint used to deploy the pipeline on.",
 )
 @click.option(
     "--config",
@@ -322,7 +322,7 @@ def run_pipeline(
     "config_path",
     type=click.Path(exists=True, dir_okay=False),
     required=False,
-    help="Path to configuration file for the run.",
+    help="Path to configuration file for the deployment.",
 )
 @click.option(
     "--stack",
@@ -330,7 +330,7 @@ def run_pipeline(
     "stack_name_or_id",
     type=str,
     required=False,
-    help="Name or ID of the stack to run on.",
+    help="Name or ID of the stack to deploy on.",
 )
 @click.option(
     "--build",
@@ -356,7 +356,16 @@ def run_pipeline(
     required=False,
     help="Attach to the pipeline endpoint logs.",
 )
-def serve_pipeline(
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the pipeline to be deployed.",
+)
+def deploy_pipeline(
     source: str,
     endpoint_name: str,
     config_path: Optional[str] = None,
@@ -364,24 +373,27 @@ def serve_pipeline(
     build_path_or_id: Optional[str] = None,
     prevent_build_reuse: bool = False,
     attach: bool = False,
+    timeout: Optional[int] = None,
 ) -> None:
-    """Serve a pipeline for online inference.
+    """Deploy a pipeline for online inference.
 
     Args:
         source: Importable source resolving to a pipeline instance.
-        endpoint_name: Name of the endpoint to serve the pipeline on.
+        endpoint_name: Name of the endpoint used to deploy the pipeline on.
         config_path: Path to pipeline configuration file.
         stack_name_or_id: Name or ID of the stack on which the pipeline should
-            run.
+            be deployed.
         build_path_or_id: ID of file path of the build to use for the pipeline
-            run.
+            deployment.
         prevent_build_reuse: If True, prevents automatic reusing of previous
             builds.
         attach: If True, attach to the pipeline endpoint logs.
+        timeout: The maximum time in seconds to wait for the pipeline to be
+            deployed.
     """
     if not Client().root:
         cli_utils.warning(
-            "You're running the `zenml pipeline serve` command without a "
+            "You're running the `zenml pipeline deploy` command without a "
             "ZenML repository. Your current working directory will be used "
             "as the source root relative to which the registered step classes "
             "will be resolved. To silence this warning, run `zenml init` at "
@@ -872,11 +884,11 @@ def delete_pipeline_build(
 
 
 @pipeline.group()
-def endpoints() -> None:
+def endpoint() -> None:
     """Commands for pipeline endpoints."""
 
 
-@endpoints.command("list", help="List all registered pipeline endpoints.")
+@endpoint.command("list", help="List all registered pipeline endpoints.")
 @list_options(PipelineEndpointFilter)
 def list_pipeline_endpoints(**kwargs: Any) -> None:
     """List all registered pipeline endpoints for the filter.
@@ -901,7 +913,7 @@ def list_pipeline_endpoints(**kwargs: Any) -> None:
         cli_utils.print_page_info(pipeline_endpoints)
 
 
-@endpoints.command("describe")
+@endpoint.command("describe")
 @click.argument("endpoint_name_or_id", type=str, required=True)
 def describe_pipeline_endpoint(
     endpoint_name_or_id: str,
@@ -932,7 +944,68 @@ def describe_pipeline_endpoint(
         )
 
 
-@endpoints.command("deprovision")
+@endpoint.command("provision")
+@click.argument("endpoint_name_or_id", type=str, required=True)
+@click.option(
+    "--deployment",
+    "-d",
+    "deployment_id",
+    type=str,
+    required=False,
+    help="ID of the deployment to use.",
+)
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the pipeline endpoint to be "
+    "provisioned.",
+)
+def provision_pipeline_endpoint(
+    endpoint_name_or_id: str,
+    deployment_id: Optional[str] = None,
+    timeout: Optional[int] = None,
+) -> None:
+    """Deploy a pipeline endpoint.
+
+    Args:
+        endpoint_name_or_id: The name or ID of the pipeline endpoint to deploy.
+        deployment_id: The ID of the deployment to use.
+        timeout: The maximum time in seconds to wait for the pipeline endpoint
+            to be provisioned.
+    """
+    with console.status(
+        f"Provisioning pipeline endpoint '{endpoint_name_or_id}'...\n"
+    ):
+        try:
+            endpoint = Client().provision_pipeline_endpoint(
+                name_id_or_prefix=endpoint_name_or_id,
+                deployment_id=deployment_id,
+                timeout=timeout,
+            )
+        except KeyError as e:
+            cli_utils.error(str(e))
+        else:
+            cli_utils.declare(
+                f"Provisioned pipeline endpoint '{endpoint_name_or_id}'."
+            )
+            cli_utils.print_pydantic_model(
+                title="Pipeline Endpoint",
+                model=endpoint,
+                exclude_columns={
+                    "created",
+                    "updated",
+                    "user",
+                    "project",
+                    "metadata",
+                },
+            )
+
+
+@endpoint.command("deprovision")
 @click.argument("endpoint_name_or_id", type=str, required=True)
 @click.option(
     "--yes",
@@ -941,40 +1014,88 @@ def describe_pipeline_endpoint(
     default=False,
     help="Don't ask for confirmation.",
 )
+@click.option(
+    "--delete",
+    "-d",
+    is_flag=True,
+    default=False,
+    help="Delete the pipeline endpoint after deprovisioning.",
+)
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the pipeline endpoint to be "
+    "deprovisioned.",
+)
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    default=False,
+    help="Force the deletion of the pipeline endpoint if it cannot be "
+    "deprovisioned.",
+)
 def deprovision_pipeline_endpoint(
     endpoint_name_or_id: str,
     yes: bool = False,
+    delete: bool = False,
+    timeout: Optional[int] = None,
+    force: bool = False,
 ) -> None:
-    """Deprovision a pipeline endpoint.
+    """Deprovision and optionally delete a pipeline endpoint.
 
     Args:
         endpoint_name_or_id: The name or ID of the pipeline endpoint to deprovision.
         yes: If set, don't ask for confirmation.
+        delete: If set, delete the pipeline endpoint after deprovisioning.
+        timeout: The maximum time in seconds to wait for the pipeline endpoint
+            to be deprovisioned.
+        force: If set, force the deletion of the pipeline endpoint if it cannot
+            be deprovisioned.
     """
     # Ask for confirmation to deprovision endpoint.
     if not yes:
+        extension = ""
+        if delete:
+            extension = " and delete"
         confirmation = cli_utils.confirmation(
-            f"Are you sure you want to deprovision and delete pipeline endpoint "
+            f"Are you sure you want to deprovision{extension} pipeline endpoint "
             f"`{endpoint_name_or_id}`?"
         )
         if not confirmation:
             cli_utils.declare("Pipeline endpoint deprovision canceled.")
             return
 
-    # Deprovision endpoint.
-    try:
-        Client().deprovision_pipeline_endpoint(
-            name_id_or_prefix=endpoint_name_or_id,
-        )
-    except KeyError as e:
-        cli_utils.error(str(e))
-    else:
-        cli_utils.declare(
-            f"Deprovisioned pipeline endpoint '{endpoint_name_or_id}'."
-        )
+    with console.status(
+        f"Deprovisioning pipeline endpoint '{endpoint_name_or_id}'...\n"
+    ):
+        try:
+            if delete:
+                Client().delete_pipeline_endpoint(
+                    name_id_or_prefix=endpoint_name_or_id,
+                    force=force,
+                    timeout=timeout,
+                )
+                cli_utils.declare(
+                    f"Deleted pipeline endpoint '{endpoint_name_or_id}'."
+                )
+            else:
+                Client().deprovision_pipeline_endpoint(
+                    name_id_or_prefix=endpoint_name_or_id,
+                    timeout=timeout,
+                )
+                cli_utils.declare(
+                    f"Deprovisioned pipeline endpoint '{endpoint_name_or_id}'."
+                )
+        except KeyError as e:
+            cli_utils.error(str(e))
 
 
-@endpoints.command("refresh")
+@endpoint.command("refresh")
 @click.argument("endpoint_name_or_id", type=str, required=True)
 def refresh_pipeline_endpoint(
     endpoint_name_or_id: str,
@@ -1008,7 +1129,63 @@ def refresh_pipeline_endpoint(
         )
 
 
-@endpoints.command("logs")
+@endpoint.command("invoke", context_settings={"ignore_unknown_options": True})
+@click.argument("endpoint_name_or_id", type=str, required=True)
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the pipeline endpoint to be "
+    "invoked.",
+)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def invoke_pipeline_endpoint(
+    endpoint_name_or_id: str,
+    args: List[str],
+    timeout: Optional[int] = None,
+) -> None:
+    """Call a pipeline endpoint with arguments.
+
+    Args:
+        endpoint_name_or_id: The name or ID of the pipeline endpoint to call.
+        args: The arguments to pass to the pipeline endpoint call.
+        timeout: The maximum time in seconds to wait for the pipeline endpoint
+            to be invoked.
+    """
+    from zenml.deployers.utils import call_pipeline_endpoint
+
+    # Parse the given args
+    args = list(args)
+    args.append(endpoint_name_or_id)
+
+    name_or_id, parsed_args = cli_utils.parse_name_and_extra_arguments(
+        args,
+        expand_args=True,
+        name_mandatory=True,
+    )
+    assert name_or_id is not None
+
+    try:
+        response = call_pipeline_endpoint(
+            endpoint_name_or_id=name_or_id,
+            timeout=timeout or 300,  # 5 minute timeout
+            project=None,
+            **parsed_args,
+        )
+
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Invoked pipeline endpoint '{name_or_id}' with response:"
+        )
+        print(json.dumps(response, indent=2))
+
+
+@endpoint.command("logs")
 @click.argument("endpoint_name_or_id", type=str, required=True)
 @click.option(
     "--follow",

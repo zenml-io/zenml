@@ -49,41 +49,6 @@ class GCPDeployerSettings(BaseDeployerSettings):
         description="Prefix for service names in Cloud Run to avoid naming "
         "conflicts.",
     )
-    # Resource configuration
-    cpu: str = Field(
-        default="1",
-        description="CPU allocation for the Cloud Run service. "
-        "Can be '1', '2', '4', '6', '8' or fractional values like '0.5'.",
-    )
-
-    memory: str = Field(
-        default="2Gi",
-        description="Memory allocation for the Cloud Run service. "
-        "Must be specified in Gi (e.g., '1Gi', '2Gi', '4Gi', '8Gi').",
-    )
-
-    # Scaling configuration
-    min_instances: int = Field(
-        default=1,
-        ge=0,
-        le=1000,
-        description="Minimum number of instances to keep warm. "
-        "Setting to 0 allows scaling to zero.",
-    )
-
-    max_instances: int = Field(
-        default=100,
-        ge=1,
-        le=1000,
-        description="Maximum number of instances that can be created.",
-    )
-
-    concurrency: int = Field(
-        default=80,
-        ge=1,
-        le=1000,
-        description="Maximum number of concurrent requests per instance.",
-    )
 
     # Timeout and execution configuration
     timeout_seconds: int = Field(

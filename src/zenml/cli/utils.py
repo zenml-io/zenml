@@ -2323,16 +2323,13 @@ def get_pipeline_endpoint_status_emoji(
     Raises:
         RuntimeError: If the given pipeline endpoint status is not supported.
     """
-    if status == PipelineEndpointStatus.DEPLOYING:
+    if status == PipelineEndpointStatus.PENDING:
         return ":hourglass_flowing_sand:"
     if status == PipelineEndpointStatus.ERROR:
         return ":x:"
     if status == PipelineEndpointStatus.RUNNING:
         return ":gear:"
-    if status in [
-        PipelineEndpointStatus.DELETED,
-        PipelineEndpointStatus.DELETING,
-    ]:
+    if status == PipelineEndpointStatus.ABSENT:
         return ":stop_sign:"
     if status == PipelineEndpointStatus.UNKNOWN:
         return ":question:"
