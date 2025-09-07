@@ -23,11 +23,10 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
-    Union,
 )
 
 from zenml import __version__
-from zenml.capture.config import BatchCapture, RealtimeCapture
+from zenml.capture.config import Capture
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -152,6 +151,26 @@ class Compiler:
             pipeline_spec=pipeline_spec,
         )
 
+        # Populate canonical capture fields from typed pipeline configuration
+        cap: Optional[Capture] = pipeline.configuration.capture
+        mem_only = bool(getattr(cap, "memory_only", False)) if cap else False
+        code = bool(getattr(cap, "code", True)) if cap else True
+        logs = bool(getattr(cap, "logs", True)) if cap else True
+        metadata_enabled = (
+            bool(getattr(cap, "metadata", True)) if cap else True
+        )
+        visuals = bool(getattr(cap, "visualizations", True)) if cap else True
+        metrics = bool(getattr(cap, "metrics", True)) if cap else True
+        try:
+            setattr(deployment, "capture_memory_only", mem_only)
+            setattr(deployment, "capture_code", code)
+            setattr(deployment, "capture_logs", logs)
+            setattr(deployment, "capture_metadata", metadata_enabled)
+            setattr(deployment, "capture_visualizations", visuals)
+            setattr(deployment, "capture_metrics", metrics)
+        except Exception:
+            pass
+
         logger.debug("Compiled pipeline deployment: %s", deployment)
 
         return deployment
@@ -198,42 +217,13 @@ class Compiler:
             config: The run configurations.
         """
         with pipeline.__suppress_configure_warnings__():
-            # Normalize run-level capture (str/dict) to typed for configure
-            cap_typed: Optional[Union[BatchCapture, RealtimeCapture]] = None
-            if isinstance(config.capture, str):
-                if config.capture.upper() == "REALTIME":
-                    from zenml.capture.config import RealtimeCapture
-
-                    cap_typed = RealtimeCapture()
-                elif config.capture.upper() == "BATCH":
-                    from zenml.capture.config import BatchCapture
-
-                    cap_typed = BatchCapture()
-            elif isinstance(config.capture, dict):
-                mode = str(config.capture.get("mode", "BATCH")).upper()
-                if mode == "REALTIME":
-                    from zenml.capture.config import RealtimeCapture
-
-                    cap_typed = RealtimeCapture(
-                        flush_on_step_end=bool(
-                            config.capture.get("flush_on_step_end", False)
-                        ),
-                        memory_only=bool(
-                            config.capture.get("memory_only", False)
-                        ),
-                    )
-                else:
-                    from zenml.capture.config import BatchCapture
-
-                    cap_typed = BatchCapture()
-
             pipeline.configure(
                 enable_cache=config.enable_cache,
                 enable_artifact_metadata=config.enable_artifact_metadata,
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
                 enable_pipeline_logs=config.enable_pipeline_logs,
-                capture=cap_typed,
+                capture=config.capture,
                 settings=config.settings,
                 tags=config.tags,
                 extra=config.extra,

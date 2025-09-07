@@ -20,9 +20,8 @@ import time
 from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
-from zenml.capture.config import CapturePolicy
 from zenml.client import Client
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
@@ -55,6 +54,7 @@ from zenml.orchestrators.runtime_manager import (
     get_or_create_shared_memory_runtime,
 )
 from zenml.orchestrators.step_runner import StepRunner
+from zenml.orchestrators.utils import is_serving_context
 from zenml.stack import Stack
 from zenml.utils import exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
@@ -147,6 +147,90 @@ class StepLauncher:
         # Internal properties and methods
         self._step_run: Optional[StepRunResponse] = None
         self._setup_signal_handlers()
+
+    # --- Serving helpers ---
+    def _validate_and_merge_request_params(
+        self,
+        req_params: Dict[str, Any],
+        effective_step_config: StepConfiguration,
+    ) -> Dict[str, Any]:
+        """Safely merge request parameters with allowlist and light validation.
+
+        Only keys already declared in the pipeline parameters are merged.
+        Performs simple type-coercion against defaults where possible and
+        applies size limits to avoid oversized payloads.
+
+        TODO(beta->prod): derive expected types from the pipeline entrypoint
+        annotations (or a generated parameter schema) instead of the current
+        defaults-based heuristic; add a total payload size limit.
+
+        Args:
+            req_params: Raw parameters dictionary from the request.
+            effective_step_config: The current effective step configuration.
+
+        Returns:
+            Merged and validated parameters dictionary.
+        """
+        if not req_params:
+            return effective_step_config.parameters or {}
+
+        declared = set((effective_step_config.parameters or {}).keys())
+        allowed = {k: v for k, v in req_params.items() if k in declared}
+        dropped = set(req_params.keys()) - declared
+        if dropped:
+            logger.warning(
+                "Dropping unknown request parameters: %s", sorted(dropped)
+            )
+
+        validated: Dict[str, Any] = {}
+        for key, value in allowed.items():
+            # Size limits
+            try:
+                if isinstance(value, str) and len(value) > 10_000:
+                    logger.warning(
+                        "Dropping oversized string parameter '%s' (%s chars)",
+                        key,
+                        len(value),
+                    )
+                    continue
+                if (
+                    isinstance(value, (list, dict))
+                    and len(str(value)) > 50_000
+                ):
+                    logger.warning(
+                        "Dropping oversized collection parameter '%s'", key
+                    )
+                    continue
+            except Exception:
+                # If size introspection fails, keep conservative and drop
+                logger.warning(
+                    "Dropping parameter '%s' due to size check error", key
+                )
+                continue
+
+            # Type coercion against defaults, if present
+            try:
+                defaults = effective_step_config.parameters or {}
+                if key in defaults and defaults[key] is not None:
+                    expected_t = type(defaults[key])
+                    if not isinstance(value, expected_t):
+                        try:
+                            value = expected_t(value)  # best-effort coercion
+                        except Exception:
+                            logger.warning(
+                                "Type mismatch for parameter '%s', dropping",
+                                key,
+                            )
+                            continue
+            except Exception:
+                # On any error, accept original value (already allowlisted)
+                pass
+
+            validated[key] = value
+
+        merged = dict(effective_step_config.parameters or {})
+        merged.update(validated)
+        return merged
 
     def _setup_signal_handlers(self) -> None:
         """Set up signal handlers for graceful shutdown, chaining previous handlers."""
@@ -246,28 +330,69 @@ class StepLauncher:
             else None
         )
 
-        # Determine capture-based runtime and memory-only mode early
-        mode_cfg = getattr(
-            self._deployment.pipeline_configuration, "capture", None
+        # Determine serving context and canonical capture flags
+        in_serving_ctx = is_serving_context()
+        mem_only_flag = bool(
+            getattr(self._deployment, "capture_memory_only", False)
         )
-        capture_policy = CapturePolicy.from_value(mode_cfg)
-        runtime = get_runtime(capture_policy)
+        # Dev fallback: if canonical field missing or False, derive from typed capture
+        if not mem_only_flag:
+            try:
+                from zenml.capture.config import Capture as _Cap
+
+                cap_typed = getattr(
+                    self._deployment.pipeline_configuration, "capture", None
+                )
+                if isinstance(cap_typed, _Cap) and bool(
+                    getattr(cap_typed, "memory_only", False)
+                ):
+                    mem_only_flag = True
+            except Exception:
+                pass
+        # memory_only applies only in serving; warn and ignore otherwise
+        memory_only = mem_only_flag if in_serving_ctx else False
+        if mem_only_flag and not in_serving_ctx:
+            logger.warning(
+                "memory_only=True configured but not in serving; ignoring."
+            )
+
+        metrics_enabled = bool(
+            getattr(self._deployment, "capture_metrics", True)
+        )
+        if metrics_enabled is True:
+            try:
+                from zenml.capture.config import Capture as _Cap
+
+                cap_typed = getattr(
+                    self._deployment.pipeline_configuration, "capture", None
+                )
+                if isinstance(cap_typed, _Cap):
+                    metrics_enabled = bool(getattr(cap_typed, "metrics", True))
+            except Exception:
+                pass
+        runtime = get_runtime(
+            serving=in_serving_ctx,
+            memory_only=memory_only,
+            metrics_enabled=metrics_enabled,
+        )
         # Store for later use
         self._runtime = runtime
-        # Serving context detection
-        in_serving_ctx = os.getenv("ZENML_SERVING_CAPTURE_DEFAULT") is not None
-        memory_only = bool(capture_policy.get_option("memory_only", False))
-        # Debug messages to clarify behavior
-        if capture_policy.mode.name == "REALTIME" and not in_serving_ctx:
-            logger.warning(
-                "REALTIME mode enabled outside serving (development). Performance/ordering may vary."
+        # Apply observability toggles to runtime
+        try:
+            setattr(
+                runtime,
+                "_metadata_enabled",
+                bool(getattr(self._deployment, "capture_metadata", True)),
             )
-        if memory_only and not in_serving_ctx:
-            # Ignore memory_only outside serving: fall back to normal (Batch/Realtime) behavior
-            logger.warning(
-                "memory_only=True requested outside serving; ignoring and proceeding with standard execution."
+            setattr(
+                runtime,
+                "_visualizations_enabled",
+                bool(
+                    getattr(self._deployment, "capture_visualizations", True)
+                ),
             )
-            memory_only = False
+        except Exception:
+            pass
 
         # Select entity manager and, if memory-only, set up shared runtime
         is_memory_only_path = memory_only and in_serving_ctx
@@ -279,35 +404,21 @@ class StepLauncher:
                 self._runtime = shared
             except Exception:
                 pass
+            logger.info(
+                "[Memory-only] Serving context detected; using in-process memory handoff (no runs/artifacts)."
+            )
             entity_manager = MemoryRunEntityManager(self)
         else:
             entity_manager = DefaultRunEntityManager(self)
 
         pipeline_run, run_was_created = entity_manager.create_or_reuse_run()
-        if (
-            capture_policy.mode.name == "REALTIME"
-            and "flush_on_step_end"
-            not in getattr(capture_policy, "options", {})
-            and in_serving_ctx
-        ):
-            flush_opt = False
-        else:
-            # Honor capture option: flush_on_step_end (default True)
-            flush_opt = capture_policy.get_option("flush_on_step_end", True)
-        # Configure runtime flush behavior if supported
-        set_flush = getattr(runtime, "set_flush_on_step_end", None)
-        if callable(set_flush):
-            try:
-                set_flush(bool(flush_opt))
-            except Exception as e:
-                logger.debug(
-                    "Could not configure runtime flush behavior: %s", e
-                )
+        # No flush configuration: batch is blocking, serving is async by default
 
         # Enable or disable step logs storage
         if (
             handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False)
             or tracking_disabled
+            or is_memory_only_path  # never persist logs in memory-only
         ):
             step_logging_enabled = False
         else:
@@ -318,6 +429,11 @@ class StepLauncher:
 
         logs_context = nullcontext()
         logs_model = None
+
+        # Apply observability toggle from canonical capture
+        capture_logs = bool(getattr(self._deployment, "capture_logs", True))
+        if not capture_logs:
+            step_logging_enabled = False
 
         if step_logging_enabled and not tracking_disabled:
             # Configure the logs
@@ -353,8 +469,7 @@ class StepLauncher:
                     )
 
         # Honor capture.code flag (default True)
-        code_opt = capture_policy.get_option("code", True)
-        code_enabled = str(code_opt).lower() not in {"false", "0", "off"}
+        code_enabled = bool(getattr(self._deployment, "capture_code", True))
 
         # Prepare step run creation
         if isinstance(entity_manager, DefaultRunEntityManager):
@@ -584,23 +699,26 @@ class StepLauncher:
                 }
             )
 
-        # Merge request-level parameters (serving) for memory-only runtime
+        # Merge request-level parameters in serving (applies to all runtimes)
         runtime = getattr(self, "_runtime", None)
-        if isinstance(runtime, MemoryStepRuntime):
+        if is_serving_context():
             try:
                 req_env = os.getenv("ZENML_SERVING_REQUEST_PARAMS")
                 req_params = json.loads(req_env) if req_env else {}
-                if not req_params:
-                    req_params = (
-                        self._deployment.pipeline_configuration.parameters
-                        or {}
-                    )
                 if req_params:
-                    merged = dict(effective_step_config.parameters or {})
-                    merged.update(req_params)
+                    merged = self._validate_and_merge_request_params(
+                        req_params, effective_step_config
+                    )
                     effective_step_config = effective_step_config.model_copy(
                         update={"parameters": merged}
                     )
+                    try:
+                        logger.info(
+                            "[Serving] Request parameters merged into step config: %s",
+                            sorted(list(req_params.keys())),
+                        )
+                    except Exception:
+                        pass
             except Exception:
                 pass
 
@@ -660,9 +778,11 @@ class StepLauncher:
                     output_artifact_uris=output_artifact_uris,
                 )
         except:  # noqa: E722
-            output_utils.remove_artifact_dirs(
-                artifact_uris=list(output_artifact_uris.values())
-            )
+            # Best-effort cleanup only for filesystem URIs
+            if not isinstance(runtime, MemoryStepRuntime):
+                output_utils.remove_artifact_dirs(
+                    artifact_uris=list(output_artifact_uris.values())
+                )
             raise
 
         duration = time.time() - start_time
@@ -679,9 +799,7 @@ class StepLauncher:
                 self._step_name in cfg.spec.upstream_steps
                 for name, cfg in self._deployment.step_configurations.items()
             )
-            should_flush = has_downstream or (
-                os.getenv("ZENML_SERVING_CAPTURE_DEFAULT") is not None
-            )
+            should_flush = has_downstream or is_serving_context()
             if should_flush:
                 try:
                     runtime.flush()
@@ -723,29 +841,7 @@ class StepLauncher:
         environment.update(secrets)
 
         environment[ENV_ZENML_STEP_OPERATOR] = "True"
-        # Propagate capture mode to the step operator environment so that
-        # the entrypoint can construct the appropriate runtime.
-        try:
-            mode_cfg = getattr(
-                self._deployment.pipeline_configuration, "capture", None
-            )
-            if mode_cfg:
-                # If typed capture with explicit mode, export it; unified Capture has no mode
-                try:
-                    from zenml.capture.config import (
-                        BatchCapture,
-                        RealtimeCapture,
-                    )
-
-                    if isinstance(mode_cfg, RealtimeCapture):
-                        environment["ZENML_CAPTURE_MODE"] = "REALTIME"
-                    elif isinstance(mode_cfg, BatchCapture):
-                        environment["ZENML_CAPTURE_MODE"] = "BATCH"
-                except Exception:
-                    pass
-                environment["ZENML_ENABLE_STEP_RUNTIME"] = "true"
-        except Exception:
-            pass
+        # No capture mode propagation; runtime behavior derived from context
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,

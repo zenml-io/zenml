@@ -11,92 +11,43 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Factory to construct a step runtime based on capture policy."""
+"""Factory to construct a step runtime based on context and capture."""
 
-from typing import Callable, Dict, Optional
-
-from zenml.capture.config import CaptureMode, CapturePolicy
 from zenml.execution.step_runtime import (
     BaseStepRuntime,
     DefaultStepRuntime,
     MemoryStepRuntime,
 )
 
-# Registry of runtime builders keyed by capture mode
-_RUNTIME_REGISTRY: Dict[
-    CaptureMode, Callable[[CapturePolicy], BaseStepRuntime]
-] = {}
 
-
-def register_runtime(
-    mode: CaptureMode, builder: Callable[[CapturePolicy], BaseStepRuntime]
-) -> None:
-    """Register a runtime builder for a capture mode."""
-    _RUNTIME_REGISTRY[mode] = builder
-
-
-def get_runtime(policy: Optional[CapturePolicy]) -> BaseStepRuntime:
-    """Return a runtime implementation using the registry.
-
-    Falls back to the default runtime if no builder is registered.
+def get_runtime(
+    *, serving: bool, memory_only: bool, metrics_enabled: bool = True
+) -> BaseStepRuntime:
+    """Return a runtime implementation for the given context.
 
     Args:
-        policy: The capture policy.
+        serving: True if executing in serving context.
+        memory_only: True if serving should use in-process handoff.
+        metrics_enabled: Enable runtime metrics collection (realtime only).
 
     Returns:
         The runtime implementation.
     """
-    policy = policy or CapturePolicy()
-    builder = _RUNTIME_REGISTRY.get(policy.mode)
-    if builder is None:
-        raise ValueError(
-            f"No runtime registered for capture mode: {policy.mode}. "
-            "Expected one of: "
-            + ", ".join(m.name for m in _RUNTIME_REGISTRY.keys())
-        )
-    return builder(policy)
+    if not serving:
+        return DefaultStepRuntime()
+    if memory_only:
+        return MemoryStepRuntime()
 
-
-# Register default builders
-def _build_default(_: CapturePolicy) -> BaseStepRuntime:
-    """Build the default runtime.
-
-    Args:
-        policy: The capture policy.
-
-    Returns:
-        The runtime implementation.
-    """
-    return DefaultStepRuntime()
-
-
-def _build_realtime(policy: CapturePolicy) -> BaseStepRuntime:
-    """Build the realtime runtime.
-
-    Args:
-        policy: The capture policy.
-
-    Returns:
-        The runtime implementation.
-    """
     # Import here to avoid circular imports
     from zenml.execution.realtime_runtime import RealtimeStepRuntime
 
-    # If memory_only flagged, or legacy runs/persistence indicate memory-only, use memory runtime
-    memory_only = bool(policy.get_option("memory_only", False))
-    runs_opt = str(policy.get_option("runs", "on")).lower()
-    persistence = str(policy.get_option("persistence", "async")).lower()
-    if (
-        memory_only
-        or runs_opt in {"off", "false", "0"}
-        or persistence in {"memory", "off"}
-    ):
-        return MemoryStepRuntime()
-
-    ttl = policy.get_option("ttl_seconds")
-    max_entries = policy.get_option("max_entries")
-    return RealtimeStepRuntime(ttl_seconds=ttl, max_entries=max_entries)
-
-
-register_runtime(CaptureMode.BATCH, _build_default)
-register_runtime(CaptureMode.REALTIME, _build_realtime)
+    rt = RealtimeStepRuntime()
+    # Gate metrics at the runtime if supported
+    if not metrics_enabled:
+        try:
+            setattr(
+                rt, "_metrics_disabled", True
+            )  # runtime may optionally read this
+        except Exception:
+            pass
+    return rt

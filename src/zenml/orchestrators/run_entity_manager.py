@@ -147,9 +147,25 @@ class MemoryRunEntityManager:
             outputs: Dict[str, Any] = None  # type: ignore[assignment]
             regular_inputs: Dict[str, Any] = None  # type: ignore[assignment]
 
+            # Minimal config for template substitutions used by StepRunner
+            @dataclass
+            class _Cfg:
+                # Step-level toggles are optional and may be None
+                enable_step_logs: Optional[bool] = None
+                enable_artifact_metadata: Optional[bool] = None
+                enable_artifact_visualization: Optional[bool] = None
+                substitutions: Dict[str, str] = None  # type: ignore[assignment]
+
+            config: Any = _Cfg()
+
             def __post_init__(self) -> None:  # noqa: D401
                 self.outputs = {}
                 self.regular_inputs = {}
+                # Default to empty substitutions mapping
+                try:
+                    self.config.substitutions = {}
+                except Exception:
+                    pass
 
         return _StepRunStub(id=run_id, name=step_name)
 

@@ -1,79 +1,60 @@
 ---
-title: Capture Policy & Execution Runtimes (Advanced)
+title: Capture & Execution Runtimes (Advanced)
 ---
 
-# Capture Policy & Execution Runtimes (Advanced)
+# Capture & Execution Runtimes (Advanced)
 
 This page explains how capture options map to execution runtimes and how to tune them for production serving.
 
 ## Execution Runtimes
 
-- DefaultStepRuntime
-  - Standard ZenML execution: persists artifacts, creates runs and step runs, captures metadata/logs per config.
+- DefaultStepRuntime (Batch)
+  - Standard ZenML execution: persists artifacts, creates runs and step runs, captures metadata/logs based on capture toggles.
+  - Used outside serving.
 
-- RealtimeStepRuntime
-  - Focus: Low latency + observability.
-  - Features:
-    - In-process artifact value cache for downstream steps in the same process.
-      - Tunables: `ttl_seconds`, `max_entries` via capture options (or env vars `ZENML_RT_CACHE_TTL_SECONDS`, `ZENML_RT_CACHE_MAX_ENTRIES`).
-    - Async server updates with a background worker.
-      - `flush_on_step_end` controls whether to block at step boundary to flush updates.
-      - In serving with `mode=REALTIME`, `flush_on_step_end` defaults to `false` unless explicitly set.
+- RealtimeStepRuntime (Serving, async by default)
+  - Optimized for low latency with async server updates and an in‑process cache for downstream loads.
+  - Tunables via env: `ZENML_RT_CACHE_TTL_SECONDS`, `ZENML_RT_CACHE_MAX_ENTRIES`, `ZENML_RT_ERR_REPORT_INTERVAL`, circuit breaker knobs (see Realtime Tuning page).
 
-- MemoryStepRuntime
-  - Focus: Pure in-memory execution (no server, no persistence).
-  - Behavior: Inter-step data is exchanged via in-process memory handles; no runs or artifacts.
-  - Configure with REALTIME: `@pipeline(capture=Capture(memory_only=True))`.
+- MemoryStepRuntime (Serving with memory_only)
+  - Pure in‑memory execution: no runs/steps/artifacts or server calls.
+  - Inter‑step data is exchanged via in‑process handles.
 
-## Capture Configuration
-
-Where to set:
-- In code: `@pipeline(capture=...)` (typed only)
-- In run config YAML: `capture: REALTIME|BATCH`
-
-Recommended API (typed)
+## Capture API (typed only)
 ```python
 from zenml.capture.config import Capture
 
-# Not required for defaults, but explicit usage examples:
-
-# Realtime (default in serving), non-blocking reporting
+# Serving async (default) – explicit but not required
 @pipeline(capture=Capture())
+
+# Serving memory-only (no DB/artifacts)
+@pipeline(capture=Capture(memory_only=True))
 def serve(...):
     ...
-
-# Realtime, blocking reporting
-@pipeline(capture=Capture(flush_on_step_end=True))
-
-# Realtime, memory-only (serving only)
-@pipeline(capture=Capture(memory_only=True))
 ```
 
-Notes:
-- Modes are inferred by context (batch vs serving), you only set options:
-  - `flush_on_step_end`: If `False`, serving returns immediately; tracking is published asynchronously by the runtime worker.
-  - `memory_only=True`: Pure in-memory execution (no runs/artifacts), serving only.
-  - `code=False`: Skips docstring/source capture (metadata), but does not affect code execution.
+Options:
+- `memory_only` (serving only): in‑process handoff; no persistence.
+- Observability toggles (affect only observability, not dataflow):
+  - `code`: include code/source/docstrings in metadata (default True)
+  - `logs`: persist step logs (default True)
+  - `metadata`: publish run/step metadata (default True)
+  - `visualizations`: persist visualizations (default True)
+  - `metrics`: emit runtime metrics (default True)
 
 ## Serving Defaults
 
-- REALTIME + serving context:
-  - If capture is unset, defaults to non-blocking (`flush_on_step_end=False`).
-  - Users can set `flush_on_step_end=True` to block at step boundary.
+- Serving uses the Realtime runtime and returns asynchronously by default.
+- There is no `flush_on_step_end` knob; batch is blocking, serving is async.
 
 ## Validation & Behavior
 
-- Realtime capture outside serving:
-  - Allowed for development; logs a warning and continues. In production, use the serving service.
-- memory_only outside serving:
-  - Ignored with a warning; standard execution proceeds (Batch/Realtime as applicable).
-- Contradictory options:
-  - Capture(memory_only=True, flush_on_step_end=True) → raises ValueError.
+- memory_only outside serving: ignored with a warning.
+- Observability toggles never affect dataflow/caching, only what’s recorded.
 
 ## Step Operators & Remote Execution
 
-- Step operators inherit capture via environment (e.g., `ZENML_CAPTURE_MODE`).
-- Remote entrypoints construct the matching runtime and honor capture options.
+Step operators and remote entrypoints derive behavior from context; no capture env propagation is required.
 
 ## Memory-Only Internals (for deeper understanding)
 
@@ -84,52 +65,14 @@ Notes:
   - `store_output_artifacts`: stores outputs back to the store; returns new handles for downstream steps.
 - No server calls; no runs or artifacts are created.
 
-## Environment Variables
-
-- `ZENML_CAPTURE_MODE`: global default capture when not set in the pipeline.
-- `ZENML_SERVING_CAPTURE_DEFAULT`: used internally to reduce tracking when capture is not set (serving compatibility).
-- `ZENML_RT_CACHE_TTL_SECONDS`, `ZENML_RT_CACHE_MAX_ENTRIES`: Realtime cache controls.
-
 ## Recipes
 
-- Low-latency serving (eventual consistency):
-  - `@pipeline(capture=Capture())`
-
-- Strict serving (strong consistency):
-  - `@pipeline(capture=Capture(flush_on_step_end=True))`
-
-- Memory-only (stateless service):
-  - `@pipeline(capture=Capture(memory_only=True))`
-
-### Control logs/metadata/visualizations (Batch & Realtime)
-
-These are pipeline settings, not capture options. Set them via `pipeline.configure(...)` or YAML:
-
-```python
-@pipeline()
-def train(...):
-    ...
-
-# In code
-train = train.with_options()
-train.configure(
-    enable_step_logs=True,
-    enable_artifact_metadata=True,
-    enable_artifact_visualization=False,
-)
-```
-
-Or in run config YAML:
-
-```yaml
-enable_step_logs: true
-enable_artifact_metadata: true
-enable_artifact_visualization: false
-```
+- Low-latency serving (default): `@pipeline(capture=Capture())`
+- Memory-only (stateless service): `@pipeline(capture=Capture(memory_only=True))`
 
 ### Disable code capture (docstring/source)
 
-Code capture affects metadata only (not execution). You can disable it via capture in both modes:
+Code capture affects metadata only (not execution). You can disable it via capture:
 
 ```python
 from zenml.capture.config import Capture
@@ -145,14 +88,7 @@ def train(...):
 
 ## FAQ
 
-- Can I enable only partial capture (e.g., errors-only logs)?
-  - Yes, e.g., `logs: errors-only` and `metadata: false`.
-
 - Does `code: false` break step execution?
   - No. It only disables docstring/source capture. Steps still run normally.
-
-- How does caching interact with REALTIME?
-  - Default caching behavior is unchanged. Set `cache_enabled: false` to bypass caching entirely.
-
 - Can memory-only work with parallelism?
   - Memory-only is per-process. For multi-process/multi-container setups, use persistence for cross-process data.

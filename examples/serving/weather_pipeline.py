@@ -18,7 +18,6 @@ import random
 from typing import Dict
 
 from zenml import pipeline, step
-from zenml.capture.config import Capture
 from zenml.config import DockerSettings
 
 # Import enums for type-safe capture mode configuration
@@ -100,6 +99,7 @@ def analyze_weather_with_llm(weather_data: Dict[str, float], city: str) -> str:
     and returns analysis with no database or filesystem writes.
     """
     import time
+
     temp = weather_data["temperature"]
     humidity = weather_data["humidity"]
     wind = weather_data["wind_speed"]
@@ -221,7 +221,6 @@ Analysis: Rule-based AI (LLM unavailable)"""
 
 
 @pipeline(
-    capture=Capture(memory_only=True),
     on_init=init_hook,
     settings={
         "docker": docker_settings,
@@ -274,7 +273,7 @@ if __name__ == "__main__":
     # Create deployment without running
     deployment = weather_agent_pipeline._create_deployment()
 
-    weather_agent_pipeline()
+    # weather_agent_pipeline()
 
     print("\n✅ Pipeline deployed for run-only serving!")
     print(f"📋 Deployment ID: {deployment.id}")

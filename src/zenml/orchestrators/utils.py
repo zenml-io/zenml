@@ -112,7 +112,7 @@ def is_tracking_enabled(
     - 'none' (case-insensitive) or False -> disable tracking
     - any other value or missing -> enable tracking
 
-    For serving, respects ZENML_SERVING_CAPTURE_DEFAULT when pipeline settings are absent.
+    Serving context does not change this; capture options are typed-only.
 
     Args:
         pipeline_settings: Pipeline configuration settings mapping, if any.
@@ -121,27 +121,11 @@ def is_tracking_enabled(
         Whether tracking should be enabled.
     """
     if not pipeline_settings:
-        # Check for serving default when no pipeline settings
-        import os
-
-        serving_default = (
-            os.getenv("ZENML_SERVING_CAPTURE_DEFAULT", "").strip().lower()
-        )
-        if serving_default in {"none", "off", "false", "0", "disabled"}:
-            return False
         return True
 
     try:
         capture_value = pipeline_settings.get("capture")
         if capture_value is None:
-            # Check for serving default when capture setting is missing
-            import os
-
-            serving_default = (
-                os.getenv("ZENML_SERVING_CAPTURE_DEFAULT", "").strip().lower()
-            )
-            if serving_default in {"none", "off", "false", "0", "disabled"}:
-                return False
             return True
         if isinstance(capture_value, bool):
             return capture_value
@@ -176,7 +160,14 @@ def is_tracking_enabled(
 def is_tracking_disabled(
     pipeline_settings: Optional[Dict[str, Any]] = None,
 ) -> bool:
-    """True if tracking/persistence should be disabled completely."""
+    """True if tracking/persistence should be disabled completely.
+
+    Args:
+        pipeline_settings: Optional pipeline settings mapping.
+
+    Returns:
+        True if tracking should be disabled, False otherwise.
+    """
     return not is_tracking_enabled(pipeline_settings)
 
 
@@ -187,15 +178,49 @@ _serve_output_tap: ContextVar[Dict[str, Dict[str, Any]]] = ContextVar(
 
 
 def tap_store_step_outputs(step_name: str, outputs: Dict[str, Any]) -> None:
-    """Store step outputs in the serve tap for in-memory handoff."""
+    """Store step outputs in the serve tap for in-memory handoff.
+
+    Args:
+        step_name: Name of the step producing outputs.
+        outputs: Mapping of output name to value.
+    """
     current_tap = _serve_output_tap.get({})
     current_tap[step_name] = outputs
     _serve_output_tap.set(current_tap)
 
 
 def tap_get_step_outputs(step_name: str) -> Optional[Dict[str, Any]]:
-    """Get step outputs from the serve tap."""
+    """Get step outputs from the serve tap.
+
+    Args:
+        step_name: Name of the step whose outputs to fetch.
+
+    Returns:
+        Optional mapping of outputs for the step if present, else None.
+    """
     return _serve_output_tap.get({}).get(step_name)
+
+
+# Serving context marker
+_serving_ctx: ContextVar[bool] = ContextVar("serving_ctx", default=False)
+
+
+def set_serving_context(value: bool) -> None:
+    """Set whether the current execution is in a serving context.
+
+    Args:
+        value: True if running inside the serving service, else False.
+    """
+    _serving_ctx.set(bool(value))
+
+
+def is_serving_context() -> bool:
+    """Return True if running inside a serving context.
+
+    Returns:
+        True if serving context is active, otherwise False.
+    """
+    return _serving_ctx.get()
 
 
 # Serve pipeline state context
@@ -205,12 +230,20 @@ _serve_pipeline_state: ContextVar[Optional[Any]] = ContextVar(
 
 
 def set_pipeline_state(state: Optional[Any]) -> None:
-    """Set pipeline state for serving context."""
+    """Set pipeline state for serving context.
+
+    Args:
+        state: Optional pipeline state object to associate with this request.
+    """
     _serve_pipeline_state.set(state)
 
 
 def get_pipeline_state() -> Optional[Any]:
-    """Get pipeline state for serving context."""
+    """Get pipeline state for serving context.
+
+    Returns:
+        Optional pipeline state object if set, else None.
+    """
     return _serve_pipeline_state.get(None)
 
 

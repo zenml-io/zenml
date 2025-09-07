@@ -35,15 +35,9 @@ Circuit Breaker (async → inline fallback)
 - `ZENML_RT_CB_OPEN_SECONDS` (default: `300`)
   - Duration (seconds) to keep breaker open; inline publishing is used while open.
 
-Capture & Mode (context)
-
-- `ZENML_CAPTURE_MODE`: default runtime mode from environment (`BATCH|REALTIME`).
-- `ZENML_SERVING_CAPTURE_DEFAULT`: when present, serving defaults to `REALTIME` if capture is not set.
-
 Notes
 
-- Realtime outside serving logs a warning and continues (for local development). For production serving, run via the serving service.
-- YAML/ENV can still set `capture: REALTIME|BATCH` for run configs; code paths are typed-only (`Capture`, `BatchCapture`, `RealtimeCapture`).
+- Serving uses the Realtime runtime by default. Outside serving, batch runtime is used.
 
 ## Metrics & Observability
 
@@ -83,4 +77,3 @@ Recommendation
 
 - Low cache hit rate:
   - Check step dependencies and cache TTL; ensure downstream steps run in the same process to benefit from warm cache.
-

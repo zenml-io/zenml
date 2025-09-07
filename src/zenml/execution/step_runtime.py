@@ -21,12 +21,31 @@ Enable usage by setting environment variable `ZENML_ENABLE_STEP_RUNTIME=true`.
 """
 
 import threading
+import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 from uuid import UUID
 
+from zenml.artifacts.unmaterialized_artifact import (
+    UnmaterializedArtifact,
+)
 from zenml.client import Client
+from zenml.enums import ArtifactSaveType
+from zenml.logger import get_logger
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.models import ArtifactVersionResponse
+
+# Note: avoid importing zenml.orchestrators modules at import time to prevent
+# circular dependencies. Where needed, import locally within methods.
+from zenml.steps.step_context import get_step_context
+from zenml.utils import (
+    materializer_utils,
+    source_utils,
+    string_utils,
+    tag_utils,
+)
+from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
@@ -36,6 +55,8 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.step_run import StepRunInputResponse
     from zenml.stack import Stack
     from zenml.steps.utils import OutputSignature
+
+logger = get_logger(__name__)
 
 
 class BaseStepRuntime(ABC):
@@ -125,6 +146,7 @@ class BaseStepRuntime(ABC):
         Returns:
             The computed cache key.
         """
+        # Local import to avoid circular import issues
         from zenml.orchestrators import cache_utils
 
         return cache_utils.generate_cache_key(
@@ -147,6 +169,7 @@ class BaseStepRuntime(ABC):
         Returns:
             The cached step run if available, otherwise None.
         """
+        # Local import to avoid circular import issues
         from zenml.orchestrators import cache_utils
 
         return cache_utils.get_cached_step_run(cache_key=cache_key)
@@ -167,11 +190,13 @@ class BaseStepRuntime(ABC):
             pipeline_run_id: The pipeline run ID.
             pipeline_run_metadata: The pipeline run metadata.
         """
+        if not bool(getattr(self, "_metadata_enabled", True)):
+            return
         from zenml.orchestrators.publish_utils import (
-            publish_pipeline_run_metadata,
+            publish_pipeline_run_metadata as _pub_run_md,
         )
 
-        publish_pipeline_run_metadata(
+        _pub_run_md(
             pipeline_run_id=pipeline_run_id,
             pipeline_run_metadata=pipeline_run_metadata,
         )
@@ -185,9 +210,13 @@ class BaseStepRuntime(ABC):
             step_run_id: The step run ID.
             step_run_metadata: The step run metadata.
         """
-        from zenml.orchestrators.publish_utils import publish_step_run_metadata
+        if not bool(getattr(self, "_metadata_enabled", True)):
+            return
+        from zenml.orchestrators.publish_utils import (
+            publish_step_run_metadata as _pub_step_md,
+        )
 
-        publish_step_run_metadata(
+        _pub_step_md(
             step_run_id=step_run_id, step_run_metadata=step_run_metadata
         )
 
@@ -201,10 +230,10 @@ class BaseStepRuntime(ABC):
             output_artifact_ids: The output artifact IDs.
         """
         from zenml.orchestrators.publish_utils import (
-            publish_successful_step_run,
+            publish_successful_step_run as _pub_step_success,
         )
 
-        publish_successful_step_run(
+        _pub_step_success(
             step_run_id=step_run_id, output_artifact_ids=output_artifact_ids
         )
 
@@ -214,9 +243,11 @@ class BaseStepRuntime(ABC):
         Args:
             step_run_id: The step run ID.
         """
-        from zenml.orchestrators.publish_utils import publish_failed_step_run
+        from zenml.orchestrators.publish_utils import (
+            publish_failed_step_run as _pub_step_failed,
+        )
 
-        publish_failed_step_run(step_run_id)
+        _pub_step_failed(step_run_id)
 
     def flush(self) -> None:
         """Ensure all queued updates are sent."""
@@ -230,7 +261,8 @@ class BaseStepRuntime(ABC):
     def get_metrics(self) -> Dict[str, Any]:
         """Optional runtime metrics for observability.
 
-        Default implementation returns an empty dict.
+        Returns:
+            Dictionary of runtime metrics; empty by default.
         """
         return {}
 
@@ -239,6 +271,9 @@ class BaseStepRuntime(ABC):
         """Whether the runner should call flush() at step end.
 
         Implementations may override to disable flush for non-blocking serving.
+
+        Returns:
+            True to flush on step end; False otherwise.
         """
         return True
 
@@ -264,8 +299,12 @@ class DefaultStepRuntime(BaseStepRuntime):
         Args:
             step: The step to resolve inputs for.
             pipeline_run: The pipeline run to resolve inputs for.
-            step_runs: The step runs to resolve inputs for.
+            step_runs: Optional map of step runs.
+
+        Returns:
+            Mapping from input name to resolved step run input.
         """
+        # Local import to avoid circular import issues
         from zenml.orchestrators import input_utils
 
         return input_utils.resolve_step_inputs(
@@ -286,26 +325,17 @@ class DefaultStepRuntime(BaseStepRuntime):
             artifact: The artifact to load.
             data_type: The data type of the artifact.
             stack: The stack to load the artifact from.
+
+        Returns:
+            The loaded Python value for the input artifact.
         """
-        from typing import Any as _Any
-
-        from zenml.artifacts.unmaterialized_artifact import (
-            UnmaterializedArtifact,
-        )
-        from zenml.materializers.base_materializer import BaseMaterializer
-        from zenml.orchestrators.utils import (
-            register_artifact_store_filesystem,
-        )
-        from zenml.utils import source_utils
-        from zenml.utils.typing_utils import get_origin, is_union
-
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact(
                 **artifact.get_hydrated_version().model_dump()
             )
 
-        if data_type in (None, _Any) or is_union(get_origin(data_type)):
+        if data_type in (None, Any) or is_union(get_origin(data_type)):
             # Use the stored artifact datatype when function annotation is not specific
             data_type = source_utils.load(artifact.data_type)
 
@@ -326,6 +356,11 @@ class DefaultStepRuntime(BaseStepRuntime):
             stack.artifact_store._register()
             return _load(artifact_store=stack.artifact_store)
         else:
+            # Local import to avoid circular import issues
+            from zenml.orchestrators.utils import (
+                register_artifact_store_filesystem,
+            )
+
             with register_artifact_store_filesystem(
                 artifact.artifact_store_id
             ) as target_store:
@@ -353,17 +388,20 @@ class DefaultStepRuntime(BaseStepRuntime):
             artifact_visualization_enabled: Whether artifact visualization is enabled.
 
         Returns:
-            The stored artifacts.
-        """
-        from typing import Type as _Type
+            Mapping from output name to stored artifact version.
 
-        from zenml.artifacts.utils import (
-            _store_artifact_data_and_prepare_request,
+        Raises:
+            RuntimeError: If artifact batch creation fails after retries or
+                the number of responses does not match requests.
+        """
+        # Apply capture toggles for metadata and visualizations
+        artifact_metadata_enabled = artifact_metadata_enabled and bool(
+            getattr(self, "_metadata_enabled", True)
         )
-        from zenml.enums import ArtifactSaveType
-        from zenml.materializers.base_materializer import BaseMaterializer
-        from zenml.steps.step_context import get_step_context
-        from zenml.utils import materializer_utils, source_utils, tag_utils
+        artifact_visualization_enabled = (
+            artifact_visualization_enabled
+            and bool(getattr(self, "_visualizations_enabled", True))
+        )
 
         step_context = get_step_context()
         artifact_requests: List[Any] = []
@@ -372,7 +410,7 @@ class DefaultStepRuntime(BaseStepRuntime):
             data_type = type(return_value)
             materializer_classes = output_materializers[output_name]
             if materializer_classes:
-                materializer_class: _Type[BaseMaterializer] = (
+                materializer_class: Type[BaseMaterializer] = (
                     materializer_utils.select_materializer(
                         data_type=data_type,
                         materializer_classes=materializer_classes,
@@ -380,10 +418,6 @@ class DefaultStepRuntime(BaseStepRuntime):
                 )
             else:
                 # Runtime selection if no explicit materializer recorded
-                from zenml.materializers.materializer_registry import (
-                    materializer_registry,
-                )
-
                 default_materializer_source = (
                     step_context.step_run.config.outputs[
                         output_name
@@ -393,7 +427,7 @@ class DefaultStepRuntime(BaseStepRuntime):
                 )
 
                 if default_materializer_source:
-                    default_materializer_class: _Type[BaseMaterializer] = (
+                    default_materializer_class: Type[BaseMaterializer] = (
                         source_utils.load_and_validate_class(
                             default_materializer_source,
                             expected_class=BaseMaterializer,
@@ -435,6 +469,11 @@ class DefaultStepRuntime(BaseStepRuntime):
                     if isinstance(tag, tag_utils.Tag) and tag.cascade is True:
                         tags.append(tag.name)
 
+            # Store artifact data and prepare a request to the server.
+            from zenml.artifacts.utils import (
+                _store_artifact_data_and_prepare_request,
+            )
+
             artifact_request = _store_artifact_data_and_prepare_request(
                 name=artifact_name,
                 data=return_value,
@@ -451,53 +490,51 @@ class DefaultStepRuntime(BaseStepRuntime):
             )
             artifact_requests.append(artifact_request)
 
-        responses = Client().zen_store.batch_create_artifact_versions(
-            artifact_requests
+        max_retries = 2
+        delay = 1.0
+
+        for attempt in range(max_retries + 1):
+            try:
+                responses = Client().zen_store.batch_create_artifact_versions(
+                    artifact_requests
+                )
+                if len(responses) != len(artifact_requests):
+                    raise RuntimeError(
+                        f"Artifact batch creation returned {len(responses)}/{len(artifact_requests)} responses"
+                    )
+                return dict(zip(output_data.keys(), responses))
+            except Exception as e:
+                if attempt < max_retries:
+                    logger.warning(
+                        "Artifact creation attempt %s failed: %s. Retrying in %.1fs...",
+                        attempt + 1,
+                        e,
+                        delay,
+                    )
+                    time.sleep(delay)
+                    delay *= 1.5
+                else:
+                    logger.error(
+                        "Failed to create artifacts after %s attempts: %s. Failing step to avoid inconsistency.",
+                        max_retries + 1,
+                        e,
+                    )
+                    raise
+
+        # TODO(beta->prod): Align with server to provide atomic batch create or
+        # compensating deletes. Consider idempotent requests and retriable error
+        # categories with jittered backoff.
+        raise RuntimeError(
+            "Artifact creation failed unexpectedly without raising"
         )
-        return dict(zip(output_data.keys(), responses))
-
-
-class OffStepRuntime(DefaultStepRuntime):
-    """OFF mode runtime: minimize overhead but keep correctness.
-
-    Notes:
-    - We intentionally keep artifact persistence and success/failure status
-      updates to avoid breaking input resolution across steps.
-    - We no-op metadata publishing calls to reduce server traffic.
-    """
-
-    def publish_pipeline_run_metadata(
-        self, *, pipeline_run_id: Any, pipeline_run_metadata: Any
-    ) -> None:
-        """Publish pipeline run metadata.
-
-        Args:
-            pipeline_run_id: The pipeline run ID.
-            pipeline_run_metadata: The pipeline run metadata.
-        """
-        # No-op: skip pipeline run metadata in OFF mode
-        return
-
-    def publish_step_run_metadata(
-        self, *, step_run_id: Any, step_run_metadata: Any
-    ) -> None:
-        """Publish step run metadata.
-
-        Args:
-            step_run_id: The step run ID.
-            step_run_metadata: The step run metadata.
-        """
-        # No-op: skip step run metadata in OFF mode
-        return
 
 
 class MemoryStepRuntime(BaseStepRuntime):
-    """Pure in-memory execution runtime: no server calls, no persistence."""
+    """Pure in-memory execution runtime: no server calls, no persistence.
 
-    # Global registry keyed by run_id to isolate concurrent runs
-    _STORE: Dict[str, Dict[Tuple[str, str], Any]] = {}
-    _RUN_LOCKS: Dict[str, Any] = {}
-    _GLOBAL_LOCK: Any = threading.RLock()  # protects registry structures
+    Instance-scoped store to isolate requests. Values are accessible within the
+    same process for the same run id and step chain only.
+    """
 
     @staticmethod
     def make_handle_id(run_id: str, step_name: str, output_name: str) -> str:
@@ -522,6 +559,9 @@ class MemoryStepRuntime(BaseStepRuntime):
 
         Returns:
             The run ID, step name, and output name.
+
+        Raises:
+            ValueError: If the handle id is malformed.
         """
         if not isinstance(handle_id, str) or not handle_id.startswith(
             "mem://"
@@ -557,6 +597,10 @@ class MemoryStepRuntime(BaseStepRuntime):
         self._ctx_run_id: Optional[str] = None
         self._ctx_substitutions: Dict[str, str] = {}
         self._active_run_ids: set[str] = set()
+        # Instance-scoped storage and locks per run_id
+        self._store: Dict[str, Dict[Tuple[str, str], Any]] = {}
+        self._run_locks: Dict[str, Any] = {}
+        self._global_lock: Any = threading.RLock()
 
     def set_context(
         self, *, run_id: str, substitutions: Optional[Dict[str, str]] = None
@@ -592,8 +636,6 @@ class MemoryStepRuntime(BaseStepRuntime):
         Returns:
             A mapping of input name to MemoryStepRuntime.Handle.
         """
-        from zenml.utils import string_utils
-
         run_id = self._ctx_run_id or str(getattr(pipeline_run, "id", "local"))
         subs = self._ctx_substitutions or {}
         handles: Dict[str, Any] = {}
@@ -621,20 +663,19 @@ class MemoryStepRuntime(BaseStepRuntime):
 
         Returns:
             The loaded artifact.
+
+        Raises:
+            ValueError: If the memory handle id is invalid or malformed.
         """
         handle_id_any = getattr(artifact, "id", None)
         if not isinstance(handle_id_any, str):
             raise ValueError("Invalid memory handle id")
         run_id, step_name, output_name = self.parse_handle_id(handle_id_any)
         # Use per-run lock to avoid cross-run interference
-        with MemoryStepRuntime._GLOBAL_LOCK:
-            rlock = MemoryStepRuntime._RUN_LOCKS.setdefault(
-                run_id, threading.RLock()
-            )
+        with self._global_lock:
+            rlock = self._run_locks.setdefault(run_id, threading.RLock())
         with rlock:
-            return MemoryStepRuntime._STORE.get(run_id, {}).get(
-                (step_name, output_name)
-            )
+            return self._store.get(run_id, {}).get((step_name, output_name))
 
     def store_output_artifacts(
         self,
@@ -659,8 +700,6 @@ class MemoryStepRuntime(BaseStepRuntime):
         Returns:
             The stored artifacts.
         """
-        from zenml.steps.step_context import get_step_context
-
         ctx = get_step_context()
         run_id = str(getattr(ctx.pipeline_run, "id", "local"))
         try:
@@ -670,12 +709,10 @@ class MemoryStepRuntime(BaseStepRuntime):
             pass
         step_name = str(getattr(ctx.step_run, "name", "step"))
         handles: Dict[str, Any] = {}
-        with MemoryStepRuntime._GLOBAL_LOCK:
-            rlock = MemoryStepRuntime._RUN_LOCKS.setdefault(
-                run_id, threading.RLock()
-            )
+        with self._global_lock:
+            rlock = self._run_locks.setdefault(run_id, threading.RLock())
         with rlock:
-            rr = MemoryStepRuntime._STORE.setdefault(run_id, {})
+            rr = self._store.setdefault(run_id, {})
             for output_name, value in output_data.items():
                 rr[(step_name, output_name)] = value
                 handle_id = self.make_handle_id(run_id, step_name, output_name)
@@ -793,8 +830,8 @@ class MemoryStepRuntime(BaseStepRuntime):
         Args:
             run_id: The run id to clear.
         """
-        with MemoryStepRuntime._GLOBAL_LOCK:
+        with self._global_lock:
             try:
-                MemoryStepRuntime._STORE.pop(run_id, None)
+                self._store.pop(run_id, None)
             finally:
-                MemoryStepRuntime._RUN_LOCKS.pop(run_id, None)
+                self._run_locks.pop(run_id, None)

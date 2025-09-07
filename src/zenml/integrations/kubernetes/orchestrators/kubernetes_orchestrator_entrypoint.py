@@ -308,15 +308,11 @@ def main() -> None:
             for owner_reference in owner_references:
                 owner_reference.controller = False
 
-        # Build a runtime for request factory using capture mode from config
+        # Build a runtime for request factory (batch context)
         try:
-            from zenml.capture.config import CapturePolicy
             from zenml.execution.factory import get_runtime
 
-            mode_cfg = getattr(
-                deployment.pipeline_configuration, "capture", None
-            )
-            _runtime = get_runtime(CapturePolicy.from_value(mode_cfg))
+            _runtime = get_runtime(serving=False, memory_only=False)
         except Exception:
             _runtime = None
 

@@ -17,7 +17,7 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String, UniqueConstraint
+from sqlalchemy import TEXT, Boolean, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload, object_session
 from sqlalchemy.sql.base import ExecutableOption
@@ -86,6 +86,26 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         )
     )
     code_path: Optional[str] = Field(nullable=True)
+
+    # Canonical capture fields
+    capture_memory_only: bool = Field(
+        sa_column=Column(Boolean, nullable=False, default=False), default=False
+    )
+    capture_code: bool = Field(
+        sa_column=Column(Boolean, nullable=False, default=True), default=True
+    )
+    capture_logs: bool = Field(
+        sa_column=Column(Boolean, nullable=False, default=True), default=True
+    )
+    capture_metadata: bool = Field(
+        sa_column=Column(Boolean, nullable=False, default=True), default=True
+    )
+    capture_visualizations: bool = Field(
+        sa_column=Column(Boolean, nullable=False, default=True), default=True
+    )
+    capture_metrics: bool = Field(
+        sa_column=Column(Boolean, nullable=False, default=True), default=True
+    )
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -319,6 +339,14 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             if request.pipeline_spec
             else None,
             code_path=request.code_path,
+            capture_memory_only=getattr(request, "capture_memory_only", False),
+            capture_code=getattr(request, "capture_code", True),
+            capture_logs=getattr(request, "capture_logs", True),
+            capture_metadata=getattr(request, "capture_metadata", True),
+            capture_visualizations=getattr(
+                request, "capture_visualizations", True
+            ),
+            capture_metrics=getattr(request, "capture_metrics", True),
         )
 
     def to_model(
@@ -390,6 +418,12 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 else None,
                 code_path=self.code_path,
                 template_id=self.template_id,
+                capture_memory_only=self.capture_memory_only,
+                capture_code=self.capture_code,
+                capture_logs=self.capture_logs,
+                capture_metadata=self.capture_metadata,
+                capture_visualizations=self.capture_visualizations,
+                capture_metrics=self.capture_metrics,
             )
 
         resources = None

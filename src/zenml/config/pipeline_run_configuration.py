@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import Field, SerializeAsAny
 
+from zenml.capture.config import Capture
 from zenml.config.base_settings import BaseSettings
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
@@ -41,8 +42,8 @@ class PipelineRunConfiguration(
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     enable_pipeline_logs: Optional[bool] = None
-    # Optional override for capture per run: mode string or dict with options
-    capture: Optional[Union[str, Dict[str, Any]]] = None
+    # Optional typed capture override per run (no dicts/strings)
+    capture: Optional[Capture] = None
     schedule: Optional[Schedule] = None
     build: Union[PipelineBuildBase, UUID, None] = Field(
         default=None, union_mode="left_to_right"

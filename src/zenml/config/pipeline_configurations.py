@@ -18,12 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pydantic import SerializeAsAny, field_validator
 
-from zenml.capture.config import (
-    BatchCapture,
-    Capture,
-    CaptureConfig,
-    RealtimeCapture,
-)
+from zenml.capture.config import Capture
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
@@ -48,8 +43,8 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     enable_pipeline_logs: Optional[bool] = None
-    # Capture policy for execution semantics (typed only)
-    capture: Optional[CaptureConfig] = None
+    # Capture configuration (typed only)
+    capture: Optional[Capture] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
@@ -96,16 +91,14 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     @field_validator("capture")
     @classmethod
     def validate_capture_mode(
-        cls, value: Optional[CaptureConfig]
-    ) -> Optional[CaptureConfig]:
+        cls, value: Optional[Capture]
+    ) -> Optional[Capture]:
         """Validates the capture config (typed only)."""
         if value is None:
             return value
-        if isinstance(value, (Capture, BatchCapture, RealtimeCapture)):
+        if isinstance(value, Capture):
             return value
-        raise ValueError(
-            "'capture' must be a typed Capture, BatchCapture, or RealtimeCapture."
-        )
+        raise ValueError("'capture' must be a typed Capture.")
 
     @field_validator("name")
     @classmethod

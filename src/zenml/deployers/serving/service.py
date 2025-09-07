@@ -19,19 +19,31 @@ applies them to the loaded deployment, and triggers the orchestrator.
 """
 
 import asyncio
+import inspect
 import json
 import os
 import time
+import traceback
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
+
+import numpy as np
 
 from zenml.client import Client
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
-from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.topsort import topsorted_layers
+from zenml.orchestrators.utils import (
+    extract_return_contract,
+    is_tracking_disabled,
+    response_tap_clear,
+    response_tap_get_all,
+    set_pipeline_state,
+    set_return_targets,
+    set_serving_context,
+)
 from zenml.stack import Stack
 from zenml.utils import source_utils
 
@@ -128,8 +140,6 @@ class PipelineServingService:
         except Exception as e:
             logger.error(f"❌ Failed to initialize service: {str(e)}")
             logger.error(f"   Error type: {type(e)}")
-            import traceback
-
             logger.error(f"   Traceback: {traceback.format_exc()}")
             raise
 
@@ -193,10 +203,6 @@ class PipelineServingService:
                 self.deployment.pipeline_configuration, "spec", None
             )
             if pipeline_spec and getattr(pipeline_spec, "source", None):
-                import inspect
-
-                from zenml.utils import source_utils
-
                 # Load the pipeline function
                 pipeline_func = source_utils.load(pipeline_spec.source)
 
@@ -287,16 +293,12 @@ class PipelineServingService:
             JSON-serializable representation of the value
         """
         try:
-            import json
-
             # Handle common ML types that aren't JSON serializable
             if hasattr(value, "tolist"):  # numpy arrays, pandas Series
                 return value.tolist()
             elif hasattr(value, "to_dict"):  # pandas DataFrames
                 return value.to_dict()
             elif hasattr(value, "__array__"):  # numpy-like arrays
-                import numpy as np
-
                 return np.asarray(value).tolist()
 
             # Test if it's already JSON serializable
@@ -323,7 +325,7 @@ class PipelineServingService:
         logger.info("Starting pipeline execution")
 
         # Set up response capture
-        orchestrator_utils.response_tap_clear()
+        response_tap_clear()
         self._setup_return_targets()
 
         try:
@@ -334,20 +336,16 @@ class PipelineServingService:
                 resolved_params
             )
             # Expose pipeline state via serving context var
-            from zenml.orchestrators import utils as _orch_utils
-
-            _orch_utils.set_pipeline_state(self.pipeline_state)
+            set_pipeline_state(self.pipeline_state)
 
             # Get deployment and check if we're in no-capture mode
             deployment = self.deployment
-            _ = orchestrator_utils.is_tracking_disabled(
+            _ = is_tracking_disabled(
                 deployment.pipeline_configuration.settings
             )
 
-            original_capture_default = os.environ.get(
-                "ZENML_SERVING_CAPTURE_DEFAULT"
-            )
-            os.environ["ZENML_SERVING_CAPTURE_DEFAULT"] = "none"
+            # Mark serving context for the orchestrator/launcher
+            set_serving_context(True)
 
             # Build execution order using the production-tested topsort utility
             steps = deployment.step_configurations
@@ -395,18 +393,12 @@ class PipelineServingService:
 
             finally:
                 orchestrator._cleanup_run()
-                # Restore original capture default environment variable
-                if original_capture_default is None:
-                    os.environ.pop("ZENML_SERVING_CAPTURE_DEFAULT", None)
-                else:
-                    os.environ["ZENML_SERVING_CAPTURE_DEFAULT"] = (
-                        original_capture_default
-                    )
+                # Clear serving context marker
+                set_serving_context(False)
                 # Clear request params env and shared runtime state
                 os.environ.pop("ZENML_SERVING_REQUEST_PARAMS", None)
-                from zenml.orchestrators.utils import set_pipeline_state
-
                 set_pipeline_state(None)
+                # No per-request capture override to clear
                 try:
                     from zenml.orchestrators.runtime_manager import (
                         clear_shared_runtime,
@@ -419,7 +411,7 @@ class PipelineServingService:
                     pass
 
             # Get captured outputs from response tap
-            outputs = orchestrator_utils.response_tap_get_all()
+            outputs = response_tap_get_all()
 
             execution_time = time.time() - start
             self._update_execution_stats(True, execution_time)
@@ -458,7 +450,7 @@ class PipelineServingService:
             }
         finally:
             # Clean up response tap
-            orchestrator_utils.response_tap_clear()
+            response_tap_clear()
 
     async def submit_pipeline(
         self,
@@ -597,7 +589,7 @@ class PipelineServingService:
                 else None
             )
             contract = (
-                orchestrator_utils.extract_return_contract(pipeline_source)
+                extract_return_contract(pipeline_source)
                 if pipeline_source
                 else None
             )
@@ -637,12 +629,12 @@ class PipelineServingService:
                 )
 
             logger.debug(f"Return targets: {return_targets}")
-            orchestrator_utils.set_return_targets(return_targets)
+            set_return_targets(return_targets)
 
         except Exception as e:
             logger.warning(f"Failed to setup return targets: {e}")
             # Set empty targets as fallback
-            orchestrator_utils.set_return_targets({})
+            set_return_targets({})
 
     def is_healthy(self) -> bool:
         """Check if the service is healthy and ready to serve requests.

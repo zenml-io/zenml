@@ -40,7 +40,14 @@ if TYPE_CHECKING:
 
 
 class RealtimeStepRuntime(DefaultStepRuntime):
-    """Realtime runtime optimized for low-latency loads via memory cache."""
+    """Realtime runtime optimized for low-latency loads via memory cache.
+
+    TODO(beta->prod): scale background publishing either by
+    - adding a small multi-worker thread pool (ThreadPoolExecutor), or
+    - migrating to an asyncio-based runtime once the client/publish calls have
+      async variants and we want an async mode in serving.
+    Both paths must keep bounded backpressure and orderly shutdown.
+    """
 
     def __init__(
         self,
@@ -59,7 +66,11 @@ class RealtimeStepRuntime(DefaultStepRuntime):
         self._lock = threading.RLock()
         # Event queue: (kind, args, kwargs)
         Event = Tuple[str, Tuple[Any, ...], Dict[str, Any]]
-        self._q: queue.Queue[Event] = queue.Queue()
+        self._q: queue.Queue[Event] = queue.Queue(maxsize=1024)
+        # TODO(beta->prod): when scaling per-process publishing, prefer either
+        # (1) a small thread pool consuming this queue, or (2) an asyncio loop
+        # with an asyncio.Queue and async workers, once the client has async
+        # publish calls and we opt into async serving.
         self._worker: Optional[threading.Thread] = None
         self._stop = threading.Event()
         self._errors_since_last_flush: int = 0
@@ -74,6 +85,8 @@ class RealtimeStepRuntime(DefaultStepRuntime):
         self._cache_hits: int = 0
         self._cache_misses: int = 0
         self._op_latencies: List[float] = []
+        # TODO(beta->prod): add process memory monitoring and expose worker
+        # liveness/health at the service layer.
         # Tunables via env: TTL seconds and max entries
         # Options precedence: explicit args > env > defaults
         if ttl_seconds is not None:
@@ -119,8 +132,8 @@ class RealtimeStepRuntime(DefaultStepRuntime):
             )
         except Exception:
             self._err_report_interval = 15.0
-        # Flush behavior (can be disabled for serving non-blocking)
-        self._flush_on_step_end: bool = True
+        # Serving is async by default (non-blocking)
+        self._flush_on_step_end: bool = False
 
     # --- lifecycle ---
     def start(self) -> None:
@@ -390,12 +403,25 @@ class RealtimeStepRuntime(DefaultStepRuntime):
         if self._should_process_inline():
             publish_utils.publish_failed_step_run(step_run_id)
             return
-        self._q.put(("step_failed", (), {"step_run_id": step_run_id}))
-        with self._lock:
-            self._queued_count += 1
+        try:
+            self._q.put_nowait(
+                ("step_failed", (), {"step_run_id": step_run_id})
+            )
+            with self._lock:
+                self._queued_count += 1
+        except queue.Full:
+            self._logger.debug("Queue full, processing step_failed inline")
+            try:
+                publish_utils.publish_failed_step_run(step_run_id)
+            except Exception as e:
+                self._logger.warning("Inline processing failed: %s", e)
 
     def flush(self) -> None:
-        """Flush the realtime runtime by draining queued events synchronously."""
+        """Flush the realtime runtime by draining queued events synchronously.
+
+        Raises:
+            RuntimeError: If background errors were encountered while draining.
+        """
         # Drain the queue in the calling thread to avoid waiting on the worker
         while True:
             try:
@@ -449,7 +475,10 @@ class RealtimeStepRuntime(DefaultStepRuntime):
         return
 
     def shutdown(self) -> None:
-        """Shutdown the realtime runtime."""
+        """Shutdown the realtime runtime.
+
+        TODO(beta->prod): expose worker liveness/health signals to the service.
+        """
         # Wait for remaining tasks and stop
         self.flush()
         self._stop.set()
@@ -486,6 +515,10 @@ class RealtimeStepRuntime(DefaultStepRuntime):
         Returns:
             The runtime metrics snapshot.
         """
+        # TODO(beta->prod): export to an external sink (e.g., Prometheus) and
+        # expand with additional histograms / event counters as needed.
+        if bool(getattr(self, "_metrics_disabled", False)):
+            return {}
         with self._lock:
             queued = self._queued_count
             processed = self._processed_count
@@ -545,27 +578,28 @@ class RealtimeStepRuntime(DefaultStepRuntime):
 
     # --- internal helpers ---
     def _sweep_expired(self) -> None:
-        """Remove expired entries from the head (LRU) side with a time budget."""
-        deadline = time.time() + 0.003
+        """Remove expired entries using a snapshot within a small time budget."""
+        deadline = time.time() + 0.005
         with self._lock:
-            while time.time() < deadline:
-                try:
-                    key = next(iter(self._cache))
-                except StopIteration:
-                    break
-                try:
-                    _, expires_at = self._cache[key]
-                except KeyError:
-                    continue
-                if time.time() <= expires_at:
-                    break
-                try:
-                    del self._cache[key]
-                except KeyError:
-                    pass
+            snapshot = list(self._cache.items())
+        expired: List[str] = []
+        now = time.time()
+        for key, (_val, expires_at) in snapshot:
+            if time.time() > deadline:
+                break
+            if now > expires_at:
+                expired.append(key)
+        if expired:
+            with self._lock:
+                for key in expired:
+                    self._cache.pop(key, None)
 
     def _should_process_inline(self) -> bool:
-        """Return True if circuit breaker is open and we should publish inline."""
+        """Return True if circuit breaker is open and we should publish inline.
+
+        Returns:
+            True if inline processing should be used, False otherwise.
+        """
         with self._lock:
             now = time.time()
             if now < self._cb_open_until_ts:

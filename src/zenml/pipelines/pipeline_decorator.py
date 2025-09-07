@@ -25,11 +25,7 @@ from typing import (
     overload,
 )
 
-from zenml.capture.config import (
-    BatchCapture,
-    Capture,
-    RealtimeCapture,
-)
+from zenml.capture.config import Capture
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -67,7 +63,7 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-    capture: Optional[Union[Capture, BatchCapture, RealtimeCapture]] = None,
+    capture: Optional[Capture] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
 
@@ -89,7 +85,7 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-    capture: Optional[Union[Capture, BatchCapture, RealtimeCapture]] = None,
+    capture: Optional[Capture] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -130,14 +126,7 @@ def pipeline(
         from zenml.pipelines.pipeline_definition import Pipeline
 
         # Directly store typed capture config
-        cap = capture
-        cap_val: Optional[Union[Capture, BatchCapture, RealtimeCapture]] = None
-        if cap is not None:
-            if not isinstance(cap, (Capture, BatchCapture, RealtimeCapture)):
-                raise ValueError(
-                    "'capture' must be a Capture, BatchCapture or RealtimeCapture."
-                )
-            cap_val = cap
+        cap_val = capture
 
         p = Pipeline(
             name=name or func.__name__,
