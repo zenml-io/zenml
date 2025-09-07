@@ -632,6 +632,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
             self.in_progress = self._check_if_run_in_progress()
 
+        if run_update.orchestrator_run_id:
+            self.orchestrator_run_id = run_update.orchestrator_run_id
+
         self.updated = utc_now()
         return self
 

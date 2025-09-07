@@ -144,6 +144,7 @@ class PipelineRunUpdate(BaseUpdate):
 
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
+    orchestrator_run_id: Optional[str] = None
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(
