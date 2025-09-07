@@ -25,7 +25,7 @@ import time
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
-from zenml.execution.step_runtime import DefaultStepRuntime
+from zenml.execution.default_runtime import DefaultStepRuntime
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import ArtifactVersionResponse

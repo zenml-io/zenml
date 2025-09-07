@@ -10,7 +10,8 @@ from __future__ import annotations
 from contextvars import ContextVar
 from typing import Optional
 
-from zenml.execution.step_runtime import BaseStepRuntime, MemoryStepRuntime
+from zenml.execution.memory_runtime import MemoryStepRuntime
+from zenml.execution.step_runtime import BaseStepRuntime
 
 # Shared runtime context for the lifetime of a single request.
 _shared_runtime: ContextVar[Optional[BaseStepRuntime]] = ContextVar(

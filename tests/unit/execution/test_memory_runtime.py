@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from zenml.execution.step_runtime import MemoryStepRuntime
+from zenml.execution.memory_runtime import MemoryStepRuntime
 
 
 def test_memory_runtime_instance_isolated_store(monkeypatch):

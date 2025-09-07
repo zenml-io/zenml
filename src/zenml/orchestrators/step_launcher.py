@@ -32,7 +32,7 @@ from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.execution.factory import get_runtime
-from zenml.execution.step_runtime import MemoryStepRuntime
+from zenml.execution.memory_runtime import MemoryStepRuntime
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
@@ -267,7 +267,9 @@ class StepLauncher:
                 pipeline_run = None
 
                 # Memory-only stubs do not have a pipeline_run_id; handle gracefully
-                if self._step_run and hasattr(self._step_run, "pipeline_run_id"):
+                if self._step_run and hasattr(
+                    self._step_run, "pipeline_run_id"
+                ):
                     pipeline_run = client.get_pipeline_run(
                         self._step_run.pipeline_run_id
                     )
@@ -277,7 +279,9 @@ class StepLauncher:
                     )
                 else:
                     # Memory-only: no server-side run to update; just signal interruption
-                    raise RunInterruptedException("The execution was interrupted.")
+                    raise RunInterruptedException(
+                        "The execution was interrupted."
+                    )
 
                 if pipeline_run and pipeline_run.status in [
                     ExecutionStatus.STOPPING,
@@ -306,9 +310,14 @@ class StepLauncher:
                     prev = self._prev_sigterm_handler
                 elif signum == signal.SIGINT:
                     prev = self._prev_sigint_handler
-                if prev and prev not in (signal.SIG_DFL, signal.SIG_IGN) and prev is not signal_handler:
+                if (
+                    prev
+                    and prev not in (signal.SIG_DFL, signal.SIG_IGN)
+                    and prev is not signal_handler
+                ):
                     try:
-                        prev(signum, frame)
+                        if callable(prev):
+                            prev(signum, frame)
                     except Exception:
                         pass
 

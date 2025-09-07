@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from zenml.execution.step_runtime import DefaultStepRuntime
+from zenml.execution.default_runtime import DefaultStepRuntime
 
 
 def test_artifact_write_retry_and_validate(monkeypatch):

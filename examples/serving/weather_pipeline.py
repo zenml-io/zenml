@@ -275,7 +275,7 @@ if __name__ == "__main__":
     # Create deployment without running
     deployment = weather_agent_pipeline._create_deployment()
 
-    # weather_agent_pipeline()
+    weather_agent_pipeline()
 
     print("\n✅ Pipeline deployed for run-only serving!")
     print(f"📋 Deployment ID: {deployment.id}")

@@ -13,11 +13,9 @@
 #  permissions and limitations under the License.
 """Factory to construct a step runtime based on context and capture."""
 
-from zenml.execution.step_runtime import (
-    BaseStepRuntime,
-    DefaultStepRuntime,
-    MemoryStepRuntime,
-)
+from zenml.execution.default_runtime import DefaultStepRuntime
+from zenml.execution.memory_runtime import MemoryStepRuntime
+from zenml.execution.step_runtime import BaseStepRuntime
 
 
 def get_runtime(

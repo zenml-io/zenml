@@ -41,7 +41,8 @@ from zenml.constants import (
 )
 from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
-from zenml.execution.step_runtime import BaseStepRuntime, DefaultStepRuntime
+from zenml.execution.default_runtime import DefaultStepRuntime
+from zenml.execution.step_runtime import BaseStepRuntime
 from zenml.logger import get_logger
 from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
