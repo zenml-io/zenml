@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's builtin materializer."""
 
+import hashlib
+import json
 import os
 from typing import (
     TYPE_CHECKING,
@@ -138,6 +140,20 @@ class BuiltInMaterializer(BaseMaterializer):
 
         return {}
 
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
+        """
+        hash_ = hashlib.md5(usedforsecurity=False)
+        hash_.update(self.__class__.__name__.encode())
+        hash_.update(json.dumps(data, sort_keys=True).encode())
+        return hash_.hexdigest()
+
 
 class BytesMaterializer(BaseMaterializer):
     """Handle `bytes` data type, which is not JSON serializable."""
@@ -189,6 +205,20 @@ class BytesMaterializer(BaseMaterializer):
         """
         return {self.data_path.replace("\\", "/"): VisualizationType.MARKDOWN}
 
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
+        """
+        hash_ = hashlib.md5(usedforsecurity=False)
+        hash_.update(self.__class__.__name__.encode())
+        hash_.update(data)
+        return hash_.hexdigest()
+
 
 def _all_serializable(iterable: Iterable[Any]) -> bool:
     """For an iterable, check whether all of its elements are JSON-serializable.
@@ -222,6 +252,21 @@ def _is_serializable(obj: Any) -> bool:
             obj.values()
         )
     return False
+
+
+def _custom_json_converter(obj: Any) -> Any:
+    """Custom JSON converter that handles sets and tuples.
+
+    Args:
+        obj: The object to convert.
+
+    Returns:
+        The converted object.
+    """
+    if isinstance(obj, (set, tuple)):
+        return list(obj)
+
+    return obj
 
 
 def find_type_by_str(type_str: str) -> Type[Any]:
@@ -489,3 +534,24 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         if hasattr(data, "__len__"):
             return {"length": len(data)}
         return {}
+
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
+        """
+        if _is_serializable(data):
+            hash_ = hashlib.md5(usedforsecurity=False)
+            hash_.update(self.__class__.__name__.encode())
+            hash_.update(
+                json.dumps(
+                    data, sort_keys=True, default=_custom_json_converter
+                ).encode()
+            )
+            return hash_.hexdigest()
+
+        return None

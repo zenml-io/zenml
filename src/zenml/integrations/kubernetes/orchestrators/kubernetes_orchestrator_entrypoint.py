@@ -57,7 +57,11 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
-from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+from zenml.models import (
+    PipelineDeploymentResponse,
+    PipelineRunResponse,
+    PipelineRunUpdate,
+)
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
@@ -257,7 +261,12 @@ def main() -> None:
     else:
         orchestrator_run_id = orchestrator_pod_name
         if args.run_id:
-            pipeline_run = client.get_pipeline_run(args.run_id)
+            pipeline_run = client.zen_store.update_run(
+                run_id=args.run_id,
+                run_update=PipelineRunUpdate(
+                    orchestrator_run_id=orchestrator_run_id
+                ),
+            )
         else:
             pipeline_run = create_placeholder_run(
                 deployment=deployment,

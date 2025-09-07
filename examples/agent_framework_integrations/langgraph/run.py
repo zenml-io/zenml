@@ -4,11 +4,21 @@ This pipeline demonstrates how to integrate LangGraph agents with ZenML
 for orchestration and artifact management.
 """
 
+import os
 from typing import Annotated, Any, Dict
 
 from langgraph_agent import agent
 
 from zenml import ExternalArtifact, pipeline, step
+from zenml.config import DockerSettings, PythonPackageInstaller
+
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    requirements="requirements.txt",  # relative to the pipeline directory
+    environment={
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    },
+)
 
 
 @step
@@ -72,7 +82,7 @@ Response:
     return formatted.strip()
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings}, enable_cache=False)
 def langgraph_agent_pipeline() -> str:
     """ZenML pipeline that orchestrates the LangGraph ReAct agent.
 

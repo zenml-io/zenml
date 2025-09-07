@@ -106,6 +106,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.client_lazy_loader import ClientLazyLoader
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
@@ -150,6 +151,7 @@ class Pipeline:
         retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
         capture: Optional[Capture] = None,
+        cache_policy: Optional["CachePolicyOrString"] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -183,6 +185,7 @@ class Pipeline:
             retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
             capture: Capture configuration for the pipeline (typed only).
+            cache_policy: Cache policy for this pipeline.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -209,6 +212,7 @@ class Pipeline:
                 retry=retry,
                 substitutions=substitutions,
                 capture=capture,
+                cache_policy=cache_policy,
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -335,6 +339,7 @@ class Pipeline:
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
         capture: Optional[Capture] = None,
+        cache_policy: Optional["CachePolicyOrString"] = None,
     ) -> Self:
         """Configures the pipeline.
 
@@ -382,6 +387,7 @@ class Pipeline:
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
             capture: Capture configuration for the pipeline (typed only).
+            cache_policy: Cache policy for this pipeline.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -433,6 +439,7 @@ class Pipeline:
                 "parameters": parameters,
                 "substitutions": substitutions,
                 "capture": cap_norm,
+                "cache_policy": cache_policy,
             }
         )
         if not self.__suppress_warnings_flag__:

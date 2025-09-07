@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from pydantic import SerializeAsAny, field_validator
 
 from zenml.capture.config import Capture
+from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
@@ -56,6 +57,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
     substitutions: Dict[str, str] = {}
+    cache_policy: Optional[CachePolicyWithValidator] = None
 
     def finalize_substitutions(
         self, start_time: Optional[datetime] = None, inplace: bool = False
