@@ -394,6 +394,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Returns:
             The list of Step objects, including the step that did not run yet.
+
+        Raises:
+            RuntimeError: If the pipeline run has no deployment.
         """
         if self.deployment:
             steps = []

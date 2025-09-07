@@ -153,6 +153,9 @@ def publish_pipeline_run_status_update(
 
     Returns:
         The updated pipeline run.
+    
+    Raises:
+        ValueError: If the end time is set for a non-finished run.
     """
     if end_time is not None and not status.is_finished:
         raise ValueError("End time cannot be set for a non-finished run.")
