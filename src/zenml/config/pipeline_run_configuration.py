@@ -19,6 +19,7 @@ from uuid import UUID
 from pydantic import Field, SerializeAsAny
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.source import SourceWithValidator
@@ -57,3 +58,4 @@ class PipelineRunConfiguration(
     init_hook_source: Optional[SourceWithValidator] = None
     cleanup_hook_source: Optional[SourceWithValidator] = None
     substitutions: Dict[str, str] = {}
+    cache_policy: Optional[CachePolicyWithValidator] = None
