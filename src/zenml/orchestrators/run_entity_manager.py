@@ -6,7 +6,7 @@ either DB-backed behavior or stubbed in-memory entities for memory-only runs.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Protocol, Tuple, cast
 
 
@@ -116,7 +116,7 @@ class MemoryRunEntityManager:
             name: str
             model_version: Any = None
             pipeline: Any = None
-            config: Any = _PRCfg()
+            config: Any = field(default_factory=_PRCfg)
 
         return _PipelineRunStub(id=run_id, name=run_id), True
 
@@ -143,7 +143,7 @@ class MemoryRunEntityManager:
             name: str
             model_version: Any = None
             logs: Optional[Any] = None
-            status: Any = _StatusStub()
+            status: Any = field(default_factory=_StatusStub)
             outputs: Dict[str, Any] = None  # type: ignore[assignment]
             regular_inputs: Dict[str, Any] = None  # type: ignore[assignment]
 
@@ -156,7 +156,7 @@ class MemoryRunEntityManager:
                 enable_artifact_visualization: Optional[bool] = None
                 substitutions: Dict[str, str] = None  # type: ignore[assignment]
 
-            config: Any = _Cfg()
+            config: Any = field(default_factory=_Cfg)
 
             def __post_init__(self) -> None:  # noqa: D401
                 self.outputs = {}

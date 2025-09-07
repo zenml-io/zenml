@@ -266,15 +266,18 @@ class StepLauncher:
                 client = Client()
                 pipeline_run = None
 
-                if self._step_run:
+                # Memory-only stubs do not have a pipeline_run_id; handle gracefully
+                if self._step_run and hasattr(self._step_run, "pipeline_run_id"):
                     pipeline_run = client.get_pipeline_run(
                         self._step_run.pipeline_run_id
                     )
-                else:
+                elif self._step_run is None:
                     raise RunInterruptedException(
-                        "The execution was interrupted and the step does not "
-                        "exist yet."
+                        "The execution was interrupted and the step does not exist yet."
                     )
+                else:
+                    # Memory-only: no server-side run to update; just signal interruption
+                    raise RunInterruptedException("The execution was interrupted.")
 
                 if pipeline_run and pipeline_run.status in [
                     ExecutionStatus.STOPPING,
@@ -296,15 +299,18 @@ class StepLauncher:
             except Exception as e:
                 raise RunInterruptedException(str(e))
             finally:
-                # Chain to previous handler if it exists and is not default/ignore
-                if signum == signal.SIGTERM and callable(
-                    self._prev_sigterm_handler
-                ):
-                    self._prev_sigterm_handler(signum, frame)
-                elif signum == signal.SIGINT and callable(
-                    self._prev_sigint_handler
-                ):
-                    self._prev_sigint_handler(signum, frame)
+                # Chain to previous handler if it exists, not default/ignore,
+                # and not this handler to avoid recursion
+                prev = None
+                if signum == signal.SIGTERM:
+                    prev = self._prev_sigterm_handler
+                elif signum == signal.SIGINT:
+                    prev = self._prev_sigint_handler
+                if prev and prev not in (signal.SIG_DFL, signal.SIG_IGN) and prev is not signal_handler:
+                    try:
+                        prev(signum, frame)
+                    except Exception:
+                        pass
 
         # Register handlers for common termination signals
         try:

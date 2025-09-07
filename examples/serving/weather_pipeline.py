@@ -18,6 +18,7 @@ import random
 from typing import Dict
 
 from zenml import pipeline, step
+from zenml.capture.config import Capture
 from zenml.config import DockerSettings
 
 # Import enums for type-safe capture mode configuration
@@ -222,6 +223,7 @@ Analysis: Rule-based AI (LLM unavailable)"""
 
 @pipeline(
     on_init=init_hook,
+    capture=Capture(memory_only=True),
     settings={
         "docker": docker_settings,
         "deployer.gcp": {
