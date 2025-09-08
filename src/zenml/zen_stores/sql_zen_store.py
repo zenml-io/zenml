@@ -9095,7 +9095,6 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.add(step_schema)
-
             try:
                 session.commit()
             except IntegrityError:
@@ -9133,7 +9132,6 @@ class SqlZenStore(BaseZenStore):
                         f"source '{step_run.logs.source}' already exists "
                         f"within the scope of the same step '{step_schema.id}'."
                     )
-
             # If cached, attach metadata of the original step
             if (
                 step_run.status == ExecutionStatus.CACHED
@@ -9387,7 +9385,6 @@ class SqlZenStore(BaseZenStore):
                     "The status of retried step runs can not be updated."
                 )
 
-            # If the step is retriable and failed, we need to set its status to retrying.
             if (
                 existing_step_run.is_retriable
                 and step_run_update.status == ExecutionStatus.FAILED
@@ -9700,7 +9697,6 @@ class SqlZenStore(BaseZenStore):
 
         pipeline_run.update(run_update)
         session.add(pipeline_run)
-
         # Commit so that we release the lock on the pipeline run.
         session.commit()
 
