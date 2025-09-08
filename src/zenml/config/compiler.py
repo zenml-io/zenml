@@ -117,7 +117,7 @@ class Compiler:
             invocation_id: self._compile_step_invocation(
                 invocation=invocation,
                 stack=stack,
-                step_config=run_configuration.steps.get(invocation_id),
+                step_config=(run_configuration.steps or {}).get(invocation_id),
                 pipeline_configuration=pipeline.configuration,
             )
             for invocation_id, invocation in self._get_sorted_invocations(
@@ -233,7 +233,10 @@ class Compiler:
                 cache_policy=config.cache_policy,
             )
 
-        invalid_step_configs = set(config.steps) - set(pipeline.invocations)
+        configured_step_configs = config.steps or {}
+        invalid_step_configs = set(configured_step_configs) - set(
+            pipeline.invocations
+        )
         if invalid_step_configs:
             logger.warning(
                 f"Configuration for step invocations {invalid_step_configs} "
@@ -242,7 +245,7 @@ class Compiler:
             )
 
         for key in invalid_step_configs:
-            config.steps.pop(key)
+            configured_step_configs.pop(key)
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
@@ -502,7 +505,7 @@ class Compiler:
         )
 
         parameters_to_ignore = (
-            set(step_config.parameters) if step_config else set()
+            set(step_config.parameters or {}) if step_config else set()
         )
         step_configuration_overrides = invocation.finalize(
             parameters_to_ignore=parameters_to_ignore

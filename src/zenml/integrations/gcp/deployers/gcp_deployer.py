@@ -1054,12 +1054,13 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         return concurrency
 
-    def do_serve_pipeline(
+    def do_provision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
         stack: "Stack",
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, str]] = None,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+        timeout: int,
     ) -> PipelineEndpointOperationalState:
         """Serve a pipeline as a Cloud Run service.
 
@@ -1068,6 +1069,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             stack: The stack the pipeline will be served on.
             environment: Environment variables to set.
             secrets: Secret environment variables to set.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deployed.
 
         Returns:
             The operational state of the deployed pipeline endpoint.
@@ -1131,7 +1134,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
             if existing_service_path != service_path:
                 try:
-                    self.do_deprovision_pipeline_endpoint(endpoint)
+                    self.do_deprovision_pipeline_endpoint(endpoint, timeout)
                 except PipelineEndpointNotFoundError:
                     logger.warning(
                         f"Pipeline endpoint '{endpoint.name}' not found, "
@@ -1426,11 +1429,14 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
     def do_deprovision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
+        timeout: int,
     ) -> Optional[PipelineEndpointOperationalState]:
         """Deprovision a Cloud Run pipeline endpoint.
 
         Args:
             endpoint: The pipeline endpoint to deprovision.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deprovisioned.
 
         Returns:
             The operational state of the deprovisioned endpoint, or None if

@@ -296,12 +296,13 @@ class DockerDeployer(ContainerizedDeployer):
 
         return state
 
-    def do_serve_pipeline(
+    def do_provision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
         stack: "Stack",
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, str]] = None,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+        timeout: int,
     ) -> PipelineEndpointOperationalState:
         """Serve a pipeline as a Docker container.
 
@@ -314,6 +315,8 @@ class DockerDeployer(ContainerizedDeployer):
                 on the pipeline endpoint. These secret environment variables
                 should not be exposed as regular environment variables on the
                 deployer.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deployed.
 
         Returns:
             The PipelineEndpointOperationalState object representing the
@@ -376,7 +379,7 @@ class DockerDeployer(ContainerizedDeployer):
                     f"Container for pipeline endpoint '{endpoint.name}' is "
                     "already running",
                 )
-                container.stop()
+                container.stop(timeout=timeout)
 
             # the container is stopped or in an error state, remove it
             logger.debug(
@@ -611,11 +614,14 @@ class DockerDeployer(ContainerizedDeployer):
     def do_deprovision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
+        timeout: int,
     ) -> Optional[PipelineEndpointOperationalState]:
         """Deprovision a docker pipeline endpoint.
 
         Args:
             endpoint: The pipeline endpoint to deprovision.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deprovisioned.
 
         Returns:
             The PipelineEndpointOperationalState object representing the
@@ -636,7 +642,7 @@ class DockerDeployer(ContainerizedDeployer):
             )
 
         try:
-            container.stop()
+            container.stop(timeout=timeout)
             container.remove()
         except docker_errors.DockerException as e:
             raise PipelineEndpointDeprovisionError(

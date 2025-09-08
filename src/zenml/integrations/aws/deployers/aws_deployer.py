@@ -1069,30 +1069,33 @@ class AWSDeployer(ContainerizedDeployer):
             metadata=metadata.model_dump(exclude_none=True),
         )
 
-        # Map App Runner service status to ZenML status
+        # Map App Runner service status to ZenML status. Valid values are:
+        # - CREATE_FAILED
+        # - DELETE_FAILED
+        # - RUNNING
+        # - DELETED
+        # - PAUSED
+        # - OPERATION_IN_PROGRESS
         service_status = service.get("Status", "").upper()
 
         if service_status in [
             "CREATE_FAILED",
-            "UPDATE_FAILED",
             "DELETE_FAILED",
         ]:
             state.status = PipelineEndpointStatus.ERROR
-        elif service_status in ["CREATING", "UPDATING"]:
+        elif service_status == "OPERATION_IN_PROGRESS":
             state.status = PipelineEndpointStatus.PENDING
         elif service_status == "RUNNING":
             state.status = PipelineEndpointStatus.RUNNING
             state.url = service.get("ServiceUrl")
             if state.url and not state.url.startswith("https://"):
                 state.url = f"https://{state.url}"
-        elif service_status in ["DELETING"]:
-            state.status = PipelineEndpointStatus.PENDING
-        elif service_status in ["DELETED"]:
+        elif service_status == "DELETED":
             state.status = PipelineEndpointStatus.ABSENT
         elif service_status == "PAUSED":
             state.status = (
-                PipelineEndpointStatus.ERROR
-            )  # Treat paused as error for now
+                PipelineEndpointStatus.PENDING
+            )  # Treat paused as pending for now
         else:
             state.status = PipelineEndpointStatus.UNKNOWN
 
@@ -1285,12 +1288,13 @@ class AWSDeployer(ContainerizedDeployer):
 
         return min_size, max_size, max_concurrency
 
-    def do_serve_pipeline(
+    def do_provision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
         stack: "Stack",
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, str]] = None,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+        timeout: int,
     ) -> PipelineEndpointOperationalState:
         """Serve a pipeline as an App Runner service.
 
@@ -1299,6 +1303,8 @@ class AWSDeployer(ContainerizedDeployer):
             stack: The stack the pipeline will be served on.
             environment: Environment variables to set.
             secrets: Secret environment variables to set.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deployed.
 
         Returns:
             The operational state of the deployed pipeline endpoint.
@@ -1346,7 +1352,7 @@ class AWSDeployer(ContainerizedDeployer):
         ):
             # Delete existing service before creating new one
             try:
-                self.do_deprovision_pipeline_endpoint(endpoint)
+                self.do_deprovision_pipeline_endpoint(endpoint, timeout)
             except PipelineEndpointNotFoundError:
                 logger.warning(
                     f"Pipeline endpoint '{endpoint.name}' not found, "
@@ -1792,11 +1798,14 @@ class AWSDeployer(ContainerizedDeployer):
     def do_deprovision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
+        timeout: int,
     ) -> Optional[PipelineEndpointOperationalState]:
         """Deprovision an App Runner pipeline endpoint.
 
         Args:
             endpoint: The pipeline endpoint to deprovision.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deprovisioned.
 
         Returns:
             The operational state of the deprovisioned endpoint, or None if
@@ -1833,22 +1842,6 @@ class AWSDeployer(ContainerizedDeployer):
                 ServiceArn=existing_metadata.service_arn
             )
 
-            # Clean up associated secrets
-            self._cleanup_endpoint_secrets(endpoint)
-
-            # Clean up associated auto-scaling configuration
-            self._cleanup_endpoint_auto_scaling_config(endpoint)
-
-            # App Runner deletion is asynchronous, return the deleting state
-            service["Status"] = "DELETING"
-            existing_secret_arn = self._get_secret_arn(endpoint)
-
-            return self._get_service_operational_state(
-                service,
-                existing_metadata.region or self.region,
-                existing_secret_arn,
-            )
-
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
                 raise PipelineEndpointNotFoundError(
@@ -1861,3 +1854,31 @@ class AWSDeployer(ContainerizedDeployer):
             raise DeployerError(
                 f"Unexpected error while deleting pipeline endpoint '{endpoint.name}': {e}"
             )
+
+        endpoint_before_deletion = endpoint
+
+        # App Runner deletion is asynchronous and the auto-scaling configuration
+        # and secrets need to be cleaned up after the service is deleted. So we
+        # poll the service until it is deleted, runs into an error or times out.
+        endpoint, endpoint_state = self._poll_pipeline_endpoint(
+            endpoint, PipelineEndpointStatus.ABSENT, timeout
+        )
+
+        if endpoint_state.status != PipelineEndpointStatus.ABSENT:
+            return endpoint_state
+
+        try:
+            # Clean up associated secrets
+            self._cleanup_endpoint_secrets(endpoint_before_deletion)
+
+            # Clean up associated auto-scaling configuration
+            self._cleanup_endpoint_auto_scaling_config(
+                endpoint_before_deletion
+            )
+        except Exception as e:
+            raise DeployerError(
+                f"Unexpected error while cleaning up resources for pipeline "
+                f"endpoint '{endpoint.name}': {e}"
+            )
+
+        return None
