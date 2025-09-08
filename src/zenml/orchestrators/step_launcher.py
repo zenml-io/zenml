@@ -185,8 +185,7 @@ class StepLauncher:
                     raise RunStoppedException("Pipeline run is stopped.")
 
                 step_run = client.get_run_step(
-                    self._step_run.id, 
-                    hydrate=False
+                    self._step_run.id, hydrate=False
                 )
 
                 if (
