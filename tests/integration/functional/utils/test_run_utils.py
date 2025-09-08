@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Integration tests for run utils."""
 
-import logging
 import pytest
+
 from zenml import get_step_context, pipeline, step
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.zen_stores.schemas.pipeline_run_schemas import (
@@ -170,7 +170,7 @@ def test_find_all_downstream_steps(clean_client):
     expected_from_step2 = {"step_5", "step_8"}
     assert downstream_from_step2 == expected_from_step2
 
-    # Test finding downstream steps from terminal step 
+    # Test finding downstream steps from terminal step
     downstream_from_step5 = find_all_downstream_steps("step_8", dag)
     assert downstream_from_step5 == set()
 
@@ -251,7 +251,7 @@ def test_execution_mode_continue_on_failure(clean_client):
     assert run.steps["step_3"].status == ExecutionStatus.COMPLETED
     assert run.steps["step_4"].status == ExecutionStatus.COMPLETED
     assert run.steps["step_6"].status == ExecutionStatus.COMPLETED
-    # Step 7 is critical because it checks whether the 
+    # Step 7 is critical because it checks whether the
     # in progress flag was set correctly, even though step 2 failed.
     assert run.steps["step_7"].status == ExecutionStatus.COMPLETED
     assert "step_5" not in run.steps
