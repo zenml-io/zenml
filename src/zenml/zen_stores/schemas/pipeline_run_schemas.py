@@ -731,11 +731,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     def _check_if_run_in_progress(self) -> bool:
         """Checks whether the run is in progress.
-
+        
         Returns:
-            A tuple containing:
-            - Whether the run is in progress
-            - The end time if the run has finished, None otherwise
+            A flag to indicate whether the run is in progress.
         """
         run_status = ExecutionStatus(self.status)
 
