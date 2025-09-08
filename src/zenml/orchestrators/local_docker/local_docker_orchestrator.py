@@ -156,32 +156,45 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         execution_mode = deployment.pipeline_configuration.execution_mode
 
         failed_steps: List[str] = []
+        skipped_steps: List[str] = []
 
         # Run each step
         for step_name, step in deployment.step_configurations.items():
             if (
                 execution_mode == ExecutionMode.STOP_ON_FAILURE
-                and len(failed_steps) > 0
+                and failed_steps
             ):
                 logger.warning(
-                    "Stopping pipeline run due to failure in step %s and "
-                    "execution mode %s.",
-                    failed_steps[0],
+                    "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
+                    step_name,
+                    ", ".join(failed_steps),
                     execution_mode,
                 )
-                break
+                skipped_steps.append(step_name)
+                continue
 
             if failed_upstream_steps := [
                 fs for fs in failed_steps if fs in step.spec.upstream_steps
             ]:
                 logger.warning(
-                    "Skipping step %s due to failure in upstream step(s) %s and "
-                    "execution mode %s",
+                    "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
                     step_name,
                     ", ".join(failed_upstream_steps),
                     execution_mode,
                 )
-                failed_steps.append(step_name)
+                skipped_steps.append(step_name)
+                continue
+
+            if skipped_upstream_steps := [
+                fs for fs in skipped_steps if fs in step.spec.upstream_steps
+            ]:
+                logger.warning(
+                    "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
+                    step_name,
+                    ", ".join(skipped_upstream_steps),
+                    execution_mode,
+                )
+                skipped_steps.append(step_name)
                 continue
 
             if self.requires_resources_in_orchestration_environment(step):
