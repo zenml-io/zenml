@@ -71,7 +71,7 @@ def step_7(input_from_4: str) -> str:
 
 @step
 def step_8(input_from_5: str, input_from_6: str, input_from_7: str) -> str:
-    """Step 8 - depends on step 5."""
+    """Step 8 - depends on step 5, 6, 7."""
     return "step_8_output"
 
 
@@ -94,11 +94,12 @@ def execution_mode_pipeline(fail_step_2: bool = False) -> None:
     output_4 = step_4(output_1)
 
     # These steps depend on the steps above
-    output_5 = step_5(output_2)  # Depends on step 2
-    output_6 = step_6(output_3)  # Depends on step 3
-    output_7 = step_7(output_4)  # Depends on step 4
+    output_5 = step_5(output_2)  
+    output_6 = step_6(output_3)  
+    output_7 = step_7(output_4)
 
-    step_8(output_5, output_6, output_7)  # Depends on step 5, 6, 7
+    # Final step
+    _ = step_8(output_5, output_6, output_7)
 
 
 def test_build_dag_with_downstream_steps(clean_client):
@@ -118,18 +119,14 @@ def test_build_dag_with_downstream_steps(clean_client):
 
     # Expected DAG structure based on our pipeline
     expected_structure = {
-        "step_1": {
-            "step_2",
-            "step_3",
-            "step_4",
-        },  # step_1 feeds into 3 parallel steps
-        "step_2": {"step_5"},  # step_2 feeds into step_5
-        "step_3": {"step_6"},  # step_3 feeds into step_6
-        "step_4": {"step_7"},  # step_4 feeds into step_7
-        "step_5": {"step_8"},  # step_5 feeds into step_8
-        "step_6": {"step_8"},  # step_6 feeds into step_8
-        "step_7": {"step_8"},  # step_7 feeds into step_8
-        "step_8": set(),  # terminal step
+        "step_1": {"step_2", "step_3", "step_4"}, 
+        "step_2": {"step_5"},  
+        "step_3": {"step_6"}, 
+        "step_4": {"step_7"}, 
+        "step_5": {"step_8"}, 
+        "step_6": {"step_8"},  
+        "step_7": {"step_8"},  
+        "step_8": set(),  
     }
 
     assert dag == expected_structure
