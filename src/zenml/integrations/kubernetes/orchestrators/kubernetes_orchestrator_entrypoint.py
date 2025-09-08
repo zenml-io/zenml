@@ -580,6 +580,7 @@ def main() -> None:
                     logger.info(
                         f"Successfully stopped step job: {job.metadata.name}"
                     )
+                    break
                 except Exception as e:
                     logger.warning(
                         f"Failed to stop step job {job.metadata.name}: {e}"
