@@ -5838,6 +5838,23 @@ class SqlZenStore(BaseZenStore):
                 include_full_metadata=include_full_metadata,
             )
 
+    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
+        """Gets the status of a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The status of the pipeline run.
+        """
+        with Session(self.engine) as session:
+            run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+            return run.status
+
     def _check_if_run_in_progress(
         self, run_id: UUID
     ) -> Tuple[bool, Optional[datetime]]:

@@ -786,7 +786,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                             continue
 
                         # If it is not in the step runs yet
-                        if step.config.name not in self.step_runs:
+                        if step.config.name not in [
+                            s.name for s in self.step_runs
+                        ]:
                             return True
                         # Else, check if it is finished
                         elif not ExecutionStatus(
