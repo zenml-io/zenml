@@ -266,7 +266,6 @@ def get_step_logs(
 
     Args:
         step_id: ID of the step for which to get the logs.
-        count: The number of log entries to return per page.
 
     Returns:
         List of log entries.
