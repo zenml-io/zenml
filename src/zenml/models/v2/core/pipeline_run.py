@@ -104,6 +104,11 @@ class PipelineRunRequest(ProjectScopedRequest):
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
     )
+    status_reason: Optional[str] = Field(
+        title="The reason for the status of the pipeline run.",
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     orchestrator_environment: Dict[str, Any] = Field(
         default={},
         title=(
@@ -131,7 +136,10 @@ class PipelineRunRequest(ProjectScopedRequest):
         Returns:
             Whether the request is a placeholder request.
         """
-        return self.status == ExecutionStatus.INITIALIZING
+        return self.status in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.PROVISIONING,
+        }
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -143,6 +151,11 @@ class PipelineRunUpdate(BaseUpdate):
     """Pipeline run update model."""
 
     status: Optional[ExecutionStatus] = None
+    status_reason: Optional[str] = Field(
+        default=None,
+        title="The reason for the status of the pipeline run.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     end_time: Optional[datetime] = None
     orchestrator_run_id: Optional[str] = None
     # TODO: we should maybe have a different update model here, the upper
@@ -171,6 +184,10 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     )
     in_progress: bool = Field(
         title="Whether the pipeline run is in progress.",
+    )
+    status_reason: Optional[str] = Field(
+        default=None,
+        title="The reason for the status of the pipeline run.",
     )
     stack: Optional["StackResponse"] = Field(
         default=None, title="The stack that was used for this run."
