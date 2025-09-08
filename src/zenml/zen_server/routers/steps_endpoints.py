@@ -13,30 +13,23 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
-from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
     API,
-    DOWNLOAD_TOKEN,
     LOGS,
     STATUS,
     STEP_CONFIGURATION,
     STEPS,
     VERSION_1,
 )
-from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
+from zenml.enums import ExecutionStatus
 from zenml.logging.step_logging import (
-    DEFAULT_PAGE_SIZE,
-    FilePosition,
     LogEntry,
-    LogInfo,
     fetch_log_records,
-    generate_log_info,
-    stream_log_records,
 )
 from zenml.models import (
     Page,
@@ -48,10 +41,7 @@ from zenml.models import (
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
-    generate_download_token,
-    verify_download_token,
 )
-from zenml.zen_server.download_utils import verify_step_logs_are_downloadable
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
@@ -270,41 +260,19 @@ def get_step_status(
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
     step_id: UUID,
-    count: int = DEFAULT_PAGE_SIZE,
-    level: int = LoggingLevels.INFO.value,
-    search: Optional[str] = None,
-    page: Optional[int] = None,
-    from_file_index: Optional[int] = None,
-    from_position: Optional[int] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
-    """Get log entries for efficient pagination.
-
-    This endpoint supports optimized navigation modes:
-
-    - page=1: Returns the first page
-    - page=N: Returns the Nth page
-    - with from_position: Returns the page starting from the position
-
-    page and from_position cannot be used together.
-
-    For efficient navigation to arbitrary pages, use the /logs/info endpoint
-    to get page positions, then use those positions with this endpoint.
+    """Get log entries for a step.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        page: The page number to return (1-indexed).
         count: The number of log entries to return per page.
-        level: Log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
-        from_file_index: Optional file index to start the page from.
-        from_position: Optional position within file to start the page from.
 
     Returns:
         List of log entries.
 
     Raises:
-        KeyError: If no logs are available for this step or invalid navigation.
+        KeyError: If no logs are available for this step.
     """
     step = zen_store().get_run_step(step_id, hydrate=True)
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
@@ -316,168 +284,8 @@ def get_step_logs(
     if step.logs is None:
         raise KeyError("No logs available for this step.")
 
-    # Construct FilePosition if both parameters provided
-    parsed_from_position = None
-    if from_file_index is not None and from_position is not None:
-        parsed_from_position = FilePosition(
-            file_index=from_file_index,
-            position=from_position,
-        )
-
     return fetch_log_records(
         zen_store=store,
         artifact_store_id=step.logs.artifact_store_id,
         logs_uri=step.logs.uri,
-        page=page,
-        count=count,
-        level=level,
-        search=search,
-        from_position=parsed_from_position,
-    )
-
-
-@router.get(
-    "/{step_id}" + LOGS + "/info",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def get_step_logs_info(
-    step_id: UUID,
-    page_size: int = DEFAULT_PAGE_SIZE,
-    level: int = LoggingLevels.INFO.value,
-    search: Optional[str] = None,
-    _: AuthContext = Security(authorize),
-) -> LogInfo:
-    """Get pagination information and page positions for step logs.
-
-    This endpoint scans the log file and returns a dictionary mapping
-    page numbers to their start positions, enabling efficient navigation.
-
-    Args:
-        step_id: ID of the step for which to get the logs info.
-        page_size: Number of entries per page.
-        level: Log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
-
-    Returns:
-        Dictionary with page indices as keys and FilePosition objects as values.
-        Format: {"1": {"file_index": 0, "position": 123}, "2": {...}, ...}
-
-    Raises:
-        KeyError: If no logs are available for this step.
-    """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
-
-    store = zen_store()
-    if step.logs is None:
-        raise KeyError("No logs available for this step.")
-
-    return generate_log_info(
-        zen_store=store,
-        artifact_store_id=step.logs.artifact_store_id,
-        logs_uri=step.logs.uri,
-        page_size=page_size,
-        level=level,
-        search=search,
-    )
-
-
-@router.get(
-    "/{step_id}" + LOGS + DOWNLOAD_TOKEN,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def get_step_logs_download_token(
-    step_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> str:
-    """Get a download token for the step logs.
-
-    Args:
-        step_id: ID of the step for which to get the logs.
-
-    Returns:
-        The download token for the step logs.
-    """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
-
-    # Verify that logs are downloadable
-    verify_step_logs_are_downloadable(step)
-
-    # The step log download is handled in a separate tab by the browser. In this
-    # tab, we do not have the ability to set any headers and therefore cannot
-    # include the CSRF token in the request. To handle this, we instead generate
-    # a JWT token in this endpoint (which includes CSRF and RBAC checks) and
-    # then use that token to download the step logs in a separate endpoint
-    # which only verifies this short-lived token.
-    return generate_download_token(
-        download_type=DownloadType.STEP_LOGS,
-        resource_id=step_id,
-    )
-
-
-@router.get(
-    "/{step_id}" + LOGS + "/download",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def download_step_logs(
-    step_id: UUID,
-    token: str,
-    format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
-) -> StreamingResponse:
-    """Download all logs of a specific step as a formatted string.
-
-    Available fields for the format string:
-        - {timestamp}: ISO format timestamp (e.g., "2024-01-15T10:30:45.123456")
-        - {level}: Log level name (e.g., "INFO", "ERROR", "DEBUG")
-        - {message}: The actual log message content
-        - {name}: Logger name (e.g., "zenml.pipeline")
-        - {module}: Module name (e.g., "zenml.pipelines")
-        - {filename}: Source filename (e.g., "pipeline.py")
-        - {lineno}: Line number where log was generated
-        - {chunk_index}: Chunk index for large messages (usually 0)
-        - {total_chunks}: Total chunks for large messages (usually 1)
-        - {id}: Unique log entry ID (UUID)
-
-    Args:
-        step_id: ID of the step.
-        token: The token to authenticate the step logs download.
-        format_string: Format string for each log entry using Python string formatting.
-            If None or empty string, returns raw jsonified log entries without formatting.
-
-    Returns:
-        A string containing all log entries, either raw or formatted.
-
-    Raises:
-        KeyError: If no logs are available for this step.
-    """
-    verify_download_token(
-        token=token,
-        download_type=DownloadType.STEP_LOGS,
-        resource_id=step_id,
-    )
-
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    store = zen_store()
-
-    if step.logs is None:
-        raise KeyError(f"No logs are available for step '{step.id}'.")
-
-    log_generator = stream_log_records(
-        zen_store=store,
-        artifact_store_id=step.logs.artifact_store_id,
-        logs_uri=step.logs.uri,
-        format_string=format_string,
-    )
-    return StreamingResponse(
-        log_generator,
-        media_type="text/plain",
-        headers={
-            "Content-Disposition": f"attachment; filename=step-{step_id}-logs.txt"
-        },
     )

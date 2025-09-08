@@ -26,7 +26,6 @@ from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
-    Dict,
     Iterator,
     List,
     Optional,
@@ -76,12 +75,11 @@ ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
-DEFAULT_PAGE_SIZE = (
-    100  # Maximum number of log entries to return in a single request
-)
-DEFAULT_MESSAGE_SIZE = (
-    10 * 1024
-)  # Maximum size of a single log message in bytes (10KB)
+
+# Maximum number of log entries to return in a single request
+MAX_ENTRIES_PER_REQUEST = 20000
+# Maximum size of a single log message in bytes (5KB)
+DEFAULT_MESSAGE_SIZE = 5 * 1024
 
 
 class LogEntry(BaseModel):
@@ -121,35 +119,6 @@ class LogEntry(BaseModel):
     id: UUID = Field(
         default_factory=uuid4,
         description="The unique identifier of the log entry",
-    )
-
-
-class FilePosition(BaseModel):
-    """Position within a log file for efficient seeking."""
-
-    file_index: int = Field(
-        description="Index in sorted file list (0 for single files, proper index for directories)"
-    )
-    position: int = Field(
-        description="Opaque tell() token for position within that specific file"
-    )
-
-
-class LogInfo(BaseModel):
-    """Log pagination information with page positions for efficient navigation."""
-
-    page_size: int = Field(description="Number of entries per page")
-    total_entries: int = Field(
-        description="Total number of entries matching filters"
-    )
-    total_pages: int = Field(description="Total number of pages")
-    level: int = Field(description="Log level filter used")
-    search: Optional[str] = Field(
-        default=None, description="Search filter used"
-    )
-    page_positions: Dict[int, FilePosition] = Field(
-        description="Dictionary mapping page numbers to their start positions",
-        default_factory=dict,
     )
 
 
@@ -357,301 +326,33 @@ def prepare_logs_uri(
     return sanitize_remote_path(logs_uri)
 
 
-def generate_log_info(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
-    logs_uri: str,
-    page_size: int = DEFAULT_PAGE_SIZE,
-    level: int = LoggingLevels.INFO.value,
-    search: Optional[str] = None,
-) -> LogInfo:
-    """Generate page index for efficient log navigation.
-
-    This function scans the log file once and creates an index of page start positions,
-    enabling fast direct navigation to any page without expensive seeking.
-
-    Args:
-        zen_store: The store in which the artifact is stored.
-        artifact_store_id: The ID of the artifact store.
-        logs_uri: The URI of the artifact (file or directory).
-        page_size: Number of entries per page.
-        level: Log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
-
-    Returns:
-        LogInfo: LogInfo object with page positions and metadata.
-    """
-    artifact_store = _load_artifact_store(
-        zen_store=zen_store, artifact_store_id=artifact_store_id
-    )
-
-    if artifact_store.isdir(logs_uri):
-        files = sorted(
-            [
-                str(f)
-                for f in artifact_store.listdir(logs_uri)
-                if str(f).endswith(".log")
-            ]
-        )
-    else:
-        files = [logs_uri]
-
-    page_positions = {1: FilePosition(file_index=0, position=0)}
-    total_entries = 0
-    entries_in_current_page = 0
-    current_page = 1
-
-    for file_index, file_path in enumerate(files):
-        try:
-            with artifact_store.open(file_path, "r") as file:
-                while True:
-                    line = file.readline()
-                    if not line:
-                        break
-
-                    line_text = line.rstrip("\n\r")
-                    if not line_text.strip():
-                        continue
-
-                    log_entry = parse_log_entry(line_text)
-                    if not log_entry:
-                        continue
-
-                    total_entries += 1
-
-                    if _entry_matches_filters(log_entry, level, search):
-                        entries_in_current_page += 1
-
-                        # If we've filled the current page, move to next page
-                        if entries_in_current_page >= page_size:
-                            current_page += 1
-                            entries_in_current_page = 0
-
-                            page_positions[current_page] = FilePosition(
-                                file_index=file_index,
-                                position=file.tell(),
-                            )
-
-        except Exception as e:
-            logger.warning(f"Error reading file {file_path}: {e}")
-            continue
-
-    total_pages = len(page_positions)
-
-    return LogInfo(
-        page_size=page_size,
-        total_entries=total_entries,
-        total_pages=total_pages,
-        level=level,
-        search=search,
-        page_positions=page_positions,
-    )
-
-
 def fetch_log_records(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
-    page: Optional[int] = None,
-    count: int = DEFAULT_PAGE_SIZE,
-    level: int = LoggingLevels.INFO.value,
-    search: Optional[str] = None,
-    from_position: Optional[FilePosition] = None,
 ) -> List[LogEntry]:
-    """Fetches log entries for efficient pagination.
-
-    This function operates in two different modes:
-    1. Page: Navigation to a specific page using the page parameter
-    2. From position: Navigating to a specific page using the from_position parameter
+    """Fetches log entries.
 
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
         logs_uri: The URI of the artifact (file or directory).
-        count: The number of entries to return per page.
-        level: Log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
-        page: The page number to return.
-        from_position: Optional FilePosition to start the page from.
 
     Returns:
         List of log entries.
-
-    Raises:
-        ValueError: If page navigation is not possible without from_position.
     """
-    artifact_store = _load_artifact_store(
-        zen_store=zen_store, artifact_store_id=artifact_store_id
-    )
+    log_entries = []
 
-    if artifact_store.isdir(logs_uri):
-        files = sorted(
-            [
-                str(f)
-                for f in artifact_store.listdir(logs_uri)
-                if str(f).endswith(".log")
-            ]
-        )
-    else:
-        files = [logs_uri]
+    for line in _stream_logs_line_by_line(
+        zen_store, artifact_store_id, logs_uri
+    ):
+        if log_entry := parse_log_entry(line):
+            log_entries.append(log_entry)
 
-    # Handle different page navigation modes
-    if from_position is not None:
-        if page is not None:
-            raise ValueError(
-                "Page and from_position cannot be used together. Please "
-                "use only one of them."
-            )
-        # Direct page navigation using position
-        return _fetch_from_position(
-            artifact_store=artifact_store,
-            files=files,
-            from_position=from_position,
-            count=count,
-            level=level,
-            search=search,
-        )
-
-    else:
-        return _fetch_page(
-            artifact_store=artifact_store,
-            files=files,
-            page=page if page is not None else 1,
-            count=count,
-            level=level,
-            search=search,
-        )
-
-
-def _fetch_from_position(
-    artifact_store: "BaseArtifactStore",
-    files: List[str],
-    from_position: FilePosition,
-    count: int,
-    level: int,
-    search: Optional[str],
-) -> List[LogEntry]:
-    """Fetch log entries from a specific position.
-
-    Args:
-        artifact_store: The artifact store in which the artifact is stored.
-        files: The list of files to search in.
-        from_position: The position to start from.
-        count: The number of entries to return.
-        level: The level of the entries to return.
-        search: The search string to filter the entries by.
-
-    Returns:
-        List of log entries.
-
-    Raises:
-        Exception: If there is an error fetching the log entries.
-    """
-    entries = []
-    entries_collected = 0
-
-    try:
-        _files_to_search = files[from_position.file_index :]
-
-        for file_index, file_path in enumerate(_files_to_search):
-            with artifact_store.open(file_path, "r") as file:
-                # If it is the first file, we seek to the position
-                if file_index == 0:
-                    file.seek(from_position.position)
-                # Otherwise, we seek to the beginning of the file
-                else:
-                    file.seek(0, os.SEEK_SET)
-
-                while True:
-                    line = file.readline()
-                    if not line:
-                        break
-
-                    line_text = line.rstrip("\n\r")
-                    if not line_text.strip():
-                        continue
-
-                    log_entry = parse_log_entry(line_text)
-                    if not log_entry:
-                        continue
-
-                    if _entry_matches_filters(log_entry, level, search):
-                        entries.append(log_entry)
-                        entries_collected += 1
-
-                    if entries_collected >= count:
-                        return entries
-
-    except Exception as e:
-        logger.warning(f"Position-based fetching failed: {e}")
-        raise
-
-    return entries
-
-
-def _fetch_page(
-    artifact_store: "BaseArtifactStore",
-    files: List[str],
-    page: int,
-    count: int,
-    level: int,
-    search: Optional[str],
-) -> List[LogEntry]:
-    """Fetch log entries from a specific page.
-
-    Args:
-        artifact_store: The artifact store in which the artifact is stored.
-        files: The list of files to search in.
-        page: The page number to return.
-        count: The number of entries to return.
-        level: The level of the entries to return.
-        search: The search string to filter the entries by.
-
-    Returns:
-        List of log entries.
-
-    Raises:
-        Exception: If there is an error fetching the log entries.
-    """
-    entries = []
-    total_entries_found = 0
-    entries_collected = 0
-    start_entry_index = (page - 1) * count
-    target_entries_range = range(start_entry_index, start_entry_index + count)
-
-    # Scan through all files to find the requested page
-    for file_index, file_path in enumerate(files):
-        if entries_collected >= count:
+        if len(log_entries) >= MAX_ENTRIES_PER_REQUEST:
             break
 
-        try:
-            with artifact_store.open(file_path, "r") as file:
-                while entries_collected < count:
-                    line = file.readline()
-                    if not line:
-                        break
-
-                    line_text = line.rstrip("\n\r")
-                    if not line_text.strip():
-                        continue
-
-                    log_entry = parse_log_entry(line_text)
-                    if not log_entry:
-                        continue
-
-                    if _entry_matches_filters(log_entry, level, search):
-                        # Check if this entry is in our target page
-                        if total_entries_found in target_entries_range:
-                            entries.append(log_entry)
-                            entries_collected += 1
-
-                        total_entries_found += 1
-
-        except Exception as e:
-            logger.warning(f"Error reading file {file_path}: {e}")
-            raise
-
-    return entries
+    return log_entries
 
 
 def _stream_logs_line_by_line(
@@ -702,108 +403,6 @@ def _stream_logs_line_by_line(
                         yield line.rstrip("\n\r")
     finally:
         artifact_store.cleanup()
-
-
-def _entry_matches_filters(
-    entry: LogEntry,
-    level: int = LoggingLevels.INFO.value,
-    search: Optional[str] = None,
-) -> bool:
-    """Check if a log entry matches the given filters.
-
-    Args:
-        entry: The log entry to check.
-        level: Optional log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
-
-    Returns:
-        True if the entry matches all filters, False otherwise.
-    """
-    # Apply level filter
-    if level:
-        try:
-            if not entry.level or entry.level.value < level:
-                return False
-        except KeyError:
-            # If invalid level provided, ignore the filter
-            pass
-
-    # Apply search filter
-    if search:
-        search_lower = search.lower()
-        if search_lower not in entry.message.lower():
-            return False
-
-    return True
-
-
-def stream_log_records(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
-    logs_uri: str,
-    format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
-) -> Iterator[str]:
-    """Streams logs from the artifact store line by line.
-
-    This generator yields formatted log lines one at  a time, making it memory-efficient
-    for large log files.
-
-    Args:
-        zen_store: The store in which the artifact is stored.
-        artifact_store_id: The ID of the artifact store.
-        logs_uri: The URI of the artifact.
-        format_string: Format string for each log entry. If None or empty, yields raw lines.
-
-    Yields:
-        Individual formatted log lines as strings.
-    """
-    if not format_string:
-        # Stream raw file content
-        for line in _stream_logs_line_by_line(
-            zen_store=zen_store,
-            artifact_store_id=artifact_store_id,
-            logs_uri=logs_uri,
-        ):
-            yield line + "\n"
-        return
-
-    # Stream formatted logs
-    for line in _stream_logs_line_by_line(
-        zen_store=zen_store,
-        artifact_store_id=artifact_store_id,
-        logs_uri=logs_uri,
-    ):
-        if not line.strip():
-            continue
-
-        log_entry = parse_log_entry(line)
-        if not log_entry:
-            continue
-
-        # Prepare format arguments
-        format_args = {
-            "message": log_entry.message or "",
-            "name": log_entry.name or "",
-            "level": log_entry.level.name if log_entry.level else "",
-            "timestamp": log_entry.timestamp.isoformat()
-            if log_entry.timestamp
-            else "",
-            "module": log_entry.module or "",
-            "filename": log_entry.filename or "",
-            "lineno": log_entry.lineno or "",
-            "chunk_index": log_entry.chunk_index,
-            "total_chunks": log_entry.total_chunks,
-            "id": str(log_entry.id),
-        }
-
-        # Format the entry using the provided format string
-        try:
-            formatted_entry = format_string.format(**format_args)
-            yield formatted_entry + "\n"
-        except (KeyError, ValueError) as e:
-            # If formatting fails, fall back to raw message
-            logger.warning(f"Failed to format log entry: {e}")
-            yield (log_entry.message or "") + "\n"
 
 
 class PipelineLogsStorage:

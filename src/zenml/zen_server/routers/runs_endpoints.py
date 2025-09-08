@@ -13,16 +13,13 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-import math
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
-from fastapi.responses import StreamingResponse
 
 from zenml.constants import (
     API,
-    DOWNLOAD_TOKEN,
     LOGS,
     PIPELINE_CONFIGURATION,
     REFRESH,
@@ -32,18 +29,13 @@ from zenml.constants import (
     STOP,
     VERSION_1,
 )
-from zenml.enums import DownloadType, ExecutionStatus, LoggingLevels
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
-    DEFAULT_PAGE_SIZE,
-    FilePosition,
+    MAX_ENTRIES_PER_REQUEST,
     LogEntry,
-    LogInfo,
-    _entry_matches_filters,
     fetch_log_records,
-    generate_log_info,
     parse_log_entry,
-    stream_log_records,
 )
 from zenml.models import (
     Page,
@@ -59,10 +51,7 @@ from zenml.utils import run_utils
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
-    generate_download_token,
-    verify_download_token,
 )
-from zenml.zen_server.download_utils import verify_run_logs_are_downloadable
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
@@ -438,7 +427,7 @@ def stop_run(
 
 
 @router.get(
-    "/{run_id}/logs",
+    "/{run_id}" + LOGS,
     responses={
         400: error_response,
         401: error_response,
@@ -450,12 +439,6 @@ def stop_run(
 def run_logs(
     run_id: UUID,
     source: str,
-    count: int = DEFAULT_PAGE_SIZE,
-    level: int = LoggingLevels.INFO.value,
-    search: Optional[str] = None,
-    page: Optional[int] = None,
-    from_file_index: Optional[int] = None,
-    from_position: Optional[int] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
     """Get log entries for efficient pagination.
@@ -465,19 +448,12 @@ def run_logs(
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
-        page: The page number to return (1-indexed). Negative values supported (-1 = last page).
-        count: The number of log entries to return per page.
-        level: Log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
-        from_file_index: Optional file index for efficient seeking.
-        from_position: Optional position within file for efficient seeking.
 
     Returns:
         List of log entries.
 
     Raises:
         KeyError: If no logs are found for the specified source.
-        ValueError: If from_file_index and from_position are used for runner logs.
     """
     store = zen_store()
 
@@ -487,52 +463,25 @@ def run_logs(
         hydrate=True,
     )
 
-    # Construct FilePosition if both parameters provided
-    parsed_seek_position = None
-    if from_file_index is not None and from_position is not None:
-        parsed_seek_position = FilePosition(
-            file_index=from_file_index,
-            position=from_position,
-        )
-
     # Handle runner logs from workload manager
     if run.deployment_id and source == "runner":
-        if parsed_seek_position:
-            raise ValueError(
-                "from_file_index and from_position cannot be used for runner logs."
-            )
         deployment = store.get_deployment(run.deployment_id)
         if deployment.template_id and server_config().workload_manager_enabled:
             workload_logs = workload_manager().get_logs(
                 workload_id=deployment.id
             )
 
-            start_index = (page - 1) * count if page is not None else 0
-            end_index = start_index + count
-
-            matching_entries = []
-            entries_found = 0
-
+            log_entries = []
             for line in workload_logs.split("\n"):
-                if not line.strip():
-                    continue
+                if log_record := parse_log_entry(line):
+                    log_entries.append(log_record)
 
-                log_record = parse_log_entry(line)
-                if not log_record:
-                    continue
+                log_entries.append(log_record)
 
-                # Check if this entry matches our filters
-                if _entry_matches_filters(log_record, level, search):
-                    entries_found += 1
+                if len(log_entries) >= MAX_ENTRIES_PER_REQUEST:
+                    break
 
-                    # Only start collecting after we've skipped 'offset' entries
-                    if (
-                        entries_found > start_index
-                        and entries_found <= end_index
-                    ):
-                        matching_entries.append(log_record)
-
-            return matching_entries
+            return log_entries
 
     # Handle logs from log collection
     if run.log_collection:
@@ -542,288 +491,6 @@ def run_logs(
                     zen_store=store,
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,
-                    page=page,
-                    count=count,
-                    level=level,
-                    search=search,
-                    from_position=parsed_seek_position,
-                )
-
-    # If no logs found for the specified source, raise an error
-    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
-
-
-@router.get(
-    "/{run_id}" + LOGS + "/info",
-    responses={
-        401: error_response,
-        404: error_response,
-        422: error_response,
-    },
-)
-@async_fastapi_endpoint_wrapper
-def get_run_logs_info(
-    run_id: UUID,
-    source: str,
-    page_size: int = DEFAULT_PAGE_SIZE,
-    level: int = LoggingLevels.INFO.value,
-    search: Optional[str] = None,
-    _: AuthContext = Security(authorize),
-) -> LogInfo:
-    """Get lightweight pagination information for pipeline run logs.
-
-    This endpoint provides basic log statistics without position tracking for
-    efficient total count retrieval.
-
-    Args:
-        run_id: ID of the pipeline run.
-        source: Required source to get logs for.
-        page_size: Number of entries per page.
-        level: Log level filter. Returns messages at this level and above.
-        search: Optional search string. Only returns messages containing this string.
-
-    Returns:
-        LogInfo object with pagination metadata.
-
-    Raises:
-        KeyError: If no logs are found for the specified source.
-    """
-    store = zen_store()
-
-    run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=store.get_run,
-        hydrate=True,
-    )
-
-    # Handle runner logs from workload manager
-    if run.deployment_id and source == "runner":
-        deployment = store.get_deployment(run.deployment_id)
-        if deployment.template_id and server_config().workload_manager_enabled:
-            workload_logs = workload_manager().get_logs(
-                workload_id=deployment.id
-            )
-
-            total_entries = 0
-
-            for line in workload_logs.split("\n"):
-                if not line.strip():
-                    continue
-
-                log_record = parse_log_entry(line)
-                if not log_record:
-                    continue
-
-                # Check if this entry matches our filters
-                if _entry_matches_filters(log_record, level, search):
-                    total_entries += 1
-
-            total_pages = (
-                math.ceil(total_entries / page_size)
-                if total_entries > 0
-                else 0
-            )
-
-            return LogInfo(
-                page_size=page_size,
-                total_entries=total_entries,
-                total_pages=total_pages,
-                level=level,
-                search=search,
-                page_positions={},  # No page positions for workload logs yet
-            )
-
-    # Handle logs from log collection
-    if run.log_collection:
-        for log_entry in run.log_collection:
-            if log_entry.source == source:
-                return generate_log_info(
-                    zen_store=store,
-                    artifact_store_id=log_entry.artifact_store_id,
-                    logs_uri=log_entry.uri,
-                    page_size=page_size,
-                    level=level,
-                    search=search,
-                )
-
-    # If no logs found for the specified source, raise an error
-    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
-
-
-@router.get(
-    "/{run_id}/logs" + DOWNLOAD_TOKEN,
-    responses={
-        401: error_response,
-        404: error_response,
-        422: error_response,
-    },
-)
-@async_fastapi_endpoint_wrapper
-def get_run_logs_download_token(
-    run_id: UUID,
-    source: str,
-    _: AuthContext = Security(authorize),
-) -> str:
-    """Get a download token for the pipeline run logs.
-
-    Args:
-        run_id: ID of the pipeline run.
-        source: Required source to get logs for.
-
-    Returns:
-        The download token for the run logs.
-    """
-    run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=zen_store().get_run,
-        hydrate=True,
-    )
-    verify_run_logs_are_downloadable(run, source)
-
-    # The run log download is handled in a separate tab by the browser. In this
-    # tab, we do not have the ability to set any headers and therefore cannot
-    # include the CSRF token in the request. To handle this, we instead generate
-    # a JWT token in this endpoint (which includes CSRF and RBAC checks) and
-    # then use that token to download the run logs in a separate endpoint
-    # which only verifies this short-lived token.
-    return generate_download_token(
-        download_type=DownloadType.RUN_LOGS,
-        resource_id=run_id,
-        extra_claims={"source": source},
-    )
-
-
-@router.get(
-    "/{run_id}/logs/download",
-    responses={
-        401: error_response,
-        404: error_response,
-        422: error_response,
-    },
-)
-@async_fastapi_endpoint_wrapper
-def download_run_logs(
-    run_id: UUID,
-    source: str,
-    token: str,
-    format_string: Optional[str] = "[{timestamp}] [{level}] {message}",
-) -> StreamingResponse:
-    """Download all pipeline run logs for a specific source as a formatted string.
-
-    Available fields for the format string:
-        - {timestamp}: ISO format timestamp (e.g., "2024-01-15T10:30:45.123456")
-        - {level}: Log level name (e.g., "INFO", "ERROR", "DEBUG")
-        - {message}: The actual log message content
-        - {name}: Logger name (e.g., "zenml.pipeline")
-        - {module}: Module name (e.g., "zenml.pipelines")
-        - {filename}: Source filename (e.g., "pipeline.py")
-        - {lineno}: Line number where log was generated
-        - {chunk_index}: Chunk index for large messages (usually 0)
-        - {total_chunks}: Total chunks for large messages (usually 1)
-        - {id}: Unique log entry ID (UUID)
-
-    Args:
-        run_id: ID of the pipeline run.
-        source: Required source to get logs for.
-        token: The token to authenticate the run logs download.
-        format_string: Format string for each log entry using Python string formatting.
-            If None or empty string, returns raw jsonified log entries without formatting.
-
-    Returns:
-        A string containing all log entries, either raw or formatted.
-
-    Raises:
-        KeyError: If no logs are found for the specified source.
-    """
-    verify_download_token(
-        token=token,
-        download_type=DownloadType.RUN_LOGS,
-        resource_id=run_id,
-        extra_claims={"source": source},
-    )
-
-    store = zen_store()
-    run = store.get_run(run_id)
-
-    # Handle runner logs from workload manager
-    if run.deployment_id and source == "runner":
-        deployment = store.get_deployment(run.deployment_id)
-        if deployment.template_id and server_config().workload_manager_enabled:
-            workload_logs = workload_manager().get_logs(
-                workload_id=deployment.id
-            )
-
-            def generate_workload_logs() -> Iterator[str]:
-                """Generator for workload manager logs.
-
-                Yields:
-                    A string containing all log entries, either raw or formatted.
-                """
-                if not format_string:
-                    # Return raw logs
-                    for line in workload_logs.split("\n"):
-                        yield line + "\n"
-                    return
-
-                # Process and format workload logs
-                for line in workload_logs.split("\n"):
-                    if not line.strip():
-                        continue
-
-                    log_record = parse_log_entry(line)
-                    if not log_record:
-                        continue
-
-                    # Prepare format arguments
-                    format_args = {
-                        "message": log_record.message or "",
-                        "name": log_record.name or "",
-                        "level": log_record.level.name
-                        if log_record.level
-                        else "",
-                        "timestamp": log_record.timestamp.isoformat()
-                        if log_record.timestamp
-                        else "",
-                        "module": log_record.module or "",
-                        "filename": log_record.filename or "",
-                        "lineno": log_record.lineno or "",
-                        "chunk_index": log_record.chunk_index,
-                        "total_chunks": log_record.total_chunks,
-                        "id": str(log_record.id),
-                    }
-
-                    # Format the entry using the provided format string
-                    try:
-                        formatted_entry = format_string.format(**format_args)
-                        yield formatted_entry + "\n"
-                    except (KeyError, ValueError):
-                        # If formatting fails, fall back to raw message
-                        yield (log_record.message or "") + "\n"
-
-            return StreamingResponse(
-                generate_workload_logs(),
-                media_type="text/plain",
-                headers={
-                    "Content-Disposition": f"attachment; filename=run-{run_id}-{source}-logs.txt"
-                },
-            )
-
-    # Handle logs from log collection
-    if run.log_collection:
-        for log_entry in run.log_collection:
-            if log_entry.source == source:
-                log_generator = stream_log_records(
-                    zen_store=store,
-                    artifact_store_id=log_entry.artifact_store_id,
-                    logs_uri=log_entry.uri,
-                    format_string=format_string,
-                )
-                return StreamingResponse(
-                    log_generator,
-                    media_type="text/plain",
-                    headers={
-                        "Content-Disposition": f"attachment; filename=run-{run_id}-{source}-logs.txt"
-                    },
                 )
 
     # If no logs found for the specified source, raise an error
