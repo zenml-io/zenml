@@ -178,6 +178,8 @@ def _store_artifact_data_and_prepare_request(
         # the materializer
         combined_metadata.update(metadata or {})
 
+    content_hash = materializer.compute_content_hash(data)
+
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,
         version=version,
@@ -186,6 +188,7 @@ def _store_artifact_data_and_prepare_request(
         uri=materializer.uri,
         materializer=source_utils.resolve(materializer.__class__),
         data_type=source_utils.resolve(data_type),
+        content_hash=content_hash,
         project=Client().active_project.id,
         artifact_store_id=artifact_store.id,
         visualizations=visualizations,
