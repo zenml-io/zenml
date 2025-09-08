@@ -1910,6 +1910,8 @@ class SqlZenStore(BaseZenStore):
         settings = self._get_server_settings(session=session)
         settings.update_onboarding_state(completed_steps=completed_steps)
         session.add(settings)
+        session.commit()
+        session.refresh(settings)
 
         assert settings.onboarding_state
         self._cached_onboarding_state = set(
@@ -6162,11 +6164,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
-            existing_run = session.exec(
-                select(PipelineRunSchema)
-                .with_for_update()
-                .where(PipelineRunSchema.id == run_id)
-            ).one()
+            existing_run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
 
             if run_update.orchestrator_run_id:
                 if not existing_run.is_placeholder_run():
@@ -6188,15 +6190,8 @@ class SqlZenStore(BaseZenStore):
 
             existing_run.update(run_update=run_update)
             session.add(existing_run)
-
-            if run_update.status is not None:
-                self._update_pipeline_run_status(
-                    pipeline_run=existing_run,
-                    session=session,
-                )
-
-            # Release the lock on the pipeline run
             session.commit()
+            session.refresh(existing_run)
 
             # Add logs if specified
             if run_update.add_logs:
@@ -6244,7 +6239,11 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            session.commit()
+            if run_update.status is not None:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=run_id,
+                    session=session,
+                )
             session.refresh(existing_run)
 
             return existing_run.to_model(
@@ -8971,11 +8970,12 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(request_model=step_run, session=session)
 
             # Check if the pipeline run exists
-            run = session.exec(
-                select(PipelineRunSchema)
-                .with_for_update()
-                .where(PipelineRunSchema.id == step_run.pipeline_run_id)
-            ).one()
+            run = self._get_reference_schema_by_id(
+                resource=step_run,
+                reference_schema=PipelineRunSchema,
+                reference_id=step_run.pipeline_run_id,
+                session=session,
+            )
 
             # Validate pipeline status before creating step
             if run.status in [
@@ -9007,6 +9007,18 @@ class SqlZenStore(BaseZenStore):
                 reference_type="original step run",
             )
             step_config = run.get_step_configuration(step_name=step_run.name)
+
+            # Release the read locks of the previous two queries before we
+            # try to acquire more exclusive locks
+            session.commit()
+
+            # Acquire exclusive lock on the pipeline run to prevent deadlocks
+            # during insertion
+            session.exec(
+                select(PipelineRunSchema.id)
+                .with_for_update()
+                .where(PipelineRunSchema.id == step_run.pipeline_run_id)
+            )
 
             existing_step_runs = session.exec(
                 select(StepRunSchema)
@@ -9083,28 +9095,6 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.add(step_schema)
-
-            # If the created step is in failed state, we need to stop all
-            # other steps in the pipeline. This is only relevant in
-            # FAIL_FAST mode.
-            if step_schema.status == ExecutionStatus.FAILED:
-                execution_mode = (
-                    run.get_pipeline_configuration().execution_mode
-                )
-
-                if execution_mode == ExecutionMode.FAIL_FAST:
-                    for step in run.step_runs:
-                        if (
-                            step.id != step_schema.id
-                            and not ExecutionStatus(step.status).is_finished
-                        ):
-                            step.status = ExecutionStatus.STOPPING.value
-                            session.add(step)
-
-            if step_run.status != ExecutionStatus.RUNNING:
-                self._update_pipeline_run_status(
-                    pipeline_run=run, session=session
-                )
 
             try:
                 session.commit()
@@ -9264,6 +9254,13 @@ class SqlZenStore(BaseZenStore):
                     )
 
             session.commit()
+
+            if step_run.status != ExecutionStatus.RUNNING:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=step_run.pipeline_run_id, session=session
+                )
+
+            session.commit()
             session.refresh(
                 step_schema, ["input_artifacts", "output_artifacts"]
             )
@@ -9375,7 +9372,7 @@ class SqlZenStore(BaseZenStore):
             )
 
         with Session(self.engine) as session:
-            # First fetch the step run
+            # Check if the step exists
             existing_step_run = self._get_schema_by_id(
                 resource_id=step_run_id,
                 schema_class=StepRunSchema,
@@ -9389,24 +9386,6 @@ class SqlZenStore(BaseZenStore):
                 raise ValueError(
                     "The status of retried step runs can not be updated."
                 )
-
-            # Through the step run, fetch the pipeline run with the lock
-            existing_run = session.exec(
-                select(PipelineRunSchema)
-                .with_for_update()
-                .where(
-                    PipelineRunSchema.id == existing_step_run.pipeline_run_id
-                )
-            ).one()
-
-            # Re-fetch the step run to get the latest state. This is necessary
-            # because another transaction with the same lock might have updated
-            # the step run until we could acquire the lock.
-            existing_step_run = self._get_schema_by_id(
-                resource_id=step_run_id,
-                schema_class=StepRunSchema,
-                session=session,
-            )
 
             # If the step is retriable and failed, we need to set its status to retrying.
             if (
@@ -9424,35 +9403,9 @@ class SqlZenStore(BaseZenStore):
             ):
                 step_run_update.status = ExecutionStatus.STOPPED
 
-            # If the step failed, we need to stop all other steps in the pipeline.
-            # This is only relevant in FAIL_FAST mode.
-            if step_run_update.status == ExecutionStatus.FAILED:
-                execution_mode = (
-                    existing_run.get_pipeline_configuration().execution_mode
-                )
-
-                if execution_mode == ExecutionMode.FAIL_FAST:
-                    for step in existing_run.step_runs:
-                        if (
-                            step.id != existing_step_run.id
-                            and not ExecutionStatus(step.status).is_finished
-                        ):
-                            step.status = ExecutionStatus.STOPPING.value
-                            session.add(step)
-
-            # Update the step itself
+            # Update the step
             existing_step_run.update(step_run_update)
             session.add(existing_step_run)
-
-            # And finally update the pipeline run status
-            self._update_pipeline_run_status(
-                pipeline_run=existing_run,
-                session=session,
-            )
-
-            # Release the lock on the pipeline run as the transactions after
-            # this point are not dependent on the pipeline run.
-            session.commit()
 
             # Update the artifacts.
             for name, artifact_version_ids in step_run_update.outputs.items():
@@ -9478,6 +9431,11 @@ class SqlZenStore(BaseZenStore):
                 )
             session.commit()
             session.refresh(existing_step_run)
+
+            self._update_pipeline_run_status(
+                pipeline_run_id=existing_step_run.pipeline_run_id,
+                session=session,
+            )
 
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
@@ -9686,24 +9644,30 @@ class SqlZenStore(BaseZenStore):
 
     def _update_pipeline_run_status(
         self,
-        pipeline_run: PipelineRunSchema,
+        pipeline_run_id: UUID,
         session: Session,
     ) -> None:
         """Updates the status of a pipeline run.
 
         Args:
-            pipeline_run: The pipeline run schema to update.
+            pipeline_run_id: The ID of the pipeline run to update.
             session: The database session to use.
         """
         from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
-        step_run_statuses = [
-            step.status
-            for step in pipeline_run.step_runs
-            if step.status != ExecutionStatus.RETRIED.value
-        ]
+        session.commit()
+        pipeline_run = session.exec(
+            select(PipelineRunSchema)
+            .with_for_update()
+            .where(PipelineRunSchema.id == pipeline_run_id)
+        ).one()
+        step_run_statuses = session.exec(
+            select(StepRunSchema.status)
+            .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
+            .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
+        ).all()
 
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
@@ -9737,6 +9701,9 @@ class SqlZenStore(BaseZenStore):
         pipeline_run.update(run_update)
         session.add(pipeline_run)
 
+        # Commit so that we release the lock on the pipeline run.
+        session.commit()
+
         if new_status.is_finished:
             assert run_update.end_time
             if pipeline_run.start_time:
@@ -9760,7 +9727,7 @@ class SqlZenStore(BaseZenStore):
             ) as analytics_handler:
                 analytics_handler.metadata = {
                     "project_id": pipeline_run.project_id,
-                    "pipeline_run_id": pipeline_run.id,
+                    "pipeline_run_id": pipeline_run_id,
                     "template_id": pipeline_run.deployment.template_id,
                     "status": new_status,
                     "num_steps": num_steps,

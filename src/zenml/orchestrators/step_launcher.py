@@ -26,7 +26,7 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
@@ -183,6 +183,18 @@ class StepLauncher:
                             end_time=utc_now(),
                         )
                     raise RunStoppedException("Pipeline run is stopped.")
+
+                if (
+                    pipeline_run.status == ExecutionStatus.FAILED
+                    and self._deployment.pipeline_configuration.execution_mode
+                    == ExecutionMode.FAIL_FAST
+                ):
+                    publish_utils.publish_step_run_status_update(
+                        step_run_id=self._step_run.id,
+                        status=ExecutionStatus.STOPPED,
+                        end_time=utc_now(),
+                    )
+
                 elif step_run := client.get_run_step(
                     self._step_run.id, hydrate=False
                 ):
