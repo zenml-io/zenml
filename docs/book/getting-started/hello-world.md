@@ -17,9 +17,11 @@ Start by installing ZenML in a fresh Python environment:
 
 ```bash
 pip install zenml
+zenml login
 ```
 
-This gives you access to both the ZenML Python SDK and CLI tools.
+This gives you access to both the ZenML Python SDK and CLI tools. It also surfaces the
+ZenML dashboard + connects it to your local client.
 {% endstep %}
 
 {% step %}
@@ -128,8 +130,8 @@ To continue your ZenML journey, explore these key topics:
 * **Organization**: Use [tags](../how-to/tags/tags.md) and [metadata](../how-to/metadata/metadata.md) to keep your AI projects structured
 
 **For LLMs and AI Agents:**
-* **LLMOps Guide**: Follow our comprehensive [LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide) for agent development patterns
-* **Agent Evaluation**: Learn to [systematically evaluate](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) and compare different agent architectures
+* **LLMOps Guide**: Write your [first AI pipeline](your-first-ai-pipeline.md) for agent development patterns
+* **Agent Evaluation**: Learn to [systematically evaluate](https://github.com/zenml-io/zenml/tree/main/examples/agent_comparison) and compare different agent architectures
 * **Prompt Management**: Version and track prompts, tools, and agent configurations as [artifacts](../how-to/artifacts/artifacts.md)
 
 **Infrastructure & Deployment:**

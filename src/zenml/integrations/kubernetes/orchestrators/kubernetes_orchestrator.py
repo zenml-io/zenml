@@ -31,6 +31,7 @@
 """Kubernetes-native orchestrator."""
 
 import os
+import random
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -50,6 +51,13 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.integrations.kubernetes.constants import (
+    ENV_ZENML_KUBERNETES_RUN_ID,
+    KUBERNETES_CRON_JOB_METADATA_KEY,
+    KUBERNETES_SECRET_TOKEN_KEY_NAME,
+    ORCHESTRATOR_ANNOTATION_KEY,
+    STEP_NAME_ANNOTATION_KEY,
+)
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
@@ -60,13 +68,15 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypo
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_cron_job_manifest,
+    build_job_manifest,
     build_pod_manifest,
+    job_template_manifest_from_job,
+    pod_template_manifest_from_pod,
 )
-from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.core.schedule import ScheduleUpdate
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
-from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
@@ -74,13 +84,11 @@ if TYPE_CHECKING:
         PipelineDeploymentBase,
         PipelineDeploymentResponse,
         PipelineRunResponse,
+        ScheduleResponse,
     )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
-
-ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
-KUBERNETES_SECRET_TOKEN_KEY_NAME = "zenml_api_token"
 
 
 class KubernetesOrchestrator(ContainerizedOrchestrator):
@@ -361,45 +369,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate_local_requirements,
         )
 
-    @classmethod
-    def apply_default_resource_requests(
-        cls,
-        memory: str,
-        cpu: Optional[str] = None,
-        pod_settings: Optional[KubernetesPodSettings] = None,
-    ) -> KubernetesPodSettings:
-        """Applies default resource requests to a pod settings object.
-
-        Args:
-            memory: The memory resource request.
-            cpu: The CPU resource request.
-            pod_settings: The pod settings to update. A new one will be created
-                if not provided.
-
-        Returns:
-            The new or updated pod settings.
-        """
-        resources = {
-            "requests": {"memory": memory},
-        }
-        if cpu:
-            resources["requests"]["cpu"] = cpu
-        if not pod_settings:
-            pod_settings = KubernetesPodSettings(resources=resources)
-        elif not pod_settings.resources:
-            # We can't update the pod settings in place (because it's a frozen
-            # pydantic model), so we have to create a new one.
-            pod_settings = KubernetesPodSettings(
-                **pod_settings.model_dump(exclude_unset=True),
-                resources=resources,
-            )
-        else:
-            set_requests = pod_settings.resources.get("requests", {})
-            resources["requests"].update(set_requests)
-            pod_settings.resources["requests"] = resources["requests"]
-
-        return pod_settings
-
     def get_token_secret_name(self, deployment_id: UUID) -> str:
         """Returns the name of the secret that contains the ZenML token.
 
@@ -438,6 +407,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If a schedule without cron expression is given.
+            Exception: If the orchestrator pod fails to start.
 
         Returns:
             Optional submission result.
@@ -461,27 +431,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
             KubernetesOrchestratorSettings, self.get_settings(deployment)
-        )
-
-        # We already make sure the orchestrator run name has the correct length
-        # to make sure we don't cut off the randomized suffix later when
-        # sanitizing the pod name. This avoids any pod naming collisions.
-        max_length = kube_utils.calculate_max_pod_name_length_for_namespace(
-            namespace=self.config.kubernetes_namespace
-        )
-        orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name, max_length=max_length
-        )
-
-        if settings.pod_name_prefix:
-            pod_name = get_orchestrator_run_name(
-                settings.pod_name_prefix, max_length=max_length
-            )
-        else:
-            pod_name = orchestrator_run_name
-
-        pod_name = kube_utils.sanitize_pod_name(
-            pod_name, namespace=self.config.kubernetes_namespace
         )
 
         assert stack.container_registry
@@ -514,7 +463,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # takes up some memory resources itself and, if not specified, the pod
         # will be scheduled on any node regardless of available memory and risk
         # negatively impacting or even crashing the node due to memory pressure.
-        orchestrator_pod_settings = self.apply_default_resource_requests(
+        orchestrator_pod_settings = kube_utils.apply_default_resource_requests(
             memory="400Mi",
             cpu="100m",
             pod_settings=settings.orchestrator_pod_settings,
@@ -550,10 +499,74 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 str(placeholder_run.id)
             )
             orchestrator_pod_labels["run_name"] = kube_utils.sanitize_label(
-                str(placeholder_run.name)
+                placeholder_run.name
             )
 
-        # Schedule as CRON job if CRON schedule is given.
+        pod_manifest = build_pod_manifest(
+            pod_name=None,
+            image_name=image,
+            command=command,
+            args=args,
+            privileged=False,
+            pod_settings=orchestrator_pod_settings,
+            service_account_name=service_account_name,
+            env=base_environment,
+            labels=orchestrator_pod_labels,
+            mount_local_stores=self.config.is_local,
+            termination_grace_period_seconds=settings.pod_stop_grace_period,
+        )
+
+        pod_failure_policy = settings.pod_failure_policy or {
+            # These rules are applied sequentially. This means any failure in
+            # the main container will count towards the max retries. Any other
+            # disruption will not count towards the max retries.
+            "rules": [
+                # If the main container fails, we count it towards the max
+                # retries.
+                {
+                    "action": "Count",
+                    "onExitCodes": {
+                        "containerName": "main",
+                        "operator": "NotIn",
+                        "values": [0],
+                    },
+                },
+                # If the pod is interrupted at any other time, we don't count
+                # it as a retry
+                {
+                    "action": "Ignore",
+                    "onPodConditions": [
+                        {
+                            "type": "DisruptionTarget",
+                            "status": "True",
+                        }
+                    ],
+                },
+            ]
+        }
+
+        job_name = settings.job_name_prefix or ""
+        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        job_name += (
+            f"-{random_prefix}-{deployment.pipeline_configuration.name}"
+        )
+        # The job name will be used as a label on the pods, so we need to make
+        # sure it doesn't exceed the label length limit
+        job_name = kube_utils.sanitize_label(job_name)
+
+        job_manifest = build_job_manifest(
+            job_name=job_name,
+            pod_template=pod_template_manifest_from_pod(pod_manifest),
+            backoff_limit=settings.orchestrator_job_backoff_limit,
+            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+            active_deadline_seconds=settings.active_deadline_seconds,
+            pod_failure_policy=pod_failure_policy,
+            labels=orchestrator_pod_labels,
+            annotations={
+                ORCHESTRATOR_ANNOTATION_KEY: str(self.id),
+            },
+        )
+
         if deployment.schedule:
             if not deployment.schedule.cron_expression:
                 raise RuntimeError(
@@ -564,93 +577,73 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             cron_expression = deployment.schedule.cron_expression
             cron_job_manifest = build_cron_job_manifest(
                 cron_expression=cron_expression,
-                pod_name=pod_name,
-                image_name=image,
-                command=command,
-                args=args,
-                service_account_name=service_account_name,
-                privileged=False,
-                pod_settings=orchestrator_pod_settings,
-                env=base_environment,
-                mount_local_stores=self.config.is_local,
+                job_template=job_template_manifest_from_job(job_manifest),
                 successful_jobs_history_limit=settings.successful_jobs_history_limit,
                 failed_jobs_history_limit=settings.failed_jobs_history_limit,
-                ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
-                termination_grace_period_seconds=settings.pod_stop_grace_period,
-                labels=orchestrator_pod_labels,
             )
 
-            self._k8s_batch_api.create_namespaced_cron_job(
+            cron_job = self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
                 namespace=self.config.kubernetes_namespace,
             )
             logger.info(
-                f"Scheduling Kubernetes run `{pod_name}` with CRON expression "
-                f'`"{cron_expression}"`.'
+                f"Created Kubernetes CronJob `{cron_job.metadata.name}` "
+                f"with CRON expression `{cron_expression}`."
             )
-            return None
+            return SubmissionResult(
+                metadata={
+                    KUBERNETES_CRON_JOB_METADATA_KEY: cron_job.metadata.name,
+                }
+            )
         else:
-            # Create and run the orchestrator pod.
-            pod_manifest = build_pod_manifest(
-                pod_name=pod_name,
-                image_name=image,
-                command=command,
-                args=args,
-                privileged=False,
-                pod_settings=orchestrator_pod_settings,
-                service_account_name=service_account_name,
-                env=base_environment,
-                labels=orchestrator_pod_labels,
-                mount_local_stores=self.config.is_local,
-                termination_grace_period_seconds=settings.pod_stop_grace_period,
-            )
+            try:
+                kube_utils.create_job(
+                    batch_api=self._k8s_batch_api,
+                    namespace=self.config.kubernetes_namespace,
+                    job_manifest=job_manifest,
+                )
+            except Exception as e:
+                if self.config.pass_zenml_token_as_secret:
+                    secret_name = self.get_token_secret_name(deployment.id)
+                    try:
+                        kube_utils.delete_secret(
+                            core_api=self._k8s_core_api,
+                            namespace=self.config.kubernetes_namespace,
+                            secret_name=secret_name,
+                        )
+                    except Exception as cleanup_error:
+                        logger.error(
+                            "Error cleaning up secret %s: %s",
+                            secret_name,
+                            cleanup_error,
+                        )
+                raise e
 
-            kube_utils.create_and_wait_for_pod_to_start(
-                core_api=self._k8s_core_api,
-                pod_display_name="Kubernetes orchestrator pod",
-                pod_name=pod_name,
-                pod_manifest=pod_manifest,
-                namespace=self.config.kubernetes_namespace,
-                startup_max_retries=settings.pod_failure_max_retries,
-                startup_failure_delay=settings.pod_failure_retry_delay,
-                startup_failure_backoff=settings.pod_failure_backoff,
-                startup_timeout=settings.pod_startup_timeout,
-            )
-
-            metadata: Dict[str, MetadataType] = {
-                METADATA_ORCHESTRATOR_RUN_ID: pod_name,
-            }
-
-            # Wait for the orchestrator pod to finish and stream logs.
             if settings.synchronous:
 
                 def _wait_for_run_to_finish() -> None:
-                    logger.info(
-                        "Waiting for Kubernetes orchestrator pod to finish..."
-                    )
-                    kube_utils.wait_pod(
-                        kube_client_fn=self.get_kube_client,
-                        pod_name=pod_name,
+                    logger.info("Waiting for orchestrator job to finish...")
+                    kube_utils.wait_for_job_to_finish(
+                        batch_api=self._k8s_batch_api,
+                        core_api=self._k8s_core_api,
                         namespace=self.config.kubernetes_namespace,
-                        exit_condition_lambda=kube_utils.pod_is_done,
-                        timeout_sec=settings.timeout,
+                        job_name=job_name,
+                        backoff_interval=settings.job_monitoring_interval,
+                        fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                         stream_logs=True,
                     )
 
                 return SubmissionResult(
-                    metadata=metadata,
                     wait_for_completion=_wait_for_run_to_finish,
                 )
             else:
                 logger.info(
-                    f"Orchestration started asynchronously in pod "
-                    f"`{self.config.kubernetes_namespace}:{pod_name}`. "
+                    f"Orchestrator job `{job_name}` started. "
                     f"Run the following command to inspect the logs: "
-                    f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
+                    f"`kubectl -n {self.config.kubernetes_namespace} logs "
+                    f"job/{job_name}`"
                 )
-                return SubmissionResult(
-                    metadata=metadata,
-                )
+                return None
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings
@@ -723,7 +716,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # Find all jobs running steps of the pipeline
         label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
         try:
-            jobs = self._k8s_batch_api.list_namespaced_job(
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
             )
@@ -732,8 +726,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"Failed to list step jobs with run ID {run.id}: {e}"
             )
 
-        for job in jobs.items:
-            if job.status.conditions:
+        for job in job_list.items:
+            if not kube_utils.is_step_job(job):
+                # This is the orchestrator job which stops by itself
+                continue
+
+            if job.status and job.status.conditions:
                 # Don't delete completed/failed jobs
                 for condition in job.status.conditions:
                     if (
@@ -804,94 +802,59 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             A tuple of (pipeline_status, step_statuses).
             If include_steps is False, step_statuses will be None.
             If include_steps is True, step_statuses will be a dict (possibly empty).
-
-        Raises:
-            ValueError: If the orchestrator run ID cannot be found or if the
-                stack components are not accessible.
         """
-        # Get the orchestrator run ID which corresponds to the orchestrator pod name
-        orchestrator_run_id = run.orchestrator_run_id
-        if not orchestrator_run_id:
-            raise ValueError(
-                "Cannot determine orchestrator run ID for the run. "
-                "Unable to fetch the status."
-            )
+        pipeline_status = None
+        include_run_status = not run.status.is_finished
 
-        # Check the orchestrator pod status (only if run is not finished)
-        if not run.status.is_finished:
-            orchestrator_pod_phase = self._check_pod_status(
-                pod_name=orchestrator_run_id,
+        label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
+        try:
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
             )
-            pipeline_status = self._map_pod_phase_to_execution_status(
-                orchestrator_pod_phase
-            )
-        else:
-            # Run is already finished, don't change status
-            pipeline_status = None
+        except Exception as e:
+            logger.warning(f"Failed to list jobs for run {run.id}: {e}")
+            return None, None
 
-        step_statuses = None
-        if include_steps:
-            step_statuses = self._fetch_step_statuses(run)
+        step_statuses = {}
+        # Only fetch steps if we really need them
+        steps_dict = run.steps if include_steps else {}
+
+        for job in job_list.items:
+            if not job.metadata or not job.metadata.annotations:
+                continue
+
+            is_orchestrator_job = (
+                ORCHESTRATOR_ANNOTATION_KEY in job.metadata.annotations
+            )
+            if is_orchestrator_job:
+                if include_run_status:
+                    pipeline_status = self._map_job_status_to_execution_status(
+                        job
+                    )
+                continue
+
+            step_name = job.metadata.annotations.get(
+                STEP_NAME_ANNOTATION_KEY, None
+            )
+            if not include_steps or not step_name:
+                continue
+
+            step_response = steps_dict.get(step_name, None)
+
+            if step_response is None:
+                continue
+
+            # If the step is already in a finished state, skip
+            if step_response and step_response.status.is_finished:
+                continue
+
+            execution_status = self._map_job_status_to_execution_status(job)
+            if execution_status is not None:
+                step_statuses[step_name] = execution_status
 
         return pipeline_status, step_statuses
-
-    def _check_pod_status(
-        self,
-        pod_name: str,
-    ) -> kube_utils.PodPhase:
-        """Check pod status and handle deletion scenarios for both orchestrator and step pods.
-
-        This method should only be called for non-finished pipeline runs/steps.
-
-        Args:
-            pod_name: The name of the pod to check.
-
-        Returns:
-            The pod phase if the pod exists, or PodPhase.FAILED if pod was deleted.
-        """
-        pod = kube_utils.get_pod(
-            core_api=self._k8s_core_api,
-            pod_name=pod_name,
-            namespace=self.config.kubernetes_namespace,
-        )
-
-        if pod and pod.status and pod.status.phase:
-            try:
-                return kube_utils.PodPhase(pod.status.phase)
-            except ValueError:
-                # Handle unknown pod phases
-                logger.warning(
-                    f"Unknown pod phase for pod {pod_name}: {pod.status.phase}"
-                )
-                return kube_utils.PodPhase.UNKNOWN
-        else:
-            logger.warning(
-                f"Can't fetch the status of pod {pod_name} "
-                f"in namespace {self.config.kubernetes_namespace}."
-            )
-            return kube_utils.PodPhase.UNKNOWN
-
-    def _map_pod_phase_to_execution_status(
-        self, pod_phase: kube_utils.PodPhase
-    ) -> Optional[ExecutionStatus]:
-        """Map Kubernetes pod phase to ZenML execution status.
-
-        Args:
-            pod_phase: The Kubernetes pod phase.
-
-        Returns:
-            The corresponding ZenML execution status.
-        """
-        if pod_phase == kube_utils.PodPhase.PENDING:
-            return ExecutionStatus.INITIALIZING
-        elif pod_phase == kube_utils.PodPhase.RUNNING:
-            return ExecutionStatus.RUNNING
-        elif pod_phase == kube_utils.PodPhase.SUCCEEDED:
-            return ExecutionStatus.COMPLETED
-        elif pod_phase == kube_utils.PodPhase.FAILED:
-            return ExecutionStatus.FAILED
-        else:  # UNKNOWN - no update
-            return None
 
     def _map_job_status_to_execution_status(
         self, job: k8s_client.V1Job
@@ -904,7 +867,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Returns:
             The corresponding ZenML execution status, or None if no clear status.
         """
-        # Check job conditions first
         if job.status and job.status.conditions:
             for condition in job.status.conditions:
                 if condition.type == "Complete" and condition.status == "True":
@@ -914,61 +876,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         # Return None if no clear status - don't update
         return None
-
-    def _fetch_step_statuses(
-        self, run: "PipelineRunResponse"
-    ) -> Dict[str, ExecutionStatus]:
-        """Fetch the statuses of individual pipeline steps.
-
-        Args:
-            run: The pipeline run response.
-
-        Returns:
-            A dictionary mapping step names to their execution statuses.
-        """
-        step_statuses = {}
-
-        # Query all jobs for this run and match them to steps
-        label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
-
-        try:
-            jobs = self._k8s_batch_api.list_namespaced_job(
-                namespace=self.config.kubernetes_namespace,
-                label_selector=label_selector,
-            )
-        except Exception as e:
-            logger.warning(f"Failed to list jobs for run {run.id}: {e}")
-            return {}
-
-        # Fetch the steps from the run response
-        steps_dict = run.steps
-
-        for job in jobs.items:
-            # Extract step name from job labels
-            if not job.metadata or not job.metadata.labels:
-                continue
-
-            step_name = job.metadata.labels.get("step_name")
-            if not step_name:
-                continue
-
-            # Check if this step is already finished
-            step_response = steps_dict.get(step_name, None)
-
-            # If the step is not in the run response yet, skip, we can't update
-            if step_response is None:
-                continue
-
-            # If the step is already in a finished state, skip
-            if step_response and step_response.status.is_finished:
-                continue
-
-            # Check job status and map to execution status
-            execution_status = self._map_job_status_to_execution_status(job)
-            if execution_status is not None:
-                step_statuses[step_name] = execution_status
-
-        return step_statuses
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -984,3 +891,48 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return {
             METADATA_ORCHESTRATOR_RUN_ID: self.get_orchestrator_run_id(),
         }
+
+    def update_schedule(
+        self, schedule: "ScheduleResponse", update: ScheduleUpdate
+    ) -> None:
+        """Updates a schedule.
+
+        Args:
+            schedule: The schedule to update.
+            update: The update to apply to the schedule.
+
+        Raises:
+            RuntimeError: If the cron job name is not found.
+        """
+        cron_job_name = schedule.run_metadata.get(
+            KUBERNETES_CRON_JOB_METADATA_KEY
+        )
+        if not cron_job_name:
+            raise RuntimeError("Unable to find cron job name for schedule.")
+
+        if update.cron_expression:
+            self._k8s_batch_api.patch_namespaced_cron_job(
+                name=cron_job_name,
+                namespace=self.config.kubernetes_namespace,
+                body={"spec": {"schedule": update.cron_expression}},
+            )
+
+    def delete_schedule(self, schedule: "ScheduleResponse") -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule: The schedule to delete.
+
+        Raises:
+            RuntimeError: If the cron job name is not found.
+        """
+        cron_job_name = schedule.run_metadata.get(
+            KUBERNETES_CRON_JOB_METADATA_KEY
+        )
+        if not cron_job_name:
+            raise RuntimeError("Unable to find cron job name for schedule.")
+
+        self._k8s_batch_api.delete_namespaced_cron_job(
+            name=cron_job_name,
+            namespace=self.config.kubernetes_namespace,
+        )

@@ -117,10 +117,6 @@ class StepRunRequestFactory:
             pipeline_run=self.pipeline_run,
             step_runs=step_runs,
         )
-        input_artifact_ids = {
-            input_name: artifact.id
-            for input_name, artifact in input_artifacts.items()
-        }
 
         request.inputs = {
             name: [artifact.id] for name, artifact in input_artifacts.items()
@@ -128,7 +124,7 @@ class StepRunRequestFactory:
 
         cache_key = cache_utils.generate_cache_key(
             step=step,
-            input_artifact_ids=input_artifact_ids,
+            input_artifacts=input_artifacts,
             artifact_store=self.stack.artifact_store,
             project_id=Client().active_project.id,
         )

@@ -33,6 +33,7 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
@@ -66,8 +67,8 @@ def step(
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
-    experiment_tracker: Optional[str] = None,
-    step_operator: Optional[str] = None,
+    experiment_tracker: Optional[Union[bool, str]] = None,
+    step_operator: Optional[Union[bool, str]] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
@@ -78,6 +79,7 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -89,8 +91,8 @@ def step(
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
-    experiment_tracker: Optional[str] = None,
-    step_operator: Optional[str] = None,
+    experiment_tracker: Optional[Union[bool, str]] = None,
+    step_operator: Optional[Union[bool, str]] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
@@ -101,6 +103,7 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -135,6 +138,7 @@ def step(
         model: configuration of the model in the Model Control Plane.
         retry: configuration of step retry in case of step failure.
         substitutions: Extra placeholders for the step name.
+        cache_policy: Cache policy for this step.
 
     Returns:
         The step instance.
@@ -171,6 +175,7 @@ def step(
             model=model,
             retry=retry,
             substitutions=substitutions,
+            cache_policy=cache_policy,
         )
 
         return step_instance

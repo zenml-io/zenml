@@ -740,7 +740,7 @@ You may access the ZenML Pro server at: https://zenml-pro.my.domain
 
 Use the following credentials:
 
-  Username: admin@zenml.pro
+  Username: admin
   Password: fetch the password by running:
 
     kubectl get secret --namespace zenml-pro zenml-pro -o jsonpath="{.data.ZENML_CLOUD_ADMIN_PASSWORD}" | base64 --decode; echo
@@ -811,8 +811,8 @@ However, this feature is currently supported with helper Python scripts, as desc
 
     ```yaml
     users:
-    - email: adam@zenml.io
-        password: tu3]4_Xz{5$9
+    - username: adam@zenml.io
+      password: tu3]4_Xz{5$9
     ```
 3.  Run the `create_users.py` script below. This will create all of the users.
 
@@ -859,11 +859,11 @@ However, this feature is currently supported with helper Python scripts, as desc
             print(f"Response: {response.text}")
             sys.exit(1)
 
-    def create_user(token: str, base_url: str, email: str, password: Optional[str]):
-        """Create a user with the given email."""
+    def create_user(token: str, base_url: str, username: str, password: Optional[str]):
+        """Create a user with the given username."""
         users_url = f"{base_url}{USERS_ENDPOINT}"
         params = {
-            'email': email,
+            'username': username,
             'password': password
         }
 
@@ -877,19 +877,19 @@ However, this feature is currently supported with helper Python scripts, as desc
         response = requests.post(users_url, params=params, headers=headers, data='')
 
         if response.status_code == 200:
-            print(f"User created successfully: {email}")
+            print(f"User created successfully: {username}")
         else:
-            print(f"Failed to create user: {email}")
+            print(f"Failed to create user: {username}")
             print(f"Status code: {response.status_code}")
             print(f"Response: {response.text}")
 
     def main():
         # Get login credentials
         base_url = input("ZenML URL: ")
-        username = input("Enter username: ")
-        password = getpass.getpass("Enter password: ")
+        username = input("Enter admin username: ")
+        password = getpass.getpass("Enter admin password: ")
         # Get the YAML file path
-        yaml_file = input("Enter the path to the YAML file containing email addresses: ")
+        yaml_file = input("Enter the path to the YAML file containing user account details: ")
 
         # Login and get token
         token = login(base_url, username, password)
@@ -908,15 +908,15 @@ However, this feature is currently supported with helper Python scripts, as desc
         # Create users
         if isinstance(users, list):
             for user in users:
-                create_user(token, base_url, user["email"], user["password"])
+                create_user(token, base_url, user["username"], user["password"])
         else:
-            print("Invalid YAML format. Expected a list of email addresses.")
+            print("Invalid YAML format. Expected a list of user account details.")
 
     if __name__ == "__main__":
         main()
     ```
 
-The script will prompt you for the URL of your deployment, the admin account email and admin account password and finally the location of your `users.yml` file.
+The script will prompt you for the URL of your deployment, the admin account username and password and finally the location of your `users.yml` file.
 
 ![](.gitbook/assets/on-prem-01.png)
 
@@ -952,7 +952,7 @@ For each user, finally head over to the Pending invited screen and copy the invi
 
 ![](.gitbook/assets/on-prem-07.png)
 
-Finally, send the invitation link, along with the account's email and initial password over to your team members.
+Finally, send the invitation link, along with the account's username and initial password over to your team members.
 
 ## Stage 2/2: Enroll and Deploy ZenML Pro workspaces
 
@@ -1238,7 +1238,7 @@ Installing and updating on-prem ZenML Pro workspace servers is not automated, as
         )
         username = prompt(
             "Enter the ZenML Pro admin account username",
-            default_value="admin@zenml.pro",
+            default_value="admin",
         )
         password = prompt(
             "Enter the ZenML Pro admin account password", password=True
@@ -1556,6 +1556,8 @@ The Run Templates feature comes with some optional sub-features that can be turn
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED` (optional): the time in seconds after which to cleanup finished jobs and their pods. Defaults to 2 days.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR` (optional): the Kubernetes node selector to use for the "runner" jobs, in JSON format. Example: `{"node-pool": "zenml-pool"}`.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS` (optional): the Kubernetes tolerations to use for the "runner" jobs, in JSON format. Example: `[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]`.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_JOB_BACKOFF_LIMIT` (optional): the Kubernetes backoff limit to use for the builder and runner jobs.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_FAILURE_POLICY` (optional): the Kubernetes pod failure policy to use for the builder and runner jobs.
     * `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` (optional): the maximum number of concurrent run templates that can be started at the same time by each server container or pod. Defaults to 2. If a client exceeds this number, the request will be rejected with a 429 Too Many Requests HTTP error. Note that this only limits the number of parallel run templates that can be *started* at the same time, not the number of parallel pipeline runs.
 
     For the AWS implementation, the following additional variables are supported:

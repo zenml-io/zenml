@@ -14,10 +14,11 @@
 """Utilities for caching."""
 
 import hashlib
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Mapping, Optional
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.constants import CODE_HASH_PARAMETER_NAME
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 from zenml.orchestrators import step_run_utils
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
     from zenml.models import (
+        ArtifactVersionResponse,
         PipelineDeploymentResponse,
         PipelineRunResponse,
         StepRunResponse,
@@ -38,7 +40,7 @@ logger = get_logger(__name__)
 
 def generate_cache_key(
     step: "Step",
-    input_artifact_ids: Dict[str, "UUID"],
+    input_artifacts: Mapping[str, "ArtifactVersionResponse"],
     artifact_store: "BaseArtifactStore",
     project_id: "UUID",
 ) -> str:
@@ -61,13 +63,14 @@ def generate_cache_key(
 
     Args:
         step: The step to generate the cache key for.
-        input_artifact_ids: The input artifact IDs for the step.
+        input_artifacts: The input artifacts for the step.
         artifact_store: The artifact store of the active stack.
         project_id: The ID of the active project.
 
     Returns:
         A cache key.
     """
+    cache_policy = step.config.cache_policy
     hash_ = hashlib.md5()  # nosec
 
     # Project ID
@@ -86,15 +89,25 @@ def generate_cache_key(
     # when committing some unrelated files
     hash_.update(step.spec.source.import_path.encode())
 
-    # Step parameters
-    for key, value in sorted(step.config.parameters.items()):
-        hash_.update(key.encode())
-        hash_.update(str(value).encode())
+    if cache_policy.include_step_parameters:
+        for key, value in sorted(step.config.parameters.items()):
+            hash_.update(key.encode())
+            hash_.update(str(value).encode())
 
     # Input artifacts
-    for name, artifact_version_id in input_artifact_ids.items():
+    for name, artifact_version in input_artifacts.items():
+        if name in (cache_policy.ignored_inputs or []):
+            continue
+
         hash_.update(name.encode())
-        hash_.update(artifact_version_id.bytes)
+
+        if (
+            artifact_version.content_hash
+            and cache_policy.include_artifact_values
+        ):
+            hash_.update(artifact_version.content_hash.encode())
+        elif cache_policy.include_artifact_ids:
+            hash_.update(artifact_version.id.bytes)
 
     # Output artifacts and materializers
     for name, output in step.config.outputs.items():
@@ -104,6 +117,12 @@ def generate_cache_key(
 
     # Custom caching parameters
     for key, value in sorted(step.config.caching_parameters.items()):
+        if (
+            key == CODE_HASH_PARAMETER_NAME
+            and not cache_policy.include_step_code
+        ):
+            continue
+
         hash_.update(key.encode())
         hash_.update(str(value).encode())
 

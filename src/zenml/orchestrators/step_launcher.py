@@ -16,7 +16,6 @@
 import signal
 import time
 from contextlib import nullcontext
-from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
@@ -24,6 +23,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus
@@ -43,7 +43,7 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
-from zenml.utils import env_utils, string_utils
+from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
@@ -211,7 +211,9 @@ class StepLauncher:
 
         Raises:
             RunStoppedException: If the pipeline run is stopped by the user.
+            BaseException: If the step preparation or execution fails.
         """
+        publish_utils.step_exception_info.set(None)
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
         # Enable or disable step logs storage
@@ -269,10 +271,13 @@ class StepLauncher:
 
             try:
                 request_factory.populate_request(request=step_run_request)
-            except:
+            except BaseException as e:
                 logger.exception(f"Failed preparing step `{self._step_name}`.")
                 step_run_request.status = ExecutionStatus.FAILED
                 step_run_request.end_time = utc_now()
+                step_run_request.exception_info = (
+                    exception_utils.collect_exception_information(e)
+                )
                 raise
             finally:
                 step_run = Client().zen_store.create_run_step(step_run_request)
@@ -293,9 +298,8 @@ class StepLauncher:
                         logs_context,
                         step_logging.PipelineLogsStorageContext,
                     ):
-                        force_write_logs = partial(
-                            logs_context.storage.save_to_file,
-                            force=True,
+                        force_write_logs = (
+                            logs_context.storage.send_merge_event
                         )
                     else:
 
@@ -459,7 +463,7 @@ class StepLauncher:
                 stack=self._stack,
             )
         )
-
+        environment[ENV_ZENML_STEP_OPERATOR] = "True"
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,

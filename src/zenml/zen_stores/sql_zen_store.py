@@ -261,6 +261,7 @@ from zenml.models import (
     ServerSettingsResponse,
     ServerSettingsUpdate,
     ServiceAccountFilter,
+    ServiceAccountInternalRequest,
     ServiceAccountRequest,
     ServiceAccountResponse,
     ServiceAccountUpdate,
@@ -5419,10 +5420,15 @@ class SqlZenStore(BaseZenStore):
                     step_id = step_run.id
                     metadata["status"] = step_run.status
 
-                    if step_run.end_time and step_run.start_time:
-                        metadata["duration"] = (
-                            step_run.end_time - step_run.start_time
-                        ).total_seconds()
+                    if step_run.start_time:
+                        metadata["start_time"] = (
+                            step_run.start_time.isoformat()
+                        )
+
+                        if step_run.end_time:
+                            metadata["duration"] = (
+                                step_run.end_time - step_run.start_time
+                            ).total_seconds()
 
                 step_node = helper.add_step_node(
                     node_id=helper.get_step_node_id(name=step_name),
@@ -5710,6 +5716,8 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a run with the same name already exists or
                 a log entry with the same source already exists within the
                 scope of the same pipeline run.
+            KeyError: If the run requires a model version that doesn't exist and
+                can not be created.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
         self._get_reference_schema_by_id(
@@ -5780,9 +5788,16 @@ class SqlZenStore(BaseZenStore):
                     f"within the scope of the same pipeline run '{new_run.id}'."
                 )
 
-        if model_version_id := self._get_or_create_model_version_for_run(
-            new_run
-        ):
+        try:
+            model_version_id = self._get_or_create_model_version_for_run(
+                new_run
+            )
+        except KeyError as e:
+            session.delete(new_run)
+            session.commit()
+            raise e
+
+        if model_version_id:
             new_run.model_version_id = model_version_id
             session.add(new_run)
             session.commit()
@@ -5903,7 +5918,12 @@ class SqlZenStore(BaseZenStore):
                 )
             )
             .where(
-                PipelineRunSchema.status == ExecutionStatus.INITIALIZING.value
+                or_(
+                    PipelineRunSchema.status
+                    == ExecutionStatus.INITIALIZING.value,
+                    PipelineRunSchema.status
+                    == ExecutionStatus.PROVISIONING.value,
+                )
             )
             # In very rare cases, there can be multiple placeholder runs for
             # the same deployment. By ordering by the orchestrator_run_id, we
@@ -5963,7 +5983,12 @@ class SqlZenStore(BaseZenStore):
                 PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
             )
             .where(
-                PipelineRunSchema.status != ExecutionStatus.INITIALIZING.value
+                and_(
+                    PipelineRunSchema.status
+                    != ExecutionStatus.INITIALIZING.value,
+                    PipelineRunSchema.status
+                    != ExecutionStatus.PROVISIONING.value,
+                )
             )
         ).first()
 
@@ -6016,6 +6041,14 @@ class SqlZenStore(BaseZenStore):
                     )
                 except KeyError:
                     pass
+
+            # Acquire exclusive lock on the deployment to prevent deadlocks
+            # during insertion
+            session.exec(
+                select(PipelineDeploymentSchema.id)
+                .with_for_update()
+                .where(PipelineDeploymentSchema.id == pipeline_run.deployment)
+            )
 
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
@@ -6143,6 +6176,9 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a log entry with the same source already
                 exists within the scope of the same pipeline run.
+            IllegalOperationError: If the orchestrator run id is being updated
+                on a non-placeholder run or if the orchestrator run id is
+                already set and is different from the new orchestrator run id.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
@@ -6151,6 +6187,24 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
+
+            if run_update.orchestrator_run_id:
+                if not existing_run.is_placeholder_run():
+                    raise IllegalOperationError(
+                        "Cannot update the orchestrator run id of a pipeline "
+                        "run that is not a placeholder run."
+                    )
+
+                if (
+                    existing_run.orchestrator_run_id
+                    and existing_run.orchestrator_run_id
+                    != run_update.orchestrator_run_id
+                ):
+                    raise IllegalOperationError(
+                        "Pipeline run already has a different orchestrator run "
+                        f"id. Existing: {existing_run.orchestrator_run_id}, "
+                        f"New: {run_update.orchestrator_run_id}"
+                    )
 
             existing_run.update(run_update=run_update)
             session.add(existing_run)
@@ -7436,7 +7490,10 @@ class SqlZenStore(BaseZenStore):
 
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
     def create_service_account(
-        self, service_account: ServiceAccountRequest
+        self,
+        service_account: Union[
+            ServiceAccountRequest, ServiceAccountInternalRequest
+        ],
     ) -> ServiceAccountResponse:
         """Creates a new service account.
 

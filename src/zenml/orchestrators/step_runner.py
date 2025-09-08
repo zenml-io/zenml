@@ -16,6 +16,7 @@
 
 import copy
 import inspect
+import os
 from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
@@ -34,6 +35,7 @@ from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
 from zenml.enums import ArtifactSaveType
@@ -41,10 +43,14 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models.v2.core.step_run import StepRunInputResponse
+from zenml.models.v2.core.step_run import (
+    StepRunInputResponse,
+    StepRunUpdate,
+)
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
     publish_successful_step_run,
+    step_exception_info,
 )
 from zenml.orchestrators.utils import (
     is_setting_enabled,
@@ -57,6 +63,7 @@ from zenml.steps.utils import (
 )
 from zenml.utils import (
     env_utils,
+    exception_utils,
     materializer_utils,
     source_utils,
     string_utils,
@@ -208,6 +215,24 @@ class StepRunner:
                     )
             except BaseException as step_exception:  # noqa: E722
                 step_failed = True
+
+                exception_info = exception_utils.collect_exception_information(
+                    step_exception, step_instance
+                )
+
+                if ENV_ZENML_STEP_OPERATOR in os.environ:
+                    # We're running in a step operator environment, so we can't
+                    # depend on the step launcher to publish the exception info
+                    Client().zen_store.update_run_step(
+                        step_run_id=step_run_info.step_run_id,
+                        step_run_update=StepRunUpdate(
+                            exception_info=exception_info,
+                        ),
+                    )
+                else:
+                    # This will be published by the step launcher
+                    step_exception_info.set(exception_info)
+
                 if not step_run.is_retriable:
                     if (
                         failure_hook_source

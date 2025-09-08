@@ -35,7 +35,11 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import RunMonitoringError, RunStoppedException
+from zenml.exceptions import (
+    IllegalOperationError,
+    RunMonitoringError,
+    RunStoppedException,
+)
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
@@ -50,7 +54,12 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import (
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+        ScheduleResponse,
+        ScheduleUpdate,
+    )
 
 logger = get_logger(__name__)
 
@@ -325,6 +334,11 @@ class BaseOrchestrator(StackComponent, ABC):
                     step_environments=step_environments,
                     placeholder_run=placeholder_run,
                 )
+                if placeholder_run:
+                    publish_pipeline_run_status_update(
+                        pipeline_run_id=placeholder_run.id,
+                        status=ExecutionStatus.PROVISIONING,
+                    )
 
                 if submission_result:
                     if submission_result.metadata:
@@ -498,6 +512,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
                 class does not implement this logic.
+            IllegalOperationError: If the run has no orchestrator run id yet.
         """
         # Check if the orchestrator supports cancellation
         if (
@@ -509,10 +524,17 @@ class BaseOrchestrator(StackComponent, ABC):
                 "support stopping pipeline runs."
             )
 
+        if not run.orchestrator_run_id:
+            raise IllegalOperationError(
+                "Cannot stop a pipeline run that has no orchestrator run id "
+                "yet."
+            )
+
         # Update pipeline status to STOPPING before calling concrete implementation
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
+            status_reason="Manual stop requested.",
         )
 
         # Now call the concrete implementation
@@ -537,6 +559,61 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         raise NotImplementedError(
             "The stop run functionality is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
+
+    @property
+    def supports_schedule_updates(self) -> bool:
+        """Whether the orchestrator supports updating schedules.
+
+        Returns:
+            Whether the orchestrator supports updating schedules.
+        """
+        return (
+            getattr(self.update_schedule, "__func__", None)
+            is not BaseOrchestrator.update_schedule
+        )
+
+    @property
+    def supports_schedule_deletion(self) -> bool:
+        """Whether the orchestrator supports deleting schedules.
+
+        Returns:
+            Whether the orchestrator supports deleting schedules.
+        """
+        return (
+            getattr(self.delete_schedule, "__func__", None)
+            is not BaseOrchestrator.delete_schedule
+        )
+
+    def update_schedule(
+        self, schedule: "ScheduleResponse", update: "ScheduleUpdate"
+    ) -> None:
+        """Updates a schedule.
+
+        Args:
+            schedule: The schedule to update.
+            update: The update to apply to the schedule.
+
+        Raises:
+            NotImplementedError: If the functionality is not implemented.
+        """
+        raise NotImplementedError(
+            "Schedule updating is not implemented for the "
+            f"'{self.__class__.__name__}' orchestrator."
+        )
+
+    def delete_schedule(self, schedule: "ScheduleResponse") -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule: The schedule to delete.
+
+        Raises:
+            NotImplementedError: If the functionality is not implemented.
+        """
+        raise NotImplementedError(
+            "Schedule deletion is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."
         )
 

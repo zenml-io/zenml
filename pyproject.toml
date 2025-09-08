@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.84.0"
+version = "0.84.3"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -43,7 +43,7 @@ zenml = "zenml.cli.cli:cli"
 [tool.poetry.dependencies]
 alembic = { version = ">=1.8.1,<=1.15.2" }
 bcrypt = { version = "4.0.1" }
-click = "^8.0.1,<8.1.8"
+click = "^8.0.1,<=8.2.1"
 cloudpickle = ">=2.0.0,<3"
 distro = "^1.6.0"
 docker = "~7.1.0"
@@ -168,7 +168,7 @@ types-certifi = { version = "^2021.10.8.0", optional = true }
 types-croniter = { version = "^1.0.2", optional = true }
 types-futures = { version = "^3.3.1", optional = true }
 types-Markdown = { version = "^3.3.6", optional = true }
-types-paramiko = { version = ">=3.4.0", optional = true }
+types-paramiko = { version = ">=3.4.0,<4.0.0", optional = true }
 types-Pillow = { version = "^9.2.1", optional = true }
 types-protobuf = { version = "^3.18.0", optional = true }
 types-PyMySQL = { version = "^1.0.4", optional = true }
@@ -491,5 +491,6 @@ module = [
     "vllm.*",
     "numba.*",
     "uvloop.*",
+    "litellm",
 ]
 ignore_missing_imports = true

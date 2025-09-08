@@ -19,6 +19,7 @@ from uuid import UUID
 
 from pydantic import SerializeAsAny, field_validator
 
+from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
@@ -54,6 +55,7 @@ class PipelineConfigurationUpdate(FrozenBaseModel):
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
     substitutions: Dict[str, str] = {}
+    cache_policy: Optional[CachePolicyWithValidator] = None
 
     def finalize_substitutions(
         self, start_time: Optional[datetime] = None, inplace: bool = False

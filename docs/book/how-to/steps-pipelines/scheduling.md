@@ -56,9 +56,22 @@ Check out our [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-con
 
 ### Update/Pause/Stop a schedule
 
-The way pipelines are scheduled depends on the orchestrator you are using. For example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause a scheduled run. However, the exact steps for stopping or pausing a scheduled run may vary depending on the orchestrator you are using. We recommend consulting the documentation for your orchestrator to learn the current method for stopping or pausing a scheduled run.
+You can update or delete your schedules using the following CLI commands:
+```bash
+# Update the cron expression of the schedule
+zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='* * * * *'
 
-The normal pattern for updating a schedule is:
+# Delete a schedule
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+```
+
+The functionality of these commands changes depending on whether the orchestrator that is running the schedule
+supports schedule updates/deletions:
+- If the orchestrator supports it, this will update/delete the actual schedule as well as the schedule information stored in ZenML
+- If the orchestrator does not support it, this will only update/delete the schedule information stored in ZenML
+
+If the orchestrator **does not** support schedule management, maintaining the lifecycle of the schedule is the responsibility of the user.
+In these cases, we recommend the following steps:
 
 1. Find schedule on ZenML
 2. Match schedule on orchestrator side and delete
@@ -66,8 +79,3 @@ The normal pattern for updating a schedule is:
 4. Re-run pipeline with new schedule
 
 A concrete example can be found on the [GCP Vertex orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex) docs, and this pattern can be adapted for other orchestrators as well.
-
-
-{% hint style="warning" %}
-Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule (as explained above) is the responsibility of the user. If you run a pipeline containing a schedule two times, two scheduled pipelines (with different/unique names) will be created.
-{% endhint %}
