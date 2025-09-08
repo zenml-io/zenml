@@ -3979,6 +3979,7 @@ class Client(metaclass=ClientMetaClass):
         model: Optional[Union[UUID, str]] = None,
         stack: Optional[Union[UUID, str]] = None,
         stack_component: Optional[Union[UUID, str]] = None,
+        in_progress: Optional[bool] = None,
         hydrate: bool = False,
         include_full_metadata: bool = False,
     ) -> Page[PipelineRunResponse]:
@@ -4060,6 +4061,7 @@ class Client(metaclass=ClientMetaClass):
             stack=stack,
             model=model,
             stack_component=stack_component,
+            in_progress=in_progress,
             templatable=templatable,
         )
         return self.zen_store.list_runs(
