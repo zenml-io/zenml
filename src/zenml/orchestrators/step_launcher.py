@@ -184,8 +184,14 @@ class StepLauncher:
                         )
                     raise RunStoppedException("Pipeline run is stopped.")
 
+                step_run = client.get_run_step(
+                    self._step_run.id, 
+                    hydrate=False
+                )
+
                 if (
                     pipeline_run.status == ExecutionStatus.FAILED
+                    and step_run.status == ExecutionStatus.RUNNING
                     and self._deployment.pipeline_configuration.execution_mode
                     == ExecutionMode.FAIL_FAST
                 ):
@@ -194,16 +200,17 @@ class StepLauncher:
                         status=ExecutionStatus.STOPPED,
                         end_time=utc_now(),
                     )
+                    raise RunStoppedException(
+                        "Step run was stopped due to a failure in the pipeline "
+                        "run and the execution mode 'FAIL_FAST'."
+                    )
 
-                elif step_run := client.get_run_step(
-                    self._step_run.id, hydrate=False
-                ):
-                    if step_run.status == ExecutionStatus.STOPPING:
-                        publish_utils.publish_step_run_status_update(
-                            step_run_id=step_run.id,
-                            status=ExecutionStatus.STOPPED,
-                            end_time=utc_now(),
-                        )
+                elif step_run.status == ExecutionStatus.STOPPING:
+                    publish_utils.publish_step_run_status_update(
+                        step_run_id=step_run.id,
+                        status=ExecutionStatus.STOPPED,
+                        end_time=utc_now(),
+                    )
                     raise RunStoppedException("Pipeline run is stopped.")
                 else:
                     raise RunInterruptedException(
