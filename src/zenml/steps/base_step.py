@@ -862,7 +862,8 @@ class BaseStep:
             config: The configuration update to validate.
             runtime_parameters: Dictionary of parameters passed to a step from runtime
         """
-        settings_utils.validate_setting_keys(list(config.settings))
+        if config.settings:
+            settings_utils.validate_setting_keys(list(config.settings))
         self._validate_function_parameters(
             parameters=config.parameters, runtime_parameters=runtime_parameters
         )
@@ -870,7 +871,7 @@ class BaseStep:
 
     def _validate_function_parameters(
         self,
-        parameters: Dict[str, Any],
+        parameters: Optional[Dict[str, Any]],
         runtime_parameters: Dict[str, Any],
     ) -> None:
         """Validates step function parameters.

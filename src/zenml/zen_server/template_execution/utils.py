@@ -461,8 +461,9 @@ def deployment_request_from_template(
     )
 
     steps = {}
+    step_config_updates = config.steps or {}
     for invocation_id, step in deployment.step_configurations.items():
-        step_update = config.steps.get(
+        step_update = step_config_updates.get(
             invocation_id, StepConfigurationUpdate()
         ).model_dump(
             # Get rid of deprecated name to prevent overriding the step name

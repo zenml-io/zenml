@@ -268,16 +268,18 @@ def validate_run_config_is_runnable_from_server(
             "Can't set schedule when running pipeline via Rest API."
         )
 
-    if run_configuration.settings.get("docker"):
+    if run_configuration.settings and run_configuration.settings.get("docker"):
         raise ValueError(
             "Can't set DockerSettings when running pipeline via Rest API."
         )
 
-    for step_update in run_configuration.steps.values():
-        if step_update.settings.get("docker"):
-            raise ValueError(
-                "Can't set DockerSettings when running pipeline via Rest API."
-            )
+    if run_configuration.steps:
+        for step_update in run_configuration.steps.values():
+            if step_update.settings and step_update.settings.get("docker"):
+                raise ValueError(
+                    "Can't set DockerSettings when running pipeline via "
+                    "Rest API."
+                )
 
 
 def upload_notebook_cell_code_if_necessary(
