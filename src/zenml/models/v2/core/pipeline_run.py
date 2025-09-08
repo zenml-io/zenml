@@ -491,7 +491,7 @@ class PipelineRunResponse(
         return self.get_metadata().end_time
 
     @property
-    def in_progress(self) -> Optional[bool]:
+    def in_progress(self) -> bool:
         """The `in_progress` property.
 
         Returns:

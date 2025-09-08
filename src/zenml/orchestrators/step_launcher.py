@@ -186,7 +186,7 @@ class StepLauncher:
                 elif step_run := client.get_run_step(
                     self._step_run.id, hydrate=False
                 ):
-                    if step_run.status in ExecutionStatus.STOPPING:
+                    if step_run.status == ExecutionStatus.STOPPING:
                         publish_utils.publish_step_run_status_update(
                             step_run_id=step_run.id,
                             status=ExecutionStatus.STOPPED,
