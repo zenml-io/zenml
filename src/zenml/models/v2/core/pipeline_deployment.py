@@ -75,6 +75,24 @@ class PipelineDeploymentBase(BaseZenModel):
         default=None,
         title="The pipeline spec of the deployment.",
     )
+    # Canonical capture fields (single source of truth at runtime)
+    capture_memory_only: bool = Field(
+        default=False,
+        title="Serving-only: execute in memory without persistence.",
+    )
+    capture_code: bool = Field(
+        default=True, title="Capture code/source/docstrings in metadata."
+    )
+    capture_logs: bool = Field(default=True, title="Persist step logs.")
+    capture_metadata: bool = Field(
+        default=True, title="Publish run/step metadata."
+    )
+    capture_visualizations: bool = Field(
+        default=True, title="Persist artifact visualizations."
+    )
+    capture_metrics: bool = Field(
+        default=True, title="Emit runtime metrics (realtime)."
+    )
 
     @property
     def should_prevent_build_reuse(self) -> bool:
@@ -164,6 +182,24 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
     code_path: Optional[str] = Field(
         default=None,
         title="Optional path where the code is stored in the artifact store.",
+    )
+    # Canonical capture fields (mirrored on response)
+    capture_memory_only: bool = Field(
+        default=False,
+        title="Serving-only: execute in memory without persistence.",
+    )
+    capture_code: bool = Field(
+        default=True, title="Capture code/source/docstrings in metadata."
+    )
+    capture_logs: bool = Field(default=True, title="Persist step logs.")
+    capture_metadata: bool = Field(
+        default=True, title="Publish run/step metadata."
+    )
+    capture_visualizations: bool = Field(
+        default=True, title="Persist artifact visualizations."
+    )
+    capture_metrics: bool = Field(
+        default=True, title="Emit runtime metrics (realtime)."
     )
 
     pipeline: Optional[PipelineResponse] = Field(

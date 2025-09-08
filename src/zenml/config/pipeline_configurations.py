@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pydantic import SerializeAsAny, field_validator
 
+from zenml.capture.config import Capture
 from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
@@ -43,6 +44,8 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     enable_pipeline_logs: Optional[bool] = None
+    # Capture configuration (typed only)
+    capture: Optional[Capture] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
@@ -86,6 +89,18 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
+
+    @field_validator("capture")
+    @classmethod
+    def validate_capture_mode(
+        cls, value: Optional[Capture]
+    ) -> Optional[Capture]:
+        """Validates the capture config (typed only)."""
+        if value is None:
+            return value
+        if isinstance(value, Capture):
+            return value
+        raise ValueError("'capture' must be a typed Capture.")
 
     @field_validator("name")
     @classmethod

@@ -25,6 +25,7 @@ from typing import (
     overload,
 )
 
+from zenml.capture.config import Capture
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -63,6 +64,7 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    capture: Optional[Capture] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
@@ -85,6 +87,7 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    capture: Optional[Capture] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
@@ -116,6 +119,7 @@ def pipeline(
         model: configuration of the model in the Model Control Plane.
         retry: Retry configuration for the pipeline steps.
         substitutions: Extra placeholders to use in the name templates.
+        capture: Capture policy for the pipeline (typed only).
         cache_policy: Cache policy for this pipeline.
 
     Returns:
@@ -142,6 +146,7 @@ def pipeline(
             model=model,
             retry=retry,
             substitutions=substitutions,
+            capture=capture,
             cache_policy=cache_policy,
         )
 

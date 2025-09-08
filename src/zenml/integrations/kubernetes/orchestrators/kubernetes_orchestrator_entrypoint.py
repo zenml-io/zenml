@@ -317,10 +317,19 @@ def main() -> None:
             for owner_reference in owner_references:
                 owner_reference.controller = False
 
+        # Build a runtime for request factory (batch context)
+        try:
+            from zenml.execution.factory import get_runtime
+
+            _runtime = get_runtime(serving=False, memory_only=False)
+        except Exception:
+            _runtime = None
+
         step_run_request_factory = StepRunRequestFactory(
             deployment=deployment,
             pipeline_run=pipeline_run,
             stack=active_stack,
+            runtime=_runtime,
         )
         step_runs = {}
 

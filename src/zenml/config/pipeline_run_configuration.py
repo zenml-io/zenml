@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import Field, SerializeAsAny
 
+from zenml.capture.config import Capture
 from zenml.config.base_settings import BaseSettings
 from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.retry_config import StepRetryConfig
@@ -69,6 +70,11 @@ class PipelineRunConfiguration(
         default=None,
         union_mode="left_to_right",
         description="The build to use for the pipeline run.",
+    )
+    # Optional typed capture override per run (no dicts/strings)
+    capture: Optional[Capture] = Field(
+        default=None,
+        description="The capture to use for the pipeline run.",
     )
     steps: Optional[Dict[str, StepConfigurationUpdate]] = Field(
         default=None,

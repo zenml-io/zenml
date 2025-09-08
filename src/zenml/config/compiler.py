@@ -26,6 +26,7 @@ from typing import (
 )
 
 from zenml import __version__
+from zenml.capture.config import Capture
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -150,6 +151,26 @@ class Compiler:
             pipeline_spec=pipeline_spec,
         )
 
+        # Populate canonical capture fields from typed pipeline configuration
+        cap: Optional[Capture] = pipeline.configuration.capture
+        mem_only = bool(getattr(cap, "memory_only", False)) if cap else False
+        code = bool(getattr(cap, "code", True)) if cap else True
+        logs = bool(getattr(cap, "logs", True)) if cap else True
+        metadata_enabled = (
+            bool(getattr(cap, "metadata", True)) if cap else True
+        )
+        visuals = bool(getattr(cap, "visualizations", True)) if cap else True
+        metrics = bool(getattr(cap, "metrics", True)) if cap else True
+        try:
+            setattr(deployment, "capture_memory_only", mem_only)
+            setattr(deployment, "capture_code", code)
+            setattr(deployment, "capture_logs", logs)
+            setattr(deployment, "capture_metadata", metadata_enabled)
+            setattr(deployment, "capture_visualizations", visuals)
+            setattr(deployment, "capture_metrics", metrics)
+        except Exception:
+            pass
+
         logger.debug("Compiled pipeline deployment: %s", deployment)
 
         return deployment
@@ -202,6 +223,7 @@ class Compiler:
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
                 enable_pipeline_logs=config.enable_pipeline_logs,
+                capture=config.capture,
                 settings=config.settings,
                 tags=config.tags,
                 extra=config.extra,

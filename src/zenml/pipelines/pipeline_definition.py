@@ -42,6 +42,7 @@ from typing_extensions import Self
 from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
+from zenml.capture.config import Capture
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -149,6 +150,7 @@ class Pipeline:
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        capture: Optional[Capture] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
     ) -> None:
         """Initializes a pipeline.
@@ -182,6 +184,7 @@ class Pipeline:
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
+            capture: Capture configuration for the pipeline (typed only).
             cache_policy: Cache policy for this pipeline.
         """
         self._invocations: Dict[str, StepInvocation] = {}
@@ -208,6 +211,7 @@ class Pipeline:
                 model=model,
                 retry=retry,
                 substitutions=substitutions,
+                capture=capture,
                 cache_policy=cache_policy,
             )
         self.entrypoint = entrypoint
@@ -334,6 +338,7 @@ class Pipeline:
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
+        capture: Optional[Capture] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
     ) -> Self:
         """Configures the pipeline.
@@ -381,6 +386,7 @@ class Pipeline:
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
+            capture: Capture configuration for the pipeline (typed only).
             cache_policy: Cache policy for this pipeline.
 
         Returns:
@@ -411,6 +417,9 @@ class Pipeline:
             # merges dicts
             tags = self._configuration.tags + tags
 
+        # Directly store typed capture config
+        cap_norm = capture
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -429,6 +438,7 @@ class Pipeline:
                 "retry": retry,
                 "parameters": parameters,
                 "substitutions": substitutions,
+                "capture": cap_norm,
                 "cache_policy": cache_policy,
             }
         )

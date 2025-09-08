@@ -53,6 +53,9 @@
 * [Models](how-to/models/models.md)
 * [Templates](how-to/templates/templates.md)
 * [Dashboard](how-to/dashboard/dashboard-features.md)
+* Serving
+  * [Pipeline Serving Overview](serving/overview.md)
+  * [Capture Policy & Runtimes (Advanced)](serving/advanced/capture-and-runtime.md)
 * [Serving Pipelines](how-to/serving/serving.md)
 * [Pipeline Serving Capture Policies](how-to/serving/capture-policies.md)
 
