@@ -222,7 +222,6 @@ Analysis: Rule-based AI (LLM unavailable)"""
             "generate_auth_key": True,
         },
         "deployer.aws": {
-            "allow_unauthenticated": True,
             "generate_auth_key": True,
         },
         "resources": ResourceSettings(

@@ -149,6 +149,11 @@ class BaseDeployer(StackComponent, ABC):
             The updated pipeline endpoint.
         """
         client = Client()
+        if operational_state.status == PipelineEndpointStatus.ABSENT:
+            # Erase the URL and metadata for absent endpoints
+            operational_state.url = ""
+            operational_state.metadata = {}
+
         return client.zen_store.update_pipeline_endpoint(
             endpoint.id,
             PipelineEndpointUpdate.from_operational_state(operational_state),

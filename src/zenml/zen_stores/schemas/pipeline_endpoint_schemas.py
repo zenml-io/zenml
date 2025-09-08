@@ -220,10 +220,10 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             The updated `PipelineEndpointSchema`.
         """
         for field, value in update.model_dump(
-            exclude_unset=True,
+            exclude_unset=True, exclude_none=True
         ).items():
             if field == "endpoint_metadata":
-                setattr(self, field, json.dumps(value or {}))
+                setattr(self, field, json.dumps(value))
             elif hasattr(self, field):
                 setattr(self, field, value)
 

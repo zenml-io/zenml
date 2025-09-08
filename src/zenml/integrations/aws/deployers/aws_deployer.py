@@ -1069,30 +1069,33 @@ class AWSDeployer(ContainerizedDeployer):
             metadata=metadata.model_dump(exclude_none=True),
         )
 
-        # Map App Runner service status to ZenML status
+        # Map App Runner service status to ZenML status. Valid values are:
+        # - CREATE_FAILED
+        # - DELETE_FAILED
+        # - RUNNING
+        # - DELETED
+        # - PAUSED
+        # - OPERATION_IN_PROGRESS
         service_status = service.get("Status", "").upper()
 
         if service_status in [
             "CREATE_FAILED",
-            "UPDATE_FAILED",
             "DELETE_FAILED",
         ]:
             state.status = PipelineEndpointStatus.ERROR
-        elif service_status in ["CREATING", "UPDATING"]:
+        elif service_status == "OPERATION_IN_PROGRESS":
             state.status = PipelineEndpointStatus.PENDING
         elif service_status == "RUNNING":
             state.status = PipelineEndpointStatus.RUNNING
             state.url = service.get("ServiceUrl")
             if state.url and not state.url.startswith("https://"):
                 state.url = f"https://{state.url}"
-        elif service_status in ["DELETING"]:
-            state.status = PipelineEndpointStatus.PENDING
-        elif service_status in ["DELETED"]:
+        elif service_status == "DELETED":
             state.status = PipelineEndpointStatus.ABSENT
         elif service_status == "PAUSED":
             state.status = (
-                PipelineEndpointStatus.ERROR
-            )  # Treat paused as error for now
+                PipelineEndpointStatus.PENDING
+            )  # Treat paused as pending for now
         else:
             state.status = PipelineEndpointStatus.UNKNOWN
 
