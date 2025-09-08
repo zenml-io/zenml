@@ -36,6 +36,7 @@ class PipelineRunConfiguration(
     StrictBaseModel, pydantic_utils.YAMLSerializationMixin
 ):
     """Class for pipeline run configurations."""
+
     run_name: Optional[str] = Field(
         default=None, description="The name of the pipeline run."
     )
@@ -71,7 +72,7 @@ class PipelineRunConfiguration(
         description="The build to use for the pipeline run.",
     )
     # Optional typed capture override per run (no dicts/strings)
-    capture: Optional[Capture] =Field(
+    capture: Optional[Capture] = Field(
         default=None,
         description="The capture to use for the pipeline run.",
     )
