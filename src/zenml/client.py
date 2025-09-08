@@ -195,7 +195,7 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
-from zenml.utils import io_utils, source_utils
+from zenml.utils import dict_utils, io_utils, source_utils
 from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -1321,6 +1321,7 @@ class Client(metaclass=ClientMetaClass):
         ] = None,
         add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
+        environment: Optional[Dict[str, Any]] = None,
     ) -> StackResponse:
         """Updates a stack and its components.
 
@@ -1334,6 +1335,9 @@ class Client(metaclass=ClientMetaClass):
                 lists of new stack component names or ids.
             add_secrets: The secrets to add to the stack.
             remove_secrets: The secrets to remove from the stack.
+            environment: The environment to set on the stack. If the value for
+                any item is None, the key will be removed from the existing
+                environment.
 
         Returns:
             The model of the updated stack.
@@ -1396,6 +1400,14 @@ class Client(metaclass=ClientMetaClass):
 
         if remove_secrets:
             update_model.remove_secrets = list(remove_secrets)
+
+        if environment:
+            environment = {
+                **stack.environment,
+                **environment,
+            }
+            environment = dict_utils.remove_none_values(environment)
+            update_model.environment = environment
 
         updated_stack = self.zen_store.update_stack(
             stack_id=stack.id,
@@ -1988,6 +2000,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Dict[str, str],
         labels: Optional[Dict[str, Any]] = None,
         secrets: Optional[Sequence[Union[UUID, str]]] = None,
+        environment: Optional[Dict[str, Any]] = None,
     ) -> "ComponentResponse":
         """Registers a stack component.
 
@@ -1998,6 +2011,7 @@ class Client(metaclass=ClientMetaClass):
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
             secrets: The secrets of the stack component.
+            environment: The environment of the stack component.
 
         Returns:
             The model of the registered component.
@@ -2028,6 +2042,7 @@ class Client(metaclass=ClientMetaClass):
             ),
             labels=labels,
             secrets=secrets,
+            environment=environment,
         )
 
         # Register the new model
@@ -2047,6 +2062,7 @@ class Client(metaclass=ClientMetaClass):
         connector_resource_id: Optional[str] = None,
         add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
+        environment: Optional[Dict[str, str]] = None,
     ) -> ComponentResponse:
         """Updates a stack component.
 
@@ -2064,6 +2080,9 @@ class Client(metaclass=ClientMetaClass):
                 stack component.
             add_secrets: The secrets to add to the stack component.
             remove_secrets: The secrets to remove from the stack component.
+            environment: The environment to set on the stack component. If the
+                value for any item is None, the key will be removed from the
+                existing environment.
 
         Returns:
             The updated stack component.
@@ -2153,6 +2172,14 @@ class Client(metaclass=ClientMetaClass):
 
         if remove_secrets:
             update_model.remove_secrets = list(remove_secrets)
+
+        if environment:
+            environment = {
+                **component.environment,
+                **environment,
+            }
+            environment = dict_utils.remove_none_values(environment)
+            update_model.environment = environment
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(

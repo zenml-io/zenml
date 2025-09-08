@@ -14,6 +14,7 @@
 """Functionality to generate stack component CLI commands."""
 
 import time
+from ast import Dict
 from importlib import import_module
 from typing import Any, Callable, List, Optional, Tuple, cast
 from uuid import UUID
@@ -240,6 +241,15 @@ def generate_stack_component_register_command(
         required=False,
         multiple=True,
     )
+    @click.option(
+        "--env",
+        "environment_variables",
+        help="Environment variables to set when running on this component. "
+        "Must be of the format 'KEY=VALUE'.",
+        type=str,
+        required=False,
+        multiple=True,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
         name: str,
@@ -249,6 +259,7 @@ def generate_stack_component_register_command(
         connector: Optional[str] = None,
         resource_id: Optional[str] = None,
         secrets: List[str] = [],
+        environment_variables: List[str] = [],
     ) -> None:
         """Registers a stack component.
 
@@ -279,6 +290,11 @@ def generate_stack_component_register_command(
                     f"Could not find a connector '{connector}': {str(err)}"
                 )
 
+        environment: Dict[str, str] = {}
+        for environment_variable in environment_variables:
+            key, value = environment_variable.split("=", 1)
+            environment[key] = value
+
         with console.status(f"Registering {display_name} '{name}'...\n"):
             # Create a new stack component model
             component = client.create_stack_component(
@@ -288,6 +304,7 @@ def generate_stack_component_register_command(
                 configuration=parsed_args,
                 labels=parsed_labels,
                 secrets=secrets,
+                environment=environment,
             )
 
             cli_utils.declare(
@@ -350,6 +367,16 @@ def generate_stack_component_update_command(
         required=False,
         multiple=True,
     )
+    @click.option(
+        "--env",
+        "environment_variables",
+        help="Environment variables to set when running on this component. "
+        "Must be of the format 'KEY=VALUE'. To remove an environment variable "
+        "from the component, use an empty value, e.g. 'KEY='",
+        type=str,
+        required=False,
+        multiple=True,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
         name_id_or_prefix: Optional[str],
@@ -357,6 +384,7 @@ def generate_stack_component_update_command(
         labels: Optional[List[str]] = None,
         secrets: List[str] = [],
         remove_secrets: List[str] = [],
+        environment_variables: List[str] = [],
     ) -> None:
         """Updates a stack component.
 
@@ -366,6 +394,8 @@ def generate_stack_component_update_command(
             labels: Labels to be associated with the component.
             secrets: Secrets to attach to the component.
             remove_secrets: Secrets to remove from the component.
+            environment_variables: Environment variables to set when running
+                on this component.
         """
         client = Client()
 
@@ -382,6 +412,13 @@ def generate_stack_component_update_command(
 
         parsed_labels = cli_utils.get_parsed_labels(labels)
 
+        environment: Dict[str, str] = {}
+        for environment_variable in environment_variables:
+            key, value = environment_variable.split("=", 1)
+            # Fallback to None if the value is empty so the existing environment
+            # variable is removed
+            environment[key] = value or None
+
         with console.status(f"Updating {display_name}...\n"):
             try:
                 updated_component = client.update_stack_component(
@@ -391,6 +428,7 @@ def generate_stack_component_update_command(
                     labels=parsed_labels,
                     add_secrets=secrets,
                     remove_secrets=remove_secrets,
+                    environment=environment,
                 )
             except KeyError as err:
                 cli_utils.error(str(err))
