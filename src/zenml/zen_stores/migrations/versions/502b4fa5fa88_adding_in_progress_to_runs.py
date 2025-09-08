@@ -1,7 +1,7 @@
 """adding in_progress to runs [502b4fa5fa88].
 
 Revision ID: 502b4fa5fa88
-Revises: aae4eed923b5
+Revises: 83ef3cb746a5
 Create Date: 2025-09-03 14:49:39.767249
 
 """
@@ -13,7 +13,7 @@ from zenml.enums import ExecutionStatus
 
 # revision identifiers, used by Alembic.
 revision = "502b4fa5fa88"
-down_revision = "aae4eed923b5"
+down_revision = "83ef3cb746a5"
 branch_labels = None
 depends_on = None
 
