@@ -443,7 +443,7 @@ def run_logs(
 ) -> List[LogEntry]:
     """Get log entries for efficient pagination.
 
-    This endpoint returns the log entries for the requested page.
+    This endpoint returns the log entries.
 
     Args:
         run_id: ID of the pipeline run.
@@ -475,8 +475,6 @@ def run_logs(
             for line in workload_logs.split("\n"):
                 if log_record := parse_log_entry(line):
                     log_entries.append(log_record)
-
-                log_entries.append(log_record)
 
                 if len(log_entries) >= MAX_ENTRIES_PER_REQUEST:
                     break
