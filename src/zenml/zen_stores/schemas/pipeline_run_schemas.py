@@ -632,11 +632,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The updated `PipelineRunSchema`.
         """
         if run_update.status:
-            self.status = run_update.status.value
-
-            if run_update.status.is_finished:
-                self.end_time = run_update.end_time
-
             if (
                 run_update.status == ExecutionStatus.PROVISIONING
                 and self.status != ExecutionStatus.INITIALIZING.value
