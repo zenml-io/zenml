@@ -4020,6 +4020,7 @@ class Client(metaclass=ClientMetaClass):
             model: Filter by model name/ID.
             stack: Filter by stack name/ID.
             stack_component: Filter by stack component name/ID.
+            in_progress: Filter by in_progress.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             include_full_metadata: If True, include metadata of all steps in
