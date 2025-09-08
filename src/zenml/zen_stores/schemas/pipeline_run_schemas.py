@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -43,6 +43,10 @@ from zenml.models import (
     RunMetadataEntry,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
+from zenml.utils.run_utils import (
+    build_dag_with_downstream_steps,
+    find_all_downstream_steps,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -758,77 +762,39 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     # Get all steps
                     steps = self.get_steps()
 
-                    # Build a reverse DAG (step_name -> list of downstream steps)
-                    reverse_dag: Dict[str, List[str]] = {}
-                    for step in steps:
-                        step_name = step.config.name
-                        reverse_dag[step_name] = []
+                    # Build a reverse DAG (step_name -> set of downstream steps)
+                    dag = build_dag_with_downstream_steps(steps)
 
-                    for step in steps:
-                        step_name = step.config.name
-                        upstream_steps = step.spec.upstream_steps
-                        for upstream_step in upstream_steps:
-                            if upstream_step in reverse_dag:
-                                reverse_dag[upstream_step].append(step_name)
-
-                    # Find all failed steps
-                    failed_steps = set()
-                    step_run_statuses = {
-                        sr.name: ExecutionStatus(sr.status)
-                        for sr in self.step_runs
+                    # Fetch all failed steps
+                    failed_steps = {
+                        s.name
+                        for s in self.step_runs
+                        if ExecutionStatus(s.status).is_failed
                     }
 
-                    for step_run in self.step_runs:
-                        if ExecutionStatus(step_run.status).is_failed:
-                            failed_steps.add(step_run.name)
-
-                    # Recursively find all downstream steps of failed steps
-                    def find_all_downstream_steps(
-                        step_name: str, visited: Set[str]
-                    ) -> Set[str]:
-                        """Find all downstream steps of a given step.
-
-                        Args:
-                            step_name: The name of the step to find the downstream steps of.
-                            visited: The set of steps that have already been visited.
-
-                        Returns:
-                            The set of downstream steps.
-                        """
-                        if step_name in visited:
-                            return set()
-                        visited.add(step_name)
-
-                        downstream = set()
-                        for downstream_step in reverse_dag.get(step_name, []):
-                            downstream.add(downstream_step)
-                            downstream.update(
-                                find_all_downstream_steps(
-                                    downstream_step, visited
-                                )
-                            )
-                        return downstream
-
-                    # Get all steps that should be skipped (failed + their downstream)
-                    skipped_steps = set(failed_steps)
+                    # Find all downstream steps of failed steps
+                    steps_to_skip = set()
                     for failed_step in failed_steps:
-                        skipped_steps.update(
-                            find_all_downstream_steps(failed_step, set())
+                        steps_to_skip.update(
+                            find_all_downstream_steps(failed_step, dag)
                         )
 
                     # Check if all non-skipped steps are finished
-                    all_step_names = {step.config.name for step in steps}
-                    remaining_steps = all_step_names - skipped_steps
+                    for step in steps:
+                        # If it is a downstream step of a failed step, skip
+                        if step.config.name in steps_to_skip:
+                            continue
 
-                    for step_name in remaining_steps:
-                        if step_name in step_run_statuses:
-                            if not step_run_statuses[step_name].is_finished:
-                                return False
-                        else:
-                            # Step hasn't started yet
-                            return False
+                        # If it is not in the step runs yet
+                        if step.config.name not in self.step_runs:
+                            return True
+                        # Else, check if it is finished
+                        elif not ExecutionStatus(
+                            self.step_runs[step.config.name].status
+                        ).is_finished:
+                            return True
 
-                    return True
+                    return False
                 else:
                     # No deployment, fallback to basic check
                     in_progress = any(
