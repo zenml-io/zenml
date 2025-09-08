@@ -6058,7 +6058,12 @@ class SqlZenStore(BaseZenStore):
                 )
             )
             .where(
-                PipelineRunSchema.status == ExecutionStatus.INITIALIZING.value
+                or_(
+                    PipelineRunSchema.status
+                    == ExecutionStatus.INITIALIZING.value,
+                    PipelineRunSchema.status
+                    == ExecutionStatus.PROVISIONING.value,
+                )
             )
             # In very rare cases, there can be multiple placeholder runs for
             # the same deployment. By ordering by the orchestrator_run_id, we
@@ -6118,7 +6123,12 @@ class SqlZenStore(BaseZenStore):
                 PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
             )
             .where(
-                PipelineRunSchema.status != ExecutionStatus.INITIALIZING.value
+                and_(
+                    PipelineRunSchema.status
+                    != ExecutionStatus.INITIALIZING.value,
+                    PipelineRunSchema.status
+                    != ExecutionStatus.PROVISIONING.value,
+                )
             )
         ).first()
 

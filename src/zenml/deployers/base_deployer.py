@@ -22,6 +22,7 @@ from typing import (
     Dict,
     Generator,
     Optional,
+    Tuple,
     Type,
     Union,
     cast,
@@ -37,7 +38,6 @@ from zenml.constants import (
 from zenml.deployers.exceptions import (
     DeployerError,
     PipelineEndpointAlreadyExistsError,
-    PipelineEndpointDeletionTimeoutError,
     PipelineEndpointDeployerMismatchError,
     PipelineEndpointDeploymentError,
     PipelineEndpointDeploymentMismatchError,
@@ -149,6 +149,11 @@ class BaseDeployer(StackComponent, ABC):
             The updated pipeline endpoint.
         """
         client = Client()
+        if operational_state.status == PipelineEndpointStatus.ABSENT:
+            # Erase the URL and metadata for absent endpoints
+            operational_state.url = ""
+            operational_state.metadata = {}
+
         return client.zen_store.update_pipeline_endpoint(
             endpoint.id,
             PipelineEndpointUpdate.from_operational_state(operational_state),
@@ -219,6 +224,71 @@ class BaseDeployer(StackComponent, ABC):
         alphabet = string.ascii_letters + string.digits
         return "".join(secrets.choice(alphabet) for _ in range(key_length))
 
+    def _poll_pipeline_endpoint(
+        self,
+        endpoint: PipelineEndpointResponse,
+        desired_status: PipelineEndpointStatus,
+        timeout: int,
+    ) -> Tuple[PipelineEndpointResponse, PipelineEndpointOperationalState]:
+        """Poll the pipeline endpoint until it reaches the desired status, an error occurs or times out.
+
+        Args:
+            endpoint: The pipeline endpoint to poll.
+            desired_status: The desired status of the pipeline endpoint.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to reach the desired status.
+
+        Returns:
+            The updated pipeline endpoint and the operational state of the
+            pipeline endpoint.
+
+        Raises:
+            PipelineEndpointDeploymentTimeoutError: if the pipeline endpoint
+                deployment times out while waiting to reach the desired status.
+        """
+        start_time = time.time()
+        sleep_time = 5
+        while True:
+            endpoint_state = PipelineEndpointOperationalState(
+                status=PipelineEndpointStatus.ERROR,
+            )
+            try:
+                endpoint_state = self.do_get_pipeline_endpoint(endpoint)
+            except PipelineEndpointNotFoundError:
+                endpoint_state = PipelineEndpointOperationalState(
+                    status=PipelineEndpointStatus.ABSENT
+                )
+            except DeployerError as e:
+                logger.exception(
+                    f"Failed to get pipeline endpoint {endpoint.name}: {e}"
+                )
+            finally:
+                endpoint = self._update_pipeline_endpoint(
+                    endpoint, endpoint_state
+                )
+
+            if endpoint.status in [
+                desired_status,
+                PipelineEndpointStatus.ERROR,
+            ]:
+                break
+
+            elapsed_time = int(time.time() - start_time)
+            if elapsed_time > timeout:
+                raise PipelineEndpointDeploymentTimeoutError(
+                    f"Timed out waiting for pipeline endpoint {endpoint.name} "
+                    f"to reach desired state '{desired_status}' after {timeout} "
+                    "seconds"
+                )
+            logger.info(
+                f"The pipeline endpoint {endpoint.name} state is still "
+                f"'{endpoint.status}' after {elapsed_time} seconds. Waiting for "
+                f"max {timeout - elapsed_time} seconds..."
+            )
+            time.sleep(sleep_time)
+
+        return endpoint, endpoint_state
+
     def provision_pipeline_endpoint(
         self,
         deployment: PipelineDeploymentResponse,
@@ -253,8 +323,6 @@ class BaseDeployer(StackComponent, ABC):
             PipelineEndpointAlreadyExistsError: if the pipeline endpoint already
                 exists and replace is False.
             PipelineEndpointDeploymentError: if the pipeline deployment fails.
-            PipelineEndpointDeploymentTimeoutError: if the pipeline endpoint
-                deployment times out while waiting to become operational.
             DeployerError: if an unexpected error occurs.
 
         Returns:
@@ -369,33 +437,34 @@ class BaseDeployer(StackComponent, ABC):
         environment[ENV_ZENML_ACTIVE_STACK_ID] = str(stack.id)
         environment[ENV_ZENML_ACTIVE_PROJECT_ID] = str(deployment.project_id)
 
+        start_time = time.time()
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
         )
         try:
-            endpoint_state = self.do_serve_pipeline(
+            endpoint_state = self.do_provision_pipeline_endpoint(
                 endpoint,
                 stack=stack,
                 environment=environment,
                 secrets=secrets,
+                timeout=timeout,
             )
             endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
         except PipelineEndpointDeploymentError as e:
-            self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise PipelineEndpointDeploymentError(
                 f"Failed to deploy pipeline endpoint {endpoint.name}: {e}"
             ) from e
         except DeployerError as e:
-            self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise DeployerError(
                 f"Failed to deploy pipeline endpoint {endpoint.name}: {e}"
             ) from e
         except Exception as e:
-            self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise DeployerError(
                 f"Unexpected error while deploying pipeline endpoint for "
                 f"{endpoint.name}: {e}"
             ) from e
+        finally:
+            endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
 
         logger.debug(
             f"Deployed pipeline endpoint {endpoint.name} with "
@@ -403,36 +472,19 @@ class BaseDeployer(StackComponent, ABC):
             f"{endpoint_state.status}"
         )
 
-        start_time = time.time()
-        sleep_time = 5
-        while endpoint_state.status not in [
-            PipelineEndpointStatus.RUNNING,
-            PipelineEndpointStatus.ERROR,
-        ]:
-            elapsed_time = int(time.time() - start_time)
-            if elapsed_time > timeout:
-                raise PipelineEndpointDeploymentTimeoutError(
-                    f"Deployment of pipeline endpoint {endpoint.name} "
-                    f"timed out after {timeout} seconds"
-                )
-            logger.info(
-                f"Pipeline endpoint {endpoint.name} is still not running after "
-                f"{elapsed_time} seconds. Waiting for max "
-                f"{timeout - elapsed_time} seconds..."
-            )
-            time.sleep(sleep_time)
-            try:
-                endpoint_state = self.do_get_pipeline_endpoint(endpoint)
-                endpoint = self._update_pipeline_endpoint(
-                    endpoint, endpoint_state
-                )
-            except PipelineEndpointNotFoundError:
-                endpoint_state.status = PipelineEndpointStatus.UNKNOWN
+        if endpoint_state.status == PipelineEndpointStatus.RUNNING:
+            return endpoint
 
-        if endpoint_state.status != PipelineEndpointStatus.RUNNING:
+        # Subtract the time spent deploying the endpoint from the timeout
+        timeout = timeout - int(time.time() - start_time)
+        endpoint, _ = self._poll_pipeline_endpoint(
+            endpoint, PipelineEndpointStatus.RUNNING, timeout
+        )
+
+        if endpoint.status != PipelineEndpointStatus.RUNNING:
             raise PipelineEndpointDeploymentError(
                 f"Failed to deploy pipeline endpoint {endpoint.name}: "
-                f"The endpoint's operational state is {endpoint_state.status}. "
+                f"The endpoint's operational state is {endpoint.status}. "
                 "Please check the status or logs of the endpoint for more "
                 "information."
             )
@@ -543,80 +595,45 @@ class BaseDeployer(StackComponent, ABC):
 
         timeout = timeout or DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT
 
+        start_time = time.time()
         endpoint_state = PipelineEndpointOperationalState(
             status=PipelineEndpointStatus.ERROR,
         )
         try:
             deleted_endpoint_state = self.do_deprovision_pipeline_endpoint(
-                endpoint
+                endpoint, timeout
             )
+            if not deleted_endpoint_state:
+                # When do_delete_pipeline_endpoint returns a None value, this
+                # is to signal that the endpoint is already fully deprovisioned.
+                endpoint_state.status = PipelineEndpointStatus.ABSENT
         except PipelineEndpointNotFoundError:
             endpoint_state.status = PipelineEndpointStatus.ABSENT
-            endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
-            return endpoint
         except DeployerError as e:
-            self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise DeployerError(
                 f"Failed to delete pipeline endpoint {endpoint_name_or_id}: {e}"
             ) from e
         except Exception as e:
-            self._update_pipeline_endpoint(endpoint, endpoint_state)
             raise DeployerError(
                 f"Unexpected error while deleting pipeline endpoint for "
                 f"{endpoint_name_or_id}: {e}"
             ) from e
+        finally:
+            endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
 
-        if not deleted_endpoint_state:
-            # The endpoint was already fully deleted by the time the call to
-            # do_delete_pipeline_endpoint returned.
-            endpoint_state.status = PipelineEndpointStatus.ABSENT
+        if endpoint_state.status == PipelineEndpointStatus.ABSENT:
+            return endpoint
 
-        endpoint_state = deleted_endpoint_state or endpoint_state
+        # Subtract the time spent deprovisioning the endpoint from the timeout
+        timeout = timeout - int(time.time() - start_time)
+        endpoint, _ = self._poll_pipeline_endpoint(
+            endpoint, PipelineEndpointStatus.ABSENT, timeout
+        )
 
-        start_time = time.time()
-        sleep_time = 5
-        while endpoint_state.status not in [
-            PipelineEndpointStatus.ABSENT,
-            PipelineEndpointStatus.ERROR,
-        ]:
-            elapsed_time = int(time.time() - start_time)
-            if elapsed_time > timeout:
-                raise PipelineEndpointDeletionTimeoutError(
-                    f"Deprovisioning of pipeline endpoint {endpoint_name_or_id} "
-                    f"timed out after {timeout} seconds"
-                )
-            logger.info(
-                f"Pipeline endpoint {endpoint_name_or_id} is still not "
-                f"deprovisioned after {elapsed_time} seconds. Waiting for max "
-                f"{timeout - elapsed_time} seconds..."
-            )
-            time.sleep(sleep_time)
-            try:
-                endpoint_state = self.do_get_pipeline_endpoint(endpoint)
-                endpoint = self._update_pipeline_endpoint(
-                    endpoint, endpoint_state
-                )
-            except PipelineEndpointNotFoundError:
-                endpoint_state.status = PipelineEndpointStatus.ABSENT
-                break
-            except DeployerError as e:
-                endpoint_state.status = PipelineEndpointStatus.ERROR
-                raise DeployerError(
-                    f"Failed to deprovision pipeline endpoint "
-                    f"{endpoint_name_or_id}: {e}"
-                ) from e
-            except Exception as e:
-                endpoint_state.status = PipelineEndpointStatus.ERROR
-                raise DeployerError(
-                    f"Unexpected error while deprovisioning pipeline endpoint "
-                    f"for {endpoint_name_or_id}: {e}"
-                ) from e
-
-        endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
-        if endpoint_state.status != PipelineEndpointStatus.ABSENT:
+        if endpoint.status != PipelineEndpointStatus.ABSENT:
             raise PipelineEndpointDeprovisionError(
                 f"Failed to deprovision pipeline endpoint {endpoint_name_or_id}: "
-                f"Operational state: {endpoint_state.status}"
+                f"Operational state: {endpoint.status}"
             )
         return endpoint
 
@@ -722,12 +739,13 @@ class BaseDeployer(StackComponent, ABC):
     # ------------------ Abstract Methods ------------------
 
     @abstractmethod
-    def do_serve_pipeline(
+    def do_provision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
         stack: "Stack",
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, str]] = None,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+        timeout: int,
     ) -> PipelineEndpointOperationalState:
         """Abstract method to serve a pipeline as an HTTP endpoint.
 
@@ -763,6 +781,8 @@ class BaseDeployer(StackComponent, ABC):
                 on the pipeline endpoint. These secret environment variables
                 should not be exposed as regular environment variables on the
                 deployer.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deployed.
 
         Returns:
             The PipelineEndpointOperationalState object representing the
@@ -827,6 +847,7 @@ class BaseDeployer(StackComponent, ABC):
     def do_deprovision_pipeline_endpoint(
         self,
         endpoint: PipelineEndpointResponse,
+        timeout: int,
     ) -> Optional[PipelineEndpointOperationalState]:
         """Abstract method to deprovision a pipeline endpoint.
 
@@ -850,6 +871,8 @@ class BaseDeployer(StackComponent, ABC):
 
         Args:
             endpoint: The pipeline endpoint to delete.
+            timeout: The maximum time in seconds to wait for the pipeline
+                endpoint to be deprovisioned.
 
         Returns:
             The PipelineEndpointOperationalState object representing the

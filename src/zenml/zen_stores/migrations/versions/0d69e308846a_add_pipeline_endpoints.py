@@ -1,7 +1,7 @@
 """add pipeline endpoints [0d69e308846a].
 
 Revision ID: 0d69e308846a
-Revises: 0.84.3
+Revises: 83ef3cb746a5
 Create Date: 2025-08-26 10:30:52.737833
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "0d69e308846a"
-down_revision = "0.84.3"
+down_revision = "83ef3cb746a5"
 branch_labels = None
 depends_on = None
 

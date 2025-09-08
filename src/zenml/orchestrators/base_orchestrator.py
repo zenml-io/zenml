@@ -320,6 +320,11 @@ class BaseOrchestrator(StackComponent, ABC):
                     environment=environment,
                     placeholder_run=placeholder_run,
                 )
+                if placeholder_run:
+                    publish_pipeline_run_status_update(
+                        pipeline_run_id=placeholder_run.id,
+                        status=ExecutionStatus.PROVISIONING,
+                    )
 
                 if submission_result:
                     if submission_result.metadata:
@@ -515,6 +520,7 @@ class BaseOrchestrator(StackComponent, ABC):
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
+            status_reason="Manual stop requested.",
         )
 
         # Now call the concrete implementation
