@@ -2062,7 +2062,7 @@ class Client(metaclass=ClientMetaClass):
         connector_resource_id: Optional[str] = None,
         add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
-        environment: Optional[Dict[str, str]] = None,
+        environment: Optional[Dict[str, Any]] = None,
     ) -> ComponentResponse:
         """Updates a stack component.
 

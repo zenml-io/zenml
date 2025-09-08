@@ -14,7 +14,6 @@
 """Functionality to generate stack component CLI commands."""
 
 import time
-from ast import Dict
 from importlib import import_module
 from typing import Any, Callable, List, Optional, Tuple, cast
 from uuid import UUID
@@ -271,6 +270,8 @@ def generate_stack_component_register_command(
             connector: Name of the service connector to connect the component to.
             resource_id: The resource ID to use with the connector.
             secrets: Secrets to attach to the component.
+            environment_variables: Environment variables to set when running
+                on this component.
         """
         client = Client()
 
@@ -290,7 +291,7 @@ def generate_stack_component_register_command(
                     f"Could not find a connector '{connector}': {str(err)}"
                 )
 
-        environment: Dict[str, str] = {}
+        environment = {}
         for environment_variable in environment_variables:
             key, value = environment_variable.split("=", 1)
             environment[key] = value
@@ -412,7 +413,7 @@ def generate_stack_component_update_command(
 
         parsed_labels = cli_utils.get_parsed_labels(labels)
 
-        environment: Dict[str, str] = {}
+        environment = {}
         for environment_variable in environment_variables:
             key, value = environment_variable.split("=", 1)
             # Fallback to None if the value is empty so the existing environment

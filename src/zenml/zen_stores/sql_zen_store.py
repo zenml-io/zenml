@@ -6994,11 +6994,11 @@ class SqlZenStore(BaseZenStore):
                 secret, schema_class=SecretSchema, session=session
             )
             resource_type = resource_types[type(resource)]
-            
+
             query = delete(SecretResourceSchema).where(
-                SecretResourceSchema.resource_id == resource.id,
-                SecretResourceSchema.resource_type == resource_type.value,
-                SecretResourceSchema.secret_id == secret_schema.id,
+                col(SecretResourceSchema.resource_id) == resource.id,
+                col(SecretResourceSchema.resource_type) == resource_type.value,
+                col(SecretResourceSchema.secret_id) == secret_schema.id,
             )
             session.execute(query)
 

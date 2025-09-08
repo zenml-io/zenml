@@ -14,20 +14,17 @@
 """Utility functions for secrets and secret references."""
 
 import re
-from typing import TYPE_CHECKING, Any, List, NamedTuple, Optional, Union
+from typing import TYPE_CHECKING, Any, List, NamedTuple, Union
 
 from pydantic import Field, PlainSerializer, SecretStr
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
-from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
     from uuid import UUID
 
     from pydantic.fields import FieldInfo
-
-    from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 
 _secret_reference_expression = re.compile(r"\{\{\s*\S+?\.\S+\s*\}\}")
 

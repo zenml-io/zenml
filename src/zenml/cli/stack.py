@@ -756,7 +756,7 @@ def update_stack(
     """
     client = Client()
 
-    environment: Dict[str, str] = {}
+    environment: Dict[str, Any] = {}
     for environment_variable in environment_variables:
         key, value = environment_variable.split("=", 1)
         # Fallback to None if the value is empty so the existing environment

@@ -285,21 +285,18 @@ if server_config().workload_manager_enabled:
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
             if config:
+                secrets = config.secrets or []
+
+                if config.steps:
+                    for _, step in config.steps.items():
+                        secrets.extend(step.secrets or [])
+
                 rbac_read_checks.extend(
                     [
-                        zen_store().get_secret_by_name_or_id(id)
-                        for id in config.secrets
+                        zen_store().get_secret_by_name_or_id(secret_name_or_id)
+                        for secret_name_or_id in secrets
                     ]
                 )
-
-                for _, step in config.steps.items():
-                    if step.secrets:
-                        rbac_read_checks.extend(
-                            [
-                                zen_store().get_secret_by_name_or_id(id)
-                                for id in step.secrets
-                            ]
-                        )
 
             if rbac_read_checks:
                 batch_verify_permissions_for_models(

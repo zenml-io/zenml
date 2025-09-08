@@ -178,7 +178,7 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="Settings for the step.",
     )
-    environment: Optional[Dict[str, Any]] = Field(
+    environment: Optional[Dict[str, str]] = Field(
         default=None,
         description="The environment for the step.",
     )
@@ -256,6 +256,8 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     name: str
     parameters: Dict[str, Any] = {}
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
+    environment: Dict[str, str] = {}
+    secrets: List[Union[str, UUID]] = []
     extra: Dict[str, Any] = {}
     substitutions: Dict[str, str] = {}
     caching_parameters: Mapping[str, Any] = {}
