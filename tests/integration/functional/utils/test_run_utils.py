@@ -94,8 +94,8 @@ def execution_mode_pipeline(fail_step_2: bool = False) -> None:
     output_4 = step_4(output_1)
 
     # These steps depend on the steps above
-    output_5 = step_5(output_2)  
-    output_6 = step_6(output_3)  
+    output_5 = step_5(output_2)
+    output_6 = step_6(output_3)
     output_7 = step_7(output_4)
 
     # Final step
@@ -119,14 +119,14 @@ def test_build_dag_with_downstream_steps(clean_client):
 
     # Expected DAG structure based on our pipeline
     expected_structure = {
-        "step_1": {"step_2", "step_3", "step_4"}, 
-        "step_2": {"step_5"},  
-        "step_3": {"step_6"}, 
-        "step_4": {"step_7"}, 
-        "step_5": {"step_8"}, 
-        "step_6": {"step_8"},  
-        "step_7": {"step_8"},  
-        "step_8": set(),  
+        "step_1": {"step_2", "step_3", "step_4"},
+        "step_2": {"step_5"},
+        "step_3": {"step_6"},
+        "step_4": {"step_7"},
+        "step_5": {"step_8"},
+        "step_6": {"step_8"},
+        "step_7": {"step_8"},
+        "step_8": set(),
     }
 
     assert dag == expected_structure
