@@ -1855,21 +1855,26 @@ class AWSDeployer(ContainerizedDeployer):
                 f"Unexpected error while deleting pipeline endpoint '{endpoint.name}': {e}"
             )
 
+        endpoint_before_deletion = endpoint
+
         # App Runner deletion is asynchronous and the auto-scaling configuration
         # and secrets need to be cleaned up after the service is deleted. So we
         # poll the service until it is deleted, runs into an error or times out.
         endpoint, endpoint_state = self._poll_pipeline_endpoint(
             endpoint, PipelineEndpointStatus.ABSENT, timeout
         )
+
         if endpoint_state.status != PipelineEndpointStatus.ABSENT:
             return endpoint_state
 
         try:
             # Clean up associated secrets
-            self._cleanup_endpoint_secrets(endpoint)
+            self._cleanup_endpoint_secrets(endpoint_before_deletion)
 
             # Clean up associated auto-scaling configuration
-            self._cleanup_endpoint_auto_scaling_config(endpoint)
+            self._cleanup_endpoint_auto_scaling_config(
+                endpoint_before_deletion
+            )
         except Exception as e:
             raise DeployerError(
                 f"Unexpected error while cleaning up resources for pipeline "
