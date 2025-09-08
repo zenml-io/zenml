@@ -68,7 +68,7 @@ class LocalOrchestrator(BaseOrchestrator):
             Optional submission result.
 
         Raises:
-            RuntimeError: If the pipeline run fails.
+            Exception: If the pipeline run fails.
         """
         if deployment.schedule:
             logger.warning(
@@ -134,13 +134,11 @@ class LocalOrchestrator(BaseOrchestrator):
 
             try:
                 self.run_step(step=step)
-            except Exception as e:
+            except Exception:
                 failed_steps.append(step_name)
 
                 if execution_mode == ExecutionMode.FAIL_FAST:
-                    raise RuntimeError(
-                        f"Step {step_name} failed with error: {e}"
-                    )
+                    raise
 
         if failed_steps:
             raise RuntimeError(

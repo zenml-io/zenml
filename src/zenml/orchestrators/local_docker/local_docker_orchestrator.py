@@ -123,7 +123,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
-            RuntimeError: If the pipeline run fails.
+            ContainerError: If the pipeline run fails.
 
         Returns:
             Optional submission result.
@@ -249,7 +249,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 error_message = e.stderr.decode()
                 failed_steps.append(step_name)
                 if execution_mode == ExecutionMode.FAIL_FAST:
-                    raise RuntimeError(error_message)
+                    raise
                 else:
                     logger.error(error_message)
 
