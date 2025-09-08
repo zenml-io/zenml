@@ -774,23 +774,28 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                             find_all_downstream_steps(failed_step, dag)
                         )
 
+                    # Combine failed steps and their downstream steps
+                    steps_to_skip.update(failed_steps)
+
+                    # Get the statuses of all steps that have run so far
+                    steps_statuses = {
+                        s.name: ExecutionStatus(s.status)
+                        for s in self.step_runs
+                    }
+
                     # Check if all non-skipped steps are finished
                     for step in steps:
-                        # If it is a downstream step of a failed step, skip
+                        # If it is a failed step or a downstream step of a failed step, continue
                         if step.config.name in steps_to_skip:
                             continue
-
-                        # If it is not in the step runs yet
-                        if step.config.name not in [
-                            s.name for s in self.step_runs
-                        ]:
+                        # If it is not in the step runs yet, it is in progress
+                        if step.config.name not in steps_statuses:
                             return True
-                        # Else, check if it is finished
-                        elif not ExecutionStatus(
-                            self.step_runs[step.config.name].status
-                        ).is_finished:
+                        # If it is in the step runs and is not finished, it is in progress
+                        elif not steps_statuses[step.config.name].is_finished:
                             return True
 
+                    # Otherwise, it is not in progress
                     return False
                 else:
                     # No deployment, fallback to basic check

@@ -5853,7 +5853,7 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-            return run.status
+            return ExecutionStatus(run.status)
 
     def _check_if_run_in_progress(
         self, run_id: UUID
