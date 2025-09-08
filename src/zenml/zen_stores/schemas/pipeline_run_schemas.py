@@ -391,7 +391,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         else:
             raise RuntimeError("Pipeline run has no deployment.")
 
-    def get_step_configurations(self) -> List[Step]:
+    def get_steps(self) -> List[Step]:
         """Get the list of all the steps.
 
         Returns:
@@ -755,20 +755,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             # Continue on failure is in progress
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
                 if self.deployment:
-                    # Get all step configurations
-                    step_configurations = (
-                        self.deployment.get_step_configurations()
-                    )
-
-                    # Create Step objects from configurations
-                    pipeline_configuration = self.get_pipeline_configuration()
-                    steps = []
-                    for step_config in step_configurations:
-                        step = Step.from_dict(
-                            data=json.loads(step_config.config),
-                            pipeline_configuration=pipeline_configuration,
-                        )
-                        steps.append(step)
+                    # Get all steps
+                    steps = self.get_steps()
 
                     # Build a reverse DAG (step_name -> list of downstream steps)
                     reverse_dag: Dict[str, List[str]] = {}
