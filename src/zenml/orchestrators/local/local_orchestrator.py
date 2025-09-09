@@ -69,6 +69,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
         Raises:
             Exception: If the pipeline run fails.
+            RuntimeError: If the pipeline run fails.
         """
         if deployment.schedule:
             logger.warning(

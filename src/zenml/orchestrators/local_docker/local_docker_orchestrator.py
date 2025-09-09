@@ -124,6 +124,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             ContainerError: If the pipeline run fails.
+            RuntimeError: If the pipeline run fails.
 
         Returns:
             Optional submission result.
