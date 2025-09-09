@@ -404,7 +404,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Raises:
             RuntimeError: If the pipeline run has no deployment or
-            the deployment has no pipeline spec.
+                the deployment has no pipeline spec.
         """
         if self.deployment and self.deployment.pipeline_spec:
             pipeline_spec = PipelineSpec.model_validate_json(
