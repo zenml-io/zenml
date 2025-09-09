@@ -1,6 +1,6 @@
 ---
 description: Configuring environment variables.
-icon: earth-africa
+icon: globe
 ---
 
 # Environment variables
