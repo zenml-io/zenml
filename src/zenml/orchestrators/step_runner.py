@@ -436,6 +436,23 @@ class StepRunner:
         if args and args[0] == "self":
             args.pop(0)
 
+        # Prefer effective step configuration passed via StepRunInfo for
+        # runtime overrides (e.g., serving), falling back to the original
+        # deployed step configuration.
+        effective_params: Dict[str, Any] = {}
+        try:
+            if (
+                hasattr(self, "_step_run_info")
+                and self._step_run_info
+                and self._step_run_info.config
+            ):
+                effective_params = self._step_run_info.config.parameters or {}
+        except Exception:
+            # Fallback silently if anything goes wrong retrieving effective params
+            effective_params = {}
+        if not effective_params:
+            effective_params = self.configuration.parameters or {}
+
         for arg in args:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
@@ -444,8 +461,8 @@ class StepRunner:
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
                 )
-            elif arg in self.configuration.parameters:
-                param_value = self.configuration.parameters[arg]
+            elif arg in effective_params:
+                param_value = effective_params[arg]
                 # Pydantic bridging: convert dict to Pydantic model if possible
                 function_params[arg] = self._maybe_convert_to_pydantic(
                     param_value, arg_type

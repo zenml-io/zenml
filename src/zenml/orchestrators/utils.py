@@ -211,6 +211,12 @@ _return_targets: ContextVar[Dict[str, Optional[str]]] = ContextVar(
     "return_targets", default={}
 )
 
+# Runtime parameter overrides for serving: injected per-request and read by
+# the step launcher to compose effective step configurations.
+_runtime_parameters: ContextVar[Dict[str, Any]] = ContextVar(
+    "runtime_parameters", default={}
+)
+
 
 def response_tap_set(output_name: str, value: Any) -> None:
     """Set a response output value in the tap.
@@ -236,6 +242,25 @@ def response_tap_get_all() -> Dict[str, Any]:
 def response_tap_clear() -> None:
     """Clear the response tap for a fresh request."""
     _response_tap.set({})
+
+
+def set_runtime_parameters(params: Dict[str, Any]) -> None:
+    """Set runtime parameter overrides for the current request.
+
+    Args:
+        params: Mapping of parameter name to value
+    """
+    _runtime_parameters.set(params or {})
+
+
+def get_runtime_parameters() -> Dict[str, Any]:
+    """Get runtime parameter overrides for the current request."""
+    return _runtime_parameters.get({})
+
+
+def clear_runtime_parameters() -> None:
+    """Clear runtime parameter overrides for a fresh request."""
+    _runtime_parameters.set({})
 
 
 def set_return_targets(targets: Dict[str, Optional[str]]) -> None:

@@ -314,12 +314,12 @@ class PipelineServingService:
         timeout: Optional[int] = 300,
     ) -> Dict[str, Any]:
         """Execute pipeline synchronously by invoking BaseOrchestrator.run_step."""
+        from zenml.orchestrators import utils as orchestrator_utils
+
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
-
         start = time.time()
         logger.info("Starting pipeline execution")
-
         # Set up response capture
         orchestrator_utils.response_tap_clear()
         self._setup_return_targets()
@@ -327,6 +327,10 @@ class PipelineServingService:
         try:
             # Resolve request parameters
             resolved_params = self._resolve_parameters(parameters)
+
+            # Expose runtime parameters via a context variable so the launcher
+            # can inject them into the effective step configuration per-step.
+            orchestrator_utils.set_runtime_parameters(resolved_params)
 
             # Get deployment and check if we're in no-capture mode
             deployment = self.deployment
@@ -394,6 +398,11 @@ class PipelineServingService:
                     os.environ["ZENML_SERVING_CAPTURE_DEFAULT"] = (
                         original_capture_default
                     )
+                # Clear runtime parameter overrides for this request
+                try:
+                    orchestrator_utils.clear_runtime_parameters()
+                except Exception:
+                    pass
 
             # Get captured outputs from response tap
             outputs = orchestrator_utils.response_tap_get_all()
