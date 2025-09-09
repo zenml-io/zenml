@@ -1,6 +1,6 @@
 ---
 description: Configuring environment variables.
-icon: TODO
+icon: earth-africa
 ---
 
 # Environment variables
