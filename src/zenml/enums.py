@@ -74,6 +74,7 @@ class ExecutionStatus(StrEnum):
     """Enum that represents the execution status of a step or pipeline run."""
 
     INITIALIZING = "initializing"
+    PROVISIONING = "provisioning"
     FAILED = "failed"
     COMPLETED = "completed"
     RUNNING = "running"

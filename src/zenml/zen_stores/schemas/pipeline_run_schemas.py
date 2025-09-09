@@ -99,6 +99,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True, default=None)
     status: str = Field(nullable=False)
+    status_reason: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -330,6 +331,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             status=request.status.value,
+            status_reason=request.status_reason,
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
@@ -503,6 +505,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             user_id=self.user_id,
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
+            status_reason=self.status_reason,
             stack=stack,
             pipeline=pipeline,
             build=build,
@@ -596,8 +599,22 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The updated `PipelineRunSchema`.
         """
         if run_update.status:
-            self.status = run_update.status.value
-            self.end_time = run_update.end_time
+            if (
+                run_update.status == ExecutionStatus.PROVISIONING
+                and self.status != ExecutionStatus.INITIALIZING.value
+            ):
+                # This run is already past the provisioning status, so we ignore
+                # the update.
+                pass
+            else:
+                self.status = run_update.status.value
+                self.end_time = run_update.end_time
+
+                if run_update.status_reason:
+                    self.status_reason = run_update.status_reason
+
+        if run_update.orchestrator_run_id:
+            self.orchestrator_run_id = run_update.orchestrator_run_id
 
         self.updated = utc_now()
         return self
@@ -670,4 +687,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             Whether the pipeline run is a placeholder run.
         """
-        return self.status == ExecutionStatus.INITIALIZING.value
+        return self.status in {
+            ExecutionStatus.INITIALIZING.value,
+            ExecutionStatus.PROVISIONING.value,
+        }
