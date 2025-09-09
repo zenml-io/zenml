@@ -18,18 +18,18 @@ from unittest.mock import Mock
 import pytest
 
 from zenml.zen_stores.schemas.pipeline_run_schemas import (
-    build_dag_with_downstream_steps,
+    build_dag,
     find_all_downstream_steps,
 )
 
 
 class TestBuildDagWithDownstreamSteps:
-    """Test cases for build_dag_with_downstream_steps function."""
+    """Test cases for build_dag function."""
 
     def test_empty_steps_list(self):
         """Test with empty steps list."""
         steps = []
-        result = build_dag_with_downstream_steps(steps)
+        result = build_dag(steps)
         assert result == {}
 
     def test_single_step_no_upstream(self):
@@ -39,7 +39,7 @@ class TestBuildDagWithDownstreamSteps:
         step.config.name = "step1"
         step.spec.upstream_steps = []
 
-        result = build_dag_with_downstream_steps([step])
+        result = build_dag([step])
 
         expected = {"step1": set()}
         assert result == expected
@@ -59,7 +59,7 @@ class TestBuildDagWithDownstreamSteps:
         step3.config.name = "step3"
         step3.spec.upstream_steps = ["step2"]
 
-        result = build_dag_with_downstream_steps([step1, step2, step3])
+        result = build_dag([step1, step2, step3])
 
         expected = {"step1": {"step2"}, "step2": {"step3"}, "step3": set()}
         assert result == expected
@@ -84,7 +84,7 @@ class TestBuildDagWithDownstreamSteps:
         step4.spec.upstream_steps = ["step2", "step3"]
 
         steps = [step1, step2, step3, step4]
-        result = build_dag_with_downstream_steps(steps)
+        result = build_dag(steps)
 
         expected = {
             "step1": {"step2", "step3"},
@@ -113,7 +113,7 @@ class TestBuildDagWithDownstreamSteps:
             step.spec.upstream_steps = upstream
             steps.append(step)
 
-        result = build_dag_with_downstream_steps(steps)
+        result = build_dag(steps)
 
         expected = {
             "step1": {"step2", "step3"},

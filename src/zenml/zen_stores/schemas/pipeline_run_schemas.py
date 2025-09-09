@@ -44,7 +44,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.utils.run_utils import (
-    build_dag_with_downstream_steps,
+    build_dag,
     find_all_downstream_steps,
 )
 from zenml.utils.time_utils import utc_now
@@ -736,74 +736,59 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         run_status = ExecutionStatus(self.status)
 
-        # Unfinished states are in progress
         if not run_status.is_finished:
             return True
 
-        # Among finished states, only failed runs can be in progress
         if run_status == ExecutionStatus.FAILED:
             execution_mode = self.get_pipeline_configuration().execution_mode
 
-            # Fail fast and stop on failure are not in progress
             if execution_mode in [
                 ExecutionMode.FAIL_FAST,
                 ExecutionMode.STOP_ON_FAILURE,
             ]:
                 return False
 
-            # Continue on failure is in progress
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
                 if self.deployment:
-                    # Get all steps
                     steps = self.get_steps()
 
-                    # Build a reverse DAG (step_name -> set of downstream steps)
-                    dag = build_dag_with_downstream_steps(steps)
+                    dag = build_dag(steps)
 
-                    # Fetch all failed steps
                     failed_steps = {
                         s.name
                         for s in self.step_runs
                         if ExecutionStatus(s.status).is_failed
                     }
 
-                    # Find all downstream steps of failed steps
                     steps_to_skip = set()
                     for failed_step in failed_steps:
                         steps_to_skip.update(
                             find_all_downstream_steps(failed_step, dag)
                         )
 
-                    # Combine failed steps and their downstream steps
                     steps_to_skip.update(failed_steps)
 
-                    # Get the statuses of all steps that have run so far
                     steps_statuses = {
                         s.name: ExecutionStatus(s.status)
                         for s in self.step_runs
                     }
 
-                    # Check if all non-skipped steps are finished
                     for step in steps:
-                        # If it is a failed step or a downstream step of a failed step, continue
                         if step.config.name in steps_to_skip:
                             continue
-                        # If it is not in the step runs yet, it is in progress
+
                         if step.config.name not in steps_statuses:
                             return True
-                        # If it is in the step runs and is not finished, it is in progress
+
                         elif not steps_statuses[step.config.name].is_finished:
                             return True
 
-                    # Otherwise, it is not in progress
                     return False
                 else:
-                    # No deployment, fallback to basic check
                     in_progress = any(
                         not ExecutionStatus(s.status).is_finished
                         for s in self.step_runs
                     )
                     return in_progress
 
-        # Any other finished state is in not progress
         return False

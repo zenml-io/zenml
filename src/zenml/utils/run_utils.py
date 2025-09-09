@@ -168,7 +168,7 @@ def refresh_run_status(
     return run
 
 
-def build_dag_with_downstream_steps(steps: List[Step]) -> Dict[str, Set[str]]:
+def build_dag(steps: List[Step]) -> Dict[str, Set[str]]:
     """Build DAG with downstream steps from a list of steps.
 
     Args:

@@ -585,6 +585,7 @@ def main() -> None:
                     logger.warning(
                         f"Failed to stop step job {job.metadata.name}: {e}"
                     )
+                    break
 
         def check_job_status(node: Node) -> NodeStatus:
             """Check the status of a job.

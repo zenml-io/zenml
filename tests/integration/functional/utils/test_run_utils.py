@@ -18,7 +18,7 @@ import pytest
 from zenml import get_step_context, pipeline, step
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.zen_stores.schemas.pipeline_run_schemas import (
-    build_dag_with_downstream_steps,
+    build_dag,
     find_all_downstream_steps,
 )
 
@@ -102,8 +102,8 @@ def execution_mode_pipeline(fail_step_2: bool = False) -> None:
     _ = step_8(output_5, output_6, output_7)
 
 
-def test_build_dag_with_downstream_steps(clean_client):
-    """Test build_dag_with_downstream_steps with real pipeline execution."""
+def test_build_dag(clean_client):
+    """Test build_dag with real pipeline execution."""
     # Run the pipeline
     run = execution_mode_pipeline()
 
@@ -115,7 +115,7 @@ def test_build_dag_with_downstream_steps(clean_client):
     steps = list(deployment.step_configurations.values())
 
     # Build the DAG using our function
-    dag = build_dag_with_downstream_steps(steps)
+    dag = build_dag(steps)
 
     # Expected DAG structure based on our pipeline
     expected_structure = {
@@ -142,7 +142,7 @@ def test_find_all_downstream_steps(clean_client):
     steps = list(deployment.step_configurations.values())
 
     # Build the DAG
-    dag = build_dag_with_downstream_steps(steps)
+    dag = build_dag(steps)
 
     # Test finding downstream steps from step_1 (should include all others)
     downstream_from_step1 = find_all_downstream_steps("step_1", dag)
@@ -184,7 +184,7 @@ def test_dag_with_failed_step(clean_client):
     steps = list(deployment.step_configurations.values())
 
     # Build the DAG
-    dag = build_dag_with_downstream_steps(steps)
+    dag = build_dag(steps)
 
     # If step_2 fails, we can still find its downstream dependencies
     downstream_from_failed_step2 = find_all_downstream_steps("step_2", dag)
