@@ -332,7 +332,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             source_code=request.source_code,
             version=version,
             is_retriable=is_retriable,
-            exception_info=json.dumps(request.exception_info)
+            exception_info=request.exception_info.model_dump_json()
             if request.exception_info
             else None,
         )

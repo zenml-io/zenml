@@ -35,7 +35,11 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import RunMonitoringError, RunStoppedException
+from zenml.exceptions import (
+    IllegalOperationError,
+    RunMonitoringError,
+    RunStoppedException,
+)
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
@@ -312,6 +316,11 @@ class BaseOrchestrator(StackComponent, ABC):
                     environment=environment,
                     placeholder_run=placeholder_run,
                 )
+                if placeholder_run:
+                    publish_pipeline_run_status_update(
+                        pipeline_run_id=placeholder_run.id,
+                        status=ExecutionStatus.PROVISIONING,
+                    )
 
                 if submission_result:
                     if submission_result.metadata:
@@ -485,6 +494,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
                 class does not implement this logic.
+            IllegalOperationError: If the run has no orchestrator run id yet.
         """
         # Check if the orchestrator supports cancellation
         if (
@@ -496,10 +506,17 @@ class BaseOrchestrator(StackComponent, ABC):
                 "support stopping pipeline runs."
             )
 
+        if not run.orchestrator_run_id:
+            raise IllegalOperationError(
+                "Cannot stop a pipeline run that has no orchestrator run id "
+                "yet."
+            )
+
         # Update pipeline status to STOPPING before calling concrete implementation
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
+            status_reason="Manual stop requested.",
         )
 
         # Now call the concrete implementation

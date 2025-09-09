@@ -253,7 +253,8 @@ def trigger_deployment(
 
     command = RunnerEntrypointConfiguration.get_entrypoint_command()
     args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
-        deployment_id=new_deployment.id
+        deployment_id=new_deployment.id,
+        placeholder_run_id=placeholder_run.id,
     )
 
     if build.python_version:
@@ -337,14 +338,20 @@ def trigger_deployment(
                     str(deployment.id),
                     str(placeholder_run.id),
                 )
-                zen_store().update_run(
-                    run_id=placeholder_run.id,
-                    run_update=PipelineRunUpdate(
-                        status=ExecutionStatus.FAILED,
-                        end_time=utc_now(),
-                    ),
-                )
-                raise
+                run_status, _ = zen_store().get_run_status(placeholder_run.id)
+                if run_status == ExecutionStatus.INITIALIZING:
+                    # The run isn't in the provisioning status yet, which means
+                    # the orchestrator wasn't able to submit the run. In this
+                    # case, we can update the run to failed.
+                    zen_store().update_run(
+                        run_id=placeholder_run.id,
+                        run_update=PipelineRunUpdate(
+                            status=ExecutionStatus.FAILED,
+                            status_reason="Failed to start run.",
+                            end_time=utc_now(),
+                        ),
+                    )
+                    raise
 
     if sync:
         _task_with_analytics_and_error_handling()
@@ -493,8 +500,9 @@ def deployment_request_from_source_deployment(
     )
 
     steps = {}
+    step_config_updates = config.steps or {}
     for invocation_id, step in source_deployment.step_configurations.items():
-        step_update = config.steps.get(
+        step_update = step_config_updates.get(
             invocation_id, StepConfigurationUpdate()
         ).model_dump(
             # Get rid of deprecated name to prevent overriding the step name
