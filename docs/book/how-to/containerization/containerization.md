@@ -470,19 +470,19 @@ Setting all of the above attributes to `False` is not recommended and will most 
 
 ## Environment Variables
 
-You can set environment variables that will be available in the Docker container:
+You can configure environment variables that will be set in the beginning of the Docker image building process before any python or apt packages are installed:
 
 ```python
 docker_settings = DockerSettings(
     environment={
         "PYTHONUNBUFFERED": "1",
         "MODEL_DIR": "/models",
-        "API_KEY": "${GLOBAL_API_KEY}"  # Reference environment variables
+        "API_KEY": "${GLOBAL_API_KEY}"  # Reference a local environment variable
     }
 )
 ```
 
-Environment variables can reference other environment variables by using the `${VAR_NAME}` syntax. ZenML will substitute these at runtime.
+Environment variables can reference other environment variables set in your client environment by using the `${VAR_NAME}` syntax. ZenML will substitute these before building the images.
 
 ## Build Reuse and Optimization
 
