@@ -10,6 +10,10 @@ Environment variables can be configured to be available at runtime during step e
 1. **Plain text environment variables**: Configure key-value pairs directly
 2. **Secrets as environment variables**: Use ZenML secrets where the secret values become environment variables. Check out [this page](../secrets/secrets.md) for more information on secret management in ZenML.
 
+{% hint style="info" %}
+If you need environment variables to be available at image built time, check out the [containerization documentation](../containerization/containerization.md#environment-variables) for more information.
+{% endhint %}
+
 ## Configuration levels
 
 Environment variables and secrets can be configured at different levels with increasing precedence:
@@ -32,6 +36,7 @@ For example, if you set:
 export __ZENML__MY_VAR=my_value
 ```
 
+It will be available in your steps as follows:
 ```python
 import os
 from zenml import step
@@ -174,13 +179,11 @@ my_step = my_step.with_options(
 
 ## When environment variables are set
 
-The timing of when environment variables are made available depends on the orchestrator being used:
+The timing of when environment variables are set depends on the orchestrator being used:
 
-- **Some orchestrators** set environment variables right before your step code is being executed
-- **Other orchestrators** set environment variables already at container startup time
+- The [Databricks](../../component-guide/orchestrators/databricks.md) and [Lightning](../../component-guide/orchestrators/lightning.md) orchestrators will set the environment variables right before your step code is being executed
+- **All other orchestrators** set environment variables already at container startup time
 
 {% hint style="info" %}
 **Environment variables from secrets** are always set right before your step code is being executed for security reasons, regardless of the orchestrator.
 {% endhint %}
-
-If you need environment variables to be available at container startup time and are using an orchestrator that doesn't support this, you can use Docker settings to configure environment variables that will be set at container startup. See the [containerization documentation](../containerization/containerization.md#environment-variables) for more information.
