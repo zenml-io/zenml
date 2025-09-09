@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, cast
 
-from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
@@ -168,7 +167,7 @@ def refresh_run_status(
     return run
 
 
-def build_dag(steps: List[Step]) -> Dict[str, Set[str]]:
+def build_dag(steps: Dict[str, List[str]]) -> Dict[str, Set[str]]:
     """Build DAG with downstream steps from a list of steps.
 
     Args:
@@ -177,11 +176,11 @@ def build_dag(steps: List[Step]) -> Dict[str, Set[str]]:
     Returns:
         The DAG with downstream steps.
     """
-    dag: Dict[str, Set[str]] = {step.config.name: set() for step in steps}
+    dag: Dict[str, Set[str]] = {step: set() for step in steps}
 
-    for step in steps:
-        for upstream_step in step.spec.upstream_steps:
-            dag[upstream_step].add(step.config.name)
+    for step_name, upstream_steps in steps.items():
+        for upstream_step in upstream_steps:
+            dag[upstream_step].add(step_name)
 
     return dag
 

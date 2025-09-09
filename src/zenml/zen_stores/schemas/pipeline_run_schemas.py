@@ -25,6 +25,7 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -395,26 +396,24 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         else:
             raise RuntimeError("Pipeline run has no deployment.")
 
-    def get_steps(self) -> List[Step]:
-        """Get the list of all the steps.
+    def get_upstream_steps(self) -> Dict[str, List[str]]:
+        """Get the list of all the upstream steps for each step.
 
         Returns:
-            The list of Step objects, including the step that did not run yet.
+            The list of upstream steps for each step.
 
         Raises:
-            RuntimeError: If the pipeline run has no deployment.
+            RuntimeError: If the pipeline run has no deployment or
+            the deployment has no pipeline spec.
         """
-        if self.deployment:
-            steps = []
-            pipeline_configuration = self.get_pipeline_configuration()
-            for (
-                step_configuration
-            ) in self.deployment.get_step_configurations():
-                steps.append(
-                    Step.from_dict(
-                        data=json.loads(step_configuration.config),
-                        pipeline_configuration=pipeline_configuration,
-                    )
+        if self.deployment and self.deployment.pipeline_spec:
+            pipeline_spec = PipelineSpec.model_validate_json(
+                self.deployment.pipeline_spec
+            )
+            steps = {}
+            for step_spec in pipeline_spec.steps:
+                steps[step_spec.pipeline_parameter_name] = (
+                    step_spec.upstream_steps
                 )
             return steps
         else:
@@ -749,10 +748,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 return False
 
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
-                if self.deployment:
-                    steps = self.get_steps()
+                if self.deployment and self.deployment.pipeline_spec:
+                    step_dict = self.get_upstream_steps()
 
-                    dag = build_dag(steps)
+                    dag = build_dag(step_dict)
 
                     failed_steps = {
                         s.name
@@ -773,14 +772,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         for s in self.step_runs
                     }
 
-                    for step in steps:
-                        if step.config.name in steps_to_skip:
+                    for step_name, step in step_dict.items():
+                        if step_name in steps_to_skip:
                             continue
 
-                        if step.config.name not in steps_statuses:
+                        if step_name not in steps_statuses:
                             return True
 
-                        elif not steps_statuses[step.config.name].is_finished:
+                        elif not steps_statuses[step_name].is_finished:
                             return True
 
                     return False

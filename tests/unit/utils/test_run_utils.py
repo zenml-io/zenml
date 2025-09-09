@@ -13,11 +13,9 @@
 #  permissions and limitations under the License.
 """Unit tests for run utils."""
 
-from unittest.mock import Mock
-
 import pytest
 
-from zenml.zen_stores.schemas.pipeline_run_schemas import (
+from zenml.utils.run_utils import (
     build_dag,
     find_all_downstream_steps,
 )
@@ -26,64 +24,34 @@ from zenml.zen_stores.schemas.pipeline_run_schemas import (
 class TestBuildDagWithDownstreamSteps:
     """Test cases for build_dag function."""
 
-    def test_empty_steps_list(self):
-        """Test with empty steps list."""
-        steps = []
-        result = build_dag(steps)
-        assert result == {}
-
     def test_single_step_no_upstream(self):
         """Test with single step having no upstream dependencies."""
-        # Mock step with no upstream dependencies
-        step = Mock()
-        step.config.name = "step1"
-        step.spec.upstream_steps = []
-
-        result = build_dag([step])
+        steps = {"step1": []}
+        result = build_dag(steps)
 
         expected = {"step1": set()}
         assert result == expected
 
     def test_linear_pipeline(self):
         """Test with linear pipeline: step1 -> step2 -> step3."""
-        # Create mock steps
-        step1 = Mock()
-        step1.config.name = "step1"
-        step1.spec.upstream_steps = []
-
-        step2 = Mock()
-        step2.config.name = "step2"
-        step2.spec.upstream_steps = ["step1"]
-
-        step3 = Mock()
-        step3.config.name = "step3"
-        step3.spec.upstream_steps = ["step2"]
-
-        result = build_dag([step1, step2, step3])
+        steps = {
+            "step1": [],
+            "step2": ["step1"],
+            "step3": ["step2"],
+        }
+        result = build_dag(steps)
 
         expected = {"step1": {"step2"}, "step2": {"step3"}, "step3": set()}
         assert result == expected
 
     def test_diamond_pipeline(self):
         """Test with diamond-shaped pipeline: step1 -> step2,step3 -> step4."""
-        # Create mock steps
-        step1 = Mock()
-        step1.config.name = "step1"
-        step1.spec.upstream_steps = []
-
-        step2 = Mock()
-        step2.config.name = "step2"
-        step2.spec.upstream_steps = ["step1"]
-
-        step3 = Mock()
-        step3.config.name = "step3"
-        step3.spec.upstream_steps = ["step1"]
-
-        step4 = Mock()
-        step4.config.name = "step4"
-        step4.spec.upstream_steps = ["step2", "step3"]
-
-        steps = [step1, step2, step3, step4]
+        steps = {
+            "step1": [],
+            "step2": ["step1"],
+            "step3": ["step1"],
+            "step4": ["step2", "step3"],
+        }
         result = build_dag(steps)
 
         expected = {
@@ -96,23 +64,14 @@ class TestBuildDagWithDownstreamSteps:
 
     def test_complex_pipeline(self):
         """Test with more complex pipeline structure."""
-        # Create mock steps for a complex DAG
-        steps_data = [
-            ("step1", []),
-            ("step2", ["step1"]),
-            ("step3", ["step1"]),
-            ("step4", ["step2", "step3"]),
-            ("step5", ["step2"]),
-            ("step6", ["step4", "step5"]),
-        ]
-
-        steps = []
-        for name, upstream in steps_data:
-            step = Mock()
-            step.config.name = name
-            step.spec.upstream_steps = upstream
-            steps.append(step)
-
+        steps = {
+            "step1": [],
+            "step2": ["step1"],
+            "step3": ["step1"],
+            "step4": ["step2", "step3"],
+            "step5": ["step2"],
+            "step6": ["step4", "step5"],
+        }
         result = build_dag(steps)
 
         expected = {

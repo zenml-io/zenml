@@ -112,7 +112,9 @@ def test_build_dag(clean_client):
     # Get the deployment and extract steps
     deployment = clean_client.get_deployment(run.deployment_id)
 
-    steps = list(deployment.step_configurations.values())
+    steps = {}
+    for step_spec in deployment.pipeline_spec.steps:
+        steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
 
     # Build the DAG using our function
     dag = build_dag(steps)
@@ -139,7 +141,10 @@ def test_find_all_downstream_steps(clean_client):
 
     # Get the deployment and extract steps
     deployment = clean_client.get_deployment(run.deployment_id)
-    steps = list(deployment.step_configurations.values())
+
+    steps = {}
+    for step_spec in deployment.pipeline_spec.steps:
+        steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
 
     # Build the DAG
     dag = build_dag(steps)
@@ -181,7 +186,10 @@ def test_dag_with_failed_step(clean_client):
 
     # Get the deployment and extract steps
     deployment = clean_client.get_deployment(run.deployment_id)
-    steps = list(deployment.step_configurations.values())
+
+    steps = {}
+    for step_spec in deployment.pipeline_spec.steps:
+        steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
 
     # Build the DAG
     dag = build_dag(steps)
