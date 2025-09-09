@@ -5517,6 +5517,9 @@ class SqlZenStore(BaseZenStore):
                     .load_only(
                         jl_arg(PipelineRunSchema.id),
                         jl_arg(PipelineRunSchema.name),
+                        jl_arg(PipelineRunSchema.start_time),
+                        jl_arg(PipelineRunSchema.end_time),
+                        jl_arg(PipelineRunSchema.status),
                     ),
                 ],
             )
@@ -5729,12 +5732,27 @@ class SqlZenStore(BaseZenStore):
                         ] = artifact_node
 
                     for triggered_run in step_run.triggered_runs:
+                        metadata: Dict[str, Any] = {}
+                        metadata["status"] = triggered_run.status
+
+                        if triggered_run.start_time:
+                            metadata["start_time"] = (
+                                triggered_run.start_time.isoformat()
+                            )
+
+                            if triggered_run.end_time:
+                                metadata["duration"] = (
+                                    triggered_run.end_time
+                                    - triggered_run.start_time
+                                ).total_seconds()
+
                         triggered_run_node = helper.add_triggered_run_node(
                             node_id=helper.get_triggered_run_node_id(
                                 name=triggered_run.name
                             ),
                             id=triggered_run.id,
                             name=triggered_run.name,
+                            **metadata,
                         )
                         helper.add_edge(
                             source=step_node.node_id,
