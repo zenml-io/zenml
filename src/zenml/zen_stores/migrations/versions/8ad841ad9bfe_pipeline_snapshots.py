@@ -1,4 +1,4 @@
-"""Versioned pipeline deployments [8ad841ad9bfe].
+"""Pipeline snapshots [8ad841ad9bfe].
 
 Revision ID: 8ad841ad9bfe
 Revises: 83ef3cb746a5
