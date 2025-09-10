@@ -5286,16 +5286,16 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.delete(template)
-            # We set the reference of all deployments to this template to null
+            # We set the reference of all snapshots to this template to null
             # manually as we can't have a foreign key there to avoid a cycle
-            deployments = session.exec(
+            snapshots = session.exec(
                 select(PipelineSnapshotSchema).where(
-                    PipelineSnapshotSchema.source_snapshot_id == template_id
+                    PipelineSnapshotSchema.template_id == template_id
                 )
             ).all()
-            for deployment in deployments:
-                deployment.source_snapshot_id = None
-                session.add(deployment)
+            for snapshot in snapshots:
+                snapshot.template_id = None
+                session.add(snapshot)
 
             session.commit()
 
@@ -5513,7 +5513,7 @@ class SqlZenStore(BaseZenStore):
                 ],
             )
             assert run.snapshot is not None
-            deployment = run.snapshot
+            snapshot = run.snapshot
             step_runs = {
                 step.name: step
                 for step in run.step_runs
@@ -5521,7 +5521,7 @@ class SqlZenStore(BaseZenStore):
             }
 
             pipeline_configuration = PipelineConfiguration.model_validate_json(
-                deployment.pipeline_configuration
+                snapshot.pipeline_configuration
             )
             pipeline_configuration.finalize_substitutions(
                 start_time=run.start_time, inplace=True
@@ -5532,7 +5532,7 @@ class SqlZenStore(BaseZenStore):
                     json.loads(config_table.config),
                     pipeline_configuration=pipeline_configuration,
                 )
-                for config_table in deployment.step_configurations
+                for config_table in snapshot.step_configurations
             }
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
@@ -5920,11 +5920,11 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # ... or if the deployment_id and orchestrator_run_id are used
+            # ... or if the snapshot_id and orchestrator_run_id are used
             # by an existing run
             raise EntityExistsError(
                 "Unable to create pipeline run: A pipeline run with "
-                "the same deployment_id and orchestrator_run_id "
+                "the same snapshot_id and orchestrator_run_id "
                 "already exists."
             )
 
@@ -6073,7 +6073,7 @@ class SqlZenStore(BaseZenStore):
             # finishes, the subsequent queries will not be able to find a
             # placeholder run anymore, as we already updated the
             # status.
-            # Note: Due to our unique index on deployment_id and
+            # Note: Due to our unique index on snapshot_id and
             # orchestrator_run_id, this only locks a single row. If you're
             # modifying this WHERE clause, make sure to test/adjust so this
             # does not lock multiple rows or even the complete table.
@@ -6095,7 +6095,7 @@ class SqlZenStore(BaseZenStore):
                 )
             )
             # In very rare cases, there can be multiple placeholder runs for
-            # the same deployment. By ordering by the orchestrator_run_id, we
+            # the same snapshot. By ordering by the orchestrator_run_id, we
             # make sure that we use the placeholder run with the matching
             # orchestrator_run_id if it exists, before falling back to the
             # placeholder run without any orchestrator_run_id provided.
@@ -6129,17 +6129,17 @@ class SqlZenStore(BaseZenStore):
         )
 
     def _get_run_by_orchestrator_run_id(
-        self, orchestrator_run_id: str, deployment_id: UUID, session: Session
+        self, orchestrator_run_id: str, snapshot_id: UUID, session: Session
     ) -> PipelineRunResponse:
-        """Get a pipeline run based on deployment and orchestrator run ID.
+        """Get a pipeline run based on snapshot and orchestrator run ID.
 
         Args:
             orchestrator_run_id: The orchestrator run ID.
-            deployment_id: The deployment ID.
+            snapshot_id: The snapshot ID.
             session: SQLAlchemy session.
 
         Raises:
-            KeyError: If no run exists for the deployment and orchestrator run
+            KeyError: If no run exists for the snapshot and orchestrator run
                 ID.
 
         Returns:
@@ -6147,7 +6147,7 @@ class SqlZenStore(BaseZenStore):
         """
         run_schema = session.exec(
             select(PipelineRunSchema)
-            .where(PipelineRunSchema.snapshot_id == deployment_id)
+            .where(PipelineRunSchema.snapshot_id == snapshot_id)
             .where(
                 PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
             )
@@ -6164,7 +6164,7 @@ class SqlZenStore(BaseZenStore):
         if not run_schema:
             raise KeyError(
                 f"Unable to get run for orchestrator run ID "
-                f"{orchestrator_run_id} and deployment ID {deployment_id}."
+                f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
         return run_schema.to_model(
@@ -6203,7 +6203,7 @@ class SqlZenStore(BaseZenStore):
                     return (
                         self._get_run_by_orchestrator_run_id(
                             orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                            deployment_id=pipeline_run.snapshot,
+                            snapshot_id=pipeline_run.snapshot,
                             session=session,
                         ),
                         False,
@@ -6211,7 +6211,7 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            # Acquire exclusive lock on the deployment to prevent deadlocks
+            # Acquire exclusive lock on the snapshot to prevent deadlocks
             # during insertion
             session.exec(
                 select(PipelineSnapshotSchema.id)
@@ -6235,12 +6235,12 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     # We were not able to find/replace a placeholder run. This could
                     # be due to one of the following three reasons:
-                    # (1) There never was a placeholder run for the deployment. This
+                    # (1) There never was a placeholder run for the snapshot. This
                     #     is the case if the user ran the pipeline on a schedule.
                     # (2) There was a placeholder run, but a previous pipeline run
                     #     already used it. This is the case if users rerun a
                     #     pipeline run e.g. from the orchestrator UI, as they will
-                    #     use the same deployment_id with a new orchestrator_run_id.
+                    #     use the same snapshot_id with a new orchestrator_run_id.
                     # (3) A step of the same pipeline run already replaced the
                     #     placeholder run.
                     pass
@@ -6251,12 +6251,12 @@ class SqlZenStore(BaseZenStore):
                 # (1) The behavior depends on whether we're the first step of
                 #     the pipeline run that's trying to create the run. If yes,
                 #     the `self._create_run(...)` call will succeed. If no, a
-                #     run with the same deployment_id and orchestrator_run_id
+                #     run with the same snapshot_id and orchestrator_run_id
                 #     already exists and the `self._create_run(...)` call will
                 #     fail due to the unique constraint on those columns.
                 # (2) Same as (1).
                 # (3) A step of the same pipeline run replaced the placeholder
-                #     run, which now contains the deployment_id and
+                #     run, which now contains the snapshot_id and
                 #     orchestrator_run_id of the run that we're trying to
                 #     create.
                 #     -> The `self._create_run(...)` call will fail due to the
@@ -6268,7 +6268,7 @@ class SqlZenStore(BaseZenStore):
                 if not pipeline_run.orchestrator_run_id:
                     raise
                 # Creating the run failed because
-                # - a run with the same deployment_id and orchestrator_run_id
+                # - a run with the same snapshot_id and orchestrator_run_id
                 #   exists. We now fetch and return that run.
                 # - a run with the same name already exists. This could be
                 #   either a different run (in which case we want to fail) or a
@@ -6278,7 +6278,7 @@ class SqlZenStore(BaseZenStore):
                     return (
                         self._get_run_by_orchestrator_run_id(
                             orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                            deployment_id=pipeline_run.snapshot,
+                            snapshot_id=pipeline_run.snapshot,
                             session=session,
                         ),
                         False,
@@ -9833,7 +9833,7 @@ class SqlZenStore(BaseZenStore):
             .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
         ).all()
 
-        # Deployment always exists for pipeline runs of newer versions
+        # Snapshots always exists for pipeline runs of newer versions
         assert pipeline_run.snapshot
         num_steps = pipeline_run.snapshot.step_count
         new_status = get_pipeline_run_status(
@@ -9891,7 +9891,7 @@ class SqlZenStore(BaseZenStore):
                 analytics_handler.metadata = {
                     "project_id": pipeline_run.project_id,
                     "pipeline_run_id": pipeline_run_id,
-                    "source_deployment_id": pipeline_run.snapshot.source_snapshot_id,
+                    "source_snapshot_id": pipeline_run.snapshot.source_snapshot_id,
                     "status": new_status,
                     "num_steps": num_steps,
                     "start_time": start_time_str,
@@ -13359,7 +13359,7 @@ class SqlZenStore(BaseZenStore):
 
                         # TODO: This is very inefficient, we should use a
                         # better query
-                        older_deployments = self.list_snapshots(
+                        older_snapshots = self.list_snapshots(
                             PipelineSnapshotFilter(
                                 id=f"notequals:{resource.id}",
                                 project=resource.project.id,
@@ -13367,11 +13367,11 @@ class SqlZenStore(BaseZenStore):
                                 tags=[tag_schema.name],
                             )
                         )
-                        if older_deployments.items:
+                        if older_snapshots.items:
                             detach_resources.append(
                                 TagResourceRequest(
                                     tag_id=tag_schema.id,
-                                    resource_id=older_deployments.items[0].id,
+                                    resource_id=older_snapshots.items[0].id,
                                     resource_type=TaggableResourceTypes.PIPELINE_SNAPSHOT,
                                 )
                             )
