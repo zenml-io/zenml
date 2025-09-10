@@ -748,54 +748,58 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 return False
 
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
-                session = object_session(self)
-
-                step_run_statuses = session.execute(
-                    select(StepRunSchema.name, StepRunSchema.status).where(
-                        StepRunSchema.pipeline_run_id == self.id
-                    )
-                ).all()
-
-                if self.deployment and self.deployment.pipeline_spec:
-                    step_dict = self.get_upstream_steps()
-
-                    dag = build_dag(step_dict)
-
-                    failed_steps = {
-                        name
-                        for name, status in step_run_statuses
-                        if ExecutionStatus(status).is_failed
-                    }
-
-                    steps_to_skip = set()
-                    for failed_step in failed_steps:
-                        steps_to_skip.update(
-                            find_all_downstream_steps(failed_step, dag)
+                if session := object_session(self):
+                    step_run_statuses = session.execute(
+                        select(StepRunSchema.name, StepRunSchema.status).where(
+                            StepRunSchema.pipeline_run_id == self.id
                         )
+                    ).all()
 
-                    steps_to_skip.update(failed_steps)
+                    if self.deployment and self.deployment.pipeline_spec:
+                        step_dict = self.get_upstream_steps()
 
-                    steps_statuses = {
-                        name: ExecutionStatus(status)
-                        for name, status in step_run_statuses
-                    }
+                        dag = build_dag(step_dict)
 
-                    for step_name, _ in step_dict.items():
-                        if step_name in steps_to_skip:
-                            continue
+                        failed_steps = {
+                            name
+                            for name, status in step_run_statuses
+                            if ExecutionStatus(status).is_failed
+                        }
 
-                        if step_name not in steps_statuses:
-                            return True
+                        steps_to_skip = set()
+                        for failed_step in failed_steps:
+                            steps_to_skip.update(
+                                find_all_downstream_steps(failed_step, dag)
+                            )
 
-                        elif not steps_statuses[step_name].is_finished:
-                            return True
+                        steps_to_skip.update(failed_steps)
 
-                    return False
+                        steps_statuses = {
+                            name: ExecutionStatus(status)
+                            for name, status in step_run_statuses
+                        }
+
+                        for step_name, _ in step_dict.items():
+                            if step_name in steps_to_skip:
+                                continue
+
+                            if step_name not in steps_statuses:
+                                return True
+
+                            elif not steps_statuses[step_name].is_finished:
+                                return True
+
+                        return False
+                    else:
+                        in_progress = any(
+                            not ExecutionStatus(status).is_finished
+                            for name, status in step_run_statuses
+                        )
+                        return in_progress
                 else:
-                    in_progress = any(
-                        not ExecutionStatus(status).is_finished
-                        for name, status in step_run_statuses
+                    raise RuntimeError(
+                        "Missing DB session to check the in progress "
+                        "status of the run."
                     )
-                    return in_progress
 
         return False
