@@ -32,6 +32,7 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineFilter,
     PipelineRunFilter,
+    PipelineSnapshotFilter,
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
@@ -348,7 +349,7 @@ def create_run_template(
     cli_utils.warning(
         "The `zenml pipeline create-run-template` command is deprecated and "
         "will be removed in a future version. Please use `zenml pipeline "
-        "deploy` instead."
+        "snapshot create` instead."
     )
     if not Client().root:
         cli_utils.warning(
@@ -368,158 +369,6 @@ def create_run_template(
         template = pipeline_instance.create_run_template(name=name)
 
     cli_utils.declare(f"Created run template `{template.id}`.")
-
-
-@pipeline.command("create-snapshot", help="Create a snapshot of a pipeline.")
-@click.argument("source")
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    required=False,
-    help="The version name of the snapshot. If not provided, a version "
-    "name will be generated automatically.",
-)
-@click.option(
-    "--description",
-    "-d",
-    type=str,
-    required=False,
-    help="The description of the snapshot.",
-)
-@click.option(
-    "--tags",
-    "-t",
-    type=str,
-    required=False,
-    multiple=True,
-    help="The tags to add to the snapshot.",
-)
-@click.option(
-    "--config",
-    "-c",
-    "config_path",
-    type=click.Path(exists=True, dir_okay=False),
-    required=False,
-    help="Path to configuration file for the snapshot.",
-)
-@click.option(
-    "--stack",
-    "-s",
-    "stack_name_or_id",
-    type=str,
-    required=False,
-    help="Name or ID of the stack to use for the snapshot.",
-)
-def create_pipeline_snapshot(
-    source: str,
-    version: Optional[str] = None,
-    description: Optional[str] = None,
-    tags: Optional[List[str]] = None,
-    config_path: Optional[str] = None,
-    stack_name_or_id: Optional[str] = None,
-) -> None:
-    """Create a snapshot of a pipeline.
-
-    Args:
-        source: Importable source resolving to a pipeline instance.
-        version: Version name of the snapshot.
-        description: Description of the snapshot.
-        tags: Tags to add to the snapshot.
-        config_path: Path to configuration file for the snapshot.
-        stack_name_or_id: Name or ID of the stack for which the snapshot
-            should be created.
-    """
-    if not Client().root:
-        cli_utils.warning(
-            "You're running the `zenml pipeline create-snapshot` command "
-            "without a ZenML repository. Your current working directory will "
-            "be used as the source root relative to which the registered step "
-            "classes will be resolved. To silence this warning, run `zenml "
-            "init` at your source code root."
-        )
-
-    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
-        pipeline_instance = _import_pipeline(source=source)
-
-        pipeline_instance = pipeline_instance.with_options(
-            config_path=config_path
-        )
-        snapshot = pipeline_instance.create_snapshot(
-            version=version, description=description, tags=tags
-        )
-
-    cli_utils.declare(
-        f"Created pipeline snapshot `{snapshot.id}`. You can now trigger "
-        f"this snapshot from the dashboard or by calling `zenml pipeline "
-        f"trigger-snapshot --snapshot {snapshot.id}`"
-    )
-
-
-@pipeline.command("trigger-snapshot", help="Trigger a snapshot.")
-@click.option(
-    "--snapshot",
-    "-s",
-    "snapshot_id",
-    type=str,
-    required=False,
-    help="The ID of the snapshot to trigger.",
-)
-@click.option(
-    "--pipeline",
-    "-p",
-    "pipeline_name_or_id",
-    type=str,
-    required=False,
-    help="The name or ID of the pipeline to trigger.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    required=False,
-    help="The version of the snapshot to trigger.",
-)
-@click.option(
-    "--config",
-    "-c",
-    "config_path",
-    type=click.Path(exists=True, dir_okay=False),
-    required=False,
-    help="Path to configuration file for the run.",
-)
-@click.option(
-    "--stack",
-    "-s",
-    "stack_name_or_id",
-    type=str,
-    required=False,
-    help="Name or ID of the stack for which to find a snapshot.",
-)
-def trigger_snapshot(
-    snapshot_id: Optional[str] = None,
-    pipeline_name_or_id: Optional[str] = None,
-    version: Optional[str] = None,
-    config_path: Optional[str] = None,
-    stack_name_or_id: Optional[str] = None,
-) -> None:
-    """Trigger a snapshot.
-
-    Args:
-        snapshot_id: The ID of the snapshot to trigger.
-        pipeline_name_or_id: The name or ID of the pipeline to trigger.
-        version: The version of the snapshot to trigger.
-        config_path: Path to configuration file for the run.
-        stack_name_or_id: Name or ID of the stack for which to find a snapshot.
-    """
-    run = Client().trigger_snapshot(
-        snapshot_id=UUID(snapshot_id) if snapshot_id else None,
-        pipeline_name_or_id=pipeline_name_or_id,
-        version=version,
-        config_path=config_path,
-        stack_name_or_id=stack_name_or_id,
-    )
-    cli_utils.declare(f"Triggered snapshot run `{run.id}`.")
 
 
 @pipeline.command("list", help="List all registered pipelines.")
@@ -894,3 +743,205 @@ def delete_pipeline_build(
         cli_utils.error(str(e))
     else:
         cli_utils.declare(f"Deleted pipeline build '{build_id}'.")
+
+
+@pipeline.group()
+def snapshot() -> None:
+    """Commands for pipeline snapshots."""
+
+
+@snapshot.command("create", help="Create a snapshot of a pipeline.")
+@click.argument("source")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+    help="The version name of the snapshot. If not provided, a version "
+    "name will be generated automatically.",
+)
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="The description of the snapshot.",
+)
+@click.option(
+    "--tags",
+    "-t",
+    type=str,
+    required=False,
+    multiple=True,
+    help="The tags to add to the snapshot.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the snapshot.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to use for the snapshot.",
+)
+def create_pipeline_snapshot(
+    source: str,
+    version: Optional[str] = None,
+    description: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+) -> None:
+    """Create a snapshot of a pipeline.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        version: Version name of the snapshot.
+        description: Description of the snapshot.
+        tags: Tags to add to the snapshot.
+        config_path: Path to configuration file for the snapshot.
+        stack_name_or_id: Name or ID of the stack for which the snapshot
+            should be created.
+    """
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline snapshot register` command "
+            "without a ZenML repository. Your current working directory will "
+            "be used as the source root relative to which the registered step "
+            "classes will be resolved. To silence this warning, run `zenml "
+            "init` at your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path
+        )
+        snapshot = pipeline_instance.create_snapshot(
+            version=version, description=description, tags=tags
+        )
+
+    cli_utils.declare(
+        f"Created pipeline snapshot `{snapshot.id}`. You can now trigger "
+        f"this snapshot from the dashboard or by calling `zenml pipeline "
+        f"trigger-snapshot --snapshot {snapshot.id}`"
+    )
+
+
+@snapshot.command("trigger", help="Trigger a snapshot.")
+@click.option(
+    "--snapshot",
+    "-s",
+    "snapshot_id",
+    type=str,
+    required=False,
+    help="The ID of the snapshot to trigger.",
+)
+@click.option(
+    "--pipeline",
+    "-p",
+    "pipeline_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline to trigger.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+    help="The version of the snapshot to trigger.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the run.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack for which to find a snapshot.",
+)
+def trigger_snapshot(
+    snapshot_id: Optional[str] = None,
+    pipeline_name_or_id: Optional[str] = None,
+    version: Optional[str] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+) -> None:
+    """Trigger a snapshot.
+
+    Args:
+        snapshot_id: The ID of the snapshot to trigger.
+        pipeline_name_or_id: The name or ID of the pipeline to trigger.
+        version: The version of the snapshot to trigger.
+        config_path: Path to configuration file for the run.
+        stack_name_or_id: Name or ID of the stack for which to find a snapshot.
+    """
+    run = Client().trigger_snapshot(
+        snapshot_id=UUID(snapshot_id) if snapshot_id else None,
+        pipeline_name_or_id=pipeline_name_or_id,
+        version=version,
+        config_path=config_path,
+        stack_name_or_id=stack_name_or_id,
+    )
+    cli_utils.declare(f"Triggered snapshot run `{run.id}`.")
+
+
+@snapshot.command("list", help="List pipeline snapshots.")
+@list_options(PipelineSnapshotFilter)
+def list_pipeline_snapshots(**kwargs: Any) -> None:
+    """List all pipeline snapshots for the filter.
+
+    Args:
+        **kwargs: Keyword arguments to filter pipeline snapshots.
+    """
+    client = Client()
+    try:
+        with console.status("Listing pipeline snapshots...\n"):
+            pipeline_snapshots = client.list_snapshots(hydrate=True, **kwargs)
+    except KeyError as err:
+        cli_utils.error(str(err))
+    else:
+        if not pipeline_snapshots.items:
+            cli_utils.declare("No pipeline snapshots found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            pipeline_snapshots,
+            exclude_columns=[
+                "created",
+                "updated",
+                "user",
+                "project",
+                "pipeline_configuration",
+                "step_configurations",
+                "client_environment",
+                "client_version",
+                "server_version",
+                "run_name_template",
+                "pipeline_version_hash",
+                "pipeline_spec",
+                "pipeline",
+                "stack",
+                "build",
+                "schedule",
+                "code_reference",
+                "config_schema",
+                "config_template",
+            ],
+        )

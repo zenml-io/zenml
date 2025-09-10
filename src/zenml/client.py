@@ -3425,6 +3425,9 @@ class Client(metaclass=ClientMetaClass):
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
         template_id: Optional[Union[str, UUID]] = None,
+        schedule_id: Optional[Union[str, UUID]] = None,
+        source_snapshot_id: Optional[Union[str, UUID]] = None,
+        tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineSnapshotResponse]:
@@ -3447,6 +3450,9 @@ class Client(metaclass=ClientMetaClass):
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
             template_id: The ID of the template to filter by.
+            schedule_id: The ID of the schedule to filter by.
+            source_snapshot_id: The ID of the source snapshot to filter by.
+            tag: Filter by tag.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3470,6 +3476,9 @@ class Client(metaclass=ClientMetaClass):
             stack_id=stack_id,
             build_id=build_id,
             template_id=template_id,
+            schedule_id=schedule_id,
+            source_snapshot_id=source_snapshot_id,
+            tag=tag,
             tags=tags,
         )
         return self.zen_store.list_snapshots(
