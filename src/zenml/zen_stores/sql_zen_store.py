@@ -4894,7 +4894,10 @@ class SqlZenStore(BaseZenStore):
             )
 
             if run_template and not snapshot.source_snapshot:
-                # TODO: remove this once we remove run templates entirely
+                # This snapshot is created as part of a triggered run template.
+                # As we're going to remove run templates soon, we also
+                # automatically associate the snapshot with its source snapshot
+                # (= the snapshot backing the run template)
                 snapshot.source_snapshot = run_template.source_snapshot_id
 
             if snapshot.version:
@@ -5098,6 +5101,19 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.delete(snapshot)
+
+            # We set the reference of all snapshots to this snapshot to null
+            # manually as we can't have a foreign key there to avoid a cycle
+            snapshots = session.exec(
+                select(PipelineSnapshotSchema).where(
+                    PipelineSnapshotSchema.source_snapshot_id == snapshot_id
+                )
+            ).all()
+
+            for snapshot in snapshots:
+                snapshot.source_snapshot_id = None
+                session.add(snapshot)
+
             session.commit()
 
     def trigger_snapshot(
