@@ -750,7 +750,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
                 session = object_session(self)
 
-                step_run_statuses = session.exec(
+                step_run_statuses = session.execute(
                     select(StepRunSchema.name, StepRunSchema.status).where(
                         StepRunSchema.pipeline_run_id == self.id
                     )
