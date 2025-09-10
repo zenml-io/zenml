@@ -44,7 +44,7 @@ if TYPE_CHECKING:
         PipelineBuildSchema,
     )
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-        PipelineDeploymentSchema,
+        PipelineSnapshotSchema,
     )
 
 
@@ -106,7 +106,7 @@ class StackSchema(NamedSchema, table=True):
         link_model=StackCompositionSchema,
     )
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="stack")
-    deployments: List["PipelineDeploymentSchema"] = Relationship(
+    deployments: List["PipelineSnapshotSchema"] = Relationship(
         back_populates="stack",
     )
 

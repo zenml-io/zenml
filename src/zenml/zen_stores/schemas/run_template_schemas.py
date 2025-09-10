@@ -41,7 +41,7 @@ from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-        PipelineDeploymentSchema,
+        PipelineSnapshotSchema,
     )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
@@ -102,7 +102,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         back_populates="run_templates",
     )
     project: "ProjectSchema" = Relationship()
-    source_deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+    source_deployment: Optional["PipelineSnapshotSchema"] = Relationship(
         sa_relationship_kwargs={
             "foreign_keys": "RunTemplateSchema.source_deployment_id",
         }
@@ -137,11 +137,11 @@ class RunTemplateSchema(NamedSchema, table=True):
         Returns:
             A list of query options.
         """
-        from zenml.zen_stores.schemas import PipelineDeploymentSchema
+        from zenml.zen_stores.schemas import PipelineSnapshotSchema
 
         options = [
             joinedload(jl_arg(RunTemplateSchema.source_deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.build)
+                jl_arg(PipelineSnapshotSchema.build)
             ),
         ]
 
@@ -150,11 +150,11 @@ class RunTemplateSchema(NamedSchema, table=True):
                 [
                     joinedload(
                         jl_arg(RunTemplateSchema.source_deployment)
-                    ).joinedload(jl_arg(PipelineDeploymentSchema.pipeline)),
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
                     joinedload(
                         jl_arg(RunTemplateSchema.source_deployment)
                     ).joinedload(
-                        jl_arg(PipelineDeploymentSchema.code_reference)
+                        jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
                 ]
             )
@@ -163,10 +163,10 @@ class RunTemplateSchema(NamedSchema, table=True):
                 [
                     joinedload(
                         jl_arg(RunTemplateSchema.source_deployment)
-                    ).joinedload(jl_arg(PipelineDeploymentSchema.stack)),
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.stack)),
                     joinedload(
                         jl_arg(RunTemplateSchema.source_deployment)
-                    ).joinedload(jl_arg(PipelineDeploymentSchema.schedule)),
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
                 ]
             )
 
@@ -191,8 +191,8 @@ class RunTemplateSchema(NamedSchema, table=True):
             The latest run for this template.
         """
         from zenml.zen_stores.schemas import (
-            PipelineDeploymentSchema,
             PipelineRunSchema,
+            PipelineSnapshotSchema,
         )
 
         if session := object_session(self):
@@ -200,11 +200,11 @@ class RunTemplateSchema(NamedSchema, table=True):
                 session.execute(
                     select(PipelineRunSchema)
                     .join(
-                        PipelineDeploymentSchema,
-                        col(PipelineDeploymentSchema.id)
+                        PipelineSnapshotSchema,
+                        col(PipelineSnapshotSchema.id)
                         == col(PipelineRunSchema.deployment_id),
                     )
-                    .where(PipelineDeploymentSchema.template_id == self.id)
+                    .where(PipelineSnapshotSchema.template_id == self.id)
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
                 )

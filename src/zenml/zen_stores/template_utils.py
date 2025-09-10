@@ -29,7 +29,7 @@ from zenml.logger import get_logger
 from zenml.stack import Flavor
 from zenml.zen_stores.schemas import (
     PipelineBuildSchema,
-    PipelineDeploymentSchema,
+    PipelineSnapshotSchema,
 )
 
 if TYPE_CHECKING:
@@ -83,7 +83,7 @@ def validate_build_is_runnable(
 
 
 def validate_deployment_is_templatable(
-    deployment: PipelineDeploymentSchema,
+    deployment: PipelineSnapshotSchema,
 ) -> None:
     """Validate that a deployment is templatable.
 
@@ -133,7 +133,7 @@ def validate_deployment_is_templatable(
 
 
 def generate_config_template(
-    deployment: PipelineDeploymentSchema,
+    deployment: PipelineSnapshotSchema,
     pipeline_configuration: "PipelineConfiguration",
     step_configurations: Dict[str, "Step"],
 ) -> Dict[str, Any]:
@@ -178,7 +178,7 @@ def generate_config_template(
 
 
 def generate_config_schema(
-    deployment: PipelineDeploymentSchema,
+    deployment: PipelineSnapshotSchema,
     step_configurations: Dict[str, "Step"],
 ) -> Dict[str, Any]:
     """Generate a run configuration schema for the deployment and stack.

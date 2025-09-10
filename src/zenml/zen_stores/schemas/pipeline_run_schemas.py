@@ -47,7 +47,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-    PipelineDeploymentSchema,
+    PipelineSnapshotSchema,
 )
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -107,7 +107,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     # Foreign keys
     deployment_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineDeploymentSchema.__tablename__,
+        target=PipelineSnapshotSchema.__tablename__,
         source_column="deployment_id",
         target_column="id",
         ondelete="CASCADE",
@@ -147,7 +147,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Relationships
-    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+    deployment: Optional["PipelineSnapshotSchema"] = Relationship(
         back_populates="pipeline_runs"
     )
     project: "ProjectSchema" = Relationship(back_populates="runs")
@@ -264,19 +264,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         options = [
             selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.pipeline)
+                jl_arg(PipelineSnapshotSchema.pipeline)
             ),
             selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.stack)
+                jl_arg(PipelineSnapshotSchema.stack)
             ),
             selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.build)
+                jl_arg(PipelineSnapshotSchema.build)
             ),
             selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.schedule)
+                jl_arg(PipelineSnapshotSchema.schedule)
             ),
             selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.code_reference)
+                jl_arg(PipelineSnapshotSchema.code_reference)
             ),
         ]
 
@@ -558,7 +558,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 template_id=self.deployment.template_id
                 if self.deployment
                 else None,
-                source_deployment_id=self.deployment.source_deployment_id
+                source_deployment_id=self.deployment.source_snapshot_id
                 if self.deployment
                 else None,
                 is_templatable=is_templatable,

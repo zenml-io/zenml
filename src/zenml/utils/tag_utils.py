@@ -302,7 +302,7 @@ def add_tags(
     ):
         deployment_model = client.get_deployment(id_or_prefix=deployment)
         resource_id = deployment_model.id
-        resource_type = TaggableResourceTypes.PIPELINE_DEPLOYMENT
+        resource_type = TaggableResourceTypes.PIPELINE_SNAPSHOT
 
     # Tag an artifact
     elif artifact is not None and all(
@@ -670,7 +670,7 @@ def remove_tags(
     ):
         deployment_model = client.get_deployment(id_or_prefix=deployment)
         resource_id = deployment_model.id
-        resource_type = TaggableResourceTypes.PIPELINE_DEPLOYMENT
+        resource_type = TaggableResourceTypes.PIPELINE_SNAPSHOT
 
     # Remove tags from a run
     elif run is not None and all(

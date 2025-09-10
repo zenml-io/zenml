@@ -34,7 +34,7 @@ from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-    PipelineDeploymentSchema,
+    PipelineSnapshotSchema,
     StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -92,7 +92,7 @@ __all__ = [
     "NamedSchema",
     "OAuthDeviceSchema",
     "PipelineBuildSchema",
-    "PipelineDeploymentSchema",
+    "PipelineSnapshotSchema",
     "StepConfigurationSchema",
     "PipelineRunSchema",
     "PipelineSchema",

@@ -269,9 +269,8 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
-    # TODO: non-optional?
-    pipeline: Optional[PipelineResponse] = Field(
-        default=None, title="The pipeline associated with the snapshot."
+    pipeline: PipelineResponse = Field(
+        title="The pipeline associated with the snapshot."
     )
     stack: Optional[StackResponse] = Field(
         default=None, title="The stack associated with the snapshot."
@@ -451,7 +450,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().code_path
 
     @property
-    def pipeline(self) -> Optional[PipelineResponse]:
+    def pipeline(self) -> PipelineResponse:
         """The `pipeline` property.
 
         Returns:
@@ -632,14 +631,14 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         from sqlmodel import col
 
         from zenml.zen_stores.schemas import (
-            PipelineDeploymentSchema,
+            PipelineSnapshotSchema,
         )
 
         custom_filters = super().get_custom_filters(table)
 
         if self.versioned_only:
             custom_filters.append(
-                col(PipelineDeploymentSchema.version).is_not(None)
+                col(PipelineSnapshotSchema.version).is_not(None)
             )
 
         return custom_filters

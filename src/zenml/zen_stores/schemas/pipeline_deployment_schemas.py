@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQLModel implementation of pipeline deployment tables."""
+"""Pipeline snapshot schemas."""
 
 import json
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
@@ -59,9 +59,10 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class PipelineDeploymentSchema(BaseSchema, table=True):
-    """SQL Model for pipeline deployments."""
+class PipelineSnapshotSchema(BaseSchema, table=True):
+    """SQL Model for pipeline snapshots."""
 
+    # This is kept to not mess with existing foreign keys
     __tablename__ = "pipeline_deployment"
     __table_args__ = (
         UniqueConstraint(
@@ -164,7 +165,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     )
     # This is not a foreign key to remove a cycle which messes with our DB
     # backup process
-    source_deployment_id: Optional[UUID] = None
+    source_snapshot_id: Optional[UUID] = None
 
     # Deprecated, remove once we remove run templates entirely
     template_id: Optional[UUID] = None
@@ -179,7 +180,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     schedule: Optional["ScheduleSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship(
         sa_relationship_kwargs={
-            "foreign_keys": "[PipelineDeploymentSchema.build_id]"
+            "foreign_keys": "[PipelineSnapshotSchema.build_id]"
         }
     )
     code_reference: Optional["CodeReferenceSchema"] = Relationship()
@@ -199,7 +200,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     step_count: int
     tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE_DEPLOYMENT.value}', foreign(TagResourceSchema.resource_id)==PipelineDeploymentSchema.id)",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE_SNAPSHOT.value}', foreign(TagResourceSchema.resource_id)==PipelineSnapshotSchema.id)",
             secondary="tag_resource",
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
@@ -209,17 +210,17 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
     @property
     def latest_triggered_run(self) -> Optional["PipelineRunSchema"]:
-        """Fetch the latest triggered run for this deployment.
+        """Fetch the latest triggered run for this snapshot.
 
         Raises:
             RuntimeError: If no session for the schema exists.
 
         Returns:
-            The latest triggered run for this deployment.
+            The latest triggered run for this snapshot.
         """
         from zenml.zen_stores.schemas import (
-            PipelineDeploymentSchema,
             PipelineRunSchema,
+            PipelineSnapshotSchema,
         )
 
         if session := object_session(self):
@@ -227,13 +228,12 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 session.execute(
                     select(PipelineRunSchema)
                     .join(
-                        PipelineDeploymentSchema,
-                        col(PipelineDeploymentSchema.id)
+                        PipelineSnapshotSchema,
+                        col(PipelineSnapshotSchema.id)
                         == col(PipelineRunSchema.deployment_id),
                     )
                     .where(
-                        PipelineDeploymentSchema.source_deployment_id
-                        == self.id
+                        PipelineSnapshotSchema.source_snapshot_id == self.id
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
@@ -243,13 +243,13 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             )
         else:
             raise RuntimeError(
-                "Missing DB session to fetch latest run for deployment."
+                "Missing DB session to fetch latest run for snapshot."
             )
 
     def get_step_configurations(
         self, include: Optional[List[str]] = None
     ) -> List["StepConfigurationSchema"]:
-        """Get step configurations for the deployment.
+        """Get step configurations for the snapshot.
 
         Args:
             include: List of step names to include. If not given, all step
@@ -282,7 +282,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     def get_step_configuration(
         self, step_name: str
     ) -> "StepConfigurationSchema":
-        """Get the step configuration for the deployment.
+        """Get a step configuration of the snapshot.
 
         Args:
             step_name: The name of the step to get the configuration for.
@@ -324,18 +324,16 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         if include_metadata:
             options.extend(
                 [
-                    joinedload(jl_arg(PipelineDeploymentSchema.stack)),
-                    joinedload(jl_arg(PipelineDeploymentSchema.build)),
-                    joinedload(jl_arg(PipelineDeploymentSchema.pipeline)),
-                    joinedload(jl_arg(PipelineDeploymentSchema.schedule)),
-                    joinedload(
-                        jl_arg(PipelineDeploymentSchema.code_reference)
-                    ),
+                    joinedload(jl_arg(PipelineSnapshotSchema.stack)),
+                    joinedload(jl_arg(PipelineSnapshotSchema.build)),
+                    joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
+                    joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
+                    joinedload(jl_arg(PipelineSnapshotSchema.code_reference)),
                 ]
             )
 
         if include_resources:
-            options.extend([joinedload(jl_arg(PipelineDeploymentSchema.user))])
+            options.extend([joinedload(jl_arg(PipelineSnapshotSchema.user))])
 
         return options
 
@@ -344,16 +342,16 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         cls,
         request: PipelineSnapshotRequest,
         code_reference_id: Optional[UUID],
-    ) -> "PipelineDeploymentSchema":
-        """Convert a `PipelineDeploymentRequest` to a `PipelineDeploymentSchema`.
+    ) -> "PipelineSnapshotSchema":
+        """Create schema from request.
 
         Args:
             request: The request to convert.
             code_reference_id: Optional ID of the code reference for the
-                deployment.
+                snapshot.
 
         Returns:
-            The created `PipelineDeploymentSchema`.
+            The created schema.
         """
         client_env = json.dumps(request.client_environment)
         if len(client_env) > TEXT_FIELD_MAX_LENGTH:
@@ -382,7 +380,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             user_id=request.user,
             schedule_id=request.schedule,
             template_id=request.template,
-            source_deployment_id=request.source_snapshot,
+            source_snapshot_id=request.source_snapshot,
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
@@ -401,8 +399,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
     def update(
         self, update: PipelineSnapshotUpdate
-    ) -> "PipelineDeploymentSchema":
-        """Update the deployment schema.
+    ) -> "PipelineSnapshotSchema":
+        """Update the schema.
 
         Args:
             update: The update to apply.
@@ -432,7 +430,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         step_configuration_filter: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> PipelineSnapshotResponse:
-        """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponse`.
+        """Convert schema to response.
 
         Args:
             include_metadata: Whether the metadata will be filled.
@@ -446,7 +444,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
 
         Returns:
-            The created `PipelineDeploymentResponse`.
+            The response.
         """
         runnable = False
         if self.build and not self.build.is_local and self.build.stack_id:
@@ -516,7 +514,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 client_environment=client_environment,
                 client_version=self.client_version,
                 server_version=self.server_version,
-                pipeline=self.pipeline.to_model() if self.pipeline else None,
+                pipeline=self.pipeline.to_model(),
                 stack=self.stack.to_model() if self.stack else None,
                 build=self.build.to_model() if self.build else None,
                 schedule=self.schedule.to_model() if self.schedule else None,
@@ -531,7 +529,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 else None,
                 code_path=self.code_path,
                 template_id=self.template_id,
-                source_snapshot_id=self.source_deployment_id,
+                source_snapshot_id=self.source_snapshot_id,
                 config_schema=config_schema,
                 config_template=config_template,
             )
@@ -582,7 +580,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
 
     deployment_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineDeploymentSchema.__tablename__,
+        target=PipelineSnapshotSchema.__tablename__,
         source_column="deployment_id",
         target_column="id",
         ondelete="CASCADE",

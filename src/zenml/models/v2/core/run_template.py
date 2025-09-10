@@ -406,8 +406,8 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
-            PipelineDeploymentSchema,
             PipelineSchema,
+            PipelineSnapshotSchema,
             RunTemplateSchema,
             StackSchema,
         )
@@ -420,8 +420,8 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         if self.code_repository_id:
             code_repo_filter = and_(
                 RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.code_reference_id
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.code_reference_id
                 == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
                 == self.code_repository_id,
@@ -431,32 +431,32 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         if self.stack_id:
             stack_filter = and_(
                 RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.stack_id == self.stack_id,
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.stack_id == self.stack_id,
             )
             custom_filters.append(stack_filter)
 
         if self.build_id:
             build_filter = and_(
                 RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.build_id == self.build_id,
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.build_id == self.build_id,
             )
             custom_filters.append(build_filter)
 
         if self.pipeline_id:
             pipeline_filter = and_(
                 RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.pipeline_id == self.pipeline_id,
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.pipeline_id == self.pipeline_id,
             )
             custom_filters.append(pipeline_filter)
 
         if self.pipeline:
             pipeline_filter = and_(
                 RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.pipeline_id == PipelineSchema.id,
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.pipeline,
                     table=PipelineSchema,
@@ -467,8 +467,8 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         if self.stack:
             stack_filter = and_(
                 RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.stack,
                     table=StackSchema,

@@ -50,7 +50,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-    PipelineDeploymentSchema,
+    PipelineSnapshotSchema,
     StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -123,7 +123,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     deployment_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineDeploymentSchema.__tablename__,
+        target=PipelineSnapshotSchema.__tablename__,
         source_column="deployment_id",
         target_column="id",
         ondelete="CASCADE",
@@ -165,7 +165,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     # Relationships
     project: "ProjectSchema" = Relationship(back_populates="step_runs")
     user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
-    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+    deployment: Optional["PipelineSnapshotSchema"] = Relationship(
         back_populates="step_runs"
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
@@ -250,7 +250,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         options = [
             selectinload(jl_arg(StepRunSchema.deployment)).load_only(
-                jl_arg(PipelineDeploymentSchema.pipeline_configuration)
+                jl_arg(PipelineSnapshotSchema.pipeline_configuration)
             ),
             selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
                 jl_arg(PipelineRunSchema.start_time)

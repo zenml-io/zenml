@@ -351,9 +351,9 @@ from zenml.zen_stores.schemas import (
     NamedSchema,
     OAuthDeviceSchema,
     PipelineBuildSchema,
-    PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
+    PipelineSnapshotSchema,
     ProjectSchema,
     RunMetadataResourceSchema,
     RunMetadataSchema,
@@ -4816,9 +4816,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             If a deployment with the given arguments exists.
         """
-        query = select(PipelineDeploymentSchema.id).where(
-            col(PipelineDeploymentSchema.pipeline_id) == pipeline_id,
-            col(PipelineDeploymentSchema.version) == version,
+        query = select(PipelineSnapshotSchema.id).where(
+            col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
+            col(PipelineSnapshotSchema.version) == version,
         )
 
         with Session(self.engine) as session:
@@ -4890,7 +4890,7 @@ class SqlZenStore(BaseZenStore):
 
             self._get_reference_schema_by_id(
                 resource=deployment,
-                reference_schema=PipelineDeploymentSchema,
+                reference_schema=PipelineSnapshotSchema,
                 reference_id=deployment.source_snapshot,
                 session=session,
             )
@@ -4909,7 +4909,7 @@ class SqlZenStore(BaseZenStore):
                 code_reference=deployment.code_reference,
             )
 
-            new_deployment = PipelineDeploymentSchema.from_request(
+            new_deployment = PipelineSnapshotSchema.from_request(
                 deployment, code_reference_id=code_reference_id
             )
 
@@ -4982,7 +4982,7 @@ class SqlZenStore(BaseZenStore):
             # Check if deployment with the given ID exists
             deployment = self._get_schema_by_id(
                 resource_id=deployment_id,
-                schema_class=PipelineDeploymentSchema,
+                schema_class=PipelineSnapshotSchema,
                 session=session,
             )
 
@@ -5014,11 +5014,11 @@ class SqlZenStore(BaseZenStore):
                 filter_model=deployment_filter_model,
                 session=session,
             )
-            query = select(PipelineDeploymentSchema)
+            query = select(PipelineSnapshotSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=PipelineDeploymentSchema,
+                table=PipelineSnapshotSchema,
                 filter_model=deployment_filter_model,
                 hydrate=hydrate,
             )
@@ -5045,7 +5045,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             deployment = self._get_schema_by_id(
                 resource_id=deployment_id,
-                schema_class=PipelineDeploymentSchema,
+                schema_class=PipelineSnapshotSchema,
                 session=session,
             )
 
@@ -5097,7 +5097,7 @@ class SqlZenStore(BaseZenStore):
             # Check if build with the given ID exists
             deployment = self._get_schema_by_id(
                 resource_id=deployment_id,
-                schema_class=PipelineDeploymentSchema,
+                schema_class=PipelineSnapshotSchema,
                 session=session,
             )
 
@@ -5148,7 +5148,7 @@ class SqlZenStore(BaseZenStore):
 
             deployment = self._get_reference_schema_by_id(
                 resource=template,
-                reference_schema=PipelineDeploymentSchema,
+                reference_schema=PipelineSnapshotSchema,
                 reference_id=template.source_deployment_id,
                 session=session,
             )
@@ -5293,13 +5293,12 @@ class SqlZenStore(BaseZenStore):
             # We set the reference of all deployments to this template to null
             # manually as we can't have a foreign key there to avoid a cycle
             deployments = session.exec(
-                select(PipelineDeploymentSchema).where(
-                    PipelineDeploymentSchema.source_deployment_id
-                    == template_id
+                select(PipelineSnapshotSchema).where(
+                    PipelineSnapshotSchema.source_snapshot_id == template_id
                 )
             ).all()
             for deployment in deployments:
-                deployment.source_deployment_id = None
+                deployment.source_snapshot_id = None
                 session.add(deployment)
 
             session.commit()
@@ -5495,14 +5494,12 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.deployment)
                     ).load_only(
-                        jl_arg(
-                            PipelineDeploymentSchema.pipeline_configuration
-                        ),
+                        jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.deployment)
                     ).selectinload(
-                        jl_arg(PipelineDeploymentSchema.step_configurations)
+                        jl_arg(PipelineSnapshotSchema.step_configurations)
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
@@ -5900,7 +5897,7 @@ class SqlZenStore(BaseZenStore):
         self._set_request_user_id(request_model=pipeline_run, session=session)
         self._get_reference_schema_by_id(
             resource=pipeline_run,
-            reference_schema=PipelineDeploymentSchema,
+            reference_schema=PipelineSnapshotSchema,
             reference_id=pipeline_run.deployment,
             session=session,
         )
@@ -6223,9 +6220,9 @@ class SqlZenStore(BaseZenStore):
             # Acquire exclusive lock on the deployment to prevent deadlocks
             # during insertion
             session.exec(
-                select(PipelineDeploymentSchema.id)
+                select(PipelineSnapshotSchema.id)
                 .with_for_update()
-                .where(PipelineDeploymentSchema.id == pipeline_run.deployment)
+                .where(PipelineSnapshotSchema.id == pipeline_run.deployment)
             )
 
             if not pipeline_run.is_placeholder_request:
@@ -9900,7 +9897,7 @@ class SqlZenStore(BaseZenStore):
                 analytics_handler.metadata = {
                     "project_id": pipeline_run.project_id,
                     "pipeline_run_id": pipeline_run_id,
-                    "source_deployment_id": pipeline_run.deployment.source_deployment_id,
+                    "source_deployment_id": pipeline_run.deployment.source_snapshot_id,
                     "status": new_status,
                     "num_steps": num_steps,
                     "start_time": start_time_str,
@@ -12673,7 +12670,7 @@ class SqlZenStore(BaseZenStore):
             PipelineSchema: TaggableResourceTypes.PIPELINE,
             PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
             RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
-            PipelineDeploymentSchema: TaggableResourceTypes.PIPELINE_DEPLOYMENT,
+            PipelineSnapshotSchema: TaggableResourceTypes.PIPELINE_SNAPSHOT,
         }
         if type(resource) not in resource_types:
             raise ValueError(
@@ -12699,9 +12696,9 @@ class SqlZenStore(BaseZenStore):
             ArtifactVersionSchema,
             ModelSchema,
             ModelVersionSchema,
-            PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
+            PipelineSnapshotSchema,
             RunTemplateSchema,
         )
 
@@ -12715,7 +12712,7 @@ class SqlZenStore(BaseZenStore):
             TaggableResourceTypes.PIPELINE: PipelineSchema,
             TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
             TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
-            TaggableResourceTypes.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
+            TaggableResourceTypes.PIPELINE_SNAPSHOT: PipelineSnapshotSchema,
         }
 
         return resource_type_to_schema_mapping[resource_type]
@@ -13027,7 +13024,7 @@ class SqlZenStore(BaseZenStore):
                     TaggableResourceTypes.PIPELINE_RUN.value,
                     TaggableResourceTypes.ARTIFACT_VERSION.value,
                     TaggableResourceTypes.RUN_TEMPLATE.value,
-                    TaggableResourceTypes.PIPELINE_DEPLOYMENT.value,
+                    TaggableResourceTypes.PIPELINE_SNAPSHOT.value,
                 ]
 
                 # Check if tag is associated with any non-allowed resource types
@@ -13074,16 +13071,16 @@ class SqlZenStore(BaseZenStore):
                         None,  # Special case - will be handled differently
                     ),
                     (
-                        TaggableResourceTypes.PIPELINE_DEPLOYMENT,
-                        PipelineDeploymentSchema.id,
-                        PipelineDeploymentSchema.pipeline_id,
+                        TaggableResourceTypes.PIPELINE_SNAPSHOT,
+                        PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.pipeline_id,
                     ),
                 ]:
                     # Special handling for run templates as they don't have direct pipeline_id
                     if resource_type == TaggableResourceTypes.RUN_TEMPLATE:
                         query = (
                             select(
-                                PipelineDeploymentSchema.pipeline_id,
+                                PipelineSnapshotSchema.pipeline_id,
                                 func.count().label("count"),
                             )
                             .select_from(RunTemplateSchema)
@@ -13097,12 +13094,12 @@ class SqlZenStore(BaseZenStore):
                                 ),
                             )
                             .join(
-                                PipelineDeploymentSchema,
+                                PipelineSnapshotSchema,
                                 RunTemplateSchema.source_deployment_id  # type: ignore[arg-type]
-                                == PipelineDeploymentSchema.id,
+                                == PipelineSnapshotSchema.id,
                             )
                             .where(TagResourceSchema.tag_id == tag.id)
-                            .group_by(PipelineDeploymentSchema.pipeline_id)  # type: ignore[arg-type]
+                            .group_by(PipelineSnapshotSchema.pipeline_id)  # type: ignore[arg-type]
                         )
 
                         results = session.exec(query).all()
@@ -13362,10 +13359,10 @@ class SqlZenStore(BaseZenStore):
                                             resource_type=TaggableResourceTypes.RUN_TEMPLATE,
                                         )
                                     )
-                    elif isinstance(resource, PipelineDeploymentSchema):
+                    elif isinstance(resource, PipelineSnapshotSchema):
                         scope_id = resource.pipeline_id
                         scope_ids[
-                            TaggableResourceTypes.PIPELINE_DEPLOYMENT
+                            TaggableResourceTypes.PIPELINE_SNAPSHOT
                         ].append(scope_id)
 
                         # TODO: This is very inefficient, we should use a
@@ -13383,7 +13380,7 @@ class SqlZenStore(BaseZenStore):
                                 TagResourceRequest(
                                     tag_id=tag_schema.id,
                                     resource_id=older_deployments.items[0].id,
-                                    resource_type=TaggableResourceTypes.PIPELINE_DEPLOYMENT,
+                                    resource_type=TaggableResourceTypes.PIPELINE_SNAPSHOT,
                                 )
                             )
                     else:

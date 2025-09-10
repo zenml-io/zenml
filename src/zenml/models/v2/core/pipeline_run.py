@@ -768,9 +768,9 @@ class PipelineRunFilter(
             ModelSchema,
             ModelVersionSchema,
             PipelineBuildSchema,
-            PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
+            PipelineSnapshotSchema,
             ScheduleSchema,
             StackComponentSchema,
             StackCompositionSchema,
@@ -788,8 +788,8 @@ class PipelineRunFilter(
 
         if self.code_repository_id:
             code_repo_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.code_reference_id
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.code_reference_id
                 == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
                 == self.code_repository_id,
@@ -798,39 +798,39 @@ class PipelineRunFilter(
 
         if self.stack_id:
             stack_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
                 StackSchema.id == self.stack_id,
             )
             custom_filters.append(stack_filter)
 
         if self.schedule_id:
             schedule_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.schedule_id == ScheduleSchema.id,
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.schedule_id == ScheduleSchema.id,
                 ScheduleSchema.id == self.schedule_id,
             )
             custom_filters.append(schedule_filter)
 
         if self.build_id:
             pipeline_build_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.build_id == PipelineBuildSchema.id,
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
                 PipelineBuildSchema.id == self.build_id,
             )
             custom_filters.append(pipeline_build_filter)
 
         if self.template_id:
             run_template_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.template_id == self.template_id,
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.template_id == self.template_id,
             )
             custom_filters.append(run_template_filter)
 
         if self.source_deployment_id:
             source_deployment_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.source_deployment_id
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.source_snapshot_id
                 == self.source_deployment_id,
             )
             custom_filters.append(source_deployment_filter)
@@ -846,8 +846,8 @@ class PipelineRunFilter(
 
         if self.stack:
             stack_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.stack,
                     table=StackSchema,
@@ -857,8 +857,8 @@ class PipelineRunFilter(
 
         if self.code_repository:
             code_repo_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.code_reference_id
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.code_reference_id
                 == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
                 == CodeRepositorySchema.id,
@@ -881,8 +881,8 @@ class PipelineRunFilter(
 
         if self.stack_component:
             component_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
                 StackSchema.id == StackCompositionSchema.stack_id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,
                 self.generate_name_or_id_query_conditions(
@@ -911,9 +911,8 @@ class PipelineRunFilter(
                     # components, but the best we can do currently with our
                     # table columns.
                     PipelineRunSchema.deployment_id
-                    == PipelineDeploymentSchema.id,
-                    PipelineDeploymentSchema.build_id
-                    == PipelineBuildSchema.id,
+                    == PipelineSnapshotSchema.id,
+                    PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
                     col(PipelineBuildSchema.is_local).is_(False),
                     col(PipelineBuildSchema.stack_id).is_not(None),
                 )
@@ -922,13 +921,13 @@ class PipelineRunFilter(
                     col(PipelineRunSchema.deployment_id).is_(None),
                     and_(
                         PipelineRunSchema.deployment_id
-                        == PipelineDeploymentSchema.id,
-                        col(PipelineDeploymentSchema.build_id).is_(None),
+                        == PipelineSnapshotSchema.id,
+                        col(PipelineSnapshotSchema.build_id).is_(None),
                     ),
                     and_(
                         PipelineRunSchema.deployment_id
-                        == PipelineDeploymentSchema.id,
-                        PipelineDeploymentSchema.build_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.build_id
                         == PipelineBuildSchema.id,
                         or_(
                             col(PipelineBuildSchema.is_local).is_(True),
@@ -974,9 +973,9 @@ class PipelineRunFilter(
         from zenml.zen_stores.schemas import (
             ModelSchema,
             ModelVersionSchema,
-            PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
+            PipelineSnapshotSchema,
             StackSchema,
         )
 
@@ -990,11 +989,11 @@ class PipelineRunFilter(
             column = PipelineSchema.name
         elif sort_by == "stack":
             query = query.outerjoin(
-                PipelineDeploymentSchema,
-                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineSnapshotSchema,
+                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
             ).outerjoin(
                 StackSchema,
-                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
             )
             column = StackSchema.name
         elif sort_by == "model":

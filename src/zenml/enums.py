@@ -378,7 +378,7 @@ class TaggableResourceTypes(StrEnum):
     PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
     RUN_TEMPLATE = "run_template"
-    PIPELINE_DEPLOYMENT = "pipeline_deployment"
+    PIPELINE_SNAPSHOT = "pipeline_snapshot"
 
 
 class ResponseUpdateStrategy(StrEnum):
