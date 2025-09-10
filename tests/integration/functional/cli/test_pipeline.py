@@ -62,7 +62,7 @@ def test_pipeline_delete(clean_client_with_run: Client):
     assert len(updated_pipelines) == 0
 
     # Ensure pipeline deletion cascades pipeline runs and deployments
-    updated_deployments = clean_client_with_run.list_deployments()
+    updated_deployments = clean_client_with_run.list_snapshots()
     assert len(updated_deployments) == 0
     updated_runs = clean_client_with_run.list_pipeline_runs()
     assert len(updated_runs) == 0

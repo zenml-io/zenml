@@ -3342,29 +3342,29 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_trigger(trigger_id=trigger.id)
         logger.info("Deleted trigger with name '%s'.", trigger.name)
 
-    # ------------------------------ Deployments -------------------------------
+    # ------------------------------ Snapshots -------------------------------
 
-    def get_deployment(
+    def get_snapshot(
         self,
         id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> PipelineSnapshotResponse:
-        """Get a deployment by name, id or prefix.
+        """Get a snapshot by name, id or prefix.
 
         Args:
-            id_or_prefix: The id or prefix of the deployment.
+            id_or_prefix: The id or prefix of the snapshot.
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Raises:
-            KeyError: If no deployment was found for the given id or prefix.
-            ZenKeyError: If multiple deployments were found that match the given
+            KeyError: If no snapshot was found for the given id or prefix.
+            ZenKeyError: If multiple snapshots were found that match the given
                 id or prefix.
 
         Returns:
-            The deployment.
+            The snapshot.
         """
         from zenml.utils.uuid_utils import is_valid_uuid
 
@@ -3386,7 +3386,7 @@ class Client(metaclass=ClientMetaClass):
             list_kwargs["project"] = project
             scope = f" in project {project}"
 
-        entity = self.list_deployments(**list_kwargs)
+        entity = self.list_snapshots(**list_kwargs)
 
         # If only a single entity is found, return it.
         if entity.total == 1:
@@ -3395,20 +3395,20 @@ class Client(metaclass=ClientMetaClass):
         # If no entity is found, raise an error.
         if entity.total == 0:
             raise KeyError(
-                f"No deployment have been found that have either an id or "
+                f"No snapshot have been found that have either an id or "
                 f"prefix that matches the provided string '{id_or_prefix}'{scope}."
             )
 
         raise ZenKeyError(
-            f"{entity.total} deployments have been found{scope} that have "
+            f"{entity.total} snapshots have been found{scope} that have "
             f"an ID that matches the provided "
             f"string '{id_or_prefix}':\n"
             f"{[entity.items]}.\n"
             f"Please use the id to uniquely identify "
-            f"only one of the deployments."
+            f"only one of the snapshots."
         )
 
-    def list_deployments(
+    def list_snapshots(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
@@ -3428,7 +3428,7 @@ class Client(metaclass=ClientMetaClass):
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineSnapshotResponse]:
-        """List all deployments.
+        """List all snapshots.
 
         Args:
             sort_by: The column to sort by
@@ -3441,7 +3441,7 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
             version: Filter by version.
-            versioned_only: If `True`, only deployments with an assigned version
+            versioned_only: If `True`, only snapshots with an assigned version
                 will be returned.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
@@ -3452,9 +3452,9 @@ class Client(metaclass=ClientMetaClass):
                 by including metadata fields in the response.
 
         Returns:
-            A page with deployments fitting the filter description
+            A page with snapshots fitting the filter description
         """
-        deployment_filter_model = PipelineSnapshotFilter(
+        snapshot_filter_model = PipelineSnapshotFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3473,11 +3473,11 @@ class Client(metaclass=ClientMetaClass):
             tags=tags,
         )
         return self.zen_store.list_snapshots(
-            snapshot_filter_model=deployment_filter_model,
+            snapshot_filter_model=snapshot_filter_model,
             hydrate=hydrate,
         )
 
-    def update_deployment(
+    def update_snapshot(
         self,
         id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
@@ -3486,27 +3486,27 @@ class Client(metaclass=ClientMetaClass):
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
     ) -> PipelineSnapshotResponse:
-        """Update a deployment.
+        """Update a snapshot.
 
         Args:
-            id_or_prefix: The id or id prefix of the deployment.
+            id_or_prefix: The id or id prefix of the snapshot.
             project: The project name/ID to filter by.
-            version: The new version of the deployment.
-            description: The new description of the deployment.
-            add_tags: Tags to add to the deployment.
-            remove_tags: Tags to remove from the deployment.
+            version: The new version of the snapshot.
+            description: The new description of the snapshot.
+            add_tags: Tags to add to the snapshot.
+            remove_tags: Tags to remove from the snapshot.
 
         Returns:
-            The updated deployment.
+            The updated snapshot.
         """
-        deployment = self.get_deployment(
+        snapshot = self.get_snapshot(
             id_or_prefix=id_or_prefix,
             project=project,
             hydrate=False,
         )
 
         return self.zen_store.update_snapshot(
-            snapshot_id=deployment.id,
+            snapshot_id=snapshot.id,
             snapshot_update=PipelineSnapshotUpdate(
                 version=version,
                 description=description,
@@ -3515,28 +3515,28 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
 
-    def delete_deployment(
+    def delete_snapshot(
         self,
         id_or_prefix: str,
         project: Optional[Union[str, UUID]] = None,
     ) -> None:
-        """Delete a deployment.
+        """Delete a snapshot.
 
         Args:
-            id_or_prefix: The id or id prefix of the deployment.
+            id_or_prefix: The id or id prefix of the snapshot.
             project: The project name/ID to filter by.
         """
-        deployment = self.get_deployment(
+        snapshot = self.get_snapshot(
             id_or_prefix=id_or_prefix,
             project=project,
             hydrate=False,
         )
-        self.zen_store.delete_snapshot(snapshot_id=deployment.id)
+        self.zen_store.delete_snapshot(snapshot_id=snapshot.id)
 
     @_fail_for_sql_zen_store
-    def trigger_deployment(
+    def trigger_snapshot(
         self,
-        deployment_id: Optional[UUID] = None,
+        snapshot_id: Optional[UUID] = None,
         pipeline_name_or_id: Union[str, UUID, None] = None,
         version: Optional[str] = None,
         run_configuration: Union[
@@ -3547,37 +3547,37 @@ class Client(metaclass=ClientMetaClass):
         synchronous: bool = False,
         project: Optional[Union[str, UUID]] = None,
     ) -> PipelineRunResponse:
-        """Trigger a deployment.
+        """Trigger a snapshot.
 
         Usage examples:
-        * Trigger a specific deployment by ID:
+        * Trigger a specific snapshot by ID:
         ```python
-        Client().trigger_deployment(deployment_id=<ID>)
+        Client().trigger_snapshot(snapshot_id=<ID>)
         ```
-        * Trigger the latest runnable deployment for a pipeline:
+        * Trigger the latest runnable snapshot for a pipeline:
         ```python
-        Client().trigger_deployment(pipeline_name_or_id=<NAME>)
+        Client().trigger_snapshot(pipeline_name_or_id=<NAME>)
         ```
-        * Trigger the latest runnable deployment for a pipeline on a specific
+        * Trigger the latest runnable snapshot for a pipeline on a specific
         stack:
         ```python
-        Client().trigger_deployment(
+        Client().trigger_snapshot(
             pipeline_name_or_id=<NAME>,
             stack_name_or_id=<STACK_NAME_OR_ID>
         )
         ```
 
         Args:
-            deployment_id: ID of the deployment to trigger. Either this or a
+            snapshot_id: ID of the snapshot to trigger. Either this or a
                 pipeline can be specified.
             pipeline_name_or_id: Name or ID of the pipeline. If this is
-                specified, the latest runnable deployment for this pipeline will
+                specified, the latest runnable snapshot for this pipeline will
                 be used for the run (Runnable here means that the build
-                associated with the deployment is for a remote stack without any
-                custom flavor stack components). If not given, a deployment ID
+                associated with the snapshot is for a remote stack without any
+                custom flavor stack components). If not given, a snapshot ID
                 that should be run needs to be specified.
-            version: Version of the deployment to trigger. If not given, the
-                latest runnable deployment for the pipeline will be used.
+            version: Version of the snapshot to trigger. If not given, the
+                latest runnable snapshot for the pipeline will be used.
             run_configuration: Configuration for the run. Either this or a
                 path to a config file can be specified.
             config_path: Path to a YAML configuration file. This file will be
@@ -3585,14 +3585,14 @@ class Client(metaclass=ClientMetaClass):
                 the configuration in code can be specified.
             stack_name_or_id: Name or ID of the stack on which to run the
                 pipeline. If not specified, this method will try to find a
-                runnable deployment on any stack.
+                runnable snapshot on any stack.
             synchronous: If `True`, this method will wait until the triggered
                 run is finished.
             project: The project name/ID to filter by.
 
         Raises:
-            RuntimeError: If triggering the deployment failed.
-            KeyError: If no deployment with the given version exists.
+            RuntimeError: If triggering the snapshot failed.
+            KeyError: If no snapshot with the given version exists.
 
         Returns:
             Model of the pipeline run.
@@ -3603,9 +3603,9 @@ class Client(metaclass=ClientMetaClass):
             wait_for_pipeline_run_to_finish,
         )
 
-        if Counter([deployment_id, pipeline_name_or_id])[None] != 1:
+        if Counter([snapshot_id, pipeline_name_or_id])[None] != 1:
             raise RuntimeError(
-                "You need to specify exactly one of deployment or pipeline "
+                "You need to specify exactly one of snapshot or pipeline "
                 "to trigger."
             )
 
@@ -3625,16 +3625,16 @@ class Client(metaclass=ClientMetaClass):
         if run_configuration:
             validate_run_config_is_runnable_from_server(run_configuration)
 
-        if deployment_id:
+        if snapshot_id:
             if stack_name_or_id:
                 logger.warning(
-                    "Deployment ID and stack specified, ignoring the stack and "
-                    "using stack associated with the deployment instead."
+                    "Snapshot ID and stack specified, ignoring the stack and "
+                    "using stack associated with the snapshot instead."
                 )
 
             if version:
                 logger.warning(
-                    "Deployment ID and version specified, ignoring the version."
+                    "Snapshot ID and version specified, ignoring the version."
                 )
         else:
             assert pipeline_name_or_id
@@ -3644,22 +3644,22 @@ class Client(metaclass=ClientMetaClass):
             )
 
             if version:
-                deployments = self.list_deployments(
+                snapshots = self.list_snapshots(
                     version=f"equals:{version}",
                     pipeline_id=pipeline.id,
                     project=pipeline.project_id,
                 )
 
-                if deployments.total == 0:
+                if snapshots.total == 0:
                     raise KeyError(
-                        f"No deployment found for pipeline {pipeline.id} "
+                        f"No snapshot found for pipeline {pipeline.id} "
                         f"with version {version}."
                     )
                 else:
-                    deployment_id = deployments.items[0].id
+                    snapshot_id = snapshots.items[0].id
             else:
                 # No version or ID specified, find the latest runnable
-                # deployment for the pipeline (and stack if specified)
+                # snapshot for the pipeline (and stack if specified)
                 stack = None
                 if stack_name_or_id:
                     stack = self.get_stack(
@@ -3669,18 +3669,18 @@ class Client(metaclass=ClientMetaClass):
                         zen_store=self.zen_store, stack=stack
                     )
 
-                all_deployments = depaginate(
-                    self.list_deployments,
+                all_snapshots = depaginate(
+                    self.list_snapshots,
                     pipeline_id=pipeline.id,
                     stack_id=stack.id if stack else None,
                     project=pipeline.project_id,
                 )
 
-                for deployment in all_deployments:
-                    if not deployment.build:
+                for snapshot in all_snapshots:
+                    if not snapshot.build:
                         continue
 
-                    stack = deployment.build.stack
+                    stack = snapshot.build.stack
                     if not stack:
                         continue
 
@@ -3691,11 +3691,11 @@ class Client(metaclass=ClientMetaClass):
                     except ValueError:
                         continue
 
-                    deployment_id = deployment.id
+                    snapshot_id = snapshot.id
                     break
                 else:
                     raise RuntimeError(
-                        "Unable to find a runnable deployment for the given "
+                        "Unable to find a runnable snapshot for the given "
                         "stack and pipeline."
                     )
 
@@ -3708,7 +3708,7 @@ class Client(metaclass=ClientMetaClass):
             pass
 
         run = self.zen_store.trigger_snapshot(
-            snapshot_id=deployment_id,
+            snapshot_id=snapshot_id,
             trigger_request=PipelineSnapshotTriggerRequest(
                 run_configuration=run_configuration,
                 step_run=step_run_id,

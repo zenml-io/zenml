@@ -1623,7 +1623,7 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
         )
 
-    # -------------------------- Pipeline Deployments --------------------------
+    # -------------------------- Pipeline Snapshots --------------------------
 
     def create_snapshot(
         self,

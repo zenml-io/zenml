@@ -511,7 +511,7 @@ def trigger_deployment(
         stack_name_or_id: Name or ID of the stack for which the deployment
             should be created.
     """
-    run = Client().trigger_deployment(
+    run = Client().trigger_snapshot(
         deployment_id=UUID(deployment_id) if deployment_id else None,
         pipeline_name_or_id=pipeline_name_or_id,
         version=version,

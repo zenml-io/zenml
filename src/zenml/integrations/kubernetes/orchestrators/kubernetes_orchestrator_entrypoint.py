@@ -203,7 +203,7 @@ def main() -> None:
     orchestrator_pod_name = socket.gethostname()
 
     client = Client()
-    snapshot = client.get_deployment(args.snapshot_id)
+    snapshot = client.get_snapshot(args.snapshot_id)
     active_stack = client.active_stack
     orchestrator = active_stack.orchestrator
     assert isinstance(orchestrator, KubernetesOrchestrator)

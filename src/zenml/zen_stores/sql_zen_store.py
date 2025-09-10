@@ -4756,7 +4756,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(build)
             session.commit()
 
-    # -------------------------- Pipeline Deployments --------------------------
+    # -------------------------- Pipeline Snapshots --------------------------
 
     @staticmethod
     def _create_or_reuse_code_reference(

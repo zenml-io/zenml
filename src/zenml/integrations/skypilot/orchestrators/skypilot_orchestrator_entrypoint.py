@@ -89,7 +89,7 @@ def main() -> None:
     run = None
 
     try:
-        deployment = Client().get_deployment(args.deployment_id)
+        deployment = Client().get_snapshot(args.deployment_id)
 
         pipeline_dag = {
             step_name: step.spec.upstream_steps

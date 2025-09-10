@@ -1277,7 +1277,7 @@ class ZenStoreInterface(ABC):
             KeyError: if the build doesn't exist.
         """
 
-    # -------------------- Pipeline deployments --------------------
+    # -------------------- Pipeline Snapshots --------------------
 
     @abstractmethod
     def create_snapshot(

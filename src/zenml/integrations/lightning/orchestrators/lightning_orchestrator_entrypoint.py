@@ -84,7 +84,7 @@ def main() -> None:
 
     logger.info(f"Orchestrator run id: {orchestrator_run_id}")
 
-    deployment = Client().get_deployment(args.deployment_id)
+    deployment = Client().get_snapshot(args.deployment_id)
     filename = f"{args.run_name}.tar.gz"
 
     pipeline_dag = {

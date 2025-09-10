@@ -793,7 +793,7 @@ class ModelContext:
         for run in self.prs:
             client.zen_store.delete_run(run.id)
         for deployment in self.deployments:
-            client.delete_deployment(str(deployment.id))
+            client.delete_snapshot(str(deployment.id))
         client.zen_store.delete_pipeline(self.pipeline.id)
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
