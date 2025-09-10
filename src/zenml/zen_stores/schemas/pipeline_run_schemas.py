@@ -20,9 +20,9 @@ from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import TEXT, Column, Field, Relationship
+from sqlmodel import TEXT, Column, Field, Relationship, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
@@ -748,15 +748,23 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 return False
 
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
+                session = object_session(self)
+
+                step_run_statuses = session.exec(
+                    select(StepRunSchema.name, StepRunSchema.status).where(
+                        StepRunSchema.pipeline_run_id == self.id
+                    )
+                ).all()
+
                 if self.deployment and self.deployment.pipeline_spec:
                     step_dict = self.get_upstream_steps()
 
                     dag = build_dag(step_dict)
 
                     failed_steps = {
-                        s.name
-                        for s in self.step_runs
-                        if ExecutionStatus(s.status).is_failed
+                        name
+                        for name, status in step_run_statuses
+                        if ExecutionStatus(status).is_failed
                     }
 
                     steps_to_skip = set()
@@ -768,11 +776,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     steps_to_skip.update(failed_steps)
 
                     steps_statuses = {
-                        s.name: ExecutionStatus(s.status)
-                        for s in self.step_runs
+                        name: ExecutionStatus(status)
+                        for name, status in step_run_statuses
                     }
 
-                    for step_name, step in step_dict.items():
+                    for step_name, _ in step_dict.items():
                         if step_name in steps_to_skip:
                             continue
 
@@ -785,8 +793,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     return False
                 else:
                     in_progress = any(
-                        not ExecutionStatus(s.status).is_finished
-                        for s in self.step_runs
+                        not ExecutionStatus(status).is_finished
+                        for name, status in step_run_statuses
                     )
                     return in_progress
 
