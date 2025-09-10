@@ -165,10 +165,17 @@ def trigger_snapshot(
         ID of the new pipeline run.
     """
     if not snapshot.runnable:
-        raise ValueError(
-            "This snapshot can not be run because its associated "
-            "stack or build have been deleted."
-        )
+        if stack := snapshot.stack:
+            validate_stack_is_runnable_from_server(
+                zen_store=zen_store(), stack=stack
+            )
+        if not snapshot.build:
+            raise ValueError(
+                "This snapshot can not be run via the server because it does "
+                "not have an associated build. This is probably because the "
+                "build has been deleted."
+            )
+        raise ValueError("This snapshot can not be run via the server.")
 
     # Guaranteed by the `runnable` check above
     build = snapshot.build

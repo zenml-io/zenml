@@ -925,8 +925,8 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
             exclude_columns=[
                 "created",
                 "updated",
-                "user",
-                "project",
+                "user_id",
+                "project_id",
                 "pipeline_configuration",
                 "step_configurations",
                 "client_environment",
@@ -942,5 +942,7 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
                 "code_reference",
                 "config_schema",
                 "config_template",
+                "source_snapshot_id",
+                "template_id",
             ],
         )

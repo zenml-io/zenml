@@ -193,13 +193,19 @@ def validate_stack_is_runnable_from_server(
         flavor_model = flavors[0]
 
         if flavor_model.is_custom:
-            raise ValueError("No custom stack component flavors allowed.")
+            raise ValueError(
+                "Unable to run pipeline from the server on a stack that "
+                "includes stack components with a custom flavor."
+            )
 
         flavor = Flavor.from_model(flavor_model)
         component_config = flavor.config_class(**component.configuration)
 
         if component_config.is_local:
-            raise ValueError("No local stack components allowed.")
+            raise ValueError(
+                "Unable to run pipeline from the server on a stack that "
+                "includes local stack components."
+            )
 
 
 def validate_run_config_is_runnable_from_server(

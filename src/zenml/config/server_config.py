@@ -157,7 +157,7 @@ class ServerConfiguration(BaseModel):
             server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
-        max_concurrent_template_runs: The maximum number of concurrent template
+        max_concurrent_snapshot_runs: The maximum number of concurrent snapshot
             runs that can be executed on the server.
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
