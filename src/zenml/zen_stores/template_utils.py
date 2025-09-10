@@ -28,7 +28,6 @@ from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.stack import Flavor
 from zenml.zen_stores.schemas import (
-    PipelineBuildSchema,
     PipelineSnapshotSchema,
 )
 
@@ -39,74 +38,31 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def validate_build_is_runnable(
-    build: Optional[PipelineBuildSchema],
+def validate_snapshot_is_templatable(
+    snapshot: PipelineSnapshotSchema,
 ) -> None:
-    """Validate that a build is runnable.
+    """Validate that a snapshot is templatable.
 
     Args:
-        build: The build to validate.
+        snapshot: The snapshot to validate.
 
     Raises:
-        ValueError: If the build is not runnable.
+        ValueError: If the snapshot is not templatable.
     """
-    if not build or not build.stack:
-        raise ValueError(
-            "Deployment versions are only supported for remote orchestrators "
-            "that use container images to run the pipeline."
-        )
-
-    for component in build.stack.components:
-        if not component.flavor_schema:
-            raise ValueError(
-                "Unable to create deployment versions as a component of the "
-                "associated stack has no flavor."
-            )
-
-        if component.flavor_schema.is_custom:
-            raise ValueError(
-                "Unable to create deployment versions as a component of the "
-                "associated stack has a custom flavor."
-            )
-
-        flavor_model = component.flavor_schema.to_model()
-        flavor = Flavor.from_model(flavor_model)
-        component_config = flavor.config_class(
-            **component.to_model(include_metadata=True).configuration
-        )
-
-        if component_config.is_local:
-            raise ValueError(
-                "Unable to create deployment versions as the associated stack "
-                "contains local components."
-            )
-
-
-def validate_deployment_is_templatable(
-    deployment: PipelineSnapshotSchema,
-) -> None:
-    """Validate that a deployment is templatable.
-
-    Args:
-        deployment: The deployment to validate.
-
-    Raises:
-        ValueError: If the deployment is not templatable.
-    """
-    if not deployment.build:
+    if not snapshot.build:
         raise ValueError(
             "Unable to create run template as there is no associated build. "
             "Run templates can only be created for remote orchestrators that "
             "use container images to run the pipeline."
         )
 
-    if not deployment.build.stack:
+    if not snapshot.build.stack:
         raise ValueError(
             "Unable to create run template as the associated build has no "
             "stack reference."
         )
 
-    for component in deployment.build.stack.components:
+    for component in snapshot.build.stack.components:
         if not component.flavor_schema:
             raise ValueError(
                 "Unable to create run template as a component of the "
@@ -133,14 +89,14 @@ def validate_deployment_is_templatable(
 
 
 def generate_config_template(
-    deployment: PipelineSnapshotSchema,
+    snapshot: PipelineSnapshotSchema,
     pipeline_configuration: "PipelineConfiguration",
     step_configurations: Dict[str, "Step"],
 ) -> Dict[str, Any]:
-    """Generate a run configuration template for a deployment.
+    """Generate a run configuration template for a snapshot.
 
     Args:
-        deployment: The deployment.
+        snapshot: The snapshot.
         pipeline_configuration: The pipeline configuration.
         step_configurations: The step configurations.
 
@@ -170,7 +126,7 @@ def generate_config_template(
     pipeline_config.get("settings", {}).pop("docker", None)
 
     config_template = {
-        "run_name": deployment.run_name_template,
+        "run_name": snapshot.run_name_template,
         "steps": steps_configs,
         **pipeline_config,
     }
@@ -178,24 +134,24 @@ def generate_config_template(
 
 
 def generate_config_schema(
-    deployment: PipelineSnapshotSchema,
+    snapshot: PipelineSnapshotSchema,
     step_configurations: Dict[str, "Step"],
 ) -> Dict[str, Any]:
-    """Generate a run configuration schema for the deployment and stack.
+    """Generate a run configuration schema for the snapshot.
 
     Args:
-        deployment: The deployment schema.
+        snapshot: The snapshot schema.
         step_configurations: The step configurations.
 
     Returns:
         The generated schema dictionary.
     """
-    # Config schema can only be generated for a runnable template, so this is
-    # guaranteed by checks in the run template schema
-    assert deployment.build
-    assert deployment.build.stack
+    # Config schema can only be generated for a runnable snapshot, so this is
+    # guaranteed by checks in the snapshot schema
+    assert snapshot.build
+    assert snapshot.build.stack
 
-    stack = deployment.build.stack
+    stack = snapshot.build.stack
     experiment_trackers = []
     step_operators = []
 

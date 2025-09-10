@@ -5149,7 +5149,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            template_utils.validate_deployment_is_templatable(snapshot)
+            template_utils.validate_snapshot_is_templatable(snapshot)
 
             template_schema = RunTemplateSchema.from_request(request=template)
 

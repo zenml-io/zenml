@@ -497,12 +497,12 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     all_step_configurations = step_configurations
 
                 config_template = template_utils.generate_config_template(
-                    deployment=self,
+                    snapshot=self,
                     pipeline_configuration=pipeline_configuration,
                     step_configurations=all_step_configurations,
                 )
                 config_schema = template_utils.generate_config_schema(
-                    deployment=self,
+                    snapshot=self,
                     step_configurations=all_step_configurations,
                 )
 

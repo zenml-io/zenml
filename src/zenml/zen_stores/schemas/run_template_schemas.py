@@ -312,12 +312,12 @@ class RunTemplateSchema(NamedSchema, table=True):
                     and self.source_deployment.build.stack_id
                 ):
                     config_template = template_utils.generate_config_template(
-                        deployment=self.source_deployment,
+                        snapshot=self.source_deployment,
                         pipeline_configuration=source_deployment_model.pipeline_configuration,
                         step_configurations=source_deployment_model.step_configurations,
                     )
                     config_schema = template_utils.generate_config_schema(
-                        deployment=self.source_deployment,
+                        snapshot=self.source_deployment,
                         step_configurations=source_deployment_model.step_configurations,
                     )
 
