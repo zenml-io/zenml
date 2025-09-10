@@ -243,8 +243,8 @@ class StepRunRequestFactory:
         if template_id := self.pipeline_run.template_id:
             template = Client().get_run_template(template_id)
             if (
-                deployment_id := template.source_deployment.id
-                if template.source_deployment
+                deployment_id := template.source_snapshot.id
+                if template.source_snapshot
                 else None
             ):
                 steps = Client().list_run_steps(

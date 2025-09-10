@@ -120,7 +120,7 @@ def test_build_is_skipped_when_not_required(mocker):
         server_version="0.12.3",
     )
 
-    assert build_utils.create_pipeline_build(deployment=deployment) is None
+    assert build_utils.create_pipeline_build(snapshot=deployment) is None
     mock_build_docker_image.assert_not_called()
 
 
@@ -154,7 +154,7 @@ def test_stack_with_container_registry_creates_non_local_build(
         server_version="0.12.3",
     )
 
-    build = build_utils.create_pipeline_build(deployment=deployment)
+    build = build_utils.create_pipeline_build(snapshot=deployment)
     assert build.is_local is False
 
 
@@ -187,7 +187,7 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
     pipeline_instance = empty_pipeline
     pipeline_id = pipeline_instance.register().id
     build = build_utils.create_pipeline_build(
-        deployment=deployment, pipeline_id=pipeline_id
+        snapshot=deployment, pipeline_id=pipeline_id
     )
 
     mock_build_docker_image.assert_called_with(
@@ -234,7 +234,7 @@ def test_building_with_identical_keys_and_settings(mocker):
         server_version="0.12.3",
     )
 
-    build = build_utils.create_pipeline_build(deployment=deployment)
+    build = build_utils.create_pipeline_build(snapshot=deployment)
     assert len(build.images) == 1
     assert build.images["key"].image == "image_name"
 
@@ -269,7 +269,7 @@ def test_building_with_identical_keys_and_different_settings(mocker):
     )
 
     with pytest.raises(RuntimeError):
-        build_utils.create_pipeline_build(deployment=deployment)
+        build_utils.create_pipeline_build(snapshot=deployment)
 
 
 def test_building_with_different_keys_and_identical_settings(mocker):
@@ -297,7 +297,7 @@ def test_building_with_different_keys_and_identical_settings(mocker):
         server_version="0.12.3",
     )
 
-    build = build_utils.create_pipeline_build(deployment=deployment)
+    build = build_utils.create_pipeline_build(snapshot=deployment)
     assert len(build.images) == 2
     assert build.images["key1"].image == "image_name"
     assert build.images["key2"].image == "image_name"
@@ -337,7 +337,7 @@ def test_custom_build_verification(
         # Image key missing
         build_utils.verify_custom_build(
             build=missing_image_build,
-            deployment=sample_deployment_response_model,
+            snapshot=sample_deployment_response_model,
         )
 
     correct_build = missing_image_build.model_copy(deep=True)
@@ -352,7 +352,7 @@ def test_custom_build_verification(
         # All keys present
         build_utils.verify_custom_build(
             build=correct_build,
-            deployment=sample_deployment_response_model,
+            snapshot=sample_deployment_response_model,
         )
 
     build_that_requires_download = missing_image_build.model_copy(deep=True)
@@ -378,14 +378,14 @@ def test_custom_build_verification(
         # Missing code repo for download
         build_utils.verify_custom_build(
             build=build_that_requires_download,
-            deployment=sample_deployment_response_model,
+            snapshot=sample_deployment_response_model,
         )
 
     code_repo = StubCodeRepository()
     with does_not_raise():
         build_utils.verify_custom_build(
             build=build_that_requires_download,
-            deployment=sample_deployment_response_model,
+            snapshot=sample_deployment_response_model,
             code_repository=code_repo,
         )
 
@@ -446,10 +446,10 @@ def test_local_repo_verification(
     )
 
     assert not build_utils.verify_local_repository_context(
-        deployment=deployment, local_repo_context=None
+        snapshot=deployment, local_repo_context=None
     )
     assert not build_utils.verify_local_repository_context(
-        deployment=deployment,
+        snapshot=deployment,
         local_repo_context=context_with_local_changes,
     )
 
@@ -461,7 +461,7 @@ def test_local_repo_verification(
 
     # Code download not required if no build is necessary
     assert not build_utils.verify_local_repository_context(
-        deployment=deployment,
+        snapshot=deployment,
         local_repo_context=None,
     )
 
@@ -473,19 +473,19 @@ def test_local_repo_verification(
     with pytest.raises(RuntimeError):
         # No local repo
         build_utils.verify_local_repository_context(
-            deployment=deployment,
+            snapshot=deployment,
             local_repo_context=None,
         )
 
     with pytest.raises(RuntimeError):
         build_utils.verify_local_repository_context(
-            deployment=deployment,
+            snapshot=deployment,
             local_repo_context=dirty_local_context,
         )
 
     with pytest.raises(RuntimeError):
         build_utils.verify_local_repository_context(
-            deployment=deployment,
+            snapshot=deployment,
             local_repo_context=context_with_local_changes,
         )
 
@@ -516,7 +516,7 @@ def test_local_repo_verification(
         is_dirty=False, has_local_changes=False
     )
     code_repo = build_utils.verify_local_repository_context(
-        deployment=deployment,
+        snapshot=deployment,
         local_repo_context=clean_local_context,
     )
     assert isinstance(code_repo, StubCodeRepository)
@@ -543,7 +543,7 @@ def test_finding_existing_build(
     mocker.patch.object(Stack, "get_docker_builds", return_value=[])
 
     build_utils.find_existing_build(
-        deployment=sample_deployment_response_model,
+        snapshot=sample_deployment_response_model,
         code_repository=StubCodeRepository(),
     )
     # No required builds -> no need to look for build to reuse
@@ -558,7 +558,7 @@ def test_finding_existing_build(
     )
 
     build_utils.find_existing_build(
-        deployment=sample_deployment_response_model,
+        snapshot=sample_deployment_response_model,
         code_repository=StubCodeRepository(),
     )
     # No container registry -> no non-local build to pull
@@ -572,7 +572,7 @@ def test_finding_existing_build(
     )
 
     build = build_utils.find_existing_build(
-        deployment=sample_deployment_response_model,
+        snapshot=sample_deployment_response_model,
         code_repository=StubCodeRepository(),
     )
 

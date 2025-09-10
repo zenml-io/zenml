@@ -236,7 +236,7 @@ class RunTemplateSchema(NamedSchema, table=True):
             name=request.name,
             description=request.description,
             hidden=request.hidden,
-            source_deployment_id=request.source_deployment_id,
+            source_deployment_id=request.source_snapshot_id,
         )
 
     def update(self, update: RunTemplateUpdate) -> "RunTemplateSchema":
@@ -355,7 +355,7 @@ class RunTemplateSchema(NamedSchema, table=True):
 
             resources = RunTemplateResponseResources(
                 user=self.user.to_model() if self.user else None,
-                source_deployment=self.source_deployment.to_model()
+                source_snapshot=self.source_deployment.to_model()
                 if self.source_deployment
                 else None,
                 pipeline=pipeline,

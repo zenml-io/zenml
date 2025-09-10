@@ -81,8 +81,8 @@ class PipelineRunRequest(ProjectScopedRequest):
         title="The name of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    deployment: UUID = Field(
-        title="The deployment associated with the pipeline run."
+    snapshot: UUID = Field(
+        title="The snapshot associated with the pipeline run."
     )
     pipeline: Optional[UUID] = Field(
         title="The pipeline associated with the pipeline run.",
@@ -201,8 +201,8 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     code_reference: Optional["CodeReferenceResponse"] = Field(
         default=None, title="The code reference that was used for this run."
     )
-    deployment_id: Optional[UUID] = Field(
-        default=None, title="The deployment that was used for this run."
+    snapshot_id: Optional[UUID] = Field(
+        default=None, title="The snapshot that was used for this run."
     )
     trigger_execution: Optional["TriggerExecutionResponse"] = Field(
         default=None, title="The trigger execution that triggered this run."
@@ -420,13 +420,13 @@ class PipelineRunResponse(
         return self.get_body().code_reference
 
     @property
-    def deployment_id(self) -> Optional["UUID"]:
-        """The `deployment_id` property.
+    def snapshot_id(self) -> Optional["UUID"]:
+        """The `snapshot_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().deployment_id
+        return self.get_body().snapshot_id
 
     @property
     def model_version_id(self) -> Optional[UUID]:

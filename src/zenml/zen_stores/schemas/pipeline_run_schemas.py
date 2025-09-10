@@ -333,7 +333,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             status=request.status.value,
             status_reason=request.status_reason,
             pipeline_id=request.pipeline,
-            deployment_id=request.deployment,
+            deployment_id=request.snapshot,
             trigger_execution_id=request.trigger_execution_id,
         )
 
@@ -518,7 +518,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ),
             created=self.created,
             updated=self.updated,
-            deployment_id=self.deployment_id,
+            snapshot_id=self.deployment_id,
             model_version_id=self.model_version_id,
         )
         metadata = None
@@ -651,7 +651,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         if (
-            self.deployment_id != request.deployment
+            self.deployment_id != request.snapshot
             or self.pipeline_id != request.pipeline
             or self.project_id != request.project
         ):

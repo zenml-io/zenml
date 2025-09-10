@@ -284,14 +284,14 @@ if server_config().workload_manager_enabled:
             )
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
-            if not template.source_deployment:
+            if not template.source_snapshot:
                 raise ValueError(
                     "This template can not be run because it has no source "
                     "deployment."
                 )
 
             return trigger_deployment(
-                deployment=template.source_deployment,
+                deployment=template.source_snapshot,
                 auth_context=auth_context,
                 trigger_request=PipelineSnapshotTriggerRequest(
                     run_configuration=config,

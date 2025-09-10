@@ -690,12 +690,12 @@ class StackComponent:
         return None
 
     def get_docker_builds(
-        self, deployment: "PipelineSnapshotBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.

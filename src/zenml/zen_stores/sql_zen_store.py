@@ -5145,7 +5145,7 @@ class SqlZenStore(BaseZenStore):
             snapshot = self._get_reference_schema_by_id(
                 resource=template,
                 reference_schema=PipelineSnapshotSchema,
-                reference_id=template.source_deployment_id,
+                reference_id=template.source_snapshot_id,
                 session=session,
             )
 
@@ -5894,7 +5894,7 @@ class SqlZenStore(BaseZenStore):
         self._get_reference_schema_by_id(
             resource=pipeline_run,
             reference_schema=PipelineSnapshotSchema,
-            reference_id=pipeline_run.deployment,
+            reference_id=pipeline_run.snapshot,
             session=session,
         )
 
@@ -6080,7 +6080,7 @@ class SqlZenStore(BaseZenStore):
             # modifying this WHERE clause, make sure to test/adjust so this
             # does not lock multiple rows or even the complete table.
             .with_for_update()
-            .where(PipelineRunSchema.deployment_id == pipeline_run.deployment)
+            .where(PipelineRunSchema.deployment_id == pipeline_run.snapshot)
             .where(
                 or_(
                     PipelineRunSchema.orchestrator_run_id
@@ -6205,7 +6205,7 @@ class SqlZenStore(BaseZenStore):
                     return (
                         self._get_run_by_orchestrator_run_id(
                             orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                            deployment_id=pipeline_run.deployment,
+                            deployment_id=pipeline_run.snapshot,
                             session=session,
                         ),
                         False,
@@ -6218,7 +6218,7 @@ class SqlZenStore(BaseZenStore):
             session.exec(
                 select(PipelineSnapshotSchema.id)
                 .with_for_update()
-                .where(PipelineSnapshotSchema.id == pipeline_run.deployment)
+                .where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
             )
 
             if not pipeline_run.is_placeholder_request:
@@ -6280,7 +6280,7 @@ class SqlZenStore(BaseZenStore):
                     return (
                         self._get_run_by_orchestrator_run_id(
                             orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                            deployment_id=pipeline_run.deployment,
+                            deployment_id=pipeline_run.snapshot,
                             session=session,
                         ),
                         False,

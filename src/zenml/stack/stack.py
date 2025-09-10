@@ -794,19 +794,19 @@ class Stack:
             )
 
     def get_docker_builds(
-        self, deployment: "PipelineSnapshotBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the stack.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
         """
         return list(
             itertools.chain.from_iterable(
-                component.get_docker_builds(deployment=deployment)
+                component.get_docker_builds(snapshot=snapshot)
                 for component in self.components.values()
             )
         )

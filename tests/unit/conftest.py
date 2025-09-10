@@ -467,7 +467,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequest:
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
         project=uuid4(),
-        deployment=uuid4(),
+        snapshot=uuid4(),
         pipeline=uuid4(),
     )
 

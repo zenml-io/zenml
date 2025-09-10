@@ -269,7 +269,7 @@ def main() -> None:
             )
         else:
             pipeline_run = create_placeholder_run(
-                deployment=deployment,
+                snapshot=deployment,
                 orchestrator_run_id=orchestrator_run_id,
             )
 

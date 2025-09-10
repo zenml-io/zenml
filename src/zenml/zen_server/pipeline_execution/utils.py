@@ -222,7 +222,7 @@ def trigger_snapshot(
         )
 
     placeholder_run = create_placeholder_run(
-        deployment=new_snapshot, trigger_execution_id=trigger_execution_id
+        snapshot=new_snapshot, trigger_execution_id=trigger_execution_id
     )
 
     report_usage(

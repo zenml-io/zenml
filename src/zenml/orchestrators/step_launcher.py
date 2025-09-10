@@ -357,7 +357,7 @@ class StepLauncher:
             name=run_name,
             orchestrator_run_id=self._orchestrator_run_id,
             project=client.active_project.id,
-            deployment=self._deployment.id,
+            snapshot=self._deployment.id,
             pipeline=(
                 self._deployment.pipeline.id
                 if self._deployment.pipeline

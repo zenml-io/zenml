@@ -76,8 +76,8 @@ class RunTemplateRequest(ProjectScopedRequest):
         title="The description of the run template.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    source_deployment_id: UUID = Field(
-        title="The deployment that should be the base of the created template."
+    source_snapshot_id: UUID = Field(
+        title="The snapshot that should be the base of the created template."
     )
     hidden: bool = Field(
         default=False,
@@ -153,9 +153,9 @@ class RunTemplateResponseMetadata(ProjectScopedResponseMetadata):
 class RunTemplateResponseResources(ProjectScopedResponseResources):
     """All resource models associated with the run template."""
 
-    source_deployment: Optional[PipelineSnapshotResponse] = Field(
+    source_snapshot: Optional[PipelineSnapshotResponse] = Field(
         default=None,
-        title="The deployment that is the source of the template.",
+        title="The snapshot that is the source of the template.",
     )
     pipeline: Optional[PipelineResponse] = Field(
         default=None, title="The pipeline associated with the template."
@@ -281,13 +281,13 @@ class RunTemplateResponse(
         return self.get_metadata().config_schema
 
     @property
-    def source_deployment(self) -> Optional[PipelineSnapshotResponse]:
-        """The `source_deployment` property.
+    def source_snapshot(self) -> Optional[PipelineSnapshotResponse]:
+        """The `source_snapshot` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().source_deployment
+        return self.get_resources().source_snapshot
 
     @property
     def pipeline(self) -> Optional[PipelineResponse]:

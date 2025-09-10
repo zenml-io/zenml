@@ -5512,7 +5512,7 @@ class TestRunMetadata:
                     project=client.active_project.id,
                     id=uuid4(),
                     name=sample_name("foo"),
-                    deployment=deployment.id,
+                    snapshot=deployment.id,
                     status=ExecutionStatus.RUNNING,
                 )
             )

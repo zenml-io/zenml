@@ -3725,7 +3725,7 @@ class Client(metaclass=ClientMetaClass):
     def create_run_template(
         self,
         name: str,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
     ) -> RunTemplateResponse:
@@ -3733,7 +3733,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name: The name of the run template.
-            deployment_id: ID of the deployment which this template should be
+            snapshot_id: ID of the snapshot which this template should be
                 based off of.
             description: The description of the run template.
             tags: Tags associated with the run template.
@@ -3745,7 +3745,7 @@ class Client(metaclass=ClientMetaClass):
             template=RunTemplateRequest(
                 name=name,
                 description=description,
-                source_deployment_id=deployment_id,
+                source_snapshot_id=snapshot_id,
                 tags=tags,
                 project=self.active_project.id,
             )

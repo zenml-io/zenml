@@ -73,7 +73,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         assert deployment.stack and stack.id == deployment.stack.id
 
         deploy_pipeline(
-            deployment=deployment,
+            snapshot=deployment,
             stack=stack,
             placeholder_run=placeholder_run,
         )

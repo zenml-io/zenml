@@ -761,7 +761,7 @@ class ModelContext:
                         status="running",
                         config=PipelineConfiguration(name="aria_pipeline"),
                         project=ws.id,
-                        deployment=deployment.id,
+                        snapshot=deployment.id,
                     )
                 )[0]
             )
@@ -1379,7 +1379,7 @@ run_template_test_config = CrudTestConfig(
     create_model=RunTemplateRequest(
         name=sample_name("run_template"),
         description="Test run template.",
-        source_deployment_id=uuid.uuid4(),  # will be overridden in create()
+        source_snapshot_id=uuid.uuid4(),  # will be overridden in create()
         project=uuid.uuid4(),
     ),
     update_model=RunTemplateUpdate(name=sample_name("updated_run_template")),

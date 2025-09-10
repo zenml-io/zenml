@@ -595,16 +595,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             local_repo = code_repository_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository_context(
-                deployment=deployment, local_repo_context=local_repo
+                snapshot=deployment, local_repo_context=local_repo
             )
 
             return build_utils.create_pipeline_build(
-                deployment=deployment,
+                snapshot=deployment,
                 pipeline_id=pipeline_id,
                 code_repository=code_repository,
             )
 
-    def _create_deployment(
+    def _create_snapshot(
         self,
         *,
         run_name: Optional[str] = None,
@@ -623,9 +623,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         config_path: Optional[str] = None,
         prevent_build_reuse: bool = False,
         skip_schedule_registration: bool = False,
-        **deployment_request_kwargs: Any,
+        **snapshot_request_kwargs: Any,
     ) -> PipelineSnapshotResponse:
-        """Create a pipeline deployment.
+        """Create a pipeline snapshot.
 
         Args:
             run_name: Name of the pipeline run.
@@ -651,17 +651,17 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
             skip_schedule_registration: Whether to skip schedule registration.
-            **deployment_request_kwargs: Additional keyword arguments to pass to
-                the deployment request.
+            **snapshot_request_kwargs: Additional keyword arguments to pass to
+                the snapshot request.
 
         Returns:
-            The pipeline deployment.
+            The pipeline snapshot.
 
         Raises:
             ValueError: If the orchestrator doesn't support scheduling, but a
                 schedule was given
         """
-        deployment, schedule, build = self._compile(
+        snapshot, schedule, build = self._compile(
             config_path=config_path,
             run_name=run_name,
             enable_cache=enable_cache,
@@ -694,8 +694,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 schedule_name = schedule.name
             else:
                 schedule_name = format_name_template(
-                    deployment.run_name_template,
-                    substitutions=deployment.pipeline_configuration.substitutions,
+                    snapshot.run_name_template,
+                    substitutions=snapshot.pipeline_configuration.substitutions,
                 )
             components = Client().active_stack_model.components
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]
@@ -715,25 +715,23 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule_id = Client().zen_store.create_schedule(schedule_model).id
             logger.info(
                 f"Created schedule `{schedule_name}` for pipeline "
-                f"`{deployment.pipeline_configuration.name}`."
+                f"`{snapshot.pipeline_configuration.name}`."
             )
 
         stack = Client().active_stack
         stack.validate()
-        upload_notebook_cell_code_if_necessary(
-            deployment=deployment, stack=stack
-        )
+        upload_notebook_cell_code_if_necessary(snapshot=snapshot, stack=stack)
 
         local_repo_context = (
             code_repository_utils.find_active_code_repository()
         )
         code_repository = build_utils.verify_local_repository_context(
-            deployment=deployment, local_repo_context=local_repo_context
+            snapshot=snapshot, local_repo_context=local_repo_context
         )
         can_download_from_code_repository = code_repository is not None
         if local_repo_context:
             build_utils.log_code_repository_usage(
-                deployment=deployment, local_repo_context=local_repo_context
+                snapshot=snapshot, local_repo_context=local_repo_context
             )
 
         if prevent_build_reuse:
@@ -744,7 +742,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
 
         build_model = build_utils.reuse_or_create_pipeline_build(
-            deployment=deployment,
+            snapshot=snapshot,
             pipeline_id=pipeline_id,
             allow_build_reuse=not prevent_build_reuse,
             build=build,
@@ -769,7 +767,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         code_path = None
         if build_utils.should_upload_code(
-            deployment=deployment,
+            snapshot=snapshot,
             build=build_model,
             can_download_from_code_repository=can_download_from_code_repository,
         ):
@@ -793,8 +791,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule=schedule_id,
             code_reference=code_reference,
             code_path=code_path,
-            **deployment.model_dump(),
-            **deployment_request_kwargs,
+            **snapshot.model_dump(),
+            **snapshot_request_kwargs,
         )
         return Client().zen_store.create_snapshot(snapshot=request)
 
@@ -863,12 +861,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
 
             with logs_context:
-                deployment = self._create_deployment(**self._run_args)
+                deployment = self._create_snapshot(**self._run_args)
 
                 self.log_pipeline_deployment_metadata(deployment)
                 run = (
                     create_placeholder_run(
-                        deployment=deployment, logs=logs_model
+                        snapshot=deployment, logs=logs_model
                     )
                     if not deployment.schedule
                     else None
@@ -896,7 +894,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         )
 
                 deploy_pipeline(
-                    deployment=deployment, stack=stack, placeholder_run=run
+                    snapshot=deployment, stack=stack, placeholder_run=run
                 )
 
             if run:
@@ -1550,12 +1548,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             "`pipeline.deploy(..)` instead."
         )
         self._prepare_if_possible()
-        deployment = self._create_deployment(
+        snapshot = self._create_snapshot(
             **self._run_args, skip_schedule_registration=True
         )
 
         return Client().create_run_template(
-            name=name, deployment_id=deployment.id, **kwargs
+            name=name, snapshot_id=snapshot.id, **kwargs
         )
 
     def deploy(
@@ -1576,7 +1574,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             The created deployment.
         """
         self._prepare_if_possible()
-        return self._create_deployment(
+        return self._create_snapshot(
             skip_schedule_registration=True,
             version=version or True,
             description=description,
