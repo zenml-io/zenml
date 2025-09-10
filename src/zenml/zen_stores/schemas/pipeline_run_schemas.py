@@ -730,6 +730,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     def _check_if_run_in_progress(self) -> bool:
         """Checks whether the run is in progress.
 
+        Raises:
+            RuntimeError: If the DB session is missing.
+
         Returns:
             A flag to indicate whether the run is in progress.
         """
