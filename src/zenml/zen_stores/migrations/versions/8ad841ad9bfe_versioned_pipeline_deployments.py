@@ -130,8 +130,10 @@ def rename_pipeline_deployment_to_pipeline_snapshot() -> None:
             ondelete="SET NULL",
         )
 
-    # 5. Rename foreign keys and columns referecing the pipeline snapshot
-    # table
+    # 5. Drop more constraints that need to be renamed, and alter the column
+    # names. For some reason, we can't use the same `batch_alter_table` to
+    # rename columns and then create new constraints, so we have to do it in
+    # separate calls.
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.drop_constraint(
             "unique_orchestrator_run_id_for_deployment_id", type_="unique"
@@ -143,31 +145,11 @@ def rename_pipeline_deployment_to_pipeline_snapshot() -> None:
             new_column_name="snapshot_id",
         )
 
-        batch_op.create_unique_constraint(
-            "unique_orchestrator_run_id_for_snapshot_id",
-            ["snapshot_id", "orchestrator_run_id"],
-        )
-        batch_op.create_foreign_key(
-            "fk_pipeline_run_snapshot_id_pipeline_snapshot",
-            "pipeline_snapshot",
-            ["snapshot_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-
     with op.batch_alter_table("run_template", schema=None) as batch_op:
         batch_op.alter_column(
             "source_deployment_id",
             existing_type=sa.CHAR(length=32),
             new_column_name="source_snapshot_id",
-        )
-
-        batch_op.create_foreign_key(
-            "fk_run_template_source_snapshot_id_pipeline_snapshot",
-            "pipeline_snapshot",
-            ["source_snapshot_id"],
-            ["id"],
-            ondelete="SET NULL",
         )
 
     with op.batch_alter_table("step_configuration", schema=None) as batch_op:
@@ -181,6 +163,36 @@ def rename_pipeline_deployment_to_pipeline_snapshot() -> None:
             new_column_name="snapshot_id",
         )
 
+    with op.batch_alter_table("step_run", schema=None) as batch_op:
+        batch_op.alter_column(
+            "deployment_id",
+            existing_type=sa.CHAR(length=32),
+            new_column_name="snapshot_id",
+        )
+
+    # 6. Add back the constraints with correct columns and names
+    with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
+        batch_op.create_unique_constraint(
+            "unique_orchestrator_run_id_for_snapshot_id",
+            ["snapshot_id", "orchestrator_run_id"],
+        )
+        batch_op.create_foreign_key(
+            "fk_pipeline_run_snapshot_id_pipeline_snapshot",
+            "pipeline_snapshot",
+            ["snapshot_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
+
+    with op.batch_alter_table("run_template", schema=None) as batch_op:
+        batch_op.create_foreign_key(
+            "fk_run_template_source_snapshot_id_pipeline_snapshot",
+            "pipeline_snapshot",
+            ["source_snapshot_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+    with op.batch_alter_table("step_configuration", schema=None) as batch_op:
         batch_op.create_unique_constraint(
             "unique_step_name_for_snapshot", ["snapshot_id", "name"]
         )
@@ -193,12 +205,6 @@ def rename_pipeline_deployment_to_pipeline_snapshot() -> None:
         )
 
     with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.alter_column(
-            "deployment_id",
-            existing_type=sa.CHAR(length=32),
-            new_column_name="snapshot_id",
-        )
-
         batch_op.create_foreign_key(
             "fk_step_run_snapshot_id_pipeline_snapshot",
             "pipeline_snapshot",
