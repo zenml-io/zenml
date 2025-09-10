@@ -65,15 +65,15 @@ from zenml.stack.flavor import Flavor
 from zenml.utils import pydantic_utils, requirements_utils, settings_utils
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, generate_access_token
-from zenml.zen_server.deployment_execution.runner_entrypoint_configuration import (
-    RunnerEntrypointConfiguration,
-)
 from zenml.zen_server.feature_gate.endpoint_utils import (
     report_usage,
 )
+from zenml.zen_server.pipeline_execution.runner_entrypoint_configuration import (
+    RunnerEntrypointConfiguration,
+)
 from zenml.zen_server.utils import (
-    deployment_executor,
     server_config,
+    snapshot_executor,
     workload_manager,
     zen_store,
 )
@@ -138,40 +138,40 @@ class BoundedThreadPoolExecutor:
         self._executor.shutdown(**kwargs)
 
 
-def trigger_deployment(
-    deployment: PipelineSnapshotResponse,
+def trigger_snapshot(
+    snapshot: PipelineSnapshotResponse,
     auth_context: AuthContext,
     trigger_request: PipelineSnapshotTriggerRequest,
     sync: bool = False,
     template_id: Optional[UUID] = None,
 ) -> PipelineRunResponse:
-    """Run a pipeline from a deployment.
+    """Run a pipeline from a snapshot.
 
     Args:
-        deployment: The deployment to run.
+        snapshot: The snapshot to run.
         auth_context: Authentication context.
         trigger_request: The trigger request.
-        sync: Whether to run the deployment synchronously.
-        template_id: The ID of the template from which to create the deployment
+        sync: Whether to run the snapshot synchronously.
+        template_id: The ID of the template from which to create the snapshot
             request.
 
     Raises:
-        ValueError: If the deployment can not be run.
+        ValueError: If the snapshot can not be run.
         RuntimeError: If the server URL is not set in the server configuration.
         MaxConcurrentTasksError: If the maximum number of concurrent run
-            deployment tasks is reached.
+            snapshot tasks is reached.
 
     Returns:
         ID of the new pipeline run.
     """
-    if not deployment.runnable:
+    if not snapshot.runnable:
         raise ValueError(
-            "This deployment can not be run because its associated "
+            "This snapshot can not be run because its associated "
             "stack or build have been deleted."
         )
 
     # Guaranteed by the `runnable` check above
-    build = deployment.build
+    build = snapshot.build
     assert build
     stack = build.stack
     assert stack
@@ -181,9 +181,9 @@ def trigger_deployment(
     ):
         raise ValueError(
             f"The stack {stack.name} has been updated since it was used for "
-            "the deployment. This means the Docker "
+            "the snapshot. This means the Docker "
             "images associated with this template most likely do not contain "
-            "the necessary requirements. Please create a new deployment with "
+            "the necessary requirements. Please create a new snapshot with "
             "the updated stack."
         )
 
@@ -193,15 +193,15 @@ def trigger_deployment(
             trigger_request.run_configuration
         )
 
-    deployment_request = deployment_request_from_source_deployment(
-        source_deployment=deployment,
+    snapshot_request = snapshot_request_from_source_snapshot(
+        source_snapshot=snapshot,
         config=trigger_request.run_configuration or PipelineRunConfiguration(),
         template_id=template_id,
     )
 
-    ensure_async_orchestrator(deployment=deployment_request, stack=stack)
+    ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
 
-    new_deployment = zen_store().create_snapshot(deployment_request)
+    new_snapshot = zen_store().create_snapshot(snapshot_request)
 
     server_url = server_config().server_url
     if not server_url:
@@ -214,7 +214,7 @@ def trigger_deployment(
     trigger_execution_id = None
     if trigger_request.step_run:
         trigger_execution_request = TriggerExecutionRequest(
-            project=deployment.project_id,
+            project=snapshot.project_id,
             step_run=trigger_request.step_run,
         )
         trigger_execution_id = (
@@ -222,7 +222,7 @@ def trigger_deployment(
         )
 
     placeholder_run = create_placeholder_run(
-        deployment=new_deployment, trigger_execution_id=trigger_execution_id
+        deployment=new_snapshot, trigger_execution_id=trigger_execution_id
     )
 
     report_usage(
@@ -242,7 +242,7 @@ def trigger_deployment(
     ).access_token
 
     environment = {
-        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_deployment.project_id),
+        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_snapshot.project_id),
         ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
         "ZENML_VERSION": zenml_version,
         "ZENML_STORE_URL": server_url,
@@ -253,7 +253,7 @@ def trigger_deployment(
 
     command = RunnerEntrypointConfiguration.get_entrypoint_command()
     args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
-        deployment_id=new_deployment.id,
+        deployment_id=new_snapshot.id,
         placeholder_run_id=placeholder_run.id,
     )
 
@@ -288,14 +288,14 @@ def trigger_deployment(
 
     def _task() -> None:
         runner_image = workload_manager().build_and_push_image(
-            workload_id=new_deployment.id,
+            workload_id=new_snapshot.id,
             dockerfile=dockerfile,
             image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
             sync=True,
         )
 
         workload_manager().log(
-            workload_id=new_deployment.id,
+            workload_id=new_snapshot.id,
             message="Starting pipeline run.",
         )
 
@@ -306,7 +306,7 @@ def trigger_deployment(
         # could do this same thing with a step operator, but we need some
         # minor changes to the abstract interface to support that.
         workload_manager().run(
-            workload_id=new_deployment.id,
+            workload_id=new_snapshot.id,
             image=runner_image,
             command=command,
             arguments=args,
@@ -315,7 +315,7 @@ def trigger_deployment(
             sync=True,
         )
         workload_manager().log(
-            workload_id=new_deployment.id,
+            workload_id=new_snapshot.id,
             message="Pipeline run started successfully.",
         )
 
@@ -324,9 +324,9 @@ def trigger_deployment(
             event=AnalyticsEvent.RUN_PIPELINE
         ) as analytics_handler:
             analytics_handler.metadata = get_pipeline_run_analytics_metadata(
-                deployment=new_deployment,
+                snapshot=new_snapshot,
                 stack=stack,
-                source_deployment_id=deployment.id,
+                source_snapshot_id=snapshot.id,
                 run_id=placeholder_run.id,
             )
 
@@ -334,8 +334,8 @@ def trigger_deployment(
                 _task()
             except Exception:
                 logger.exception(
-                    "Failed to run deployment %s, run ID: %s",
-                    str(deployment.id),
+                    "Failed to run snapshot %s, run ID: %s",
+                    str(snapshot.id),
                     str(placeholder_run.id),
                 )
                 run_status, _ = zen_store().get_run_status(placeholder_run.id)
@@ -357,28 +357,26 @@ def trigger_deployment(
         _task_with_analytics_and_error_handling()
     else:
         try:
-            deployment_executor().submit(
-                _task_with_analytics_and_error_handling
-            )
+            snapshot_executor().submit(_task_with_analytics_and_error_handling)
         except MaxConcurrentTasksError:
             zen_store().delete_run(run_id=placeholder_run.id)
             raise MaxConcurrentTasksError(
-                "Maximum number of concurrent deployment tasks reached."
+                "Maximum number of concurrent snapshot tasks reached."
             ) from None
 
     return placeholder_run
 
 
 def ensure_async_orchestrator(
-    deployment: PipelineSnapshotRequest, stack: StackResponse
+    snapshot: PipelineSnapshotRequest, stack: StackResponse
 ) -> None:
     """Ensures the orchestrator is configured to run async.
 
     Args:
-        deployment: Deployment request in which the orchestrator
+        snapshot: Snapshot request in which the orchestrator
             configuration should be updated to ensure the orchestrator is
             running async.
-        stack: The stack on which the deployment will run.
+        stack: The stack on which the snapshot will run.
     """
     orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
     flavors = zen_store().list_flavors(
@@ -389,13 +387,13 @@ def ensure_async_orchestrator(
     if "synchronous" in flavor.config_class.model_fields:
         key = settings_utils.get_flavor_setting_key(flavor)
 
-        if settings := deployment.pipeline_configuration.settings.get(key):
+        if settings := snapshot.pipeline_configuration.settings.get(key):
             settings_dict = settings.model_dump()
         else:
             settings_dict = {}
 
         settings_dict["synchronous"] = False
-        deployment.pipeline_configuration.settings[key] = (
+        snapshot.pipeline_configuration.settings[key] = (
             BaseSettings.model_validate(settings_dict)
         )
 
@@ -468,18 +466,18 @@ def generate_dockerfile(
     return "\n".join(lines)
 
 
-def deployment_request_from_source_deployment(
-    source_deployment: PipelineSnapshotResponse,
+def snapshot_request_from_source_snapshot(
+    source_snapshot: PipelineSnapshotResponse,
     config: PipelineRunConfiguration,
     template_id: Optional[UUID] = None,
 ) -> "PipelineSnapshotRequest":
-    """Generate a deployment request from a source deployment.
+    """Generate a snapshot request from a source snapshot.
 
     Args:
-        source_deployment: The source deployment from which to create the
-            deployment request.
+        source_snapshot: The source snapshot from which to create the
+            snapshot request.
         config: The run configuration.
-        template_id: The ID of the template from which to create the deployment
+        template_id: The ID of the template from which to create the snapshot
             request.
 
     Raises:
@@ -487,7 +485,7 @@ def deployment_request_from_source_deployment(
             configuration.
 
     Returns:
-        The generated deployment request.
+        The generated snapshot request.
     """
     pipeline_update = config.model_dump(
         include=set(PipelineConfiguration.model_fields),
@@ -496,12 +494,12 @@ def deployment_request_from_source_deployment(
         exclude_none=True,
     )
     pipeline_configuration = pydantic_utils.update_model(
-        source_deployment.pipeline_configuration, pipeline_update
+        source_snapshot.pipeline_configuration, pipeline_update
     )
 
     steps = {}
     step_config_updates = config.steps or {}
-    for invocation_id, step in source_deployment.step_configurations.items():
+    for invocation_id, step in source_snapshot.step_configurations.items():
         step_update = step_config_updates.get(
             invocation_id, StepConfigurationUpdate()
         ).model_dump(
@@ -542,54 +540,51 @@ def deployment_request_from_source_deployment(
         )
 
     code_reference_request = None
-    if source_deployment.code_reference:
+    if source_snapshot.code_reference:
         code_reference_request = CodeReferenceRequest(
-            commit=source_deployment.code_reference.commit,
-            subdirectory=source_deployment.code_reference.subdirectory,
-            code_repository=source_deployment.code_reference.code_repository.id,
+            commit=source_snapshot.code_reference.commit,
+            subdirectory=source_snapshot.code_reference.subdirectory,
+            code_repository=source_snapshot.code_reference.code_repository.id,
         )
 
     zenml_version = zen_store().get_store_info().version
-    assert source_deployment.stack
-    assert source_deployment.build
-    deployment_request = PipelineSnapshotRequest(
-        project=source_deployment.project_id,
-        run_name_template=config.run_name
-        or source_deployment.run_name_template,
+    assert source_snapshot.stack
+    assert source_snapshot.build
+    return PipelineSnapshotRequest(
+        project=source_snapshot.project_id,
+        run_name_template=config.run_name or source_snapshot.run_name_template,
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
         client_environment={},
         client_version=zenml_version,
         server_version=zenml_version,
-        stack=source_deployment.stack.id,
-        pipeline=source_deployment.pipeline.id
-        if source_deployment.pipeline
+        stack=source_snapshot.stack.id,
+        pipeline=source_snapshot.pipeline.id
+        if source_snapshot.pipeline
         else None,
-        build=source_deployment.build.id,
+        build=source_snapshot.build.id,
         schedule=None,
         code_reference=code_reference_request,
-        code_path=source_deployment.code_path,
+        code_path=source_snapshot.code_path,
         template=template_id,
-        source_snapshot=source_deployment.id,
-        pipeline_version_hash=source_deployment.pipeline_version_hash,
-        pipeline_spec=source_deployment.pipeline_spec,
+        source_snapshot=source_snapshot.id,
+        pipeline_version_hash=source_snapshot.pipeline_version_hash,
+        pipeline_spec=source_snapshot.pipeline_spec,
     )
-
-    return deployment_request
 
 
 def get_pipeline_run_analytics_metadata(
-    deployment: "PipelineSnapshotResponse",
+    snapshot: "PipelineSnapshotResponse",
     stack: StackResponse,
-    source_deployment_id: UUID,
+    source_snapshot_id: UUID,
     run_id: UUID,
 ) -> Dict[str, Any]:
     """Get metadata for the pipeline run analytics event.
 
     Args:
-        deployment: The deployment of the run.
+        snapshot: The snapshot of the run.
         stack: The stack on which the run will happen.
-        source_deployment_id: ID of the source deployment from which the run
+        source_snapshot_id: ID of the source snapshot from which the run
             was started.
         run_id: ID of the run.
 
@@ -597,15 +592,15 @@ def get_pipeline_run_analytics_metadata(
         The analytics metadata.
     """
     custom_materializer = False
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         for output in step.config.outputs.values():
             for source in output.materializer_source:
                 if not source.is_internal:
                     custom_materializer = True
 
-    assert deployment.user_id
+    assert snapshot.user_id
     stack_creator = stack.user_id
-    own_stack = stack_creator and stack_creator == deployment.user_id
+    own_stack = stack_creator and stack_creator == snapshot.user_id
 
     stack_metadata = {
         component_type.value: component_list[0].flavor_name
@@ -613,13 +608,13 @@ def get_pipeline_run_analytics_metadata(
     }
 
     return {
-        "project_id": deployment.project_id,
+        "project_id": snapshot.project_id,
         "store_type": "rest",  # This method is called from within a REST endpoint
         **stack_metadata,
-        "total_steps": len(deployment.step_configurations),
-        "schedule": deployment.schedule is not None,
+        "total_steps": len(snapshot.step_configurations),
+        "schedule": snapshot.schedule is not None,
         "custom_materializer": custom_materializer,
         "own_stack": own_stack,
         "pipeline_run_id": str(run_id),
-        "source_deployment_id": str(source_deployment_id),
+        "source_snapshot_id": str(source_snapshot_id),
     }

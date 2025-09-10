@@ -57,7 +57,7 @@ from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import ProjectScopedFilter
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.cache import MemoryCache
-from zenml.zen_server.deployment_execution.workload_manager_interface import (
+from zenml.zen_server.pipeline_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
@@ -72,7 +72,7 @@ if TYPE_CHECKING:
     from fastapi import Request
 
     from zenml.zen_server.auth import AuthContext
-    from zenml.zen_server.deployment_execution.utils import (
+    from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
     )
 
@@ -87,7 +87,7 @@ _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
-_deployment_executor: Optional["BoundedThreadPoolExecutor"] = None
+_snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
 _request_manager: Optional[RequestManager] = None
@@ -218,32 +218,32 @@ def initialize_workload_manager() -> None:
             _workload_manager = workload_manager_class()
 
 
-def deployment_executor() -> "BoundedThreadPoolExecutor":
-    """Return the initialized deployment executor.
+def snapshot_executor() -> "BoundedThreadPoolExecutor":
+    """Return the initialized snapshot executor.
 
     Raises:
-        RuntimeError: If the deployment executor is not initialized.
+        RuntimeError: If the snapshot executor is not initialized.
 
     Returns:
-        The deployment executor.
+        The snapshot executor.
     """
-    global _deployment_executor
-    if _deployment_executor is None:
-        raise RuntimeError("Deployment executor not initialized")
+    global _snapshot_executor
+    if _snapshot_executor is None:
+        raise RuntimeError("Snapshot executor not initialized")
 
-    return _deployment_executor
+    return _snapshot_executor
 
 
-def initialize_deployment_executor() -> None:
-    """Initialize the deployment executor."""
-    global _deployment_executor
-    from zenml.zen_server.deployment_execution.utils import (
+def initialize_snapshot_executor() -> None:
+    """Initialize the snapshot executor."""
+    global _snapshot_executor
+    from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
     )
 
-    _deployment_executor = BoundedThreadPoolExecutor(
-        max_workers=server_config().max_concurrent_deployment_runs,
-        thread_name_prefix="zenml-deployment-executor",
+    _snapshot_executor = BoundedThreadPoolExecutor(
+        max_workers=server_config().max_concurrent_snapshot_runs,
+        thread_name_prefix="zenml-snapshot-executor",
     )
 
 
