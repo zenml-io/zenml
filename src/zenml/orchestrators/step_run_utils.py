@@ -248,7 +248,7 @@ class StepRunRequestFactory:
                 else None
             ):
                 steps = Client().list_run_steps(
-                    deployment_id=snapshot_id,
+                    snapshot_id=snapshot_id,
                     name=invocation_id,
                     size=1,
                     hydrate=True,

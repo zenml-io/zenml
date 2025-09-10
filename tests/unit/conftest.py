@@ -576,7 +576,7 @@ def create_step_run(
             ),
             metadata=StepRunResponseMetadata(
                 pipeline_run_id=uuid4(),
-                deployment_id=uuid4(),
+                snapshot_id=uuid4(),
                 spec=spec,
                 config=config,
                 **kwargs,

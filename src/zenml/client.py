@@ -2494,7 +2494,7 @@ class Client(metaclass=ClientMetaClass):
         logger.warning(
             "The `Client().trigger_pipeline(...)` method is deprecated and "
             "will be removed in a future version. Please use "
-            "`Client().trigger_deployment(...)` instead."
+            "`Client().trigger_snapshot(...)` instead."
         )
 
         if Counter([template_id, pipeline_name_or_id])[None] != 1:
@@ -4186,10 +4186,10 @@ class Client(metaclass=ClientMetaClass):
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
-        deployment_id: Optional[Union[str, UUID]] = None,
+        snapshot_id: Optional[Union[str, UUID]] = None,
         code_repository_id: Optional[Union[str, UUID]] = None,
         template_id: Optional[Union[str, UUID]] = None,
-        source_deployment_id: Optional[Union[str, UUID]] = None,
+        source_snapshot_id: Optional[Union[str, UUID]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
@@ -4227,10 +4227,10 @@ class Client(metaclass=ClientMetaClass):
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
             build_id: The id of the build to filter by.
-            deployment_id: The id of the deployment to filter by.
+            snapshot_id: The id of the snapshot to filter by.
             code_repository_id: The id of the code repository to filter by.
             template_id: The ID of the template to filter by.
-            source_deployment_id: The ID of the source deployment to filter by.
+            source_snapshot_id: The ID of the source snapshot to filter by.
             model_version_id: The ID of the model version to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
@@ -4272,10 +4272,10 @@ class Client(metaclass=ClientMetaClass):
             pipeline_name=pipeline_name,
             schedule_id=schedule_id,
             build_id=build_id,
-            deployment_id=deployment_id,
+            snapshot_id=snapshot_id,
             code_repository_id=code_repository_id,
             template_id=template_id,
-            source_deployment_id=source_deployment_id,
+            source_snapshot_id=source_snapshot_id,
             model_version_id=model_version_id,
             orchestrator_run_id=orchestrator_run_id,
             stack_id=stack_id,
@@ -4357,7 +4357,7 @@ class Client(metaclass=ClientMetaClass):
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
         pipeline_run_id: Optional[Union[str, UUID]] = None,
-        deployment_id: Optional[Union[str, UUID]] = None,
+        snapshot_id: Optional[Union[str, UUID]] = None,
         original_step_run_id: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -4382,7 +4382,7 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
             pipeline_run_id: The id of the pipeline run to filter by.
-            deployment_id: The id of the deployment to filter by.
+            snapshot_id: The id of the snapshot to filter by.
             original_step_run_id: The id of the original step run to filter by.
             model_version_id: The ID of the model version to filter by.
             model: Filter by model name/ID.
@@ -4407,7 +4407,7 @@ class Client(metaclass=ClientMetaClass):
             cache_key=cache_key,
             code_hash=code_hash,
             pipeline_run_id=pipeline_run_id,
-            deployment_id=deployment_id,
+            snapshot_id=snapshot_id,
             original_step_run_id=original_step_run_id,
             status=status,
             created=created,

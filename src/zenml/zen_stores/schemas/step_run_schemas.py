@@ -49,11 +49,11 @@ from zenml.models.v2.core.step_run import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
-from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     PipelineSnapshotSchema,
     StepConfigurationSchema,
 )
-from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -121,10 +121,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    deployment_id: Optional[UUID] = build_foreign_key_field(
+    snapshot_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSnapshotSchema.__tablename__,
-        source_column="deployment_id",
+        source_column="snapshot_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=True,
@@ -165,7 +165,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     # Relationships
     project: "ProjectSchema" = Relationship(back_populates="step_runs")
     user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
-    deployment: Optional["PipelineSnapshotSchema"] = Relationship(
+    snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
         back_populates="step_runs"
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
@@ -217,7 +217,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Relationship(
             sa_relationship_kwargs=dict(
                 viewonly=True,
-                primaryjoin="and_(foreign(StepConfigurationSchema.name) == StepRunSchema.name, foreign(StepConfigurationSchema.deployment_id) == StepRunSchema.deployment_id)",
+                primaryjoin="and_(foreign(StepConfigurationSchema.name) == StepRunSchema.name, foreign(StepConfigurationSchema.snapshot_id) == StepRunSchema.snapshot_id)",
             ),
         )
     )
@@ -249,7 +249,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
 
         options = [
-            selectinload(jl_arg(StepRunSchema.deployment)).load_only(
+            selectinload(jl_arg(StepRunSchema.snapshot)).load_only(
                 jl_arg(PipelineSnapshotSchema.pipeline_configuration)
             ),
             selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
@@ -301,7 +301,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     def from_request(
         cls,
         request: StepRunRequest,
-        deployment_id: Optional[UUID],
+        snapshot_id: Optional[UUID],
         version: int,
         is_retriable: bool,
     ) -> "StepRunSchema":
@@ -309,7 +309,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Args:
             request: The step run request model.
-            deployment_id: The deployment ID.
+            snapshot_id: The snapshot ID.
             version: The version of the step run.
             is_retriable: Whether the step run is retriable.
 
@@ -323,7 +323,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             start_time=request.start_time,
             end_time=request.end_time,
             status=request.status.value,
-            deployment_id=deployment_id,
+            snapshot_id=snapshot_id,
             original_step_run_id=request.original_step_run_id,
             pipeline_run_id=request.pipeline_run_id,
             docstring=request.docstring,
@@ -348,11 +348,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         step = None
 
-        if self.deployment is not None:
+        if self.snapshot is not None:
             if self.step_configuration_schema:
                 pipeline_configuration = (
                     PipelineConfiguration.model_validate_json(
-                        self.deployment.pipeline_configuration
+                        self.snapshot.pipeline_configuration
                     )
                 )
                 pipeline_configuration.finalize_substitutions(
@@ -426,7 +426,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.exception_info
                 else None,
                 logs=self.logs.to_model() if self.logs else None,
-                deployment_id=self.deployment_id,
+                snapshot_id=self.snapshot_id,
                 pipeline_run_id=self.pipeline_run_id,
                 original_step_run_id=self.original_step_run_id,
                 parent_step_ids=[p.parent_id for p in self.parents],

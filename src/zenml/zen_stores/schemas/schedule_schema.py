@@ -44,7 +44,7 @@ from zenml.zen_stores.schemas.utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
         PipelineSnapshotSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import (
@@ -93,7 +93,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         nullable=True,
     )
     pipeline: "PipelineSchema" = Relationship(back_populates="schedules")
-    deployment: Optional["PipelineSnapshotSchema"] = Relationship(
+    snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
         back_populates="schedule"
     )
 

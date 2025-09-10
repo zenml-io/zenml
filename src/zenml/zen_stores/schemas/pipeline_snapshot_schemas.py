@@ -62,8 +62,7 @@ logger = get_logger(__name__)
 class PipelineSnapshotSchema(BaseSchema, table=True):
     """SQL Model for pipeline snapshots."""
 
-    # This is kept to not mess with existing foreign keys
-    __tablename__ = "pipeline_deployment"
+    __tablename__ = "pipeline_snapshot"
     __table_args__ = (
         UniqueConstraint(
             "pipeline_id",
@@ -172,9 +171,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
     # SQLModel Relationships
     user: Optional["UserSchema"] = Relationship(
-        back_populates="deployments",
+        back_populates="snapshots",
     )
-    project: "ProjectSchema" = Relationship()
+    project: "ProjectSchema" = Relationship(back_populates="snapshots")
     stack: Optional["StackSchema"] = Relationship()
     pipeline: "PipelineSchema" = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
@@ -230,7 +229,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     .join(
                         PipelineSnapshotSchema,
                         col(PipelineSnapshotSchema.id)
-                        == col(PipelineRunSchema.deployment_id),
+                        == col(PipelineRunSchema.snapshot_id),
                     )
                     .where(
                         PipelineSnapshotSchema.source_snapshot_id == self.id
@@ -264,7 +263,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if session := object_session(self):
             query = (
                 select(StepConfigurationSchema)
-                .where(StepConfigurationSchema.deployment_id == self.id)
+                .where(StepConfigurationSchema.snapshot_id == self.id)
                 .order_by(asc(StepConfigurationSchema.index))
             )
 
@@ -561,9 +560,9 @@ class StepConfigurationSchema(BaseSchema, table=True):
     __tablename__ = "step_configuration"
     __table_args__ = (
         UniqueConstraint(
-            "deployment_id",
+            "snapshot_id",
             "name",
-            name="unique_step_name_for_deployment",
+            name="unique_step_name_for_snapshot",
         ),
     )
 
@@ -578,10 +577,10 @@ class StepConfigurationSchema(BaseSchema, table=True):
         )
     )
 
-    deployment_id: UUID = build_foreign_key_field(
+    snapshot_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSnapshotSchema.__tablename__,
-        source_column="deployment_id",
+        source_column="snapshot_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,

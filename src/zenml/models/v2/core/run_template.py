@@ -419,7 +419,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.code_repository_id:
             code_repo_filter = and_(
-                RunTemplateSchema.source_deployment_id
+                RunTemplateSchema.source_snapshot_id
                 == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.code_reference_id
                 == CodeReferenceSchema.id,
@@ -430,7 +430,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.stack_id:
             stack_filter = and_(
-                RunTemplateSchema.source_deployment_id
+                RunTemplateSchema.source_snapshot_id
                 == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.stack_id == self.stack_id,
             )
@@ -438,7 +438,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.build_id:
             build_filter = and_(
-                RunTemplateSchema.source_deployment_id
+                RunTemplateSchema.source_snapshot_id
                 == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.build_id == self.build_id,
             )
@@ -446,7 +446,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.pipeline_id:
             pipeline_filter = and_(
-                RunTemplateSchema.source_deployment_id
+                RunTemplateSchema.source_snapshot_id
                 == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.pipeline_id == self.pipeline_id,
             )
@@ -454,7 +454,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.pipeline:
             pipeline_filter = and_(
-                RunTemplateSchema.source_deployment_id
+                RunTemplateSchema.source_snapshot_id
                 == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
                 self.generate_name_or_id_query_conditions(
@@ -466,7 +466,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.stack:
             stack_filter = and_(
-                RunTemplateSchema.source_deployment_id
+                RunTemplateSchema.source_snapshot_id
                 == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.stack_id == StackSchema.id,
                 self.generate_name_or_id_query_conditions(

@@ -4895,7 +4895,7 @@ class SqlZenStore(BaseZenStore):
 
             if run_template and not snapshot.source_snapshot:
                 # TODO: remove this once we remove run templates entirely
-                snapshot.source_snapshot = run_template.source_deployment_id
+                snapshot.source_snapshot = run_template.source_snapshot_id
 
             if snapshot.version:
                 if isinstance(snapshot.version, str):
@@ -4939,7 +4939,7 @@ class SqlZenStore(BaseZenStore):
                     config=step_configuration.model_dump_json(
                         exclude={"config"}
                     ),
-                    deployment_id=new_snapshot.id,
+                    snapshot_id=new_snapshot.id,
                 )
                 session.add(step_configuration_schema)
             session.commit()
@@ -5487,13 +5487,11 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=[
-                    selectinload(
-                        jl_arg(PipelineRunSchema.deployment)
-                    ).load_only(
+                    selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                     ),
                     selectinload(
-                        jl_arg(PipelineRunSchema.deployment)
+                        jl_arg(PipelineRunSchema.snapshot)
                     ).selectinload(
                         jl_arg(PipelineSnapshotSchema.step_configurations)
                     ),
@@ -5514,8 +5512,8 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-            assert run.deployment is not None
-            deployment = run.deployment
+            assert run.snapshot is not None
+            deployment = run.snapshot
             step_runs = {
                 step.name: step
                 for step in run.step_runs
@@ -6080,7 +6078,7 @@ class SqlZenStore(BaseZenStore):
             # modifying this WHERE clause, make sure to test/adjust so this
             # does not lock multiple rows or even the complete table.
             .with_for_update()
-            .where(PipelineRunSchema.deployment_id == pipeline_run.snapshot)
+            .where(PipelineRunSchema.snapshot_id == pipeline_run.snapshot)
             .where(
                 or_(
                     PipelineRunSchema.orchestrator_run_id
@@ -6149,7 +6147,7 @@ class SqlZenStore(BaseZenStore):
         """
         run_schema = session.exec(
             select(PipelineRunSchema)
-            .where(PipelineRunSchema.deployment_id == deployment_id)
+            .where(PipelineRunSchema.snapshot_id == deployment_id)
             .where(
                 PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
             )
@@ -9260,7 +9258,7 @@ class SqlZenStore(BaseZenStore):
 
             step_schema = StepRunSchema.from_request(
                 step_run,
-                deployment_id=run.deployment_id,
+                snapshot_id=run.snapshot_id,
                 version=len(existing_step_runs) + 1,
                 # TODO: This isn't actually guaranteed to be correct, how
                 # do we handle these cases? E.g. if the step on kubernetes
@@ -9836,8 +9834,8 @@ class SqlZenStore(BaseZenStore):
         ).all()
 
         # Deployment always exists for pipeline runs of newer versions
-        assert pipeline_run.deployment
-        num_steps = pipeline_run.deployment.step_count
+        assert pipeline_run.snapshot
+        num_steps = pipeline_run.snapshot.step_count
         new_status = get_pipeline_run_status(
             run_status=ExecutionStatus(pipeline_run.status),
             step_statuses=[
@@ -9881,7 +9879,7 @@ class SqlZenStore(BaseZenStore):
                 start_time_str = None
                 duration_seconds = None
 
-            stack = pipeline_run.deployment.stack
+            stack = pipeline_run.snapshot.stack
             assert stack
             stack_metadata = {
                 str(component.type): component.flavor
@@ -9893,7 +9891,7 @@ class SqlZenStore(BaseZenStore):
                 analytics_handler.metadata = {
                     "project_id": pipeline_run.project_id,
                     "pipeline_run_id": pipeline_run_id,
-                    "source_deployment_id": pipeline_run.deployment.source_snapshot_id,
+                    "source_deployment_id": pipeline_run.snapshot.source_snapshot_id,
                     "status": new_status,
                     "num_steps": num_steps,
                     "start_time": start_time_str,
@@ -13091,7 +13089,7 @@ class SqlZenStore(BaseZenStore):
                             )
                             .join(
                                 PipelineSnapshotSchema,
-                                RunTemplateSchema.source_deployment_id  # type: ignore[arg-type]
+                                RunTemplateSchema.source_snapshot_id  # type: ignore[arg-type]
                                 == PipelineSnapshotSchema.id,
                             )
                             .where(TagResourceSchema.tag_id == tag.id)
@@ -13328,11 +13326,9 @@ class SqlZenStore(BaseZenStore):
                                 )
                     elif isinstance(resource, RunTemplateSchema):
                         scope_id = None
-                        if resource.source_deployment:
-                            if resource.source_deployment.pipeline_id:
-                                scope_id = (
-                                    resource.source_deployment.pipeline_id
-                                )
+                        if resource.source_snapshot:
+                            if resource.source_snapshot.pipeline_id:
+                                scope_id = resource.source_snapshot.pipeline_id
                                 scope_ids[
                                     TaggableResourceTypes.RUN_TEMPLATE
                                 ].append(scope_id)

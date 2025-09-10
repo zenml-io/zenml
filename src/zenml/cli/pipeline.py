@@ -508,11 +508,10 @@ def trigger_deployment(
         pipeline_name_or_id: The name or ID of the pipeline to trigger.
         version: The version of the deployment to trigger.
         config_path: Path to configuration file for the run.
-        stack_name_or_id: Name or ID of the stack for which the deployment
-            should be created.
+        stack_name_or_id: Name or ID on which to run the snapshot.
     """
     run = Client().trigger_snapshot(
-        deployment_id=UUID(deployment_id) if deployment_id else None,
+        snapshot_id=UUID(deployment_id) if deployment_id else None,
         pipeline_name_or_id=pipeline_name_or_id,
         version=version,
         config_path=config_path,

@@ -41,10 +41,10 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_build_schemas import (
         PipelineBuildSchema,
     )
-    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+    from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
         PipelineSnapshotSchema,
     )
-    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
@@ -91,7 +91,7 @@ class PipelineSchema(NamedSchema, table=True):
     builds: List["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
     )
-    deployments: List["PipelineSnapshotSchema"] = Relationship(
+    snapshots: List["PipelineSnapshotSchema"] = Relationship(
         back_populates="pipeline",
         sa_relationship_kwargs={"cascade": "delete"},
     )

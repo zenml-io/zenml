@@ -269,9 +269,9 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         description="DEPRECATED: Template used for the pipeline run.",
         deprecated=True,
     )
-    source_deployment_id: Optional[UUID] = Field(
+    source_snapshot_id: Optional[UUID] = Field(
         default=None,
-        description="Source deployment used for the pipeline run.",
+        description="Source snapshot used for the pipeline run.",
     )
     is_templatable: bool = Field(
         default=False,
@@ -538,13 +538,13 @@ class PipelineRunResponse(
         return self.get_metadata().template_id
 
     @property
-    def source_deployment_id(self) -> Optional[UUID]:
-        """The `source_deployment_id` property.
+    def source_snapshot_id(self) -> Optional[UUID]:
+        """The `source_snapshot_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().source_deployment_id
+        return self.get_metadata().source_snapshot_id
 
     @property
     def is_templatable(self) -> bool:
@@ -620,7 +620,7 @@ class PipelineRunFilter(
         "schedule_id",
         "stack_id",
         "template_id",
-        "source_deployment_id",
+        "source_snapshot_id",
         "pipeline",
         "stack",
         "code_repository",
@@ -669,9 +669,9 @@ class PipelineRunFilter(
         description="Build used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    deployment_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Deployment used for the Pipeline Run",
+        description="Snapshot used for the Pipeline Run",
         union_mode="left_to_right",
     )
     code_repository_id: Optional[Union[UUID, str]] = Field(
@@ -685,9 +685,9 @@ class PipelineRunFilter(
         union_mode="left_to_right",
         deprecated=True,
     )
-    source_deployment_id: Optional[Union[UUID, str]] = Field(
+    source_snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Source deployment used for the pipeline run.",
+        description="Source snapshot used for the pipeline run.",
         union_mode="left_to_right",
     )
     model_version_id: Optional[Union[UUID, str]] = Field(
@@ -788,7 +788,7 @@ class PipelineRunFilter(
 
         if self.code_repository_id:
             code_repo_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.code_reference_id
                 == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
@@ -798,7 +798,7 @@ class PipelineRunFilter(
 
         if self.stack_id:
             stack_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.stack_id == StackSchema.id,
                 StackSchema.id == self.stack_id,
             )
@@ -806,7 +806,7 @@ class PipelineRunFilter(
 
         if self.schedule_id:
             schedule_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.schedule_id == ScheduleSchema.id,
                 ScheduleSchema.id == self.schedule_id,
             )
@@ -814,7 +814,7 @@ class PipelineRunFilter(
 
         if self.build_id:
             pipeline_build_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
                 PipelineBuildSchema.id == self.build_id,
             )
@@ -822,16 +822,16 @@ class PipelineRunFilter(
 
         if self.template_id:
             run_template_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.template_id == self.template_id,
             )
             custom_filters.append(run_template_filter)
 
-        if self.source_deployment_id:
+        if self.source_snapshot_id:
             source_deployment_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.source_snapshot_id
-                == self.source_deployment_id,
+                == self.source_snapshot_id,
             )
             custom_filters.append(source_deployment_filter)
 
@@ -846,7 +846,7 @@ class PipelineRunFilter(
 
         if self.stack:
             stack_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.stack_id == StackSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.stack,
@@ -857,7 +857,7 @@ class PipelineRunFilter(
 
         if self.code_repository:
             code_repo_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.code_reference_id
                 == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
@@ -881,7 +881,7 @@ class PipelineRunFilter(
 
         if self.stack_component:
             component_filter = and_(
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.stack_id == StackSchema.id,
                 StackSchema.id == StackCompositionSchema.stack_id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,
@@ -910,22 +910,21 @@ class PipelineRunFilter(
                     # consider stacks with custom flavor components or local
                     # components, but the best we can do currently with our
                     # table columns.
-                    PipelineRunSchema.deployment_id
-                    == PipelineSnapshotSchema.id,
+                    PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                     PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
                     col(PipelineBuildSchema.is_local).is_(False),
                     col(PipelineBuildSchema.stack_id).is_not(None),
                 )
             else:
                 templatable_filter = or_(
-                    col(PipelineRunSchema.deployment_id).is_(None),
+                    col(PipelineRunSchema.snapshot_id).is_(None),
                     and_(
-                        PipelineRunSchema.deployment_id
+                        PipelineRunSchema.snapshot_id
                         == PipelineSnapshotSchema.id,
                         col(PipelineSnapshotSchema.build_id).is_(None),
                     ),
                     and_(
-                        PipelineRunSchema.deployment_id
+                        PipelineRunSchema.snapshot_id
                         == PipelineSnapshotSchema.id,
                         PipelineSnapshotSchema.build_id
                         == PipelineBuildSchema.id,
@@ -990,7 +989,7 @@ class PipelineRunFilter(
         elif sort_by == "stack":
             query = query.outerjoin(
                 PipelineSnapshotSchema,
-                PipelineRunSchema.deployment_id == PipelineSnapshotSchema.id,
+                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
             ).outerjoin(
                 StackSchema,
                 PipelineSnapshotSchema.stack_id == StackSchema.id,

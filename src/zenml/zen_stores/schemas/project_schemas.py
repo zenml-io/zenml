@@ -107,8 +107,7 @@ class ProjectSchema(NamedSchema, table=True):
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-
-    deployments: List["PipelineSnapshotSchema"] = Relationship(
+    snapshots: List["PipelineSnapshotSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )

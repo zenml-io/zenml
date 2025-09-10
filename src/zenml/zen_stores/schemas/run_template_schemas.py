@@ -40,10 +40,10 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+    from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
         PipelineSnapshotSchema,
     )
-    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
@@ -89,10 +89,10 @@ class RunTemplateSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    source_deployment_id: Optional[UUID] = build_foreign_key_field(
+    source_snapshot_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target="pipeline_deployment",
-        source_column="source_deployment_id",
+        target="pipeline_snapshot",
+        source_column="source_snapshot_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
@@ -102,9 +102,9 @@ class RunTemplateSchema(NamedSchema, table=True):
         back_populates="run_templates",
     )
     project: "ProjectSchema" = Relationship()
-    source_deployment: Optional["PipelineSnapshotSchema"] = Relationship(
+    source_snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
         sa_relationship_kwargs={
-            "foreign_keys": "RunTemplateSchema.source_deployment_id",
+            "foreign_keys": "RunTemplateSchema.source_snapshot_id",
         }
     )
 
@@ -140,7 +140,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         from zenml.zen_stores.schemas import PipelineSnapshotSchema
 
         options = [
-            joinedload(jl_arg(RunTemplateSchema.source_deployment)).joinedload(
+            joinedload(jl_arg(RunTemplateSchema.source_snapshot)).joinedload(
                 jl_arg(PipelineSnapshotSchema.build)
             ),
         ]
@@ -149,10 +149,10 @@ class RunTemplateSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(
-                        jl_arg(RunTemplateSchema.source_deployment)
+                        jl_arg(RunTemplateSchema.source_snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
                     joinedload(
-                        jl_arg(RunTemplateSchema.source_deployment)
+                        jl_arg(RunTemplateSchema.source_snapshot)
                     ).joinedload(
                         jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
@@ -162,10 +162,10 @@ class RunTemplateSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(
-                        jl_arg(RunTemplateSchema.source_deployment)
+                        jl_arg(RunTemplateSchema.source_snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.stack)),
                     joinedload(
-                        jl_arg(RunTemplateSchema.source_deployment)
+                        jl_arg(RunTemplateSchema.source_snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
                 ]
             )
@@ -202,7 +202,7 @@ class RunTemplateSchema(NamedSchema, table=True):
                     .join(
                         PipelineSnapshotSchema,
                         col(PipelineSnapshotSchema.id)
-                        == col(PipelineRunSchema.deployment_id),
+                        == col(PipelineRunSchema.snapshot_id),
                     )
                     .where(PipelineSnapshotSchema.template_id == self.id)
                     .order_by(desc(PipelineRunSchema.created))
@@ -236,7 +236,7 @@ class RunTemplateSchema(NamedSchema, table=True):
             name=request.name,
             description=request.description,
             hidden=request.hidden,
-            source_deployment_id=request.source_snapshot_id,
+            source_snapshot_id=request.source_snapshot_id,
         )
 
     def update(self, update: RunTemplateUpdate) -> "RunTemplateSchema":
@@ -277,10 +277,10 @@ class RunTemplateSchema(NamedSchema, table=True):
         """
         runnable = False
         if (
-            self.source_deployment
-            and self.source_deployment.build
-            and not self.source_deployment.build.is_local
-            and self.source_deployment.build.stack_id
+            self.source_snapshot
+            and self.source_snapshot.build
+            and not self.source_snapshot.build.is_local
+            and self.source_snapshot.build.stack_id
         ):
             runnable = True
 
@@ -299,26 +299,26 @@ class RunTemplateSchema(NamedSchema, table=True):
             config_template = None
             config_schema = None
 
-            if self.source_deployment:
+            if self.source_snapshot:
                 from zenml.zen_stores import template_utils
 
-                source_deployment_model = self.source_deployment.to_model(
+                source_snapshot_model = self.source_snapshot.to_model(
                     include_metadata=True
                 )
-                pipeline_spec = source_deployment_model.pipeline_spec
+                pipeline_spec = source_snapshot_model.pipeline_spec
 
                 if (
-                    self.source_deployment.build
-                    and self.source_deployment.build.stack_id
+                    self.source_snapshot.build
+                    and self.source_snapshot.build.stack_id
                 ):
                     config_template = template_utils.generate_config_template(
-                        snapshot=self.source_deployment,
-                        pipeline_configuration=source_deployment_model.pipeline_configuration,
-                        step_configurations=source_deployment_model.step_configurations,
+                        snapshot=self.source_snapshot,
+                        pipeline_configuration=source_snapshot_model.pipeline_configuration,
+                        step_configurations=source_snapshot_model.step_configurations,
                     )
                     config_schema = template_utils.generate_config_schema(
-                        snapshot=self.source_deployment,
-                        step_configurations=source_deployment_model.step_configurations,
+                        snapshot=self.source_snapshot,
+                        step_configurations=source_snapshot_model.step_configurations,
                     )
 
             metadata = RunTemplateResponseMetadata(
@@ -330,20 +330,20 @@ class RunTemplateSchema(NamedSchema, table=True):
 
         resources = None
         if include_resources:
-            if self.source_deployment:
+            if self.source_snapshot:
                 pipeline = (
-                    self.source_deployment.pipeline.to_model()
-                    if self.source_deployment.pipeline
+                    self.source_snapshot.pipeline.to_model()
+                    if self.source_snapshot.pipeline
                     else None
                 )
                 build = (
-                    self.source_deployment.build.to_model()
-                    if self.source_deployment.build
+                    self.source_snapshot.build.to_model()
+                    if self.source_snapshot.build
                     else None
                 )
                 code_reference = (
-                    self.source_deployment.code_reference.to_model()
-                    if self.source_deployment.code_reference
+                    self.source_snapshot.code_reference.to_model()
+                    if self.source_snapshot.code_reference
                     else None
                 )
             else:
@@ -355,8 +355,8 @@ class RunTemplateSchema(NamedSchema, table=True):
 
             resources = RunTemplateResponseResources(
                 user=self.user.to_model() if self.user else None,
-                source_snapshot=self.source_deployment.to_model()
-                if self.source_deployment
+                source_snapshot=self.source_snapshot.to_model()
+                if self.source_snapshot
                 else None,
                 pipeline=pipeline,
                 build=build,
