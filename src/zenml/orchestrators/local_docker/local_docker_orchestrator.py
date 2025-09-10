@@ -103,7 +103,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -116,11 +116,11 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
             RuntimeError: If a step fails.
@@ -128,7 +128,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         Returns:
             Optional submission result.
         """
-        if deployment.schedule:
+        if snapshot.schedule:
             logger.warning(
                 "Local Docker Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
@@ -154,7 +154,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         start_time = time.time()
 
         # Run each step
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
@@ -164,14 +164,14 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 )
 
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, snapshot_id=deployment.id
+                step_name=step_name, snapshot_id=snapshot.id
             )
 
             settings = cast(
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
-            image = self.get_image(deployment=deployment, step_name=step_name)
+            image = self.get_image(snapshot=snapshot, step_name=step_name)
 
             user = None
             if sys.platform != "win32":

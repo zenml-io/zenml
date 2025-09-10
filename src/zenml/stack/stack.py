@@ -823,7 +823,7 @@ class Stack:
             placeholder_run: An optional placeholder run for the deployment.
         """
         self.orchestrator.run(
-            deployment=deployment, stack=self, placeholder_run=placeholder_run
+            snapshot=deployment, stack=self, placeholder_run=placeholder_run
         )
 
     def _get_active_components_for_step(

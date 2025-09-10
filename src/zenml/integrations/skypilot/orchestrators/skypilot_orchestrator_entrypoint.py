@@ -184,7 +184,7 @@ def main() -> None:
                 cluster_name = unique_resource_configs[step_name]
 
                 image = SkypilotBaseOrchestrator.get_image(
-                    deployment=deployment, step_name=step_name
+                    snapshot=deployment, step_name=step_name
                 )
 
                 step_args = (

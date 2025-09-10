@@ -5728,17 +5728,17 @@ class SqlZenStore(BaseZenStore):
                         ] = artifact_node
 
                     for triggered_run in step_run.triggered_runs:
-                        triggered_run_metadata = {
+                        triggered_run_metadata: Dict[str, Any] = {
                             "status": triggered_run.status,
                         }
 
                         if triggered_run.start_time:
-                            metadata["start_time"] = (
+                            triggered_run_metadata["start_time"] = (
                                 triggered_run.start_time.isoformat()
                             )
 
                             if triggered_run.end_time:
-                                metadata["duration"] = (
+                                triggered_run_metadata["duration"] = (
                                     triggered_run.end_time
                                     - triggered_run.start_time
                                 ).total_seconds()
@@ -5749,7 +5749,7 @@ class SqlZenStore(BaseZenStore):
                             ),
                             id=triggered_run.id,
                             name=triggered_run.name,
-                            **metadata,
+                            **triggered_run_metadata,
                         )
                         helper.add_edge(
                             source=step_node.node_id,

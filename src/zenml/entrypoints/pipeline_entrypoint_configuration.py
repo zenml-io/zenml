@@ -34,7 +34,7 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         self.download_code_if_necessary(snapshot=snapshot)
 
         orchestrator = Client().active_stack.orchestrator
-        orchestrator._prepare_run(deployment=snapshot)
+        orchestrator._prepare_run(snapshot=snapshot)
 
         for step in snapshot.step_configurations.values():
             orchestrator.run_step(step)

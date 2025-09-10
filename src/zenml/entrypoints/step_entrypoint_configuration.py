@@ -208,5 +208,5 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             snapshot: The snapshot configuration.
         """
         orchestrator = Client().active_stack.orchestrator
-        orchestrator._prepare_run(deployment=snapshot)
+        orchestrator._prepare_run(snapshot=snapshot)
         orchestrator.run_step(step=step)

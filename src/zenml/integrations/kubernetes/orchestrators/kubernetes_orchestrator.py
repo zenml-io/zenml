@@ -369,20 +369,20 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate_local_requirements,
         )
 
-    def get_token_secret_name(self, deployment_id: UUID) -> str:
+    def get_token_secret_name(self, snapshot_id: UUID) -> str:
         """Returns the name of the secret that contains the ZenML token.
 
         Args:
-            deployment_id: The ID of the deployment.
+            snapshot_id: The ID of the snapshot.
 
         Returns:
             The name of the secret that contains the ZenML token.
         """
-        return f"zenml-token-{deployment_id}"
+        return f"zenml-token-{snapshot_id}"
 
     def submit_pipeline(
         self,
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -395,11 +395,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
             RuntimeError: If a schedule without cron expression is given.
@@ -408,7 +408,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Returns:
             Optional submission result.
         """
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not yet supported for "
@@ -424,30 +424,30 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         "for the Kubernetes orchestrator."
                     )
 
-        pipeline_name = deployment.pipeline_configuration.name
+        pipeline_name = snapshot.pipeline_configuration.name
         settings = cast(
-            KubernetesOrchestratorSettings, self.get_settings(deployment)
+            KubernetesOrchestratorSettings, self.get_settings(snapshot)
         )
 
         assert stack.container_registry
 
         # Get Docker image for the orchestrator pod
         try:
-            image = self.get_image(deployment=deployment)
+            image = self.get_image(snapshot=snapshot)
         except KeyError:
             # If no generic pipeline image exists (which means all steps have
             # custom builds) we use a random step image as all of them include
             # dependencies for the active stack
-            pipeline_step_name = next(iter(deployment.step_configurations))
+            pipeline_step_name = next(iter(snapshot.step_configurations))
             image = self.get_image(
-                deployment=deployment, step_name=pipeline_step_name
+                snapshot=snapshot, step_name=pipeline_step_name
             )
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.
         command = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_command()
         args = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id=deployment.id,
+            snapshot_id=snapshot.id,
             run_id=placeholder_run.id if placeholder_run else None,
         )
 
@@ -466,7 +466,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         if self.config.pass_zenml_token_as_secret:
-            secret_name = self.get_token_secret_name(deployment.id)
+            secret_name = self.get_token_secret_name(snapshot.id)
             token = environment.pop("ZENML_STORE_API_TOKEN")
             kube_utils.create_or_update_secret(
                 core_api=self._k8s_core_api,
@@ -543,9 +543,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         job_name = settings.job_name_prefix or ""
         random_prefix = "".join(random.choices("0123456789abcdef", k=8))
-        job_name += (
-            f"-{random_prefix}-{deployment.pipeline_configuration.name}"
-        )
+        job_name += f"-{random_prefix}-{snapshot.pipeline_configuration.name}"
         # The job name will be used as a label on the pods, so we need to make
         # sure it doesn't exceed the label length limit
         job_name = kube_utils.sanitize_label(job_name)
@@ -563,14 +561,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             },
         )
 
-        if deployment.schedule:
-            if not deployment.schedule.cron_expression:
+        if snapshot.schedule:
+            if not snapshot.schedule.cron_expression:
                 raise RuntimeError(
                     "The Kubernetes orchestrator only supports scheduling via "
                     "CRON jobs, but the run was configured with a manual "
                     "schedule. Use `Schedule(cron_expression=...)` instead."
                 )
-            cron_expression = deployment.schedule.cron_expression
+            cron_expression = snapshot.schedule.cron_expression
             cron_job_manifest = build_cron_job_manifest(
                 cron_expression=cron_expression,
                 job_template=job_template_manifest_from_job(job_manifest),
@@ -600,7 +598,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 )
             except Exception as e:
                 if self.config.pass_zenml_token_as_secret:
-                    secret_name = self.get_token_secret_name(deployment.id)
+                    secret_name = self.get_token_secret_name(snapshot.id)
                     try:
                         kube_utils.delete_secret(
                             core_api=self._k8s_core_api,

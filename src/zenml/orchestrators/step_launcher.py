@@ -260,7 +260,7 @@ class StepLauncher:
                     )
 
             request_factory = step_run_utils.StepRunRequestFactory(
-                deployment=self._deployment,
+                snapshot=self._deployment,
                 pipeline_run=pipeline_run,
                 stack=self._stack,
             )

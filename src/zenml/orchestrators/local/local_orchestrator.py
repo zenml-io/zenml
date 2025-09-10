@@ -44,7 +44,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -57,16 +57,16 @@ class LocalOrchestrator(BaseOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
             Optional submission result.
         """
-        if deployment.schedule:
+        if snapshot.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
@@ -77,7 +77,7 @@ class LocalOrchestrator(BaseOrchestrator):
         start_time = time.time()
 
         # Run each step
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "

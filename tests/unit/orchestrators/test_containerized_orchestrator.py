@@ -165,7 +165,7 @@ def test_getting_image_from_deployment(
     with pytest.raises(RuntimeError):
         # Missing build in deployment
         ContainerizedOrchestrator.get_image(
-            deployment=sample_deployment_response_model
+            snapshot=sample_deployment_response_model
         )
 
     sample_deployment_response_model.metadata.build = (
@@ -176,7 +176,7 @@ def test_getting_image_from_deployment(
     with pytest.raises(KeyError):
         # Missing the image in build
         ContainerizedOrchestrator.get_image(
-            deployment=sample_deployment_response_model
+            snapshot=sample_deployment_response_model
         )
 
     sample_build_response_model.metadata.images = {
@@ -184,7 +184,7 @@ def test_getting_image_from_deployment(
     }
     assert (
         ContainerizedOrchestrator.get_image(
-            deployment=sample_deployment_response_model
+            snapshot=sample_deployment_response_model
         )
         == "image_name"
     )

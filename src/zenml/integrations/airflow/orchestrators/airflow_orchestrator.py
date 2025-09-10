@@ -193,7 +193,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -206,17 +206,17 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
             Optional submission result.
         """
         pipeline_settings = cast(
-            AirflowOrchestratorSettings, self.get_settings(deployment)
+            AirflowOrchestratorSettings, self.get_settings(snapshot)
         )
 
         dag_generator_values = get_dag_generator_values(
@@ -226,13 +226,13 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         command = StepEntrypointConfiguration.get_entrypoint_command()
 
         tasks = []
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             settings = cast(
                 AirflowOrchestratorSettings, self.get_settings(step)
             )
-            image = self.get_image(deployment=deployment, step_name=step_name)
+            image = self.get_image(snapshot=snapshot, step_name=step_name)
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, snapshot_id=deployment.id
+                step_name=step_name, snapshot_id=snapshot.id
             )
             operator_args = settings.operator_args.copy()
             if self.requires_resources_in_orchestration_environment(step=step):
@@ -269,7 +269,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         )
 
         dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
+            pipeline_name=snapshot.pipeline_configuration.name
         )
         dag_config = dag_generator_values.dag_configuration_class(
             id=dag_id,
@@ -277,7 +277,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             tasks=tasks,
             tags=pipeline_settings.dag_tags,
             dag_args=pipeline_settings.dag_args,
-            **self._translate_schedule(deployment.schedule),
+            **self._translate_schedule(snapshot.schedule),
         )
 
         self._write_dag(

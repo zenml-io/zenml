@@ -151,7 +151,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all orchestrators."""
 
-    _active_deployment: Optional["PipelineSnapshotResponse"] = None
+    _active_snapshot: Optional["PipelineSnapshotResponse"] = None
 
     @property
     def config(self) -> BaseOrchestratorConfig:
@@ -175,7 +175,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -188,11 +188,11 @@ class BaseOrchestrator(StackComponent, ABC):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
             Optional submission result.
@@ -218,14 +218,14 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def run(
         self,
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         """Runs a pipeline on a stack.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
             stack: The stack on which to run the pipeline.
             placeholder_run: An optional placeholder run for the deployment.
                 This will be deleted in case the pipeline deployment failed.
@@ -236,12 +236,12 @@ class BaseOrchestrator(StackComponent, ABC):
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
         """
-        self._prepare_run(deployment=deployment)
+        self._prepare_run(snapshot=snapshot)
 
         pipeline_run_id: Optional[UUID] = None
         schedule_id: Optional[UUID] = None
-        if deployment.schedule:
-            schedule_id = deployment.schedule.id
+        if snapshot.schedule:
+            schedule_id = snapshot.schedule.id
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
@@ -257,14 +257,14 @@ class BaseOrchestrator(StackComponent, ABC):
         if (
             placeholder_run
             and self.config.supports_client_side_caching
-            and not deployment.schedule
+            and not snapshot.schedule
             and not prevent_client_side_caching
         ):
             from zenml.orchestrators import cache_utils
 
             run_required = (
                 cache_utils.create_cached_step_runs_and_prune_deployment(
-                    deployment=deployment,
+                    deployment=snapshot,
                     pipeline_run=placeholder_run,
                     stack=stack,
                 )
@@ -290,7 +290,7 @@ class BaseOrchestrator(StackComponent, ABC):
                     self.name,
                 )
                 if metadata_iterator := self.prepare_or_run_pipeline(
-                    deployment=deployment,
+                    deployment=snapshot,
                     stack=stack,
                     environment=environment,
                     placeholder_run=placeholder_run,
@@ -311,7 +311,7 @@ class BaseOrchestrator(StackComponent, ABC):
                             )
             else:
                 submission_result = self.submit_pipeline(
-                    deployment=deployment,
+                    snapshot=snapshot,
                     stack=stack,
                     environment=environment,
                     placeholder_run=placeholder_run,
@@ -336,10 +336,10 @@ class BaseOrchestrator(StackComponent, ABC):
                                 logger.debug(
                                     "Error publishing run metadata: %s", e
                                 )
-                        elif deployment.schedule:
+                        elif snapshot.schedule:
                             try:
                                 publish_schedule_metadata(
-                                    schedule_id=deployment.schedule.id,
+                                    schedule_id=snapshot.schedule.id,
                                     schedule_metadata={
                                         self.id: submission_result.metadata
                                     },
@@ -378,10 +378,10 @@ class BaseOrchestrator(StackComponent, ABC):
         """
 
         def _launch_step() -> None:
-            assert self._active_deployment
+            assert self._active_snapshot
 
             launcher = StepLauncher(
-                deployment=self._active_deployment,
+                deployment=self._active_snapshot,
                 step=step,
                 orchestrator_run_id=self.get_orchestrator_run_id(),
             )
@@ -446,17 +446,17 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return not step.config.resource_settings.empty
 
-    def _prepare_run(self, deployment: "PipelineSnapshotResponse") -> None:
+    def _prepare_run(self, snapshot: "PipelineSnapshotResponse") -> None:
         """Prepares a run.
 
         Args:
             deployment: The deployment to prepare.
         """
-        self._active_deployment = deployment
+        self._active_snapshot = snapshot
 
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
-        self._active_deployment = None
+        self._active_snapshot = None
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False

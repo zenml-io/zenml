@@ -27,29 +27,29 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
 
     @staticmethod
     def get_image(
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         step_name: Optional[str] = None,
     ) -> str:
         """Gets the Docker image for the pipeline/a step.
 
         Args:
-            deployment: The deployment from which to get the image.
+            snapshot: The snapshot from which to get the image.
             step_name: Pipeline step name for which to get the image. If not
                 given the generic pipeline image will be returned.
 
         Raises:
-            RuntimeError: If the deployment does not have an associated build.
+            RuntimeError: If the snapshot does not have an associated build.
 
         Returns:
             The image name or digest.
         """
-        if not deployment.build:
+        if not snapshot.build:
             raise RuntimeError(
-                f"Missing build for deployment {deployment.id}. This is "
+                f"Missing build for snapshot {snapshot.id}. This is "
                 "probably because the build was manually deleted."
             )
 
-        return deployment.build.get_image(
+        return snapshot.build.get_image(
             component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
         )
 
@@ -59,7 +59,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         """Whether to build the pipeline image.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
 
         Returns:
             Whether to build the pipeline image.

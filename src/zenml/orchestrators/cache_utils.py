@@ -171,7 +171,7 @@ def create_cached_step_runs_and_prune_deployment(
         Whether an actual pipeline run is still required.
     """
     cached_invocations = step_run_utils.create_cached_step_runs(
-        deployment=deployment,
+        snapshot=deployment,
         pipeline_run=pipeline_run,
         stack=stack,
     )
