@@ -870,7 +870,6 @@ def create_pipeline_snapshot(
 )
 @click.option(
     "--stack",
-    "-s",
     "stack_name_or_id",
     type=str,
     required=False,
