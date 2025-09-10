@@ -450,7 +450,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """Prepares a run.
 
         Args:
-            deployment: The deployment to prepare.
+            snapshot: The snapshot to prepare.
         """
         self._active_snapshot = snapshot
 
