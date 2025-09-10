@@ -88,7 +88,7 @@ def create_pipeline_snapshot(
 
     return verify_permissions_and_create_entity(
         request_model=snapshot,
-        create_method=zen_store().create_deployment,
+        create_method=zen_store().create_snapshot,
     )
 
 
@@ -123,7 +123,7 @@ def list_pipeline_snapshots(
     return verify_permissions_and_list_entities(
         filter_model=snapshot_filter_model,
         resource_type=ResourceType.PIPELINE_DEPLOYMENT,
-        list_method=zen_store().list_deployments,
+        list_method=zen_store().list_snapshots,
         hydrate=hydrate,
     )
 
@@ -156,7 +156,7 @@ def get_pipeline_snapshot(
     """
     return verify_permissions_and_get_entity(
         id=snapshot_id,
-        get_method=zen_store().get_deployment,
+        get_method=zen_store().get_snapshot,
         hydrate=hydrate,
         step_configuration_filter=step_configuration_filter,
         include_config_schema=include_config_schema,
@@ -185,8 +185,8 @@ def update_pipeline_snapshot(
     return verify_permissions_and_update_entity(
         id=snapshot_id,
         update_model=snapshot_update,
-        get_method=zen_store().get_deployment,
-        update_method=zen_store().update_deployment,
+        get_method=zen_store().get_snapshot,
+        update_method=zen_store().update_snapshot,
     )
 
 
@@ -206,8 +206,8 @@ def delete_pipeline_snapshot(
     """
     verify_permissions_and_delete_entity(
         id=snapshot_id,
-        get_method=zen_store().get_deployment,
-        delete_method=zen_store().delete_deployment,
+        get_method=zen_store().get_snapshot,
+        delete_method=zen_store().delete_snapshot,
     )
 
 
@@ -247,7 +247,7 @@ if server_config().workload_manager_enabled:
         ) as analytics_handler:
             snapshot = verify_permissions_and_get_entity(
                 id=snapshot_id,
-                get_method=zen_store().get_deployment,
+                get_method=zen_store().get_snapshot,
                 hydrate=True,
             )
             analytics_handler.metadata = {

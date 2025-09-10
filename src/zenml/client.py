@@ -3375,7 +3375,7 @@ class Client(metaclass=ClientMetaClass):
                 if isinstance(id_or_prefix, str)
                 else id_or_prefix
             )
-            return self.zen_store.get_deployment(id_, hydrate=hydrate)
+            return self.zen_store.get_snapshot(id_, hydrate=hydrate)
 
         list_kwargs: Dict[str, Any] = dict(
             id=f"startswith:{id_or_prefix}",
@@ -3472,8 +3472,8 @@ class Client(metaclass=ClientMetaClass):
             template_id=template_id,
             tags=tags,
         )
-        return self.zen_store.list_deployments(
-            deployment_filter_model=deployment_filter_model,
+        return self.zen_store.list_snapshots(
+            snapshot_filter_model=deployment_filter_model,
             hydrate=hydrate,
         )
 
@@ -3505,9 +3505,9 @@ class Client(metaclass=ClientMetaClass):
             hydrate=False,
         )
 
-        return self.zen_store.update_deployment(
-            deployment_id=deployment.id,
-            deployment_update=PipelineSnapshotUpdate(
+        return self.zen_store.update_snapshot(
+            snapshot_id=deployment.id,
+            snapshot_update=PipelineSnapshotUpdate(
                 version=version,
                 description=description,
                 add_tags=add_tags,
@@ -3531,7 +3531,7 @@ class Client(metaclass=ClientMetaClass):
             project=project,
             hydrate=False,
         )
-        self.zen_store.delete_deployment(deployment_id=deployment.id)
+        self.zen_store.delete_snapshot(snapshot_id=deployment.id)
 
     @_fail_for_sql_zen_store
     def trigger_deployment(
@@ -3707,8 +3707,8 @@ class Client(metaclass=ClientMetaClass):
         except RuntimeError:
             pass
 
-        run = self.zen_store.trigger_deployment(
-            deployment_id=deployment_id,
+        run = self.zen_store.trigger_snapshot(
+            snapshot_id=deployment_id,
             trigger_request=PipelineSnapshotTriggerRequest(
                 run_configuration=run_configuration,
                 step_run=step_run_id,

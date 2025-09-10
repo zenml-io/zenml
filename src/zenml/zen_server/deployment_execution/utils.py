@@ -201,7 +201,7 @@ def trigger_deployment(
 
     ensure_async_orchestrator(deployment=deployment_request, stack=stack)
 
-    new_deployment = zen_store().create_deployment(deployment_request)
+    new_deployment = zen_store().create_snapshot(deployment_request)
 
     server_url = server_config().server_url
     if not server_url:

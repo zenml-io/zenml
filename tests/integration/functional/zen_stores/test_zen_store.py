@@ -5482,7 +5482,7 @@ class TestRunMetadata:
             or type_ == MetadataResourceTypes.STEP_RUN
         ):
             step_name = sample_name("foo")
-            deployment = client.zen_store.create_deployment(
+            deployment = client.zen_store.create_snapshot(
                 PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
@@ -5541,7 +5541,7 @@ class TestRunMetadata:
                     pipeline_id=pipeline_model.id,
                 )
             )
-            deployment = client.zen_store.create_deployment(
+            deployment = client.zen_store.create_snapshot(
                 PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
@@ -5604,9 +5604,9 @@ class TestRunMetadata:
             or type_ == MetadataResourceTypes.STEP_RUN
         ):
             client.zen_store.delete_run(pr.id)
-            client.zen_store.delete_deployment(deployment.id)
+            client.zen_store.delete_snapshot(deployment.id)
         elif type_ == MetadataResourceTypes.SCHEDULE:
-            client.zen_store.delete_deployment(deployment.id)
+            client.zen_store.delete_snapshot(deployment.id)
             client.zen_store.delete_schedule(resource.id)
 
         client.zen_store.delete_pipeline(pipeline_model.id)

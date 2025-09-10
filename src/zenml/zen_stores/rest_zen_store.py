@@ -81,7 +81,7 @@ from zenml.constants import (
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
-    PIPELINE_DEPLOYMENTS,
+    PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
     RUN_METADATA,
@@ -1625,35 +1625,35 @@ class RestZenStore(BaseZenStore):
 
     # -------------------------- Pipeline Deployments --------------------------
 
-    def create_deployment(
+    def create_snapshot(
         self,
-        deployment: PipelineSnapshotRequest,
+        snapshot: PipelineSnapshotRequest,
     ) -> PipelineSnapshotResponse:
-        """Creates a new deployment.
+        """Creates a new snapshot.
 
         Args:
-            deployment: The deployment to create.
+            snapshot: The snapshot to create.
 
         Returns:
-            The newly created deployment.
+            The newly created snapshot.
         """
         return self._create_resource(
-            resource=deployment,
-            route=PIPELINE_DEPLOYMENTS,
+            resource=snapshot,
+            route=PIPELINE_SNAPSHOTS,
             response_model=PipelineSnapshotResponse,
         )
 
-    def get_deployment(
+    def get_snapshot(
         self,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
     ) -> PipelineSnapshotResponse:
-        """Get a deployment with a given ID.
+        """Get a snapshot with a given ID.
 
         Args:
-            deployment_id: ID of the deployment.
+            snapshot_id: ID of the snapshot.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             step_configuration_filter: List of step configurations to include in
@@ -1662,11 +1662,11 @@ class RestZenStore(BaseZenStore):
             include_config_schema: Whether the config schema will be filled.
 
         Returns:
-            The deployment.
+            The snapshot.
         """
         return self._get_resource(
-            resource_id=deployment_id,
-            route=PIPELINE_DEPLOYMENTS,
+            resource_id=snapshot_id,
+            route=PIPELINE_SNAPSHOTS,
             response_model=PipelineSnapshotResponse,
             params={
                 "hydrate": hydrate,
@@ -1675,86 +1675,86 @@ class RestZenStore(BaseZenStore):
             },
         )
 
-    def list_deployments(
+    def list_snapshots(
         self,
-        deployment_filter_model: PipelineSnapshotFilter,
+        snapshot_filter_model: PipelineSnapshotFilter,
         hydrate: bool = False,
     ) -> Page[PipelineSnapshotResponse]:
-        """List all deployments matching the given filter criteria.
+        """List all snapshots matching the given filter criteria.
 
         Args:
-            deployment_filter_model: All filter parameters including pagination
+            snapshot_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A page of all deployments matching the filter criteria.
+            A page of all snapshots matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=PIPELINE_DEPLOYMENTS,
+            route=PIPELINE_SNAPSHOTS,
             response_model=PipelineSnapshotResponse,
-            filter_model=deployment_filter_model,
+            filter_model=snapshot_filter_model,
             params={"hydrate": hydrate},
         )
 
-    def update_deployment(
+    def update_snapshot(
         self,
-        deployment_id: UUID,
-        deployment_update: PipelineSnapshotUpdate,
+        snapshot_id: UUID,
+        snapshot_update: PipelineSnapshotUpdate,
     ) -> PipelineSnapshotResponse:
-        """Update a deployment.
+        """Update a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to update.
+            snapshot_id: The ID of the snapshot to update.
             deployment_update: The update to apply.
 
         Returns:
-            The updated deployment.
+            The updated snapshot.
         """
         return self._update_resource(
-            resource_id=deployment_id,
-            resource_update=deployment_update,
-            route=PIPELINE_DEPLOYMENTS,
+            resource_id=snapshot_id,
+            resource_update=snapshot_update,
+            route=PIPELINE_SNAPSHOTS,
             response_model=PipelineSnapshotResponse,
         )
 
-    def delete_deployment(self, deployment_id: UUID) -> None:
-        """Deletes a deployment.
+    def delete_snapshot(self, snapshot_id: UUID) -> None:
+        """Deletes a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to delete.
+            snapshot_id: The ID of the snapshot to delete.
         """
         self._delete_resource(
-            resource_id=deployment_id,
-            route=PIPELINE_DEPLOYMENTS,
+            resource_id=snapshot_id,
+            route=PIPELINE_SNAPSHOTS,
         )
 
     def trigger_deployment(
         self,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         trigger_request: PipelineSnapshotTriggerRequest,
     ) -> PipelineRunResponse:
-        """Trigger a deployment.
+        """Trigger a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to trigger.
+            snapshot_id: The ID of the snapshot to trigger.
             trigger_request: Configuration for the trigger.
 
         Raises:
-            RuntimeError: If the server does not support running a deployment.
+            RuntimeError: If the server does not support running a snapshot.
 
         Returns:
             Model of the pipeline run.
         """
         try:
             response_body = self.post(
-                f"{PIPELINE_DEPLOYMENTS}/{deployment_id}/runs",
+                f"{PIPELINE_SNAPSHOTS}/{snapshot_id}/runs",
                 body=trigger_request,
             )
         except MethodNotAllowedError as e:
             raise RuntimeError(
-                "Running a deployment is not supported for this server."
+                "Running a snapshot is not supported for this server."
             ) from e
 
         return PipelineRunResponse.model_validate(response_body)

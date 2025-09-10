@@ -337,7 +337,7 @@ class PipelineSnapshotResponse(
         """
         from zenml.client import Client
 
-        return Client().zen_store.get_deployment(self.id)
+        return Client().zen_store.get_snapshot(self.id)
 
     # Body and metadata properties
 

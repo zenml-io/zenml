@@ -96,7 +96,7 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         assert isinstance(config, PipelineRunActionConfiguration)
 
-        deployment = zen_store().get_deployment(config.deployment_id)
+        deployment = zen_store().get_snapshot(config.deployment_id)
         logger.debug("Running deployment:", deployment)
         trigger_deployment(
             deployment=deployment,
@@ -121,7 +121,7 @@ class PipelineRunActionHandler(BaseActionHandler):
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            zen_store.get_deployment(deployment_id=config.deployment_id)
+            zen_store.get_snapshot(snapshot_id=config.deployment_id)
         except KeyError:
             raise ValueError(
                 f"No deployment found with id {config.deployment_id}."
@@ -188,8 +188,8 @@ class PipelineRunActionHandler(BaseActionHandler):
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            deployment = zen_store.get_deployment(
-                deployment_id=action_config.deployment_id, hydrate=hydrate
+            deployment = zen_store.get_snapshot(
+                snapshot_id=action_config.deployment_id, hydrate=hydrate
             )
         except KeyError:
             raise ValueError(

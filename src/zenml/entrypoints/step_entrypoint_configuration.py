@@ -157,8 +157,8 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         """
         deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
-        return Client().zen_store.get_deployment(
-            deployment_id=deployment_id, step_configuration_filter=[step_name]
+        return Client().zen_store.get_snapshot(
+            snapshot_id=deployment_id, step_configuration_filter=[step_name]
         )
 
     def run(self) -> None:

@@ -132,7 +132,7 @@ def create_deployment(
 
     deployment_response = verify_permissions_and_create_entity(
         request_model=deployment,
-        create_method=zen_store().create_deployment,
+        create_method=zen_store().create_snapshot,
     )
 
     exclude = None
@@ -187,7 +187,7 @@ def list_deployments(
     page = verify_permissions_and_list_entities(
         filter_model=deployment_filter_model,
         resource_type=ResourceType.PIPELINE_DEPLOYMENT,
-        list_method=zen_store().list_deployments,
+        list_method=zen_store().list_snapshots,
         hydrate=hydrate,
     )
 
@@ -238,7 +238,7 @@ def get_deployment(
     """
     deployment = verify_permissions_and_get_entity(
         id=deployment_id,
-        get_method=zen_store().get_deployment,
+        get_method=zen_store().get_snapshot,
         hydrate=hydrate,
         step_configuration_filter=step_configuration_filter,
         include_config_schema=include_config_schema,
@@ -277,8 +277,8 @@ def update_deployment(
     return verify_permissions_and_update_entity(
         id=deployment_id,
         update_model=deployment_update,
-        get_method=zen_store().get_deployment,
-        update_method=zen_store().update_deployment,
+        get_method=zen_store().get_snapshot,
+        update_method=zen_store().update_snapshot,
     )
 
 
@@ -298,8 +298,8 @@ def delete_deployment(
     """
     verify_permissions_and_delete_entity(
         id=deployment_id,
-        get_method=zen_store().get_deployment,
-        delete_method=zen_store().delete_deployment,
+        get_method=zen_store().get_snapshot,
+        delete_method=zen_store().delete_snapshot,
     )
 
 
@@ -335,7 +335,7 @@ def deployment_logs(
 
     deployment = verify_permissions_and_get_entity(
         id=deployment_id,
-        get_method=store.get_deployment,
+        get_method=store.get_snapshot,
         hydrate=True,
     )
 
@@ -409,7 +409,7 @@ if server_config().workload_manager_enabled:
         ) as analytics_handler:
             deployment = verify_permissions_and_get_entity(
                 id=deployment_id,
-                get_method=zen_store().get_deployment,
+                get_method=zen_store().get_snapshot,
                 hydrate=True,
             )
             analytics_handler.metadata = {

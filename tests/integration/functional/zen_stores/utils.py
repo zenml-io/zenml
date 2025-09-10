@@ -742,7 +742,7 @@ class ModelContext:
             )
             self.artifact_versions.append(artifact_version)
         for _ in range(self.create_prs):
-            deployment = client.zen_store.create_deployment(
+            deployment = client.zen_store.create_snapshot(
                 PipelineSnapshotRequest(
                     project=ws.id,
                     stack=stack.id,

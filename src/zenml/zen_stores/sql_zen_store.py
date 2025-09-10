@@ -4800,21 +4800,21 @@ class SqlZenStore(BaseZenStore):
         session.add(new_reference)
         return new_reference.id
 
-    def _deployment_version_exists(
+    def _snapshot_version_exists(
         self,
         session: Session,
         pipeline_id: UUID,
         version: str,
     ) -> bool:
-        """Check if a deployment with a certain version exists.
+        """Check if a snapshot with a certain version exists.
 
         Args:
             session: SQLAlchemy session.
-            pipeline_id: The pipeline ID of the deployment.
+            pipeline_id: The pipeline ID of the snapshot.
             version: The version name.
 
         Returns:
-            If a deployment with the given arguments exists.
+            If a snapshot with the given arguments exists.
         """
         query = select(PipelineSnapshotSchema.id).where(
             col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
@@ -4824,113 +4824,111 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return session.exec(query).first() is not None
 
-    def create_deployment(
+    def create_snapshot(
         self,
-        deployment: PipelineSnapshotRequest,
+        snapshot: PipelineSnapshotRequest,
     ) -> PipelineSnapshotResponse:
-        """Creates a new deployment.
+        """Creates a new snapshot.
 
         Args:
-            deployment: The deployment to create.
+            snapshot: The snapshot to create.
 
         Raises:
-            EntityExistsError: If a deployment with the same version already
+            EntityExistsError: If a snapshot with the same version already
                 exists for the same pipeline.
-            RuntimeError: If the deployment creation fails.
+            RuntimeError: If the snapshot creation fails.
 
         Returns:
-            The newly created deployment.
+            The newly created snapshot.
         """
         with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=deployment, session=session
-            )
+            self._set_request_user_id(request_model=snapshot, session=session)
             self._get_reference_schema_by_id(
-                resource=deployment,
+                resource=snapshot,
                 reference_schema=StackSchema,
-                reference_id=deployment.stack,
+                reference_id=snapshot.stack,
                 session=session,
             )
 
             self._get_reference_schema_by_id(
-                resource=deployment,
+                resource=snapshot,
                 reference_schema=PipelineSchema,
-                reference_id=deployment.pipeline,
+                reference_id=snapshot.pipeline,
                 session=session,
             )
 
             self._get_reference_schema_by_id(
-                resource=deployment,
+                resource=snapshot,
                 reference_schema=PipelineBuildSchema,
-                reference_id=deployment.build,
+                reference_id=snapshot.build,
                 session=session,
             )
 
             self._get_reference_schema_by_id(
-                resource=deployment,
+                resource=snapshot,
                 reference_schema=ScheduleSchema,
-                reference_id=deployment.schedule,
+                reference_id=snapshot.schedule,
                 session=session,
             )
 
-            if deployment.code_reference:
+            if snapshot.code_reference:
                 self._get_reference_schema_by_id(
-                    resource=deployment,
+                    resource=snapshot,
                     reference_schema=CodeRepositorySchema,
-                    reference_id=deployment.code_reference.code_repository,
+                    reference_id=snapshot.code_reference.code_repository,
                     session=session,
                 )
 
             run_template = self._get_reference_schema_by_id(
-                resource=deployment,
+                resource=snapshot,
                 reference_schema=RunTemplateSchema,
-                reference_id=deployment.template,
+                reference_id=snapshot.template,
                 session=session,
             )
 
             self._get_reference_schema_by_id(
-                resource=deployment,
+                resource=snapshot,
                 reference_schema=PipelineSnapshotSchema,
-                reference_id=deployment.source_snapshot,
+                reference_id=snapshot.source_snapshot,
                 session=session,
             )
 
-            if run_template and not deployment.source_snapshot:
+            if run_template and not snapshot.source_snapshot:
                 # TODO: remove this once we remove run templates entirely
-                deployment.source_snapshot = run_template.source_deployment_id
+                snapshot.source_snapshot = run_template.source_deployment_id
 
-            if deployment.version:
-                if isinstance(deployment.version, str):
-                    validate_name(deployment, "version")
+            if snapshot.version:
+                if isinstance(snapshot.version, str):
+                    validate_name(snapshot, "version")
 
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
-                project_id=deployment.project,
-                code_reference=deployment.code_reference,
+                project_id=snapshot.project,
+                code_reference=snapshot.code_reference,
             )
 
-            new_deployment = PipelineSnapshotSchema.from_request(
-                deployment, code_reference_id=code_reference_id
+            new_snapshot = PipelineSnapshotSchema.from_request(
+                snapshot, code_reference_id=code_reference_id
             )
 
             try:
-                session.add(new_deployment)
+                session.add(new_snapshot)
                 session.commit()
             except IntegrityError as e:
-                if new_deployment.version and self._deployment_version_exists(
+                if new_snapshot.version and self._snapshot_version_exists(
                     session=session,
-                    pipeline_id=deployment.pipeline,
-                    version=new_deployment.version,
+                    pipeline_id=snapshot.pipeline,
+                    version=new_snapshot.version,
                 ):
                     raise EntityExistsError(
-                        f"Deployment version {new_deployment.version} already "
-                        f"exists for pipeline {deployment.pipeline}."
+                        f"Snapshot version {new_snapshot.version} already "
+                        f"exists for pipeline {snapshot.pipeline}."
                     )
                 else:
-                    raise RuntimeError("Deployment creation failed.") from e
+                    raise RuntimeError("Snapshot creation failed.") from e
 
             for index, (step_name, step_configuration) in enumerate(
-                deployment.step_configurations.items()
+                snapshot.step_configurations.items()
             ):
                 step_configuration_schema = StepConfigurationSchema(
                     index=index,
@@ -4941,33 +4939,33 @@ class SqlZenStore(BaseZenStore):
                     config=step_configuration.model_dump_json(
                         exclude={"config"}
                     ),
-                    deployment_id=new_deployment.id,
+                    deployment_id=new_snapshot.id,
                 )
                 session.add(step_configuration_schema)
             session.commit()
 
             self._attach_tags_to_resources(
-                tags=deployment.tags,
-                resources=new_deployment,
+                tags=snapshot.tags,
+                resources=new_snapshot,
                 session=session,
             )
-            session.refresh(new_deployment)
+            session.refresh(new_snapshot)
 
-            return new_deployment.to_model(
+            return new_snapshot.to_model(
                 include_metadata=True, include_resources=True
             )
 
-    def get_deployment(
+    def get_snapshot(
         self,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
     ) -> PipelineSnapshotResponse:
-        """Get a deployment with a given ID.
+        """Get a snapshot with a given ID.
 
         Args:
-            deployment_id: ID of the deployment.
+            snapshot_id: ID of the snapshot.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             step_configuration_filter: List of step configurations to include in
@@ -4976,42 +4974,41 @@ class SqlZenStore(BaseZenStore):
             include_config_schema: Whether the config schema will be filled.
 
         Returns:
-            The deployment.
+            The snapshot.
         """
         with Session(self.engine) as session:
-            # Check if deployment with the given ID exists
-            deployment = self._get_schema_by_id(
-                resource_id=deployment_id,
+            snapshot = self._get_schema_by_id(
+                resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
 
-            return deployment.to_model(
+            return snapshot.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 step_configuration_filter=step_configuration_filter,
                 include_config_schema=include_config_schema,
             )
 
-    def list_deployments(
+    def list_snapshots(
         self,
-        deployment_filter_model: PipelineSnapshotFilter,
+        snapshot_filter_model: PipelineSnapshotFilter,
         hydrate: bool = False,
     ) -> Page[PipelineSnapshotResponse]:
-        """List all deployments matching the given filter criteria.
+        """List all snapshots matching the given filter criteria.
 
         Args:
-            deployment_filter_model: All filter parameters including pagination
+            snapshot_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A page of all deployments matching the filter criteria.
+            A page of all snapshots matching the filter criteria.
         """
         with Session(self.engine) as session:
             self._set_filter_project_id(
-                filter_model=deployment_filter_model,
+                filter_model=snapshot_filter_model,
                 session=session,
             )
             query = select(PipelineSnapshotSchema)
@@ -5019,107 +5016,106 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 query=query,
                 table=PipelineSnapshotSchema,
-                filter_model=deployment_filter_model,
+                filter_model=snapshot_filter_model,
                 hydrate=hydrate,
             )
 
-    def update_deployment(
+    def update_snapshot(
         self,
-        deployment_id: UUID,
-        deployment_update: PipelineSnapshotUpdate,
+        snapshot_id: UUID,
+        snapshot_update: PipelineSnapshotUpdate,
     ) -> PipelineSnapshotResponse:
-        """Update a deployment.
+        """Update a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to update.
-            deployment_update: The update to apply.
+            snapshot_id: The ID of the snapshot to update.
+            snapshot_update: The update to apply.
 
         Raises:
-            EntityExistsError: If a deployment with the same version already
+            EntityExistsError: If a snapshot with the same version already
                 exists for the same pipeline.
-            RuntimeError: If the deployment update fails.
+            RuntimeError: If the snapshot update fails.
 
         Returns:
-            The updated deployment.
+            The updated snapshot.
         """
         with Session(self.engine) as session:
-            deployment = self._get_schema_by_id(
-                resource_id=deployment_id,
+            snapshot = self._get_schema_by_id(
+                resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
 
-            if deployment.version:
-                if isinstance(deployment.version, str):
-                    validate_name(deployment_update, "version")
+            if snapshot.version:
+                if isinstance(snapshot.version, str):
+                    validate_name(snapshot_update, "version")
 
-            deployment.update(deployment_update)
+            snapshot.update(snapshot_update)
 
             try:
-                session.add(deployment)
+                session.add(snapshot)
                 session.commit()
             except IntegrityError as e:
-                if deployment.version and self._deployment_version_exists(
+                if snapshot.version and self._snapshot_version_exists(
                     session=session,
-                    pipeline_id=deployment.pipeline_id,
-                    version=deployment.version,
+                    pipeline_id=snapshot.pipeline_id,
+                    version=snapshot.version,
                 ):
                     raise EntityExistsError(
-                        f"Deployment version {deployment.version} "
-                        f"already exists for pipeline {deployment.pipeline_id}."
+                        f"Snapshot version {snapshot.version} "
+                        f"already exists for pipeline {snapshot.pipeline_id}."
                     )
                 else:
-                    raise RuntimeError("Deployment update failed.") from e
+                    raise RuntimeError("Snapshot update failed.") from e
 
             self._attach_tags_to_resources(
-                tags=deployment_update.add_tags,
-                resources=deployment,
+                tags=snapshot_update.add_tags,
+                resources=snapshot,
                 session=session,
             )
             self._detach_tags_from_resources(
-                tags=deployment_update.remove_tags,
-                resources=deployment,
+                tags=snapshot_update.remove_tags,
+                resources=snapshot,
                 session=session,
             )
 
-            session.refresh(deployment)
-            return deployment.to_model(
+            session.refresh(snapshot)
+            return snapshot.to_model(
                 include_metadata=True, include_resources=True
             )
 
-    def delete_deployment(self, deployment_id: UUID) -> None:
-        """Deletes a deployment.
+    def delete_snapshot(self, snapshot_id: UUID) -> None:
+        """Deletes a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to delete.
+            snapshot_id: The ID of the snapshot to delete.
         """
         with Session(self.engine) as session:
-            # Check if build with the given ID exists
-            deployment = self._get_schema_by_id(
-                resource_id=deployment_id,
+            snapshot = self._get_schema_by_id(
+                resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
 
-            session.delete(deployment)
+            session.delete(snapshot)
             session.commit()
 
-    def trigger_deployment(
+    def trigger_snapshot(
         self,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         trigger_request: PipelineSnapshotTriggerRequest,
     ) -> NoReturn:
-        """Trigger a deployment.
+        """Trigger a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to trigger.
+            snapshot_id: The ID of the snapshot to trigger.
             trigger_request: Configuration for the trigger.
 
         Raises:
             NotImplementedError: Always.
         """
         raise NotImplementedError(
-            "Running a deployment is not possible with a local store."
+            "Running a snapshot is not possible with a local store."
         )
 
     # -------------------- Run templates --------------------
@@ -5146,23 +5142,23 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            deployment = self._get_reference_schema_by_id(
+            snapshot = self._get_reference_schema_by_id(
                 resource=template,
                 reference_schema=PipelineSnapshotSchema,
                 reference_id=template.source_deployment_id,
                 session=session,
             )
 
-            template_utils.validate_deployment_is_templatable(deployment)
+            template_utils.validate_deployment_is_templatable(snapshot)
 
             template_schema = RunTemplateSchema.from_request(request=template)
 
             if not template.hidden:
                 # Also update the name and description of the underlying
-                # deployment
-                deployment.version = template.name
-                deployment.description = template.description
-                session.add(deployment)
+                # snapshot
+                snapshot.version = template.name
+                snapshot.description = template.description
+                session.add(snapshot)
 
             session.add(template_schema)
             session.commit()
@@ -13367,7 +13363,7 @@ class SqlZenStore(BaseZenStore):
 
                         # TODO: This is very inefficient, we should use a
                         # better query
-                        older_deployments = self.list_deployments(
+                        older_deployments = self.list_snapshots(
                             PipelineSnapshotFilter(
                                 id=f"notequals:{resource.id}",
                                 project=resource.project.id,

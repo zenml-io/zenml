@@ -190,7 +190,7 @@ class BaseEntrypointConfiguration(ABC):
             The deployment.
         """
         deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
-        return Client().zen_store.get_deployment(deployment_id=deployment_id)
+        return Client().zen_store.get_snapshot(snapshot_id=deployment_id)
 
     def download_code_if_necessary(
         self,

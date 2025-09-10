@@ -1280,34 +1280,34 @@ class ZenStoreInterface(ABC):
     # -------------------- Pipeline deployments --------------------
 
     @abstractmethod
-    def create_deployment(
+    def create_snapshot(
         self,
-        deployment: PipelineSnapshotRequest,
+        snapshot: PipelineSnapshotRequest,
     ) -> PipelineSnapshotResponse:
-        """Creates a new deployment.
+        """Creates a new snapshot.
 
         Args:
-            deployment: The deployment to create.
+            snapshot: The snapshot to create.
 
         Returns:
-            The newly created deployment.
+            The newly created snapshot.
 
         Raises:
-            EntityExistsError: If an identical deployment already exists.
+            EntityExistsError: If an identical snapshot already exists.
         """
 
     @abstractmethod
-    def get_deployment(
+    def get_snapshot(
         self,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
     ) -> PipelineSnapshotResponse:
-        """Get a deployment with a given ID.
+        """Get a snapshot with a given ID.
 
         Args:
-            deployment_id: ID of the deployment.
+            snapshot_id: ID of the snapshot.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             step_configuration_filter: List of step configurations to include in
@@ -1316,67 +1316,67 @@ class ZenStoreInterface(ABC):
             include_config_schema: Whether the config schema will be filled.
 
         Returns:
-            The deployment.
+            The snapshot.
 
         Raises:
-            KeyError: If the deployment does not exist.
+            KeyError: If the snapshot does not exist.
         """
 
     @abstractmethod
-    def list_deployments(
+    def list_snapshots(
         self,
-        deployment_filter_model: PipelineSnapshotFilter,
+        snapshot_filter_model: PipelineSnapshotFilter,
         hydrate: bool = False,
     ) -> Page[PipelineSnapshotResponse]:
-        """List all deployments matching the given filter criteria.
+        """List all snapshots matching the given filter criteria.
 
         Args:
-            deployment_filter_model: All filter parameters including pagination
+            snapshot_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A page of all deployments matching the filter criteria.
+            A page of all snapshots matching the filter criteria.
         """
 
     @abstractmethod
-    def update_deployment(
+    def update_snapshot(
         self,
-        deployment_id: UUID,
-        deployment_update: PipelineSnapshotUpdate,
+        snapshot_id: UUID,
+        snapshot_update: PipelineSnapshotUpdate,
     ) -> PipelineSnapshotResponse:
-        """Update a deployment.
+        """Update a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to update.
-            deployment_update: The update to apply.
+            snapshot_id: The ID of the snapshot to update.
+            snapshot_update: The update to apply.
 
         Returns:
-            The updated deployment.
+            The updated snapshot.
         """
 
     @abstractmethod
-    def delete_deployment(self, deployment_id: UUID) -> None:
-        """Deletes a deployment.
+    def delete_snapshot(self, snapshot_id: UUID) -> None:
+        """Deletes a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to delete.
+            snapshot_id: The ID of the snapshot to delete.
 
         Raises:
-            KeyError: If the deployment doesn't exist.
+            KeyError: If the snapshot doesn't exist.
         """
 
     @abstractmethod
-    def trigger_deployment(
+    def trigger_snapshot(
         self,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         trigger_request: PipelineSnapshotTriggerRequest,
     ) -> PipelineRunResponse:
-        """Trigger a deployment.
+        """Trigger a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to trigger.
+            snapshot_id: The ID of the snapshot to trigger.
             trigger_request: Configuration for the trigger.
 
         Returns:

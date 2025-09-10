@@ -796,7 +796,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             **deployment.model_dump(),
             **deployment_request_kwargs,
         )
-        return Client().zen_store.create_deployment(deployment=request)
+        return Client().zen_store.create_snapshot(snapshot=request)
 
     def _run(
         self,
