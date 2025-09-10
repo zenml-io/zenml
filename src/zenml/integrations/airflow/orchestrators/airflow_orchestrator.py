@@ -52,8 +52,8 @@ if TYPE_CHECKING:
         TaskConfiguration,
     )
     from zenml.models import (
-        PipelineSnapshotResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         ScheduleResponse,
     )
     from zenml.stack import Stack

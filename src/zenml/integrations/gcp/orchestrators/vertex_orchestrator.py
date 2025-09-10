@@ -96,8 +96,8 @@ from zenml.utils.io_utils import get_global_config_directory
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.models import (
-        PipelineSnapshotResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         ScheduleResponse,
     )
     from zenml.stack import Stack

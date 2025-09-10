@@ -20,7 +20,7 @@ import pytest
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.models import PipelineSnapshotRequest, PipelineRequest
+from zenml.models import PipelineRequest, PipelineSnapshotRequest
 
 
 class StubEntrypointConfiguration(BaseEntrypointConfiguration):

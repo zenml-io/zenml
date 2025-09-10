@@ -29,8 +29,8 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models import (
         ArtifactVersionResponse,
-        PipelineSnapshotResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         StepRunResponse,
     )
     from zenml.stack import Stack

@@ -28,12 +28,12 @@ from zenml.constants import (
 )
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
+    PipelineRunFilter,
+    PipelineRunResponse,
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
     PipelineSnapshotTriggerRequest,
     PipelineSnapshotUpdate,
-    PipelineRunFilter,
-    PipelineRunResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -93,6 +93,7 @@ router = APIRouter(
     prefix=API + VERSION_1 + PIPELINE_DEPLOYMENTS,
     tags=["deployments"],
     responses={401: error_response, 403: error_response},
+    deprecated=True,
 )
 
 

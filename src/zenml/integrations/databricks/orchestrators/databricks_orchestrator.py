@@ -60,7 +60,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 

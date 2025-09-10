@@ -221,11 +221,6 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineSnapshotFilter,
-    PipelineSnapshotRequest,
-    PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
-    PipelineSnapshotUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -234,6 +229,11 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
     ProjectRequest,
@@ -4897,9 +4897,7 @@ class SqlZenStore(BaseZenStore):
 
             if run_template and not deployment.source_snapshot:
                 # TODO: remove this once we remove run templates entirely
-                deployment.source_snapshot = (
-                    run_template.source_deployment_id
-                )
+                deployment.source_snapshot = run_template.source_deployment_id
 
             if deployment.version:
                 if isinstance(deployment.version, str):

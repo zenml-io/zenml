@@ -40,7 +40,7 @@ from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils, string_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
 
 logger = get_logger(__name__)
 

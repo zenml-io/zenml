@@ -65,9 +65,9 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import (
+        PipelineRunResponse,
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
-        PipelineRunResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.stack import StackComponent

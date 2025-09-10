@@ -47,11 +47,11 @@ from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
     FlavorFilter,
+    PipelineRunResponse,
+    PipelineRunUpdate,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotTriggerRequest,
-    PipelineRunResponse,
-    PipelineRunUpdate,
     StackResponse,
     TriggerExecutionRequest,
 )

@@ -75,7 +75,7 @@ from zenml.stack import StackValidator
 from zenml.utils import io_utils, settings_utils, yaml_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 

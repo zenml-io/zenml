@@ -25,8 +25,8 @@ from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
     ArtifactVersionResponse,
     ModelVersionResponse,
-    PipelineSnapshotResponse,
     PipelineRunResponse,
+    PipelineSnapshotResponse,
     StepRunRequest,
     StepRunResponse,
 )

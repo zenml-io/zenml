@@ -68,7 +68,7 @@ from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)

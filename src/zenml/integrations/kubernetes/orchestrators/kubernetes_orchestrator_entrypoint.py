@@ -58,9 +58,9 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
 from zenml.models import (
-    PipelineSnapshotResponse,
     PipelineRunResponse,
     PipelineRunUpdate,
+    PipelineSnapshotResponse,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.step_run_utils import (

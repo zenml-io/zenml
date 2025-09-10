@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,34 +11,29 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Endpoint definitions for run templates."""
+"""Endpoint definitions for pipeline snapshots."""
 
-from typing import Optional, Union
+from typing import Any, List, Optional, Union
 from uuid import UUID
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    Security,
-)
+from fastapi import APIRouter, Depends, Query, Security
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.constants import (
     API,
+    PIPELINE_SNAPSHOTS,
     RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
-    RUN_TEMPLATES,
     VERSION_1,
 )
 from zenml.models import (
     Page,
     PipelineRunResponse,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
     PipelineSnapshotTriggerRequest,
-    RunTemplateFilter,
-    RunTemplateRequest,
-    RunTemplateResponse,
-    RunTemplateUpdate,
+    PipelineSnapshotUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -54,7 +49,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
-from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
@@ -63,10 +57,9 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=API + VERSION_1 + RUN_TEMPLATES,
-    tags=["run_templates"],
+    prefix=API + VERSION_1 + PIPELINE_SNAPSHOTS,
+    tags=["snapshots"],
     responses={401: error_response, 403: error_response},
-    deprecated=True,
 )
 
 
@@ -74,36 +67,28 @@ router = APIRouter(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
-# and can be removed after the migration
-@workspace_router.post(
-    "/{project_name_or_id}" + RUN_TEMPLATES,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
-    tags=["run_templates"],
-)
 @async_fastapi_endpoint_wrapper
-def create_run_template(
-    run_template: RunTemplateRequest,
+def create_pipeline_snapshot(
+    snapshot: PipelineSnapshotRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
-) -> RunTemplateResponse:
-    """Create a run template.
+) -> PipelineSnapshotResponse:
+    """Creates a snapshot.
 
     Args:
-        run_template: Run template to create.
+        snapshot: Snapshot to create.
         project_name_or_id: Optional name or ID of the project.
 
     Returns:
-        The created run template.
+        The created snapshot.
     """
     if project_name_or_id:
         project = zen_store().get_project(project_name_or_id)
-        run_template.project = project.id
+        snapshot.project = project.id
 
     return verify_permissions_and_create_entity(
-        request_model=run_template,
-        create_method=zen_store().create_run_template,
+        request_model=snapshot,
+        create_method=zen_store().create_deployment,
     )
 
 
@@ -111,125 +96,125 @@ def create_run_template(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
-# and can be removed after the migration
-@workspace_router.get(
-    "/{project_name_or_id}" + RUN_TEMPLATES,
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-    tags=["run_templates"],
-)
 @async_fastapi_endpoint_wrapper(deduplicate=True)
-def list_run_templates(
-    filter_model: RunTemplateFilter = Depends(
-        make_dependable(RunTemplateFilter)
+def list_pipeline_snapshots(
+    snapshot_filter_model: PipelineSnapshotFilter = Depends(
+        make_dependable(PipelineSnapshotFilter)
     ),
     project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[RunTemplateResponse]:
-    """Get a page of run templates.
+) -> Page[PipelineSnapshotResponse]:
+    """Gets a list of snapshots.
 
     Args:
-        filter_model: Filter model used for pagination, sorting,
+        snapshot_filter_model: Filter model used for pagination, sorting,
             filtering.
-        project_name_or_id: Optional name or ID of the project.
+        project_name_or_id: Optional name or ID of the project to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        Page of run templates.
+        List of snapshot objects matching the filter criteria.
     """
     if project_name_or_id:
-        filter_model.project = project_name_or_id
+        snapshot_filter_model.project = project_name_or_id
 
     return verify_permissions_and_list_entities(
-        filter_model=filter_model,
-        resource_type=ResourceType.RUN_TEMPLATE,
-        list_method=zen_store().list_run_templates,
+        filter_model=snapshot_filter_model,
+        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        list_method=zen_store().list_deployments,
         hydrate=hydrate,
     )
 
 
 @router.get(
-    "/{template_id}",
+    "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper(deduplicate=True)
-def get_run_template(
-    template_id: UUID,
+def get_pipeline_snapshot(
+    snapshot_id: UUID,
     hydrate: bool = True,
+    step_configuration_filter: Optional[List[str]] = Query(None),
+    include_config_schema: Optional[bool] = None,
     _: AuthContext = Security(authorize),
-) -> RunTemplateResponse:
-    """Get a run template.
+) -> PipelineSnapshotResponse:
+    """Gets a specific snapshot using its unique id.
 
     Args:
-        template_id: ID of the run template to get.
+        snapshot_id: ID of the snapshot to get.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        step_configuration_filter: List of step configurations to include in
+            the response. If not given, all step configurations will be
+            included.
+        include_config_schema: Whether the config schema will be filled.
 
     Returns:
-        The run template.
+        A specific snapshot object.
     """
     return verify_permissions_and_get_entity(
-        id=template_id,
-        get_method=zen_store().get_run_template,
+        id=snapshot_id,
+        get_method=zen_store().get_deployment,
         hydrate=hydrate,
+        step_configuration_filter=step_configuration_filter,
+        include_config_schema=include_config_schema,
     )
 
 
 @router.put(
-    "/{template_id}",
+    "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper(deduplicate=True)
-def update_run_template(
-    template_id: UUID,
-    update: RunTemplateUpdate,
+@async_fastapi_endpoint_wrapper
+def update_pipeline_snapshot(
+    snapshot_id: UUID,
+    snapshot_update: PipelineSnapshotUpdate,
     _: AuthContext = Security(authorize),
-) -> RunTemplateResponse:
-    """Update a run template.
+) -> Any:
+    """Update a snapshot.
 
     Args:
-        template_id: ID of the run template to get.
-        update: The updates to apply.
+        snapshot_id: ID of the snapshot to update.
+        snapshot_update: The update to apply.
 
     Returns:
-        The updated run template.
+        The updated snapshot.
     """
     return verify_permissions_and_update_entity(
-        id=template_id,
-        update_model=update,
-        get_method=zen_store().get_run_template,
-        update_method=zen_store().update_run_template,
+        id=snapshot_id,
+        update_model=snapshot_update,
+        get_method=zen_store().get_deployment,
+        update_method=zen_store().update_deployment,
     )
 
 
 @router.delete(
-    "/{template_id}",
+    "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
-def delete_run_template(
-    template_id: UUID,
+def delete_pipeline_snapshot(
+    snapshot_id: UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Delete a run template.
+    """Deletes a specific snapshot.
 
     Args:
-        template_id: ID of the run template to delete.
+        snapshot_id: ID of the snapshot to delete.
     """
     verify_permissions_and_delete_entity(
-        id=template_id,
-        get_method=zen_store().get_run_template,
-        delete_method=zen_store().delete_run_template,
+        id=snapshot_id,
+        get_method=zen_store().get_deployment,
+        delete_method=zen_store().delete_deployment,
     )
 
 
 if server_config().workload_manager_enabled:
 
     @router.post(
-        "/{template_id}/runs",
+        "/{snapshot_id}/runs",
         responses={
             401: error_response,
             404: error_response,
@@ -238,20 +223,17 @@ if server_config().workload_manager_enabled:
         },
     )
     @async_fastapi_endpoint_wrapper
-    def create_template_run(
-        template_id: UUID,
-        config: Optional[PipelineRunConfiguration] = None,
+    def create_snapshot_run(
+        snapshot_id: UUID,
+        trigger_request: PipelineSnapshotTriggerRequest,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
-        """Run a pipeline from a template.
+        """Run a pipeline from a snapshot.
 
         Args:
-            template_id: The ID of the template.
-            config: Configuration for the pipeline run.
+            snapshot_id: The ID of the snapshot.
+            trigger_request: Trigger request.
             auth_context: Authentication context.
-
-        Raises:
-            ValueError: If the template can not be run.
 
         Returns:
             The created pipeline run.
@@ -261,40 +243,32 @@ if server_config().workload_manager_enabled:
         )
 
         with track_handler(
-            event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
+            event=AnalyticsEvent.EXECUTED_DEPLOYMENT,
         ) as analytics_handler:
-            template = verify_permissions_and_get_entity(
-                id=template_id,
-                get_method=zen_store().get_run_template,
+            snapshot = verify_permissions_and_get_entity(
+                id=snapshot_id,
+                get_method=zen_store().get_deployment,
                 hydrate=True,
             )
             analytics_handler.metadata = {
-                "project_id": template.project_id,
+                "project_id": snapshot.project_id,
             }
 
             verify_permission(
                 resource_type=ResourceType.PIPELINE_DEPLOYMENT,
                 action=Action.CREATE,
-                project_id=template.project_id,
+                project_id=snapshot.project_id,
             )
             verify_permission(
                 resource_type=ResourceType.PIPELINE_RUN,
                 action=Action.CREATE,
-                project_id=template.project_id,
+                project_id=snapshot.project_id,
             )
+
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
-            if not template.source_deployment:
-                raise ValueError(
-                    "This template can not be run because it has no source "
-                    "deployment."
-                )
-
             return trigger_deployment(
-                deployment=template.source_deployment,
+                deployment=snapshot,
                 auth_context=auth_context,
-                trigger_request=PipelineSnapshotTriggerRequest(
-                    run_configuration=config,
-                ),
-                template_id=template_id,
+                trigger_request=trigger_request,
             )

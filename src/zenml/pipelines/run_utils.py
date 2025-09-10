@@ -17,10 +17,10 @@ from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
     LogsRequest,
-    PipelineSnapshotBase,
-    PipelineSnapshotResponse,
     PipelineRunRequest,
     PipelineRunResponse,
+    PipelineSnapshotBase,
+    PipelineSnapshotResponse,
     StackResponse,
 )
 from zenml.orchestrators.publish_utils import publish_failed_pipeline_run

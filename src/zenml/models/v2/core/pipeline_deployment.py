@@ -131,9 +131,7 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     )
 
     stack: UUID = Field(title="The stack associated with the snapshot.")
-    pipeline: UUID = Field(
-        title="The pipeline associated with the snapshot."
-    )
+    pipeline: UUID = Field(title="The pipeline associated with the snapshot.")
     build: Optional[UUID] = Field(
         default=None, title="The build associated with the snapshot."
     )

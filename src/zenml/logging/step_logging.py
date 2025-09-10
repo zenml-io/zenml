@@ -49,8 +49,8 @@ from zenml.logger import get_logger
 from zenml.models import (
     LogsRequest,
     LogsResponse,
-    PipelineSnapshotResponse,
     PipelineRunUpdate,
+    PipelineSnapshotResponse,
 )
 from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now

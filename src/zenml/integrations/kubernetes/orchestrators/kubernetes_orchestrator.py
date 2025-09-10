@@ -81,9 +81,9 @@ from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
     from zenml.models import (
+        PipelineRunResponse,
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
-        PipelineRunResponse,
         ScheduleResponse,
     )
     from zenml.stack import Stack

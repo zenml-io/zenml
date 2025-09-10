@@ -45,7 +45,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.utils import code_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 

@@ -33,9 +33,9 @@ from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
     LogsRequest,
-    PipelineSnapshotResponse,
     PipelineRunRequest,
     PipelineRunResponse,
+    PipelineSnapshotResponse,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
