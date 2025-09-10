@@ -122,7 +122,7 @@ def list_pipeline_snapshots(
 
     return verify_permissions_and_list_entities(
         filter_model=snapshot_filter_model,
-        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        resource_type=ResourceType.PIPELINE_SNAPSHOT,
         list_method=zen_store().list_snapshots,
         hydrate=hydrate,
     )
@@ -255,7 +255,7 @@ if server_config().workload_manager_enabled:
             }
 
             verify_permission(
-                resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+                resource_type=ResourceType.PIPELINE_SNAPSHOT,
                 action=Action.CREATE,
                 project_id=snapshot.project_id,
             )

@@ -828,12 +828,12 @@ class PipelineRunFilter(
             custom_filters.append(run_template_filter)
 
         if self.source_snapshot_id:
-            source_deployment_filter = and_(
+            source_snapshot_filter = and_(
                 PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
                 PipelineSnapshotSchema.source_snapshot_id
                 == self.source_snapshot_id,
             )
-            custom_filters.append(source_deployment_filter)
+            custom_filters.append(source_snapshot_filter)
 
         if self.pipeline:
             pipeline_filter = and_(

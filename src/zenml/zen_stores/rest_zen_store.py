@@ -1707,7 +1707,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             snapshot_id: The ID of the snapshot to update.
-            deployment_update: The update to apply.
+            snapshot_update: The update to apply.
 
         Returns:
             The updated snapshot.

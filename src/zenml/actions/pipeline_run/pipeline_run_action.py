@@ -197,7 +197,7 @@ class PipelineRunActionHandler(BaseActionHandler):
             )
 
         resources: Dict[ResourceType, BaseResponse[Any, Any, Any]] = {
-            ResourceType.PIPELINE_DEPLOYMENT: snapshot
+            ResourceType.PIPELINE_SNAPSHOT: snapshot
         }
 
         if snapshot.pipeline is not None:

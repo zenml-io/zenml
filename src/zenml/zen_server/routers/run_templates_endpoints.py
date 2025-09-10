@@ -273,7 +273,7 @@ if server_config().workload_manager_enabled:
             }
 
             verify_permission(
-                resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+                resource_type=ResourceType.PIPELINE_SNAPSHOT,
                 action=Action.CREATE,
                 project_id=template.project_id,
             )

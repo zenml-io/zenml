@@ -263,8 +263,8 @@ class BaseOrchestrator(StackComponent, ABC):
             from zenml.orchestrators import cache_utils
 
             run_required = (
-                cache_utils.create_cached_step_runs_and_prune_deployment(
-                    deployment=snapshot,
+                cache_utils.create_cached_step_runs_and_prune_snapshot(
+                    snapshot=snapshot,
                     pipeline_run=placeholder_run,
                     stack=stack,
                 )
@@ -381,7 +381,7 @@ class BaseOrchestrator(StackComponent, ABC):
             assert self._active_snapshot
 
             launcher = StepLauncher(
-                deployment=self._active_snapshot,
+                snapshot=self._active_snapshot,
                 step=step,
                 orchestrator_run_id=self.get_orchestrator_run_id(),
             )

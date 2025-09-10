@@ -60,7 +60,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
     def run(self) -> None:
         """Run the entrypoint configuration.
 
-        This method runs the pipeline defined by the deployment given as input
+        This method runs the pipeline defined by the snapshot given as input
         to the entrypoint configuration.
         """
         snapshot = self.load_snapshot()
