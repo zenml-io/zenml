@@ -20,7 +20,7 @@ import pytest
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.models import PipelineDeploymentRequest, PipelineRequest
+from zenml.models import PipelineSnapshotRequest, PipelineRequest
 
 
 class StubEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -52,7 +52,7 @@ def test_loading_the_deployment(clean_client):
             project=clean_client.active_project.id,
         )
     )
-    request = PipelineDeploymentRequest(
+    request = PipelineSnapshotRequest(
         user=clean_client.active_user.id,
         project=clean_client.active_project.id,
         run_name_template="",

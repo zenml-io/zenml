@@ -29,7 +29,7 @@ from zenml.models import (
     ActionRequest,
     ActionResponse,
     ActionUpdate,
-    PipelineDeploymentTriggerRequest,
+    PipelineSnapshotTriggerRequest,
     TriggerExecutionResponse,
 )
 from zenml.models.v2.base.base import BaseResponse
@@ -100,7 +100,7 @@ class PipelineRunActionHandler(BaseActionHandler):
         logger.debug("Running deployment:", deployment)
         trigger_deployment(
             deployment=deployment,
-            trigger_request=PipelineDeploymentTriggerRequest(
+            trigger_request=PipelineSnapshotTriggerRequest(
                 run_configuration=config.run_config,
             ),
             auth_context=auth_context,

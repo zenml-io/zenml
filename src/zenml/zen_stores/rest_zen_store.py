@@ -196,11 +196,11 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
-    PipelineDeploymentTriggerRequest,
-    PipelineDeploymentUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1627,8 +1627,8 @@ class RestZenStore(BaseZenStore):
 
     def create_deployment(
         self,
-        deployment: PipelineDeploymentRequest,
-    ) -> PipelineDeploymentResponse:
+        deployment: PipelineSnapshotRequest,
+    ) -> PipelineSnapshotResponse:
         """Creates a new deployment.
 
         Args:
@@ -1640,7 +1640,7 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=deployment,
             route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
+            response_model=PipelineSnapshotResponse,
         )
 
     def get_deployment(
@@ -1649,7 +1649,7 @@ class RestZenStore(BaseZenStore):
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
-    ) -> PipelineDeploymentResponse:
+    ) -> PipelineSnapshotResponse:
         """Get a deployment with a given ID.
 
         Args:
@@ -1667,7 +1667,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
+            response_model=PipelineSnapshotResponse,
             params={
                 "hydrate": hydrate,
                 "step_configuration_filter": step_configuration_filter,
@@ -1677,9 +1677,9 @@ class RestZenStore(BaseZenStore):
 
     def list_deployments(
         self,
-        deployment_filter_model: PipelineDeploymentFilter,
+        deployment_filter_model: PipelineSnapshotFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineDeploymentResponse]:
+    ) -> Page[PipelineSnapshotResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
@@ -1693,7 +1693,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_paginated_resources(
             route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
+            response_model=PipelineSnapshotResponse,
             filter_model=deployment_filter_model,
             params={"hydrate": hydrate},
         )
@@ -1701,8 +1701,8 @@ class RestZenStore(BaseZenStore):
     def update_deployment(
         self,
         deployment_id: UUID,
-        deployment_update: PipelineDeploymentUpdate,
-    ) -> PipelineDeploymentResponse:
+        deployment_update: PipelineSnapshotUpdate,
+    ) -> PipelineSnapshotResponse:
         """Update a deployment.
 
         Args:
@@ -1716,7 +1716,7 @@ class RestZenStore(BaseZenStore):
             resource_id=deployment_id,
             resource_update=deployment_update,
             route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
+            response_model=PipelineSnapshotResponse,
         )
 
     def delete_deployment(self, deployment_id: UUID) -> None:
@@ -1733,7 +1733,7 @@ class RestZenStore(BaseZenStore):
     def trigger_deployment(
         self,
         deployment_id: UUID,
-        trigger_request: PipelineDeploymentTriggerRequest,
+        trigger_request: PipelineSnapshotTriggerRequest,
     ) -> PipelineRunResponse:
         """Trigger a deployment.
 

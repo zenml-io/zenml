@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models import (
         ArtifactVersionResponse,
-        PipelineDeploymentResponse,
+        PipelineSnapshotResponse,
         PipelineRunResponse,
         StepRunResponse,
     )
@@ -156,7 +156,7 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
 
 
 def create_cached_step_runs_and_prune_deployment(
-    deployment: "PipelineDeploymentResponse",
+    deployment: "PipelineSnapshotResponse",
     pipeline_run: "PipelineRunResponse",
     stack: "Stack",
 ) -> bool:

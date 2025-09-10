@@ -17,8 +17,8 @@ from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
     LogsRequest,
-    PipelineDeploymentBase,
-    PipelineDeploymentResponse,
+    PipelineSnapshotBase,
+    PipelineSnapshotResponse,
     PipelineRunRequest,
     PipelineRunResponse,
     StackResponse,
@@ -50,7 +50,7 @@ def get_default_run_name(pipeline_name: str) -> str:
 
 
 def create_placeholder_run(
-    deployment: "PipelineDeploymentResponse",
+    deployment: "PipelineSnapshotResponse",
     orchestrator_run_id: Optional[str] = None,
     logs: Optional["LogsRequest"] = None,
     trigger_execution_id: Optional[UUID] = None,
@@ -96,7 +96,7 @@ def create_placeholder_run(
 
 
 def deploy_pipeline(
-    deployment: "PipelineDeploymentResponse",
+    deployment: "PipelineSnapshotResponse",
     stack: "Stack",
     placeholder_run: Optional["PipelineRunResponse"] = None,
 ) -> None:
@@ -257,7 +257,7 @@ def validate_run_config_is_runnable_from_server(
 
 
 def upload_notebook_cell_code_if_necessary(
-    deployment: "PipelineDeploymentBase", stack: "Stack"
+    deployment: "PipelineSnapshotBase", stack: "Stack"
 ) -> None:
     """Upload notebook cell code if necessary.
 

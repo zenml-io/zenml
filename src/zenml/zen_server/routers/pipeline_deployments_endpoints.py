@@ -28,10 +28,10 @@ from zenml.constants import (
 )
 from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentTriggerRequest,
-    PipelineDeploymentUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotUpdate,
     PipelineRunFilter,
     PipelineRunResponse,
 )
@@ -111,7 +111,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_deployment(
     request: Request,
-    deployment: PipelineDeploymentRequest,
+    deployment: PipelineSnapshotRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> Any:
@@ -160,8 +160,8 @@ def create_deployment(
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_deployments(
     request: Request,
-    deployment_filter_model: PipelineDeploymentFilter = Depends(
-        make_dependable(PipelineDeploymentFilter)
+    deployment_filter_model: PipelineSnapshotFilter = Depends(
+        make_dependable(PipelineSnapshotFilter)
     ),
     project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
@@ -261,7 +261,7 @@ def get_deployment(
 @async_fastapi_endpoint_wrapper
 def update_deployment(
     deployment_id: UUID,
-    deployment_update: PipelineDeploymentUpdate,
+    deployment_update: PipelineSnapshotUpdate,
     _: AuthContext = Security(authorize),
 ) -> Any:
     """Update a deployment.
@@ -339,7 +339,7 @@ def deployment_logs(
     )
 
     if (
-        deployment.source_deployment_id
+        deployment.source_snapshot_id
         and server_config().workload_manager_enabled
     ):
         return workload_manager().get_logs(workload_id=deployment.id)
@@ -386,7 +386,7 @@ if server_config().workload_manager_enabled:
     @async_fastapi_endpoint_wrapper
     def create_deployment_run(
         deployment_id: UUID,
-        trigger_request: PipelineDeploymentTriggerRequest,
+        trigger_request: PipelineSnapshotTriggerRequest,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
         """Run a pipeline from a deployment.

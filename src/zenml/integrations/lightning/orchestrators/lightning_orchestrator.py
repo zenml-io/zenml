@@ -45,7 +45,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.utils import code_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 
@@ -59,7 +59,7 @@ class LightningOrchestrator(BaseOrchestrator):
 
     def _set_lightning_env_vars(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
     ) -> None:
         """Set up the Lightning client using environment variables.
 
@@ -158,7 +158,7 @@ class LightningOrchestrator(BaseOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -237,7 +237,7 @@ class LightningOrchestrator(BaseOrchestrator):
         )
 
         def _construct_lightning_steps(
-            deployment: "PipelineDeploymentResponse",
+            deployment: "PipelineSnapshotResponse",
         ) -> Dict[str, Dict[str, Any]]:
             """Construct the steps for the pipeline.
 
@@ -360,7 +360,7 @@ class LightningOrchestrator(BaseOrchestrator):
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         orchestrator_run_id: str,
         requirements: str,
         settings: LightningOrchestratorSettings,

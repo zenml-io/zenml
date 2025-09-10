@@ -79,11 +79,11 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
-    PipelineDeploymentTriggerRequest,
-    PipelineDeploymentUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1282,8 +1282,8 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def create_deployment(
         self,
-        deployment: PipelineDeploymentRequest,
-    ) -> PipelineDeploymentResponse:
+        deployment: PipelineSnapshotRequest,
+    ) -> PipelineSnapshotResponse:
         """Creates a new deployment.
 
         Args:
@@ -1303,7 +1303,7 @@ class ZenStoreInterface(ABC):
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
-    ) -> PipelineDeploymentResponse:
+    ) -> PipelineSnapshotResponse:
         """Get a deployment with a given ID.
 
         Args:
@@ -1325,9 +1325,9 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_deployments(
         self,
-        deployment_filter_model: PipelineDeploymentFilter,
+        deployment_filter_model: PipelineSnapshotFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineDeploymentResponse]:
+    ) -> Page[PipelineSnapshotResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
@@ -1344,8 +1344,8 @@ class ZenStoreInterface(ABC):
     def update_deployment(
         self,
         deployment_id: UUID,
-        deployment_update: PipelineDeploymentUpdate,
-    ) -> PipelineDeploymentResponse:
+        deployment_update: PipelineSnapshotUpdate,
+    ) -> PipelineSnapshotResponse:
         """Update a deployment.
 
         Args:
@@ -1371,7 +1371,7 @@ class ZenStoreInterface(ABC):
     def trigger_deployment(
         self,
         deployment_id: UUID,
-        trigger_request: PipelineDeploymentTriggerRequest,
+        trigger_request: PipelineSnapshotTriggerRequest,
     ) -> PipelineRunResponse:
         """Trigger a deployment.
 

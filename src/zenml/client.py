@@ -130,10 +130,10 @@ from zenml.models import (
     Page,
     PipelineBuildFilter,
     PipelineBuildResponse,
-    PipelineDeploymentFilter,
-    PipelineDeploymentResponse,
-    PipelineDeploymentTriggerRequest,
-    PipelineDeploymentUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotResponse,
+    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotUpdate,
     PipelineFilter,
     PipelineResponse,
     PipelineRunFilter,
@@ -3349,7 +3349,7 @@ class Client(metaclass=ClientMetaClass):
         id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
-    ) -> PipelineDeploymentResponse:
+    ) -> PipelineSnapshotResponse:
         """Get a deployment by name, id or prefix.
 
         Args:
@@ -3427,7 +3427,7 @@ class Client(metaclass=ClientMetaClass):
         template_id: Optional[Union[str, UUID]] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
-    ) -> Page[PipelineDeploymentResponse]:
+    ) -> Page[PipelineSnapshotResponse]:
         """List all deployments.
 
         Args:
@@ -3454,7 +3454,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page with deployments fitting the filter description
         """
-        deployment_filter_model = PipelineDeploymentFilter(
+        deployment_filter_model = PipelineSnapshotFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3485,7 +3485,7 @@ class Client(metaclass=ClientMetaClass):
         description: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
-    ) -> PipelineDeploymentResponse:
+    ) -> PipelineSnapshotResponse:
         """Update a deployment.
 
         Args:
@@ -3507,7 +3507,7 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.update_deployment(
             deployment_id=deployment.id,
-            deployment_update=PipelineDeploymentUpdate(
+            deployment_update=PipelineSnapshotUpdate(
                 version=version,
                 description=description,
                 add_tags=add_tags,
@@ -3709,7 +3709,7 @@ class Client(metaclass=ClientMetaClass):
 
         run = self.zen_store.trigger_deployment(
             deployment_id=deployment_id,
-            trigger_request=PipelineDeploymentTriggerRequest(
+            trigger_request=PipelineSnapshotTriggerRequest(
                 run_configuration=run_configuration,
                 step_run=step_run_id,
             ),

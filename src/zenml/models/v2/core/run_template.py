@@ -49,7 +49,7 @@ from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
 )
 from zenml.models.v2.core.pipeline_deployment import (
-    PipelineDeploymentResponse,
+    PipelineSnapshotResponse,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -153,7 +153,7 @@ class RunTemplateResponseMetadata(ProjectScopedResponseMetadata):
 class RunTemplateResponseResources(ProjectScopedResponseResources):
     """All resource models associated with the run template."""
 
-    source_deployment: Optional[PipelineDeploymentResponse] = Field(
+    source_deployment: Optional[PipelineSnapshotResponse] = Field(
         default=None,
         title="The deployment that is the source of the template.",
     )
@@ -281,7 +281,7 @@ class RunTemplateResponse(
         return self.get_metadata().config_schema
 
     @property
-    def source_deployment(self) -> Optional[PipelineDeploymentResponse]:
+    def source_deployment(self) -> Optional[PipelineSnapshotResponse]:
         """The `source_deployment` property.
 
         Returns:

@@ -35,8 +35,8 @@ from zenml.models import (
     PipelineBuildResponse,
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
-    PipelineDeploymentBase,
-    PipelineDeploymentResponse,
+    PipelineSnapshotBase,
+    PipelineSnapshotResponse,
 )
 from zenml.pipelines import build_utils
 from zenml.stack import Stack
@@ -112,7 +112,7 @@ def test_build_is_skipped_when_not_required(mocker):
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBase(
+    deployment = PipelineSnapshotBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -146,7 +146,7 @@ def test_stack_with_container_registry_creates_non_local_build(
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBase(
+    deployment = PipelineSnapshotBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -176,7 +176,7 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBase(
+    deployment = PipelineSnapshotBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -226,7 +226,7 @@ def test_building_with_identical_keys_and_settings(mocker):
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBase(
+    deployment = PipelineSnapshotBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -260,7 +260,7 @@ def test_building_with_identical_keys_and_different_settings(mocker):
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBase(
+    deployment = PipelineSnapshotBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -289,7 +289,7 @@ def test_building_with_different_keys_and_identical_settings(mocker):
         return_value=("image_name", "", ""),
     )
 
-    deployment = PipelineDeploymentBase(
+    deployment = PipelineSnapshotBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={},
@@ -424,10 +424,10 @@ def test_build_checksum_computation(mocker):
 
 
 def test_local_repo_verification(
-    mocker, sample_deployment_response_model: PipelineDeploymentResponse
+    mocker, sample_deployment_response_model: PipelineSnapshotResponse
 ):
     """Test the local repo verification."""
-    deployment = PipelineDeploymentBase(
+    deployment = PipelineSnapshotBase(
         run_name_template=sample_deployment_response_model.run_name_template,
         pipeline_configuration=sample_deployment_response_model.pipeline_configuration,
         step_configurations=sample_deployment_response_model.step_configurations,

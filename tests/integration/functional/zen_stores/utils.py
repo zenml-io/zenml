@@ -76,8 +76,8 @@ from zenml.models import (
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
     PipelineFilter,
     PipelineRequest,
     PipelineRunFilter,
@@ -743,7 +743,7 @@ class ModelContext:
             self.artifact_versions.append(artifact_version)
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequest(
+                PipelineSnapshotRequest(
                     project=ws.id,
                     stack=stack.id,
                     pipeline=self.pipeline.id,
@@ -1278,7 +1278,7 @@ build_crud_test_config = CrudTestConfig(
     conditional_entities={"stack": remote_stack_crud_test_config},
 )
 deployment_crud_test_config = CrudTestConfig(
-    create_model=PipelineDeploymentRequest(
+    create_model=PipelineSnapshotRequest(
         project=uuid.uuid4(),
         stack=uuid.uuid4(),
         pipeline=uuid.uuid4(),
@@ -1289,7 +1289,7 @@ deployment_crud_test_config = CrudTestConfig(
         pipeline_version_hash="random_hash",
         pipeline_spec=PipelineSpec(steps=[]),
     ),
-    filter_model=PipelineDeploymentFilter,
+    filter_model=PipelineSnapshotFilter,
     entity_name="deployment",
     conditional_entities={"pipeline": deepcopy(pipeline_crud_test_config)},
 )
@@ -1356,7 +1356,7 @@ model_crud_test_config = CrudTestConfig(
     entity_name="model",
 )
 remote_deployment_crud_test_config = CrudTestConfig(
-    create_model=PipelineDeploymentRequest(
+    create_model=PipelineSnapshotRequest(
         project=uuid.uuid4(),
         stack=uuid.uuid4(),
         build=uuid.uuid4(),  # will be overridden in create()
@@ -1368,7 +1368,7 @@ remote_deployment_crud_test_config = CrudTestConfig(
         pipeline_version_hash="random_hash",
         pipeline_spec=PipelineSpec(steps=[]),
     ),
-    filter_model=PipelineDeploymentFilter,
+    filter_model=PipelineSnapshotFilter,
     entity_name="deployment",
     conditional_entities={
         "build": deepcopy(build_crud_test_config),

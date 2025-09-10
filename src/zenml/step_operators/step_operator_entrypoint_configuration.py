@@ -27,7 +27,7 @@ from zenml.orchestrators.step_runner import StepRunner
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineSnapshotResponse
 
 STEP_RUN_ID_OPTION = "step_run_id"
 
@@ -67,7 +67,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
     def _run_step(
         self,
         step: "Step",
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
     ) -> None:
         """Runs a single step.
 

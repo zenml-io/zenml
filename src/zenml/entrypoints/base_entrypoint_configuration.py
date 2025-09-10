@@ -34,7 +34,7 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.models import CodeReferenceResponse, PipelineDeploymentResponse
+    from zenml.models import CodeReferenceResponse, PipelineSnapshotResponse
 
 logger = get_logger(__name__)
 DEFAULT_ENTRYPOINT_COMMAND = [
@@ -183,7 +183,7 @@ class BaseEntrypointConfiguration(ABC):
         result, _ = parser.parse_known_args(arguments)
         return vars(result)
 
-    def load_deployment(self) -> "PipelineDeploymentResponse":
+    def load_deployment(self) -> "PipelineSnapshotResponse":
         """Loads the deployment.
 
         Returns:
@@ -194,7 +194,7 @@ class BaseEntrypointConfiguration(ABC):
 
     def download_code_if_necessary(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         step_name: Optional[str] = None,
     ) -> None:
         """Downloads user code if necessary.
@@ -290,7 +290,7 @@ class BaseEntrypointConfiguration(ABC):
 
     def _should_download_code(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         step_name: Optional[str] = None,
     ) -> bool:
         """Checks whether code should be downloaded.

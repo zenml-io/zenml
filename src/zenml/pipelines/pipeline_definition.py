@@ -65,9 +65,9 @@ from zenml.models import (
     LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
-    PipelineDeploymentBase,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
+    PipelineSnapshotBase,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
     PipelineRequest,
     PipelineResponse,
     PipelineRunResponse,
@@ -624,7 +624,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         prevent_build_reuse: bool = False,
         skip_schedule_registration: bool = False,
         **deployment_request_kwargs: Any,
-    ) -> PipelineDeploymentResponse:
+    ) -> PipelineSnapshotResponse:
         """Create a pipeline deployment.
 
         Args:
@@ -785,7 +785,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             code_path = code_utils.upload_code_if_necessary(code_archive)
 
-        request = PipelineDeploymentRequest(
+        request = PipelineSnapshotRequest(
             project=Client().active_project.id,
             stack=stack.id,
             pipeline=pipeline_id,
@@ -905,7 +905,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     @staticmethod
     def log_pipeline_deployment_metadata(
-        deployment_model: PipelineDeploymentResponse,
+        deployment_model: PipelineSnapshotResponse,
     ) -> None:
         """Displays logs based on the deployment model upon running a pipeline.
 
@@ -1051,7 +1051,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def _get_pipeline_analytics_metadata(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         run_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
@@ -1094,7 +1094,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def _compile(
         self, config_path: Optional[str] = None, **run_configuration_args: Any
     ) -> Tuple[
-        "PipelineDeploymentBase",
+        "PipelineSnapshotBase",
         Optional["Schedule"],
         Union["PipelineBuildBase", UUID, None],
     ]:
@@ -1563,7 +1563,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         version: Optional[str] = None,
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
-    ) -> PipelineDeploymentResponse:
+    ) -> PipelineSnapshotResponse:
         """Deploy the pipeline.
 
         Args:

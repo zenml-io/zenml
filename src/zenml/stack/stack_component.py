@@ -46,8 +46,8 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.models import (
         ComponentResponse,
-        PipelineDeploymentBase,
-        PipelineDeploymentResponse,
+        PipelineSnapshotBase,
+        PipelineSnapshotResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
@@ -485,8 +485,8 @@ class StackComponent:
             "Step",
             "StepRunResponse",
             "StepRunInfo",
-            "PipelineDeploymentBase",
-            "PipelineDeploymentResponse",
+            "PipelineSnapshotBase",
+            "PipelineSnapshotResponse",
             "PipelineRunResponse",
         ],
     ) -> "BaseSettings":
@@ -690,7 +690,7 @@ class StackComponent:
         return None
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, deployment: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
@@ -704,7 +704,7 @@ class StackComponent:
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
     ) -> None:
         """Prepares deploying the pipeline.

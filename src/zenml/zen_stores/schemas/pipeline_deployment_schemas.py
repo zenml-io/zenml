@@ -30,12 +30,12 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TaggableResourceTypes
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
-    PipelineDeploymentResponseBody,
-    PipelineDeploymentResponseMetadata,
-    PipelineDeploymentResponseResources,
-    PipelineDeploymentUpdate,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotResponseBody,
+    PipelineSnapshotResponseMetadata,
+    PipelineSnapshotResponseResources,
+    PipelineSnapshotUpdate,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -342,7 +342,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        request: PipelineDeploymentRequest,
+        request: PipelineSnapshotRequest,
         code_reference_id: Optional[UUID],
     ) -> "PipelineDeploymentSchema":
         """Convert a `PipelineDeploymentRequest` to a `PipelineDeploymentSchema`.
@@ -382,7 +382,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             user_id=request.user,
             schedule_id=request.schedule,
             template_id=request.template,
-            source_deployment_id=request.source_deployment,
+            source_deployment_id=request.source_snapshot,
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
@@ -400,7 +400,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         )
 
     def update(
-        self, update: PipelineDeploymentUpdate
+        self, update: PipelineSnapshotUpdate
     ) -> "PipelineDeploymentSchema":
         """Update the deployment schema.
 
@@ -431,7 +431,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         include_config_schema: Optional[bool] = None,
         step_configuration_filter: Optional[List[str]] = None,
         **kwargs: Any,
-    ) -> PipelineDeploymentResponse:
+    ) -> PipelineSnapshotResponse:
         """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponse`.
 
         Args:
@@ -452,7 +452,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         if self.build and not self.build.is_local and self.build.stack_id:
             runnable = True
 
-        body = PipelineDeploymentResponseBody(
+        body = PipelineSnapshotResponseBody(
             version=self.version,
             user_id=self.user_id,
             project_id=self.project_id,
@@ -508,7 +508,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                     step_configurations=all_step_configurations,
                 )
 
-            metadata = PipelineDeploymentResponseMetadata(
+            metadata = PipelineSnapshotResponseMetadata(
                 description=self.description,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
@@ -531,7 +531,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 else None,
                 code_path=self.code_path,
                 template_id=self.template_id,
-                source_deployment_id=self.source_deployment_id,
+                source_snapshot_id=self.source_deployment_id,
                 config_schema=config_schema,
                 config_template=config_template,
             )
@@ -540,7 +540,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         if include_resources:
             latest_run = self.latest_triggered_run
 
-            resources = PipelineDeploymentResponseResources(
+            resources = PipelineSnapshotResponseResources(
                 user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
                 latest_triggered_run_id=latest_run.id if latest_run else None,
@@ -549,7 +549,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 else None,
             )
 
-        return PipelineDeploymentResponse(
+        return PipelineSnapshotResponse(
             id=self.id,
             body=body,
             metadata=metadata,

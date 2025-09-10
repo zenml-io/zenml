@@ -34,7 +34,7 @@ from zenml.step_operators import BaseStepOperator
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineDeploymentBase
+    from zenml.models import PipelineSnapshotBase
 
 logger = get_logger(__name__)
 
@@ -127,7 +127,7 @@ class ModalStepOperator(BaseStepOperator):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, deployment: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Get the Docker build configurations for the Modal step operator.
 

@@ -47,9 +47,9 @@ from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
     FlavorFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
-    PipelineDeploymentTriggerRequest,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotTriggerRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
     StackResponse,
@@ -139,9 +139,9 @@ class BoundedThreadPoolExecutor:
 
 
 def trigger_deployment(
-    deployment: PipelineDeploymentResponse,
+    deployment: PipelineSnapshotResponse,
     auth_context: AuthContext,
-    trigger_request: PipelineDeploymentTriggerRequest,
+    trigger_request: PipelineSnapshotTriggerRequest,
     sync: bool = False,
     template_id: Optional[UUID] = None,
 ) -> PipelineRunResponse:
@@ -370,7 +370,7 @@ def trigger_deployment(
 
 
 def ensure_async_orchestrator(
-    deployment: PipelineDeploymentRequest, stack: StackResponse
+    deployment: PipelineSnapshotRequest, stack: StackResponse
 ) -> None:
     """Ensures the orchestrator is configured to run async.
 
@@ -469,10 +469,10 @@ def generate_dockerfile(
 
 
 def deployment_request_from_source_deployment(
-    source_deployment: PipelineDeploymentResponse,
+    source_deployment: PipelineSnapshotResponse,
     config: PipelineRunConfiguration,
     template_id: Optional[UUID] = None,
-) -> "PipelineDeploymentRequest":
+) -> "PipelineSnapshotRequest":
     """Generate a deployment request from a source deployment.
 
     Args:
@@ -552,7 +552,7 @@ def deployment_request_from_source_deployment(
     zenml_version = zen_store().get_store_info().version
     assert source_deployment.stack
     assert source_deployment.build
-    deployment_request = PipelineDeploymentRequest(
+    deployment_request = PipelineSnapshotRequest(
         project=source_deployment.project_id,
         run_name_template=config.run_name
         or source_deployment.run_name_template,
@@ -570,7 +570,7 @@ def deployment_request_from_source_deployment(
         code_reference=code_reference_request,
         code_path=source_deployment.code_path,
         template=template_id,
-        source_deployment=source_deployment.id,
+        source_snapshot=source_deployment.id,
         pipeline_version_hash=source_deployment.pipeline_version_hash,
         pipeline_spec=source_deployment.pipeline_spec,
     )
@@ -579,7 +579,7 @@ def deployment_request_from_source_deployment(
 
 
 def get_pipeline_run_analytics_metadata(
-    deployment: "PipelineDeploymentResponse",
+    deployment: "PipelineSnapshotResponse",
     stack: StackResponse,
     source_deployment_id: UUID,
     run_id: UUID,

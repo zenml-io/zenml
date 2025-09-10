@@ -33,7 +33,7 @@ from zenml.constants import (
 )
 from zenml.models import (
     Page,
-    PipelineDeploymentTriggerRequest,
+    PipelineSnapshotTriggerRequest,
     PipelineRunResponse,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -293,7 +293,7 @@ if server_config().workload_manager_enabled:
             return trigger_deployment(
                 deployment=template.source_deployment,
                 auth_context=auth_context,
-                trigger_request=PipelineDeploymentTriggerRequest(
+                trigger_request=PipelineSnapshotTriggerRequest(
                     run_configuration=config,
                 ),
                 template_id=template_id,

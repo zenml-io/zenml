@@ -34,7 +34,7 @@ from zenml.models import (
     PipelineBuildBase,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineDeploymentBase,
+    PipelineSnapshotBase,
     StackResponse,
 )
 from zenml.stack import Stack
@@ -50,7 +50,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def build_required(deployment: "PipelineDeploymentBase") -> bool:
+def build_required(deployment: "PipelineSnapshotBase") -> bool:
     """Checks whether a build is required for the deployment and active stack.
 
     Args:
@@ -64,7 +64,7 @@ def build_required(deployment: "PipelineDeploymentBase") -> bool:
 
 
 def requires_included_code(
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineSnapshotBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> bool:
     """Checks whether the deployment requires included code.
@@ -99,7 +99,7 @@ def requires_included_code(
 
 
 def requires_download_from_code_repository(
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineSnapshotBase",
 ) -> bool:
     """Checks whether the deployment needs to download code from a repository.
 
@@ -127,7 +127,7 @@ def requires_download_from_code_repository(
 
 
 def code_download_possible(
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineSnapshotBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> bool:
     """Checks whether code download is possible for the deployment.
@@ -159,7 +159,7 @@ def code_download_possible(
 
 
 def reuse_or_create_pipeline_build(
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineSnapshotBase",
     allow_build_reuse: bool,
     pipeline_id: Optional[UUID] = None,
     build: Union["UUID", "PipelineBuildBase", None] = None,
@@ -240,7 +240,7 @@ def reuse_or_create_pipeline_build(
 
 
 def find_existing_build(
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineSnapshotBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Find an existing build for a deployment.
@@ -303,7 +303,7 @@ def find_existing_build(
 
 
 def create_pipeline_build(
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineSnapshotBase",
     pipeline_id: Optional[UUID] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
@@ -479,7 +479,7 @@ def compute_build_checksum(
 
 
 def verify_local_repository_context(
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineSnapshotBase",
     local_repo_context: Optional["LocalRepositoryContext"],
 ) -> Optional[BaseCodeRepository]:
     """Verifies the local repository.
@@ -537,7 +537,7 @@ def verify_local_repository_context(
 
 def verify_custom_build(
     build: "PipelineBuildResponse",
-    deployment: "PipelineDeploymentBase",
+    deployment: "PipelineSnapshotBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> None:
     """Verify a custom build for a pipeline deployment.
@@ -688,7 +688,7 @@ def compute_stack_checksum(stack: StackResponse) -> str:
 
 
 def should_upload_code(
-    deployment: PipelineDeploymentBase,
+    deployment: PipelineSnapshotBase,
     build: Optional[PipelineBuildResponse],
     can_download_from_code_repository: bool,
 ) -> bool:
@@ -730,7 +730,7 @@ def should_upload_code(
 
 
 def allows_download_from_code_repository(
-    deployment: PipelineDeploymentBase,
+    deployment: PipelineSnapshotBase,
 ) -> bool:
     """Checks whether a code repository can be used to download code.
 
@@ -750,7 +750,7 @@ def allows_download_from_code_repository(
 
 
 def log_code_repository_usage(
-    deployment: PipelineDeploymentBase,
+    deployment: PipelineSnapshotBase,
     local_repo_context: "LocalRepositoryContext",
 ) -> None:
     """Log what the code repository can (not) be used for given a deployment.

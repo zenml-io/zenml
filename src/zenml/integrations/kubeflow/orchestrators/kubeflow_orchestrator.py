@@ -75,7 +75,7 @@ from zenml.stack import StackValidator
 from zenml.utils import io_utils, settings_utils, yaml_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 
@@ -468,7 +468,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -666,7 +666,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         pipeline_file_path: str,
         run_name: str,
     ) -> Optional[SubmissionResult]:

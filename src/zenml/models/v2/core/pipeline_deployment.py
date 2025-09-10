@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing pipeline deployments."""
+"""Pipeline snapshot models."""
 
 from typing import (
     TYPE_CHECKING,
@@ -67,20 +67,20 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class PipelineDeploymentBase(BaseZenModel):
-    """Base model for pipeline deployments."""
+class PipelineSnapshotBase(BaseZenModel):
+    """Base model for pipeline snapshots."""
 
     run_name_template: str = Field(
-        title="The run name template for runs created using this deployment.",
+        title="The run name template for runs created using this snapshot.",
     )
     pipeline_configuration: PipelineConfiguration = Field(
-        title="The pipeline configuration for this deployment."
+        title="The pipeline configuration for this snapshot."
     )
     step_configurations: Dict[str, Step] = Field(
-        default={}, title="The step configurations for this deployment."
+        default={}, title="The step configurations for this snapshot."
     )
     client_environment: Dict[str, Any] = Field(
-        default={}, title="The client environment for this deployment."
+        default={}, title="The client environment for this snapshot."
     )
     client_version: Optional[str] = Field(
         default=None,
@@ -92,19 +92,19 @@ class PipelineDeploymentBase(BaseZenModel):
     )
     pipeline_version_hash: Optional[str] = Field(
         default=None,
-        title="The pipeline version hash of the deployment.",
+        title="The pipeline version hash of the snapshot.",
     )
     pipeline_spec: Optional[PipelineSpec] = Field(
         default=None,
-        title="The pipeline spec of the deployment.",
+        title="The pipeline spec of the snapshot.",
     )
 
     @property
     def should_prevent_build_reuse(self) -> bool:
-        """Whether the deployment prevents a build reuse.
+        """Whether the snapshot prevents a build reuse.
 
         Returns:
-            Whether the deployment prevents a build reuse.
+            Whether the snapshot prevents a build reuse.
         """
         return any(
             step.config.docker_settings.prevent_build_reuse
@@ -112,37 +112,37 @@ class PipelineDeploymentBase(BaseZenModel):
         )
 
 
-class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
-    """Request model for pipeline deployments."""
+class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
+    """Request model for pipeline snapshots."""
 
     version: Optional[Union[str, bool]] = Field(
         default=None,
-        title="The version of the deployment. If set to True, a version will "
+        title="The version of the snapshot. If set to True, a version will "
         "be generated automatically.",
     )
     description: Optional[str] = Field(
         default=None,
-        title="The description of the deployment.",
+        title="The description of the snapshot.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     tags: Optional[List[str]] = Field(
         default=None,
-        title="Tags of the deployment.",
+        title="Tags of the snapshot.",
     )
 
-    stack: UUID = Field(title="The stack associated with the deployment.")
+    stack: UUID = Field(title="The stack associated with the snapshot.")
     pipeline: UUID = Field(
-        title="The pipeline associated with the deployment."
+        title="The pipeline associated with the snapshot."
     )
     build: Optional[UUID] = Field(
-        default=None, title="The build associated with the deployment."
+        default=None, title="The build associated with the snapshot."
     )
     schedule: Optional[UUID] = Field(
-        default=None, title="The schedule associated with the deployment."
+        default=None, title="The schedule associated with the snapshot."
     )
     code_reference: Optional["CodeReferenceRequest"] = Field(
         default=None,
-        title="The code reference associated with the deployment.",
+        title="The code reference associated with the snapshot.",
     )
     code_path: Optional[str] = Field(
         default=None,
@@ -150,12 +150,12 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     )
     template: Optional[UUID] = Field(
         default=None,
-        description="DEPRECATED: Template used for the deployment.",
+        description="DEPRECATED: Template used for the snapshot.",
         deprecated=True,
     )
-    source_deployment: Optional[UUID] = Field(
+    source_snapshot: Optional[UUID] = Field(
         default=None,
-        description="Deployment that is the source of this deployment.",
+        description="Snapshot that is the source of this snapshot.",
     )
 
     @field_validator("version")
@@ -163,10 +163,10 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     def _validate_version(cls, v: Any) -> Any:
         if isinstance(v, str):
             if not v:
-                raise ValueError("Deployment version cannot be empty.")
+                raise ValueError("Snapshot version cannot be empty.")
             if len(v) > STR_FIELD_MAX_LENGTH:
                 raise ValueError(
-                    f"Deployment version `{v}` is too long. The maximum length "
+                    f"Snapshot version `{v}` is too long. The maximum length "
                     f"is {STR_FIELD_MAX_LENGTH} characters."
                 )
 
@@ -176,26 +176,26 @@ class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class PipelineDeploymentUpdate(BaseUpdate):
-    """Pipeline deployment update model."""
+class PipelineSnapshotUpdate(BaseUpdate):
+    """Pipeline snapshot update model."""
 
     version: Optional[Union[str, bool]] = Field(
         default=None,
-        title="The version of the deployment. If set to True, the existing "
+        title="The version of the snapshot. If set to True, the existing "
         "version will be kept or a new version will be generated. If set to "
         "False, the version will be removed.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
         default=None,
-        title="The description of the deployment.",
+        title="The description of the snapshot.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     add_tags: Optional[List[str]] = Field(
-        default=None, title="New tags to add to the deployment."
+        default=None, title="New tags to add to the snapshot."
     )
     remove_tags: Optional[List[str]] = Field(
-        default=None, title="Tags to remove from the deployment."
+        default=None, title="Tags to remove from the snapshot."
     )
 
     @field_validator("version")
@@ -203,10 +203,10 @@ class PipelineDeploymentUpdate(BaseUpdate):
     def _validate_version(cls, v: Any) -> Any:
         if isinstance(v, str):
             if not v:
-                raise ValueError("Deployment version cannot be empty.")
+                raise ValueError("Snapshot version cannot be empty.")
             if len(v) > STR_FIELD_MAX_LENGTH:
                 raise ValueError(
-                    f"Deployment version `{v}` is too long. The maximum length "
+                    f"Snapshot version `{v}` is too long. The maximum length "
                     f"is {STR_FIELD_MAX_LENGTH} characters."
                 )
 
@@ -216,21 +216,21 @@ class PipelineDeploymentUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class PipelineDeploymentResponseBody(ProjectScopedResponseBody):
-    """Response body for pipeline deployments."""
+class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
+    """Response body for pipeline snapshots."""
 
     version: Optional[str] = Field(
         default=None,
-        title="The version of the deployment.",
+        title="The version of the snapshot.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     runnable: bool = Field(
-        title="If a run can be started from the deployment.",
+        title="If a run can be started from the snapshot.",
     )
 
 
-class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
-    """Response metadata for pipeline deployments."""
+class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
+    """Response metadata for pipeline snapshots."""
 
     __zenml_skip_dehydration__: ClassVar[List[str]] = [
         "pipeline_configuration",
@@ -241,19 +241,19 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
 
     description: Optional[str] = Field(
         default=None,
-        title="The description of the deployment.",
+        title="The description of the snapshot.",
     )
     run_name_template: str = Field(
-        title="The run name template for runs created using this deployment.",
+        title="The run name template for runs created using this snapshot.",
     )
     pipeline_configuration: PipelineConfiguration = Field(
-        title="The pipeline configuration for this deployment."
+        title="The pipeline configuration for this snapshot."
     )
     step_configurations: Dict[str, Step] = Field(
-        default={}, title="The step configurations for this deployment."
+        default={}, title="The step configurations for this snapshot."
     )
     client_environment: Dict[str, Any] = Field(
-        default={}, title="The client environment for this deployment."
+        default={}, title="The client environment for this snapshot."
     )
     client_version: Optional[str] = Field(
         title="The version of the ZenML installation on the client side."
@@ -262,41 +262,41 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
         title="The version of the ZenML installation on the server side."
     )
     pipeline_version_hash: Optional[str] = Field(
-        default=None, title="The pipeline version hash of the deployment."
+        default=None, title="The pipeline version hash of the snapshot."
     )
     pipeline_spec: Optional[PipelineSpec] = Field(
-        default=None, title="The pipeline spec of the deployment."
+        default=None, title="The pipeline spec of the snapshot."
     )
     code_path: Optional[str] = Field(
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
-
+    # TODO: non-optional?
     pipeline: Optional[PipelineResponse] = Field(
-        default=None, title="The pipeline associated with the deployment."
+        default=None, title="The pipeline associated with the snapshot."
     )
     stack: Optional[StackResponse] = Field(
-        default=None, title="The stack associated with the deployment."
+        default=None, title="The stack associated with the snapshot."
     )
     build: Optional[PipelineBuildResponse] = Field(
         default=None,
-        title="The pipeline build associated with the deployment.",
+        title="The pipeline build associated with the snapshot.",
     )
     schedule: Optional[ScheduleResponse] = Field(
-        default=None, title="The schedule associated with the deployment."
+        default=None, title="The schedule associated with the snapshot."
     )
     code_reference: Optional[CodeReferenceResponse] = Field(
         default=None,
-        title="The code reference associated with the deployment.",
+        title="The code reference associated with the snapshot.",
     )
     template_id: Optional[UUID] = Field(
         default=None,
-        description="Template from which this deployment was created.",
+        description="Template from which this snapshot was created.",
         deprecated=True,
     )
-    source_deployment_id: Optional[UUID] = Field(
+    source_snapshot_id: Optional[UUID] = Field(
         default=None,
-        description="Deployment that is the source of this deployment.",
+        description="Snapshot that is the source of this snapshot.",
     )
     config_template: Optional[Dict[str, Any]] = Field(
         default=None, title="Run configuration template."
@@ -306,34 +306,34 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
     )
 
 
-class PipelineDeploymentResponseResources(ProjectScopedResponseResources):
-    """Class for all resource models associated with the pipeline deployment entity."""
+class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
+    """Run snapshot resources."""
 
     tags: List[TagResponse] = Field(
         default=[],
-        title="Tags associated with the deployment.",
+        title="Tags associated with the snapshot.",
     )
     latest_triggered_run_id: Optional[UUID] = Field(
         default=None,
-        title="The ID of the latest triggered run of the deployment.",
+        title="The ID of the latest triggered run of the snapshot.",
     )
     latest_triggered_run_status: Optional[ExecutionStatus] = Field(
         default=None,
-        title="The status of the latest triggered run of the deployment.",
+        title="The status of the latest triggered run of the snapshot.",
     )
 
 
-class PipelineDeploymentResponse(
+class PipelineSnapshotResponse(
     ProjectScopedResponse[
-        PipelineDeploymentResponseBody,
-        PipelineDeploymentResponseMetadata,
-        PipelineDeploymentResponseResources,
+        PipelineSnapshotResponseBody,
+        PipelineSnapshotResponseMetadata,
+        PipelineSnapshotResponseResources,
     ]
 ):
-    """Response model for pipeline deployments."""
+    """Response model for pipeline snapshots."""
 
-    def get_hydrated_version(self) -> "PipelineDeploymentResponse":
-        """Return the hydrated version of this pipeline deployment.
+    def get_hydrated_version(self) -> "PipelineSnapshotResponse":
+        """Return the hydrated version of this pipeline snapshot.
 
         Returns:
             an instance of the same entity with the metadata field attached.
@@ -507,13 +507,13 @@ class PipelineDeploymentResponse(
         return self.get_metadata().template_id
 
     @property
-    def source_deployment_id(self) -> Optional[UUID]:
-        """The `source_deployment_id` property.
+    def source_snapshot_id(self) -> Optional[UUID]:
+        """The `source_snapshot_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().source_deployment_id
+        return self.get_metadata().source_snapshot_id
 
     @property
     def config_schema(self) -> Optional[Dict[str, Any]]:
@@ -564,8 +564,8 @@ class PipelineDeploymentResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
-    """Model for filtering pipeline deployments."""
+class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
+    """Model for filtering pipeline snapshots."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
@@ -583,40 +583,40 @@ class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
 
     version: Optional[str] = Field(
         default=None,
-        description="Version of the deployment.",
+        description="Version of the snapshot.",
     )
     versioned_only: Optional[bool] = Field(
         default=None,
-        description="Whether to only return deployments with a version name.",
+        description="Whether to only return snapshots with a version name.",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Pipeline associated with the deployment.",
+        description="Pipeline associated with the snapshot.",
         union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Stack associated with the deployment.",
+        description="Stack associated with the snapshot.",
         union_mode="left_to_right",
     )
     build_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Build associated with the deployment.",
+        description="Build associated with the snapshot.",
         union_mode="left_to_right",
     )
     schedule_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Schedule associated with the deployment.",
+        description="Schedule associated with the snapshot.",
         union_mode="left_to_right",
     )
     template_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Template used as base for the deployment.",
+        description="Template used as base for the snapshot.",
         union_mode="left_to_right",
     )
-    source_deployment_id: Optional[Union[UUID, str]] = Field(
+    source_snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Source deployment used for the deployment.",
+        description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
     )
 
@@ -650,15 +650,14 @@ class PipelineDeploymentFilter(ProjectScopedFilter, TaggableFilter):
 # ------------------ Trigger Model ------------------
 
 
-class PipelineDeploymentTriggerRequest(BaseZenModel):
-    """Request model for triggering a pipeline deployment."""
+class PipelineSnapshotTriggerRequest(BaseZenModel):
+    """Request model for triggering a pipeline snapshot."""
 
     run_configuration: Optional[PipelineRunConfiguration] = Field(
         default=None,
-        title="The run configuration for the deployment.",
+        title="The run configuration for the snapshot.",
     )
-
     step_run: Optional[UUID] = Field(
         default=None,
-        title="The ID of the step run that triggered the deployment.",
+        title="The ID of the step run that triggered the snapshot.",
     )

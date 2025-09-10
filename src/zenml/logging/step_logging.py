@@ -49,7 +49,7 @@ from zenml.logger import get_logger
 from zenml.models import (
     LogsRequest,
     LogsResponse,
-    PipelineDeploymentResponse,
+    PipelineSnapshotResponse,
     PipelineRunUpdate,
 )
 from zenml.utils.io_utils import sanitize_remote_path
@@ -704,7 +704,7 @@ class PipelineLogsStorageContext:
 
 def setup_orchestrator_logging(
     run_id: UUID,
-    deployment: "PipelineDeploymentResponse",
+    deployment: "PipelineSnapshotResponse",
     logs_response: Optional[LogsResponse] = None,
 ) -> Any:
     """Set up logging for an orchestrator environment.

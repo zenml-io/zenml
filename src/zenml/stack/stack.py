@@ -65,8 +65,8 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import (
-        PipelineDeploymentBase,
-        PipelineDeploymentResponse,
+        PipelineSnapshotBase,
+        PipelineSnapshotResponse,
         PipelineRunResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
@@ -763,7 +763,7 @@ class Stack:
             self._image_builder = image_builder
 
     def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeploymentResponse"
+        self, deployment: "PipelineSnapshotResponse"
     ) -> None:
         """Prepares the stack for a pipeline deployment.
 
@@ -794,7 +794,7 @@ class Stack:
             )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, deployment: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the stack.
 
@@ -813,7 +813,7 @@ class Stack:
 
     def deploy_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         """Deploys a pipeline on this stack.

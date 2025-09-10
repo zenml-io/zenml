@@ -28,7 +28,7 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineSnapshotResponse
 
 logger = get_logger(__name__)
 
@@ -149,7 +149,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             kwargs[STEP_NAME_OPTION],
         ]
 
-    def load_deployment(self) -> "PipelineDeploymentResponse":
+    def load_deployment(self) -> "PipelineSnapshotResponse":
         """Loads the deployment.
 
         Returns:
@@ -201,7 +201,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     def _run_step(
         self,
         step: "Step",
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
     ) -> None:
         """Runs a single step.
 

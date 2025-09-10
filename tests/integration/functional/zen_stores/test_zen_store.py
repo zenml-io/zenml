@@ -126,7 +126,7 @@ from zenml.models import (
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
 from zenml.models.v2.core.model import ModelFilter, ModelRequest, ModelUpdate
-from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
+from zenml.models.v2.core.pipeline_deployment import PipelineSnapshotRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest
@@ -5483,7 +5483,7 @@ class TestRunMetadata:
         ):
             step_name = sample_name("foo")
             deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequest(
+                PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
@@ -5542,7 +5542,7 @@ class TestRunMetadata:
                 )
             )
             deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequest(
+                PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(

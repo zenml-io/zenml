@@ -40,7 +40,7 @@ from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils, string_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
 
 logger = get_logger(__name__)
 
@@ -103,7 +103,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,

@@ -33,7 +33,7 @@ from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
     LogsRequest,
-    PipelineDeploymentResponse,
+    PipelineSnapshotResponse,
     PipelineRunRequest,
     PipelineRunResponse,
     StepRunResponse,
@@ -104,7 +104,7 @@ class StepLauncher:
 
     def __init__(
         self,
-        deployment: PipelineDeploymentResponse,
+        deployment: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
     ):

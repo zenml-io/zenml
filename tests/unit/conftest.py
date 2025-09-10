@@ -49,11 +49,11 @@ from zenml.models import (
     PipelineBuildResponse,
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
-    PipelineDeploymentResponseBody,
-    PipelineDeploymentResponseMetadata,
-    PipelineDeploymentResponseResources,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotResponseBody,
+    PipelineSnapshotResponseMetadata,
+    PipelineSnapshotResponseResources,
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
@@ -443,9 +443,9 @@ def sample_pipeline_run(
 
 
 @pytest.fixture
-def sample_pipeline_deployment_request_model() -> PipelineDeploymentRequest:
+def sample_pipeline_deployment_request_model() -> PipelineSnapshotRequest:
     """Return sample pipeline deployment request for testing purposes."""
-    return PipelineDeploymentRequest(
+    return PipelineSnapshotRequest(
         user=uuid4(),
         project=uuid4(),
         run_name_template="aria-blupus",
@@ -621,23 +621,23 @@ def create_pipeline_model(
 def sample_deployment_response_model(
     sample_user_model: UserResponse,
     sample_project_model: ProjectResponse,
-) -> PipelineDeploymentResponse:
-    return PipelineDeploymentResponse(
+) -> PipelineSnapshotResponse:
+    return PipelineSnapshotResponse(
         id=uuid4(),
-        body=PipelineDeploymentResponseBody(
+        body=PipelineSnapshotResponseBody(
             user_id=sample_user_model.id,
             project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
             runnable=True,
         ),
-        metadata=PipelineDeploymentResponseMetadata(
+        metadata=PipelineSnapshotResponseMetadata(
             run_name_template="",
             pipeline_configuration={"name": ""},
             client_version="0.12.3",
             server_version="0.12.3",
         ),
-        resources=PipelineDeploymentResponseResources(
+        resources=PipelineSnapshotResponseResources(
             user=sample_user_model,
         ),
     )

@@ -53,7 +53,7 @@ from zenml.utils import io_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineSnapshotResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 
@@ -457,7 +457,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -653,7 +653,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         pipeline_file_path: str,
         run_name: str,
     ) -> Optional[SubmissionResult]:

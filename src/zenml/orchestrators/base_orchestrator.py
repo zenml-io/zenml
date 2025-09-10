@@ -55,7 +55,7 @@ from zenml.utils.pydantic_utils import before_validator_handler
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models import (
-        PipelineDeploymentResponse,
+        PipelineSnapshotResponse,
         PipelineRunResponse,
         ScheduleResponse,
         ScheduleUpdate,
@@ -151,7 +151,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all orchestrators."""
 
-    _active_deployment: Optional["PipelineDeploymentResponse"] = None
+    _active_deployment: Optional["PipelineSnapshotResponse"] = None
 
     @property
     def config(self) -> BaseOrchestratorConfig:
@@ -175,7 +175,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -201,7 +201,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -218,7 +218,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def run(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
@@ -446,7 +446,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return not step.config.resource_settings.empty
 
-    def _prepare_run(self, deployment: "PipelineDeploymentResponse") -> None:
+    def _prepare_run(self, deployment: "PipelineSnapshotResponse") -> None:
         """Prepares a run.
 
         Args:

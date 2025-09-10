@@ -221,11 +221,11 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
-    PipelineDeploymentTriggerRequest,
-    PipelineDeploymentUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -4826,8 +4826,8 @@ class SqlZenStore(BaseZenStore):
 
     def create_deployment(
         self,
-        deployment: PipelineDeploymentRequest,
-    ) -> PipelineDeploymentResponse:
+        deployment: PipelineSnapshotRequest,
+    ) -> PipelineSnapshotResponse:
         """Creates a new deployment.
 
         Args:
@@ -4891,13 +4891,13 @@ class SqlZenStore(BaseZenStore):
             self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=PipelineDeploymentSchema,
-                reference_id=deployment.source_deployment,
+                reference_id=deployment.source_snapshot,
                 session=session,
             )
 
-            if run_template and not deployment.source_deployment:
+            if run_template and not deployment.source_snapshot:
                 # TODO: remove this once we remove run templates entirely
-                deployment.source_deployment = (
+                deployment.source_snapshot = (
                     run_template.source_deployment_id
                 )
 
@@ -4965,7 +4965,7 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
-    ) -> PipelineDeploymentResponse:
+    ) -> PipelineSnapshotResponse:
         """Get a deployment with a given ID.
 
         Args:
@@ -4997,9 +4997,9 @@ class SqlZenStore(BaseZenStore):
 
     def list_deployments(
         self,
-        deployment_filter_model: PipelineDeploymentFilter,
+        deployment_filter_model: PipelineSnapshotFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineDeploymentResponse]:
+    ) -> Page[PipelineSnapshotResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
@@ -5028,8 +5028,8 @@ class SqlZenStore(BaseZenStore):
     def update_deployment(
         self,
         deployment_id: UUID,
-        deployment_update: PipelineDeploymentUpdate,
-    ) -> PipelineDeploymentResponse:
+        deployment_update: PipelineSnapshotUpdate,
+    ) -> PipelineSnapshotResponse:
         """Update a deployment.
 
         Args:
@@ -5109,7 +5109,7 @@ class SqlZenStore(BaseZenStore):
     def trigger_deployment(
         self,
         deployment_id: UUID,
-        trigger_request: PipelineDeploymentTriggerRequest,
+        trigger_request: PipelineSnapshotTriggerRequest,
     ) -> NoReturn:
         """Trigger a deployment.
 
@@ -13373,7 +13373,7 @@ class SqlZenStore(BaseZenStore):
                         # TODO: This is very inefficient, we should use a
                         # better query
                         older_deployments = self.list_deployments(
-                            PipelineDeploymentFilter(
+                            PipelineSnapshotFilter(
                                 id=f"notequals:{resource.id}",
                                 project=resource.project.id,
                                 pipeline_id=scope_id,

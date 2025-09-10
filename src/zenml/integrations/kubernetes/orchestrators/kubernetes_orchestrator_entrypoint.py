@@ -58,7 +58,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
 from zenml.models import (
-    PipelineDeploymentResponse,
+    PipelineSnapshotResponse,
     PipelineRunResponse,
     PipelineRunUpdate,
 )
@@ -122,7 +122,7 @@ def _get_orchestrator_job_state(
 
 
 def _reconstruct_nodes(
-    deployment: PipelineDeploymentResponse,
+    deployment: PipelineSnapshotResponse,
     pipeline_run: PipelineRunResponse,
     namespace: str,
     batch_api: k8s_client.BatchV1Api,

@@ -81,8 +81,8 @@ from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
     from zenml.models import (
-        PipelineDeploymentBase,
-        PipelineDeploymentResponse,
+        PipelineSnapshotBase,
+        PipelineSnapshotResponse,
         PipelineRunResponse,
         ScheduleResponse,
     )
@@ -97,7 +97,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
     def should_build_pipeline_image(
-        self, deployment: "PipelineDeploymentBase"
+        self, deployment: "PipelineSnapshotBase"
     ) -> bool:
         """Whether to always build the pipeline image.
 
@@ -382,7 +382,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,

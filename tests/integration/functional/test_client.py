@@ -59,7 +59,7 @@ from zenml.models import (
     ModelResponse,
     ModelVersionResponse,
     PipelineBuildRequest,
-    PipelineDeploymentRequest,
+    PipelineSnapshotRequest,
     PipelineRequest,
     RunMetadataResource,
     StackResponse,
@@ -727,7 +727,7 @@ def test_listing_deployments(clean_client):
         )
     )
 
-    request = PipelineDeploymentRequest(
+    request = PipelineSnapshotRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
@@ -757,7 +757,7 @@ def test_getting_deployments(clean_client):
             name="pipeline_name",
         )
     )
-    request = PipelineDeploymentRequest(
+    request = PipelineSnapshotRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
@@ -785,7 +785,7 @@ def test_deleting_deployments(clean_client):
             name="pipeline_name",
         )
     )
-    request = PipelineDeploymentRequest(
+    request = PipelineSnapshotRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",

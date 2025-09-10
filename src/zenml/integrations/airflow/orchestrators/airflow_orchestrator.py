@@ -52,7 +52,7 @@ if TYPE_CHECKING:
         TaskConfiguration,
     )
     from zenml.models import (
-        PipelineDeploymentResponse,
+        PipelineSnapshotResponse,
         PipelineRunResponse,
         ScheduleResponse,
     )
@@ -179,7 +179,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
     ) -> None:
         """Builds a Docker image to run pipeline steps.
@@ -193,7 +193,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,

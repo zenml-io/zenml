@@ -25,7 +25,7 @@ from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
     ArtifactVersionResponse,
     ModelVersionResponse,
-    PipelineDeploymentResponse,
+    PipelineSnapshotResponse,
     PipelineRunResponse,
     StepRunRequest,
     StepRunResponse,
@@ -43,7 +43,7 @@ class StepRunRequestFactory:
 
     def __init__(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         pipeline_run: "PipelineRunResponse",
         stack: "Stack",
     ) -> None:
@@ -262,7 +262,7 @@ class StepRunRequestFactory:
 
 
 def find_cacheable_invocation_candidates(
-    deployment: "PipelineDeploymentResponse",
+    deployment: "PipelineSnapshotResponse",
     finished_invocations: Set[str],
 ) -> Set[str]:
     """Find invocations that can potentially be cached.
@@ -296,7 +296,7 @@ def find_cacheable_invocation_candidates(
 
 
 def create_cached_step_runs(
-    deployment: "PipelineDeploymentResponse",
+    deployment: "PipelineSnapshotResponse",
     pipeline_run: PipelineRunResponse,
     stack: "Stack",
 ) -> Set[str]:
