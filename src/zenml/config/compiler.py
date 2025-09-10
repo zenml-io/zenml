@@ -84,7 +84,7 @@ class Compiler:
             run_configuration: The run configuration for this pipeline.
 
         Returns:
-            The compiled pipeline deployment.
+            The compiled pipeline snapshot.
         """
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations, so
@@ -137,7 +137,7 @@ class Compiler:
             pipeline=pipeline, step_specs=step_specs
         )
 
-        deployment = PipelineSnapshotBase(
+        snapshot = PipelineSnapshotBase(
             run_name_template=run_name,
             pipeline_configuration=pipeline.configuration,
             step_configurations=steps,
@@ -150,15 +150,15 @@ class Compiler:
             pipeline_spec=pipeline_spec,
         )
 
-        logger.debug("Compiled pipeline deployment: %s", deployment)
+        logger.debug("Compiled pipeline snapshot: %s", snapshot)
 
-        return deployment
+        return snapshot
 
     def compile_spec(self, pipeline: "Pipeline") -> PipelineSpec:
         """Compiles a ZenML pipeline to a pipeline spec.
 
         This method can be used when a pipeline spec is needed but the full
-        deployment including stack information is not required.
+        snapshot including stack information is not required.
 
         Args:
             pipeline: The pipeline to compile.
@@ -407,7 +407,7 @@ class Compiler:
 
             if not settings_instance.model_fields_set:
                 # There are no values defined on the settings instance, don't
-                # include them in the deployment
+                # include them in the snapshot
                 continue
 
             validated_settings[key] = settings_instance

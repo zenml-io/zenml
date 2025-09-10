@@ -5728,7 +5728,7 @@ class SqlZenStore(BaseZenStore):
                         ] = artifact_node
 
                     for triggered_run in step_run.triggered_runs:
-                        metadata: Dict[str, Any] = {
+                        triggered_run_metadata = {
                             "status": triggered_run.status,
                         }
 

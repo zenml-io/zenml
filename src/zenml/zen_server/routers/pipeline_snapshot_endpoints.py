@@ -238,12 +238,12 @@ if server_config().workload_manager_enabled:
         Returns:
             The created pipeline run.
         """
-        from zenml.zen_server.deployment_execution.utils import (
-            trigger_deployment,
+        from zenml.zen_server.pipeline_execution.utils import (
+            trigger_snapshot,
         )
 
         with track_handler(
-            event=AnalyticsEvent.EXECUTED_DEPLOYMENT,
+            event=AnalyticsEvent.EXECUTED_SNAPSHOT,
         ) as analytics_handler:
             snapshot = verify_permissions_and_get_entity(
                 id=snapshot_id,
@@ -267,8 +267,8 @@ if server_config().workload_manager_enabled:
 
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
-            return trigger_deployment(
-                deployment=snapshot,
+            return trigger_snapshot(
+                snapshot=snapshot,
                 auth_context=auth_context,
                 trigger_request=trigger_request,
             )

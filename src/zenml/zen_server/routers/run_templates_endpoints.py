@@ -256,8 +256,8 @@ if server_config().workload_manager_enabled:
         Returns:
             The created pipeline run.
         """
-        from zenml.zen_server.deployment_execution.utils import (
-            trigger_deployment,
+        from zenml.zen_server.pipeline_execution.utils import (
+            trigger_snapshot,
         )
 
         with track_handler(
@@ -287,11 +287,11 @@ if server_config().workload_manager_enabled:
             if not template.source_snapshot:
                 raise ValueError(
                     "This template can not be run because it has no source "
-                    "deployment."
+                    "snapshot."
                 )
 
-            return trigger_deployment(
-                deployment=template.source_snapshot,
+            return trigger_snapshot(
+                snapshot=template.source_snapshot,
                 auth_context=auth_context,
                 trigger_request=PipelineSnapshotTriggerRequest(
                     run_configuration=config,

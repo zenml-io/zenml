@@ -1730,7 +1730,7 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_SNAPSHOTS,
         )
 
-    def trigger_deployment(
+    def trigger_snapshot(
         self,
         snapshot_id: UUID,
         trigger_request: PipelineSnapshotTriggerRequest,
