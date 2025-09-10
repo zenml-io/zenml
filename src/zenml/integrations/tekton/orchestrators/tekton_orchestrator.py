@@ -517,7 +517,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
-                        deployment_id=deployment.id,
+                        snapshot_id=deployment.id,
                     )
                 )
                 dynamic_component = self._create_dynamic_component(

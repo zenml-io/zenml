@@ -257,7 +257,7 @@ class LightningOrchestrator(BaseOrchestrator):
                 entrypoint_arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
-                        deployment_id=deployment_id,
+                        snapshot_id=deployment_id,
                     )
                 )
                 entrypoint = entrypoint_command + entrypoint_arguments

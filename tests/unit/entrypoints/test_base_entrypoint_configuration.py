@@ -69,4 +69,4 @@ def test_loading_the_deployment(clean_client):
         arguments=["--deployment_id", str(deployment.id)]
     )
 
-    assert entrypoint_config.load_deployment() == deployment
+    assert entrypoint_config.load_snapshot() == deployment

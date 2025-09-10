@@ -232,7 +232,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             )
             image = self.get_image(deployment=deployment, step_name=step_name)
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, deployment_id=deployment.id
+                step_name=step_name, snapshot_id=deployment.id
             )
             operator_args = settings.operator_args.copy()
             if self.requires_resources_in_orchestration_environment(step=step):

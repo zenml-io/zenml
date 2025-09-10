@@ -222,7 +222,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "network_mode": "host",
                 "entrypoint": StepEntrypointConfiguration.get_entrypoint_command(),
                 "command": StepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, deployment_id=deployment.id
+                    step_name=step_name, snapshot_id=deployment.id
                 ),
                 "volumes": [
                     "{}:{}".format(

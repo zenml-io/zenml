@@ -63,17 +63,17 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         This method runs the pipeline defined by the deployment given as input
         to the entrypoint configuration.
         """
-        deployment = self.load_deployment()
+        snapshot = self.load_snapshot()
         placeholder_run_id = UUID(
             self.entrypoint_args[PLACEHOLDER_RUN_ID_OPTION]
         )
         placeholder_run = Client().get_pipeline_run(placeholder_run_id)
 
         stack = Client().active_stack
-        assert deployment.stack and stack.id == deployment.stack.id
+        assert snapshot.stack and stack.id == snapshot.stack.id
 
         deploy_pipeline(
-            snapshot=deployment,
+            snapshot=snapshot,
             stack=stack,
             placeholder_run=placeholder_run,
         )

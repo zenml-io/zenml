@@ -590,16 +590,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if settings:
                 compile_args["settings"] = settings
 
-            deployment, _, _ = self._compile(**compile_args)
+            snapshot, _, _ = self._compile(**compile_args)
             pipeline_id = self._register().id
 
             local_repo = code_repository_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository_context(
-                snapshot=deployment, local_repo_context=local_repo
+                snapshot=snapshot, local_repo_context=local_repo
             )
 
             return build_utils.create_pipeline_build(
-                snapshot=deployment,
+                snapshot=snapshot,
                 pipeline_id=pipeline_id,
                 code_repository=code_repository,
             )
@@ -861,20 +861,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
 
             with logs_context:
-                deployment = self._create_snapshot(**self._run_args)
+                snapshot = self._create_snapshot(**self._run_args)
 
-                self.log_pipeline_deployment_metadata(deployment)
+                self.log_pipeline_snapshot_metadata(snapshot)
                 run = (
-                    create_placeholder_run(
-                        snapshot=deployment, logs=logs_model
-                    )
-                    if not deployment.schedule
+                    create_placeholder_run(snapshot=snapshot, logs=logs_model)
+                    if not snapshot.schedule
                     else None
                 )
 
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(
-                        deployment=deployment,
+                        snapshot=snapshot,
                         stack=stack,
                         run_id=run.id if run else None,
                     )
@@ -894,7 +892,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         )
 
                 deploy_pipeline(
-                    snapshot=deployment, stack=stack, placeholder_run=run
+                    snapshot=snapshot, stack=stack, placeholder_run=run
                 )
 
             if run:
@@ -902,66 +900,63 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return None
 
     @staticmethod
-    def log_pipeline_deployment_metadata(
-        deployment_model: PipelineSnapshotResponse,
+    def log_pipeline_snapshot_metadata(
+        snapshot: PipelineSnapshotResponse,
     ) -> None:
-        """Displays logs based on the deployment model upon running a pipeline.
+        """Displays logs based on the snapshot model upon running a pipeline.
 
         Args:
-            deployment_model: The model for the pipeline deployment
+            snapshot: The model for the pipeline snapshot
         """
         try:
             # Log about the caching status
-            if deployment_model.pipeline_configuration.enable_cache is False:
+            if snapshot.pipeline_configuration.enable_cache is False:
                 logger.info(
                     f"Caching is disabled by default for "
-                    f"`{deployment_model.pipeline_configuration.name}`."
+                    f"`{snapshot.pipeline_configuration.name}`."
                 )
 
             # Log about the used builds
-            if deployment_model.build:
+            if snapshot.build:
                 logger.info("Using a build:")
                 logger.info(
                     " Image(s): "
-                    f"{', '.join([i.image for i in deployment_model.build.images.values()])}"
+                    f"{', '.join([i.image for i in snapshot.build.images.values()])}"
                 )
 
                 # Log about version mismatches between local and build
                 from zenml import __version__
 
-                if deployment_model.build.zenml_version != __version__:
+                if snapshot.build.zenml_version != __version__:
                     logger.info(
                         f"ZenML version (different than the local version): "
-                        f"{deployment_model.build.zenml_version}"
+                        f"{snapshot.build.zenml_version}"
                     )
 
                 import platform
 
-                if (
-                    deployment_model.build.python_version
-                    != platform.python_version()
-                ):
+                if snapshot.build.python_version != platform.python_version():
                     logger.info(
                         f"Python version (different than the local version): "
-                        f"{deployment_model.build.python_version}"
+                        f"{snapshot.build.python_version}"
                     )
 
             # Log about the user, stack and components
-            if deployment_model.user is not None:
-                logger.info(f"Using user: `{deployment_model.user.name}`")
+            if snapshot.user is not None:
+                logger.info(f"Using user: `{snapshot.user.name}`")
 
-            if deployment_model.stack is not None:
-                logger.info(f"Using stack: `{deployment_model.stack.name}`")
+            if snapshot.stack is not None:
+                logger.info(f"Using stack: `{snapshot.stack.name}`")
 
                 for (
                     component_type,
                     component_models,
-                ) in deployment_model.stack.components.items():
+                ) in snapshot.stack.components.items():
                     logger.info(
                         f"  {component_type.value}: `{component_models[0].name}`"
                     )
         except Exception as e:
-            logger.debug(f"Logging pipeline deployment metadata failed: {e}")
+            logger.debug(f"Logging pipeline snapshot metadata failed: {e}")
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
@@ -1049,22 +1044,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def _get_pipeline_analytics_metadata(
         self,
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         run_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
-        """Returns the pipeline deployment metadata.
+        """Compute analytics metadata for the pipeline snapshot.
 
         Args:
-            deployment: The pipeline deployment to track.
+            snapshot: The pipeline snapshot to track.
             stack: The stack on which the pipeline will be deployed.
             run_id: The ID of the pipeline run.
 
         Returns:
-            the metadata about the pipeline deployment
+            The analytics metadata.
         """
         custom_materializer = False
-        for step in deployment.step_configurations.values():
+        for step in snapshot.step_configurations.values():
             for output in step.config.outputs.values():
                 for source in output.materializer_source:
                     if not source.is_internal:
@@ -1079,11 +1074,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             for component_type, component in stack.components.items()
         }
         return {
-            "project_id": deployment.project_id,
+            "project_id": snapshot.project_id,
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "total_steps": len(self.invocations),
-            "schedule": bool(deployment.schedule),
+            "schedule": bool(snapshot.schedule),
             "custom_materializer": custom_materializer,
             "own_stack": own_stack,
             "pipeline_run_id": str(run_id) if run_id else None,
@@ -1103,7 +1098,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             **run_configuration_args: Configurations for the pipeline run.
 
         Returns:
-            A tuple containing the deployment, schedule and build of
+            A tuple containing the snapshot, schedule and build of
             the compiled pipeline.
         """
         # Activating the built-in integrations to load all materializers
@@ -1127,14 +1122,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         run_config = pydantic_utils.update_model(run_config, update=update)
         run_config = env_utils.substitute_env_variable_placeholders(run_config)
 
-        deployment = Compiler().compile(
+        snapshot = Compiler().compile(
             pipeline=self,
             stack=Client().active_stack,
             run_configuration=run_config,
         )
-        deployment = env_utils.substitute_env_variable_placeholders(deployment)
+        snapshot = env_utils.substitute_env_variable_placeholders(snapshot)
 
-        return deployment, run_config.schedule, run_config.build
+        return snapshot, run_config.schedule, run_config.build
 
     def _register(self) -> "PipelineResponse":
         """Register the pipeline in the server.

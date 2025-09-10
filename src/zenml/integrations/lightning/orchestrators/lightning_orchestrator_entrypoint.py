@@ -195,7 +195,7 @@ def main() -> None:
         """
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name,
-            deployment_id=args.deployment_id,
+            snapshot_id=args.deployment_id,
         )
 
         entrypoint = entrypoint_command + step_args

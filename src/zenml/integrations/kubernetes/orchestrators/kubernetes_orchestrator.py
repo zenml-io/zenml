@@ -97,18 +97,18 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
     def should_build_pipeline_image(
-        self, deployment: "PipelineSnapshotBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> bool:
         """Whether to always build the pipeline image.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
 
         Returns:
             Whether to always build the pipeline image.
         """
         settings = cast(
-            KubernetesOrchestratorSettings, self.get_settings(deployment)
+            KubernetesOrchestratorSettings, self.get_settings(snapshot)
         )
         return settings.always_build_pipeline_image
 

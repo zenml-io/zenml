@@ -54,7 +54,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         )
 
     def should_build_pipeline_image(
-        self, deployment: "PipelineSnapshotBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> bool:
         """Whether to build the pipeline image.
 
@@ -67,22 +67,22 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         return False
 
     def get_docker_builds(
-        self, deployment: "PipelineSnapshotBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
         """
-        pipeline_settings = deployment.pipeline_configuration.docker_settings
+        pipeline_settings = snapshot.pipeline_configuration.docker_settings
 
         included_pipeline_build = False
         builds = []
 
-        for name, step in deployment.step_configurations.items():
+        for name, step in snapshot.step_configurations.items():
             step_settings = step.config.docker_settings
 
             if step_settings != pipeline_settings:
@@ -101,7 +101,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 included_pipeline_build = True
 
         if not included_pipeline_build and self.should_build_pipeline_image(
-            deployment
+            snapshot
         ):
             pipeline_build = BuildConfiguration(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY,

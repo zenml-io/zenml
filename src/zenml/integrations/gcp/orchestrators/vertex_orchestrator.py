@@ -463,7 +463,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
-                        deployment_id=deployment.id,
+                        snapshot_id=deployment.id,
                     )
                 )
                 component = self._create_container_component(

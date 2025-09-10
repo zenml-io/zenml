@@ -391,7 +391,7 @@ def main() -> None:
                 deployment=deployment, step_name=step_name
             )
             step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, deployment_id=deployment.id
+                step_name=step_name, snapshot_id=deployment.id
             )
 
             # We set some default minimum memory resource requests for the step pod

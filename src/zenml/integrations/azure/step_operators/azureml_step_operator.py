@@ -137,18 +137,18 @@ class AzureMLStepOperator(BaseStepOperator):
             return DefaultAzureCredential()
 
     def get_docker_builds(
-        self, deployment: "PipelineSnapshotBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
         """
         builds = []
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
                     key=AZUREML_STEP_OPERATOR_DOCKER_IMAGE_KEY,

@@ -329,7 +329,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             command = SagemakerEntrypointConfiguration.get_entrypoint_command()
             arguments = (
                 SagemakerEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, deployment_id=deployment.id
+                    step_name=step_name, snapshot_id=deployment.id
                 )
             )
             entrypoint = command + arguments

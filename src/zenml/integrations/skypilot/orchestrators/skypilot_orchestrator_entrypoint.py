@@ -189,7 +189,7 @@ def main() -> None:
 
                 step_args = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
+                        step_name=step_name, snapshot_id=deployment.id
                     )
                 )
                 arguments_str = " ".join(step_args)

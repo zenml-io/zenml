@@ -20,7 +20,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
-    DEPLOYMENT_ID_OPTION,
+    SNAPSHOT_ID_OPTION,
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
@@ -149,21 +149,21 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             kwargs[STEP_NAME_OPTION],
         ]
 
-    def load_deployment(self) -> "PipelineSnapshotResponse":
-        """Loads the deployment.
+    def load_snapshot(self) -> "PipelineSnapshotResponse":
+        """Loads the snapshot.
 
         Returns:
-            The deployment.
+            The snapshot.
         """
-        deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
+        snapshot_id = UUID(self.entrypoint_args[SNAPSHOT_ID_OPTION])
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
         return Client().zen_store.get_snapshot(
-            snapshot_id=deployment_id, step_configuration_filter=[step_name]
+            snapshot_id=snapshot_id, step_configuration_filter=[step_name]
         )
 
     def run(self) -> None:
         """Prepares the environment and runs the configured step."""
-        deployment = self.load_deployment()
+        snapshot = self.load_snapshot()
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
@@ -178,9 +178,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         os.makedirs("/app", exist_ok=True)
         os.chdir("/app")
 
-        self.download_code_if_necessary(
-            deployment=deployment, step_name=step_name
-        )
+        self.download_code_if_necessary(snapshot=snapshot, step_name=step_name)
 
         # If the working directory is not in the sys.path, we include it to make
         # sure user code gets correctly imported.
@@ -188,10 +186,10 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         if cwd not in sys.path:
             sys.path.insert(0, cwd)
 
-        pipeline_name = deployment.pipeline_configuration.name
+        pipeline_name = snapshot.pipeline_configuration.name
 
-        step = deployment.step_configurations[step_name]
-        self._run_step(step, deployment=deployment)
+        step = snapshot.step_configurations[step_name]
+        self._run_step(step, snapshot=snapshot)
 
         self.post_run(
             pipeline_name=pipeline_name,
@@ -201,14 +199,14 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     def _run_step(
         self,
         step: "Step",
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
     ) -> None:
         """Runs a single step.
 
         Args:
             step: The step to run.
-            deployment: The deployment configuration.
+            snapshot: The snapshot configuration.
         """
         orchestrator = Client().active_stack.orchestrator
-        orchestrator._prepare_run(deployment=deployment)
+        orchestrator._prepare_run(deployment=snapshot)
         orchestrator.run_step(step=step)

@@ -127,18 +127,18 @@ class ModalStepOperator(BaseStepOperator):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineSnapshotBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Get the Docker build configurations for the Modal step operator.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
 
         Returns:
             A list of Docker build configurations.
         """
         builds = []
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
                     key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY,

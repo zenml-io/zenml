@@ -76,7 +76,7 @@ def test_builds_with_no_docker_settings():
         server_version="0.12.3",
     )
 
-    builds = orchestrator.get_docker_builds(deployment=deployment)
+    builds = orchestrator.get_docker_builds(snapshot=deployment)
     assert len(builds) == 1
     build = builds[0]
     assert build.key == "orchestrator"
@@ -106,7 +106,7 @@ def test_builds_with_custom_docker_settings_for_some_steps():
         server_version="0.12.3",
     )
 
-    builds = orchestrator.get_docker_builds(deployment=deployment)
+    builds = orchestrator.get_docker_builds(snapshot=deployment)
     assert len(builds) == 2
     step_1_build = builds[0]
     assert step_1_build.key == "orchestrator"
@@ -144,7 +144,7 @@ def test_builds_with_custom_docker_settings_for_all_steps():
         server_version="0.12.3",
     )
 
-    builds = orchestrator.get_docker_builds(deployment=deployment)
+    builds = orchestrator.get_docker_builds(snapshot=deployment)
     assert len(builds) == 2
     step_1_build = builds[0]
     assert step_1_build.key == "orchestrator"

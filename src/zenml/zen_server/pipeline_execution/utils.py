@@ -253,7 +253,7 @@ def trigger_snapshot(
 
     command = RunnerEntrypointConfiguration.get_entrypoint_command()
     args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
-        deployment_id=new_snapshot.id,
+        snapshot_id=new_snapshot.id,
         placeholder_run_id=placeholder_run.id,
     )
 

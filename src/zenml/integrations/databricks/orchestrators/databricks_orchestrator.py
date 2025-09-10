@@ -255,7 +255,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 # docker container when the step is called.
                 arguments = DatabricksEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
-                    deployment_id=deployment_id,
+                    snapshot_id=deployment_id,
                     wheel_package=self.package_name,
                     databricks_job_id=DATABRICKS_JOB_ID_PARAMETER_REFERENCE,
                 )
