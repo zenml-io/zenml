@@ -3378,6 +3378,7 @@ class Client(metaclass=ClientMetaClass):
             return self.zen_store.get_snapshot(id_, hydrate=hydrate)
 
         list_kwargs: Dict[str, Any] = dict(
+            named_only=None,
             id=f"startswith:{id_or_prefix}",
             hydrate=hydrate,
         )
@@ -3420,7 +3421,7 @@ class Client(metaclass=ClientMetaClass):
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
-        named_only: Optional[bool] = None,
+        named_only: Optional[bool] = True,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
