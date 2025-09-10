@@ -214,7 +214,7 @@ class DockerSettings(BaseSettings):
     prevent_build_reuse: bool = False
     target_repository: Optional[str] = None
     python_package_installer: PythonPackageInstaller = (
-        PythonPackageInstaller.PIP
+        PythonPackageInstaller.UV
     )
     python_package_installer_args: Dict[str, Any] = {}
     disable_automatic_requirements_detection: bool = True
@@ -393,36 +393,6 @@ class DockerSettings(BaseSettings):
                 "replicate_local_python_environment"
             )
         return self
-
-    @model_validator(mode="before")
-    @classmethod
-    @before_validator_handler
-    def _warn_about_future_default_installer(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Warns about the future change of default package installer from pip to uv.
-
-        Args:
-            data: The model data.
-
-        Returns:
-            The validated settings values.
-        """
-        if (
-            "python_package_installer" not in data
-            and "python_package_installer"
-            not in _docker_settings_warnings_logged
-        ):
-            logger.warning(
-                "In a future release, the default Python package installer "
-                "used by ZenML to build container images for your "
-                "containerized pipelines will change from 'pip' to 'uv'. "
-                "To maintain current behavior, you can explicitly set "
-                "`python_package_installer=PythonPackageInstaller.PIP` "
-                "in your DockerSettings."
-            )
-            _docker_settings_warnings_logged.append("python_package_installer")
-        return data
 
     model_config = ConfigDict(
         # public attributes are immutable
