@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import click
 
@@ -30,7 +30,6 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildBase,
     PipelineBuildFilter,
-    PipelineEndpointFilter,
     PipelineFilter,
     PipelineRunFilter,
     ScheduleFilter,
@@ -309,12 +308,12 @@ def run_pipeline(
 )
 @click.argument("source")
 @click.option(
-    "--endpoint-name",
-    "-e",
-    "endpoint_name",
+    "--name",
+    "-n",
+    "deployment_name",
     type=str,
-    required=True,
-    help="Name of the endpoint used to deploy the pipeline on.",
+    required=False,
+    help="Name of the deployment resulted from serving the pipeline.",
 )
 @click.option(
     "--config",
@@ -348,6 +347,26 @@ def run_pipeline(
     help="Prevent automatic build reusing.",
 )
 @click.option(
+    "--update",
+    "-u",
+    "update",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the pipeline deployment with the same name if it already "
+    "exists.",
+)
+@click.option(
+    "--overtake",
+    "-o",
+    "overtake",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the pipeline deployment with the same name if it already "
+    "exists, even if it is owned by a different user.",
+)
+@click.option(
     "--attach",
     "-a",
     "attach",
@@ -367,11 +386,13 @@ def run_pipeline(
 )
 def deploy_pipeline(
     source: str,
-    endpoint_name: str,
+    deployment_name: Optional[str] = None,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
     build_path_or_id: Optional[str] = None,
     prevent_build_reuse: bool = False,
+    update: bool = False,
+    overtake: bool = False,
     attach: bool = False,
     timeout: Optional[int] = None,
 ) -> None:
@@ -379,7 +400,7 @@ def deploy_pipeline(
 
     Args:
         source: Importable source resolving to a pipeline instance.
-        endpoint_name: Name of the endpoint used to deploy the pipeline on.
+        deployment_name: Name of the deployment used to deploy the pipeline on.
         config_path: Path to pipeline configuration file.
         stack_name_or_id: Name or ID of the stack on which the pipeline should
             be deployed.
@@ -387,6 +408,10 @@ def deploy_pipeline(
             deployment.
         prevent_build_reuse: If True, prevents automatic reusing of previous
             builds.
+        update: If True, update the pipeline deployment with the same name if it
+            already exists.
+        overtake: If True, update the pipeline deployment with the same name if
+            it already exists, even if it is owned by a different user.
         attach: If True, attach to the pipeline endpoint logs.
         timeout: The maximum time in seconds to wait for the pipeline to be
             deployed.
@@ -420,25 +445,43 @@ def deploy_pipeline(
             build=build,
             prevent_build_reuse=prevent_build_reuse,
         )
-        endpoint = pipeline_instance.serve(endpoint_name=endpoint_name)
+        if not deployment_name:
+            deployment_name = pipeline_instance.name
+        client = Client()
+        try:
+            deployment = client.get_pipeline_endpoint(deployment_name)
+        except KeyError:
+            pass
+        else:
+            if deployment.user.id != client.active_user.id and not overtake:
+                confirmation = cli_utils.confirmation(
+                    f"Deployment with name '{deployment_name}' already exists "
+                    "and is owned by a different user.\nDo you want to continue "
+                    "and update the existing deployment "
+                    "(hint: use the --overtake flag to skip this check) ?"
+                )
+                if not confirmation:
+                    cli_utils.declare("Deployment canceled.")
+                    return
+            elif not update and not overtake:
+                confirmation = cli_utils.confirmation(
+                    f"Deployment with name '{deployment_name}' already exists.\n"
+                    "Do you want to continue and update the existing "
+                    "deployment "
+                    "(hint: use the --update flag to skip this check) ?"
+                )
+                if not confirmation:
+                    cli_utils.declare("Deployment canceled.")
+                    return
 
-        cli_utils.declare(f"Served pipeline endpoint '{endpoint_name}'.")
-        cli_utils.print_pydantic_model(
-            title="Pipeline Endpoint",
-            model=endpoint,
-            exclude_columns={
-                "created",
-                "updated",
-                "user",
-                "project",
-                "metadata",
-            },
-        )
+        deployment = pipeline_instance.serve(endpoint_name=deployment_name)
+
+        cli_utils.pretty_print_deployment(deployment, show_secret=False)
 
         if attach:
             deployer = BaseDeployer.get_active_deployer()
             for log in deployer.get_pipeline_endpoint_logs(
-                endpoint_name_or_id=endpoint.id,
+                endpoint_name_or_id=deployment.id,
                 follow=True,
             ):
                 print(log)
@@ -881,350 +924,3 @@ def delete_pipeline_build(
         cli_utils.error(str(e))
     else:
         cli_utils.declare(f"Deleted pipeline build '{build_id}'.")
-
-
-@pipeline.group()
-def endpoint() -> None:
-    """Commands for pipeline endpoints."""
-
-
-@endpoint.command("list", help="List all registered pipeline endpoints.")
-@list_options(PipelineEndpointFilter)
-def list_pipeline_endpoints(**kwargs: Any) -> None:
-    """List all registered pipeline endpoints for the filter.
-
-    Args:
-        **kwargs: Keyword arguments to filter pipeline endpoints.
-    """
-    client = Client()
-    try:
-        with console.status("Listing pipeline endpoints...\n"):
-            pipeline_endpoints = client.list_pipeline_endpoints(**kwargs)
-    except KeyError as err:
-        cli_utils.error(str(err))
-    else:
-        if not pipeline_endpoints.items:
-            cli_utils.declare("No pipeline endpoints found for this filter.")
-            return
-
-        cli_utils.print_pipeline_endpoints_table(
-            pipeline_endpoints=pipeline_endpoints.items
-        )
-        cli_utils.print_page_info(pipeline_endpoints)
-
-
-@endpoint.command("describe")
-@click.argument("endpoint_name_or_id", type=str, required=True)
-def describe_pipeline_endpoint(
-    endpoint_name_or_id: str,
-) -> None:
-    """Describe a pipeline endpoint.
-
-    Args:
-        endpoint_name_or_id: The name or ID of the pipeline endpoint to describe.
-    """
-    # Ask for confirmation to describe endpoint.
-    try:
-        endpoint = Client().get_pipeline_endpoint(
-            name_id_or_prefix=endpoint_name_or_id,
-        )
-    except KeyError as e:
-        cli_utils.error(str(e))
-    else:
-        cli_utils.print_pydantic_model(
-            title="Pipeline Endpoint",
-            model=endpoint,
-            exclude_columns={
-                "created",
-                "updated",
-                "user",
-                "project",
-                "metadata",
-            },
-        )
-
-
-@endpoint.command("provision")
-@click.argument("endpoint_name_or_id", type=str, required=True)
-@click.option(
-    "--deployment",
-    "-d",
-    "deployment_id",
-    type=str,
-    required=False,
-    help="ID of the deployment to use.",
-)
-@click.option(
-    "--timeout",
-    "-t",
-    "timeout",
-    type=int,
-    required=False,
-    default=None,
-    help="Maximum time in seconds to wait for the pipeline endpoint to be "
-    "provisioned.",
-)
-def provision_pipeline_endpoint(
-    endpoint_name_or_id: str,
-    deployment_id: Optional[str] = None,
-    timeout: Optional[int] = None,
-) -> None:
-    """Deploy a pipeline endpoint.
-
-    Args:
-        endpoint_name_or_id: The name or ID of the pipeline endpoint to deploy.
-        deployment_id: The ID of the deployment to use.
-        timeout: The maximum time in seconds to wait for the pipeline endpoint
-            to be provisioned.
-    """
-    with console.status(
-        f"Provisioning pipeline endpoint '{endpoint_name_or_id}'...\n"
-    ):
-        try:
-            endpoint = Client().provision_pipeline_endpoint(
-                name_id_or_prefix=endpoint_name_or_id,
-                deployment_id=deployment_id,
-                timeout=timeout,
-            )
-        except KeyError as e:
-            cli_utils.error(str(e))
-        else:
-            cli_utils.declare(
-                f"Provisioned pipeline endpoint '{endpoint_name_or_id}'."
-            )
-            cli_utils.print_pydantic_model(
-                title="Pipeline Endpoint",
-                model=endpoint,
-                exclude_columns={
-                    "created",
-                    "updated",
-                    "user",
-                    "project",
-                    "metadata",
-                },
-            )
-
-
-@endpoint.command("deprovision")
-@click.argument("endpoint_name_or_id", type=str, required=True)
-@click.option(
-    "--yes",
-    "-y",
-    is_flag=True,
-    default=False,
-    help="Don't ask for confirmation.",
-)
-@click.option(
-    "--delete",
-    "-d",
-    is_flag=True,
-    default=False,
-    help="Delete the pipeline endpoint after deprovisioning.",
-)
-@click.option(
-    "--timeout",
-    "-t",
-    "timeout",
-    type=int,
-    required=False,
-    default=None,
-    help="Maximum time in seconds to wait for the pipeline endpoint to be "
-    "deprovisioned.",
-)
-@click.option(
-    "--force",
-    "-f",
-    is_flag=True,
-    default=False,
-    help="Force the deletion of the pipeline endpoint if it cannot be "
-    "deprovisioned.",
-)
-def deprovision_pipeline_endpoint(
-    endpoint_name_or_id: str,
-    yes: bool = False,
-    delete: bool = False,
-    timeout: Optional[int] = None,
-    force: bool = False,
-) -> None:
-    """Deprovision and optionally delete a pipeline endpoint.
-
-    Args:
-        endpoint_name_or_id: The name or ID of the pipeline endpoint to deprovision.
-        yes: If set, don't ask for confirmation.
-        delete: If set, delete the pipeline endpoint after deprovisioning.
-        timeout: The maximum time in seconds to wait for the pipeline endpoint
-            to be deprovisioned.
-        force: If set, force the deletion of the pipeline endpoint if it cannot
-            be deprovisioned.
-    """
-    # Ask for confirmation to deprovision endpoint.
-    if not yes:
-        extension = ""
-        if delete:
-            extension = " and delete"
-        confirmation = cli_utils.confirmation(
-            f"Are you sure you want to deprovision{extension} pipeline endpoint "
-            f"`{endpoint_name_or_id}`?"
-        )
-        if not confirmation:
-            cli_utils.declare("Pipeline endpoint deprovision canceled.")
-            return
-
-    with console.status(
-        f"Deprovisioning pipeline endpoint '{endpoint_name_or_id}'...\n"
-    ):
-        try:
-            if delete:
-                Client().delete_pipeline_endpoint(
-                    name_id_or_prefix=endpoint_name_or_id,
-                    force=force,
-                    timeout=timeout,
-                )
-                cli_utils.declare(
-                    f"Deleted pipeline endpoint '{endpoint_name_or_id}'."
-                )
-            else:
-                Client().deprovision_pipeline_endpoint(
-                    name_id_or_prefix=endpoint_name_or_id,
-                    timeout=timeout,
-                )
-                cli_utils.declare(
-                    f"Deprovisioned pipeline endpoint '{endpoint_name_or_id}'."
-                )
-        except KeyError as e:
-            cli_utils.error(str(e))
-
-
-@endpoint.command("refresh")
-@click.argument("endpoint_name_or_id", type=str, required=True)
-def refresh_pipeline_endpoint(
-    endpoint_name_or_id: str,
-) -> None:
-    """Refresh the status of a pipeline endpoint.
-
-    Args:
-        endpoint_name_or_id: The name or ID of the pipeline endpoint to refresh.
-    """
-    try:
-        endpoint = Client().refresh_pipeline_endpoint(
-            name_id_or_prefix=endpoint_name_or_id
-        )
-
-    except KeyError as e:
-        cli_utils.error(str(e))
-    else:
-        cli_utils.declare(
-            f"Refreshed the status of pipeline endpoint '{endpoint_name_or_id}'."
-        )
-        cli_utils.print_pydantic_model(
-            title="Pipeline Endpoint",
-            model=endpoint,
-            exclude_columns={
-                "created",
-                "updated",
-                "user",
-                "project",
-                "metadata",
-            },
-        )
-
-
-@endpoint.command("invoke", context_settings={"ignore_unknown_options": True})
-@click.argument("endpoint_name_or_id", type=str, required=True)
-@click.option(
-    "--timeout",
-    "-t",
-    "timeout",
-    type=int,
-    required=False,
-    default=None,
-    help="Maximum time in seconds to wait for the pipeline endpoint to be "
-    "invoked.",
-)
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def invoke_pipeline_endpoint(
-    endpoint_name_or_id: str,
-    args: List[str],
-    timeout: Optional[int] = None,
-) -> None:
-    """Call a pipeline endpoint with arguments.
-
-    Args:
-        endpoint_name_or_id: The name or ID of the pipeline endpoint to call.
-        args: The arguments to pass to the pipeline endpoint call.
-        timeout: The maximum time in seconds to wait for the pipeline endpoint
-            to be invoked.
-    """
-    from zenml.deployers.utils import call_pipeline_endpoint
-
-    # Parse the given args
-    args = list(args)
-    args.append(endpoint_name_or_id)
-
-    name_or_id, parsed_args = cli_utils.parse_name_and_extra_arguments(
-        args,
-        expand_args=True,
-        name_mandatory=True,
-    )
-    assert name_or_id is not None
-
-    try:
-        response = call_pipeline_endpoint(
-            endpoint_name_or_id=name_or_id,
-            timeout=timeout or 300,  # 5 minute timeout
-            project=None,
-            **parsed_args,
-        )
-
-    except KeyError as e:
-        cli_utils.error(str(e))
-    else:
-        cli_utils.declare(
-            f"Invoked pipeline endpoint '{name_or_id}' with response:"
-        )
-        print(json.dumps(response, indent=2))
-
-
-@endpoint.command("logs")
-@click.argument("endpoint_name_or_id", type=str, required=True)
-@click.option(
-    "--follow",
-    "-f",
-    is_flag=True,
-    default=False,
-    help="Follow the logs.",
-)
-@click.option(
-    "--tail",
-    "-t",
-    type=int,
-    default=None,
-    help="The number of lines to show from the end of the logs.",
-)
-def log_pipeline_endpoint(
-    endpoint_name_or_id: str,
-    follow: bool = False,
-    tail: Optional[int] = None,
-) -> None:
-    """Get the logs of a pipeline endpoint.
-
-    Args:
-        endpoint_name_or_id: The name or ID of the pipeline endpoint to get the logs of.
-        follow: If True, follow the logs.
-        tail: The number of lines to show from the end of the logs. If None,
-            show all logs.
-    """
-    try:
-        logs = Client().get_pipeline_endpoint_logs(
-            name_id_or_prefix=endpoint_name_or_id,
-            follow=follow,
-            tail=tail,
-        )
-    except KeyError as e:
-        cli_utils.error(str(e))
-    else:
-        with console.status(
-            f"Streaming logs for pipeline endpoint '{endpoint_name_or_id}'...\n"
-        ):
-            for log in logs:
-                print(log)

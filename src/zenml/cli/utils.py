@@ -2336,49 +2336,238 @@ def get_pipeline_endpoint_status_emoji(
     raise RuntimeError(f"Unknown status: {status}")
 
 
-def print_pipeline_endpoints_table(
-    pipeline_endpoints: Sequence["PipelineEndpointResponse"],
-) -> None:
-    """Print a prettified list of all pipeline endpoints supplied to this method.
+def format_deployment_status(status: PipelineEndpointStatus) -> str:
+    """Format deployment status with color.
 
     Args:
-        pipeline_endpoints: List of pipeline endpoints
+        status: The deployment status.
+
+    Returns:
+        Formatted status string.
+    """
+    if status == PipelineEndpointStatus.RUNNING:
+        return "[green]RUNNING[/green]"
+    elif status == PipelineEndpointStatus.PENDING:
+        return "[yellow]PENDING[/yellow]"
+    elif status == PipelineEndpointStatus.ERROR:
+        return "[red]ERROR[/red]"
+    elif status == PipelineEndpointStatus.ABSENT:
+        return "[dim]ABSENT[/dim]"
+    else:
+        return "[dim]UNKNOWN[/dim]"
+
+
+def print_deployment_table(
+    deployments: Sequence["PipelineEndpointResponse"],
+) -> None:
+    """Print a prettified list of all deployments supplied to this method.
+
+    Args:
+        deployments: List of deployments
     """
     endpoint_dicts = []
-    for pipeline_endpoint in pipeline_endpoints:
-        if pipeline_endpoint.user:
-            user_name = pipeline_endpoint.user.name
+    for deployment in deployments:
+        if deployment.user:
+            user_name = deployment.user.name
         else:
             user_name = "-"
 
         if (
-            pipeline_endpoint.pipeline_deployment is None
-            or pipeline_endpoint.pipeline_deployment.pipeline is None
+            deployment.pipeline_deployment is None
+            or deployment.pipeline_deployment.pipeline is None
         ):
             pipeline_name = "unlisted"
         else:
-            pipeline_name = pipeline_endpoint.pipeline_deployment.pipeline.name
+            pipeline_name = deployment.pipeline_deployment.pipeline.name
         if (
-            pipeline_endpoint.pipeline_deployment is None
-            or pipeline_endpoint.pipeline_deployment.stack is None
+            deployment.pipeline_deployment is None
+            or deployment.pipeline_deployment.stack is None
         ):
             stack_name = "[DELETED]"
         else:
-            stack_name = pipeline_endpoint.pipeline_deployment.stack.name
-        status = pipeline_endpoint.status or "unknown"
-        status_emoji = get_pipeline_endpoint_status_emoji(
-            PipelineEndpointStatus(status)
-        )
+            stack_name = deployment.pipeline_deployment.stack.name
+        status = deployment.status or PipelineEndpointStatus.UNKNOWN.value
+        status_emoji = get_pipeline_endpoint_status_emoji(status)
         run_dict = {
-            "ENDPOINT NAME": pipeline_endpoint.name,
-            "PIPELINE NAME": pipeline_name,
-            "URL": pipeline_endpoint.url or "N/A",
+            "NAME": deployment.name,
+            "PIPELINE": pipeline_name,
+            "URL": deployment.url or "N/A",
             "STATUS": f"{status_emoji} {status.upper()}",
             "STACK": stack_name,
             "OWNER": user_name,
         }
         endpoint_dicts.append(run_dict)
     print_table(endpoint_dicts)
+
+
+def pretty_print_deployment(
+    deployment: "PipelineEndpointResponse",
+    show_secret: bool = False,
+    show_metadata: bool = False,
+    no_truncate: bool = False,
+) -> None:
+    """Print a prettified deployment with organized sections.
+
+    Args:
+        deployment: The deployment to print.
+        show_secret: Whether to show the auth key or mask it.
+        show_metadata: Whether to show the metadata.
+        no_truncate: Whether to truncate the metadata.
+    """
+    # Header section
+    status = format_deployment_status(deployment.status)
+    status_emoji = get_pipeline_endpoint_status_emoji(deployment.status)
+    declare(
+        f"\n🚀 Deployment: [bold cyan]{deployment.name}[/bold cyan] is: {status} {status_emoji}"
+    )
+    if (
+        deployment.pipeline_deployment is None
+        or deployment.pipeline_deployment.pipeline is None
+    ):
+        pipeline_name = "unlisted"
+    else:
+        pipeline_name = deployment.pipeline_deployment.pipeline.name
+    if (
+        deployment.pipeline_deployment is None
+        or deployment.pipeline_deployment.stack is None
+    ):
+        stack_name = "[DELETED]"
+    else:
+        stack_name = deployment.pipeline_deployment.stack.name
+    declare(f"\n[bold]Pipeline:[/bold] [bold cyan]{pipeline_name}[/bold cyan]")
+    declare(f"[bold]Stack:[/bold] [bold cyan]{stack_name}[/bold cyan]")
+
+    # Connection section
+    if deployment.url:
+        declare("\n📡 [bold]Connection Information:[/bold]")
+
+        declare(f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]")
+        declare(
+            f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]"
+        )
+
+        # Auth key handling with proper security
+        auth_key = deployment.auth_key
+        if auth_key:
+            if show_secret:
+                declare(f"[bold]Auth Key:[/bold] [yellow]{auth_key}[/yellow]")
+            else:
+                masked_key = (
+                    f"{auth_key[:8]}***" if len(auth_key) > 8 else "***"
+                )
+                declare(
+                    f"[bold]Auth Key:[/bold] [yellow]{masked_key}[/yellow] "
+                    f"[dim](run [green]`zenml deployment describe {deployment.name} "
+                    "--show-secret`[/green] to reveal)[/dim]"
+                )
+
+        # CLI invoke command
+        cli_command = f"zenml deployment invoke {deployment.name} --input_param=value ..."
+
+        declare("[bold]CLI Command:[/bold]")
+        console.print(f"  [green]{cli_command}[/green]")
+
+        # cURL example
+        declare("\n[bold]cURL Example:[/bold]")
+        curl_headers = []
+        if auth_key:
+            if show_secret:
+                curl_headers.append(f'-H "Authorization: Bearer {auth_key}"')
+            else:
+                curl_headers.append(
+                    '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
+                )
+
+        curl_headers.append('-H "Content-Type: application/json"')
+        headers_str = " \\\n    ".join(curl_headers)
+
+        curl_command = f"""curl -X POST {deployment.url} \\
+    {headers_str} \\
+    -d '{{
+      "parameters": {{
+        "input_param": "value"
+      }}
+    }}'"""
+
+        console.print(f"  [green]{curl_command}[/green]")
+
+    if show_metadata:
+        declare("\n📋 [bold]Deployment Metadata[/bold]")
+
+        # Get the metadata - it could be from endpoint_metadata property or metadata
+        metadata = deployment.endpoint_metadata
+
+        if metadata:
+            # Recursively format nested dictionaries and lists
+            def format_value(value: Any, indent_level: int = 0) -> str:
+                if isinstance(value, dict):
+                    if not value:
+                        return "[dim]{}[/dim]"
+                    formatted_items = []
+                    for k, v in value.items():
+                        formatted_v = format_value(v, indent_level + 1)
+                        formatted_items.append(
+                            f"  {'  ' * indent_level}[bold]{k}[/bold]: {formatted_v}"
+                        )
+                    return "\n" + "\n".join(formatted_items)
+                elif isinstance(value, list):
+                    if not value:
+                        return "[dim][][/dim]"
+                    formatted_items = []
+                    for i, item in enumerate(value):
+                        formatted_item = format_value(item, indent_level + 1)
+                        formatted_items.append(
+                            f"  {'  ' * indent_level}[{i}]: {formatted_item}"
+                        )
+                    return "\n" + "\n".join(formatted_items)
+                elif isinstance(value, str):
+                    # Handle long strings by truncating if needed
+                    if len(value) > 100 and not no_truncate:
+                        return f"[green]{value[:97]}...[/green]"
+                    return f"[green]{value}[/green]"
+                elif isinstance(value, bool):
+                    return f"[yellow]{value}[/yellow]"
+                elif isinstance(value, (int, float)):
+                    return f"[blue]{value}[/blue]"
+                elif value is None:
+                    return "[dim]null[/dim]"
+                else:
+                    return f"[white]{str(value)}[/white]"
+
+            formatted_metadata = format_value(metadata)
+            console.print(formatted_metadata)
+        else:
+            declare("  [dim]No metadata available[/dim]")
+
+    # Management section
+    declare("\n⚙️  [bold]Management Commands[/bold]")
+
+    mgmt_table = table.Table(
+        box=box.ROUNDED,
+        show_header=False,
+        border_style="dim",
+        padding=(0, 1),
+    )
+    mgmt_table.add_column("Command", style="bold")
+    mgmt_table.add_column("Description")
+
+    mgmt_table.add_row(
+        f"zenml deployment logs {deployment.name} -f",
+        "Follow deployment logs in real-time",
+    )
+    mgmt_table.add_row(
+        f"zenml deployment describe {deployment.name}",
+        "Show detailed deployment information",
+    )
+    mgmt_table.add_row(
+        f"zenml deployment deprovision {deployment.name}",
+        "Deprovision this deployment and keep a record of it",
+    )
+    mgmt_table.add_row(
+        f"zenml deployment delete {deployment.name}",
+        "Deprovision and delete this deployment",
+    )
+    console.print(mgmt_table)
 
 
 def check_zenml_pro_project_availability() -> None:

@@ -246,6 +246,11 @@ class BaseDeployer(StackComponent, ABC):
             PipelineEndpointDeploymentTimeoutError: if the pipeline endpoint
                 deployment times out while waiting to reach the desired status.
         """
+        logger.info(
+            f"Waiting for the pipeline endpoint {endpoint.name} to reach "
+            f"desired state '{desired_status}' for max {timeout} seconds..."
+        )
+
         start_time = time.time()
         sleep_time = 5
         while True:
@@ -280,7 +285,7 @@ class BaseDeployer(StackComponent, ABC):
                     f"to reach desired state '{desired_status}' after {timeout} "
                     "seconds"
                 )
-            logger.info(
+            logger.debug(
                 f"The pipeline endpoint {endpoint.name} state is still "
                 f"'{endpoint.status}' after {elapsed_time} seconds. Waiting for "
                 f"max {timeout - elapsed_time} seconds..."
@@ -422,7 +427,7 @@ class BaseDeployer(StackComponent, ABC):
                 endpoint_update,
             )
 
-        logger.debug(
+        logger.info(
             f"Deploying pipeline endpoint {endpoint.name} with "
             f"deployment ID: {deployment.id}"
         )
@@ -466,9 +471,9 @@ class BaseDeployer(StackComponent, ABC):
         finally:
             endpoint = self._update_pipeline_endpoint(endpoint, endpoint_state)
 
-        logger.debug(
+        logger.info(
             f"Deployed pipeline endpoint {endpoint.name} with "
-            f"deployment ID: {deployment.id}. Operational state: "
+            f"deployment ID: {deployment.id}. Operational state is: "
             f"{endpoint_state.status}"
         )
 

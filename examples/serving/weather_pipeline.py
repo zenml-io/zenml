@@ -17,6 +17,7 @@ import random
 from typing import Dict
 
 from zenml import pipeline, step
+from zenml.client import Client
 from zenml.config import DockerSettings
 
 # Import enums for type-safe capture mode configuration
@@ -213,6 +214,7 @@ Analysis: Rule-based AI (LLM unavailable)"""
 
 
 @pipeline(
+    enable_cache=False,
     on_init=init_hook,
     settings={
         "docker": docker_settings,
@@ -254,23 +256,14 @@ def weather_agent_pipeline(city: str = "London") -> str:
 
 
 if __name__ == "__main__":
-    # Create a deployment (not run it!)
-    # We need to access the private _create_deployment method because
-    # ZenML doesn't have a public method to create deployments without running
-
     # First prepare the pipeline
-    weather_agent_pipeline._prepare_if_possible()
 
-    # Create deployment without running
-    deployment = weather_agent_pipeline._create_deployment()
+    client = Client()
 
-    print("\n✅ Pipeline deployed for run-only serving!")
-    print(f"📋 Deployment ID: {deployment.id}")
-    print("\n🚀 Start serving with millisecond latency:")
-    print(f"   export ZENML_PIPELINE_DEPLOYMENT_ID={deployment.id}")
-    print("   python -m zenml.deployers.serving.app")
-    print("\n⚡ Test ultra-fast execution:")
-    print("   curl -X POST 'http://localhost:8000/invoke' \\")
-    print("     -H 'Content-Type: application/json' \\")
-    print('     -d \'{"parameters": {"city": "Paris"}}\'')
-    print("\n   # Expected response time: 1-5ms!")
+    data_input = input("Enter city to get weather: ")
+    run = weather_agent_pipeline(city=data_input)
+
+    # Load and print the output of the last step of the last run
+    run = client.get_pipeline_run(run.id)
+    result = run.steps["analyze_weather_with_llm"].output.load()
+    print(result)

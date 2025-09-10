@@ -27,9 +27,9 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
-from zenml.deployers.serving.auth import BearerTokenAuthMiddleware
 from zenml.deployers.serving.service import PipelineServingService
 from zenml.logger import get_logger
 
@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🛑 Shutting down ZenML Pipeline Serving service...")
 
 
-# Create FastAPI application
+# Create FastAPI application with OpenAPI security scheme
 app = FastAPI(
     title="ZenML Pipeline Serving",
     description="Serve ZenML pipelines as FastAPI endpoints",
@@ -85,6 +85,13 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
+)
+
+# Define security scheme for OpenAPI documentation
+security = HTTPBearer(
+    scheme_name="Bearer Token",
+    description="Enter your API key as a Bearer token",
+    auto_error=False,  # We handle errors in our dependency
 )
 
 
@@ -102,6 +109,46 @@ def get_pipeline_service() -> PipelineServingService:
     return _service
 
 
+def verify_token(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> None:
+    """Verify the provided Bearer token for authentication.
+
+    This dependency function integrates with FastAPI's security system
+    to provide proper OpenAPI documentation and authentication UI.
+
+    Args:
+        credentials: HTTP Bearer credentials from the request
+
+    Raises:
+        HTTPException: If authentication is required but token is invalid
+    """
+    auth_key = os.getenv("ZENML_SERVING_AUTH_KEY", "").strip()
+    auth_enabled = auth_key and auth_key != ""
+
+    # If authentication is not enabled, allow all requests
+    if not auth_enabled:
+        return
+
+    # If authentication is enabled, validate the token
+    if not credentials:
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if credentials.credentials != auth_key:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Token is valid, authentication successful
+    return
+
+
 # Add CORS middleware to allow frontend access
 # TODO: In production, restrict allow_origins to specific domains for security
 app.add_middleware(
@@ -111,11 +158,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
-
-# Add authentication middleware
-# This middleware will protect all endpoints except root, health, info, metrics,
-# and status
-app.add_middleware(BearerTokenAuthMiddleware)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -160,6 +202,7 @@ async def root(
 async def invoke_pipeline(
     request: PipelineInvokeRequest,
     service: PipelineServingService = Depends(get_pipeline_service),
+    _: None = Depends(verify_token),
 ) -> Dict[str, Any]:
     """Execute pipeline with dependency injection."""
     try:
@@ -172,12 +215,6 @@ async def invoke_pipeline(
     except Exception as e:
         logger.error(f"Pipeline execution failed: {e}")
         return {"success": False, "error": f"Internal server error: {str(e)}"}
-
-
-@app.get("/concurrency/stats")
-async def concurrency_stats() -> Dict[str, Any]:
-    """Placeholder stats endpoint."""
-    return {"execution": {}, "jobs": {}, "streams": {}}
 
 
 @app.get("/health")

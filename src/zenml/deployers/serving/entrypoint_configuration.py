@@ -16,8 +16,6 @@
 import os
 from typing import Any, List, Set
 
-import uvicorn
-
 from zenml.entrypoints.base_entrypoint_configuration import (
     DEPLOYMENT_ID_OPTION,
     BaseEntrypointConfiguration,
@@ -99,6 +97,8 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         This method starts the FastAPI server with the configured parameters
         and the specified pipeline deployment.
         """
+        import uvicorn
+
         # Extract configuration from entrypoint args
         deployment_id = self.entrypoint_args[DEPLOYMENT_ID_OPTION]
         host = self.entrypoint_args.get(HOST_OPTION, "0.0.0.0")
