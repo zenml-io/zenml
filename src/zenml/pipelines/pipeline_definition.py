@@ -77,7 +77,7 @@ from zenml.models import (
 from zenml.pipelines import build_utils
 from zenml.pipelines.run_utils import (
     create_placeholder_run,
-    deploy_pipeline,
+    submit_pipeline,
     upload_notebook_cell_code_if_necessary,
 )
 from zenml.stack import Stack
@@ -891,7 +891,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                             "`zenml login --local`."
                         )
 
-                deploy_pipeline(
+                submit_pipeline(
                     snapshot=snapshot, stack=stack, placeholder_run=run
                 )
 
@@ -1052,7 +1052,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         Args:
             snapshot: The pipeline snapshot to track.
-            stack: The stack on which the pipeline will be deployed.
+            stack: The stack on which the pipeline will be run.
             run_id: The ID of the pipeline run.
 
         Returns:
@@ -1540,7 +1540,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         logger.warning(
             "The `pipeline.create_run_template(...)` method is deprecated and "
             "will be removed in a future version. Please use "
-            "`pipeline.deploy(..)` instead."
+            "`pipeline.create_snapshot(..)` instead."
         )
         self._prepare_if_possible()
         snapshot = self._create_snapshot(
@@ -1551,22 +1551,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             name=name, snapshot_id=snapshot.id, **kwargs
         )
 
-    def deploy(
+    def create_snapshot(
         self,
         version: Optional[str] = None,
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
     ) -> PipelineSnapshotResponse:
-        """Deploy the pipeline.
+        """Create a snapshot of the pipeline.
 
         Args:
-            version: The version name of the deployment. If not provided,
+            version: The version name of the snapshot. If not provided,
                 a version name will be generated automatically.
-            description: The description of the deployment.
-            tags: The tags to add to the deployment.
+            description: The description of the snapshot.
+            tags: The tags to add to the snapshot.
 
         Returns:
-            The created deployment.
+            The created snapshot.
         """
         self._prepare_if_possible()
         return self._create_snapshot(

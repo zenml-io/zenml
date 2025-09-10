@@ -95,16 +95,16 @@ def create_placeholder_run(
     return run
 
 
-def deploy_pipeline(
+def submit_pipeline(
     snapshot: "PipelineSnapshotResponse",
     stack: "Stack",
     placeholder_run: Optional["PipelineRunResponse"] = None,
 ) -> None:
-    """Run a snapshot.
+    """Submit a snapshot for execution.
 
     Args:
-        snapshot: The snapshot to run.
-        stack: The stack on which to run the snapshot.
+        snapshot: The snapshot to submit.
+        stack: The stack on which to submit the snapshot.
         placeholder_run: An optional placeholder run for the snapshot.
 
     # noqa: DAR401

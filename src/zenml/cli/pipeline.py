@@ -370,14 +370,14 @@ def create_run_template(
     cli_utils.declare(f"Created run template `{template.id}`.")
 
 
-@pipeline.command("deploy", help="Deploy a pipeline.")
+@pipeline.command("create-snapshot", help="Create a snapshot of a pipeline.")
 @click.argument("source")
 @click.option(
     "--version",
     "-v",
     type=str,
     required=False,
-    help="The version name of the deployment. If not provided, a version "
+    help="The version name of the snapshot. If not provided, a version "
     "name will be generated automatically.",
 )
 @click.option(
@@ -385,7 +385,7 @@ def create_run_template(
     "-d",
     type=str,
     required=False,
-    help="The description of the deployment.",
+    help="The description of the snapshot.",
 )
 @click.option(
     "--tags",
@@ -393,7 +393,7 @@ def create_run_template(
     type=str,
     required=False,
     multiple=True,
-    help="The tags to add to the deployment.",
+    help="The tags to add to the snapshot.",
 )
 @click.option(
     "--config",
@@ -401,7 +401,7 @@ def create_run_template(
     "config_path",
     type=click.Path(exists=True, dir_okay=False),
     required=False,
-    help="Path to configuration file for the deployment.",
+    help="Path to configuration file for the snapshot.",
 )
 @click.option(
     "--stack",
@@ -409,9 +409,9 @@ def create_run_template(
     "stack_name_or_id",
     type=str,
     required=False,
-    help="Name or ID of the stack to use for the deployment.",
+    help="Name or ID of the stack to use for the snapshot.",
 )
-def deploy_pipeline(
+def create_pipeline_snapshot(
     source: str,
     version: Optional[str] = None,
     description: Optional[str] = None,
@@ -419,20 +419,20 @@ def deploy_pipeline(
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
 ) -> None:
-    """Deploy a pipeline.
+    """Create a snapshot of a pipeline.
 
     Args:
         source: Importable source resolving to a pipeline instance.
-        version: Version name of the deployment.
-        description: Description of the deployment.
-        tags: Tags to add to the deployment.
-        config_path: Path to configuration file for the deployment.
-        stack_name_or_id: Name or ID of the stack for which the deployment
+        version: Version name of the snapshot.
+        description: Description of the snapshot.
+        tags: Tags to add to the snapshot.
+        config_path: Path to configuration file for the snapshot.
+        stack_name_or_id: Name or ID of the stack for which the snapshot
             should be created.
     """
     if not Client().root:
         cli_utils.warning(
-            "You're running the `zenml pipeline deploy` command "
+            "You're running the `zenml pipeline create-snapshot` command "
             "without a ZenML repository. Your current working directory will "
             "be used as the source root relative to which the registered step "
             "classes will be resolved. To silence this warning, run `zenml "
@@ -445,14 +445,14 @@ def deploy_pipeline(
         pipeline_instance = pipeline_instance.with_options(
             config_path=config_path
         )
-        deployment = pipeline_instance.deploy(
+        snapshot = pipeline_instance.create_snapshot(
             version=version, description=description, tags=tags
         )
 
     cli_utils.declare(
-        f"Created pipeline deployment `{deployment.id}`. You can now trigger "
-        f"this deployment from the dashboard or by calling `zenml pipeline "
-        f"trigger-deployment --deployment {deployment.id}`"
+        f"Created pipeline snapshot `{snapshot.id}`. You can now trigger "
+        f"this snapshot from the dashboard or by calling `zenml pipeline "
+        f"trigger-snapshot --snapshot {snapshot.id}`"
     )
 
 
