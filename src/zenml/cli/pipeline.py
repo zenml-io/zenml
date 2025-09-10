@@ -456,17 +456,19 @@ def create_pipeline_snapshot(
     )
 
 
-@pipeline.command("trigger-deployment", help="Trigger a deployment.")
+@pipeline.command("trigger-snapshot", help="Trigger a snapshot.")
 @click.option(
-    "--deployment",
-    "-d",
+    "--snapshot",
+    "-s",
+    "snapshot_id",
     type=str,
     required=False,
-    help="The ID of the deployment to trigger.",
+    help="The ID of the snapshot to trigger.",
 )
 @click.option(
     "--pipeline",
     "-p",
+    "pipeline_name_or_id",
     type=str,
     required=False,
     help="The name or ID of the pipeline to trigger.",
@@ -476,7 +478,7 @@ def create_pipeline_snapshot(
     "-v",
     type=str,
     required=False,
-    help="The version of the deployment to trigger.",
+    help="The version of the snapshot to trigger.",
 )
 @click.option(
     "--config",
@@ -492,32 +494,32 @@ def create_pipeline_snapshot(
     "stack_name_or_id",
     type=str,
     required=False,
-    help="Name or ID of the stack to use for the deployment.",
+    help="Name or ID of the stack for which to find a snapshot.",
 )
-def trigger_deployment(
-    deployment_id: Optional[str] = None,
+def trigger_snapshot(
+    snapshot_id: Optional[str] = None,
     pipeline_name_or_id: Optional[str] = None,
     version: Optional[str] = None,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
 ) -> None:
-    """Trigger a deployment.
+    """Trigger a snapshot.
 
     Args:
-        deployment_id: The ID of the deployment to trigger.
+        snapshot_id: The ID of the snapshot to trigger.
         pipeline_name_or_id: The name or ID of the pipeline to trigger.
-        version: The version of the deployment to trigger.
+        version: The version of the snapshot to trigger.
         config_path: Path to configuration file for the run.
-        stack_name_or_id: Name or ID on which to run the snapshot.
+        stack_name_or_id: Name or ID of the stack for which to find a snapshot.
     """
     run = Client().trigger_snapshot(
-        snapshot_id=UUID(deployment_id) if deployment_id else None,
+        snapshot_id=UUID(snapshot_id) if snapshot_id else None,
         pipeline_name_or_id=pipeline_name_or_id,
         version=version,
         config_path=config_path,
         stack_name_or_id=stack_name_or_id,
     )
-    cli_utils.declare(f"Triggered deployment run `{run.id}`.")
+    cli_utils.declare(f"Triggered snapshot run `{run.id}`.")
 
 
 @pipeline.command("list", help="List all registered pipelines.")
