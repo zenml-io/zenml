@@ -50,7 +50,7 @@ if TYPE_CHECKING:
         PipelineSnapshotResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
-    from zenml.stack import Stack, StackValidator
+    from zenml.stack import StackValidator
 
 logger = get_logger(__name__)
 
@@ -497,7 +497,7 @@ class StackComponent:
         options for this component.
 
         Args:
-            container: The `Step`, `StepRunInfo` or `PipelineDeployment` from
+            container: The `Step`, `StepRunInfo` or `PipelineSnapshot` from
                 which to get the settings.
 
         Returns:
@@ -701,22 +701,6 @@ class StackComponent:
             The required Docker builds.
         """
         return []
-
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineSnapshotResponse",
-        stack: "Stack",
-    ) -> None:
-        """Prepares deploying the pipeline.
-
-        This method gets called immediately before a pipeline is deployed.
-        Subclasses should override it if they require runtime configuration
-        options or if they need to run code before the pipeline deployment.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
 
     def get_pipeline_run_metadata(
         self, run_id: UUID

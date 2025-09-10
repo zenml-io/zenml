@@ -246,36 +246,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         """
         return os.path.join(self.root_directory, "pipelines")
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineSnapshotResponse",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-
-        Raises:
-            ValueError: If `cron_expression` is not in passed Schedule.
-        """
-        if deployment.schedule:
-            if (
-                deployment.schedule.catchup
-                or deployment.schedule.interval_second
-            ):
-                logger.warning(
-                    "Vertex orchestrator only uses schedules with the "
-                    "`cron_expression` property, with optional `start_time` "
-                    "and/or `end_time`. All other properties are ignored."
-                )
-            if deployment.schedule.cron_expression is None:
-                raise ValueError(
-                    "Property `cron_expression` must be set when passing "
-                    "schedule to a Vertex orchestrator."
-                )
-
     def _create_container_component(
         self,
         image: str,
@@ -422,9 +392,25 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the snapshot.
 
+        Raises:
+            ValueError: If a schedule without a cron expression is passed.
+
         Returns:
             Optional submission result.
         """
+        if snapshot.schedule:
+            if snapshot.schedule.catchup or snapshot.schedule.interval_second:
+                logger.warning(
+                    "Vertex orchestrator only uses schedules with the "
+                    "`cron_expression` property, with optional `start_time` "
+                    "and/or `end_time`. All other properties are ignored."
+                )
+            if snapshot.schedule.cron_expression is None:
+                raise ValueError(
+                    "Property `cron_expression` must be set when passing "
+                    "schedule to a Vertex orchestrator."
+                )
+
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=snapshot.pipeline_configuration.name
         )

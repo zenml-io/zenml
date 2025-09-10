@@ -73,13 +73,13 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         ...
 
     class MyOrchestrator(BaseOrchestrator):
-        def prepare_or_run_pipeline(
+        def submit_pipeline(
             self,
-            deployment: "PipelineDeployment",
+            snapshot: "PipelineSnapshotResponse",
             stack: "Stack",
             environment: Dict[str, str],
             placeholder_run: Optional["PipelineRunResponse"] = None,
-        ) -> Any:
+        ) -> Optional[SubmissionResult]:
             ...
 
             cmd = MyStepEntrypointConfiguration.get_entrypoint_command()
@@ -87,7 +87,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
                 ...
 
                 args = MyStepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name
+                    step_name=step_name, snapshot_id=snapshot.id
                 )
                 # Run the command and pass it the arguments. Our example
                 # orchestrator here executes the entrypoint in a separate

@@ -117,9 +117,9 @@ def deploy_pipeline(
     previous_value = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
     try:
-        stack.prepare_pipeline_deployment(deployment=snapshot)
-        stack.deploy_pipeline(
-            deployment=snapshot,
+        stack.prepare_pipeline_submission(snapshot=snapshot)
+        stack.submit_pipeline(
+            snapshot=snapshot,
             placeholder_run=placeholder_run,
         )
     except RunMonitoringError as e:

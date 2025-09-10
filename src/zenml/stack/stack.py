@@ -762,18 +762,18 @@ class Stack:
 
             self._image_builder = image_builder
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineSnapshotResponse"
+    def prepare_pipeline_submission(
+        self, snapshot: "PipelineSnapshotResponse"
     ) -> None:
-        """Prepares the stack for a pipeline deployment.
+        """Prepares the stack for a pipeline submission.
 
-        This method is called before a pipeline is deployed.
+        This method is called before a pipeline is submitted.
 
         Args:
-            deployment: The pipeline deployment
+            snapshot: The pipeline snapshot
 
         Raises:
-            RuntimeError: If trying to deploy a pipeline that requires a remote
+            RuntimeError: If trying to submit a pipeline that requires a remote
                 ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
@@ -786,11 +786,6 @@ class Stack:
                 "connect to a remote ZenML server first. Check out "
                 "https://docs.zenml.io/getting-started/deploying-zenml "
                 "for more information on how to deploy ZenML."
-            )
-
-        for component in self.components.values():
-            component.prepare_pipeline_deployment(
-                deployment=deployment, stack=self
             )
 
     def get_docker_builds(
@@ -811,19 +806,19 @@ class Stack:
             )
         )
 
-    def deploy_pipeline(
+    def submit_pipeline(
         self,
-        deployment: "PipelineSnapshotResponse",
+        snapshot: "PipelineSnapshotResponse",
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
-        """Deploys a pipeline on this stack.
+        """Submits a pipeline on this stack.
 
         Args:
-            deployment: The pipeline deployment.
-            placeholder_run: An optional placeholder run for the deployment.
+            snapshot: The pipeline snapshot.
+            placeholder_run: An optional placeholder run for the snapshot.
         """
         self.orchestrator.run(
-            snapshot=deployment, stack=self, placeholder_run=placeholder_run
+            snapshot=snapshot, stack=self, placeholder_run=placeholder_run
         )
 
     def _get_active_components_for_step(

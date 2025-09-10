@@ -177,20 +177,6 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                 custom_validation_function=_validate_remote_components,
             )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineSnapshotResponse",
-        stack: "Stack",
-    ) -> None:
-        """Builds a Docker image to run pipeline steps.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        if self.config.local:
-            stack.check_local_paths()
-
     def submit_pipeline(
         self,
         snapshot: "PipelineSnapshotResponse",
@@ -215,6 +201,9 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         Returns:
             Optional submission result.
         """
+        if self.config.local:
+            stack.check_local_paths()
+
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(snapshot)
         )
