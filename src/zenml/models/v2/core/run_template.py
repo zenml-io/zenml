@@ -48,7 +48,7 @@ from zenml.models.v2.core.pipeline import PipelineResponse
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
 )
-from zenml.models.v2.core.pipeline_deployment import (
+from zenml.models.v2.core.pipeline_snapshot import (
     PipelineSnapshotResponse,
 )
 from zenml.models.v2.core.tag import TagResponse

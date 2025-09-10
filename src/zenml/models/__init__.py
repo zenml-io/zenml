@@ -228,7 +228,7 @@ from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponseMetadata,
     PipelineBuildResponseResources,
 )
-from zenml.models.v2.core.pipeline_deployment import (
+from zenml.models.v2.core.pipeline_snapshot import (
     PipelineSnapshotBase,
     PipelineSnapshotRequest,
     PipelineSnapshotUpdate,
