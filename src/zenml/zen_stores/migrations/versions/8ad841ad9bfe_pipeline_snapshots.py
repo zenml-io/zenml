@@ -425,7 +425,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline_snapshot", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
-                "version", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+                "name", sqlmodel.sql.sqltypes.AutoString(), nullable=True
             )
         )
         batch_op.add_column(
@@ -444,7 +444,7 @@ def upgrade() -> None:
             "pipeline_id", existing_type=sa.CHAR(length=32), nullable=False
         )
         batch_op.create_unique_constraint(
-            "unique_version_for_pipeline_id", ["pipeline_id", "version"]
+            "unique_name_for_pipeline_id", ["pipeline_id", "name"]
         )
         batch_op.create_foreign_key(
             "fk_pipeline_snapshot_pipeline_id_pipeline",

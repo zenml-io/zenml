@@ -4800,25 +4800,25 @@ class SqlZenStore(BaseZenStore):
         session.add(new_reference)
         return new_reference.id
 
-    def _snapshot_version_exists(
+    def _snapshot_exists(
         self,
         session: Session,
         pipeline_id: UUID,
-        version: str,
+        name: str,
     ) -> bool:
-        """Check if a snapshot with a certain version exists.
+        """Check if a snapshot with a certain name exists.
 
         Args:
             session: SQLAlchemy session.
             pipeline_id: The pipeline ID of the snapshot.
-            version: The version name.
+            name: The name of the snapshot.
 
         Returns:
             If a snapshot with the given arguments exists.
         """
         query = select(PipelineSnapshotSchema.id).where(
             col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
-            col(PipelineSnapshotSchema.version) == version,
+            col(PipelineSnapshotSchema.name) == name,
         )
 
         with Session(self.engine) as session:
@@ -4834,7 +4834,7 @@ class SqlZenStore(BaseZenStore):
             snapshot: The snapshot to create.
 
         Raises:
-            EntityExistsError: If a snapshot with the same version already
+            EntityExistsError: If a snapshot with the same name already
                 exists for the same pipeline.
             RuntimeError: If the snapshot creation fails.
 
@@ -4900,9 +4900,9 @@ class SqlZenStore(BaseZenStore):
                 # (= the snapshot backing the run template)
                 snapshot.source_snapshot = run_template.source_snapshot_id
 
-            if snapshot.version:
-                if isinstance(snapshot.version, str):
-                    validate_name(snapshot, "version")
+            if snapshot.name:
+                if isinstance(snapshot.name, str):
+                    validate_name(snapshot)
 
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
@@ -4918,14 +4918,15 @@ class SqlZenStore(BaseZenStore):
                 session.add(new_snapshot)
                 session.commit()
             except IntegrityError as e:
-                if new_snapshot.version and self._snapshot_version_exists(
+                session.rollback()
+                if new_snapshot.name and self._snapshot_exists(
                     session=session,
                     pipeline_id=snapshot.pipeline,
-                    version=new_snapshot.version,
+                    name=new_snapshot.name,
                 ):
                     raise EntityExistsError(
-                        f"Snapshot version {new_snapshot.version} already "
-                        f"exists for pipeline {snapshot.pipeline}."
+                        f"Snapshot with name `{new_snapshot.name}` already "
+                        f"exists for pipeline `{snapshot.pipeline}`."
                     )
                 else:
                     raise RuntimeError("Snapshot creation failed.") from e
@@ -5049,9 +5050,9 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if snapshot.version:
-                if isinstance(snapshot.version, str):
-                    validate_name(snapshot_update, "version")
+            if snapshot.name:
+                if isinstance(snapshot.name, str):
+                    validate_name(snapshot_update)
 
             snapshot.update(snapshot_update)
 
@@ -5059,13 +5060,14 @@ class SqlZenStore(BaseZenStore):
                 session.add(snapshot)
                 session.commit()
             except IntegrityError as e:
-                if snapshot.version and self._snapshot_version_exists(
+                session.rollback()
+                if snapshot.name and self._snapshot_exists(
                     session=session,
                     pipeline_id=snapshot.pipeline_id,
-                    version=snapshot.version,
+                    name=snapshot.name,
                 ):
                     raise EntityExistsError(
-                        f"Snapshot version {snapshot.version} "
+                        f"Snapshot with name `{snapshot.name}` "
                         f"already exists for pipeline {snapshot.pipeline_id}."
                     )
                 else:
@@ -5172,7 +5174,7 @@ class SqlZenStore(BaseZenStore):
             if not template.hidden:
                 # Also update the name and description of the underlying
                 # snapshot
-                snapshot.version = template.name
+                snapshot.name = template.name
                 snapshot.description = template.description
                 session.add(snapshot)
 

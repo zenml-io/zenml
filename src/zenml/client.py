@@ -3419,8 +3419,8 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
-        version: Optional[str] = None,
-        versioned_only: Optional[bool] = None,
+        name: Optional[str] = None,
+        named_only: Optional[bool] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
@@ -3443,8 +3443,8 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
-            version: Filter by version.
-            versioned_only: If `True`, only snapshots with an assigned version
+            name: Filter by name.
+            named_only: If `True`, only snapshots with an assigned name
                 will be returned.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
@@ -3470,8 +3470,8 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             project=project or self.active_project.id,
             user=user,
-            version=version,
-            versioned_only=versioned_only,
+            name=name,
+            named_only=named_only,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
@@ -3490,7 +3490,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
-        version: Optional[str] = None,
+        name: Optional[str] = None,
         description: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
@@ -3500,7 +3500,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             id_or_prefix: The id or id prefix of the snapshot.
             project: The project name/ID to filter by.
-            version: The new version of the snapshot.
+            name: The new name of the snapshot.
             description: The new description of the snapshot.
             add_tags: Tags to add to the snapshot.
             remove_tags: Tags to remove from the snapshot.
@@ -3517,7 +3517,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.update_snapshot(
             snapshot_id=snapshot.id,
             snapshot_update=PipelineSnapshotUpdate(
-                version=version,
+                name=name,
                 description=description,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
@@ -3547,7 +3547,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         snapshot_id: Optional[UUID] = None,
         pipeline_name_or_id: Union[str, UUID, None] = None,
-        version: Optional[str] = None,
+        name: Optional[str] = None,
         run_configuration: Union[
             PipelineRunConfiguration, Dict[str, Any], None
         ] = None,
@@ -3585,7 +3585,7 @@ class Client(metaclass=ClientMetaClass):
                 associated with the snapshot is for a remote stack without any
                 custom flavor stack components). If not given, a snapshot ID
                 that should be run needs to be specified.
-            version: Version of the snapshot to trigger. If not given, the
+            name: Name of the snapshot to trigger. If not given, the
                 latest runnable snapshot for the pipeline will be used.
             run_configuration: Configuration for the run. Either this or a
                 path to a config file can be specified.
@@ -3601,7 +3601,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             RuntimeError: If triggering the snapshot failed.
-            KeyError: If no snapshot with the given version exists.
+            KeyError: If no snapshot with the given name exists.
 
         Returns:
             Model of the pipeline run.
@@ -3641,9 +3641,9 @@ class Client(metaclass=ClientMetaClass):
                     "using stack associated with the snapshot instead."
                 )
 
-            if version:
+            if name:
                 logger.warning(
-                    "Snapshot ID and version specified, ignoring the version."
+                    "Snapshot ID and name specified, ignoring the name."
                 )
         else:
             assert pipeline_name_or_id
@@ -3652,9 +3652,9 @@ class Client(metaclass=ClientMetaClass):
                 project=project,
             )
 
-            if version:
+            if name:
                 snapshots = self.list_snapshots(
-                    version=f"equals:{version}",
+                    name=f"equals:{name}",
                     pipeline_id=pipeline.id,
                     project=pipeline.project_id,
                 )
@@ -3662,7 +3662,7 @@ class Client(metaclass=ClientMetaClass):
                 if snapshots.total == 0:
                     raise KeyError(
                         f"No snapshot found for pipeline {pipeline.id} "
-                        f"with version {version}."
+                        f"with name {name}."
                     )
                 else:
                     snapshot_id = snapshots.items[0].id

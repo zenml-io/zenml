@@ -66,13 +66,13 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "pipeline_id",
-            "version",
-            name="unique_version_for_pipeline_id",
+            "name",
+            name="unique_name_for_pipeline_id",
         ),
     )
 
     # Fields
-    version: Optional[str] = Field(nullable=True)
+    name: Optional[str] = Field(nullable=True)
     description: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -361,16 +361,16 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             client_env = "{}"
 
         id_ = uuid4()
-        if isinstance(request.version, str):
-            version = request.version
-        elif request.version is True:
+        if isinstance(request.name, str):
+            version = request.name
+        elif request.name is True:
             version = str(id_)
         else:
             version = None
 
         return cls(
             id=id_,
-            version=version,
+            name=version,
             description=request.description,
             stack_id=request.stack,
             project_id=request.project,
@@ -407,12 +407,12 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The updated schema.
         """
-        if isinstance(update.version, str):
-            self.version = update.version
-        elif update.version is True and not self.version:
-            self.version = str(self.id)
-        elif update.version is False:
-            self.version = None
+        if isinstance(update.name, str):
+            self.name = update.name
+        elif update.name is True and not self.name:
+            self.name = str(self.id)
+        elif update.name is False:
+            self.name = None
 
         if update.description:
             self.description = update.description
@@ -450,7 +450,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             runnable = True
 
         body = PipelineSnapshotResponseBody(
-            version=self.version,
+            name=self.name,
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,

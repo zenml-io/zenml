@@ -1553,15 +1553,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def create_snapshot(
         self,
-        version: Optional[str] = None,
+        name: Optional[str] = None,
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
     ) -> PipelineSnapshotResponse:
         """Create a snapshot of the pipeline.
 
         Args:
-            version: The version name of the snapshot. If not provided,
-                a version name will be generated automatically.
+            name: The name of the snapshot. If not provided,
+                a name will be generated automatically.
             description: The description of the snapshot.
             tags: The tags to add to the snapshot.
 
@@ -1571,7 +1571,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._prepare_if_possible()
         return self._create_snapshot(
             skip_schedule_registration=True,
-            version=version or True,
+            name=name or True,
             description=description,
             tags=tags,
             **self._run_args,

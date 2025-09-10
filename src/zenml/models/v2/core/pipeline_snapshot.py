@@ -115,9 +115,9 @@ class PipelineSnapshotBase(BaseZenModel):
 class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     """Request model for pipeline snapshots."""
 
-    version: Optional[Union[str, bool]] = Field(
+    name: Optional[Union[str, bool]] = Field(
         default=None,
-        title="The version of the snapshot. If set to True, a version will "
+        title="The name of the snapshot. If set to True, a name will "
         "be generated automatically.",
     )
     description: Optional[str] = Field(
@@ -156,15 +156,15 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
         description="Snapshot that is the source of this snapshot.",
     )
 
-    @field_validator("version")
+    @field_validator("name")
     @classmethod
-    def _validate_version(cls, v: Any) -> Any:
+    def _validate_name(cls, v: Any) -> Any:
         if isinstance(v, str):
             if not v:
-                raise ValueError("Snapshot version cannot be empty.")
+                raise ValueError("Snapshot name cannot be empty.")
             if len(v) > STR_FIELD_MAX_LENGTH:
                 raise ValueError(
-                    f"Snapshot version `{v}` is too long. The maximum length "
+                    f"Snapshot name `{v}` is too long. The maximum length "
                     f"is {STR_FIELD_MAX_LENGTH} characters."
                 )
 
@@ -177,11 +177,11 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
 class PipelineSnapshotUpdate(BaseUpdate):
     """Pipeline snapshot update model."""
 
-    version: Optional[Union[str, bool]] = Field(
+    name: Optional[Union[str, bool]] = Field(
         default=None,
-        title="The version of the snapshot. If set to True, the existing "
-        "version will be kept or a new version will be generated. If set to "
-        "False, the version will be removed.",
+        title="The name of the snapshot. If set to True, the existing "
+        "name will be kept or a new name will be generated. If set to "
+        "False, the name will be removed.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
@@ -196,15 +196,15 @@ class PipelineSnapshotUpdate(BaseUpdate):
         default=None, title="Tags to remove from the snapshot."
     )
 
-    @field_validator("version")
+    @field_validator("name")
     @classmethod
-    def _validate_version(cls, v: Any) -> Any:
+    def _validate_name(cls, v: Any) -> Any:
         if isinstance(v, str):
             if not v:
-                raise ValueError("Snapshot version cannot be empty.")
+                raise ValueError("Snapshot name cannot be empty.")
             if len(v) > STR_FIELD_MAX_LENGTH:
                 raise ValueError(
-                    f"Snapshot version `{v}` is too long. The maximum length "
+                    f"Snapshot name `{v}` is too long. The maximum length "
                     f"is {STR_FIELD_MAX_LENGTH} characters."
                 )
 
@@ -217,9 +217,9 @@ class PipelineSnapshotUpdate(BaseUpdate):
 class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline snapshots."""
 
-    version: Optional[str] = Field(
+    name: Optional[str] = Field(
         default=None,
-        title="The version of the snapshot.",
+        title="The name of the snapshot.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     runnable: bool = Field(
@@ -342,13 +342,13 @@ class PipelineSnapshotResponse(
     # Body and metadata properties
 
     @property
-    def version(self) -> Optional[str]:
-        """The `version` property.
+    def name(self) -> Optional[str]:
+        """The `name` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().version
+        return self.get_body().name
 
     @property
     def runnable(self) -> bool:
@@ -578,13 +578,13 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
-    version: Optional[str] = Field(
+    name: Optional[str] = Field(
         default=None,
-        description="Version of the snapshot.",
+        description="Name of the snapshot.",
     )
-    versioned_only: Optional[bool] = Field(
+    named_only: Optional[bool] = Field(
         default=None,
-        description="Whether to only return snapshots with a version name.",
+        description="Whether to only return snapshots with a name.",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -636,9 +636,9 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
 
         custom_filters = super().get_custom_filters(table)
 
-        if self.versioned_only:
+        if self.named_only:
             custom_filters.append(
-                col(PipelineSnapshotSchema.version).is_not(None)
+                col(PipelineSnapshotSchema.name).is_not(None)
             )
 
         return custom_filters

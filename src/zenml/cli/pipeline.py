@@ -753,12 +753,12 @@ def snapshot() -> None:
 @snapshot.command("create", help="Create a snapshot of a pipeline.")
 @click.argument("source")
 @click.option(
-    "--version",
-    "-v",
+    "--name",
+    "-n",
     type=str,
     required=False,
-    help="The version name of the snapshot. If not provided, a version "
-    "name will be generated automatically.",
+    help="The name of the snapshot. If not provided, a name will be generated "
+    "automatically.",
 )
 @click.option(
     "--description",
@@ -793,7 +793,7 @@ def snapshot() -> None:
 )
 def create_pipeline_snapshot(
     source: str,
-    version: Optional[str] = None,
+    name: Optional[str] = None,
     description: Optional[str] = None,
     tags: Optional[List[str]] = None,
     config_path: Optional[str] = None,
@@ -803,7 +803,7 @@ def create_pipeline_snapshot(
 
     Args:
         source: Importable source resolving to a pipeline instance.
-        version: Version name of the snapshot.
+        name: Name of the snapshot.
         description: Description of the snapshot.
         tags: Tags to add to the snapshot.
         config_path: Path to configuration file for the snapshot.
@@ -826,7 +826,7 @@ def create_pipeline_snapshot(
             config_path=config_path
         )
         snapshot = pipeline_instance.create_snapshot(
-            version=version, description=description, tags=tags
+            name=name, description=description, tags=tags
         )
 
     cli_utils.declare(
@@ -894,7 +894,7 @@ def trigger_snapshot(
     run = Client().trigger_snapshot(
         snapshot_id=UUID(snapshot_id) if snapshot_id else None,
         pipeline_name_or_id=pipeline_name_or_id,
-        version=version,
+        name=version,
         config_path=config_path,
         stack_name_or_id=stack_name_or_id,
     )
