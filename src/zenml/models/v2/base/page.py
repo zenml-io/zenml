@@ -18,10 +18,9 @@ from typing import Generator, Generic, List, TypeVar
 from pydantic import BaseModel
 from pydantic.types import NonNegativeInt, PositiveInt
 
-from zenml.models.v2.base.base import BaseResponse
 from zenml.models.v2.base.filter import BaseFilter
 
-B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
+B = TypeVar("B", bound=BaseModel)
 
 
 class Page(BaseModel, Generic[B]):
