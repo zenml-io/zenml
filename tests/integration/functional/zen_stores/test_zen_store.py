@@ -103,6 +103,7 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunResponse,
+    PipelineSnapshotRequest,
     ProjectFilter,
     ProjectUpdate,
     RunMetadataResource,
@@ -126,7 +127,6 @@ from zenml.models import (
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
 from zenml.models.v2.core.model import ModelFilter, ModelRequest, ModelUpdate
-from zenml.models.v2.core.pipeline_deployment import PipelineSnapshotRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest

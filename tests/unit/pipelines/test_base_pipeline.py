@@ -569,14 +569,14 @@ def test_rerunning_deloyment_does_not_fail(
     pipeline_instance = empty_pipeline
     pipeline_instance()
 
-    deployments = clean_client.list_deployments()
-    assert deployments.total == 1
-    deployment = deployments[0]
+    snapshots = clean_client.list_snapshots()
+    assert snapshots.total == 1
+    snapshot = snapshots[0]
 
     stack = clean_client.active_stack
 
-    # Simulate re-running the deployment
-    stack.deploy_pipeline(deployment)
+    # Simulate re-running the snapshot
+    stack.submit_pipeline(snapshot)
 
     assert mock_get_or_create_run.call_count == 3
 
@@ -586,7 +586,7 @@ def test_rerunning_deloyment_does_not_fail(
     run_request = mock_get_or_create_run.call_args_list[1][0][0]
     assert not is_placeholder_request(run_request)
 
-    runs = clean_client.list_pipeline_runs(deployment_id=deployment.id)
+    runs = clean_client.list_pipeline_runs(snapshot_id=snapshot.id)
     assert runs.total == 2
 
 

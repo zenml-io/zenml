@@ -715,10 +715,10 @@ def test_deleting_builds(clean_client):
 # --------------------
 
 
-def test_listing_deployments(clean_client):
-    """Tests listing deployments."""
-    deployments = clean_client.list_deployments()
-    assert len(deployments) == 0
+def test_listing_snapshots(clean_client):
+    """Tests listing snapshots."""
+    snapshots = clean_client.list_snapshots()
+    assert len(snapshots) == 0
 
     pipeline = clean_client.zen_store.create_pipeline(
         PipelineRequest(
@@ -736,20 +736,20 @@ def test_listing_deployments(clean_client):
         server_version="0.12.3",
         pipeline=pipeline.id,
     )
-    response = clean_client.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_snapshot(request)
 
-    deployments = clean_client.list_deployments()
-    assert len(deployments) == 1
-    assert deployments[0] == response
+    snapshots = clean_client.list_snapshots()
+    assert len(snapshots) == 1
+    assert snapshots[0] == response
 
-    deployments = clean_client.list_deployments(stack_id=uuid4())
-    assert len(deployments) == 0
+    snapshots = clean_client.list_snapshots(stack_id=uuid4())
+    assert len(snapshots) == 0
 
 
-def test_getting_deployments(clean_client):
-    """Tests getting deployments."""
+def test_getting_snapshots(clean_client):
+    """Tests getting snapshots."""
     with pytest.raises(KeyError):
-        clean_client.get_deployment(str(uuid4()))
+        clean_client.get_snapshot(str(uuid4()))
 
     pipeline = clean_client.zen_store.create_pipeline(
         PipelineRequest(
@@ -766,18 +766,18 @@ def test_getting_deployments(clean_client):
         server_version="0.12.3",
         pipeline=pipeline.id,
     )
-    response = clean_client.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_snapshot(request)
 
     with does_not_raise():
-        deployment = clean_client.get_deployment(str(response.id))
+        snapshot = clean_client.get_snapshot(str(response.id))
 
-    assert deployment == response
+    assert snapshot == response
 
 
-def test_deleting_deployments(clean_client):
-    """Tests deleting deployments."""
+def test_deleting_snapshots(clean_client):
+    """Tests deleting snapshots."""
     with pytest.raises(KeyError):
-        clean_client.delete_deployment(str(uuid4()))
+        clean_client.delete_snapshot(str(uuid4()))
 
     pipeline = clean_client.zen_store.create_pipeline(
         PipelineRequest(
@@ -794,13 +794,13 @@ def test_deleting_deployments(clean_client):
         server_version="0.12.3",
         pipeline=pipeline.id,
     )
-    response = clean_client.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_snapshot(request)
 
     with does_not_raise():
-        clean_client.delete_deployment(str(response.id))
+        clean_client.delete_snapshot(str(response.id))
 
     with pytest.raises(KeyError):
-        clean_client.get_deployment(str(response.id))
+        clean_client.get_snapshot(str(response.id))
 
 
 def test_get_run(clean_client: Client, connected_two_step_pipeline):
