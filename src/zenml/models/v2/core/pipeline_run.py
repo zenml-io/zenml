@@ -283,7 +283,7 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
 class PipelineRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
 
-    snapshot: Optional[PipelineSnapshotResponse] = None
+    snapshot: Optional["PipelineSnapshotResponse"] = None
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
