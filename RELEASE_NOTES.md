@@ -1,5 +1,34 @@
 <!-- markdown-link-check-disable -->
 
+# 0.85.0
+
+## What's Changed
+* Add version 0.84.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3910
+* Made connection docs easier to read by @htahir1 in https://github.com/zenml-io/zenml/pull/3896
+* Add Google ADK framework example and `DockerSettings` for all examples by @strickvl in https://github.com/zenml-io/zenml/pull/3912
+* Delete run if model version doesn't exist during creation by @schustmi in https://github.com/zenml-io/zenml/pull/3915
+* Caching by value by @schustmi in https://github.com/zenml-io/zenml/pull/3900
+* Add start time to step node metadata by @schustmi in https://github.com/zenml-io/zenml/pull/3921
+* Prevent stopping runs without orchestrator run id by @schustmi in https://github.com/zenml-io/zenml/pull/3923
+* Airflow 3 support by @schustmi in https://github.com/zenml-io/zenml/pull/3922
+* fix: typo in core-concepts.md by @mhmunem in https://github.com/zenml-io/zenml/pull/3926
+* Run template config improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3918
+* Add provisioning execution status by @schustmi in https://github.com/zenml-io/zenml/pull/3924
+* Fix unnecessary code upload by @schustmi in https://github.com/zenml-io/zenml/pull/3932
+* Allow cloudpickle>3.x by @strickvl in https://github.com/zenml-io/zenml/pull/3914
+* Switch to uv as default package installer by @schustmi in https://github.com/zenml-io/zenml/pull/3935
+* Fix unit test by @schustmi in https://github.com/zenml-io/zenml/pull/3945
+* Efficient queries for execution mode changes by @bcdurak in https://github.com/zenml-io/zenml/pull/3942
+* Different pipeline execution modes by @bcdurak in https://github.com/zenml-io/zenml/pull/3874
+* Changes to the fetch logs endpoints by @bcdurak in https://github.com/zenml-io/zenml/pull/3845
+* Adding verbosity levels to log messages in storage by @bcdurak in https://github.com/zenml-io/zenml/pull/3812
+
+## New Contributors
+* @mhmunem made their first contribution in https://github.com/zenml-io/zenml/pull/3926
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.84.3...0.85.0
+
+
 # 0.84.3
 
 The `0.84.3` release introduces **ZenML Pro service account authentication** support and includes important **Kubernetes integration fixes**. This release enhances authentication flexibility for automated workflows and improves the reliability of Kubernetes-based orchestration.
