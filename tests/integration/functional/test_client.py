@@ -717,7 +717,7 @@ def test_deleting_builds(clean_client):
 
 def test_listing_snapshots(clean_client):
     """Tests listing snapshots."""
-    snapshots = clean_client.list_snapshots()
+    snapshots = clean_client.list_snapshots(named_only=False)
     assert len(snapshots) == 0
 
     pipeline = clean_client.zen_store.create_pipeline(
@@ -738,11 +738,11 @@ def test_listing_snapshots(clean_client):
     )
     response = clean_client.zen_store.create_snapshot(request)
 
-    snapshots = clean_client.list_snapshots()
+    snapshots = clean_client.list_snapshots(named_only=False)
     assert len(snapshots) == 1
     assert snapshots[0] == response
 
-    snapshots = clean_client.list_snapshots(stack_id=uuid4())
+    snapshots = clean_client.list_snapshots(named_only=False, stack_id=uuid4())
     assert len(snapshots) == 0
 
 

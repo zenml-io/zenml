@@ -33,7 +33,9 @@ def test_creating_snapshot_request_from_template(
         return_value=clean_client_with_run.zen_store,
     )
 
-    snapshots = clean_client_with_run.list_snapshots(hydrate=True)
+    snapshots = clean_client_with_run.list_snapshots(
+        named_only=False, hydrate=True
+    )
     assert len(snapshots) == 1
 
     snapshot = snapshots[0]

@@ -569,7 +569,7 @@ def test_rerunning_deloyment_does_not_fail(
     pipeline_instance = empty_pipeline
     pipeline_instance()
 
-    snapshots = clean_client.list_snapshots()
+    snapshots = clean_client.list_snapshots(named_only=False)
     assert snapshots.total == 1
     snapshot = snapshots[0]
 
