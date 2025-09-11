@@ -267,6 +267,19 @@ class StepRunner:
                             logger.debug(
                                 f"Validated outputs: {list(output_data.keys()) if output_data else 'No outputs'}"
                             )
+
+                            # Record outputs in serving context for fast access
+                            try:
+                                from zenml.deployers.serving import runtime
+
+                                if runtime.is_active():
+                                    runtime.record_step_outputs(
+                                        step_run.name, output_data
+                                    )
+                            except ImportError:
+                                # Serving module not available, skip recording
+                                pass
+
                         except Exception as e:
                             logger.error(f"Error validating outputs: {e}")
                             raise
@@ -426,25 +439,22 @@ class StepRunner:
                     input_artifacts[arg], arg_type
                 )
             elif arg in self.configuration.parameters:
-                # Check for serving parameter overrides first
-                from zenml.deployers.serving import runtime
+                # Check for parameter overrides from serving context
+                try:
+                    from zenml.deployers.serving import runtime
 
-                if runtime.is_active():
-                    # Try to resolve parameter from serving runtime context
-                    resolved_value = self._resolve_serving_parameter(arg)
-                    if resolved_value is not None:
+                    override = runtime.get_parameter_override(arg, arg_type)
+                    if override is not None:
                         logger.debug(
-                            f"Using serving override for {arg}: {resolved_value}"
+                            f"Using serving override for {arg}: {override}"
                         )
-                        function_params[arg] = resolved_value
+                        function_params[arg] = override
                     else:
-                        logger.debug(
-                            f"Using config param for {arg}: {self.configuration.parameters[arg]}"
-                        )
                         function_params[arg] = self.configuration.parameters[
                             arg
                         ]
-                else:
+                except ImportError:
+                    # Serving module not available, use regular parameters
                     function_params[arg] = self.configuration.parameters[arg]
             else:
                 raise RuntimeError(
@@ -452,54 +462,6 @@ class StepRunner:
                 )
 
         return function_params
-
-    def _resolve_serving_parameter(self, arg_name: str) -> Any:
-        """Resolve a parameter from serving runtime context.
-
-        This method tries to find a parameter value from the serving runtime
-        context by checking pipeline parameters and extracting values from
-        complex objects like Pydantic models.
-
-        Args:
-            arg_name: Name of the parameter to resolve
-
-        Returns:
-            The resolved parameter value, or None if not found
-        """
-        from zenml.deployers.serving import runtime
-
-        if not runtime.is_active():
-            return None
-
-        # Get all pipeline parameters from serving context
-        pipeline_params = runtime._STATE.pipeline_parameters
-        if not pipeline_params:
-            return None
-
-        # First try direct match
-        if arg_name in pipeline_params:
-            return pipeline_params[arg_name]
-
-        # Try to extract from Pydantic models using model_dump
-        for param_name, param_value in pipeline_params.items():
-            # Only try extraction from Pydantic BaseModel instances
-            try:
-                from pydantic import BaseModel
-
-                if isinstance(param_value, BaseModel):
-                    # Use model_dump to safely get all fields as dict
-                    model_dict = param_value.model_dump()
-                    if arg_name in model_dict:
-                        extracted_value = model_dict[arg_name]
-                        logger.debug(
-                            f"Extracted {arg_name}={extracted_value} from {param_name}"
-                        )
-                        return extracted_value
-            except Exception:
-                # Skip this parameter if extraction fails
-                continue
-
-        return None
 
     def _parse_hook_inputs(
         self,

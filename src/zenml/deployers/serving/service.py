@@ -18,14 +18,14 @@ configured in the deployment stack. It only resolves request parameters,
 applies them to the loaded deployment, and triggers the orchestrator.
 """
 
-import asyncio
 import inspect
 import json
+import os
 import time
 import traceback
 import typing
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Type, cast, get_args, get_origin
+from typing import Any, Dict, Optional, get_args, get_origin
 from uuid import UUID, uuid4
 
 from zenml.client import Client
@@ -34,7 +34,6 @@ from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
 from zenml.utils import source_utils
@@ -76,6 +75,29 @@ class PipelineServingService:
         )
 
     # Internal helpers
+    def _get_max_output_size_bytes(self) -> int:
+        """Get the maximum output size in bytes from environment variable.
+
+        Returns:
+            Maximum size in bytes, defaulting to 1MB for invalid values.
+        """
+        try:
+            size_mb = int(
+                os.environ.get("ZENML_SERVING_MAX_OUTPUT_SIZE_MB", "1")
+            )
+            if size_mb <= 0:
+                logger.warning(
+                    f"Invalid ZENML_SERVING_MAX_OUTPUT_SIZE_MB: {size_mb}. Using 1MB."
+                )
+                size_mb = 1
+            return size_mb * 1024 * 1024
+        except (ValueError, TypeError):
+            env_val = os.environ.get("ZENML_SERVING_MAX_OUTPUT_SIZE_MB", "1")
+            logger.warning(
+                f"Invalid ZENML_SERVING_MAX_OUTPUT_SIZE_MB: '{env_val}'. Using 1MB."
+            )
+            return 1024 * 1024
+
     def _ensure_param_types(self) -> bool:
         """Ensure cached parameter types from the pipeline entrypoint are available.
 
@@ -219,11 +241,59 @@ class PipelineServingService:
             return s if len(s) <= 1000 else f"{s[:1000]}... [truncated]"
 
     def _map_outputs(self, run: PipelineRunResponse) -> Dict[str, Any]:
-        """Map pipeline outputs by returning all step outputs with qualified names."""
+        """Map pipeline outputs using fast in-memory data when available."""
+        # Try fast path: use in-memory outputs from serving context
+        try:
+            from zenml.deployers.serving import runtime
+
+            if runtime.is_active():
+                in_memory_outputs = runtime.get_outputs()
+                if in_memory_outputs:
+                    # Format with qualified names (step.output)
+                    mapped_outputs = {}
+                    for step_name, step_outputs in in_memory_outputs.items():
+                        for out_name, value in step_outputs.items():
+                            # Check if data is too large (configurable via env var)
+                            try:
+                                max_size_bytes = (
+                                    self._get_max_output_size_bytes()
+                                )
+                                max_size_mb = max_size_bytes // (1024 * 1024)
+                                serialized = self._serialize_json_safe(value)
+                                if (
+                                    isinstance(serialized, str)
+                                    and len(serialized) > max_size_bytes
+                                ):
+                                    # Too large, return metadata instead
+                                    mapped_outputs[
+                                        f"{step_name}.{out_name}"
+                                    ] = {
+                                        "data_too_large": True,
+                                        "size_estimate": f"{len(serialized) // 1024}KB",
+                                        "max_size_mb": max_size_mb,
+                                        "type": str(type(value).__name__),
+                                        "note": "Use artifact loading endpoint for large outputs",
+                                    }
+                                else:
+                                    mapped_outputs[
+                                        f"{step_name}.{out_name}"
+                                    ] = serialized
+                            except Exception:
+                                # Fallback to basic info if serialization fails
+                                mapped_outputs[f"{step_name}.{out_name}"] = {
+                                    "serialization_failed": True,
+                                    "type": str(type(value).__name__),
+                                    "note": "Use artifact loading endpoint for this output",
+                                }
+                    return mapped_outputs
+        except ImportError:
+            pass
+
+        # Fallback: original expensive artifact loading
+        logger.debug("Using slow artifact loading fallback")
         from zenml.artifacts.utils import load_artifact_from_response
 
         mapped_outputs: Dict[str, Any] = {}
-
         for step_name, step_run in (run.steps or {}).items():
             if not step_run or not step_run.outputs:
                 continue
@@ -231,7 +301,6 @@ class PipelineServingService:
                 if not arts:
                     continue
                 try:
-                    # TODO: handle multiple artifacts
                     val = load_artifact_from_response(arts[0])
                     if val is not None:
                         mapped_outputs[f"{step_name}.{out_name}"] = (
@@ -242,7 +311,6 @@ class PipelineServingService:
                         f"Failed to load artifact for {step_name}.{out_name}: {e}"
                     )
                     continue
-
         return mapped_outputs
 
     async def _execute_init_hook(self) -> None:
@@ -351,10 +419,12 @@ class PipelineServingService:
                     elif isinstance(dflt, dict):
                         base = dict(dflt)
                     base.update(value)
-                    # mypy: ensure model_cls is a BaseModel subclass
-                    if inspect.isclass(model_cls) and issubclass(model_cls, BaseModel):
-                        bm_cls = cast(Type[BaseModel], model_cls)
-                        converted[name] = bm_cls.model_validate(base)
+                    # Type narrowing: model_cls is guaranteed to be a BaseModel subclass
+                    if inspect.isclass(model_cls) and issubclass(
+                        model_cls, BaseModel
+                    ):
+                        # Type checker understands model_cls is Type[BaseModel] after issubclass check
+                        converted[name] = model_cls.model_validate(base)
                         continue
                 except Exception:
                     logger.exception(
@@ -373,127 +443,137 @@ class PipelineServingService:
 
         return converted
 
-    async def execute_pipeline(
+    def execute_pipeline(
         self,
         parameters: Dict[str, Any],
         run_name: Optional[str] = None,
         timeout: Optional[int] = 300,
     ) -> Dict[str, Any]:
-        """Execute pipeline synchronously by invoking BaseOrchestrator.run_step."""
+        """Execute pipeline by delegating to orchestrator with small helpers."""
+        # Note: run_name and timeout are reserved for future implementation
+        del run_name, timeout  # Silence unused parameter warnings
+        
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
+
         start = time.time()
         logger.info("Starting pipeline execution")
-        # Run with a cloned deployment and map outputs from produced artifacts
 
-        pipeline: Optional[Pipeline] = None
         try:
-            # Resolve request parameters and rebuild a per-request deployment
             resolved_params = self._resolve_parameters(parameters)
-            client = Client()
-            active_stack: Stack = client.active_stack
-            # No persisted interface to validate; mapping built at startup
-
-            # Instantiate a local orchestrator explicitly and run with the active stack
-            from zenml.enums import StackComponentType
-            from zenml.orchestrators.local.local_orchestrator import (
-                LocalOrchestrator,
-                LocalOrchestratorConfig,
-            )
-
-            if self._cached_orchestrator is None:
-                self._cached_orchestrator = LocalOrchestrator(
-                    name="serving-local",
-                    id=uuid4(),
-                    config=LocalOrchestratorConfig(),
-                    flavor="local",
-                    type=StackComponentType.ORCHESTRATOR,
-                    user=uuid4(),
-                    created=datetime.now(),
-                    updated=datetime.now(),
-                )
-
-            # Create a placeholder run and execute with a known run id
-            placeholder_run = create_placeholder_run(
-                deployment=self.deployment, logs=None
-            )
-
-            # Start serving runtime context with parameters
-            from zenml.deployers.serving import runtime
-
-            runtime.start(
-                request_id=str(uuid4()),
-                deployment=self.deployment,
-                parameters=resolved_params,
-            )
-
-            try:
-                self._cached_orchestrator.run(
-                    deployment=self.deployment,
-                    stack=active_stack,
-                    placeholder_run=placeholder_run,
-                )
-            except Exception as e:
-                execution_time = time.time() - start
-                logger.error(f"Orchestrator execution failed: {e}")
-                return {
-                    "success": False,
-                    "error": f"Pipeline execution failed: {e!s}",
-                    "execution_time": execution_time,
-                    "metadata": {
-                        "pipeline_name": self.deployment.pipeline_configuration.name,
-                        "deployment_id": str(self.deployment.id),
-                    },
-                }
-            # Fetch the concrete run via its id
-            run: PipelineRunResponse = Client().get_pipeline_run(
-                name_id_or_prefix=placeholder_run.id,
-                hydrate=True,
-                include_full_metadata=True,
-            )
-
+            run = self._execute_with_orchestrator(resolved_params)
             mapped_outputs = self._map_outputs(run)
-
-            execution_time = time.time() - start
-            self.total_executions += 1
-            self.last_execution_time = datetime.now(timezone.utc)
-            return {
-                "success": True,
-                "outputs": mapped_outputs,
-                "execution_time": execution_time,
-                "metadata": {
-                    "pipeline_name": self.deployment.pipeline_configuration.name,
-                    "parameters_used": self._serialize_json_safe(
-                        resolved_params
-                    ),
-                    "deployment_id": str(self.deployment.id),
-                },
-            }
-        except asyncio.TimeoutError:
-            execution_time = time.time() - start
-            return {
-                "success": False,
-                "job_id": None,
-                "error": f"Pipeline execution timed out after {timeout}s",
-                "execution_time": execution_time,
-                "metadata": {},
-            }
+            return self._build_success_response(
+                mapped_outputs=mapped_outputs,
+                start_time=start,
+                resolved_params=resolved_params,
+            )
         except Exception as e:  # noqa: BLE001
-            execution_time = time.time() - start
             logger.error(f"❌ Pipeline execution failed: {e}")
-            return {
-                "success": False,
-                "job_id": None,
-                "error": str(e),
-                "execution_time": execution_time,
-                "metadata": {},
-            }
+            return self._build_error_response(e=e, start_time=start)
+
+    def _execute_with_orchestrator(
+        self, resolved_params: Dict[str, Any]
+    ) -> PipelineRunResponse:
+        """Run the deployment via the (forced local) orchestrator and return the run."""
+        client = Client()
+        active_stack: Stack = client.active_stack
+
+        # Instantiate a local orchestrator explicitly and run with the active stack
+        from zenml.enums import StackComponentType
+        from zenml.orchestrators.local.local_orchestrator import (
+            LocalOrchestrator,
+            LocalOrchestratorConfig,
+        )
+
+        if self._cached_orchestrator is None:
+            self._cached_orchestrator = LocalOrchestrator(
+                name="serving-local",
+                id=uuid4(),
+                config=LocalOrchestratorConfig(),
+                flavor="local",
+                type=StackComponentType.ORCHESTRATOR,
+                user=uuid4(),
+                created=datetime.now(),
+                updated=datetime.now(),
+            )
+
+        # Create a placeholder run and execute with a known run id
+        placeholder_run = create_placeholder_run(
+            deployment=self.deployment, logs=None
+        )
+
+        # Start serving runtime context with parameters
+        from zenml.deployers.serving import runtime
+
+        runtime.start(
+            request_id=str(uuid4()),
+            deployment=self.deployment,
+            parameters=resolved_params,
+        )
+
+        try:
+            self._cached_orchestrator.run(
+                deployment=self.deployment,
+                stack=active_stack,
+                placeholder_run=placeholder_run,
+            )
         finally:
-            # Stop serving runtime context
+            # Always stop serving runtime context
             runtime.stop()
-            # Avoid retaining references to the pipeline object
-            if pipeline is not None:
-                del pipeline
+
+        # Fetch the concrete run via its id
+        run: PipelineRunResponse = Client().get_pipeline_run(
+            name_id_or_prefix=placeholder_run.id,
+            hydrate=True,
+            include_full_metadata=True,
+        )
+        return run
+
+    def _build_success_response(
+        self,
+        mapped_outputs: Dict[str, Any],
+        start_time: float,
+        resolved_params: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        execution_time = time.time() - start_time
+        self.total_executions += 1
+        self.last_execution_time = datetime.now(timezone.utc)
+        assert self.deployment is not None
+        return {
+            "success": True,
+            "outputs": mapped_outputs,
+            "execution_time": execution_time,
+            "metadata": {
+                "pipeline_name": self.deployment.pipeline_configuration.name,
+                "parameters_used": self._serialize_json_safe(resolved_params),
+                "deployment_id": str(self.deployment.id),
+            },
+        }
+
+    def _build_timeout_response(
+        self, start_time: float, timeout: Optional[int]
+    ) -> Dict[str, Any]:
+        execution_time = time.time() - start_time
+        return {
+            "success": False,
+            "job_id": None,
+            "error": f"Pipeline execution timed out after {timeout}s",
+            "execution_time": execution_time,
+            "metadata": {},
+        }
+
+    def _build_error_response(
+        self, e: Exception, start_time: float
+    ) -> Dict[str, Any]:
+        execution_time = time.time() - start_time
+        return {
+            "success": False,
+            "job_id": None,
+            "error": str(e),
+            "execution_time": execution_time,
+            "metadata": {},
+        }
 
     def get_service_info(self) -> Dict[str, Any]:
         """Get service information including pipeline and deployment details.

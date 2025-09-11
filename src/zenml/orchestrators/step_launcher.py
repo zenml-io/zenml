@@ -283,9 +283,7 @@ class StepLauncher:
             step_run_request.logs = logs_model
 
             try:
-                # Always populate request to ensure proper input/output flow
                 request_factory.populate_request(request=step_run_request)
-
             except BaseException as e:
                 logger.exception(f"Failed preparing step `{self._step_name}`.")
                 step_run_request.status = ExecutionStatus.FAILED
@@ -295,7 +293,6 @@ class StepLauncher:
                 )
                 raise
             finally:
-                # Always create real step run for proper input/output flow
                 step_run = Client().zen_store.create_run_step(step_run_request)
                 self._step_run = step_run
                 if model_version := step_run.model_version:
@@ -400,31 +397,26 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
-        # Create effective step config with serving overrides and no-capture optimizations
+        # Create effective step config with provider-based optimizations
 
         effective_step_config = self._step.config.model_copy(deep=True)
 
-        # In no-capture mode, disable caching and step operators for speed
-        # Disable tracking in serving mode regardless of pipeline settings
+        # Apply serving optimizations if serving context is active
         try:
             from zenml.deployers.serving import runtime
 
-            serving_active = runtime.is_active()
-        except Exception:
-            serving_active = False
-
-        if serving_active:
-            effective_step_config = effective_step_config.model_copy(
-                update={
+            if runtime.is_active():
+                updates = {
                     "enable_cache": False,
                     "step_operator": None,
-                    "retry": effective_step_config.retry.model_copy(
-                        update={"max_retries": 0, "delay": 0, "backoff": 1}
-                    )
-                    if effective_step_config.retry
-                    else None,
+                    "retry": None,
                 }
-            )
+                effective_step_config = effective_step_config.model_copy(
+                    update=updates
+                )
+        except ImportError:
+            # Serving module not available, continue with normal config
+            pass
 
         # Prepare step run information with effective config
         step_run_info = StepRunInfo(

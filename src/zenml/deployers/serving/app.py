@@ -28,7 +28,8 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from zenml.deployers.serving.auth import BearerTokenAuthMiddleware
 from zenml.deployers.serving.service import PipelineServingService
@@ -94,7 +95,7 @@ app = FastAPI(
 class PipelineInvokeRequest(BaseModel):
     """Request model for pipeline invocation."""
 
-    parameters: Dict[str, Any] = {}
+    parameters: Dict[str, Any] = Field(default_factory=dict)
     run_name: Optional[str] = None
     timeout: Optional[int] = None
 
@@ -171,10 +172,12 @@ async def invoke_pipeline(
             )
             if err:
                 raise ValueError(f"Invalid parameters: {err}")
-        result = await service.execute_pipeline(
-            parameters=request.parameters,
-            run_name=request.run_name,
-            timeout=request.timeout,
+        # Offload synchronous execution to a thread to avoid blocking the event loop
+        result = await run_in_threadpool(
+            service.execute_pipeline,
+            request.parameters,
+            request.run_name,
+            request.timeout,
         )
         return result
     except Exception as e:
@@ -415,9 +418,6 @@ def _validate_request_parameters(
     Returns an error string if invalid, otherwise None.
     """
     schema = schema or {}
-    if not isinstance(params, dict):
-        return "parameters must be an object"
-
     required = schema.get("required", [])
     props = schema.get("properties", {})
 
