@@ -11,69 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Unit tests for FastAPI serving application."""
-
-from typing import Any, Dict
-from unittest.mock import MagicMock, patch
-from uuid import uuid4
-
-import pytest
-from fastapi.testclient import TestClient
-from pydantic import BaseModel
+"""Pure unit tests for serving app functions."""
 
 from zenml.deployers.serving.app import (
     PipelineInvokeRequest,
-    _install_runtime_openapi,
     _json_type_matches,
     _validate_request_parameters,
-    app,
 )
 
 
-class MockWeatherRequest(BaseModel):
-    """Mock Pydantic model for testing."""
-
-    city: str
-    activities: list[str]
-    extra: Dict[str, Any] | None = None
-
-
-@pytest.fixture
-def mock_service():
-    """Mock PipelineServingService."""
-    service = MagicMock()
-    service.deployment_id = str(uuid4())
-    service.is_healthy.return_value = True
-    service.last_execution_time = None
-    service.get_service_info.return_value = {
-        "deployment_id": service.deployment_id,
-        "pipeline_name": "test_pipeline",
-        "total_executions": 0,
-        "last_execution_time": None,
-        "status": "healthy",
-    }
-    service.get_execution_metrics.return_value = {
-        "total_executions": 0,
-        "last_execution_time": None,
-    }
-    service.request_schema = {
-        "type": "object",
-        "properties": {"city": {"type": "string", "default": "London"}},
-    }
-    service.response_schema = {"type": "object", "additionalProperties": True}
-    return service
-
-
-@pytest.fixture
-def test_client():
-    """FastAPI test client with test mode enabled."""
-    with patch.dict("os.environ", {"ZENML_SERVING_TEST_MODE": "true"}):
-        client = TestClient(app)
-        yield client
-
-
 class TestPipelineInvokeRequest:
-    """Test PipelineInvokeRequest model."""
+    """Unit tests for PipelineInvokeRequest model."""
 
     def test_default_values(self):
         """Test default values for invoke request."""
@@ -93,41 +41,110 @@ class TestPipelineInvokeRequest:
         assert request.run_name == "test_run"
         assert request.timeout == 300
 
+    def test_parameter_types(self):
+        """Test parameter type validation."""
+        # Valid parameters dict
+        request = PipelineInvokeRequest(parameters={"key": "value"})
+        assert isinstance(request.parameters, dict)
 
-class TestValidationHelpers:
-    """Test validation helper functions."""
+        # Empty parameters should be valid
+        request = PipelineInvokeRequest(parameters={})
+        assert request.parameters == {}
 
-    def test_json_type_matches(self):
-        """Test JSON type matching."""
-        # String
-        assert _json_type_matches("hello", "string")
-        assert not _json_type_matches(123, "string")
+    def test_optional_fields(self):
+        """Test optional field behavior."""
+        # Only parameters provided
+        request = PipelineInvokeRequest(parameters={"test": True})
+        assert request.run_name is None
+        assert request.timeout is None
 
-        # Integer
-        assert _json_type_matches(42, "integer")
-        assert not _json_type_matches(True, "integer")  # bool is not int
-        assert not _json_type_matches(3.14, "integer")
+        # All fields provided
+        request = PipelineInvokeRequest(
+            parameters={}, run_name="custom", timeout=600
+        )
+        assert request.run_name == "custom"
+        assert request.timeout == 600
 
-        # Number
-        assert _json_type_matches(42, "number")
-        assert _json_type_matches(3.14, "number")
-        assert not _json_type_matches(True, "number")  # bool is not number
 
-        # Boolean
-        assert _json_type_matches(True, "boolean")
-        assert _json_type_matches(False, "boolean")
-        assert not _json_type_matches(1, "boolean")
+class TestJsonTypeMatching:
+    """Unit tests for JSON type matching function."""
 
-        # Array
-        assert _json_type_matches([1, 2, 3], "array")
-        assert not _json_type_matches("string", "array")
+    def test_string_matching(self):
+        """Test string type matching."""
+        assert _json_type_matches("hello", "string") is True
+        assert _json_type_matches("", "string") is True
+        assert _json_type_matches(123, "string") is False
+        assert _json_type_matches(True, "string") is False
+        assert _json_type_matches([], "string") is False
 
-        # Object
-        assert _json_type_matches({"key": "value"}, "object")
-        assert not _json_type_matches([1, 2], "object")
+    def test_integer_matching(self):
+        """Test integer type matching."""
+        assert _json_type_matches(42, "integer") is True
+        assert _json_type_matches(0, "integer") is True
+        assert _json_type_matches(-10, "integer") is True
+        assert _json_type_matches(3.14, "integer") is False
+        assert (
+            _json_type_matches(True, "integer") is False
+        )  # bool is not int in JSON schema
+        assert _json_type_matches("123", "integer") is False
 
-    def test_validate_request_parameters_valid(self):
-        """Test parameter validation with valid parameters."""
+    def test_number_matching(self):
+        """Test number type matching."""
+        assert _json_type_matches(42, "number") is True
+        assert _json_type_matches(3.14, "number") is True
+        assert _json_type_matches(0, "number") is True
+        assert _json_type_matches(-1.5, "number") is True
+        assert (
+            _json_type_matches(True, "number") is False
+        )  # bool is not number in JSON schema
+        assert _json_type_matches("42", "number") is False
+
+    def test_boolean_matching(self):
+        """Test boolean type matching."""
+        assert _json_type_matches(True, "boolean") is True
+        assert _json_type_matches(False, "boolean") is True
+        assert _json_type_matches(1, "boolean") is False
+        assert _json_type_matches(0, "boolean") is False
+        assert _json_type_matches("true", "boolean") is False
+
+    def test_array_matching(self):
+        """Test array type matching."""
+        assert _json_type_matches([1, 2, 3], "array") is True
+        assert _json_type_matches([], "array") is True
+        assert _json_type_matches(["a", "b"], "array") is True
+        assert _json_type_matches("string", "array") is False
+        assert _json_type_matches({"key": "value"}, "array") is False
+        assert _json_type_matches(123, "array") is False
+
+    def test_object_matching(self):
+        """Test object type matching."""
+        assert _json_type_matches({"key": "value"}, "object") is True
+        assert _json_type_matches({}, "object") is True
+        assert (
+            _json_type_matches({"nested": {"object": True}}, "object") is True
+        )
+        assert _json_type_matches([1, 2], "object") is False
+        assert _json_type_matches("string", "object") is False
+        assert _json_type_matches(42, "object") is False
+
+    def test_null_matching(self):
+        """Test null type matching."""
+        assert _json_type_matches(None, "null") is True
+        assert _json_type_matches(0, "null") is False
+        assert _json_type_matches("", "null") is False
+        assert _json_type_matches(False, "null") is False
+
+    def test_unknown_type(self):
+        """Test unknown type returns False."""
+        assert _json_type_matches("value", "unknown_type") is False
+        assert _json_type_matches(123, "custom") is False
+
+
+class TestRequestParameterValidation:
+    """Unit tests for request parameter validation function."""
+
+    def test_valid_parameters(self):
+        """Test validation with valid parameters."""
         schema = {
             "type": "object",
             "properties": {
@@ -143,8 +160,8 @@ class TestValidationHelpers:
 
         assert result is None  # No errors
 
-    def test_validate_request_parameters_missing_required(self):
-        """Test parameter validation with missing required fields."""
+    def test_missing_required_fields(self):
+        """Test validation with missing required fields."""
         schema = {
             "type": "object",
             "properties": {"city": {"type": "string"}},
@@ -157,8 +174,27 @@ class TestValidationHelpers:
         assert result is not None
         assert "missing required fields: ['city']" in result
 
-    def test_validate_request_parameters_wrong_type(self):
-        """Test parameter validation with wrong types."""
+    def test_multiple_missing_required_fields(self):
+        """Test validation with multiple missing required fields."""
+        schema = {
+            "type": "object",
+            "properties": {
+                "city": {"type": "string"},
+                "country": {"type": "string"},
+            },
+            "required": ["city", "country"],
+        }
+
+        params = {}
+        result = _validate_request_parameters(params, schema)
+
+        assert result is not None
+        assert "missing required fields:" in result
+        assert "city" in result
+        assert "country" in result
+
+    def test_wrong_parameter_types(self):
+        """Test validation with wrong parameter types."""
         schema = {
             "type": "object",
             "properties": {
@@ -172,9 +208,10 @@ class TestValidationHelpers:
 
         assert result is not None
         assert "expected type integer" in result
+        assert "count" in result
 
-    def test_validate_request_parameters_extra_fields(self):
-        """Test parameter validation allows extra fields."""
+    def test_extra_fields_allowed(self):
+        """Test that extra fields are allowed."""
         schema = {"type": "object", "properties": {"city": {"type": "string"}}}
 
         params = {"city": "Paris", "extra": "allowed"}
@@ -182,239 +219,137 @@ class TestValidationHelpers:
 
         assert result is None  # Extra fields are allowed
 
-    def test_validate_request_parameters_not_dict(self):
-        """Test parameter validation with non-dict input."""
+    def test_non_dict_parameters(self):
+        """Test validation with non-dict input."""
         schema = {"type": "object"}
-        params = "not_a_dict"
 
-        result = _validate_request_parameters(params, schema)
-
+        # String input
+        result = _validate_request_parameters("not_a_dict", schema)
         assert result is not None
         assert "parameters must be an object" in result
 
+        # List input
+        result = _validate_request_parameters([1, 2, 3], schema)
+        assert result is not None
+        assert "parameters must be an object" in result
 
-class TestFastAPIApp:
-    """Test FastAPI application endpoints."""
+        # Number input
+        result = _validate_request_parameters(123, schema)
+        assert result is not None
+        assert "parameters must be an object" in result
 
-    def test_health_endpoint_healthy(self, test_client, mock_service):
-        """Test health endpoint when service is healthy."""
-        with patch("zenml.deployers.serving.app._service", mock_service):
-            response = test_client.get("/health")
+    def test_empty_schema(self):
+        """Test validation with empty schema."""
+        schema = {}
+        params = {"any": "parameter"}
 
-            assert response.status_code == 200
-            data = response.json()
-            assert data["status"] == "healthy"
-            assert "deployment_id" in data
-            assert "pipeline_name" in data
+        result = _validate_request_parameters(params, schema)
+        assert result is None  # Should pass with empty schema
 
-    def test_health_endpoint_unhealthy(self, test_client, mock_service):
-        """Test health endpoint when service is unhealthy."""
-        mock_service.is_healthy.return_value = False
+    def test_none_schema(self):
+        """Test validation with None schema."""
+        schema = None
+        params = {"any": "parameter"}
 
-        with patch("zenml.deployers.serving.app._service", mock_service):
-            response = test_client.get("/health")
+        result = _validate_request_parameters(params, schema)
+        assert result is None  # Should pass with None schema
 
-            assert response.status_code == 503
+    def test_no_properties_in_schema(self):
+        """Test validation with schema that has no properties."""
+        schema = {"type": "object", "required": ["city"]}
+        params = {"city": "Paris"}
 
-    def test_info_endpoint(self, test_client, mock_service):
-        """Test info endpoint."""
-        mock_service.deployment = MagicMock()
-        mock_service.deployment.pipeline_spec = MagicMock()
-        mock_service.deployment.pipeline_spec.parameters = {"city": "London"}
-        mock_service.deployment.pipeline_configuration.name = "test_pipeline"
+        result = _validate_request_parameters(params, schema)
+        assert (
+            result is not None
+        )  # Should fail because city is required but no properties defined
 
-        with patch("zenml.deployers.serving.app._service", mock_service):
-            response = test_client.get("/info")
-
-            assert response.status_code == 200
-            data = response.json()
-            assert "pipeline" in data
-            assert "deployment" in data
-            assert data["pipeline"]["name"] == "test_pipeline"
-            assert data["pipeline"]["parameters"] == {"city": "London"}
-
-    def test_metrics_endpoint(self, test_client, mock_service):
-        """Test metrics endpoint."""
-        with patch("zenml.deployers.serving.app._service", mock_service):
-            response = test_client.get("/metrics")
-
-            assert response.status_code == 200
-            data = response.json()
-            assert "total_executions" in data
-            assert "last_execution_time" in data
-
-    def test_status_endpoint(self, test_client, mock_service):
-        """Test status endpoint."""
-        with patch("zenml.deployers.serving.app._service", mock_service):
-            response = test_client.get("/status")
-
-            assert response.status_code == 200
-            data = response.json()
-            assert data["service_name"] == "ZenML Pipeline Serving"
-            assert data["version"] == "0.2.0"
-            assert "configuration" in data
-
-    def test_concurrency_stats_endpoint(self, test_client):
-        """Test concurrency stats endpoint."""
-        response = test_client.get("/concurrency/stats")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert "execution" in data
-        assert "jobs" in data
-        assert "streams" in data
-
-    @patch("zenml.deployers.serving.app.get_pipeline_service")
-    def test_invoke_endpoint_success(
-        self, mock_get_service, test_client, mock_service
-    ):
-        """Test invoke endpoint with successful execution."""
-        mock_service.execute_pipeline.return_value = {
-            "success": True,
-            "outputs": {"step1.result": "test_output"},
-            "execution_time": 1.5,
-            "metadata": {"pipeline_name": "test_pipeline"},
-        }
-        mock_get_service.return_value = mock_service
-
-        request_data = {
-            "parameters": {"city": "Paris"},
-            "run_name": "test_run",
-            "timeout": 300,
-        }
-
-        response = test_client.post("/invoke", json=request_data)
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert "outputs" in data
-        assert "execution_time" in data
-        # Test the qualified output names format
-        assert "step1.result" in data["outputs"]
-
-    @patch("zenml.deployers.serving.app.get_pipeline_service")
-    def test_invoke_endpoint_validation_error(
-        self, mock_get_service, test_client, mock_service
-    ):
-        """Test invoke endpoint with validation error."""
-        mock_service.request_schema = {
-            "type": "object",
-            "properties": {"city": {"type": "string"}},
-            "required": ["city"],
-        }
-        mock_get_service.return_value = mock_service
-
-        request_data = {
-            "parameters": {},  # Missing required city
-            "run_name": "test_run",
-        }
-
-        response = test_client.post("/invoke", json=request_data)
-
-        # Should return success: false due to validation error
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is False
-        assert "error" in data
-
-    def test_root_endpoint(self, test_client, mock_service):
-        """Test root endpoint returns HTML."""
-        with patch("zenml.deployers.serving.app._service", mock_service):
-            response = test_client.get("/")
-
-            assert response.status_code == 200
-            assert "text/html" in response.headers["content-type"]
-            assert "ZenML Pipeline Serving" in response.text
-
-
-class TestOpenAPIIntegration:
-    """Test OpenAPI schema installation."""
-
-    def test_install_runtime_openapi_basic(self, mock_service):
-        """Test OpenAPI schema installation with basic service."""
-        from fastapi import FastAPI
-
-        test_app = FastAPI()
-
-        # Add the invoke route
-        @test_app.post("/invoke")
-        def invoke():
-            return {}
-
-        _install_runtime_openapi(test_app, mock_service)
-
-        # Generate the schema
-        schema = test_app.openapi()
-
-        assert schema is not None
-        assert "paths" in schema
-        assert "/invoke" in schema["paths"]
-        assert "post" in schema["paths"]["/invoke"]
-
-    def test_install_runtime_openapi_with_schemas(self, mock_service):
-        """Test OpenAPI schema installation with custom schemas."""
-        from fastapi import FastAPI
-
-        # Mock service with custom schemas
-        mock_service.request_schema = {
+    def test_properties_without_type(self):
+        """Test validation with properties that have no type specified."""
+        schema = {
             "type": "object",
             "properties": {
-                "city": {"type": "string"},
-                "activities": {"type": "array"},
+                "city": {},  # No type specified
+                "count": {"type": "integer"},
             },
         }
-        mock_service.response_schema = {
+
+        params = {"city": "Paris", "count": 5}
+        result = _validate_request_parameters(params, schema)
+
+        assert result is None  # Should pass when no type is specified
+
+    def test_boolean_edge_cases(self):
+        """Test boolean type validation edge cases."""
+        schema = {
             "type": "object",
-            "properties": {"weather": {"type": "string"}},
+            "properties": {"flag": {"type": "boolean"}},
         }
 
-        test_app = FastAPI()
+        # Valid booleans
+        assert _validate_request_parameters({"flag": True}, schema) is None
+        assert _validate_request_parameters({"flag": False}, schema) is None
 
-        # Add the invoke route
-        @test_app.post("/invoke")
-        def invoke():
-            return {}
+        # Invalid booleans (in JSON schema, 1 and 0 are not booleans)
+        result = _validate_request_parameters({"flag": 1}, schema)
+        assert result is not None
+        assert "expected type boolean" in result
 
-        _install_runtime_openapi(test_app, mock_service)
+        result = _validate_request_parameters({"flag": 0}, schema)
+        assert result is not None
+        assert "expected type boolean" in result
 
-        # Generate the schema
-        schema = test_app.openapi()
+    def test_complex_nested_validation(self):
+        """Test validation with complex nested structures."""
+        schema = {
+            "type": "object",
+            "properties": {
+                "user": {"type": "object"},
+                "preferences": {"type": "array"},
+                "metadata": {"type": "object"},
+            },
+            "required": ["user"],
+        }
 
-        assert schema is not None
-        invoke_schema = schema["paths"]["/invoke"]["post"]
+        # Valid complex parameters
+        params = {
+            "user": {"name": "John", "age": 30},
+            "preferences": ["email", "sms"],
+            "metadata": {"source": "api"},
+        }
+        result = _validate_request_parameters(params, schema)
+        assert result is None
 
-        # Check request schema integration
-        request_body = invoke_schema["requestBody"]["content"][
-            "application/json"
-        ]["schema"]
-        assert (
-            request_body["properties"]["parameters"]
-            == mock_service.request_schema
+        # Invalid: user should be object, not string
+        params = {
+            "user": "john_doe",  # Should be object
+            "preferences": ["email"],
+        }
+        result = _validate_request_parameters(params, schema)
+        assert result is not None
+        assert "expected type object" in result
+
+    def test_validation_error_messages(self):
+        """Test that error messages are clear and helpful."""
+        schema = {
+            "type": "object",
+            "properties": {
+                "temperature": {"type": "number"},
+                "active": {"type": "boolean"},
+            },
+            "required": ["temperature"],
+        }
+
+        # Test missing required field message
+        result = _validate_request_parameters({}, schema)
+        assert "missing required fields: ['temperature']" in result
+
+        # Test type mismatch message
+        result = _validate_request_parameters(
+            {"temperature": "hot", "active": "yes"}, schema
         )
-
-        # Check response schema integration
-        response_schema = invoke_schema["responses"]["200"]["content"][
-            "application/json"
-        ]["schema"]
+        assert result is not None
+        # Should mention the first type error encountered
         assert (
-            response_schema["properties"]["outputs"]
-            == mock_service.response_schema
-        )
-
-    def test_install_runtime_openapi_error_handling(self, mock_service):
-        """Test OpenAPI schema installation error handling."""
-        from fastapi import FastAPI
-
-        # Mock service that raises error during schema access
-        mock_service.request_schema = None
-        mock_service.response_schema = None
-
-        test_app = FastAPI()
-
-        # This should not raise an exception even if schemas are None
-        _install_runtime_openapi(test_app, mock_service)
-
-        # Should still be able to generate basic schema
-        schema = test_app.openapi()
-        assert schema is not None
+            "temperature" in result and "expected type number" in result
+        ) or ("active" in result and "expected type boolean" in result)

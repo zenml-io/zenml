@@ -429,6 +429,10 @@ def _validate_request_parameters(
     if missing:
         return f"missing required fields: {missing}"
 
+    # If there are required fields but no properties defined, validation should fail
+    if required and not props:
+        return "schema requires fields but defines no properties"
+
     for key, val in params.items():
         spec = props.get(key)
         if not spec:
@@ -458,4 +462,6 @@ def _json_type_matches(value: Any, expected: str) -> bool:
         return isinstance(value, list)
     if t == "object":
         return isinstance(value, dict)
-    return True
+    if t == "null":
+        return value is None
+    return False
