@@ -607,7 +607,7 @@ def test_failure_during_initialization_marks_placeholder_run_as_failed(
     assert clean_client.list_pipeline_runs().total == 0
 
     mocker.patch(
-        "zenml.stack.stack.Stack.deploy_pipeline", side_effect=RuntimeError
+        "zenml.stack.stack.Stack.submit_pipeline", side_effect=RuntimeError
     )
 
     with pytest.raises(RuntimeError):

@@ -621,6 +621,7 @@ def create_pipeline_model(
 def sample_snapshot_response_model(
     sample_user_model: UserResponse,
     sample_project_model: ProjectResponse,
+    create_pipeline_model: PipelineResponse,
 ) -> PipelineSnapshotResponse:
     return PipelineSnapshotResponse(
         id=uuid4(),
@@ -636,6 +637,7 @@ def sample_snapshot_response_model(
             pipeline_configuration={"name": ""},
             client_version="0.12.3",
             server_version="0.12.3",
+            pipeline=create_pipeline_model(),
         ),
         resources=PipelineSnapshotResponseResources(
             user=sample_user_model,
