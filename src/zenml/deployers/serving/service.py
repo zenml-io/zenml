@@ -452,7 +452,7 @@ class PipelineServingService:
         """Execute pipeline by delegating to orchestrator with small helpers."""
         # Note: run_name and timeout are reserved for future implementation
         del run_name, timeout  # Silence unused parameter warnings
-        
+
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
 

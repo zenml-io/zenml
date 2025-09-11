@@ -421,6 +421,10 @@ def _validate_request_parameters(
     required = schema.get("required", [])
     props = schema.get("properties", {})
 
+    # Check if params is actually a dict
+    if not isinstance(params, dict):
+        return "parameters must be an object"
+
     missing = [k for k in required if k not in params]
     if missing:
         return f"missing required fields: {missing}"
