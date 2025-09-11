@@ -28,24 +28,24 @@ class StubEntrypointConfiguration(BaseEntrypointConfiguration):
         pass
 
 
-def test_calling_entrypoint_configuration_with_invalid_deployment_id():
-    """Tests that a valid deployment ID is required as argument."""
+def test_calling_entrypoint_configuration_with_invalid_snapshot_id():
+    """Tests that a valid snapshot ID is required as argument."""
     with pytest.raises(ValueError):
         BaseEntrypointConfiguration.get_entrypoint_arguments()
 
     with pytest.raises(ValueError):
         BaseEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id="not_a_uuid"
+            snapshot_id="not_a_uuid"
         )
 
     with does_not_raise():
         BaseEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id=uuid4()
+            snapshot_id=uuid4()
         )
 
 
-def test_loading_the_deployment(clean_client):
-    """Tests loading the deployment by ID."""
+def test_loading_the_snapshot(clean_client):
+    """Tests loading the snapshot by ID."""
     pipeline = clean_client.zen_store.create_pipeline(
         PipelineRequest(
             name="pipeline",
@@ -63,10 +63,10 @@ def test_loading_the_deployment(clean_client):
         pipeline=pipeline.id,
     )
 
-    deployment = clean_client.zen_store.create_deployment(request)
+    snapshot = clean_client.zen_store.create_snapshot(request)
 
     entrypoint_config = StubEntrypointConfiguration(
-        arguments=["--deployment_id", str(deployment.id)]
+        arguments=["--snapshot_id", str(snapshot.id)]
     )
 
-    assert entrypoint_config.load_snapshot() == deployment
+    assert entrypoint_config.load_snapshot() == snapshot

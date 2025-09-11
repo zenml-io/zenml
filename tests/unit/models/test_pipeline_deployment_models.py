@@ -22,8 +22,8 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import PipelineSnapshotBase
 
 
-def test_pipeline_deployment_base_model_fails_with_long_name():
-    """Test that the pipeline deployment base model fails with long names."""
+def test_pipeline_snapshot_base_model_fails_with_long_name():
+    """Test that the pipeline snapshot base model fails with long names."""
     long_text = "a" * (MEDIUMTEXT_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         PipelineSnapshotBase(

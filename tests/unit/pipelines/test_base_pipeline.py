@@ -559,7 +559,7 @@ def test_rerunning_deloyment_does_not_fail(
     clean_client,
     empty_pipeline,  # noqa: F811
 ):
-    """Tests that a deployment can be re-run without issues."""
+    """Tests that a snapshot can be re-run without issues."""
     mock_get_or_create_run = mocker.patch.object(
         type(clean_client.zen_store),
         "get_or_create_run",

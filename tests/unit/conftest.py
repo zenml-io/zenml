@@ -400,7 +400,7 @@ def sample_step_request_model() -> StepRunRequest:
         config=config,
         project=uuid4(),
         user=uuid4(),
-        deployment=uuid4(),
+        snapshot=uuid4(),
     )
 
 
@@ -443,8 +443,8 @@ def sample_pipeline_run(
 
 
 @pytest.fixture
-def sample_pipeline_deployment_request_model() -> PipelineSnapshotRequest:
-    """Return sample pipeline deployment request for testing purposes."""
+def sample_pipeline_snapshot_request_model() -> PipelineSnapshotRequest:
+    """Return sample pipeline snapshot request for testing purposes."""
     return PipelineSnapshotRequest(
         user=uuid4(),
         project=uuid4(),
@@ -618,7 +618,7 @@ def create_pipeline_model(
 
 
 @pytest.fixture
-def sample_deployment_response_model(
+def sample_snapshot_response_model(
     sample_user_model: UserResponse,
     sample_project_model: ProjectResponse,
 ) -> PipelineSnapshotResponse:

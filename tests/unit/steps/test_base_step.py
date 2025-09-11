@@ -907,7 +907,7 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
         RuntimeError,
         match="Configured parameter for the step 'step_with_int_input' conflict with parameter passed in runtime",
     ):
-        deployment = Compiler().compile(
+        snapshot = Compiler().compile(
             pipeline=test_pipeline,
             stack=Client().active_stack,
             run_configuration=run_config,
@@ -917,15 +917,15 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
     run_config = PipelineRunConfiguration.model_validate(
         {"steps": {"step_with_int_input": {"parameters": {"input_": 1}}}}
     )
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=test_pipeline,
         stack=Client().active_stack,
         run_configuration=run_config,
     )
     assert (
-        deployment.step_configurations[
-            "step_with_int_input"
-        ].config.parameters["input_"]
+        snapshot.step_configurations["step_with_int_input"].config.parameters[
+            "input_"
+        ]
         == 1
     )
 
