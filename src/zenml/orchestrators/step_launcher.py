@@ -226,19 +226,10 @@ class StepLauncher:
             BaseException: If the step preparation or execution fails.
         """
         publish_utils.step_exception_info.set(None)
-        # Determine tracking toggle purely from pipeline settings
-        tracking_disabled = orchestrator_utils.is_tracking_disabled(
-            self._deployment.pipeline_configuration.settings
-            if self._deployment.pipeline_configuration.settings
-            else None
-        )
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
         # Enable or disable step logs storage
-        if (
-            handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False)
-            or tracking_disabled
-        ):
+        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
         else:
             step_logging_enabled = orchestrator_utils.is_setting_enabled(
@@ -249,7 +240,7 @@ class StepLauncher:
         logs_context = nullcontext()
         logs_model = None
 
-        if step_logging_enabled and not tracking_disabled:
+        if step_logging_enabled:
             # Configure the logs
             logs_uri = step_logging.prepare_logs_uri(
                 artifact_store=self._stack.artifact_store,
@@ -268,7 +259,7 @@ class StepLauncher:
 
         # In no-capture, caching will be disabled via effective config
         with logs_context:
-            if run_was_created and not tracking_disabled:
+            if run_was_created:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
                     run_id=pipeline_run.id
                 )
@@ -295,11 +286,6 @@ class StepLauncher:
                 # Always populate request to ensure proper input/output flow
                 request_factory.populate_request(request=step_run_request)
 
-                # In no-capture mode, force fresh execution (bypass cache)
-                if tracking_disabled:
-                    step_run_request.original_step_run_id = None
-                    step_run_request.outputs = {}
-                    step_run_request.status = ExecutionStatus.RUNNING
             except BaseException as e:
                 logger.exception(f"Failed preparing step `{self._step_name}`.")
                 step_run_request.status = ExecutionStatus.FAILED
@@ -312,9 +298,7 @@ class StepLauncher:
                 # Always create real step run for proper input/output flow
                 step_run = Client().zen_store.create_run_step(step_run_request)
                 self._step_run = step_run
-                if not tracking_disabled and (
-                    model_version := step_run.model_version
-                ):
+                if model_version := step_run.model_version:
                     step_run_utils.log_model_version_dashboard_url(
                         model_version=model_version
                     )
@@ -352,22 +336,20 @@ class StepLauncher:
                         self._step_name,
                         e,
                     )
-                    if not tracking_disabled:
-                        publish_utils.publish_failed_step_run(step_run.id)
+                    publish_utils.publish_failed_step_run(step_run.id)
                     raise
             else:
                 logger.info(
                     f"Using cached version of step `{self._step_name}`."
                 )
-                if not tracking_disabled:
-                    if (
-                        model_version := step_run.model_version
-                        or pipeline_run.model_version
-                    ):
-                        step_run_utils.link_output_artifacts_to_model_version(
-                            artifacts=step_run.outputs,
-                            model_version=model_version,
-                        )
+                if (
+                    model_version := step_run.model_version
+                    or pipeline_run.model_version
+                ):
+                    step_run_utils.link_output_artifacts_to_model_version(
+                        artifacts=step_run.outputs,
+                        model_version=model_version,
+                    )
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
@@ -419,18 +401,19 @@ class StepLauncher:
             force_write_logs: The context for the step logs.
         """
         # Create effective step config with serving overrides and no-capture optimizations
-        import inspect
-
-        from zenml.orchestrators import utils as orchestrator_utils
-        from zenml.steps.base_step import BaseStep
 
         effective_step_config = self._step.config.model_copy(deep=True)
 
         # In no-capture mode, disable caching and step operators for speed
-        tracking_disabled = orchestrator_utils.is_tracking_disabled(
-            self._deployment.pipeline_configuration.settings
-        )
-        if tracking_disabled:
+        # Disable tracking in serving mode regardless of pipeline settings
+        try:
+            from zenml.deployers.serving import runtime
+
+            serving_active = runtime.is_active()
+        except Exception:
+            serving_active = False
+
+        if serving_active:
             effective_step_config = effective_step_config.model_copy(
                 update={
                     "enable_cache": False,
@@ -441,36 +424,6 @@ class StepLauncher:
                     if effective_step_config.retry
                     else None,
                 }
-            )
-
-        # Inject runtime parameter overrides (if any) for this request.
-        # Filter to entrypoint function args that are not artifact inputs.
-        try:
-            runtime_params = orchestrator_utils.get_runtime_parameters()
-            if runtime_params:
-                step_instance = BaseStep.load_from_source(
-                    self._step.spec.source
-                )
-                sig = inspect.signature(step_instance.entrypoint)
-                allowed_args = [
-                    name for name in sig.parameters.keys() if name != "self"
-                ]
-                artifact_arg_names = set(self._step.spec.inputs.keys())
-
-                filtered = {
-                    k: v
-                    for k, v in runtime_params.items()
-                    if k in allowed_args and k not in artifact_arg_names
-                }
-                if filtered:
-                    original_params = effective_step_config.parameters or {}
-                    merged_params = {**original_params, **filtered}
-                    effective_step_config = effective_step_config.model_copy(
-                        update={"parameters": merged_params}
-                    )
-        except Exception as e:
-            logger.debug(
-                f"Skipping runtime parameter injection for step '{self._step_name}': {e}"
             )
 
         # Prepare step run information with effective config

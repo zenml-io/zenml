@@ -54,7 +54,6 @@ from zenml.orchestrators.publish_utils import (
 )
 from zenml.orchestrators.utils import (
     is_setting_enabled,
-    is_tracking_disabled,
 )
 from zenml.steps.step_context import StepContext, get_step_context
 from zenml.steps.utils import (
@@ -131,16 +130,7 @@ class StepRunner:
         """
         # Store step_run_info for effective config access
         self._step_run_info = step_run_info
-        tracking_disabled = is_tracking_disabled(
-            step_run_info.pipeline.settings
-            if hasattr(step_run_info, "pipeline") and step_run_info.pipeline
-            else None
-        )
-
-        if (
-            handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False)
-            or tracking_disabled
-        ):
+        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
         else:
             enabled_on_step = step_run.config.enable_step_logs
@@ -154,11 +144,7 @@ class StepRunner:
         logs_context = nullcontext()
         # Resolve tracking toggle once for the step context
 
-        if (
-            step_logging_enabled
-            and not redirected.get()
-            and not tracking_disabled
-        ):
+        if step_logging_enabled and not redirected.get():
             if step_run.logs:
                 logs_context = PipelineLogsStorageContext(  # type: ignore[assignment]
                     logs_uri=step_run.logs.uri,
@@ -249,14 +235,13 @@ class StepRunner:
                 raise
             finally:
                 try:
-                    if not tracking_disabled:
-                        step_run_metadata = self._stack.get_step_run_metadata(
-                            info=step_run_info,
-                        )
-                        publish_step_run_metadata(
-                            step_run_id=step_run_info.step_run_id,
-                            step_run_metadata=step_run_metadata,
-                        )
+                    step_run_metadata = self._stack.get_step_run_metadata(
+                        info=step_run_info,
+                    )
+                    publish_step_run_metadata(
+                        step_run_id=step_run_info.step_run_id,
+                        step_run_metadata=step_run_metadata,
+                    )
                     self._stack.cleanup_step_run(
                         info=step_run_info, step_failed=step_failed
                     )
@@ -286,22 +271,18 @@ class StepRunner:
                             logger.error(f"Error validating outputs: {e}")
                             raise
 
-                        # Capture outputs for response if this step is a return target
-                        self._capture_response_outputs(output_data)
-
                         # Persist outputs minimally to enable downstream input resolution
                         output_artifacts = {}
                         artifact_metadata_enabled = False
                         artifact_visualization_enabled = False
-                        if not tracking_disabled:
-                            artifact_metadata_enabled = is_setting_enabled(
-                                is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-                                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-                            )
-                            artifact_visualization_enabled = is_setting_enabled(
-                                is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
-                                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
-                            )
+                        artifact_metadata_enabled = is_setting_enabled(
+                            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                        )
+                        artifact_visualization_enabled = is_setting_enabled(
+                            is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                        )
                         output_artifacts = self._store_output_artifacts(
                             output_data=output_data,
                             output_artifact_uris=output_artifact_uris,
@@ -436,23 +417,6 @@ class StepRunner:
         if args and args[0] == "self":
             args.pop(0)
 
-        # Prefer effective step configuration passed via StepRunInfo for
-        # runtime overrides (e.g., serving), falling back to the original
-        # deployed step configuration.
-        effective_params: Dict[str, Any] = {}
-        try:
-            if (
-                hasattr(self, "_step_run_info")
-                and self._step_run_info
-                and self._step_run_info.config
-            ):
-                effective_params = self._step_run_info.config.parameters or {}
-        except Exception:
-            # Fallback silently if anything goes wrong retrieving effective params
-            effective_params = {}
-        if not effective_params:
-            effective_params = self.configuration.parameters or {}
-
         for arg in args:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
@@ -461,12 +425,27 @@ class StepRunner:
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
                 )
-            elif arg in effective_params:
-                param_value = effective_params[arg]
-                # Pydantic bridging: convert dict to Pydantic model if possible
-                function_params[arg] = self._maybe_convert_to_pydantic(
-                    param_value, arg_type
-                )
+            elif arg in self.configuration.parameters:
+                # Check for serving parameter overrides first
+                from zenml.deployers.serving import runtime
+
+                if runtime.is_active():
+                    # Try to resolve parameter from serving runtime context
+                    resolved_value = self._resolve_serving_parameter(arg)
+                    if resolved_value is not None:
+                        logger.debug(
+                            f"Using serving override for {arg}: {resolved_value}"
+                        )
+                        function_params[arg] = resolved_value
+                    else:
+                        logger.debug(
+                            f"Using config param for {arg}: {self.configuration.parameters[arg]}"
+                        )
+                        function_params[arg] = self.configuration.parameters[
+                            arg
+                        ]
+                else:
+                    function_params[arg] = self.configuration.parameters[arg]
             else:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
@@ -474,33 +453,53 @@ class StepRunner:
 
         return function_params
 
-    def _maybe_convert_to_pydantic(self, value: Any, arg_type: Any) -> Any:
-        """Convert dict to Pydantic model if applicable for dual JSON/Pydantic support.
+    def _resolve_serving_parameter(self, arg_name: str) -> Any:
+        """Resolve a parameter from serving runtime context.
+
+        This method tries to find a parameter value from the serving runtime
+        context by checking pipeline parameters and extracting values from
+        complex objects like Pydantic models.
 
         Args:
-            value: The parameter value (potentially a dict from JSON)
-            arg_type: The expected argument type annotation
+            arg_name: Name of the parameter to resolve
 
         Returns:
-            Converted Pydantic model or original value
+            The resolved parameter value, or None if not found
         """
-        # Only try conversion if value is dict and arg_type looks like Pydantic
-        if (
-            isinstance(value, dict)
-            and arg_type is not None
-            and hasattr(arg_type, "__bases__")
-        ):
+        from zenml.deployers.serving import runtime
+
+        if not runtime.is_active():
+            return None
+
+        # Get all pipeline parameters from serving context
+        pipeline_params = runtime._STATE.pipeline_parameters
+        if not pipeline_params:
+            return None
+
+        # First try direct match
+        if arg_name in pipeline_params:
+            return pipeline_params[arg_name]
+
+        # Try to extract from Pydantic models using model_dump
+        for param_name, param_value in pipeline_params.items():
+            # Only try extraction from Pydantic BaseModel instances
             try:
-                # Check if it's a Pydantic BaseModel subclass
                 from pydantic import BaseModel
 
-                if issubclass(arg_type, BaseModel):
-                    return arg_type(**value)  # Convert dict to Pydantic model
-            except (TypeError, ImportError, Exception):
-                # If conversion fails or Pydantic not available, use original value
-                pass
+                if isinstance(param_value, BaseModel):
+                    # Use model_dump to safely get all fields as dict
+                    model_dict = param_value.model_dump()
+                    if arg_name in model_dict:
+                        extracted_value = model_dict[arg_name]
+                        logger.debug(
+                            f"Extracted {arg_name}={extracted_value} from {param_name}"
+                        )
+                        return extracted_value
+            except Exception:
+                # Skip this parameter if extraction fails
+                continue
 
-        return value
+        return None
 
     def _parse_hook_inputs(
         self,
@@ -670,83 +669,6 @@ class StepRunner:
                     )
             validated_outputs[output_name] = return_value
         return validated_outputs
-
-    def _capture_response_outputs(self, output_data: Dict[str, Any]) -> None:
-        """Capture outputs for response if this step is a return target.
-
-        Args:
-            output_data: Validated output data from the step
-        """
-        from zenml.orchestrators.utils import (
-            get_return_targets,
-            response_tap_set,
-        )
-
-        step_name = self._step.spec.pipeline_parameter_name
-        return_targets = get_return_targets()
-
-        if step_name not in return_targets:
-            return
-
-        expected_output_name = return_targets[step_name]
-
-        # Pick the output value
-        if expected_output_name and expected_output_name in output_data:
-            # Use specific expected output
-            value = output_data[expected_output_name]
-            output_name = expected_output_name
-        elif len(output_data) == 1:
-            # Single output fallback
-            output_name = list(output_data.keys())[0]
-            value = output_data[output_name]
-        else:
-            logger.warning(
-                f"Step '{step_name}' is a return target but no matching output found. "
-                f"Expected: '{expected_output_name}', Available: {list(output_data.keys())}"
-            )
-            return
-
-        logger.debug(
-            f"Capturing response output '{output_name}' from step '{step_name}': {type(value)}"
-        )
-
-        # Serialize for JSON response
-        serialized_value = self._serialize_for_json(value)
-
-        # Store in response tap
-        response_tap_set(output_name, serialized_value)
-
-    def _serialize_for_json(self, value: Any) -> Any:
-        """Serialize a value for JSON response with proper numpy/pandas handling.
-
-        Args:
-            value: The value to serialize
-
-        Returns:
-            JSON-serializable representation of the value
-        """
-        try:
-            import json
-
-            # Handle common ML types that aren't JSON serializable
-            if hasattr(value, "tolist"):  # numpy arrays, pandas Series
-                return value.tolist()
-            elif hasattr(value, "to_dict"):  # pandas DataFrames
-                return value.to_dict()
-            elif hasattr(value, "__array__"):  # numpy-like arrays
-                import numpy as np
-
-                return np.asarray(value).tolist()
-
-            # Test if it's already JSON serializable
-            json.dumps(value)
-            return value
-        except (TypeError, ValueError, ImportError):
-            # Safe fallback with size limit for large objects
-            str_repr = str(value)
-            if len(str_repr) > 1000:  # Truncate very large objects
-                return f"{str_repr[:1000]}... [truncated, original length: {len(str_repr)}]"
-            return str_repr
 
     def _store_output_artifacts(
         self,

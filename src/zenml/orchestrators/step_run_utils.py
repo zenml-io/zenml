@@ -69,6 +69,15 @@ class StepRunRequestFactory:
         Returns:
             Whether the step has caching enabled.
         """
+        # Disable caching entirely when serving runtime is active
+        try:
+            from zenml.deployers.serving import runtime
+
+            if runtime.is_active():
+                return False
+        except Exception:
+            pass
+
         step = self.deployment.step_configurations[invocation_id]
         return utils.is_setting_enabled(
             is_enabled_on_step=step.config.enable_cache,
@@ -145,6 +154,15 @@ class StepRunRequestFactory:
             is_enabled_on_step=step.config.enable_cache,
             is_enabled_on_pipeline=self.deployment.pipeline_configuration.enable_cache,
         )
+
+        # Disable caching for serving requests to ensure fresh execution
+        try:
+            from zenml.deployers.serving import runtime
+
+            if runtime.is_active():
+                cache_enabled = False
+        except Exception:
+            pass
 
         if cache_enabled:
             if cached_step_run := cache_utils.get_cached_step_run(

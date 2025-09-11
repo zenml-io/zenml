@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Dict, Sequence, Type
 from zenml.config.constants import (
     DOCKER_SETTINGS_KEY,
     RESOURCE_SETTINGS_KEY,
-    SERVING_SETTINGS_KEY,
 )
 from zenml.enums import StackComponentType
 
@@ -131,12 +130,10 @@ def get_general_settings() -> Dict[str, Type["BaseSettings"]]:
         Dictionary mapping general settings keys to their type.
     """
     from zenml.config import DockerSettings, ResourceSettings
-    from zenml.config.serving_settings import ServingSettings
 
     return {
         DOCKER_SETTINGS_KEY: DockerSettings,
         RESOURCE_SETTINGS_KEY: ResourceSettings,
-        SERVING_SETTINGS_KEY: ServingSettings,
     }
 
 

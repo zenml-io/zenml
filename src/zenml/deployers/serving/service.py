@@ -19,19 +19,26 @@ applies them to the loaded deployment, and triggers the orchestrator.
 """
 
 import asyncio
+import inspect
+import json
 import time
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+import traceback
+import typing
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional, Type, cast, get_args, get_origin
 from uuid import UUID, uuid4
 
 from zenml.client import Client
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
-from zenml.orchestrators import utils as orchestrator_utils
-from zenml.orchestrators.topsort import topsorted_layers
+from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.pipelines.pipeline_definition import Pipeline
+from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
 from zenml.utils import source_utils
+from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
 
@@ -45,7 +52,7 @@ class PipelineServingService:
     infrastructure.
     """
 
-    def __init__(self, deployment_id: str):
+    def __init__(self, deployment_id: UUID):
         """Initialize the pipeline serving service.
 
         Args:
@@ -53,23 +60,87 @@ class PipelineServingService:
         """
         self.deployment_id = deployment_id
         self.deployment: Optional[PipelineDeploymentResponse] = None
-        self.parameter_schema: Dict[str, Any] = {}
         self.service_start_time = time.time()
         self.last_execution_time: Optional[datetime] = None
         self.pipeline_state: Optional[Any] = None
+        # Cache a local orchestrator instance to avoid per-request construction
+        self._cached_orchestrator: Optional["BaseOrchestrator"] = None
+        # Cached parameter type map extracted from the pipeline entrypoint
+        self._param_types: Dict[str, Any] = {}
 
-        # Execution statistics
-        self.execution_stats: Dict[str, Any] = {
-            "total_executions": 0,
-            "successful_executions": 0,
-            "failed_executions": 0,
-            "total_execution_time": 0.0,
-            "executions_24h": [],  # Store timestamps for 24h tracking
-        }
+        # Simple execution tracking
+        self.total_executions = 0
 
         logger.info(
             f"Initializing PipelineServingService for deployment: {deployment_id}"
         )
+
+    # Internal helpers
+    def _ensure_param_types(self) -> bool:
+        """Ensure cached parameter types from the pipeline entrypoint are available.
+
+        Returns:
+            True if parameter types are available, False otherwise.
+        """
+        if self._param_types:
+            return True
+        try:
+            if not self.deployment or not self.deployment.pipeline_spec:
+                return False
+            from zenml.steps.entrypoint_function_utils import (
+                validate_entrypoint_function,
+            )
+
+            assert self.deployment.pipeline_spec.source is not None
+            pipeline_class = source_utils.load(
+                self.deployment.pipeline_spec.source
+            )
+            entry_def = validate_entrypoint_function(pipeline_class.entrypoint)
+            self._param_types = {
+                name: param.annotation
+                for name, param in entry_def.inputs.items()
+            }
+            return True
+        except Exception as e:
+            logger.debug(
+                "Failed to cache parameter types from entrypoint: %s", e
+            )
+            return False
+
+    @staticmethod
+    def _extract_basemodel(annotation: Any) -> Optional[type]:
+        """Try to extract a Pydantic BaseModel class from an annotation."""
+        try:
+            from pydantic import BaseModel
+        except Exception:
+            return None
+        origin = get_origin(annotation)
+        if origin is None:
+            if inspect.isclass(annotation) and issubclass(
+                annotation, BaseModel
+            ):
+                return annotation
+            return None
+        # Annotated[T, ...]
+        if origin is getattr(typing, "Annotated", None):
+            args = get_args(annotation)
+            return (
+                PipelineServingService._extract_basemodel(args[0])
+                if args
+                else None
+            )
+        # Optional/Union
+        if origin is typing.Union:
+            models = [
+                m
+                for m in (
+                    PipelineServingService._extract_basemodel(a)
+                    for a in get_args(annotation)
+                )
+                if m
+            ]
+            return models[0] if len(set(models)) == 1 else None
+        return None
 
     async def initialize(self) -> None:
         """Initialize the service by loading deployment configuration.
@@ -79,7 +150,6 @@ class PipelineServingService:
 
         Raises:
             ValueError: If deployment ID is invalid or deployment not found
-            Exception: If initialization fails
         """
         try:
             logger.info("Loading pipeline deployment configuration...")
@@ -87,29 +157,18 @@ class PipelineServingService:
             # Load deployment from ZenML store
             client = Client()
 
-            # Convert deployment_id to UUID safely
-            try:
-                if isinstance(self.deployment_id, str):
-                    deployment_uuid = UUID(self.deployment_id)
-                else:
-                    deployment_uuid = self.deployment_id
-            except (ValueError, TypeError) as e:
-                raise ValueError(
-                    f"Invalid deployment ID format: {self.deployment_id}"
-                ) from e
-
             self.deployment = client.zen_store.get_deployment(
-                deployment_id=deployment_uuid
+                deployment_id=self.deployment_id
             )
 
             # Activate integrations to ensure all components are available
             integration_registry.activate_integrations()
 
-            # Extract parameter schema for validation
-            self.parameter_schema = self._extract_parameter_schema()
+            # Pre-compute parameter types (best-effort)
+            self._ensure_param_types()
 
             # Execute the init hook, if present
-            self._execute_init_hook()
+            await self._execute_init_hook()
 
             # Log successful initialization
             pipeline_name = self.deployment.pipeline_configuration.name
@@ -121,191 +180,198 @@ class PipelineServingService:
             logger.info(
                 f"   Stack: {self.deployment.stack.name if self.deployment.stack else 'unknown'}"
             )
-            logger.info(f"   Parameters: {list(self.parameter_schema.keys())}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to initialize service: {str(e)}")
-            logger.error(f"   Error type: {type(e)}")
-            import traceback
-
+            logger.error(f"❌ Failed to initialize service: {e}")
             logger.error(f"   Traceback: {traceback.format_exc()}")
             raise
 
     async def cleanup(self) -> None:
         """Cleanup the service by executing the pipeline's cleanup hook, if present."""
-        if not self.deployment:
+        if (
+            not self.deployment
+            or not self.deployment.pipeline_configuration.cleanup_hook_source
+        ):
             return
 
-        if self.deployment.pipeline_configuration.cleanup_hook_source:
-            logger.info("Executing pipeline's cleanup hook...")
-            try:
-                cleanup_hook = source_utils.load(
-                    self.deployment.pipeline_configuration.cleanup_hook_source
-                )
-            except Exception as e:
-                logger.exception(f"Failed to load the cleanup hook: {e}")
-                raise
-            try:
+        logger.info("Executing pipeline's cleanup hook...")
+        try:
+            cleanup_hook = source_utils.load(
+                self.deployment.pipeline_configuration.cleanup_hook_source
+            )
+            if inspect.iscoroutinefunction(cleanup_hook):
+                await cleanup_hook()
+            else:
                 cleanup_hook()
-            except Exception as e:
-                logger.exception(f"Failed to execute cleanup hook: {e}")
+        except Exception as e:
+            logger.exception(f"Failed to execute cleanup hook: {e}")
             raise
 
-    def _extract_parameter_schema(self) -> Dict[str, Any]:
-        """Extract parameter schema from pipeline deployment and function signature.
-
-        Returns:
-            Dictionary containing parameter information with types and defaults
-        """
-        schema: Dict[str, Any] = {}
-
-        if not self.deployment:
-            return schema
-
-        deployment = self.deployment  # Local var for type narrowing
-
-        # Get parameters from pipeline configuration
-        pipeline_params = deployment.pipeline_configuration.parameters or {}
-
-        for param_name, param_value in pipeline_params.items():
-            # Handle parameter type safely
-            try:
-                param_type = (
-                    type(param_value).__name__
-                    if param_value is not None
-                    else "NoneType"
-                )
-            except Exception:
-                param_type = "unknown"
-
-            schema[param_name] = {
-                "type": param_type,
-                "default": param_value,
-                "required": False,  # Since it has a default
-            }
-
-        # Enhanced: Extract parameters from pipeline function signature
+    def _serialize_json_safe(self, value: Any) -> Any:
+        """Make value JSON-serializable using ZenML's encoder."""
         try:
-            # Get the pipeline source and load it to inspect the function signature
-            pipeline_spec = getattr(
-                self.deployment.pipeline_configuration, "spec", None
-            )
-            if pipeline_spec and getattr(pipeline_spec, "source", None):
-                import inspect
+            # Use ZenML's comprehensive encoder
+            json.dumps(value, default=pydantic_encoder)
+            return value
+        except (TypeError, ValueError, OverflowError):
+            # Fallback to string representation
+            s = str(value)
+            return s if len(s) <= 1000 else f"{s[:1000]}... [truncated]"
 
-                from zenml.utils import source_utils
+    def _map_outputs(self, run: PipelineRunResponse) -> Dict[str, Any]:
+        """Map pipeline outputs by returning all step outputs with qualified names."""
+        from zenml.artifacts.utils import load_artifact_from_response
 
-                # Load the pipeline function
-                pipeline_func = source_utils.load(pipeline_spec.source)
+        mapped_outputs: Dict[str, Any] = {}
 
-                # Get function signature
-                sig = inspect.signature(pipeline_func)
-
-                for param_name, param in sig.parameters.items():
-                    # Skip if we already have this parameter from deployment config
-                    if param_name in schema:
-                        continue
-
-                    # Extract type information
-                    param_type = "str"  # Default fallback
-                    if param.annotation != inspect.Parameter.empty:
-                        if hasattr(param.annotation, "__name__"):
-                            param_type = param.annotation.__name__
-                        else:
-                            param_type = str(param.annotation)
-
-                    # Extract default value
-                    has_default = param.default != inspect.Parameter.empty
-                    default_value = param.default if has_default else None
-
-                    schema[param_name] = {
-                        "type": param_type,
-                        "default": default_value,
-                        "required": not has_default,
-                    }
-
+        for step_name, step_run in (run.steps or {}).items():
+            if not step_run or not step_run.outputs:
+                continue
+            for out_name, arts in (step_run.outputs or {}).items():
+                if not arts:
+                    continue
+                try:
+                    # TODO: handle multiple artifacts
+                    val = load_artifact_from_response(arts[0])
+                    if val is not None:
+                        mapped_outputs[f"{step_name}.{out_name}"] = (
+                            self._serialize_json_safe(val)
+                        )
+                except Exception as e:
                     logger.debug(
-                        f"Extracted function parameter: {param_name} ({param_type}) = {default_value}"
+                        f"Failed to load artifact for {step_name}.{out_name}: {e}"
                     )
+                    continue
 
-        except Exception as e:
-            logger.warning(
-                f"Failed to extract pipeline function signature: {e}"
-            )
-            # Continue with just deployment parameters
+        return mapped_outputs
 
-        logger.debug(f"Final extracted parameter schema: {schema}")
-        return schema
-
-    def _execute_init_hook(self) -> None:
+    async def _execute_init_hook(self) -> None:
         """Execute the pipeline's init hook, if present."""
-        if not self.deployment:
+        if (
+            not self.deployment
+            or not self.deployment.pipeline_configuration.init_hook_source
+        ):
             return
 
-        if self.deployment.pipeline_configuration.init_hook_source:
-            logger.info("Executing pipeline's init hook...")
-            try:
-                init_hook = source_utils.load(
-                    self.deployment.pipeline_configuration.init_hook_source
-                )
-            except Exception as e:
-                logger.exception(f"Failed to load the init hook: {e}")
-                raise
-            try:
+        logger.info("Executing pipeline's init hook...")
+        try:
+            init_hook = source_utils.load(
+                self.deployment.pipeline_configuration.init_hook_source
+            )
+
+            if inspect.iscoroutinefunction(init_hook):
+                self.pipeline_state = await init_hook()
+            else:
                 self.pipeline_state = init_hook()
-            except Exception as e:
-                logger.exception(f"Failed to execute init hook: {e}")
-                raise
+        except Exception as e:
+            logger.exception(f"Failed to execute init hook: {e}")
+            raise
 
     def _resolve_parameters(
         self, request_params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Resolve pipeline parameters with request overrides.
+        """Merge request parameters with deployment defaults and handle type conversion.
 
         Args:
-            request_params: Parameters provided in the API request
+            request_params: Parameters from API request
 
         Returns:
-            Dictionary of resolved parameters (deployment defaults overridden)
+            Merged and type-converted parameters dictionary
         """
-        defaults: Dict[str, Any] = {}
-        if self.deployment:
-            defaults = self.deployment.pipeline_configuration.parameters or {}
-        resolved = {**defaults, **(request_params or {})}
-        logger.debug(f"Resolved parameters: {list(resolved.keys())}")
-        return resolved
+        if self.deployment and self.deployment.pipeline_spec:
+            defaults = self.deployment.pipeline_spec.parameters or {}
+        else:
+            defaults = {}
+        request_params = request_params or {}
+        # Ensure types, then strictly reject unknown parameter names
+        self._ensure_param_types()
+        if self._param_types:
+            allowed = set(self._param_types.keys())
+            unknown = set(request_params.keys()) - allowed
+            if unknown:
+                allowed_list = ", ".join(sorted(allowed))
+                unknown_list = ", ".join(sorted(unknown))
+                raise ValueError(
+                    f"Unknown parameter(s): {unknown_list}. Allowed parameters: {allowed_list}."
+                )
 
-    def _serialize_for_json(self, value: Any) -> Any:
-        """Serialize a value for JSON response with proper numpy/pandas handling.
+            # Fail fast on missing required parameters (no deployment default)
+            required = allowed - set(defaults.keys())
+            missing = required - set(request_params.keys())
+            if missing:
+                missing_list = ", ".join(sorted(missing))
+                raise ValueError(
+                    f"Missing required parameter(s): {missing_list}. Provide them in the request body."
+                )
 
-        Args:
-            value: The value to serialize
+        # Simple merge - request params override defaults
+        resolved = {**defaults, **request_params}
 
-        Returns:
-            JSON-serializable representation of the value
+        # Convert parameters to proper types based on pipeline signature
+        return self._convert_parameter_types(resolved)
+
+    def _convert_parameter_types(
+        self, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Convert parameter values to their expected types using cached types.
+
+        This leverages Pydantic TypeAdapter to validate/coerce primitives,
+        unions, containers, and nested BaseModels. For BaseModel parameters,
+        dict values are partially merged with deployment defaults before
+        validation.
         """
-        try:
-            import json
+        if not self.deployment or not self.deployment.pipeline_spec:
+            return params
 
-            # Handle common ML types that aren't JSON serializable
-            if hasattr(value, "tolist"):  # numpy arrays, pandas Series
-                return value.tolist()
-            elif hasattr(value, "to_dict"):  # pandas DataFrames
-                return value.to_dict()
-            elif hasattr(value, "__array__"):  # numpy-like arrays
-                import numpy as np
+        # Ensure parameter types are cached
+        if not self._ensure_param_types():
+            return params
 
-                return np.asarray(value).tolist()
+        from pydantic import BaseModel, TypeAdapter
 
-            # Test if it's already JSON serializable
-            json.dumps(value)
-            return value
-        except (TypeError, ValueError, ImportError):
-            # Safe fallback with size limit for large objects
-            str_repr = str(value)
-            if len(str_repr) > 1000:  # Truncate very large objects
-                return f"{str_repr[:1000]}... [truncated, original length: {len(str_repr)}]"
-            return str_repr
+        defaults = self.deployment.pipeline_spec.parameters or {}
+
+        converted: Dict[str, Any] = {}
+
+        for name, value in params.items():
+            annot = self._param_types.get(name)
+            if not annot:
+                # Unknown or untyped parameter: keep as-is
+                converted[name] = value
+                continue
+
+            # Partial-update behavior for BaseModel when incoming value is a dict
+            model_cls = self._extract_basemodel(annot)
+            if model_cls and isinstance(value, dict):
+                try:
+                    base: Dict[str, Any] = {}
+                    dflt = defaults.get(name)
+                    if isinstance(dflt, BaseModel):
+                        base = dflt.model_dump()
+                    elif isinstance(dflt, dict):
+                        base = dict(dflt)
+                    base.update(value)
+                    # mypy: ensure model_cls is a BaseModel subclass
+                    if inspect.isclass(model_cls) and issubclass(model_cls, BaseModel):
+                        bm_cls = cast(Type[BaseModel], model_cls)
+                        converted[name] = bm_cls.model_validate(base)
+                        continue
+                except Exception:
+                    logger.exception(
+                        "Validation failed for BaseModel parameter '%s'", name
+                    )
+                    converted[name] = value
+                    continue
+
+            # Generic validation/coercion using TypeAdapter
+            try:
+                ta = TypeAdapter(annot)
+                converted[name] = ta.validate_python(value)
+            except Exception:
+                logger.exception("Type conversion failed for '%s'", name)
+                converted[name] = value
+
+        return converted
 
     async def execute_pipeline(
         self,
@@ -314,116 +380,97 @@ class PipelineServingService:
         timeout: Optional[int] = 300,
     ) -> Dict[str, Any]:
         """Execute pipeline synchronously by invoking BaseOrchestrator.run_step."""
-        from zenml.orchestrators import utils as orchestrator_utils
-
         if not self.deployment:
             raise RuntimeError("Service not properly initialized")
         start = time.time()
         logger.info("Starting pipeline execution")
-        # Set up response capture
-        orchestrator_utils.response_tap_clear()
-        self._setup_return_targets()
+        # Run with a cloned deployment and map outputs from produced artifacts
 
+        pipeline: Optional[Pipeline] = None
         try:
-            # Resolve request parameters
+            # Resolve request parameters and rebuild a per-request deployment
             resolved_params = self._resolve_parameters(parameters)
+            client = Client()
+            active_stack: Stack = client.active_stack
+            # No persisted interface to validate; mapping built at startup
 
-            # Expose runtime parameters via a context variable so the launcher
-            # can inject them into the effective step configuration per-step.
-            orchestrator_utils.set_runtime_parameters(resolved_params)
-
-            # Get deployment and check if we're in no-capture mode
-            deployment = self.deployment
-            _ = orchestrator_utils.is_tracking_disabled(
-                deployment.pipeline_configuration.settings
+            # Instantiate a local orchestrator explicitly and run with the active stack
+            from zenml.enums import StackComponentType
+            from zenml.orchestrators.local.local_orchestrator import (
+                LocalOrchestrator,
+                LocalOrchestratorConfig,
             )
 
-            # Set serving capture default for this request (no model mutations needed)
-            import os
+            if self._cached_orchestrator is None:
+                self._cached_orchestrator = LocalOrchestrator(
+                    name="serving-local",
+                    id=uuid4(),
+                    config=LocalOrchestratorConfig(),
+                    flavor="local",
+                    type=StackComponentType.ORCHESTRATOR,
+                    user=uuid4(),
+                    created=datetime.now(),
+                    updated=datetime.now(),
+                )
 
-            original_capture_default = os.environ.get(
-                "ZENML_SERVING_CAPTURE_DEFAULT"
+            # Create a placeholder run and execute with a known run id
+            placeholder_run = create_placeholder_run(
+                deployment=self.deployment, logs=None
             )
-            os.environ["ZENML_SERVING_CAPTURE_DEFAULT"] = "none"
 
-            # Build execution order using the production-tested topsort utility
-            steps = deployment.step_configurations
-            node_ids = list(steps.keys())
-            parent_map: Dict[str, List[str]] = {
-                name: [
-                    p for p in steps[name].spec.upstream_steps if p in steps
-                ]
-                for name in node_ids
-            }
-            child_map: Dict[str, List[str]] = {name: [] for name in node_ids}
-            for child, parents in parent_map.items():
-                for p in parents:
-                    child_map[p].append(child)
+            # Start serving runtime context with parameters
+            from zenml.deployers.serving import runtime
 
-            layers = topsorted_layers(
-                nodes=node_ids,
-                get_node_id_fn=lambda n: n,
-                get_parent_nodes=lambda n: parent_map[n],
-                get_child_nodes=lambda n: child_map[n],
+            runtime.start(
+                request_id=str(uuid4()),
+                deployment=self.deployment,
+                parameters=resolved_params,
             )
-            order: List[str] = [n for layer in layers for n in layer]
 
-            # No-capture optimizations handled by effective config in StepLauncher
-
-            # Use orchestrator.run_step only (no full orchestrator.run)
-            assert deployment.stack is not None
-            stack = Stack.from_model(deployment.stack)
-
-            # Note: No artifact store override needed with tap mechanism
-
-            orchestrator = stack.orchestrator
-            # Ensure a stable run id for StepLauncher to reuse the same PipelineRun
-            if hasattr(orchestrator, "_orchestrator_run_id"):
-                setattr(orchestrator, "_orchestrator_run_id", str(uuid4()))
-
-            # No serving overrides population in local orchestrator path
-
-            # Prepare, run each step (standard local orchestrator behavior), then cleanup
-            orchestrator._prepare_run(deployment=deployment)
             try:
-                for step_name in order:
-                    orchestrator.run_step(steps[step_name])
+                self._cached_orchestrator.run(
+                    deployment=self.deployment,
+                    stack=active_stack,
+                    placeholder_run=placeholder_run,
+                )
+            except Exception as e:
+                execution_time = time.time() - start
+                logger.error(f"Orchestrator execution failed: {e}")
+                return {
+                    "success": False,
+                    "error": f"Pipeline execution failed: {e!s}",
+                    "execution_time": execution_time,
+                    "metadata": {
+                        "pipeline_name": self.deployment.pipeline_configuration.name,
+                        "deployment_id": str(self.deployment.id),
+                    },
+                }
+            # Fetch the concrete run via its id
+            run: PipelineRunResponse = Client().get_pipeline_run(
+                name_id_or_prefix=placeholder_run.id,
+                hydrate=True,
+                include_full_metadata=True,
+            )
 
-            finally:
-                orchestrator._cleanup_run()
-                # Restore original capture default environment variable
-                if original_capture_default is None:
-                    os.environ.pop("ZENML_SERVING_CAPTURE_DEFAULT", None)
-                else:
-                    os.environ["ZENML_SERVING_CAPTURE_DEFAULT"] = (
-                        original_capture_default
-                    )
-                # Clear runtime parameter overrides for this request
-                try:
-                    orchestrator_utils.clear_runtime_parameters()
-                except Exception:
-                    pass
-
-            # Get captured outputs from response tap
-            outputs = orchestrator_utils.response_tap_get_all()
+            mapped_outputs = self._map_outputs(run)
 
             execution_time = time.time() - start
-            self._update_execution_stats(True, execution_time)
+            self.total_executions += 1
             self.last_execution_time = datetime.now(timezone.utc)
             return {
                 "success": True,
-                "outputs": outputs,
+                "outputs": mapped_outputs,
                 "execution_time": execution_time,
                 "metadata": {
                     "pipeline_name": self.deployment.pipeline_configuration.name,
-                    "parameters_used": resolved_params,
+                    "parameters_used": self._serialize_json_safe(
+                        resolved_params
+                    ),
                     "deployment_id": str(self.deployment.id),
-                    "steps_executed": len(order),
                 },
             }
         except asyncio.TimeoutError:
             execution_time = time.time() - start
-            self._update_execution_stats(False, execution_time)
             return {
                 "success": False,
                 "job_id": None,
@@ -433,7 +480,6 @@ class PipelineServingService:
             }
         except Exception as e:  # noqa: BLE001
             execution_time = time.time() - start
-            self._update_execution_stats(False, execution_time)
             logger.error(f"❌ Pipeline execution failed: {e}")
             return {
                 "success": False,
@@ -443,97 +489,11 @@ class PipelineServingService:
                 "metadata": {},
             }
         finally:
-            # Clean up response tap
-            orchestrator_utils.response_tap_clear()
-
-    async def submit_pipeline(
-        self,
-        parameters: Dict[str, Any],
-        run_name: Optional[str] = None,
-        timeout: Optional[int] = 600,
-    ) -> Dict[str, Any]:
-        """Submit pipeline for asynchronous execution using the orchestrator."""
-        if not self.deployment:
-            raise RuntimeError("Service not properly initialized")
-
-        resolved_params = self._resolve_parameters(parameters)
-
-        async def _background() -> None:
-            try:
-                await self.execute_pipeline(
-                    parameters=resolved_params,
-                    run_name=run_name,
-                    timeout=timeout,
-                )
-            except Exception as e:  # noqa: BLE001
-                logger.error(f"Background execution failed: {e}")
-
-        asyncio.create_task(_background())
-        return {
-            "success": True,
-            "job_id": None,
-            "message": "Pipeline execution submitted successfully",
-            "status": "submitted",
-            "metadata": {
-                "job_id": None,
-                "pipeline_name": self.deployment.pipeline_configuration.name,
-                "parameters_used": resolved_params,
-                "deployment_id": self.deployment_id,
-            },
-        }
-
-    def _update_execution_stats(
-        self, success: bool, execution_time: float
-    ) -> None:
-        """Update execution statistics.
-
-        Args:
-            success: Whether the execution was successful
-            execution_time: Execution time in seconds
-        """
-        current_time = datetime.now(timezone.utc)
-
-        # Update counters
-        self.execution_stats["total_executions"] += 1
-        if success:
-            self.execution_stats["successful_executions"] += 1
-        else:
-            self.execution_stats["failed_executions"] += 1
-
-        # Update timing
-        self.execution_stats["total_execution_time"] += execution_time
-
-        # Track 24h executions
-        self.execution_stats["executions_24h"].append(current_time)
-
-        # Clean up old 24h entries (keep only last 24 hours)
-        cutoff_time = current_time - timedelta(hours=24)
-        self.execution_stats["executions_24h"] = [
-            ts
-            for ts in self.execution_stats["executions_24h"]
-            if ts > cutoff_time
-        ]
-
-    def get_execution_metrics(self) -> Dict[str, Any]:
-        """Get current execution metrics and statistics.
-
-        Returns:
-            Dictionary containing execution metrics
-        """
-        stats = self.execution_stats
-        total_executions = max(
-            stats["total_executions"], 1
-        )  # Avoid division by zero
-
-        return {
-            "total_executions": stats["total_executions"],
-            "successful_executions": stats["successful_executions"],
-            "failed_executions": stats["failed_executions"],
-            "success_rate": stats["successful_executions"] / total_executions,
-            "average_execution_time": stats["total_execution_time"]
-            / total_executions,
-            "last_24h_executions": len(stats["executions_24h"]),
-        }
+            # Stop serving runtime context
+            runtime.stop()
+            # Avoid retaining references to the pipeline object
+            if pipeline is not None:
+                del pipeline
 
     def get_service_info(self) -> Dict[str, Any]:
         """Get service information including pipeline and deployment details.
@@ -545,90 +505,122 @@ class PipelineServingService:
             return {"error": "Service not initialized"}
 
         return {
-            "service": {
-                "name": "ZenML Pipeline Serving",
-                "version": "0.1.0",
-                "deployment_id": self.deployment_id,
-                "uptime": time.time() - self.service_start_time,
-                "status": "healthy",
-            },
-            "pipeline": {
-                "name": self.deployment.pipeline_configuration.name,
-                "steps": list(self.deployment.step_configurations.keys()),
-                "parameters": self.parameter_schema,
-            },
-            "deployment": {
-                "id": self.deployment_id,
-                "created_at": self.deployment.created,
-                "stack": self.deployment.stack.name
-                if self.deployment.stack
-                else "unknown",
-            },
+            "deployment_id": str(self.deployment_id),
+            "pipeline_name": self.deployment.pipeline_configuration.name,
+            "total_executions": self.total_executions,
+            "last_execution_time": self.last_execution_time.isoformat()
+            if self.last_execution_time
+            else None,
+            "status": "healthy",
         }
 
-    def _setup_return_targets(self) -> None:
-        """Set up return targets for response capture based on pipeline contract."""
-        try:
-            deployment = self.deployment
-            if not deployment:
-                return
+    @property
+    def request_schema(self) -> Optional[Dict[str, Any]]:
+        """Generate request schema using cached parameter types.
 
-            # Extract return contract with safe attribute access
-            pipeline_spec = getattr(
-                deployment.pipeline_configuration, "spec", None
-            )
-            pipeline_source = (
-                getattr(pipeline_spec, "source", None)
-                if pipeline_spec
-                else None
-            )
-            contract = (
-                orchestrator_utils.extract_return_contract(pipeline_source)
-                if pipeline_source
-                else None
-            )
+        Uses `self._param_types` and deployment defaults to build a JSON schema
+        per parameter. Avoids re-loading the pipeline/signature on each call.
+        """
+        if not self.deployment or not self.deployment.pipeline_spec:
+            return None
 
-            logger.debug(f"Pipeline source: {pipeline_source}")
-            logger.debug(f"Return contract: {contract}")
+        from pydantic import BaseModel, TypeAdapter
 
-            return_targets: Dict[str, Optional[str]] = {}
+        # Populate parameter types if not already cached
+        self._ensure_param_types()
+        defaults = self.deployment.pipeline_spec.parameters or {}
+        properties: Dict[str, Any] = {}
 
-            if contract:
-                # Use return contract: step_name -> expected_output_name
-                return_targets = {
-                    step_name: output_name
-                    for output_name, step_name in contract.items()
-                }
-            else:
-                # Fallback: collect first output of terminal steps
-                step_configs = deployment.step_configurations
-                terminal_steps = []
+        # Fallback: if types unavailable, build schema from defaults only
+        if not self._param_types:
+            for name, d in defaults.items():
+                if isinstance(d, bool):
+                    properties[name] = {"type": "boolean", "default": d}
+                elif isinstance(d, int):
+                    properties[name] = {"type": "integer", "default": d}
+                elif isinstance(d, float):
+                    properties[name] = {"type": "number", "default": d}
+                elif isinstance(d, str):
+                    properties[name] = {"type": "string", "default": d}
+                elif isinstance(d, list):
+                    properties[name] = {"type": "array", "default": d}
+                elif isinstance(d, dict):
+                    properties[name] = {"type": "object", "default": d}
+                else:
+                    properties[name] = {"type": "object"}
+            return {
+                "type": "object",
+                "properties": properties,
+                "required": [],
+                "additionalProperties": False,
+            }
 
-                # Find terminal steps (no downstream dependencies)
-                for step_name, _ in step_configs.items():
-                    has_downstream = any(
-                        step_name in other_config.spec.upstream_steps
-                        for other_name, other_config in step_configs.items()
-                        if other_name != step_name
-                    )
-                    if not has_downstream:
-                        terminal_steps.append(step_name)
-
-                # Target first output of each terminal step
-                return_targets = {
-                    step_name: None for step_name in terminal_steps
-                }
+        for name, annot in self._param_types.items():
+            try:
+                if inspect.isclass(annot) and issubclass(annot, BaseModel):
+                    schema = annot.model_json_schema()
+                    dflt = defaults.get(name)
+                    if isinstance(dflt, BaseModel):
+                        schema["default"] = dflt.model_dump()
+                    elif isinstance(dflt, dict):
+                        schema["default"] = dflt
+                    properties[name] = schema
+                else:
+                    ta = TypeAdapter(annot)
+                    schema = ta.json_schema()
+                    if name in defaults:
+                        schema["default"] = defaults[name]
+                    properties[name] = schema
+            except Exception as e:
                 logger.debug(
-                    f"Using terminal steps fallback: {terminal_steps}"
+                    "Failed to build schema for parameter '%s': %s", name, e
                 )
+                # Fallback for this parameter
+                d = defaults.get(name, None)
+                if isinstance(d, bool):
+                    properties[name] = {"type": "boolean", "default": d}
+                elif isinstance(d, int):
+                    properties[name] = {"type": "integer", "default": d}
+                elif isinstance(d, float):
+                    properties[name] = {"type": "number", "default": d}
+                elif isinstance(d, str):
+                    properties[name] = {"type": "string", "default": d}
+                elif isinstance(d, list):
+                    properties[name] = {"type": "array", "default": d}
+                elif isinstance(d, dict):
+                    properties[name] = {"type": "object", "default": d}
+                else:
+                    properties[name] = {"type": "object"}
 
-            logger.debug(f"Return targets: {return_targets}")
-            orchestrator_utils.set_return_targets(return_targets)
+        # Required: parameters that have a type but no default in the deployment
+        required = [
+            name for name in self._param_types.keys() if name not in defaults
+        ]
 
-        except Exception as e:
-            logger.warning(f"Failed to setup return targets: {e}")
-            # Set empty targets as fallback
-            orchestrator_utils.set_return_targets({})
+        return {
+            "type": "object",
+            "properties": properties,
+            "required": required,
+            "additionalProperties": False,
+        }
+
+    @property
+    def response_schema(self) -> Optional[Dict[str, Any]]:
+        """Generate response schema for pipeline outputs at runtime."""
+        return {
+            "type": "object",
+            "description": "Pipeline execution outputs with qualified step names",
+            "additionalProperties": True,
+        }
+
+    def get_execution_metrics(self) -> Dict[str, Any]:
+        """Get simple execution metrics."""
+        return {
+            "total_executions": self.total_executions,
+            "last_execution_time": self.last_execution_time.isoformat()
+            if self.last_execution_time
+            else None,
+        }
 
     def is_healthy(self) -> bool:
         """Check if the service is healthy and ready to serve requests.

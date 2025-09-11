@@ -370,7 +370,10 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
-    def run_step(self, step: "Step") -> None:
+    def run_step(
+        self,
+        step: "Step",
+    ) -> None:
         """Runs the given step.
 
         Args:
