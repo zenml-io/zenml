@@ -4824,6 +4824,26 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return session.exec(query).first() is not None
 
+    def _remove_name_from_snapshot(
+        self, session: Session, pipeline_id: UUID, name: str
+    ) -> None:
+        """Remove the name of a snapshot if it exists.
+
+        Args:
+            session: SQLAlchemy session.
+            pipeline_id: The pipeline ID of the snapshot.
+            name: The name of the snapshot.
+        """
+        query = (
+            update(PipelineSnapshotSchema)
+            .where(
+                PipelineSnapshotSchema.pipeline_id == pipeline_id,
+                PipelineSnapshotSchema.name == name,
+            )
+            .values(name=None)
+        )
+        session.execute(query)
+
     def create_snapshot(
         self,
         snapshot: PipelineSnapshotRequest,
@@ -4904,6 +4924,13 @@ class SqlZenStore(BaseZenStore):
                 if isinstance(snapshot.name, str):
                     validate_name(snapshot)
 
+                if snapshot.replace:
+                    self._remove_name_from_snapshot(
+                        session=session,
+                        pipeline_id=snapshot.pipeline_id,
+                        name=snapshot.name,
+                    )
+
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
                 project_id=snapshot.project,
@@ -4926,7 +4953,9 @@ class SqlZenStore(BaseZenStore):
                 ):
                     raise EntityExistsError(
                         f"Snapshot with name `{new_snapshot.name}` already "
-                        f"exists for pipeline `{snapshot.pipeline}`."
+                        f"exists for pipeline `{snapshot.pipeline}`. If you "
+                        "want to replace the existing snapshot, set the "
+                        "`replace` flag to `True`."
                     )
                 else:
                     raise RuntimeError("Snapshot creation failed.") from e
@@ -5050,9 +5079,16 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if snapshot.name:
-                if isinstance(snapshot.name, str):
+            if snapshot_update.name:
+                if isinstance(snapshot_update.name, str):
                     validate_name(snapshot_update)
+
+                if snapshot_update.replace:
+                    self._remove_name_from_snapshot(
+                        session=session,
+                        pipeline_id=snapshot.pipeline_id,
+                        name=snapshot_update.name,
+                    )
 
             snapshot.update(snapshot_update)
 
@@ -5067,8 +5103,10 @@ class SqlZenStore(BaseZenStore):
                     name=snapshot.name,
                 ):
                     raise EntityExistsError(
-                        f"Snapshot with name `{snapshot.name}` "
-                        f"already exists for pipeline {snapshot.pipeline_id}."
+                        f"Snapshot with name `{snapshot.name}` already exists "
+                        f"for pipeline {snapshot.pipeline_id}. If you want to "
+                        "replace the existing snapshot, set the `replace` flag "
+                        "to `True`."
                     )
                 else:
                     raise RuntimeError("Snapshot update failed.") from e

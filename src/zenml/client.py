@@ -3493,6 +3493,7 @@ class Client(metaclass=ClientMetaClass):
         project: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
+        replace: Optional[bool] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
     ) -> PipelineSnapshotResponse:
@@ -3503,6 +3504,8 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             name: The new name of the snapshot.
             description: The new description of the snapshot.
+            replace: Whether to replace the existing snapshot with the same
+                name.
             add_tags: Tags to add to the snapshot.
             remove_tags: Tags to remove from the snapshot.
 
@@ -3520,6 +3523,7 @@ class Client(metaclass=ClientMetaClass):
             snapshot_update=PipelineSnapshotUpdate(
                 name=name,
                 description=description,
+                replace=replace,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
             ),

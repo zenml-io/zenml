@@ -768,6 +768,13 @@ def snapshot() -> None:
     help="The description of the snapshot.",
 )
 @click.option(
+    "--replace",
+    "-r",
+    is_flag=True,
+    required=False,
+    help="Whether to replace the existing snapshot with the same name.",
+)
+@click.option(
     "--tags",
     "-t",
     type=str,
@@ -795,6 +802,7 @@ def create_pipeline_snapshot(
     source: str,
     name: Optional[str] = None,
     description: Optional[str] = None,
+    replace: Optional[bool] = None,
     tags: Optional[List[str]] = None,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
@@ -806,6 +814,7 @@ def create_pipeline_snapshot(
         name: Name of the snapshot.
         description: Description of the snapshot.
         tags: Tags to add to the snapshot.
+        replace: Whether to replace the existing snapshot with the same name.
         config_path: Path to configuration file for the snapshot.
         stack_name_or_id: Name or ID of the stack for which the snapshot
             should be created.
@@ -826,7 +835,10 @@ def create_pipeline_snapshot(
             config_path=config_path
         )
         snapshot = pipeline_instance.create_snapshot(
-            name=name, description=description, tags=tags
+            name=name,
+            description=description,
+            replace=replace,
+            tags=tags,
         )
 
     cli_utils.declare(

@@ -125,6 +125,10 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
         title="The description of the snapshot.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
+    replace: Optional[bool] = Field(
+        default=None,
+        title="Whether to replace the existing snapshot with the same name.",
+    )
     tags: Optional[List[str]] = Field(
         default=None,
         title="Tags of the snapshot.",
@@ -188,6 +192,10 @@ class PipelineSnapshotUpdate(BaseUpdate):
         default=None,
         title="The description of the snapshot.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    replace: Optional[bool] = Field(
+        default=None,
+        title="Whether to replace the existing snapshot with the same name.",
     )
     add_tags: Optional[List[str]] = Field(
         default=None, title="New tags to add to the snapshot."

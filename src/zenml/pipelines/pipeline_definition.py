@@ -1555,6 +1555,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
+        replace: Optional[bool] = None,
         tags: Optional[List[str]] = None,
     ) -> PipelineSnapshotResponse:
         """Create a snapshot of the pipeline.
@@ -1563,6 +1564,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             name: The name of the snapshot. If not provided,
                 a name will be generated automatically.
             description: The description of the snapshot.
+            replace: Whether to replace the existing snapshot with the same
+                name.
             tags: The tags to add to the snapshot.
 
         Returns:
@@ -1573,6 +1576,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             skip_schedule_registration=True,
             name=name or True,
             description=description,
+            replace=replace,
             tags=tags,
             **self._run_args,
         )
