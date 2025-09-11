@@ -223,8 +223,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     "Please refer to https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html for more information."
                 )
 
-        snapshot = snapshot.id
-
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_databricks_pipeline(
             zenml_project_wheel: str, job_cluster_key: str
@@ -251,7 +249,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 # docker container when the step is called.
                 arguments = DatabricksEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
-                    snapshot_id=snapshot,
+                    snapshot_id=snapshot.id,
                     wheel_package=self.package_name,
                     databricks_job_id=DATABRICKS_JOB_ID_PARAMETER_REFERENCE,
                 )
@@ -259,7 +257,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 # Find the upstream container ops of the current step and
                 # configure the current container op to run after them
                 upstream_steps = [
-                    f"{snapshot}_{upstream_step_name}"
+                    f"{snapshot.id}_{upstream_step_name}"
                     for upstream_step_name in step.spec.upstream_steps
                 ]
 
@@ -285,7 +283,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 requirements = sorted(set(filter(None, requirements)))
 
                 task = convert_step_to_task(
-                    f"{snapshot}_{step_name}",
+                    f"{snapshot.id}_{step_name}",
                     ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND,
                     arguments,
                     clean_requirements(requirements),
@@ -312,9 +310,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         databricks_client = self._get_databricks_client()
 
         # Create an empty folder in a volume.
-        deployment_name = (
-            snapshot.pipeline.name if snapshot.pipeline else "default"
-        )
+        deployment_name = snapshot.pipeline.name
         databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{deployment_name}/{orchestrator_run_name}"
         databricks_wheel_path = (
             f"{databricks_directory}/{wheel_path.rsplit('/', 1)[-1]}"
@@ -339,7 +335,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         fileio.rmtree(repository_temp_dir)
 
         # using the databricks client uploads the pipeline to databricks
-        job_cluster_key = self.sanitize_name(f"{snapshot}")
+        job_cluster_key = self.sanitize_name(str(snapshot.id))
         self._upload_and_run_pipeline(
             pipeline_name=orchestrator_run_name,
             settings=settings,
