@@ -28,7 +28,7 @@ from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
@@ -514,6 +514,79 @@ def main() -> None:
 
             return NodeStatus.RUNNING
 
+        def stop_step(node: Node) -> None:
+            """Stop a step.
+
+            Args:
+                node: The node to stop.
+            """
+            step_name = node.id
+
+            label_selector = (
+                f"run_id={kube_utils.sanitize_label(str(pipeline_run.id))},"
+                f"step_name={kube_utils.sanitize_label(node.id)}"
+            )
+
+            try:
+                jobs = batch_api.list_namespaced_job(
+                    namespace=namespace,
+                    label_selector=label_selector,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to find jobs for step {step_name}: {e}"
+                )
+                return
+
+            if not jobs.items:
+                logger.debug(f"No jobs found for step {step_name}")
+                return
+
+            for job in jobs.items:
+                # Check if this is a job related to the correct step
+                step_name_annotation = job.metadata.annotations.get(
+                    STEP_NAME_ANNOTATION_KEY, None
+                )
+                if (
+                    step_name_annotation is None
+                    or step_name_annotation != step_name
+                ):
+                    continue
+
+                # Check if job is already completed or failed - skip deletion
+                job_finished = False
+                if job.status.conditions:
+                    for condition in job.status.conditions:
+                        if (
+                            condition.type in ["Complete", "Failed"]
+                            and condition.status == "True"
+                        ):
+                            job_finished = True
+                            break
+
+                if job_finished:
+                    logger.debug(
+                        f"Job {job.metadata.name} for step {step_name} already finished, skipping deletion"
+                    )
+                    continue
+
+                # Delete the running/pending job
+                try:
+                    batch_api.delete_namespaced_job(
+                        name=job.metadata.name,
+                        namespace=namespace,
+                        propagation_policy="Foreground",
+                    )
+                    logger.info(
+                        f"Successfully stopped step job: {job.metadata.name}"
+                    )
+                    break
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to stop step job {job.metadata.name}: {e}"
+                    )
+                    break
+
         def check_job_status(node: Node) -> NodeStatus:
             """Check the status of a job.
 
@@ -580,6 +653,27 @@ def main() -> None:
                         run.status,
                     )
                     return InterruptMode.GRACEFUL
+                elif run.status == ExecutionStatus.FAILED:
+                    if (
+                        deployment.pipeline_configuration.execution_mode
+                        == ExecutionMode.STOP_ON_FAILURE
+                    ):
+                        logger.info(
+                            "Stopping DAG execution because pipeline run is in "
+                            "`%s` state.",
+                            run.status,
+                        )
+                        return InterruptMode.GRACEFUL
+                    elif (
+                        deployment.pipeline_configuration.execution_mode
+                        == ExecutionMode.FAIL_FAST
+                    ):
+                        logger.info(
+                            "Stopping DAG execution because pipeline run is in "
+                            "`%s` state.",
+                            run.status,
+                        )
+                        return InterruptMode.FORCE
             except Exception as e:
                 logger.warning(
                     "Failed to check pipeline cancellation status: %s", e
@@ -597,6 +691,7 @@ def main() -> None:
                 monitoring_delay=pipeline_settings.job_monitoring_delay,
                 interrupt_check_interval=pipeline_settings.interrupt_check_interval,
                 max_parallelism=pipeline_settings.max_parallelism,
+                node_stop_function=stop_step,
             ).run()
         finally:
             if (

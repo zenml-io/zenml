@@ -432,6 +432,7 @@ def sample_pipeline_run(
             updated=datetime.now(),
             status=ExecutionStatus.COMPLETED,
             tags=[],
+            in_progress=False,
         ),
         metadata=PipelineRunResponseMetadata(
             config=PipelineConfiguration(name="aria_pipeline"),
