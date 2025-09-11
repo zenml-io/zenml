@@ -20,14 +20,16 @@ from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import TEXT, Column, Field, Relationship
+from sqlmodel import TEXT, Column, Field, Relationship, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
+    ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
     TaggableResourceTypes,
@@ -42,6 +44,10 @@ from zenml.models import (
     RunMetadataEntry,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
+from zenml.utils.run_utils import (
+    build_dag,
+    find_all_downstream_steps,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -98,6 +104,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True, default=None)
+    in_progress: bool = Field(nullable=False)
     status: str = Field(nullable=False)
     status_reason: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
@@ -331,6 +338,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             status=request.status.value,
+            in_progress=not request.status.is_finished,
             status_reason=request.status_reason,
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
@@ -385,6 +393,29 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 ),
                 pipeline_configuration=pipeline_configuration,
             )
+        else:
+            raise RuntimeError("Pipeline run has no deployment.")
+
+    def get_upstream_steps(self) -> Dict[str, List[str]]:
+        """Get the list of all the upstream steps for each step.
+
+        Returns:
+            The list of upstream steps for each step.
+
+        Raises:
+            RuntimeError: If the pipeline run has no deployment or
+                the deployment has no pipeline spec.
+        """
+        if self.deployment and self.deployment.pipeline_spec:
+            pipeline_spec = PipelineSpec.model_validate_json(
+                self.deployment.pipeline_spec
+            )
+            steps = {}
+            for step_spec in pipeline_spec.steps:
+                steps[step_spec.pipeline_parameter_name] = (
+                    step_spec.upstream_steps
+                )
+            return steps
         else:
             raise RuntimeError("Pipeline run has no deployment.")
 
@@ -520,6 +551,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             updated=self.updated,
             deployment_id=self.deployment_id,
             model_version_id=self.model_version_id,
+            in_progress=self.in_progress,
         )
         metadata = None
         if include_metadata:
@@ -613,6 +645,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if run_update.status_reason:
                     self.status_reason = run_update.status_reason
 
+            self.in_progress = self._check_if_run_in_progress()
+
         if run_update.orchestrator_run_id:
             self.orchestrator_run_id = run_update.orchestrator_run_id
 
@@ -676,6 +710,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
         self.status = request.status.value
+        self.in_progress = not request.status.is_finished
 
         self.updated = utc_now()
 
@@ -691,3 +726,85 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ExecutionStatus.INITIALIZING.value,
             ExecutionStatus.PROVISIONING.value,
         }
+
+    def _check_if_run_in_progress(self) -> bool:
+        """Checks whether the run is in progress.
+
+        Raises:
+            RuntimeError: If the DB session is missing.
+
+        Returns:
+            A flag to indicate whether the run is in progress.
+        """
+        run_status = ExecutionStatus(self.status)
+
+        if not run_status.is_finished:
+            return True
+
+        if run_status == ExecutionStatus.FAILED:
+            execution_mode = self.get_pipeline_configuration().execution_mode
+
+            if execution_mode in [
+                ExecutionMode.FAIL_FAST,
+                ExecutionMode.STOP_ON_FAILURE,
+            ]:
+                return False
+
+            elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
+                from zenml.zen_stores.schemas import StepRunSchema
+
+                if session := object_session(self):
+                    step_run_statuses = session.execute(
+                        select(StepRunSchema.name, StepRunSchema.status).where(
+                            StepRunSchema.pipeline_run_id == self.id
+                        )
+                    ).all()
+
+                    if self.deployment and self.deployment.pipeline_spec:
+                        step_dict = self.get_upstream_steps()
+
+                        dag = build_dag(step_dict)
+
+                        failed_steps = {
+                            name
+                            for name, status in step_run_statuses
+                            if ExecutionStatus(status).is_failed
+                        }
+
+                        steps_to_skip = set()
+                        for failed_step in failed_steps:
+                            steps_to_skip.update(
+                                find_all_downstream_steps(failed_step, dag)
+                            )
+
+                        steps_to_skip.update(failed_steps)
+
+                        steps_statuses = {
+                            name: ExecutionStatus(status)
+                            for name, status in step_run_statuses
+                        }
+
+                        for step_name, _ in step_dict.items():
+                            if step_name in steps_to_skip:
+                                continue
+
+                            if step_name not in steps_statuses:
+                                return True
+
+                            elif not steps_statuses[step_name].is_finished:
+                                return True
+
+                        return False
+                    else:
+                        in_progress = any(
+                            not ExecutionStatus(status).is_finished
+                            for name, status in step_run_statuses
+                        )
+                        return in_progress
+                else:
+                    raise RuntimeError(
+                        "Missing DB session to check the in progress "
+                        "status of the run."
+                    )
+
+        return False

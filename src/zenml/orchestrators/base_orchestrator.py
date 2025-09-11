@@ -21,6 +21,7 @@ from typing import (
     Callable,
     Dict,
     Iterator,
+    List,
     Optional,
     Tuple,
     Type,
@@ -34,7 +35,7 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.exceptions import (
     IllegalOperationError,
     RunMonitoringError,
@@ -453,10 +454,42 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment: The deployment to prepare.
         """
         self._active_deployment = deployment
+        self._validate_execution_mode()
 
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
         self._active_deployment = None
+
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        return [ExecutionMode.CONTINUE_ON_FAILURE]
+
+    def _validate_execution_mode(self) -> None:
+        """Validate that the requested execution mode is supported.
+
+        This base implementation logs the execution mode being used.
+        Individual orchestrator implementations can override this method
+        to add specific validation.
+
+        Raises:
+            ValueError: If the execution mode is not supported.
+        """
+        assert self._active_deployment
+
+        execution_mode = (
+            self._active_deployment.pipeline_configuration.execution_mode
+        )
+
+        if execution_mode not in self.supported_execution_modes:
+            raise ValueError(
+                f"Execution mode {execution_mode} is not supported by the "
+                f"{self.__class__.__name__} orchestrator."
+            )
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False

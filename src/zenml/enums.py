@@ -138,6 +138,14 @@ class LoggingLevels(Enum):
     CRITICAL = logging.CRITICAL
 
 
+class ExecutionMode(StrEnum):
+    """Enum that represents the execution mode of a pipeline run."""
+
+    FAIL_FAST = "fail_fast"
+    STOP_ON_FAILURE = "stop_on_failure"
+    CONTINUE_ON_FAILURE = "continue_on_failure"
+
+
 class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 

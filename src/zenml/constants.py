@@ -533,7 +533,7 @@ LOGS_STORAGE_QUEUE_TIMEOUT = handle_int_env_var(
 )
 # Log batch-write and merge windows in seconds.
 LOGS_WRITE_INTERVAL_SECONDS = handle_int_env_var(
-    ENV_ZENML_LOGS_WRITE_INTERVAL_SECONDS, default=2
+    ENV_ZENML_LOGS_WRITE_INTERVAL_SECONDS, default=1
 )
 LOGS_MERGE_INTERVAL_SECONDS = handle_int_env_var(
     ENV_ZENML_LOGS_MERGE_INTERVAL_SECONDS, default=10 * 60
