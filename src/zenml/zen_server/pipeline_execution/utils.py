@@ -557,6 +557,23 @@ def snapshot_request_from_source_snapshot(
     zenml_version = zen_store().get_store_info().version
     assert source_snapshot.stack
     assert source_snapshot.build
+
+    # Compute the source snapshot ID:
+    # - If the source snapshot has a name, we use it as the source snapshot.
+    #   That way, all runs will be associated with this snapshot.
+    # - If the source snapshot is based on another snapshot (which therefore
+    #   has a name), we use that one instead.
+    # - If the source snapshot does not have a name and is not based on another
+    #   snapshot, we don't set a source snapshot.
+    #
+    # With this, we ensure that all runs are associated with the closest named
+    # source snapshot.
+    source_snapshot_id = None
+    if source_snapshot.name:
+        source_snapshot_id = source_snapshot.id
+    elif source_snapshot.source_snapshot_id:
+        source_snapshot_id = source_snapshot.source_snapshot_id
+
     return PipelineSnapshotRequest(
         project=source_snapshot.project_id,
         run_name_template=config.run_name or source_snapshot.run_name_template,
@@ -574,7 +591,7 @@ def snapshot_request_from_source_snapshot(
         code_reference=code_reference_request,
         code_path=source_snapshot.code_path,
         template=template_id,
-        source_snapshot=source_snapshot.id,
+        source_snapshot=source_snapshot_id,
         pipeline_version_hash=source_snapshot.pipeline_version_hash,
         pipeline_spec=source_snapshot.pipeline_spec,
     )
