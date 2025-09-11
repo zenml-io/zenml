@@ -185,7 +185,6 @@ If you would like to use `uv` to install the stack requirements for an Azure Sky
 
 ```python
 docker_settings = DockerSettings(
-    python_package_installer=PythonPackageInstaller.UV,
     python_package_installer_args={"prerelease": "allow"},
 )
 
@@ -304,21 +303,6 @@ Some of the features like `job_recovery`, `disk_tier`, `image_id`, `zone`, `idle
 {% endhint %}
 {% endtab %}
 {% endtabs %}
-
-{% hint style="info" %}
-When you are running a pipeline with the Skypilot orchestrator (especially on AWS), we recommend you to use `uv` as the python package installer:
-
-```python
-from zenml import pipeline
-from zenml.config.docker_settings import DockerSettings
-
-docker_settings = DockerSettings(python_package_installer="uv")
-
-@pipeline(settings={"docker": docker_settings})
-def your_pipeline():
-    ...
-```
-{% endhint %}
 
 #### Additional Configuration
 

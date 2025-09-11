@@ -3979,6 +3979,7 @@ class Client(metaclass=ClientMetaClass):
         model: Optional[Union[UUID, str]] = None,
         stack: Optional[Union[UUID, str]] = None,
         stack_component: Optional[Union[UUID, str]] = None,
+        in_progress: Optional[bool] = None,
         hydrate: bool = False,
         include_full_metadata: bool = False,
     ) -> Page[PipelineRunResponse]:
@@ -4019,6 +4020,7 @@ class Client(metaclass=ClientMetaClass):
             model: Filter by model name/ID.
             stack: Filter by stack name/ID.
             stack_component: Filter by stack component name/ID.
+            in_progress: Filter by in_progress.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             include_full_metadata: If True, include metadata of all steps in
@@ -4060,6 +4062,7 @@ class Client(metaclass=ClientMetaClass):
             stack=stack,
             model=model,
             stack_component=stack_component,
+            in_progress=in_progress,
             templatable=templatable,
         )
         return self.zen_store.list_runs(

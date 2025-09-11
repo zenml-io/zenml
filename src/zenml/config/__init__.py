@@ -11,18 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""The `config` module contains classes and functions that manage user-specific configuration.
-
-ZenML's configuration is stored in a file called
-``config.yaml``, located on the user's directory for configuration files.
-(The exact location differs from operating system to operating system.)
-
-The ``GlobalConfiguration`` class is the main class in this module. It provides
-a Pydantic configuration object that is used to store and retrieve
-configuration. This ``GlobalConfiguration`` object handles the serialization and
-deserialization of the configuration options that are stored in the file in
-order to persist the configuration across sessions.
-"""
+"""Config classes."""
 from zenml.config.docker_settings import (
     DockerSettings,
     PythonPackageInstaller,
@@ -32,6 +21,7 @@ from zenml.config.resource_settings import ResourceSettings, ByteUnit
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.store_config import StoreConfiguration
+from zenml.config.cache_policy import CachePolicy
 
 __all__ = [
     "DockerSettings",
@@ -42,4 +32,5 @@ __all__ = [
     "StepRetryConfig",
     "Schedule",
     "StoreConfiguration",
+    "CachePolicy",
 ]

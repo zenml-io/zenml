@@ -25,10 +25,12 @@ from typing import (
     overload,
 )
 
+from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.model.model import Model
     from zenml.pipelines.pipeline_definition import Pipeline
@@ -60,6 +62,8 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    execution_mode: Optional["ExecutionMode"] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
 
@@ -79,6 +83,8 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    execution_mode: Optional["ExecutionMode"] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -102,6 +108,8 @@ def pipeline(
         model: configuration of the model in the Model Control Plane.
         retry: Retry configuration for the pipeline steps.
         substitutions: Extra placeholders to use in the name templates.
+        execution_mode: The execution mode to use for the pipeline.
+        cache_policy: Cache policy for this pipeline.
 
     Returns:
         A pipeline instance.
@@ -125,6 +133,8 @@ def pipeline(
             model=model,
             retry=retry,
             substitutions=substitutions,
+            execution_mode=execution_mode,
+            cache_policy=cache_policy,
         )
 
         p.__doc__ = func.__doc__

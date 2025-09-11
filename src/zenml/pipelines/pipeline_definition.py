@@ -104,8 +104,10 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.client_lazy_loader import ClientLazyLoader
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
+    from zenml.enums import ExecutionMode
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
     from zenml.models import ArtifactVersionResponse
@@ -145,6 +147,8 @@ class Pipeline:
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        execution_mode: Optional["ExecutionMode"] = None,
+        cache_policy: Optional["CachePolicyOrString"] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -170,6 +174,8 @@ class Pipeline:
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
+            execution_mode: The execution mode of the pipeline.
+            cache_policy: Cache policy for this pipeline.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -193,6 +199,8 @@ class Pipeline:
                 model=model,
                 retry=retry,
                 substitutions=substitutions,
+                execution_mode=execution_mode,
+                cache_policy=cache_policy,
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -316,6 +324,8 @@ class Pipeline:
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
+        execution_mode: Optional["ExecutionMode"] = None,
+        cache_policy: Optional["CachePolicyOrString"] = None,
     ) -> Self:
         """Configures the pipeline.
 
@@ -355,6 +365,8 @@ class Pipeline:
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
+            execution_mode: The execution mode of the pipeline.
+            cache_policy: Cache policy for this pipeline.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -390,6 +402,8 @@ class Pipeline:
                 "retry": retry,
                 "parameters": parameters,
                 "substitutions": substitutions,
+                "execution_mode": execution_mode,
+                "cache_policy": cache_policy,
             }
         )
         if not self.__suppress_warnings_flag__:

@@ -53,6 +53,14 @@ class ArtifactSaveType(StrEnum):
     )
 
 
+class DownloadType(StrEnum):
+    """All possible types of downloadable content."""
+
+    ARTIFACT_VERSION = "artifact_version"
+    STEP_LOGS = "step_logs"
+    RUN_LOGS = "run_logs"
+
+
 class VisualizationType(StrEnum):
     """All currently available visualization types."""
 
@@ -74,6 +82,7 @@ class ExecutionStatus(StrEnum):
     """Enum that represents the execution status of a step or pipeline run."""
 
     INITIALIZING = "initializing"
+    PROVISIONING = "provisioning"
     FAILED = "failed"
     COMPLETED = "completed"
     RUNNING = "running"
@@ -123,9 +132,18 @@ class LoggingLevels(Enum):
     NOTSET = logging.NOTSET
     ERROR = logging.ERROR
     WARN = logging.WARN
+    WARNING = logging.WARNING
     INFO = logging.INFO
     DEBUG = logging.DEBUG
     CRITICAL = logging.CRITICAL
+
+
+class ExecutionMode(StrEnum):
+    """Enum that represents the execution mode of a pipeline run."""
+
+    FAIL_FAST = "fail_fast"
+    STOP_ON_FAILURE = "stop_on_failure"
+    CONTINUE_ON_FAILURE = "continue_on_failure"
 
 
 class StackComponentType(StrEnum):

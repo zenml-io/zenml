@@ -21,6 +21,7 @@ from typing import (
     Callable,
     Dict,
     Iterator,
+    List,
     Optional,
     Tuple,
     Type,
@@ -34,8 +35,12 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import RunMonitoringError, RunStoppedException
+from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
+from zenml.exceptions import (
+    IllegalOperationError,
+    RunMonitoringError,
+    RunStoppedException,
+)
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
@@ -312,6 +317,11 @@ class BaseOrchestrator(StackComponent, ABC):
                     environment=environment,
                     placeholder_run=placeholder_run,
                 )
+                if placeholder_run:
+                    publish_pipeline_run_status_update(
+                        pipeline_run_id=placeholder_run.id,
+                        status=ExecutionStatus.PROVISIONING,
+                    )
 
                 if submission_result:
                     if submission_result.metadata:
@@ -444,10 +454,42 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment: The deployment to prepare.
         """
         self._active_deployment = deployment
+        self._validate_execution_mode()
 
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
         self._active_deployment = None
+
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        return [ExecutionMode.CONTINUE_ON_FAILURE]
+
+    def _validate_execution_mode(self) -> None:
+        """Validate that the requested execution mode is supported.
+
+        This base implementation logs the execution mode being used.
+        Individual orchestrator implementations can override this method
+        to add specific validation.
+
+        Raises:
+            ValueError: If the execution mode is not supported.
+        """
+        assert self._active_deployment
+
+        execution_mode = (
+            self._active_deployment.pipeline_configuration.execution_mode
+        )
+
+        if execution_mode not in self.supported_execution_modes:
+            raise ValueError(
+                f"Execution mode {execution_mode} is not supported by the "
+                f"{self.__class__.__name__} orchestrator."
+            )
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
@@ -485,6 +527,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base
                 class does not implement this logic.
+            IllegalOperationError: If the run has no orchestrator run id yet.
         """
         # Check if the orchestrator supports cancellation
         if (
@@ -496,10 +539,17 @@ class BaseOrchestrator(StackComponent, ABC):
                 "support stopping pipeline runs."
             )
 
+        if not run.orchestrator_run_id:
+            raise IllegalOperationError(
+                "Cannot stop a pipeline run that has no orchestrator run id "
+                "yet."
+            )
+
         # Update pipeline status to STOPPING before calling concrete implementation
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
+            status_reason="Manual stop requested.",
         )
 
         # Now call the concrete implementation

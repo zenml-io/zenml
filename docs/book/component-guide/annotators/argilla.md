@@ -89,6 +89,10 @@ dataset = annotator.get_dataset("dataset_name")
 annotations = annotator.get_labeled_data(dataset_name="dataset_name")
 ```
 
+<<<<<<< HEAD
+For more detailed information on how to use the Argilla annotator and the functionality it provides, visit the [Argilla documentation](https://github.com/argilla-io/argilla).
+=======
 For more detailed information on how to use the Argilla annotator and the functionality it provides, visit the [Argilla documentation](https://argilla.io/).
+>>>>>>> origin/develop
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

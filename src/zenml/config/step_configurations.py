@@ -26,6 +26,7 @@ from typing import (
 
 from pydantic import (
     ConfigDict,
+    Field,
     SerializeAsAny,
     field_validator,
     model_validator,
@@ -37,6 +38,7 @@ from zenml.artifacts.external_artifact_config import (
 )
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
+from zenml.config.cache_policy import CachePolicy, CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source, SourceWithValidator
@@ -141,20 +143,68 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 class StepConfigurationUpdate(StrictBaseModel):
     """Class for step configuration updates."""
 
-    enable_cache: Optional[bool] = None
-    enable_artifact_metadata: Optional[bool] = None
-    enable_artifact_visualization: Optional[bool] = None
-    enable_step_logs: Optional[bool] = None
-    step_operator: Optional[Union[bool, str]] = None
-    experiment_tracker: Optional[Union[bool, str]] = None
-    parameters: Dict[str, Any] = {}
-    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
-    extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[SourceWithValidator] = None
-    success_hook_source: Optional[SourceWithValidator] = None
-    model: Optional[Model] = None
-    retry: Optional[StepRetryConfig] = None
-    substitutions: Dict[str, str] = {}
+    enable_cache: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable cache for the step.",
+    )
+    enable_artifact_metadata: Optional[bool] = Field(
+        default=None,
+        description="Whether to store metadata for the output artifacts of "
+        "the step.",
+    )
+    enable_artifact_visualization: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable visualizations for the output "
+        "artifacts of the step.",
+    )
+    enable_step_logs: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable logs for the step.",
+    )
+    step_operator: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="The step operator to use for the step.",
+    )
+    experiment_tracker: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="The experiment tracker to use for the step.",
+    )
+    parameters: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Parameters for the step function.",
+    )
+    settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = Field(
+        default=None,
+        description="Settings for the step.",
+    )
+    extra: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Extra configurations for the step.",
+    )
+    failure_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The failure hook source for the step.",
+    )
+    success_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The success hook source for the step.",
+    )
+    model: Optional[Model] = Field(
+        default=None,
+        description="The model to use for the step.",
+    )
+    retry: Optional[StepRetryConfig] = Field(
+        default=None,
+        description="The retry configuration for the step.",
+    )
+    substitutions: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="The substitutions for the step.",
+    )
+    cache_policy: Optional[CachePolicyWithValidator] = Field(
+        default=None,
+        description="The cache policy for the step.",
+    )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
@@ -195,11 +245,16 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
+    parameters: Dict[str, Any] = {}
+    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
+    extra: Dict[str, Any] = {}
+    substitutions: Dict[str, str] = {}
     caching_parameters: Mapping[str, Any] = {}
     external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
     model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
     client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+    cache_policy: CachePolicyWithValidator = CachePolicy.default()
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -291,6 +346,7 @@ class StepConfiguration(PartialStepConfiguration):
                 "success_hook_source",
                 "retry",
                 "substitutions",
+                "cache_policy",
             },
             exclude_none=True,
         )
@@ -303,6 +359,7 @@ class StepConfiguration(PartialStepConfiguration):
                     "success_hook_source",
                     "retry",
                     "substitutions",
+                    "cache_policy",
                 },
                 exclude_none=True,
             )

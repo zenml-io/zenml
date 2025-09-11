@@ -86,6 +86,9 @@ def publish_step_run_status_update(
     if end_time is not None and not status.is_finished:
         raise ValueError("End time cannot be set for a non-finished step run.")
 
+    if end_time is None and status.is_finished:
+        end_time = utc_now()
+
     step_run = Client().zen_store.update_run_step(
         step_run_id=step_run_id,
         step_run_update=StepRunUpdate(
@@ -138,6 +141,7 @@ def publish_failed_pipeline_run(
 def publish_pipeline_run_status_update(
     pipeline_run_id: "UUID",
     status: ExecutionStatus,
+    status_reason: Optional[str] = None,
     end_time: Optional[datetime] = None,
 ) -> "PipelineRunResponse":
     """Publishes a pipeline run status update.
@@ -145,12 +149,19 @@ def publish_pipeline_run_status_update(
     Args:
         pipeline_run_id: The ID of the pipeline run to update.
         status: The new status for the pipeline run.
+        status_reason: The reason for the status of the pipeline run.
         end_time: The end time for the pipeline run. If None, will be set to current time
             for finished statuses.
 
     Returns:
         The updated pipeline run.
+
+    Raises:
+        ValueError: If the end time is set for a non-finished run.
     """
+    if end_time is not None and not status.is_finished:
+        raise ValueError("End time cannot be set for a non-finished run.")
+
     if end_time is None and status.is_finished:
         end_time = utc_now()
 
@@ -158,6 +169,7 @@ def publish_pipeline_run_status_update(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
             status=status,
+            status_reason=status_reason,
             end_time=end_time,
         ),
     )
@@ -185,19 +197,19 @@ def get_pipeline_run_status(
         else:
             return ExecutionStatus.STOPPING
 
-    # If there is a stopped step, the run is stopped or stopping
-    if ExecutionStatus.STOPPED in step_statuses:
-        if all(status.is_finished for status in step_statuses):
-            return ExecutionStatus.STOPPED
-        else:
-            return ExecutionStatus.STOPPING
-
-    # Otherwise, if there is a failed step, the run is failed
-    elif (
+    # If there is a failed step, the run is failed
+    if (
         ExecutionStatus.FAILED in step_statuses
         or run_status == ExecutionStatus.FAILED
     ):
         return ExecutionStatus.FAILED
+
+    # If there is a stopped step, the run is stopped or stopping
+    elif ExecutionStatus.STOPPED in step_statuses:
+        if all(status.is_finished for status in step_statuses):
+            return ExecutionStatus.STOPPED
+        else:
+            return ExecutionStatus.STOPPING
 
     # If there is a running step, the run is running
     elif (
