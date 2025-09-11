@@ -208,15 +208,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     )
 
     @property
-    def latest_triggered_run(self) -> Optional["PipelineRunSchema"]:
-        """Fetch the latest triggered run for this snapshot.
+    def latest_run(self) -> Optional["PipelineRunSchema"]:
+        """Fetch the latest run for this snapshot.
 
         Raises:
             RuntimeError: If no session for the schema exists.
 
         Returns:
-            The latest triggered run for this snapshot.
+            The latest run for this snapshot.
         """
+        from sqlmodel import or_
+
         from zenml.zen_stores.schemas import (
             PipelineRunSchema,
             PipelineSnapshotSchema,
@@ -232,7 +234,16 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         == col(PipelineRunSchema.snapshot_id),
                     )
                     .where(
-                        PipelineSnapshotSchema.source_snapshot_id == self.id
+                        or_(
+                            # The run is created directly from this snapshot
+                            # (e.g. regular run, scheduled runs)
+                            PipelineSnapshotSchema.id == self.id,
+                            # The snapshot for this run used this snapshot as a
+                            # source (e.g. run triggered from the server,
+                            # invocation of a deployment)
+                            PipelineSnapshotSchema.source_snapshot_id
+                            == self.id,
+                        )
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
@@ -450,7 +461,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             runnable = True
 
         body = PipelineSnapshotResponseBody(
-            name=self.name,
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
@@ -535,19 +545,18 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
         resources = None
         if include_resources:
-            latest_run = self.latest_triggered_run
+            latest_run = self.latest_run
 
             resources = PipelineSnapshotResponseResources(
                 user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
-                latest_triggered_run_id=latest_run.id if latest_run else None,
-                latest_triggered_run_status=latest_run.status
-                if latest_run
-                else None,
+                latest_run_id=latest_run.id if latest_run else None,
+                latest_run_status=latest_run.status if latest_run else None,
             )
 
         return PipelineSnapshotResponse(
             id=self.id,
+            name=self.name,
             body=body,
             metadata=metadata,
             resources=resources,

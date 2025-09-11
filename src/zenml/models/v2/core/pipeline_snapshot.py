@@ -217,11 +217,6 @@ class PipelineSnapshotUpdate(BaseUpdate):
 class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline snapshots."""
 
-    name: Optional[str] = Field(
-        default=None,
-        title="The name of the snapshot.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     runnable: bool = Field(
         title="If a run can be started from the snapshot.",
     )
@@ -310,13 +305,13 @@ class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
         default=[],
         title="Tags associated with the snapshot.",
     )
-    latest_triggered_run_id: Optional[UUID] = Field(
+    latest_run_id: Optional[UUID] = Field(
         default=None,
-        title="The ID of the latest triggered run of the snapshot.",
+        title="The ID of the latest run of the snapshot.",
     )
-    latest_triggered_run_status: Optional[ExecutionStatus] = Field(
+    latest_run_status: Optional[ExecutionStatus] = Field(
         default=None,
-        title="The status of the latest triggered run of the snapshot.",
+        title="The status of the latest run of the snapshot.",
     )
 
 
@@ -329,6 +324,12 @@ class PipelineSnapshotResponse(
 ):
     """Response model for pipeline snapshots."""
 
+    name: Optional[str] = Field(
+        default=None,
+        title="The name of the snapshot.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
     def get_hydrated_version(self) -> "PipelineSnapshotResponse":
         """Return the hydrated version of this pipeline snapshot.
 
@@ -340,15 +341,6 @@ class PipelineSnapshotResponse(
         return Client().zen_store.get_snapshot(self.id)
 
     # Body and metadata properties
-
-    @property
-    def name(self) -> Optional[str]:
-        """The `name` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().name
 
     @property
     def runnable(self) -> bool:
@@ -540,22 +532,22 @@ class PipelineSnapshotResponse(
         return self.get_resources().tags
 
     @property
-    def latest_triggered_run_id(self) -> Optional[UUID]:
-        """The `latest_triggered_run_id` property.
+    def latest_run_id(self) -> Optional[UUID]:
+        """The `latest_run_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().latest_triggered_run_id
+        return self.get_resources().latest_run_id
 
     @property
-    def latest_triggered_run_status(self) -> Optional[ExecutionStatus]:
-        """The `latest_triggered_run_status` property.
+    def latest_run_status(self) -> Optional[ExecutionStatus]:
+        """The `latest_run_status` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().latest_triggered_run_status
+        return self.get_resources().latest_run_status
 
 
 # ------------------ Filter Model ------------------

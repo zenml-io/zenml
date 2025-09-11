@@ -570,6 +570,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
             resources = PipelineRunResponseResources(
                 user=self.user.to_model() if self.user else None,
+                snapshot=self.snapshot.to_model() if self.snapshot else None,
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,

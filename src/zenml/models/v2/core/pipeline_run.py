@@ -61,6 +61,7 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline_build import (
         PipelineBuildResponse,
     )
+    from zenml.models.v2.core.pipeline_snapshot import PipelineSnapshotResponse
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
@@ -282,6 +283,7 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
 class PipelineRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
 
+    snapshot: Optional[PipelineSnapshotResponse] = None
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
