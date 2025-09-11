@@ -53,6 +53,14 @@ class ArtifactSaveType(StrEnum):
     )
 
 
+class DownloadType(StrEnum):
+    """All possible types of downloadable content."""
+
+    ARTIFACT_VERSION = "artifact_version"
+    STEP_LOGS = "step_logs"
+    RUN_LOGS = "run_logs"
+
+
 class VisualizationType(StrEnum):
     """All currently available visualization types."""
 
@@ -124,6 +132,7 @@ class LoggingLevels(Enum):
     NOTSET = logging.NOTSET
     ERROR = logging.ERROR
     WARN = logging.WARN
+    WARNING = logging.WARNING
     INFO = logging.INFO
     DEBUG = logging.DEBUG
     CRITICAL = logging.CRITICAL
