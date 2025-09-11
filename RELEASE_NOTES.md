@@ -2,6 +2,32 @@
 
 # 0.85.0
 
+The `0.85.0` release delivers powerful **pipeline execution enhancements** and **caching improvements** that provide users with greater control over pipeline behavior.
+
+## ⚠️ Breaking Changes
+
+- **Local Orchestrator Behavior**: The local orchestrator will now continue executing steps after some steps fail (instead of stopping execution immediately)
+- **Docker Package Installer**: Default Python package installer in Docker settings switched from `pip` to `uv` 
+- **Log Endpoint Format**: Log endpoints return a different format - affects manual API access but not regular pipeline operations
+
+## 📢 Upcoming Breaking Change
+
+**Important Notice for Future Release**: In the next release, the base `zenml` package will no longer include dependencies for running ZenML connected to a local database.. Users will only be able to connect to deployed ZenML servers with the base package.
+To continue using ZenML locally with a SQLite database, install with the `local` extra: `pip install 'zenml[local]'`. If you're using ZenML with a local server, you're already installing `zenml[server]` and this change will not affect you.
+
+## 🚀 New Features
+
+### Pipeline Execution Modes
+- **Flexible Failure Handling**: Configure what happens to a pipeline run when any step fails, providing fine-grained control over pipeline execution behavior
+
+### Advanced Caching System
+- **Value-Based Caching**: Materializers now support caching artifacts based on their actual content/value rather than just artifact ID, enabling more intelligent cache reuse
+- **Cache Policies**: New cache policy system allows users to specify precisely when a step should be cached, providing granular control over caching behavior
+
+### Airflow 3.0 support
+- **Airflow 3.0 Compatibility**: Support for Apache Airflow 3.0, ensuring compatibility with the latest Airflow features and improvements
+
+
 ## What's Changed
 * Add version 0.84.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3910
 * Made connection docs easier to read by @htahir1 in https://github.com/zenml-io/zenml/pull/3896
