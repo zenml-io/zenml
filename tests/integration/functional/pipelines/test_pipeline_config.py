@@ -20,6 +20,7 @@ import yaml
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
+from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 
 
@@ -126,7 +127,9 @@ def test_pipeline_config_from_file_not_overridden_for_model(
     def assert_model_pipeline():
         assert_model_step()
 
-    p = assert_model_pipeline.with_options(config_path=str(config_path))
+    p = assert_model_pipeline.with_options(
+        config_path=str(config_path), execution_mode=ExecutionMode.FAIL_FAST
+    )
     assert p.configuration.model.name == "bar"
 
     with patch(

@@ -16,7 +16,7 @@
 import functools
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Awaitable, Callable, Optional, Tuple, Union
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union, cast
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
@@ -45,7 +45,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     AuthScheme,
-    ExecutionStatus,
+    DownloadType,
     OAuthDeviceStatus,
     OnboardingStep,
 )
@@ -410,9 +410,9 @@ def authenticate_credentials(
             # to avoid unnecessary database queries.
 
             @cache_result(expiry=30)
-            def get_pipeline_run_status(
+            def check_if_pipeline_run_in_progress(
                 pipeline_run_id: UUID,
-            ) -> Tuple[Optional[ExecutionStatus], Optional[datetime]]:
+            ) -> Tuple[Optional[bool], Optional[datetime]]:
                 """Get the status of a pipeline run.
 
                 Args:
@@ -423,18 +423,23 @@ def authenticate_credentials(
                     run does not exist.
                 """
                 try:
-                    return zen_store().get_run_status(pipeline_run_id)
+                    return zen_store()._check_if_run_in_progress(
+                        pipeline_run_id
+                    )
                 except KeyError:
                     return None, None
 
             (
-                pipeline_run_status,
+                pipeline_run_in_progress,
                 pipeline_run_end_time,
-            ) = get_pipeline_run_status(decoded_token.pipeline_run_id)
-            if pipeline_run_status is None:
+            ) = check_if_pipeline_run_in_progress(
+                decoded_token.pipeline_run_id
+            )
+
+            if pipeline_run_in_progress is None:
                 error = (
-                    f"Authentication error: error retrieving token pipeline run "
-                    f"{decoded_token.pipeline_run_id}"
+                    f"Authentication error: error retrieving token. Pipeline run "
+                    f"{decoded_token.pipeline_run_id} does not exist."
                 )
                 logger.error(error)
                 raise CredentialsNotValid(error)
@@ -443,7 +448,7 @@ def authenticate_credentials(
                 ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
                 DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
             )
-            if pipeline_run_status.is_finished:
+            if not pipeline_run_in_progress:
                 if leeway < 0:
                     # The token should never expire, we don't need to check
                     # the end time.
@@ -1045,56 +1050,85 @@ def generate_access_token(
     )
 
 
-def generate_artifact_download_token(artifact_version_id: UUID) -> str:
-    """Generate a JWT token for artifact download.
+def generate_download_token(
+    download_type: DownloadType,
+    resource_id: UUID,
+    extra_claims: Optional[Dict[str, Any]] = None,
+    expires_in_seconds: int = 30,
+) -> str:
+    """Generate a JWT token for downloading content.
 
     Args:
-        artifact_version_id: The ID of the artifact version to download.
+        download_type: The type of content being downloaded.
+        resource_id: The ID of the resource to download.
+        extra_claims: Optional extra claims to include in the token.
+        expires_in_seconds: Token expiration time in seconds.
 
     Returns:
-        The JWT token for the artifact download.
+        The JWT token for the download.
     """
     import jwt
 
     config = server_config()
 
+    payload = {
+        "exp": utc_now() + timedelta(seconds=expires_in_seconds),
+        "download_type": download_type.value,
+        "resource_id": str(resource_id),
+    }
+
+    if extra_claims:
+        payload.update(extra_claims)
+
     return jwt.encode(
-        {
-            "exp": utc_now() + timedelta(seconds=30),
-            "artifact_version_id": str(artifact_version_id),
-        },
+        payload,
         key=config.jwt_secret_key,
         algorithm=config.jwt_token_algorithm,
     )
 
 
-def verify_artifact_download_token(
-    token: str, artifact_version_id: UUID
+def verify_download_token(
+    token: str,
+    download_type: DownloadType,
+    resource_id: UUID,
+    extra_claims: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Verify a JWT token for artifact download.
+    """Verify a JWT token for downloading content.
 
     Args:
         token: The JWT token to verify.
-        artifact_version_id: The ID of the artifact version to download.
+        download_type: The expected download type.
+        resource_id: The expected resource ID.
+        extra_claims: Optional extra claims to verify in the token.
 
     Raises:
-        CredentialsNotValid: If the token is invalid or the artifact version
-            ID does not match.
+        CredentialsNotValid: If the token is invalid or doesn't match expected values.
     """
     import jwt
 
     config = server_config()
     try:
-        claims = jwt.decode(
-            token,
-            config.jwt_secret_key,
-            algorithms=[config.jwt_token_algorithm],
+        claims = cast(
+            Dict[str, Any],
+            jwt.decode(
+                token,
+                config.jwt_secret_key,
+                algorithms=[config.jwt_token_algorithm],
+            ),
         )
     except jwt.PyJWTError as e:
         raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
 
-    if claims["artifact_version_id"] != str(artifact_version_id):
-        raise CredentialsNotValid("Invalid artifact version ID")
+    if claims.get("download_type") != download_type.value:
+        raise CredentialsNotValid("Invalid download type")
+
+    if claims.get("resource_id") != str(resource_id):
+        raise CredentialsNotValid("Invalid resource ID")
+
+    if extra_claims:
+        for key, expected_value in extra_claims.items():
+            if claims.get(key) != expected_value:
+                raise CredentialsNotValid(f"Invalid {key}")
 
 
 def http_authentication(

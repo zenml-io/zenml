@@ -25,6 +25,7 @@ from zenml.config.schedule import Schedule
 from zenml.config.source import SourceWithValidator
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.models import PipelineBuildBase
 from zenml.utils import pydantic_utils
@@ -107,4 +108,8 @@ class PipelineRunConfiguration(
     cache_policy: Optional[CachePolicyWithValidator] = Field(
         default=None,
         description="The cache policy for all steps of the pipeline run.",
+    )
+    execution_mode: Optional[ExecutionMode] = Field(
+        default=None,
+        description="The execution mode for the pipeline run.",
     )
