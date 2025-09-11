@@ -751,6 +751,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 return False
 
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
+                from zenml.zen_stores.schemas import StepRunSchema
+
                 if session := object_session(self):
                     step_run_statuses = session.execute(
                         select(StepRunSchema.name, StepRunSchema.status).where(
