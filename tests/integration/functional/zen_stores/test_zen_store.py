@@ -262,7 +262,7 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
         )
 
     entity_name = crud_test_config.entity_name
-    if entity_name in {"build", "deployment"}:
+    if entity_name in {"build", "snapshot"}:
         pytest.skip(f"Duplicates of {entity_name} are allowed.")
 
     # First creation is successful
@@ -5482,7 +5482,7 @@ class TestRunMetadata:
             or type_ == MetadataResourceTypes.STEP_RUN
         ):
             step_name = sample_name("foo")
-            deployment = client.zen_store.create_snapshot(
+            snapshot = client.zen_store.create_snapshot(
                 PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
@@ -5512,7 +5512,7 @@ class TestRunMetadata:
                     project=client.active_project.id,
                     id=uuid4(),
                     name=sample_name("foo"),
-                    snapshot=deployment.id,
+                    snapshot=snapshot.id,
                     status=ExecutionStatus.RUNNING,
                 )
             )
@@ -5522,7 +5522,6 @@ class TestRunMetadata:
                     name=step_name,
                     status=ExecutionStatus.RUNNING,
                     pipeline_run_id=pr.id,
-                    deployment=deployment.id,
                 )
             )
             resource = (
@@ -5541,7 +5540,7 @@ class TestRunMetadata:
                     pipeline_id=pipeline_model.id,
                 )
             )
-            deployment = client.zen_store.create_snapshot(
+            snapshot = client.zen_store.create_snapshot(
                 PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
@@ -5604,9 +5603,9 @@ class TestRunMetadata:
             or type_ == MetadataResourceTypes.STEP_RUN
         ):
             client.zen_store.delete_run(pr.id)
-            client.zen_store.delete_snapshot(deployment.id)
+            client.zen_store.delete_snapshot(snapshot.id)
         elif type_ == MetadataResourceTypes.SCHEDULE:
-            client.zen_store.delete_snapshot(deployment.id)
+            client.zen_store.delete_snapshot(snapshot.id)
             client.zen_store.delete_schedule(resource.id)
 
         client.zen_store.delete_pipeline(pipeline_model.id)

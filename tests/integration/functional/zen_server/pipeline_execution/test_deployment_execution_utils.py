@@ -25,7 +25,7 @@ from zenml.zen_server.pipeline_execution.utils import (
 )
 
 
-def test_creating_deployment_request_from_template(
+def test_creating_snapshot_request_from_template(
     clean_client_with_run, mocker
 ):
     mocker.patch(

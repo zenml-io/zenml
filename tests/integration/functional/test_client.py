@@ -711,7 +711,7 @@ def test_deleting_builds(clean_client):
 
 
 # --------------------
-# Pipeline Deployments
+# Pipeline Snasphots
 # --------------------
 
 
