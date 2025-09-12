@@ -22,8 +22,11 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Set,
     Tuple,
 )
+
+from pydantic import ConfigDict, TypeAdapter, create_model
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
@@ -41,6 +44,11 @@ from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineDeploymentBase
 from zenml.pipelines.run_utils import get_default_run_name
+from zenml.steps.base_step import BaseStep
+from zenml.steps.entrypoint_function_utils import (
+    validate_entrypoint_function,
+)
+from zenml.steps.utils import parse_return_type_annotations
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -626,6 +634,99 @@ class Compiler:
             "source": pipeline.resolve(),
             "parameters": pipeline._parameters,
         }
+
+        # Best-effort: store a JSON schema snapshot for CLI/UI tooling.
+        # Serving does not use this for validation.
+        try:
+            entrypoint_definition = validate_entrypoint_function(
+                pipeline.entrypoint
+            )  # type: ignore
+
+            defaults: Dict[str, Any] = pipeline._parameters
+            fields: Dict[str, Tuple[Any, ...]] = {}  # type: ignore[type-arg]
+            for name, param in entrypoint_definition.inputs.items():
+                fields[name] = (param.annotation, defaults.get(name, ...))
+
+            params_model = create_model(  # type: ignore[arg-type]
+                f"{pipeline.name}_ParamsModel",
+                __config__=ConfigDict(extra="forbid"),  # type: ignore[arg-type]
+                **fields,  # type: ignore[arg-type]
+            )
+            additional_spec_args["parameters_schema"] = (
+                params_model.model_json_schema()
+            )
+        except Exception:
+            # Ignore schema snapshot errors to avoid blocking compilation
+            pass
+
+        # Best-effort: build a response schema snapshot for terminal steps (tooling).
+        try:
+            # Map invocation id -> StepSpec for quick lookup
+            name_to_spec: Dict[str, StepSpec] = {
+                s.pipeline_parameter_name: s for s in step_specs
+            }
+            all_names: set[str] = set(name_to_spec.keys())
+            # Build downstream map from upstream relationships
+            downstream: Dict[str, Set[str]] = {n: set() for n in all_names}
+            for s in step_specs:
+                for up in s.upstream_steps:
+                    if up in downstream:
+                        downstream[up].add(s.pipeline_parameter_name)
+            # Terminal steps: no downstream consumers
+            terminal = [n for n in all_names if not downstream.get(n)]
+
+            outputs_properties: Dict[str, Any] = {}
+            all_defs: Dict[str, Any] = {}
+
+            for name in terminal:
+                spec = name_to_spec[name]
+                step_instance = BaseStep.load_from_source(spec.source)
+                out_sigs = parse_return_type_annotations(
+                    func=step_instance.entrypoint
+                )
+                if not out_sigs:
+                    continue
+                step_props: Dict[str, Any] = {}
+                required: List[str] = []
+                for out_name, sig in out_sigs.items():
+                    try:
+                        ta = TypeAdapter(sig.resolved_annotation)
+                        schema = ta.json_schema()
+                        if "$defs" in schema:
+                            all_defs.update(schema["$defs"])  # type: ignore
+                            schema = {
+                                k: v for k, v in schema.items() if k != "$defs"
+                            }
+                        step_props[out_name] = schema
+                        required.append(out_name)
+                    except Exception:
+                        step_props[out_name] = {"type": "object"}
+                outputs_properties[name] = {
+                    "type": "object",
+                    "properties": step_props,
+                    "required": required,
+                }
+
+            if outputs_properties:
+                response_schema: Dict[str, Any] = {
+                    "type": "object",
+                    "properties": {
+                        "outputs": {
+                            "type": "object",
+                            "properties": outputs_properties,
+                        }
+                    },
+                }
+                if all_defs:
+                    response_schema["$defs"] = all_defs
+                additional_spec_args["response_schema"] = response_schema
+        except Exception:
+            # Ignore response schema issues to avoid blocking compilation
+            logger.warning(
+                "Failed to generate response schema for pipeline `%s`.",
+                pipeline.name,
+            )
+            pass
 
         return PipelineSpec(steps=step_specs, **additional_spec_args)
 

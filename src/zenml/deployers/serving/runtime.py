@@ -8,12 +8,9 @@ with concurrent requests.
 It also provides parameter override functionality for the orchestrator
 to access serving parameters without tight coupling.
 """
-
-from __future__ import annotations
-
 import contextvars
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, Optional, Type
+from typing import Any, Dict, Iterable, Optional
 
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
@@ -131,9 +128,7 @@ def get_outputs() -> Dict[str, Dict[str, Any]]:
     return dict(_get_context().outputs)
 
 
-def get_parameter_override(
-    name: str, annotation: Optional[Type[Any]] = None
-) -> Optional[Any]:
+def get_parameter_override(name: str) -> Optional[Any]:
     """Get a parameter override from the current serving context.
 
     This function allows the orchestrator to check for parameter overrides
@@ -141,7 +136,6 @@ def get_parameter_override(
 
     Args:
         name: Parameter name to look up
-        annotation: Type annotation for the parameter (used for validation)
 
     Returns:
         Parameter value if found, None otherwise
@@ -154,68 +148,5 @@ def get_parameter_override(
     if not pipeline_params:
         return None
 
-    # First try direct match
-    if name in pipeline_params:
-        value = pipeline_params[name]
-        return _validate_parameter_type(value, annotation, name)
-
-    # Try to extract from Pydantic models using model_dump
-    for param_name, param_value in pipeline_params.items():
-        try:
-            from pydantic import BaseModel
-
-            if isinstance(param_value, BaseModel):
-                # Use model_dump to safely get all fields as dict
-                model_dict = param_value.model_dump()
-                if name in model_dict:
-                    extracted_value = model_dict[name]
-                    logger.debug(
-                        f"Extracted {name}={extracted_value} from {param_name}"
-                    )
-                    return _validate_parameter_type(
-                        extracted_value, annotation, name
-                    )
-        except Exception:
-            # Skip this parameter if extraction fails
-            continue
-
-    return None
-
-
-def _validate_parameter_type(
-    value: Any, annotation: Optional[Type[Any]], param_name: str
-) -> Any:
-    """Validate parameter value against type annotation.
-
-    Args:
-        value: The parameter value to validate
-        annotation: Expected type annotation
-        param_name: Parameter name for logging
-
-    Returns:
-        The validated value
-    """
-    if annotation is None:
-        return value
-
-    try:
-        # For basic type validation, check if value is instance of annotation
-        if hasattr(annotation, "__origin__"):
-            # Handle generic types like Optional[str], List[int], etc.
-            # For now, just return the value as complex type validation
-            # would require more sophisticated logic
-            return value
-        elif isinstance(annotation, type):
-            # Simple type check for basic types
-            if not isinstance(value, annotation):
-                logger.debug(
-                    f"Parameter {param_name} type mismatch: expected {annotation}, "
-                    f"got {type(value)}. Using value as-is."
-                )
-        return value
-    except Exception:
-        # If validation fails, log and return original value
-        logger.debug(
-            f"Type validation failed for parameter {param_name}, using value as-is"
-        )
-        return value
+    # Direct parameter lookup - pass parameters as-is
+    return pipeline_params.get(name)

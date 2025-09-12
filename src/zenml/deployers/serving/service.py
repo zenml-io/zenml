@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ import json
 import os
 import time
 import traceback
-import typing
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, get_args, get_origin
+from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
 from zenml.client import Client
@@ -64,8 +63,8 @@ class PipelineServingService:
         self.pipeline_state: Optional[Any] = None
         # Cache a local orchestrator instance to avoid per-request construction
         self._cached_orchestrator: Optional["BaseOrchestrator"] = None
-        # Cached parameter type map extracted from the pipeline entrypoint
-        self._param_types: Dict[str, Any] = {}
+        # Cached Pydantic params model built from deployment
+        self._params_model: Optional[Any] = None
 
         # Simple execution tracking
         self.total_executions = 0
@@ -76,93 +75,18 @@ class PipelineServingService:
 
     # Internal helpers
     def _get_max_output_size_bytes(self) -> int:
-        """Get the maximum output size in bytes from environment variable.
-
-        Returns:
-            Maximum size in bytes, defaulting to 1MB for invalid values.
-        """
         try:
             size_mb = int(
                 os.environ.get("ZENML_SERVING_MAX_OUTPUT_SIZE_MB", "1")
             )
-            if size_mb <= 0:
-                logger.warning(
-                    f"Invalid ZENML_SERVING_MAX_OUTPUT_SIZE_MB: {size_mb}. Using 1MB."
-                )
-                size_mb = 1
+            # Enforce reasonable bounds: 1MB to 100MB
+            size_mb = max(1, min(size_mb, 100))
             return size_mb * 1024 * 1024
         except (ValueError, TypeError):
-            env_val = os.environ.get("ZENML_SERVING_MAX_OUTPUT_SIZE_MB", "1")
             logger.warning(
-                f"Invalid ZENML_SERVING_MAX_OUTPUT_SIZE_MB: '{env_val}'. Using 1MB."
+                "Invalid ZENML_SERVING_MAX_OUTPUT_SIZE_MB. Using 1MB."
             )
             return 1024 * 1024
-
-    def _ensure_param_types(self) -> bool:
-        """Ensure cached parameter types from the pipeline entrypoint are available.
-
-        Returns:
-            True if parameter types are available, False otherwise.
-        """
-        if self._param_types:
-            return True
-        try:
-            if not self.deployment or not self.deployment.pipeline_spec:
-                return False
-            from zenml.steps.entrypoint_function_utils import (
-                validate_entrypoint_function,
-            )
-
-            assert self.deployment.pipeline_spec.source is not None
-            pipeline_class = source_utils.load(
-                self.deployment.pipeline_spec.source
-            )
-            entry_def = validate_entrypoint_function(pipeline_class.entrypoint)
-            self._param_types = {
-                name: param.annotation
-                for name, param in entry_def.inputs.items()
-            }
-            return True
-        except Exception as e:
-            logger.debug(
-                "Failed to cache parameter types from entrypoint: %s", e
-            )
-            return False
-
-    @staticmethod
-    def _extract_basemodel(annotation: Any) -> Optional[type]:
-        """Try to extract a Pydantic BaseModel class from an annotation."""
-        try:
-            from pydantic import BaseModel
-        except Exception:
-            return None
-        origin = get_origin(annotation)
-        if origin is None:
-            if inspect.isclass(annotation) and issubclass(
-                annotation, BaseModel
-            ):
-                return annotation
-            return None
-        # Annotated[T, ...]
-        if origin is getattr(typing, "Annotated", None):
-            args = get_args(annotation)
-            return (
-                PipelineServingService._extract_basemodel(args[0])
-                if args
-                else None
-            )
-        # Optional/Union
-        if origin is typing.Union:
-            models = [
-                m
-                for m in (
-                    PipelineServingService._extract_basemodel(a)
-                    for a in get_args(annotation)
-                )
-                if m
-            ]
-            return models[0] if len(set(models)) == 1 else None
-        return None
 
     async def initialize(self) -> None:
         """Initialize the service by loading deployment configuration.
@@ -186,8 +110,23 @@ class PipelineServingService:
             # Activate integrations to ensure all components are available
             integration_registry.activate_integrations()
 
-            # Pre-compute parameter types (best-effort)
-            self._ensure_param_types()
+            # Build and cache a strict Pydantic params model from the packaged
+            # model source to fail fast if the deployment is inconsistent.
+            try:
+                from zenml.deployers.serving.parameters import (
+                    build_params_model_from_deployment,
+                )
+
+                assert self.deployment is not None
+                self._params_model = build_params_model_from_deployment(
+                    self.deployment, strict=True
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to construct parameter model from deployment: %s",
+                    e,
+                )
+                raise
 
             # Execute the init hook, if present
             await self._execute_init_hook()
@@ -293,7 +232,7 @@ class PipelineServingService:
         logger.debug("Using slow artifact loading fallback")
         from zenml.artifacts.utils import load_artifact_from_response
 
-        mapped_outputs: Dict[str, Any] = {}
+        fallback_outputs: Dict[str, Any] = {}
         for step_name, step_run in (run.steps or {}).items():
             if not step_run or not step_run.outputs:
                 continue
@@ -303,7 +242,7 @@ class PipelineServingService:
                 try:
                     val = load_artifact_from_response(arts[0])
                     if val is not None:
-                        mapped_outputs[f"{step_name}.{out_name}"] = (
+                        fallback_outputs[f"{step_name}.{out_name}"] = (
                             self._serialize_json_safe(val)
                         )
                 except Exception as e:
@@ -311,7 +250,7 @@ class PipelineServingService:
                         f"Failed to load artifact for {step_name}.{out_name}: {e}"
                     )
                     continue
-        return mapped_outputs
+        return fallback_outputs
 
     async def _execute_init_hook(self) -> None:
         """Execute the pipeline's init hook, if present."""
@@ -338,110 +277,23 @@ class PipelineServingService:
     def _resolve_parameters(
         self, request_params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Merge request parameters with deployment defaults and handle type conversion.
+        """Validate and normalize request parameters with the params model.
+
+        Assumes the service was initialized successfully and a params model is
+        available. Defaults are applied by the model during validation.
 
         Args:
-            request_params: Parameters from API request
+            request_params: The request parameters to validate and normalize.
 
         Returns:
-            Merged and type-converted parameters dictionary
+            The validated and normalized request parameters.
+
+        Raises:
+            ValueError: If the request parameters are invalid.
         """
-        if self.deployment and self.deployment.pipeline_spec:
-            defaults = self.deployment.pipeline_spec.parameters or {}
-        else:
-            defaults = {}
-        request_params = request_params or {}
-        # Ensure types, then strictly reject unknown parameter names
-        self._ensure_param_types()
-        if self._param_types:
-            allowed = set(self._param_types.keys())
-            unknown = set(request_params.keys()) - allowed
-            if unknown:
-                allowed_list = ", ".join(sorted(allowed))
-                unknown_list = ", ".join(sorted(unknown))
-                raise ValueError(
-                    f"Unknown parameter(s): {unknown_list}. Allowed parameters: {allowed_list}."
-                )
-
-            # Fail fast on missing required parameters (no deployment default)
-            required = allowed - set(defaults.keys())
-            missing = required - set(request_params.keys())
-            if missing:
-                missing_list = ", ".join(sorted(missing))
-                raise ValueError(
-                    f"Missing required parameter(s): {missing_list}. Provide them in the request body."
-                )
-
-        # Simple merge - request params override defaults
-        resolved = {**defaults, **request_params}
-
-        # Convert parameters to proper types based on pipeline signature
-        return self._convert_parameter_types(resolved)
-
-    def _convert_parameter_types(
-        self, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Convert parameter values to their expected types using cached types.
-
-        This leverages Pydantic TypeAdapter to validate/coerce primitives,
-        unions, containers, and nested BaseModels. For BaseModel parameters,
-        dict values are partially merged with deployment defaults before
-        validation.
-        """
-        if not self.deployment or not self.deployment.pipeline_spec:
-            return params
-
-        # Ensure parameter types are cached
-        if not self._ensure_param_types():
-            return params
-
-        from pydantic import BaseModel, TypeAdapter
-
-        defaults = self.deployment.pipeline_spec.parameters or {}
-
-        converted: Dict[str, Any] = {}
-
-        for name, value in params.items():
-            annot = self._param_types.get(name)
-            if not annot:
-                # Unknown or untyped parameter: keep as-is
-                converted[name] = value
-                continue
-
-            # Partial-update behavior for BaseModel when incoming value is a dict
-            model_cls = self._extract_basemodel(annot)
-            if model_cls and isinstance(value, dict):
-                try:
-                    base: Dict[str, Any] = {}
-                    dflt = defaults.get(name)
-                    if isinstance(dflt, BaseModel):
-                        base = dflt.model_dump()
-                    elif isinstance(dflt, dict):
-                        base = dict(dflt)
-                    base.update(value)
-                    # Type narrowing: model_cls is guaranteed to be a BaseModel subclass
-                    if inspect.isclass(model_cls) and issubclass(
-                        model_cls, BaseModel
-                    ):
-                        # Type checker understands model_cls is Type[BaseModel] after issubclass check
-                        converted[name] = model_cls.model_validate(base)
-                        continue
-                except Exception:
-                    logger.exception(
-                        "Validation failed for BaseModel parameter '%s'", name
-                    )
-                    converted[name] = value
-                    continue
-
-            # Generic validation/coercion using TypeAdapter
-            try:
-                ta = TypeAdapter(annot)
-                converted[name] = ta.validate_python(value)
-            except Exception:
-                logger.exception("Type conversion failed for '%s'", name)
-                converted[name] = value
-
-        return converted
+        assert self._params_model is not None
+        parameters = self._params_model.model_validate(request_params or {})
+        return parameters.model_dump()  # type: ignore[return-value]
 
     def execute_pipeline(
         self,
@@ -499,6 +351,7 @@ class PipelineServingService:
             )
 
         # Create a placeholder run and execute with a known run id
+        assert self.deployment is not None
         placeholder_run = create_placeholder_run(
             deployment=self.deployment, logs=None
         )
@@ -540,7 +393,7 @@ class PipelineServingService:
         self.total_executions += 1
         self.last_execution_time = datetime.now(timezone.utc)
         assert self.deployment is not None
-        return {
+        response = {
             "success": True,
             "outputs": mapped_outputs,
             "execution_time": execution_time,
@@ -550,6 +403,17 @@ class PipelineServingService:
                 "deployment_id": str(self.deployment.id),
             },
         }
+
+        # Add response schema if available
+        if (
+            self.deployment.pipeline_spec
+            and self.deployment.pipeline_spec.response_schema
+        ):
+            response["response_schema"] = (
+                self.deployment.pipeline_spec.response_schema
+            )
+
+        return response
 
     def _build_timeout_response(
         self, start_time: float, timeout: Optional[int]
@@ -592,105 +456,6 @@ class PipelineServingService:
             if self.last_execution_time
             else None,
             "status": "healthy",
-        }
-
-    @property
-    def request_schema(self) -> Optional[Dict[str, Any]]:
-        """Generate request schema using cached parameter types.
-
-        Uses `self._param_types` and deployment defaults to build a JSON schema
-        per parameter. Avoids re-loading the pipeline/signature on each call.
-        """
-        if not self.deployment or not self.deployment.pipeline_spec:
-            return None
-
-        from pydantic import BaseModel, TypeAdapter
-
-        # Populate parameter types if not already cached
-        self._ensure_param_types()
-        defaults = self.deployment.pipeline_spec.parameters or {}
-        properties: Dict[str, Any] = {}
-
-        # Fallback: if types unavailable, build schema from defaults only
-        if not self._param_types:
-            for name, d in defaults.items():
-                if isinstance(d, bool):
-                    properties[name] = {"type": "boolean", "default": d}
-                elif isinstance(d, int):
-                    properties[name] = {"type": "integer", "default": d}
-                elif isinstance(d, float):
-                    properties[name] = {"type": "number", "default": d}
-                elif isinstance(d, str):
-                    properties[name] = {"type": "string", "default": d}
-                elif isinstance(d, list):
-                    properties[name] = {"type": "array", "default": d}
-                elif isinstance(d, dict):
-                    properties[name] = {"type": "object", "default": d}
-                else:
-                    properties[name] = {"type": "object"}
-            return {
-                "type": "object",
-                "properties": properties,
-                "required": [],
-                "additionalProperties": False,
-            }
-
-        for name, annot in self._param_types.items():
-            try:
-                if inspect.isclass(annot) and issubclass(annot, BaseModel):
-                    schema = annot.model_json_schema()
-                    dflt = defaults.get(name)
-                    if isinstance(dflt, BaseModel):
-                        schema["default"] = dflt.model_dump()
-                    elif isinstance(dflt, dict):
-                        schema["default"] = dflt
-                    properties[name] = schema
-                else:
-                    ta = TypeAdapter(annot)
-                    schema = ta.json_schema()
-                    if name in defaults:
-                        schema["default"] = defaults[name]
-                    properties[name] = schema
-            except Exception as e:
-                logger.debug(
-                    "Failed to build schema for parameter '%s': %s", name, e
-                )
-                # Fallback for this parameter
-                d = defaults.get(name, None)
-                if isinstance(d, bool):
-                    properties[name] = {"type": "boolean", "default": d}
-                elif isinstance(d, int):
-                    properties[name] = {"type": "integer", "default": d}
-                elif isinstance(d, float):
-                    properties[name] = {"type": "number", "default": d}
-                elif isinstance(d, str):
-                    properties[name] = {"type": "string", "default": d}
-                elif isinstance(d, list):
-                    properties[name] = {"type": "array", "default": d}
-                elif isinstance(d, dict):
-                    properties[name] = {"type": "object", "default": d}
-                else:
-                    properties[name] = {"type": "object"}
-
-        # Required: parameters that have a type but no default in the deployment
-        required = [
-            name for name in self._param_types.keys() if name not in defaults
-        ]
-
-        return {
-            "type": "object",
-            "properties": properties,
-            "required": required,
-            "additionalProperties": False,
-        }
-
-    @property
-    def response_schema(self) -> Optional[Dict[str, Any]]:
-        """Generate response schema for pipeline outputs at runtime."""
-        return {
-            "type": "object",
-            "description": "Pipeline execution outputs with qualified step names",
-            "additionalProperties": True,
         }
 
     def get_execution_metrics(self) -> Dict[str, Any]:

@@ -443,7 +443,7 @@ class StepRunner:
                 try:
                     from zenml.deployers.serving import runtime
 
-                    override = runtime.get_parameter_override(arg, arg_type)
+                    override = runtime.get_parameter_override(arg)
                     if override is not None:
                         logger.debug(
                             f"Using serving override for {arg}: {override}"

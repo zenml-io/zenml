@@ -21,6 +21,7 @@ from typing import Any, AsyncGenerator, Dict, Optional
 from uuid import UUID
 
 from fastapi import (
+    APIRouter,
     Depends,
     FastAPI,
     HTTPException,
@@ -28,7 +29,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, Field
+from pydantic import create_model
 from starlette.concurrency import run_in_threadpool
 
 from zenml.deployers.serving.auth import BearerTokenAuthMiddleware
@@ -68,8 +69,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         global _service
         _service = PipelineServingService(UUID(deployment_id))
         await _service.initialize()
-        # Update OpenAPI schema if a serve contract is available
-        _install_runtime_openapi(app, _service)
+        # Register a clean, focused router for the /invoke endpoint.
+        app.include_router(_build_invoke_router(_service))
         logger.info("✅ Pipeline serving service initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize: {e}")
@@ -79,6 +80,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("🛑 Shutting down ZenML Pipeline Serving service...")
+    try:
+        if _service:
+            await _service.cleanup()
+            logger.info("✅ Pipeline serving service cleaned up successfully")
+    except Exception as e:
+        logger.error(f"❌ Error during service cleanup: {e}")
 
 
 # Create FastAPI application
@@ -92,12 +99,34 @@ app = FastAPI(
 )
 
 
-class PipelineInvokeRequest(BaseModel):
-    """Request model for pipeline invocation."""
+def _build_invoke_router(service: PipelineServingService) -> APIRouter:
+    """Create an idiomatic APIRouter that exposes /invoke."""
+    assert service._params_model is not None
+    router = APIRouter()
 
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-    run_name: Optional[str] = None
-    timeout: Optional[int] = None
+    InvokeBody = create_model(
+        "PipelineInvokeRequest",
+        parameters=(service._params_model, ...),
+        run_name=(Optional[str], None),
+        timeout=(Optional[int], None),
+    )
+
+    @router.post(
+        "/invoke",
+        name="invoke_pipeline",
+        summary="Invoke the pipeline with validated parameters",
+    )
+    async def invoke(
+        body: InvokeBody,  # type: ignore[valid-type]
+    ) -> Dict[str, Any]:
+        return await run_in_threadpool(
+            service.execute_pipeline,
+            body.parameters.model_dump(),  # type: ignore[attr-defined]
+            body.run_name,  # type: ignore[attr-defined]
+            body.timeout,  # type: ignore[attr-defined]
+        )
+
+    return router
 
 
 def get_pipeline_service() -> PipelineServingService:
@@ -158,31 +187,11 @@ async def root(
     return html_content
 
 
-@app.post("/invoke")
-async def invoke_pipeline(
-    request: PipelineInvokeRequest,
-    service: PipelineServingService = Depends(get_pipeline_service),
-) -> Dict[str, Any]:
-    """Execute pipeline with dependency injection."""
-    try:
-        # Validate request parameters against runtime schema if available
-        if service.request_schema:
-            err = _validate_request_parameters(
-                request.parameters, service.request_schema
-            )
-            if err:
-                raise ValueError(f"Invalid parameters: {err}")
-        # Offload synchronous execution to a thread to avoid blocking the event loop
-        result = await run_in_threadpool(
-            service.execute_pipeline,
-            request.parameters,
-            request.run_name,
-            request.timeout,
-        )
-        return result
-    except Exception as e:
-        logger.error(f"Pipeline execution failed: {e}")
-        return {"success": False, "error": f"Internal server error: {str(e)}"}
+"""
+The /invoke route is registered dynamically during startup using the
+precomputed Pydantic model exposed by the service. This ensures OpenAPI
+and request validation are both driven by the same canonical model.
+"""
 
 
 @app.get("/concurrency/stats")
@@ -331,137 +340,3 @@ if __name__ == "__main__":
         log_level=args.log_level,
         reload=False,
     )
-
-
-def _install_runtime_openapi(
-    app: FastAPI, service: PipelineServingService
-) -> None:
-    """Install contract-based OpenAPI schema for the /invoke route.
-
-    Args:
-        app: The FastAPI app.
-        service: The pipeline serving service.
-    """
-    from fastapi.openapi.utils import get_openapi
-
-    def custom_openapi() -> Dict[str, Any]:
-        if app.openapi_schema:
-            return app.openapi_schema
-        openapi_schema = get_openapi(
-            title=app.title,
-            version=app.version,
-            description=app.description,
-            routes=app.routes,
-        )
-        try:
-            path_item = openapi_schema.get("paths", {}).get("/invoke", {})
-            post_op = path_item.get("post") or {}
-            # Request body schema derived at runtime
-            request_schema: Dict[str, Any] = {
-                "type": "object",
-                "properties": {
-                    "parameters": service.request_schema or {"type": "object"},
-                    "run_name": {"type": "string"},
-                    "timeout": {"type": "integer"},
-                },
-                "required": ["parameters"],
-            }
-            post_op.setdefault("requestBody", {}).setdefault(
-                "content", {}
-            ).setdefault("application/json", {})["schema"] = request_schema
-
-            # Response schema derived at runtime
-            response_schema: Dict[str, Any] = {
-                "type": "object",
-                "properties": {
-                    "success": {"type": "boolean"},
-                    "outputs": service.response_schema or {"type": "object"},
-                    "execution_time": {"type": "number"},
-                    "metadata": {
-                        "type": "object",
-                        "properties": {
-                            "pipeline_name": {"type": "string"},
-                            "parameters_used": {"type": "object"},
-                            "deployment_id": {"type": "string"},
-                        },
-                    },
-                },
-                "required": [
-                    "success",
-                    "outputs",
-                    "execution_time",
-                    "metadata",
-                ],
-            }
-            responses = post_op.setdefault("responses", {})
-            responses["200"] = {
-                "description": "Successful Response",
-                "content": {"application/json": {"schema": response_schema}},
-            }
-            path_item["post"] = post_op
-            openapi_schema.setdefault("paths", {})["/invoke"] = path_item
-        except Exception:
-            # Keep default schema if any error occurs
-            pass
-
-        app.openapi_schema = openapi_schema
-        return app.openapi_schema
-
-    app.openapi = custom_openapi  # type: ignore[method-assign]
-
-
-def _validate_request_parameters(
-    params: Dict[str, Any], schema: Dict[str, Any]
-) -> Optional[str]:
-    """Minimal validation for request parameters using contract.request_schema.
-
-    Returns an error string if invalid, otherwise None.
-    """
-    schema = schema or {}
-    required = schema.get("required", [])
-    props = schema.get("properties", {})
-
-    # Check if params is actually a dict
-    if not isinstance(params, dict):
-        return "parameters must be an object"
-
-    missing = [k for k in required if k not in params]
-    if missing:
-        return f"missing required fields: {missing}"
-
-    # If there are required fields but no properties defined, validation should fail
-    if required and not props:
-        return "schema requires fields but defines no properties"
-
-    for key, val in params.items():
-        spec = props.get(key)
-        if not spec:
-            # allow extra fields for now
-            continue
-        expected = spec.get("type")
-        if (
-            expected
-            and expected != "any"
-            and not _json_type_matches(val, expected)
-        ):
-            return f"field '{key}' expected type {expected}, got {type(val).__name__}"
-    return None
-
-
-def _json_type_matches(value: Any, expected: str) -> bool:
-    t = expected.lower()
-    if t == "string":
-        return isinstance(value, str)
-    if t == "integer":
-        return isinstance(value, int) and not isinstance(value, bool)
-    if t == "number":
-        return isinstance(value, (int, float)) and not isinstance(value, bool)
-    if t == "boolean":
-        return isinstance(value, bool)
-    if t == "array":
-        return isinstance(value, list)
-    if t == "object":
-        return isinstance(value, dict)
-    if t == "null":
-        return value is None
-    return False
