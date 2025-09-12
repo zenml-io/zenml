@@ -453,11 +453,15 @@ def deploy_pipeline(
         except KeyError:
             pass
         else:
-            if deployment.user.id != client.active_user.id and not overtake:
+            if (
+                deployment.user
+                and deployment.user.id != client.active_user.id
+                and not overtake
+            ):
                 confirmation = cli_utils.confirmation(
                     f"Deployment with name '{deployment_name}' already exists "
-                    "and is owned by a different user.\nDo you want to continue "
-                    "and update the existing deployment "
+                    f"and is owned by a different user '{deployment.user.name}'."
+                    "\nDo you want to continue and update the existing deployment "
                     "(hint: use the --overtake flag to skip this check) ?"
                 )
                 if not confirmation:

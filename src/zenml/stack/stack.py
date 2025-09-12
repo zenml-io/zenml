@@ -861,6 +861,12 @@ class Stack:
             endpoint_name: The name of the endpoint to serve the pipeline on.
             timeout: The maximum time in seconds to wait for the pipeline to be
                 deployed.
+
+        Returns:
+            The pipeline endpoint response.
+
+        Raises:
+            RuntimeError: If the stack does not have a deployer.
         """
         if not self.deployer:
             raise RuntimeError(

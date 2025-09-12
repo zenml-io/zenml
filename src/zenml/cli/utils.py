@@ -2310,7 +2310,7 @@ def print_pipeline_runs_table(
 
 
 def get_pipeline_endpoint_status_emoji(
-    status: "PipelineEndpointStatus",
+    status: Optional[str],
 ) -> str:
     """Returns an emoji representing the given pipeline endpoint status.
 
@@ -2319,9 +2319,6 @@ def get_pipeline_endpoint_status_emoji(
 
     Returns:
         An emoji representing the given pipeline endpoint status.
-
-    Raises:
-        RuntimeError: If the given pipeline endpoint status is not supported.
     """
     if status == PipelineEndpointStatus.PENDING:
         return ":hourglass_flowing_sand:"
@@ -2331,12 +2328,11 @@ def get_pipeline_endpoint_status_emoji(
         return ":gear:"
     if status == PipelineEndpointStatus.ABSENT:
         return ":stop_sign:"
-    if status == PipelineEndpointStatus.UNKNOWN:
-        return ":question:"
-    raise RuntimeError(f"Unknown status: {status}")
+
+    return ":question:"
 
 
-def format_deployment_status(status: PipelineEndpointStatus) -> str:
+def format_deployment_status(status: Optional[str]) -> str:
     """Format deployment status with color.
 
     Args:
@@ -2353,8 +2349,8 @@ def format_deployment_status(status: PipelineEndpointStatus) -> str:
         return "[red]ERROR[/red]"
     elif status == PipelineEndpointStatus.ABSENT:
         return "[dim]ABSENT[/dim]"
-    else:
-        return "[dim]UNKNOWN[/dim]"
+
+    return "[dim]UNKNOWN[/dim]"
 
 
 def print_deployment_table(

@@ -246,6 +246,9 @@ class DockerDeployer(ContainerizedDeployer):
     ) -> Optional[Container]:
         """Get the docker container associated with a pipeline endpoint.
 
+        Args:
+            endpoint: The pipeline endpoint to get the container for.
+
         Returns:
             The docker container for the service, or None if the container
             does not exist.
@@ -325,7 +328,6 @@ class DockerDeployer(ContainerizedDeployer):
         Raises:
             PipelineEndpointDeploymentError: if the pipeline endpoint deployment
                 fails.
-            DeployerError: if an unexpected error occurs.
         """
         deployment = endpoint.pipeline_deployment
         assert deployment, "Pipeline deployment not found"
@@ -496,9 +498,6 @@ class DockerDeployer(ContainerizedDeployer):
         Raises:
             PipelineEndpointNotFoundError: if no pipeline endpoint is found
                 corresponding to the provided PipelineEndpointResponse.
-            DeployerError: if the pipeline endpoint information cannot
-                be retrieved for any other reason or if an unexpected error
-                occurs.
         """
         container = self._get_container(endpoint)
         if container is None:
@@ -527,8 +526,8 @@ class DockerDeployer(ContainerizedDeployer):
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
 
-        Returns:
-            A generator that yields the logs of the pipeline endpoint.
+        Yields:
+            The logs of the pipeline endpoint.
 
         Raises:
             PipelineEndpointNotFoundError: if no pipeline endpoint is found
