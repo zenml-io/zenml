@@ -37,10 +37,8 @@ from zenml.artifacts.preexisting_data_materializer import (
 )
 from zenml.client import Client
 from zenml.constants import (
-    ENV_ZENML_RUNTIME_USE_IN_MEMORY_ARTIFACTS,
     ENV_ZENML_SERVER,
     MODEL_METADATA_YAML_FILE_NAME,
-    handle_bool_env_var,
 )
 from zenml.enums import (
     ArtifactSaveType,
@@ -153,85 +151,72 @@ def _store_artifact_data_and_prepare_request(
     Returns:
         Artifact version request for the artifact data that was stored.
     """
-    # Detect serving runtime + in-memory toggle
+    # Check if serving runtime is requesting in-memory mode
     use_in_memory = False
     try:
         from zenml.deployers.serving import runtime
 
-        if runtime.is_active():
-            # Check per-request parameter first
-            request_setting = runtime.get_use_in_memory()
-            if request_setting is not None:
-                use_in_memory = request_setting
-            else:
-                # Fall back to environment variable
-                use_in_memory = handle_bool_env_var(
-                    ENV_ZENML_RUNTIME_USE_IN_MEMORY_ARTIFACTS, False
-                )
-    except Exception:
-        use_in_memory = False
+        use_in_memory = runtime.should_use_in_memory()
+    except ImportError:
+        pass
 
-    artifact_store = Client().active_stack.artifact_store
-    if not use_in_memory:
-        artifact_store.makedirs(uri)
-
-    # If in-memory is requested during serving, force the in-memory materializer and artifact store
     if use_in_memory:
-        from datetime import datetime
-        from uuid import uuid4
+        # Store data directly in runtime context without any I/O
+        from zenml.deployers.serving import runtime
 
-        from zenml.artifact_stores.in_memory_artifact_store import (
-            InMemoryArtifactStore,
-            InMemoryArtifactStoreConfig,
+        runtime.put_in_memory_data(uri, data)
+
+        # Create a minimal materializer for metadata only
+        artifact_store = Client().active_stack.artifact_store
+        materializer = materializer_class(
+            uri=uri, artifact_store=artifact_store
         )
-        from zenml.enums import StackComponentType
-        from zenml.materializers.in_memory_materializer import (
-            InMemoryMaterializer,
+        materializer.uri = uri.replace("\\", "/")
+        data_type = type(data)
+        materializer.validate_save_type_compatibility(data_type)
+        # Skip actual save() call - data is already in runtime
+
+        # Skip visualizations and metadata extraction for performance
+        visualizations = None
+        combined_metadata: Dict[str, "MetadataType"] = {}
+        content_hash = None
+    else:
+        # Normal path - save to artifact store
+        artifact_store = Client().active_stack.artifact_store
+
+        # Skip directory creation for memory:// URIs as they don't need filesystem directories
+        if not uri.startswith("memory://"):
+            artifact_store.makedirs(uri)
+
+        materializer = materializer_class(
+            uri=uri, artifact_store=artifact_store
+        )
+        materializer.uri = materializer.uri.replace("\\", "/")
+
+        data_type = type(data)
+        materializer.validate_save_type_compatibility(data_type)
+        materializer.save(data)
+
+        visualizations = (
+            _save_artifact_visualizations(data=data, materializer=materializer)
+            if store_visualizations
+            else None
         )
 
-        materializer_class = InMemoryMaterializer
-        # Use in-memory artifact store instead of the active stack's artifact store
-        artifact_store = InMemoryArtifactStore(
-            name="in_memory_serving",
-            id=uuid4(),
-            config=InMemoryArtifactStoreConfig(),
-            flavor="in_memory",
-            type=StackComponentType.ARTIFACT_STORE,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
-        tags = (tags or []) + ["ephemeral"]
+        combined_metadata: Dict[str, "MetadataType"] = {}
+        if store_metadata:
+            try:
+                combined_metadata = materializer.extract_full_metadata(data)
+            except Exception as e:
+                logger.warning(
+                    "Failed to extract materializer metadata: %s", e
+                )
 
-    materializer = materializer_class(uri=uri, artifact_store=artifact_store)
-    materializer.uri = materializer.uri.replace("\\", "/")
+            # Update with user metadata to potentially overwrite values coming from
+            # the materializer
+            combined_metadata.update(metadata or {})
 
-    data_type = type(data)
-    materializer.validate_save_type_compatibility(data_type)
-    materializer.save(data)
-
-    # Avoid visualization generation in in-memory mode
-    do_visualizations = store_visualizations and not use_in_memory
-    visualizations = (
-        _save_artifact_visualizations(data=data, materializer=materializer)
-        if do_visualizations
-        else None
-    )
-
-    combined_metadata: Dict[str, "MetadataType"] = {}
-    if store_metadata and not use_in_memory:
-        try:
-            combined_metadata = materializer.extract_full_metadata(data)
-        except Exception as e:
-            logger.warning("Failed to extract materializer metadata: %s", e)
-
-        # Update with user metadata to potentially overwrite values coming from
-        # the materializer
-        combined_metadata.update(metadata or {})
-
-    content_hash = (
-        None if use_in_memory else materializer.compute_content_hash(data)
-    )
+        content_hash = materializer.compute_content_hash(data)
 
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,
@@ -305,7 +290,23 @@ def save_artifact(
 
     if not uri:
         uri = os.path.join("custom_artifacts", name, str(uuid4()))
-    if not uri.startswith(artifact_store.path):
+
+    # Check if URI uses a special scheme (like memory://) that should not be joined with artifact store path
+    has_special_scheme = any(
+        uri.startswith(scheme + "://")
+        for scheme in [
+            "memory",
+            "s3",
+            "gs",
+            "azure",
+            "hdfs",
+            "ftp",
+            "http",
+            "https",
+        ]
+    )
+
+    if not uri.startswith(artifact_store.path) and not has_special_scheme:
         uri = os.path.join(artifact_store.path, uri)
 
     if save_type == ArtifactSaveType.MANUAL:

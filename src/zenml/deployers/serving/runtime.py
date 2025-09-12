@@ -10,11 +10,13 @@ to access serving parameters without tight coupling.
 """
 
 import contextvars
+import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, Optional, Set
 
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
+from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
 
@@ -31,6 +33,8 @@ class _ServingState:
     in_memory_uris: Set[str] = field(default_factory=set)
     # Per-request in-memory mode override
     use_in_memory: Optional[bool] = None
+    # In-memory data storage for artifacts
+    _in_memory_data: Dict[str, Any] = field(default_factory=dict)
 
     def reset(self) -> None:
         self.active = False
@@ -41,6 +45,7 @@ class _ServingState:
         self.outputs.clear()
         self.in_memory_uris.clear()
         self.use_in_memory = None
+        self._in_memory_data.clear()
 
 
 # Use contextvars for thread-safe, request-scoped state
@@ -191,13 +196,170 @@ def get_parameter_override(name: str) -> Optional[Any]:
     return pipeline_params.get(name)
 
 
-def get_use_in_memory() -> Optional[bool]:
-    """Get the per-request use_in_memory setting.
+def should_use_in_memory() -> bool:
+    """Check if the current request should use in-memory mode.
 
     Returns:
-        The use_in_memory setting for the current request, or None if not set.
+        True if in-memory mode is enabled for this request.
     """
     if is_active():
         state = _get_context()
-        return state.use_in_memory
+        return state.use_in_memory is True
+    return False
+
+
+def put_in_memory_data(uri: str, data: Any) -> None:
+    """Store data in memory for the given URI.
+
+    Args:
+        uri: The artifact URI to store data for.
+        data: The data to store in memory.
+    """
+    if is_active():
+        state = _get_context()
+        state.in_memory_uris.add(uri)
+        state._in_memory_data[uri] = data
+
+
+def get_in_memory_data(uri: str) -> Any:
+    """Get data from memory for the given URI.
+
+    Args:
+        uri: The artifact URI to retrieve data for.
+
+    Returns:
+        The stored data, or None if not found.
+    """
+    if is_active():
+        state = _get_context()
+        return state._in_memory_data.get(uri)
     return None
+
+
+def has_in_memory_data(uri: str) -> bool:
+    """Check if data exists in memory for the given URI.
+
+    Args:
+        uri: The artifact URI to check.
+
+    Returns:
+        True if data exists in memory for the URI.
+    """
+    if is_active():
+        state = _get_context()
+        return uri in state._in_memory_data
+    return False
+
+
+def process_outputs(
+    runtime_outputs: Optional[Dict[str, Dict[str, Any]]],
+    run: Any,  # PipelineRunResponse
+    enforce_size_limits: bool = True,
+    max_output_size_mb: int = 1,
+) -> Dict[str, Any]:
+    """Process outputs using fast path when available, slow path as fallback.
+
+    Args:
+        runtime_outputs: In-memory outputs from runtime context (fast path)
+        run: Pipeline run response for artifact loading (slow path)
+        enforce_size_limits: Whether to enforce size limits (disable for in-memory mode)
+        max_output_size_mb: Maximum output size in MB
+
+    Returns:
+        Processed outputs ready for JSON response
+    """
+    if runtime_outputs:
+        return _process_runtime_outputs(
+            runtime_outputs, enforce_size_limits, max_output_size_mb
+        )
+
+    logger.debug("Using slow artifact loading fallback")
+    return _load_outputs_from_artifacts(run)
+
+
+def _process_runtime_outputs(
+    runtime_outputs: Dict[str, Dict[str, Any]],
+    enforce_size_limits: bool,
+    max_output_size_mb: int,
+) -> Dict[str, Any]:
+    """Process in-memory outputs with optional size limits."""
+    return {
+        f"{step_name}.{output_name}": _serialize_output(
+            value, enforce_size_limits, max_output_size_mb
+        )
+        for step_name, step_outputs in runtime_outputs.items()
+        for output_name, value in step_outputs.items()
+    }
+
+
+def _serialize_output(
+    value: Any, enforce_size_limits: bool, max_output_size_mb: int
+) -> Any:
+    """Serialize a single output value with error handling."""
+    try:
+        serialized = _make_json_safe(value)
+
+        if not enforce_size_limits:
+            return serialized
+
+        # Check size limits only if enforced
+        max_size_bytes = max(1, min(max_output_size_mb, 100)) * 1024 * 1024
+        if isinstance(serialized, str) and len(serialized) > max_size_bytes:
+            return {
+                "data_too_large": True,
+                "size_estimate": f"{len(serialized) // 1024}KB",
+                "max_size_mb": max_size_bytes // (1024 * 1024),
+                "type_name": type(value).__name__,
+                "note": "Use artifact loading endpoint for large outputs",
+            }
+
+        return serialized
+
+    except Exception:
+        return {
+            "serialization_failed": True,
+            "type_name": type(value).__name__,
+            "note": "Use artifact loading endpoint for this output",
+        }
+
+
+def _make_json_safe(value: Any) -> Any:
+    """Make value JSON-serializable using ZenML's encoder."""
+    try:
+        # Test serialization
+        json.dumps(value, default=pydantic_encoder)
+        return value
+    except (TypeError, ValueError, OverflowError):
+        # Fallback to truncated string representation
+        str_value = str(value)
+        return (
+            str_value
+            if len(str_value) <= 1000
+            else f"{str_value[:1000]}... [truncated]"
+        )
+
+
+def _load_outputs_from_artifacts(run: Any) -> Dict[str, Any]:
+    """Load outputs from artifacts (slow fallback path)."""
+    from zenml.artifacts.utils import load_artifact_from_response
+
+    outputs = {}
+
+    for step_name, step_run in (run.steps or {}).items():
+        if not step_run or not step_run.outputs:
+            continue
+
+        for output_name, artifacts in step_run.outputs.items():
+            if not artifacts:
+                continue
+
+            try:
+                value = load_artifact_from_response(artifacts[0])
+                if value is not None:
+                    outputs[f"{step_name}.{output_name}"] = _make_json_safe(
+                        value
+                    )
+            except Exception as e:
+                logger.debug(
+                    f"Failed to load artifact for {step_name}.{output_name}: {e}"
+                )

@@ -18,10 +18,6 @@ from typing import TYPE_CHECKING, Dict, Sequence
 from uuid import uuid4
 
 from zenml.client import Client
-from zenml.constants import (
-    ENV_ZENML_RUNTIME_USE_IN_MEMORY_ARTIFACTS,
-    handle_bool_env_var,
-)
 from zenml.logger import get_logger
 from zenml.utils import string_utils
 
@@ -50,15 +46,31 @@ def generate_artifact_uri(
     Returns:
         The URI of the output artifact.
     """
+    # Check if serving runtime is active and using in-memory mode
+    use_memory_uri = False
+    try:
+        from zenml.deployers.serving import runtime
+
+        if runtime.is_active() and runtime.should_use_in_memory():
+            use_memory_uri = True
+    except ImportError:
+        pass
+
     for banned_character in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]:
         output_name = output_name.replace(banned_character, "_")
-    return os.path.join(
-        artifact_store.path,
-        step_run.name,
-        output_name,
-        str(step_run.id),
-        str(uuid4())[:8],  # add random subfolder to avoid collisions
-    )
+
+    if use_memory_uri:
+        # Use memory:// prefix for in-memory serving to avoid conflicts
+        return f"memory://{step_run.name}/{output_name}/{str(step_run.id)}/{str(uuid4())[:8]}"
+    else:
+        # Normal artifact store path
+        return os.path.join(
+            artifact_store.path,
+            step_run.name,
+            output_name,
+            str(step_run.id),
+            str(uuid4())[:8],  # add random subfolder to avoid collisions
+        )
 
 
 def prepare_output_artifact_uris(
@@ -79,60 +91,21 @@ def prepare_output_artifact_uris(
     """
     artifact_store = stack.artifact_store
 
-    # Detect serving runtime + in-memory toggle to avoid unnecessary FS IO
-    use_in_memory = False
-    try:
-        from zenml.deployers.serving import runtime
-
-        if runtime.is_active():
-            # Check per-request parameter first
-            request_setting = runtime.get_use_in_memory()
-            if request_setting is not None:
-                use_in_memory = request_setting
-            else:
-                # Fall back to environment variable
-                use_in_memory = handle_bool_env_var(
-                    ENV_ZENML_RUNTIME_USE_IN_MEMORY_ARTIFACTS, False
-                )
-    except Exception:
-        use_in_memory = False
-
-    # Use in-memory artifact store for URI generation when in-memory mode is active
-    uri_generation_artifact_store = artifact_store
-    if use_in_memory:
-        from datetime import datetime
-        from uuid import uuid4
-
-        from zenml.artifact_stores.in_memory_artifact_store import (
-            InMemoryArtifactStore,
-            InMemoryArtifactStoreConfig,
-        )
-        from zenml.enums import StackComponentType
-
-        uri_generation_artifact_store = InMemoryArtifactStore(
-            name="in_memory_uri_gen",
-            id=uuid4(),
-            config=InMemoryArtifactStoreConfig(),
-            flavor="in_memory",
-            type=StackComponentType.ARTIFACT_STORE,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
-
     output_artifact_uris: Dict[str, str] = {}
     for output_name in step.config.outputs.keys():
         substituted_output_name = string_utils.format_name_template(
             output_name, substitutions=step_run.config.substitutions
         )
         artifact_uri = generate_artifact_uri(
-            artifact_store=uri_generation_artifact_store,
+            artifact_store=stack.artifact_store,
             step_run=step_run,
             output_name=substituted_output_name,
         )
-        if not use_in_memory:
-            if artifact_store.exists(artifact_uri):
-                raise RuntimeError("Artifact already exists")
+        if artifact_store.exists(artifact_uri):
+            raise RuntimeError("Artifact already exists")
+
+        # Skip directory creation for memory:// URIs as they don't need filesystem directories
+        if not artifact_uri.startswith("memory://"):
             artifact_store.makedirs(artifact_uri)
         output_artifact_uris[output_name] = artifact_uri
     return output_artifact_uris

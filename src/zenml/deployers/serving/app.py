@@ -231,6 +231,7 @@ async def root(
     """
     return html_content
 
+
 @app.get("/health")
 async def health_check(
     service: PipelineServingService = Depends(get_pipeline_service),
