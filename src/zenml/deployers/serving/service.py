@@ -24,15 +24,22 @@ import os
 import time
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 from uuid import UUID, uuid4
 
+from pydantic import BaseModel
+
 from zenml.client import Client
+from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators.local.local_orchestrator import (
+    LocalOrchestrator,
+    LocalOrchestratorConfig,
+)
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
 from zenml.utils import source_utils
@@ -62,9 +69,9 @@ class PipelineServingService:
         self.last_execution_time: Optional[datetime] = None
         self.pipeline_state: Optional[Any] = None
         # Cache a local orchestrator instance to avoid per-request construction
-        self._cached_orchestrator: Optional["BaseOrchestrator"] = None
+        self._orchestrator: Optional["BaseOrchestrator"] = None
         # Cached Pydantic params model built from deployment
-        self._params_model: Optional[Any] = None
+        self._params_model: Optional[Type[BaseModel]] = None
 
         # Simple execution tracking
         self.total_executions = 0
@@ -127,6 +134,17 @@ class PipelineServingService:
                     e,
                 )
                 raise
+
+            self._orchestrator = LocalOrchestrator(
+                name="serving-local",
+                id=uuid4(),
+                config=LocalOrchestratorConfig(),
+                flavor="local",
+                type=StackComponentType.ORCHESTRATOR,
+                user=None,
+                created=datetime.now(),
+                updated=datetime.now(),
+            )
 
             # Execute the init hook, if present
             await self._execute_init_hook()
@@ -293,7 +311,7 @@ class PipelineServingService:
         """
         assert self._params_model is not None
         parameters = self._params_model.model_validate(request_params or {})
-        return parameters.model_dump()  # type: ignore[return-value]
+        return parameters.model_dump()
 
     def execute_pipeline(
         self,
@@ -319,6 +337,7 @@ class PipelineServingService:
                 mapped_outputs=mapped_outputs,
                 start_time=start,
                 resolved_params=resolved_params,
+                run=run,
             )
         except Exception as e:  # noqa: BLE001
             logger.error(f"❌ Pipeline execution failed: {e}")
@@ -331,24 +350,8 @@ class PipelineServingService:
         client = Client()
         active_stack: Stack = client.active_stack
 
-        # Instantiate a local orchestrator explicitly and run with the active stack
-        from zenml.enums import StackComponentType
-        from zenml.orchestrators.local.local_orchestrator import (
-            LocalOrchestrator,
-            LocalOrchestratorConfig,
-        )
-
-        if self._cached_orchestrator is None:
-            self._cached_orchestrator = LocalOrchestrator(
-                name="serving-local",
-                id=uuid4(),
-                config=LocalOrchestratorConfig(),
-                flavor="local",
-                type=StackComponentType.ORCHESTRATOR,
-                user=uuid4(),
-                created=datetime.now(),
-                updated=datetime.now(),
-            )
+        if self._orchestrator is None:
+            raise RuntimeError("Orchestrator not initialized")
 
         # Create a placeholder run and execute with a known run id
         assert self.deployment is not None
@@ -366,7 +369,7 @@ class PipelineServingService:
         )
 
         try:
-            self._cached_orchestrator.run(
+            self._orchestrator.run(
                 deployment=self.deployment,
                 stack=active_stack,
                 placeholder_run=placeholder_run,
@@ -388,6 +391,7 @@ class PipelineServingService:
         mapped_outputs: Dict[str, Any],
         start_time: float,
         resolved_params: Dict[str, Any],
+        run: PipelineRunResponse,
     ) -> Dict[str, Any]:
         execution_time = time.time() - start_time
         self.total_executions += 1
@@ -399,6 +403,8 @@ class PipelineServingService:
             "execution_time": execution_time,
             "metadata": {
                 "pipeline_name": self.deployment.pipeline_configuration.name,
+                "run_id": run.id,
+                "run_name": run.name,
                 "parameters_used": self._serialize_json_safe(resolved_params),
                 "deployment_id": str(self.deployment.id),
             },
@@ -414,18 +420,6 @@ class PipelineServingService:
             )
 
         return response
-
-    def _build_timeout_response(
-        self, start_time: float, timeout: Optional[int]
-    ) -> Dict[str, Any]:
-        execution_time = time.time() - start_time
-        return {
-            "success": False,
-            "job_id": None,
-            "error": f"Pipeline execution timed out after {timeout}s",
-            "execution_time": execution_time,
-            "metadata": {},
-        }
 
     def _build_error_response(
         self, e: Exception, start_time: float

@@ -30,13 +30,14 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
 from uuid import UUID
 
 import yaml
-from pydantic import ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import Self
 
 from zenml import constants
@@ -1173,6 +1174,40 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             "own_stack": own_stack,
             "pipeline_run_id": str(run_id) if run_id else None,
         }
+
+    def get_parameters_model(self) -> Optional[Type[BaseModel]]:
+        """Create a Pydantic model that represents the pipeline parameters.
+
+        Returns:
+            A Pydantic model that represents the pipeline parameters.
+        """
+        from zenml.steps.entrypoint_function_utils import (
+            validate_entrypoint_function,
+        )
+
+        try:
+            entrypoint_definition = validate_entrypoint_function(
+                self.entrypoint
+            )
+
+            defaults: Dict[str, Any] = self._parameters
+            model_args: Dict[str, Any] = {}
+            for name, param in entrypoint_definition.inputs.items():
+                model_args[name] = (param.annotation, defaults.get(name, ...))
+
+            model_args["__config__"] = ConfigDict(extra="forbid")
+            params_model: Type[BaseModel] = create_model(
+                "PipelineParameters",
+                **model_args,
+            )
+            return params_model
+        except Exception:
+            logger.exception(
+                f"Failed to generate the input parameters schema for pipeline "
+                f"`{self.name}`. This may cause problems when deploying the "
+                f"pipeline.",
+            )
+            return None
 
     def _compile(
         self, config_path: Optional[str] = None, **run_configuration_args: Any

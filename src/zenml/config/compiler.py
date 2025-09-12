@@ -26,7 +26,7 @@ from typing import (
     Tuple,
 )
 
-from pydantic import ConfigDict, TypeAdapter, create_model
+from pydantic import TypeAdapter
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
@@ -45,9 +45,6 @@ from zenml.exceptions import StackValidationError
 from zenml.models import PipelineDeploymentBase
 from zenml.pipelines.run_utils import get_default_run_name
 from zenml.steps.base_step import BaseStep
-from zenml.steps.entrypoint_function_utils import (
-    validate_entrypoint_function,
-)
 from zenml.steps.utils import parse_return_type_annotations
 from zenml.utils import pydantic_utils, settings_utils
 
@@ -636,29 +633,12 @@ class Compiler:
             "parameters": pipeline._parameters,
         }
 
-        # Best-effort: store a JSON schema snapshot for CLI/UI tooling.
-        # Serving does not use this for validation.
-        try:
-            entrypoint_definition = validate_entrypoint_function(
-                pipeline.entrypoint
-            )  # type: ignore
-
-            defaults: Dict[str, Any] = pipeline._parameters
-            fields: Dict[str, Tuple[Any, ...]] = {}  # type: ignore[type-arg]
-            for name, param in entrypoint_definition.inputs.items():
-                fields[name] = (param.annotation, defaults.get(name, ...))
-
-            params_model = create_model(  # type: ignore[arg-type]
-                f"{pipeline.name}_ParamsModel",
-                __config__=ConfigDict(extra="forbid"),  # type: ignore[arg-type]
-                **fields,  # type: ignore[arg-type]
-            )
+        # Store a JSON schema of the pipeline input parameters for CLI/UI
+        # tooling.
+        if pipeline_parameters_model := pipeline.get_parameters_model():
             additional_spec_args["parameters_schema"] = (
-                params_model.model_json_schema()
+                pipeline_parameters_model.model_json_schema()
             )
-        except Exception:
-            # Ignore schema snapshot errors to avoid blocking compilation
-            pass
 
         # Best-effort: build a response schema snapshot for terminal steps (tooling).
         try:
@@ -694,7 +674,7 @@ class Compiler:
                         ta = TypeAdapter(sig.resolved_annotation)
                         schema = ta.json_schema()
                         if "$defs" in schema:
-                            all_defs.update(schema["$defs"])  # type: ignore
+                            all_defs.update(schema["$defs"])
                             schema = {
                                 k: v for k, v in schema.items() if k != "$defs"
                             }
@@ -721,13 +701,12 @@ class Compiler:
                 if all_defs:
                     response_schema["$defs"] = all_defs
                 additional_spec_args["response_schema"] = response_schema
-        except Exception:
+        except Exception as e:
             # Ignore response schema issues to avoid blocking compilation
             logger.warning(
-                "Failed to generate response schema for pipeline `%s`.",
-                pipeline.name,
+                f"Failed to generate response schema for pipeline "
+                f"`{pipeline.name}`: {e}",
             )
-            pass
 
         return PipelineSpec(steps=step_specs, **additional_spec_args)
 

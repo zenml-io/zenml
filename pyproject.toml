@@ -53,6 +53,8 @@ passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
 pydantic = ">=2.0,<2.11.2"
 pydantic-settings = "*"
+jsf = "*"
+jsonschema = "*"
 pymysql = { version = "~1.1.0,>=1.1.1" }
 python = ">=3.9,<3.13"
 python-dateutil = "^2.8.1"
@@ -182,6 +184,7 @@ types-six = { version = "^1.16.2", optional = true }
 types-termcolor = { version = "^1.1.2", optional = true }
 types-psutil = { version = "^5.8.13", optional = true }
 types-passlib = { version = "^1.7.7", optional = true }
+types-jsonschema = { version = "*", optional = true }
 
 [tool.poetry.extras]
 server = [
@@ -280,6 +283,7 @@ dev = [
     "types-termcolor",
     "types-psutil",
     "types-passlib",
+    "types-jsonschema",
 ]
 
 [build-system]
@@ -492,5 +496,6 @@ module = [
     "numba.*",
     "uvloop.*",
     "litellm",
+    "jsf",
 ]
 ignore_missing_imports = true

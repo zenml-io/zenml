@@ -212,6 +212,7 @@ def reuse_or_create_pipeline_build(
                     "  * The Docker settings of the pipeline and all its steps "
                     "are the same as for the existing build."
                 )
+
         return create_pipeline_build(
             deployment=deployment,
             pipeline_id=pipeline_id,

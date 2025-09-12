@@ -23,6 +23,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
+from zenml.deployers.exceptions import PipelineEndpointInvalidParametersError
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import (
@@ -607,6 +608,13 @@ def invoke_deployment(
             timeout=timeout or 300,  # 5 minute timeout
             project=None,
             **parsed_args,
+        )
+    except PipelineEndpointInvalidParametersError as e:
+        cli_utils.error(
+            f"Invalid parameters for deployment '{name_or_id}': \n"
+            f"{str(e)}\n\n"
+            f"Hint: run 'zenml deployment describe {name_or_id}' "
+            "to inspect the deployment schema."
         )
     except KeyError as e:
         cli_utils.error(

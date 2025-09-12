@@ -130,7 +130,7 @@ class TestPipelineServingService:
         assert service.deployment is None
         assert service.total_executions == 0
         assert service.last_execution_time is None
-        assert service._cached_orchestrator is None
+        assert service._orchestrator is None
 
     def test_json_serialization_basic_types(self, deployment_id):
         """Test JSON serialization of basic types."""
