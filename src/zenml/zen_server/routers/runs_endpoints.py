@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    LOGS,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -30,7 +31,12 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.logging.step_logging import fetch_logs
+from zenml.logging.step_logging import (
+    MAX_ENTRIES_PER_REQUEST,
+    LogEntry,
+    fetch_log_records,
+    parse_log_entry,
+)
 from zenml.models import (
     Page,
     PipelineRunDAG,
@@ -42,7 +48,10 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.utils import run_utils
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import (
+    AuthContext,
+    authorize,
+)
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
@@ -418,8 +427,9 @@ def stop_run(
 
 
 @router.get(
-    "/{run_id}/logs",
+    "/{run_id}" + LOGS,
     responses={
+        400: error_response,
         401: error_response,
         404: error_response,
         422: error_response,
@@ -429,20 +439,18 @@ def stop_run(
 def run_logs(
     run_id: UUID,
     source: str,
-    offset: int = 0,
-    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
     _: AuthContext = Security(authorize),
-) -> str:
-    """Get pipeline run logs for a specific source.
+) -> List[LogEntry]:
+    """Get log entries for efficient pagination.
+
+    This endpoint returns the log entries.
 
     Args:
         run_id: ID of the pipeline run.
         source: Required source to get logs for.
-        offset: The offset from which to start reading.
-        length: The amount of bytes that should be read.
 
     Returns:
-        Logs for the specified source.
+        List of log entries.
 
     Raises:
         KeyError: If no logs are found for the specified source.
@@ -462,18 +470,25 @@ def run_logs(
             workload_logs = workload_manager().get_logs(
                 workload_id=deployment.id
             )
-            return workload_logs
+
+            log_entries = []
+            for line in workload_logs.split("\n"):
+                if log_record := parse_log_entry(line):
+                    log_entries.append(log_record)
+
+                if len(log_entries) >= MAX_ENTRIES_PER_REQUEST:
+                    break
+
+            return log_entries
 
     # Handle logs from log collection
     if run.log_collection:
         for log_entry in run.log_collection:
             if log_entry.source == source:
-                return fetch_logs(
+                return fetch_log_records(
                     zen_store=store,
                     artifact_store_id=log_entry.artifact_store_id,
                     logs_uri=log_entry.uri,
-                    offset=offset,
-                    length=length,
                 )
 
     # If no logs found for the specified source, raise an error

@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from zenml import pipeline, step
+from zenml.enums import ExecutionMode
 from zenml.exceptions import StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -256,7 +257,9 @@ def test_returning_an_object_of_the_wrong_type_raises_an_error(
     pipeline_ = one_step_pipeline(step_instance)
 
     with pytest.raises(StepInterfaceError):
-        pipeline_.with_options(unlisted=True)()
+        pipeline_.with_options(
+            unlisted=True, execution_mode=ExecutionMode.FAIL_FAST
+        )()
 
 
 @step
@@ -323,7 +326,9 @@ def test_returning_wrong_amount_of_objects_raises_an_error(
     pipeline_ = one_step_pipeline(step_instance)
 
     with pytest.raises(StepInterfaceError):
-        pipeline_.with_options(unlisted=True)()
+        pipeline_.with_options(
+            unlisted=True, execution_mode=ExecutionMode.FAIL_FAST
+        )()
 
 
 @step
@@ -531,7 +536,9 @@ def test_string_outputs_do_not_get_split(one_step_pipeline):
     pipeline_ = one_step_pipeline(step_with_two_letter_string_output)
 
     with pytest.raises(StepInterfaceError):
-        pipeline_.with_options(unlisted=True)()
+        pipeline_.with_options(
+            unlisted=True, execution_mode=ExecutionMode.FAIL_FAST
+        )()
 
 
 def test_step_decorator_configuration_gets_applied_during_initialization(
@@ -1068,3 +1075,49 @@ def test_artifact_version_as_step_input(clean_client):
 
     with does_not_raise():
         test_pipeline()
+
+
+def test_step_source_code_cache_value():
+    """Tests that the source code cache value of a step is correct."""
+
+    def do_nothing(func):
+        return func
+
+    @step
+    def test_step():
+        pass
+
+    source_code_1 = test_step.source_code_cache_value
+
+    @step(enable_cache=True)
+    def test_step():
+        pass
+
+    source_code_2 = test_step.source_code_cache_value
+
+    @step(
+        enable_cache=True,
+        extra={"some_key": "some_value"},
+        settings={"orchestrator": {"some_setting": "some_value"}},
+    )
+    def test_step():
+        pass
+
+    source_code_3 = test_step.source_code_cache_value
+
+    @step
+    @do_nothing
+    def test_step():
+        pass
+
+    source_code_4 = test_step.source_code_cache_value
+
+    @do_nothing
+    @step
+    def test_step():
+        pass
+
+    source_code_5 = test_step.source_code_cache_value
+
+    assert source_code_1 == source_code_2 == source_code_3
+    assert source_code_4 == source_code_5

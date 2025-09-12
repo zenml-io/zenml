@@ -29,6 +29,30 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils.io_utils import is_path_within_directory
 
 
+def _is_safe_tar_member(member: tarfile.TarInfo, directory: str) -> bool:
+    """Check if a tar member is safe to extract.
+
+    This function validates that the member name and any link targets
+    are within the specified directory to prevent path traversal attacks.
+
+    Args:
+        member: The tar member to validate.
+        directory: The target extraction directory.
+
+    Returns:
+        True if the member is safe to extract, False otherwise.
+    """
+    # Check if the member name is within the directory
+    if not is_path_within_directory(member.name, directory):
+        return False
+
+    # For symbolic links and hard links, validate the target path
+    if member.issym() or member.islnk():
+        return is_path_within_directory(member.linkname, directory)
+
+    return True
+
+
 class PathMaterializer(BaseMaterializer):
     """Materializer for Path objects.
 
@@ -73,14 +97,14 @@ class PathMaterializer(BaseMaterializer):
                 # Extract the archive to the temporary directory
                 with tarfile.open(archive_path_local, "r:gz") as tar:
                     # Validate archive members to prevent path traversal attacks
-                    # Filter members to only those with safe paths
+                    # Filter members to only those with safe paths and link targets
                     safe_members = []
                     for member in tar.getmembers():
-                        if is_path_within_directory(member.name, directory):
+                        if _is_safe_tar_member(member, directory):
                             safe_members.append(member)
 
                     # Extract only safe members
-                    tar.extractall(path=directory, members=safe_members)  # nosec B202 - members are filtered through is_path_within_directory
+                    tar.extractall(path=directory, members=safe_members)  # nosec B202 - members are filtered through _is_safe_tar_member
 
                 # Clean up the archive file
                 os.remove(archive_path_local)

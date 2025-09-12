@@ -18,10 +18,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pydantic import SerializeAsAny, field_validator
 
+from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.utils.tag_utils import Tag
 from zenml.utils.time_utils import utc_now
@@ -42,6 +44,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     enable_pipeline_logs: Optional[bool] = None
+    execution_mode: Optional[ExecutionMode] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
@@ -51,6 +54,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
     substitutions: Dict[str, str] = {}
+    cache_policy: Optional[CachePolicyWithValidator] = None
 
     def finalize_substitutions(
         self, start_time: Optional[datetime] = None, inplace: bool = False
@@ -82,6 +86,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
+    execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE
 
     @field_validator("name")
     @classmethod

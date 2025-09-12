@@ -14,7 +14,7 @@
 """Utilities for run templates."""
 
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from pydantic import create_model
 from pydantic.fields import FieldInfo
@@ -145,7 +145,9 @@ def generate_config_schema(
     experiment_trackers = []
     step_operators = []
 
-    settings_fields: Dict[str, Any] = {"resources": (ResourceSettings, None)}
+    settings_fields: Dict[str, Any] = {
+        "resources": (Optional[ResourceSettings], None)
+    }
     for component in stack.components:
         if not component.flavor_schema:
             continue
@@ -188,7 +190,7 @@ def generate_config_schema(
             continue
 
         if field_info.annotation == Optional[SourceWithValidator]:
-            generic_step_fields[key] = (Optional[str], None)
+            generic_step_fields[key] = (Optional[str], field_info)
         else:
             generic_step_fields[key] = (field_info.annotation, field_info)
 
@@ -197,7 +199,7 @@ def generate_config_schema(
             "ExperimentTrackers", {e: e for e in experiment_trackers}
         )
         generic_step_fields["experiment_tracker"] = (
-            Optional[experiment_tracker_enum],
+            Optional[Union[experiment_tracker_enum, bool]],
             None,
         )
     if step_operators:
@@ -205,7 +207,7 @@ def generate_config_schema(
             "StepOperators", {s: s for s in step_operators}
         )
         generic_step_fields["step_operator"] = (
-            Optional[step_operator_enum],
+            Optional[Union[step_operator_enum, bool]],
             None,
         )
 
@@ -270,7 +272,7 @@ def generate_config_schema(
             continue
 
         if field_info.annotation == Optional[SourceWithValidator]:
-            top_level_fields[key] = (Optional[str], None)
+            top_level_fields[key] = (Optional[str], field_info)
         else:
             top_level_fields[key] = (field_info.annotation, field_info)
 

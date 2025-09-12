@@ -25,7 +25,7 @@ from tests.integration.functional.conftest import (
 from zenml import step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.utils import load_artifact_visualization
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import EntityExistsError
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
@@ -168,14 +168,18 @@ def test_artifact_versioning_duplication(
     pipeline_instance = one_step_pipeline(manual_string_version_step)
 
     with pytest.raises(EntityExistsError):
-        pipeline_instance.with_options(enable_cache=False)()
+        pipeline_instance.with_options(
+            enable_cache=False, execution_mode=ExecutionMode.FAIL_FAST
+        )()
 
     # Test 2: running pipeline with a manual version corresponding to an
     # existing auto-incremented version fails
     pipeline_instance = one_step_pipeline(duplicate_int_version_step)
 
     with pytest.raises(EntityExistsError):
-        pipeline_instance.with_options(enable_cache=False)()
+        pipeline_instance.with_options(
+            enable_cache=False, execution_mode=ExecutionMode.FAIL_FAST
+        )()
 
 
 @step

@@ -123,6 +123,7 @@ from zenml.enums import (
     ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
+    ExecutionMode,
     ExecutionStatus,
     LoggingLevels,
     MetadataResourceTypes,
@@ -5401,10 +5402,15 @@ class SqlZenStore(BaseZenStore):
                     step_id = step_run.id
                     metadata["status"] = step_run.status
 
-                    if step_run.end_time and step_run.start_time:
-                        metadata["duration"] = (
-                            step_run.end_time - step_run.start_time
-                        ).total_seconds()
+                    if step_run.start_time:
+                        metadata["start_time"] = (
+                            step_run.start_time.isoformat()
+                        )
+
+                        if step_run.end_time:
+                            metadata["duration"] = (
+                                step_run.end_time - step_run.start_time
+                            ).total_seconds()
 
                 step_node = helper.add_step_node(
                     node_id=helper.get_step_node_id(name=step_name),
@@ -5692,6 +5698,8 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a run with the same name already exists or
                 a log entry with the same source already exists within the
                 scope of the same pipeline run.
+            KeyError: If the run requires a model version that doesn't exist and
+                can not be created.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
         self._get_reference_schema_by_id(
@@ -5762,9 +5770,16 @@ class SqlZenStore(BaseZenStore):
                     f"within the scope of the same pipeline run '{new_run.id}'."
                 )
 
-        if model_version_id := self._get_or_create_model_version_for_run(
-            new_run
-        ):
+        try:
+            model_version_id = self._get_or_create_model_version_for_run(
+                new_run
+            )
+        except KeyError as e:
+            session.delete(new_run)
+            session.commit()
+            raise e
+
+        if model_version_id:
             new_run.model_version_id = model_version_id
             session.add(new_run)
             session.commit()
@@ -5823,17 +5838,14 @@ class SqlZenStore(BaseZenStore):
                 include_full_metadata=include_full_metadata,
             )
 
-    def get_run_status(
-        self,
-        run_id: UUID,
-    ) -> Tuple[ExecutionStatus, Optional[datetime]]:
+    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
         """Gets the status of a pipeline run.
 
         Args:
             run_id: The ID of the pipeline run to get.
 
         Returns:
-            The pipeline run status and end time.
+            The status of the pipeline run.
         """
         with Session(self.engine) as session:
             run = self._get_schema_by_id(
@@ -5841,7 +5853,27 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-            return ExecutionStatus(run.status), run.end_time
+            return ExecutionStatus(run.status)
+
+    def _check_if_run_in_progress(
+        self, run_id: UUID
+    ) -> Tuple[bool, Optional[datetime]]:
+        """Check if a pipeline run is in progress.
+
+        Args:
+            run_id: The ID of the pipeline run to check.
+
+        Returns:
+            A tuple containing the in_progress flag and the end time
+            of the pipeline run.
+        """
+        with Session(self.engine) as session:
+            run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+            return run.in_progress, run.end_time
 
     def _replace_placeholder_run(
         self,
@@ -5885,7 +5917,12 @@ class SqlZenStore(BaseZenStore):
                 )
             )
             .where(
-                PipelineRunSchema.status == ExecutionStatus.INITIALIZING.value
+                or_(
+                    PipelineRunSchema.status
+                    == ExecutionStatus.INITIALIZING.value,
+                    PipelineRunSchema.status
+                    == ExecutionStatus.PROVISIONING.value,
+                )
             )
             # In very rare cases, there can be multiple placeholder runs for
             # the same deployment. By ordering by the orchestrator_run_id, we
@@ -5945,7 +5982,12 @@ class SqlZenStore(BaseZenStore):
                 PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
             )
             .where(
-                PipelineRunSchema.status != ExecutionStatus.INITIALIZING.value
+                and_(
+                    PipelineRunSchema.status
+                    != ExecutionStatus.INITIALIZING.value,
+                    PipelineRunSchema.status
+                    != ExecutionStatus.PROVISIONING.value,
+                )
             )
         ).first()
 
@@ -5998,6 +6040,14 @@ class SqlZenStore(BaseZenStore):
                     )
                 except KeyError:
                     pass
+
+            # Acquire exclusive lock on the deployment to prevent deadlocks
+            # during insertion
+            session.exec(
+                select(PipelineDeploymentSchema.id)
+                .with_for_update()
+                .where(PipelineDeploymentSchema.id == pipeline_run.deployment)
+            )
 
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
@@ -6125,6 +6175,9 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a log entry with the same source already
                 exists within the scope of the same pipeline run.
+            IllegalOperationError: If the orchestrator run id is being updated
+                on a non-placeholder run or if the orchestrator run id is
+                already set and is different from the new orchestrator run id.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
@@ -6133,6 +6186,24 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
+
+            if run_update.orchestrator_run_id:
+                if not existing_run.is_placeholder_run():
+                    raise IllegalOperationError(
+                        "Cannot update the orchestrator run id of a pipeline "
+                        "run that is not a placeholder run."
+                    )
+
+                if (
+                    existing_run.orchestrator_run_id
+                    and existing_run.orchestrator_run_id
+                    != run_update.orchestrator_run_id
+                ):
+                    raise IllegalOperationError(
+                        "Pipeline run already has a different orchestrator run "
+                        f"id. Existing: {existing_run.orchestrator_run_id}, "
+                        f"New: {run_update.orchestrator_run_id}"
+                    )
 
             existing_run.update(run_update=run_update)
             session.add(existing_run)
@@ -8932,6 +9003,19 @@ class SqlZenStore(BaseZenStore):
                     f"Cannot create step '{step_run.name}' for pipeline in "
                     f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
                 )
+
+            if run.status == ExecutionStatus.FAILED:
+                execution_mode = (
+                    run.get_pipeline_configuration().execution_mode
+                )
+
+                if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
+                    raise IllegalOperationError(
+                        f"Cannot creat step '{step_run.name}' for the run '{run.name}'"
+                        "because the run is in a FAILED state and the execution mode is"
+                        f"{execution_mode}."
+                    )
+
             self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,
@@ -9325,6 +9409,13 @@ class SqlZenStore(BaseZenStore):
                 # This step will be retried by the orchestrator, so we
                 # set its status accordingly.
                 step_run_update.status = ExecutionStatus.RETRYING
+
+            # If the step is stopping and fails, we need to set its status to stopped.
+            if (
+                existing_step_run.status == ExecutionStatus.STOPPING.value
+                and step_run_update.status == ExecutionStatus.FAILED
+            ):
+                step_run_update.status = ExecutionStatus.STOPPED
 
             # Update the step
             existing_step_run.update(step_run_update)

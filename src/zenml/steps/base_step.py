@@ -35,6 +35,7 @@ from typing import (
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
+from zenml.config.cache_policy import CachePolicyOrString
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import (
@@ -104,8 +105,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -117,6 +118,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
     ) -> None:
         """Initializes a step.
 
@@ -146,6 +148,7 @@ class BaseStep:
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
+            cache_policy: Cache policy for this step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -207,6 +210,7 @@ class BaseStep:
             model=model,
             retry=retry,
             substitutions=substitutions,
+            cache_policy=cache_policy,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -272,6 +276,15 @@ class BaseStep:
         return inspect.getsource(self.source_object)
 
     @property
+    def source_code_cache_value(self) -> str:
+        """The source code cache value of this step.
+
+        Returns:
+            The source code cache value of this step.
+        """
+        return self.source_code
+
+    @property
     def docstring(self) -> Optional[str]:
         """The docstring of this step.
 
@@ -288,9 +301,9 @@ class BaseStep:
             A dictionary containing the caching parameters
         """
         parameters = {
-            CODE_HASH_PARAMETER_NAME: source_code_utils.get_hashed_source_code(
-                self.source_object
-            )
+            CODE_HASH_PARAMETER_NAME: hashlib.sha256(
+                self.source_code_cache_value.encode("utf-8")
+            ).hexdigest()
         }
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
@@ -594,8 +607,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -607,6 +620,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -646,6 +660,7 @@ class BaseStep:
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
+            cache_policy: Cache policy for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -716,6 +731,7 @@ class BaseStep:
                 "model": model,
                 "retry": retry,
                 "substitutions": substitutions,
+                "cache_policy": cache_policy,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -728,8 +744,8 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[str] = None,
-        step_operator: Optional[str] = None,
+        experiment_tracker: Optional[Union[bool, str]] = None,
+        step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
@@ -741,6 +757,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -770,6 +787,7 @@ class BaseStep:
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders for the step name.
+            cache_policy: Cache policy for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -796,6 +814,7 @@ class BaseStep:
             model=model,
             retry=retry,
             substitutions=substitutions,
+            cache_policy=cache_policy,
             merge=merge,
         )
         return step_copy
@@ -843,7 +862,8 @@ class BaseStep:
             config: The configuration update to validate.
             runtime_parameters: Dictionary of parameters passed to a step from runtime
         """
-        settings_utils.validate_setting_keys(list(config.settings))
+        if config.settings:
+            settings_utils.validate_setting_keys(list(config.settings))
         self._validate_function_parameters(
             parameters=config.parameters, runtime_parameters=runtime_parameters
         )
@@ -851,7 +871,7 @@ class BaseStep:
 
     def _validate_function_parameters(
         self,
-        parameters: Dict[str, Any],
+        parameters: Optional[Dict[str, Any]],
         runtime_parameters: Dict[str, Any],
     ) -> None:
         """Validates step function parameters.
