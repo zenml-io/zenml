@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.84.3"
+version = "0.85.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -44,7 +44,7 @@ zenml = "zenml.cli.cli:cli"
 alembic = { version = ">=1.8.1,<=1.15.2" }
 bcrypt = { version = "4.0.1" }
 click = "^8.0.1,<=8.2.1"
-cloudpickle = ">=2.0.0,<3"
+cloudpickle = ">=2.0.0"
 distro = "^1.6.0"
 docker = "~7.1.0"
 gitpython = "^3.1.18"
@@ -53,6 +53,8 @@ passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
 pydantic = ">=2.0,<2.11.2"
 pydantic-settings = "*"
+jsf = "*"
+jsonschema = "*"
 pymysql = { version = "~1.1.0,>=1.1.1" }
 python = ">=3.9,<3.13"
 python-dateutil = "^2.8.1"
@@ -182,6 +184,7 @@ types-six = { version = "^1.16.2", optional = true }
 types-termcolor = { version = "^1.1.2", optional = true }
 types-psutil = { version = "^5.8.13", optional = true }
 types-passlib = { version = "^1.7.7", optional = true }
+types-jsonschema = { version = "*", optional = true }
 
 [tool.poetry.extras]
 server = [
@@ -280,6 +283,7 @@ dev = [
     "types-termcolor",
     "types-psutil",
     "types-passlib",
+    "types-jsonschema",
 ]
 
 [build-system]
@@ -291,7 +295,7 @@ source = "init"
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
-log_cli = true
+log_cli = false
 log_cli_level = "INFO"
 testpaths = "tests"
 xfail_strict = true
@@ -492,5 +496,6 @@ module = [
     "numba.*",
     "uvloop.*",
     "litellm",
+    "jsf",
 ]
 ignore_missing_imports = true

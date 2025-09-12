@@ -58,6 +58,7 @@ from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
 )
+from zenml.deployers.utils import get_pipeline_endpoint_invocation_example
 from zenml.enums import (
     GenericFilterOps,
     PipelineEndpointStatus,
@@ -2457,10 +2458,15 @@ def pretty_print_deployment(
                     "--show-secret`[/green] to reveal)[/dim]"
                 )
 
-        # CLI invoke command
-        cli_command = f"zenml deployment invoke {deployment.name} --input_param=value ..."
+        example = get_pipeline_endpoint_invocation_example(deployment)
 
-        declare("[bold]CLI Command:[/bold]")
+        # CLI invoke command
+        cli_args = " ".join(
+            [f"--{k}={json.dumps(v)}" for k, v in example.items()]
+        )
+        cli_command = f"zenml deployment invoke {deployment.name} {cli_args}"
+
+        declare("[bold]CLI Command Example:[/bold]")
         console.print(f"  [green]{cli_command}[/green]")
 
         # cURL example
@@ -2474,15 +2480,15 @@ def pretty_print_deployment(
                     '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
                 )
 
+        curl_params = json.dumps(example, indent=2).replace("\n", "\n      ")
+
         curl_headers.append('-H "Content-Type: application/json"')
         headers_str = " \\\n    ".join(curl_headers)
 
-        curl_command = f"""curl -X POST {deployment.url} \\
+        curl_command = f"""curl -X POST {deployment.url}/invoke \\
     {headers_str} \\
     -d '{{
-      "parameters": {{
-        "input_param": "value"
-      }}
+      "parameters": {curl_params}
     }}'"""
 
         console.print(f"  [green]{curl_command}[/green]")

@@ -14,19 +14,65 @@
 """ZenML deployers utilities."""
 
 import json
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
 import requests
+from jsf import JSF
+from jsonschema import Draft202012Validator, FormatChecker
 
 from zenml.client import Client
 from zenml.deployers.exceptions import (
     PipelineEndpointDeploymentError,
     PipelineEndpointHTTPError,
+    PipelineEndpointInvalidParametersError,
     PipelineEndpointNotFoundError,
+    PipelineEndpointSchemaNotFoundError,
 )
 from zenml.enums import PipelineEndpointStatus
+from zenml.models import PipelineEndpointResponse
 from zenml.steps.step_context import get_step_context
+
+
+def get_pipeline_endpoint_invocation_example(
+    endpoint: PipelineEndpointResponse,
+) -> Dict[str, Any]:
+    """Generate an example invocation command for a pipeline endpoint.
+
+    Args:
+        endpoint: The pipeline endpoint to invoke.
+        project: The project ID of the pipeline endpoint to invoke.
+
+    Returns:
+        A dictionary containing the example invocation parameters.
+    """
+    if not endpoint.pipeline_deployment:
+        raise PipelineEndpointSchemaNotFoundError(
+            f"Pipeline endpoint {endpoint.name} has no deployment."
+        )
+
+    if not endpoint.pipeline_deployment.pipeline_spec:
+        raise PipelineEndpointSchemaNotFoundError(
+            f"Pipeline endpoint {endpoint.name} has no pipeline spec."
+        )
+
+    if not endpoint.pipeline_deployment.pipeline_spec.parameters_schema:
+        raise PipelineEndpointSchemaNotFoundError(
+            f"Pipeline endpoint {endpoint.name} has no parameters schema."
+        )
+
+    parameters_schema = (
+        endpoint.pipeline_deployment.pipeline_spec.parameters_schema
+    )
+
+    example_generator = JSF(parameters_schema, allow_none_optionals=0)
+    example = example_generator.generate(
+        1,
+        use_defaults=True,
+        use_examples=True,
+    )
+
+    return example  # type: ignore[no-any-return]
 
 
 def call_pipeline_endpoint(
@@ -52,6 +98,8 @@ def call_pipeline_endpoint(
         PipelineEndpointDeploymentError: If the pipeline endpoint is not running
             or has no URL.
         PipelineEndpointHTTPError: If the HTTP request to the endpoint fails.
+        PipelineEndpointInvalidParametersError: If the parameters for the
+            pipeline endpoint are invalid.
     """
     client = Client()
     try:
@@ -77,6 +125,35 @@ def call_pipeline_endpoint(
             "refresh the pipeline endpoint or check its logs for more "
             "details."
         )
+
+    parameters_schema = None
+    if (
+        endpoint.pipeline_deployment
+        and endpoint.pipeline_deployment.pipeline_spec
+    ):
+        parameters_schema = (
+            endpoint.pipeline_deployment.pipeline_spec.parameters_schema
+        )
+
+    if parameters_schema:
+        v = Draft202012Validator(
+            parameters_schema, format_checker=FormatChecker()
+        )
+        errors = sorted(v.iter_errors(kwargs), key=lambda e: e.path)
+        if errors:
+            error_messages = []
+            for err in errors:
+                path = ""
+                if err.path:
+                    path = "/".join(list(err.path))
+                    error_messages.append(f"{path}: {err.message}")
+                else:
+                    error_messages.append(f"{err.message}")
+
+            raise PipelineEndpointInvalidParametersError(
+                f"Invalid parameters for pipeline endpoint "
+                f"{endpoint_name_or_id}: \n" + "\n".join(error_messages)
+            )
 
     # Construct the invoke endpoint URL
     invoke_url = endpoint.url.rstrip("/") + "/invoke"

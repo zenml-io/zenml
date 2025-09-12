@@ -212,6 +212,7 @@ def reuse_or_create_pipeline_build(
                     "  * The Docker settings of the pipeline and all its steps "
                     "are the same as for the existing build."
                 )
+
         return create_pipeline_build(
             deployment=deployment,
             pipeline_id=pipeline_id,
@@ -707,6 +708,9 @@ def should_upload_code(
         # for step execution. In other remote orchestrators that don't use
         # Docker containers but instead use e.g. Wheels to run, the code should
         # already be included.
+        return False
+
+    if build.contains_code:
         return False
 
     for step in deployment.step_configurations.values():

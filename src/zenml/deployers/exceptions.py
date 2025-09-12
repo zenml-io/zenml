@@ -70,3 +70,11 @@ class PipelineEndpointDeploymentMismatchError(DeployerError):
 
 class PipelineEndpointHTTPError(DeployerError):
     """Error raised when an HTTP request to a pipeline endpoint fails."""
+
+
+class PipelineEndpointSchemaNotFoundError(KeyError, DeployerError):
+    """Error raised when a pipeline endpoint schema is not found."""
+
+
+class PipelineEndpointInvalidParametersError(DeployerError):
+    """Error raised when the parameters for a pipeline endpoint are invalid."""

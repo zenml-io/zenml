@@ -23,14 +23,11 @@ other entry points (e.g., CLI) can reuse the same behavior.
 
 from typing import Any, Dict, Optional, Type
 
-from pydantic import BaseModel, ConfigDict, create_model
+from pydantic import BaseModel
 
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
-from zenml.steps.entrypoint_function_utils import (
-    EntrypointFunctionDefinition,
-    validate_entrypoint_function,
-)
+from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
@@ -43,9 +40,9 @@ def build_params_model_from_deployment(
 ) -> Optional[Type[BaseModel]]:
     """Construct a Pydantic model representing pipeline parameters.
 
-    Strategy:
-    - Load the pipeline class from `pipeline_spec.source` and derive the
-      entrypoint signature types to create a dynamic model (extra='forbid').
+    Load the pipeline class from `pipeline_spec.source` and derive the
+    entrypoint signature types to create a dynamic Pydantic model
+    (extra='forbid') to use for parameter validation.
 
     Args:
         deployment: The deployment to derive the model from.
@@ -54,34 +51,41 @@ def build_params_model_from_deployment(
     Returns:
         A Pydantic `BaseModel` subclass that validates the pipeline parameters,
         or None if the model could not be constructed.
+
+    Raises:
+        RuntimeError: If the model cannot be constructed and `strict` is True.
     """
+    if not deployment.pipeline_spec or not deployment.pipeline_spec.source:
+        msg = (
+            f"Deployment `{deployment.id}` is missing pipeline_spec.source; "
+            "cannot build parameter model."
+        )
+        if strict:
+            raise RuntimeError(msg)
+        return None
+
     try:
-        if not deployment.pipeline_spec or not deployment.pipeline_spec.source:
-            msg = "Deployment is missing pipeline_spec.source; cannot build parameter model."
-            if strict:
-                raise RuntimeError(msg)
-            return None
-
-        pipeline_class = source_utils.load(deployment.pipeline_spec.source)
-        entry_def: EntrypointFunctionDefinition = validate_entrypoint_function(
-            pipeline_class.entrypoint
+        pipeline_class: Pipeline = source_utils.load(
+            deployment.pipeline_spec.source
         )
-
-        defaults: Dict[str, Any] = deployment.pipeline_spec.parameters or {}
-        fields: Dict[str, tuple] = {}  # type: ignore[type-arg]
-        for name, param in entry_def.inputs.items():
-            fields[name] = (param.annotation, defaults.get(name, ...))
-        model = create_model(
-            f"{deployment.pipeline_configuration.name}_ParamsModel",  # type: ignore[arg-type]
-            __config__=ConfigDict(extra="forbid"),  # type: ignore[arg-type]
-            **fields,  # type: ignore[arg-type]
-        )
-        return model  # type: ignore[return-value]
     except Exception as e:
-        logger.debug("Failed to build params model from deployment: %s", e)
+        logger.debug(f"Failed to load pipeline class from deployment: {e}")
         if strict:
             raise
         return None
+
+    model = pipeline_class.get_parameters_model()
+    if not model:
+        message = (
+            f"Failed to construct parameters model from pipeline "
+            f"`{deployment.pipeline_configuration.name}`."
+        )
+        if strict:
+            raise RuntimeError(message)
+        else:
+            logger.debug(message)
+
+    return model
 
 
 def validate_and_normalize_parameters(

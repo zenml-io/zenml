@@ -33,6 +33,7 @@ from zenml.constants import (
     VERSION_1,
     VISUALIZE,
 )
+from zenml.enums import DownloadType
 from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionRequest,
@@ -44,8 +45,8 @@ from zenml.models import (
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
-    generate_artifact_download_token,
-    verify_artifact_download_token,
+    generate_download_token,
+    verify_download_token,
 )
 from zenml.zen_server.download_utils import (
     create_artifact_archive,
@@ -327,7 +328,10 @@ def get_artifact_download_token(
     # a JWT token in this endpoint (which includes CSRF and RBAC checks) and
     # then use that token to download the artifact data in a separate endpoint
     # which only verifies this short-lived token.
-    return generate_artifact_download_token(artifact_version_id)
+    return generate_download_token(
+        download_type=DownloadType.ARTIFACT_VERSION,
+        resource_id=artifact_version_id,
+    )
 
 
 @artifact_version_router.get(
@@ -347,7 +351,11 @@ def download_artifact_data(
     Returns:
         The artifact data.
     """
-    verify_artifact_download_token(token, artifact_version_id)
+    verify_download_token(
+        token=token,
+        download_type=DownloadType.ARTIFACT_VERSION,
+        resource_id=artifact_version_id,
+    )
 
     artifact = zen_store().get_artifact_version(artifact_version_id)
     archive_path = create_artifact_archive(artifact)
