@@ -1,7 +1,7 @@
 """Pipeline snapshots [8ad841ad9bfe].
 
 Revision ID: 8ad841ad9bfe
-Revises: 83ef3cb746a5
+Revises: 0.85.0
 Create Date: 2025-07-22 11:20:28.777003
 
 """
@@ -17,7 +17,7 @@ from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "8ad841ad9bfe"
-down_revision = "83ef3cb746a5"
+down_revision = "0.85.0"
 branch_labels = None
 depends_on = None
 
