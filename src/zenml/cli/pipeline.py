@@ -756,9 +756,8 @@ def snapshot() -> None:
     "--name",
     "-n",
     type=str,
-    required=False,
-    help="The name of the snapshot. If not provided, a name will be generated "
-    "automatically.",
+    required=True,
+    help="The name of the snapshot.",
 )
 @click.option(
     "--description",
@@ -800,7 +799,7 @@ def snapshot() -> None:
 )
 def create_pipeline_snapshot(
     source: str,
-    name: Optional[str] = None,
+    name: str,
     description: Optional[str] = None,
     replace: Optional[bool] = None,
     tags: Optional[List[str]] = None,

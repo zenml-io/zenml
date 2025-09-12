@@ -117,8 +117,7 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
 
     name: Optional[Union[str, bool]] = Field(
         default=None,
-        title="The name of the snapshot. If set to True, a name will "
-        "be generated automatically.",
+        title="The name of the snapshot.",
     )
     description: Optional[str] = Field(
         default=None,
@@ -171,6 +170,8 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
                     f"Snapshot name `{v}` is too long. The maximum length "
                     f"is {STR_FIELD_MAX_LENGTH} characters."
                 )
+        elif v is True:
+            raise ValueError("Snapshot name cannot be `True`.")
 
         return v
 
@@ -183,8 +184,7 @@ class PipelineSnapshotUpdate(BaseUpdate):
 
     name: Optional[Union[str, bool]] = Field(
         default=None,
-        title="The name of the snapshot. If set to True, the existing "
-        "name will be kept or a new name will be generated. If set to "
+        title="The name of the snapshot. If set to "
         "False, the name will be removed.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -215,6 +215,8 @@ class PipelineSnapshotUpdate(BaseUpdate):
                     f"Snapshot name `{v}` is too long. The maximum length "
                     f"is {STR_FIELD_MAX_LENGTH} characters."
                 )
+        elif v is True:
+            raise ValueError("Snapshot name cannot be `True`.")
 
         return v
 

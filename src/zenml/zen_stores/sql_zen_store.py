@@ -4837,8 +4837,8 @@ class SqlZenStore(BaseZenStore):
         query = (
             update(PipelineSnapshotSchema)
             .where(
-                PipelineSnapshotSchema.pipeline_id == pipeline_id,
-                PipelineSnapshotSchema.name == name,
+                col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
+                col(PipelineSnapshotSchema.name) == name,
             )
             .values(name=None)
         )
@@ -4899,7 +4899,7 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            run_template = self._get_reference_schema_by_id(
+            self._get_reference_schema_by_id(
                 resource=snapshot,
                 reference_schema=RunTemplateSchema,
                 reference_id=snapshot.template,
@@ -4913,21 +4913,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if run_template and not snapshot.source_snapshot:
-                # This snapshot is created as part of a triggered run template.
-                # As we're going to remove run templates soon, we also
-                # automatically associate the snapshot with its source snapshot
-                # (= the snapshot backing the run template)
-                snapshot.source_snapshot = run_template.source_snapshot_id
-
-            if snapshot.name:
-                if isinstance(snapshot.name, str):
-                    validate_name(snapshot)
+            if isinstance(snapshot.name, str):
+                validate_name(snapshot)
 
                 if snapshot.replace:
                     self._remove_name_from_snapshot(
                         session=session,
-                        pipeline_id=snapshot.pipeline_id,
+                        pipeline_id=snapshot.pipeline,
                         name=snapshot.name,
                     )
 
@@ -5079,9 +5071,8 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if snapshot_update.name:
-                if isinstance(snapshot_update.name, str):
-                    validate_name(snapshot_update)
+            if isinstance(snapshot_update.name, str):
+                validate_name(snapshot_update)
 
                 if snapshot_update.replace:
                     self._remove_name_from_snapshot(

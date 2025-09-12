@@ -15,7 +15,7 @@
 
 import json
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
@@ -371,17 +371,13 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
             client_env = "{}"
 
-        id_ = uuid4()
         if isinstance(request.name, str):
-            version = request.name
-        elif request.name is True:
-            version = str(id_)
-        else:
-            version = None
+            name = request.name
+        elif request.name is False:
+            name = None
 
         return cls(
-            id=id_,
-            name=version,
+            name=name,
             description=request.description,
             stack_id=request.stack,
             project_id=request.project,
@@ -420,8 +416,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         """
         if isinstance(update.name, str):
             self.name = update.name
-        elif update.name is True and not self.name:
-            self.name = str(self.id)
         elif update.name is False:
             self.name = None
 
