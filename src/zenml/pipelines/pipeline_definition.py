@@ -108,6 +108,7 @@ if TYPE_CHECKING:
     from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
+    from zenml.enums import ExecutionMode
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
     from zenml.models import ArtifactVersionResponse
@@ -149,6 +150,7 @@ class Pipeline:
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        execution_mode: Optional["ExecutionMode"] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
     ) -> None:
         """Initializes a pipeline.
@@ -179,6 +181,7 @@ class Pipeline:
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
+            execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
         """
         self._invocations: Dict[str, StepInvocation] = {}
@@ -205,6 +208,7 @@ class Pipeline:
                 model=model,
                 retry=retry,
                 substitutions=substitutions,
+                execution_mode=execution_mode,
                 cache_policy=cache_policy,
             )
         self.entrypoint = entrypoint
@@ -330,6 +334,7 @@ class Pipeline:
         retry: Optional["StepRetryConfig"] = None,
         parameters: Optional[Dict[str, Any]] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        execution_mode: Optional["ExecutionMode"] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
         merge: bool = True,
     ) -> Self:
@@ -371,6 +376,7 @@ class Pipeline:
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
+            execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
                 like `extra` and `settings` with existing
@@ -417,6 +423,7 @@ class Pipeline:
                 "retry": retry,
                 "parameters": parameters,
                 "substitutions": substitutions,
+                "execution_mode": execution_mode,
                 "cache_policy": cache_policy,
             }
         )

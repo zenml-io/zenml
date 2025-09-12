@@ -24,6 +24,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
+from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.utils.tag_utils import Tag
 from zenml.utils.time_utils import utc_now
@@ -46,6 +47,7 @@ class PipelineConfigurationUpdate(FrozenBaseModel):
     environment: Dict[str, Any] = {}
     secrets: List[Union[str, UUID]] = []
     enable_pipeline_logs: Optional[bool] = None
+    execution_mode: Optional[ExecutionMode] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
@@ -87,6 +89,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
+    execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE
 
     @field_validator("name")
     @classmethod

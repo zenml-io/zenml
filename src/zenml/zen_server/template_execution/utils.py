@@ -307,7 +307,7 @@ def run_template(
                     str(template.id),
                     str(placeholder_run.id),
                 )
-                run_status, _ = zen_store().get_run_status(placeholder_run.id)
+                run_status = zen_store().get_run_status(placeholder_run.id)
                 if run_status == ExecutionStatus.INITIALIZING:
                     # The run isn't in the provisioning status yet, which means
                     # the orchestrator wasn't able to submit the run. In this

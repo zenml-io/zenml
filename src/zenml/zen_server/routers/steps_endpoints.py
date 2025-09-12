@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -27,7 +27,10 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.logging.step_logging import fetch_logs
+from zenml.logging.step_logging import (
+    LogEntry,
+    fetch_log_records,
+)
 from zenml.models import (
     Page,
     StepRunFilter,
@@ -35,7 +38,10 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import (
+    AuthContext,
+    authorize,
+)
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
@@ -244,45 +250,41 @@ def get_step_status(
 
 @router.get(
     "/{step_id}" + LOGS,
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        400: error_response,
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
     step_id: UUID,
-    offset: int = 0,
-    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
-    strip_timestamp: bool = False,
     _: AuthContext = Security(authorize),
-) -> str:
-    """Get the logs of a specific step.
+) -> List[LogEntry]:
+    """Get log entries for a step.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        offset: The offset from which to start reading.
-        length: The amount of bytes that should be read.
-        strip_timestamp: Whether to strip the timestamp in logs or not.
 
     Returns:
-        The logs of the step.
+        List of log entries.
 
     Raises:
-        HTTPException: If no logs are available for this step.
+        KeyError: If no logs are available for this step.
     """
     step = zen_store().get_run_step(step_id, hydrate=True)
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.READ)
 
     store = zen_store()
-    logs = step.logs
-    if logs is None:
-        raise HTTPException(
-            status_code=404, detail="No logs available for this step"
-        )
-    return fetch_logs(
+
+    # Verify that logs are available for this step
+    if step.logs is None:
+        raise KeyError("No logs available for this step.")
+
+    return fetch_log_records(
         zen_store=store,
-        artifact_store_id=logs.artifact_store_id,
-        logs_uri=logs.uri,
-        offset=offset,
-        length=length,
-        strip_timestamp=strip_timestamp,
+        artifact_store_id=step.logs.artifact_store_id,
+        logs_uri=step.logs.uri,
     )

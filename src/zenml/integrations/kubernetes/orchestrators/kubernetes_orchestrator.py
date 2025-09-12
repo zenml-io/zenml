@@ -50,7 +50,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_CRON_JOB_METADATA_KEY,
@@ -379,6 +379,19 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The name of the secret that contains the ZenML token.
         """
         return f"zenml-token-{deployment_id}"
+
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        return [
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        ]
 
     def submit_pipeline(
         self,
