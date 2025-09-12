@@ -9,6 +9,8 @@ The `0.85.0` release delivers powerful **pipeline execution enhancements** and *
 - **Local Orchestrator Behavior**: The local orchestrator will now continue executing steps after some steps fail (instead of stopping execution immediately)
 - **Docker Package Installer**: Default Python package installer in Docker settings switched from `pip` to `uv` 
 - **Log Endpoint Format**: Log endpoints return a different format - affects manual API access but not regular pipeline operations
+- **Fetching Runs with old Client**: Using a client of a previous release (`<0.85.0`) to fetch pipeline runs created by a client with version `>=0.85.0` can cause an error if the run is in
+the new `provisioning` status.
 
 ## 📢 Upcoming Breaking Change
 
