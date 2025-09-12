@@ -26,7 +26,6 @@ from zenml.constants import (
 from zenml.models import (
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
-    PipelineSnapshotUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -35,7 +34,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.routers.projects_endpoints import workspace_router
@@ -205,7 +203,6 @@ def get_deployment(
     deployment_id: UUID,
     hydrate: bool = True,
     step_configuration_filter: Optional[List[str]] = Query(None),
-    include_config_schema: Optional[bool] = None,
     _: AuthContext = Security(authorize),
 ) -> Any:
     """Gets a specific deployment using its unique id.
@@ -218,7 +215,6 @@ def get_deployment(
         step_configuration_filter: List of step configurations to include in
             the response. If not given, all step configurations will be
             included.
-        include_config_schema: Whether the config schema will be filled.
 
     Returns:
         A specific deployment object.
@@ -228,7 +224,6 @@ def get_deployment(
         get_method=zen_store().get_snapshot,
         hydrate=hydrate,
         step_configuration_filter=step_configuration_filter,
-        include_config_schema=include_config_schema,
     )
 
     exclude = None
@@ -240,33 +235,6 @@ def get_deployment(
         }
 
     return deployment.model_dump(mode="json", exclude=exclude)
-
-
-@router.put(
-    "/{deployment_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def update_deployment(
-    deployment_id: UUID,
-    deployment_update: PipelineSnapshotUpdate,
-    _: AuthContext = Security(authorize),
-) -> Any:
-    """Update a deployment.
-
-    Args:
-        deployment_id: ID of the deployment to update.
-        deployment_update: The update to apply.
-
-    Returns:
-        The updated deployment.
-    """
-    return verify_permissions_and_update_entity(
-        id=deployment_id,
-        update_model=deployment_update,
-        get_method=zen_store().get_snapshot,
-        update_method=zen_store().update_snapshot,
-    )
 
 
 @router.delete(
