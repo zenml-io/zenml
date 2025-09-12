@@ -191,7 +191,7 @@ class StepLauncher:
                 if (
                     pipeline_run.status == ExecutionStatus.FAILED
                     and step_run.status == ExecutionStatus.RUNNING
-                    and self._deployment.pipeline_configuration.execution_mode
+                    and self._snapshot.pipeline_configuration.execution_mode
                     == ExecutionMode.FAIL_FAST
                 ):
                     publish_utils.publish_step_run_status_update(

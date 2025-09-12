@@ -655,7 +655,7 @@ def main() -> None:
                     return InterruptMode.GRACEFUL
                 elif run.status == ExecutionStatus.FAILED:
                     if (
-                        deployment.pipeline_configuration.execution_mode
+                        snapshot.pipeline_configuration.execution_mode
                         == ExecutionMode.STOP_ON_FAILURE
                     ):
                         logger.info(
@@ -665,7 +665,7 @@ def main() -> None:
                         )
                         return InterruptMode.GRACEFUL
                     elif (
-                        deployment.pipeline_configuration.execution_mode
+                        snapshot.pipeline_configuration.execution_mode
                         == ExecutionMode.FAIL_FAST
                     ):
                         logger.info(

@@ -406,9 +406,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             RuntimeError: If the pipeline run has no deployment or
                 the deployment has no pipeline spec.
         """
-        if self.deployment and self.deployment.pipeline_spec:
+        if self.snapshot and self.snapshot.pipeline_spec:
             pipeline_spec = PipelineSpec.model_validate_json(
-                self.deployment.pipeline_spec
+                self.snapshot.pipeline_spec
             )
             steps = {}
             for step_spec in pipeline_spec.steps:
@@ -417,7 +417,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
             return steps
         else:
-            raise RuntimeError("Pipeline run has no deployment.")
+            raise RuntimeError("Pipeline run has no snapshot.")
 
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
@@ -758,7 +758,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         )
                     ).all()
 
-                    if self.deployment and self.deployment.pipeline_spec:
+                    if self.snapshot and self.snapshot.pipeline_spec:
                         step_dict = self.get_upstream_steps()
 
                         dag = build_dag(step_dict)
