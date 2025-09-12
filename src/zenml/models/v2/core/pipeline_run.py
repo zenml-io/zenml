@@ -183,6 +183,9 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
     )
+    in_progress: bool = Field(
+        title="Whether the pipeline run is in progress.",
+    )
     status_reason: Optional[str] = Field(
         default=None,
         title="The reason for the status of the pipeline run.",
@@ -495,6 +498,15 @@ class PipelineRunResponse(
         return self.get_metadata().end_time
 
     @property
+    def in_progress(self) -> bool:
+        """The `in_progress` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().in_progress
+
+    @property
     def client_environment(self) -> Dict[str, Any]:
         """The `client_environment` property.
 
@@ -700,6 +712,10 @@ class PipelineRunFilter(
     status: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
+    )
+    in_progress: Optional[bool] = Field(
+        default=None,
+        description="Whether the pipeline run is in progress.",
     )
     start_time: Optional[Union[datetime, str]] = Field(
         default=None,

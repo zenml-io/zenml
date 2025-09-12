@@ -77,11 +77,10 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     AuthorizationException,
-    DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.logging.step_logging import fetch_logs, prepare_logs_uri
+from zenml.logging.step_logging import fetch_log_records, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
@@ -3154,18 +3153,21 @@ def test_logs_are_recorded_properly(clean_client):
         steps = run_context.steps
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
-        step1_logs_content = fetch_logs(
+        step1_logs_content = fetch_log_records(
             store, step1_logs.artifact_store_id, step1_logs.uri
         )
-        step2_logs_content = fetch_logs(
+        step2_logs_content = fetch_log_records(
             store, step1_logs.artifact_store_id, step2_logs.uri
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
-        assert "log" in step1_logs_content
+        assert any("log" in record.message for record in step1_logs_content)
 
         # Step 2 does not have logs!
-        assert "Step int_plus_one_test_step has started." in step2_logs_content
+        assert any(
+            "Step `int_plus_one_test_step` has started." in record.message
+            for record in step2_logs_content
+        )
 
 
 def test_logs_are_recorded_properly_when_disabled(clean_client):
@@ -3200,11 +3202,11 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
             step_name=steps[1].name,
         )
 
-        with pytest.raises(DoesNotExistException):
-            fetch_logs(store, artifact_store_id, logs_uri_1)
+        with pytest.raises(FileNotFoundError):
+            fetch_log_records(store, artifact_store_id, logs_uri_1)
 
-        with pytest.raises(DoesNotExistException):
-            fetch_logs(store, artifact_store_id, logs_uri_2)
+        with pytest.raises(FileNotFoundError):
+            fetch_log_records(store, artifact_store_id, logs_uri_2)
 
 
 # .--------------------.

@@ -209,6 +209,7 @@ class Compiler:
                 retry=config.retry,
                 parameters=config.parameters,
                 cache_policy=config.cache_policy,
+                execution_mode=config.execution_mode,
             )
 
         configured_step_configs = config.steps or {}

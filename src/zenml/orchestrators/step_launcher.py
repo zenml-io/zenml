@@ -26,7 +26,7 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
@@ -164,7 +164,7 @@ class StepLauncher:
 
                 if self._step_run:
                     pipeline_run = client.get_pipeline_run(
-                        self._step_run.pipeline_run_id
+                        self._step_run.pipeline_run_id, hydrate=False
                     )
                 else:
                     raise RunInterruptedException(
@@ -182,7 +182,35 @@ class StepLauncher:
                             status=ExecutionStatus.STOPPED,
                             end_time=utc_now(),
                         )
-                    raise RunStoppedException("Pipeline run in stopped.")
+                    raise RunStoppedException("Pipeline run is stopped.")
+
+                step_run = client.get_run_step(
+                    self._step_run.id, hydrate=False
+                )
+
+                if (
+                    pipeline_run.status == ExecutionStatus.FAILED
+                    and step_run.status == ExecutionStatus.RUNNING
+                    and self._deployment.pipeline_configuration.execution_mode
+                    == ExecutionMode.FAIL_FAST
+                ):
+                    publish_utils.publish_step_run_status_update(
+                        step_run_id=self._step_run.id,
+                        status=ExecutionStatus.STOPPED,
+                        end_time=utc_now(),
+                    )
+                    raise RunStoppedException(
+                        "Step run was stopped due to a failure in the pipeline "
+                        "run and the execution mode 'FAIL_FAST'."
+                    )
+
+                elif step_run.status == ExecutionStatus.STOPPING:
+                    publish_utils.publish_step_run_status_update(
+                        step_run_id=step_run.id,
+                        status=ExecutionStatus.STOPPED,
+                        end_time=utc_now(),
+                    )
+                    raise RunStoppedException("Pipeline run is stopped.")
                 else:
                     raise RunInterruptedException(
                         "The execution was interrupted."
