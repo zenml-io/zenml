@@ -101,16 +101,13 @@ class ChatRequest(BaseModel):
 )
 @async_fastapi_endpoint_wrapper
 def create_pipeline_endpoint(
-    request: Request,
     endpoint: PipelineEndpointRequest,
     _: AuthContext = Security(authorize),
 ) -> PipelineEndpointResponse:
     """Creates a pipeline endpoint.
 
     Args:
-        request: The request object.
         endpoint: Endpoint to create.
-        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created deployment.
@@ -167,13 +164,12 @@ def get_pipeline_endpoint(
     """Gets a specific pipeline endpoint using its unique id.
 
     Args:
-        request: The request object.
         endpoint_id: ID of the pipeline endpoint to get.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        A specific deployment object.
+        A specific pipeline endpoint object.
     """
     return verify_permissions_and_get_entity(
         id=endpoint_id,

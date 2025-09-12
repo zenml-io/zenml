@@ -29,10 +29,10 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import create_model
 from starlette.concurrency import run_in_threadpool
 
-from zenml.deployers.serving.auth import BearerTokenAuthMiddleware
 from zenml.deployers.serving.service import PipelineServingService
 from zenml.logger import get_logger
 
@@ -88,7 +88,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.error(f"❌ Error during service cleanup: {e}")
 
 
-# Create FastAPI application
+# Create FastAPI application with OpenAPI security scheme
 app = FastAPI(
     title="ZenML Pipeline Serving",
     description="Serve ZenML pipelines as FastAPI endpoints",
@@ -96,6 +96,13 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
+)
+
+# Define security scheme for OpenAPI documentation
+security = HTTPBearer(
+    scheme_name="Bearer Token",
+    description="Enter your API key as a Bearer token",
+    auto_error=False,  # We handle errors in our dependency
 )
 
 
@@ -118,6 +125,7 @@ def _build_invoke_router(service: PipelineServingService) -> APIRouter:
     )
     async def invoke(
         body: InvokeBody,  # type: ignore[valid-type]
+        _: None = Depends(verify_token),
     ) -> Dict[str, Any]:
         return await run_in_threadpool(
             service.execute_pipeline,
@@ -135,6 +143,46 @@ def get_pipeline_service() -> PipelineServingService:
     return _service
 
 
+def verify_token(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> None:
+    """Verify the provided Bearer token for authentication.
+
+    This dependency function integrates with FastAPI's security system
+    to provide proper OpenAPI documentation and authentication UI.
+
+    Args:
+        credentials: HTTP Bearer credentials from the request
+
+    Raises:
+        HTTPException: If authentication is required but token is invalid
+    """
+    auth_key = os.getenv("ZENML_SERVING_AUTH_KEY", "").strip()
+    auth_enabled = auth_key and auth_key != ""
+
+    # If authentication is not enabled, allow all requests
+    if not auth_enabled:
+        return
+
+    # If authentication is enabled, validate the token
+    if not credentials:
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if credentials.credentials != auth_key:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Token is valid, authentication successful
+    return
+
+
 # Add CORS middleware to allow frontend access
 # TODO: In production, restrict allow_origins to specific domains for security
 app.add_middleware(
@@ -144,11 +192,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
-
-# Add authentication middleware
-# This middleware will protect all endpoints except root, health, info, metrics,
-# and status
-app.add_middleware(BearerTokenAuthMiddleware)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -185,20 +228,6 @@ async def root(
     </html>
     """
     return html_content
-
-
-"""
-The /invoke route is registered dynamically during startup using the
-precomputed Pydantic model exposed by the service. This ensures OpenAPI
-and request validation are both driven by the same canonical model.
-"""
-
-
-@app.get("/concurrency/stats")
-async def concurrency_stats() -> Dict[str, Any]:
-    """Placeholder stats endpoint."""
-    return {"execution": {}, "jobs": {}, "streams": {}}
-
 
 @app.get("/health")
 async def health_check(

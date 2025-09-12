@@ -53,7 +53,7 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
-from zenml.exceptions import EntityExistsError, RunMonitoringError
+from zenml.exceptions import EntityExistsError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
@@ -662,23 +662,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         stack = Client().active_stack
 
-        # Prevent execution of nested pipelines which might lead to
-        # unexpected behavior
-        previous_value = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
-        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
-        try:
-            stack.prepare_pipeline_deployment(deployment=deployment)
-            return stack.serve_pipeline(
-                deployment=deployment,
-                endpoint_name=endpoint_name,
-                timeout=timeout,
-            )
-        except RunMonitoringError as e:
-            # Don't mark the run as failed if the error happened during monitoring
-            # of the run.
-            raise e.original_exception from None
-        finally:
-            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = previous_value
+        stack.prepare_pipeline_deployment(deployment=deployment)
+        return stack.serve_pipeline(
+            deployment=deployment,
+            endpoint_name=endpoint_name,
+            timeout=timeout,
+        )
 
     def _create_deployment(
         self,

@@ -317,9 +317,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         Returns:
             A tuple containing the credentials and project ID.
-
-        Raises:
-            RuntimeError: If the service connector returns an unexpected type.
         """
         # Check if we need to refresh the credentials (e.g., connector expired)
         if (
@@ -500,6 +497,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             A sanitized name that complies with Secret Manager requirements.
 
         Raises:
+            RuntimeError: If the random suffix is invalid.
             ValueError: If the secret name is invalid.
         """
         sanitized_suffix = re.sub(
@@ -697,8 +695,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         Args:
             endpoint: The pipeline endpoint.
-            project_id: The GCP project ID.
-            settings: The deployer settings.
         """
         secrets = self._get_secrets(endpoint)
 
@@ -1358,15 +1354,13 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             follow: If True, stream logs as they are written.
             tail: Only retrieve the last NUM lines of log output.
 
-        Returns:
-            A generator that yields the logs of the pipeline endpoint.
+        Yields:
+            The logs of the pipeline endpoint.
 
         Raises:
-            PipelineEndpointNotFoundError: If the endpoint is not found.
+            NotImplementedError: If log following is requested.
             PipelineLogsNotFoundError: If the logs are not found.
             DeployerError: If an unexpected error occurs.
-            RuntimeError: If the service name is not found in the endpoint
-                metadata.
         """
         # If follow is requested, we would need to implement streaming
         if follow:
@@ -1395,7 +1389,10 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 )
 
             # Build the filter for Cloud Run logs
-            filter_str = f'resource.type="cloud_run_revision" AND resource.labels.service_name="{service_name}"'
+            filter_str = (
+                'resource.type="cloud_run_revision" AND '
+                f'resource.labels.service_name="{service_name}"'
+            )
 
             # Get logs from Cloud Logging
             entries = self.logging_client.list_entries(filter_=filter_str)
@@ -1419,11 +1416,13 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         except google_exceptions.GoogleAPICallError as e:
             raise PipelineLogsNotFoundError(
-                f"Failed to retrieve logs for pipeline endpoint '{endpoint.name}': {e}"
+                f"Failed to retrieve logs for pipeline endpoint "
+                f"'{endpoint.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while retrieving logs for pipeline endpoint '{endpoint.name}': {e}"
+                f"Unexpected error while retrieving logs for pipeline endpoint "
+                f"'{endpoint.name}': {e}"
             )
 
     def do_deprovision_pipeline_endpoint(

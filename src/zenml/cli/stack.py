@@ -802,7 +802,7 @@ def update_stack(
     required=False,
 )
 @click.option(
-    "-md",
+    "-d",
     "--model_deployer",
     "model_deployer_flag",
     help="Include this to remove the model deployer from this stack.",

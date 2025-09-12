@@ -4978,6 +4978,7 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Pipeline endpoints --------------------
 
+    @track_decorator(AnalyticsEvent.CREATE_DEPLOYMENT)
     def create_pipeline_endpoint(
         self, pipeline_endpoint: PipelineEndpointRequest
     ) -> PipelineEndpointResponse:
@@ -4985,6 +4986,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             pipeline_endpoint: The pipeline endpoint to create.
+
+        Returns:
+            The newly created pipeline endpoint.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
@@ -5114,6 +5118,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
+    @track_decorator(AnalyticsEvent.DELETE_DEPLOYMENT)
     def delete_pipeline_endpoint(self, endpoint_id: UUID) -> None:
         """Delete a pipeline endpoint.
 

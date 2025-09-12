@@ -581,6 +581,7 @@ class AWSDeployer(ContainerizedDeployer):
             A sanitized name that complies with Secrets Manager requirements.
 
         Raises:
+            RuntimeError: If the random suffix is invalid.
             ValueError: If the secret name is invalid.
         """
         # Validate the random suffix
@@ -659,6 +660,7 @@ class AWSDeployer(ContainerizedDeployer):
             The secret ARN.
 
         Raises:
+            ClientError: If the secret cannot be updated.
             DeployerError: If secret creation/update fails.
         """
         try:
@@ -810,6 +812,7 @@ class AWSDeployer(ContainerizedDeployer):
             The ARN of the created/updated auto-scaling configuration.
 
         Raises:
+            ClientError: If the auto-scaling configuration cannot be described.
             DeployerError: If auto-scaling configuration creation/update fails.
         """
         try:
@@ -1025,6 +1028,9 @@ class AWSDeployer(ContainerizedDeployer):
 
         Returns:
             The App Runner service dictionary, or None if it doesn't exist.
+
+        Raises:
+            ClientError: If the App Runner service cannot be described.
         """
         # Get service ARN from the endpoint metadata
         existing_metadata = AppRunnerPipelineEndpointMetadata.from_endpoint(
@@ -1699,10 +1705,11 @@ class AWSDeployer(ContainerizedDeployer):
             follow: If True, stream logs as they are written.
             tail: Only retrieve the last NUM lines of log output.
 
-        Returns:
-            A generator that yields the logs of the pipeline endpoint.
+        Yields:
+            The logs of the pipeline endpoint.
 
         Raises:
+            NotImplementedError: If log following is requested.
             PipelineEndpointNotFoundError: If the endpoint is not found.
             PipelineLogsNotFoundError: If the logs are not found.
             DeployerError: If an unexpected error occurs.

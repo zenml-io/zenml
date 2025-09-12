@@ -3607,6 +3607,12 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The provisioned pipeline endpoint.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated.
+            ValueError: If the pipeline endpoint has no associated deployment.
+            KeyError: If the pipeline endpoint is not found and no deployment
+                ID was provided.
         """
         from zenml.deployers.base_deployer import (
             BaseDeployer,
@@ -3707,6 +3713,9 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             timeout: The maximum time in seconds to wait for the pipeline
                 endpoint to be deprovisioned.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated.
         """
         from zenml.deployers.base_deployer import (
             BaseDeployer,
@@ -3832,6 +3841,13 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: Name/ID/ID prefix of the endpoint to refresh.
             project: The project name/ID to filter by.
+
+        Returns:
+            The refreshed pipeline endpoint.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated or if
+                the pipeline endpoint is no longer managed by a deployer.
         """
         from zenml.deployers.base_deployer import (
             BaseDeployer,
@@ -3880,8 +3896,12 @@ class Client(metaclass=ClientMetaClass):
             follow: If True, follow the logs.
             tail: The number of lines to show from the end of the logs.
 
-        Returns:
-            A generator that yields the logs of the pipeline endpoint.
+        Yields:
+            The logs of the pipeline endpoint.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated or if
+                the pipeline endpoint is no longer managed by a deployer.
         """
         from zenml.deployers.base_deployer import (
             BaseDeployer,
@@ -3905,7 +3925,7 @@ class Client(metaclass=ClientMetaClass):
                     f"not be instantiated. This is likely because the pipeline "
                     f"server's dependencies are not installed."
                 )
-            return deployer.get_pipeline_endpoint_logs(
+            yield from deployer.get_pipeline_endpoint_logs(
                 endpoint_name_or_id=endpoint.id,
                 follow=follow,
                 tail=tail,
