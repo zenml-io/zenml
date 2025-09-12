@@ -414,8 +414,7 @@ def my_step():
   * You omit `output_name` on a multi‑output step,
   * You reference an unknown `output_name`.
 
-See the [full SDK docs for `StepContext`](https://sdkdocs.zenml.io/latest/core_code_docs/core-steps.html#zenml.steps.StepContext) if you want a concise
-reference for this object.
+See the [full SDK docs for `StepContext`](https://sdkdocs.zenml.io/latest/core_code_docs/core-steps.html#zenml.steps.StepContext) for a concise reference to this object.
 
 ### Accessing Context During Pipeline Composition
 
