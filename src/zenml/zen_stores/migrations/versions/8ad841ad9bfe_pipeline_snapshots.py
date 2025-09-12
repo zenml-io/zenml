@@ -429,6 +429,20 @@ def upgrade() -> None:
             )
         )
 
+    with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "triggered_by", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
+        )
+        batch_op.add_column(
+            sa.Column(
+                "triggered_by_type",
+                sqlmodel.sql.sqltypes.AutoString(),
+                nullable=True,
+            )
+        )
+
     migrate_run_templates()
 
 
