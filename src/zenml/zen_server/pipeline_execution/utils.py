@@ -48,12 +48,12 @@ from zenml.models import (
     CodeReferenceRequest,
     FlavorFilter,
     PipelineRunResponse,
+    PipelineRunTriggerInfo,
     PipelineRunUpdate,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotTriggerRequest,
     StackResponse,
-    TriggerExecutionRequest,
 )
 from zenml.pipelines.build_utils import compute_stack_checksum
 from zenml.pipelines.run_utils import (
@@ -218,18 +218,14 @@ def trigger_snapshot(
     assert build.zenml_version
     zenml_version = build.zenml_version
 
-    trigger_execution_id = None
+    trigger_info = None
     if trigger_request.step_run:
-        trigger_execution_request = TriggerExecutionRequest(
-            project=snapshot.project_id,
-            step_run=trigger_request.step_run,
-        )
-        trigger_execution_id = (
-            zen_store().create_trigger_execution(trigger_execution_request).id
+        trigger_info = PipelineRunTriggerInfo(
+            step_run_id=trigger_request.step_run,
         )
 
     placeholder_run = create_placeholder_run(
-        snapshot=new_snapshot, trigger_execution_id=trigger_execution_id
+        snapshot=new_snapshot, trigger_info=trigger_info
     )
 
     report_usage(

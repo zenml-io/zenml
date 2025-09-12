@@ -32,6 +32,7 @@ from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
+    PipelineRunTriggeredByType,
     TaggableResourceTypes,
 )
 from zenml.logger import get_logger
@@ -224,6 +225,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()
     trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
+    triggered_by: Optional[UUID] = None
+    triggered_by_type: Optional[str] = None
 
     services: List["ServiceSchema"] = Relationship(
         back_populates="pipeline_run",
@@ -330,6 +333,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
             orchestrator_environment = "{}"
 
+        triggered_by = None
+        triggered_by_type = None
+        if request.trigger_info:
+            if request.trigger_info.step_run_id:
+                triggered_by = request.trigger_info.step_run_id
+                triggered_by_type = PipelineRunTriggeredByType.STEP_RUN.value
+
         return cls(
             project_id=request.project,
             user_id=request.user,
@@ -343,6 +353,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_id=request.pipeline,
             snapshot_id=request.snapshot,
             trigger_execution_id=request.trigger_execution_id,
+            triggered_by=triggered_by,
+            triggered_by_type=triggered_by_type,
         )
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:

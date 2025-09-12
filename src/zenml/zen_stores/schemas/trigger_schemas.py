@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, cast
+from typing import Any, List, Optional, Sequence, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -50,9 +50,6 @@ from zenml.zen_stores.schemas.utils import (
     get_page_from_list,
     jl_arg,
 )
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -293,50 +290,16 @@ class TriggerExecutionSchema(BaseSchema, table=True):
     """SQL Model for trigger executions."""
 
     __tablename__ = "trigger_execution"
-    project_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    project: "ProjectSchema" = Relationship(
-        back_populates="trigger_executions"
-    )
-    user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="user_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    user: Optional["UserSchema"] = Relationship(
-        back_populates="trigger_executions"
-    )
-    trigger_id: Optional[UUID] = build_foreign_key_field(
+
+    trigger_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=TriggerSchema.__tablename__,
         source_column="trigger_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=True,
+        nullable=False,
     )
-    trigger: Optional["TriggerSchema"] = Relationship(
-        back_populates="executions"
-    )
-    step_run_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target="step_run",
-        source_column="step_run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    step_run: Optional["StepRunSchema"] = Relationship(
-        back_populates="trigger_executions"
-    )
+    trigger: TriggerSchema = Relationship(back_populates="executions")
 
     event_metadata: Optional[bytes] = None
 
@@ -353,10 +316,7 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            project_id=request.project,
-            user_id=request.user,
             trigger_id=request.trigger,
-            step_run_id=request.step_run,
             event_metadata=base64.b64encode(
                 json.dumps(request.event_metadata).encode("utf-8")
             ),
@@ -380,8 +340,6 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             The converted model.
         """
         body = TriggerExecutionResponseBody(
-            project_id=self.project_id,
-            user_id=self.user_id,
             created=self.created,
             updated=self.updated,
         )
@@ -397,8 +355,7 @@ class TriggerExecutionSchema(BaseSchema, table=True):
         resources = None
         if include_resources:
             resources = TriggerExecutionResponseResources(
-                user=self.user.to_model() if self.user else None,
-                trigger=self.trigger.to_model() if self.trigger else None,
+                trigger=self.trigger.to_model(),
             )
 
         return TriggerExecutionResponse(

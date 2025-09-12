@@ -484,3 +484,9 @@ class ServiceState(StrEnum):
     PENDING_SHUTDOWN = "pending_shutdown"
     ERROR = "error"
     SCALED_TO_ZERO = "scaled_to_zero"
+
+
+class PipelineRunTriggeredByType(StrEnum):
+    """All possible types that can trigger a pipeline run."""
+
+    STEP_RUN = "step_run"

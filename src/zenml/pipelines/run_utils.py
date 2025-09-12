@@ -19,6 +19,7 @@ from zenml.models import (
     LogsRequest,
     PipelineRunRequest,
     PipelineRunResponse,
+    PipelineRunTriggerInfo,
     PipelineSnapshotBase,
     PipelineSnapshotResponse,
     StackResponse,
@@ -53,7 +54,7 @@ def create_placeholder_run(
     snapshot: "PipelineSnapshotResponse",
     orchestrator_run_id: Optional[str] = None,
     logs: Optional["LogsRequest"] = None,
-    trigger_execution_id: Optional[UUID] = None,
+    trigger_info: Optional[PipelineRunTriggerInfo] = None,
 ) -> "PipelineRunResponse":
     """Create a placeholder run for the snapshot.
 
@@ -61,8 +62,7 @@ def create_placeholder_run(
         snapshot: The snapshot for which to create the placeholder run.
         orchestrator_run_id: The orchestrator run ID for the run.
         logs: The logs for the run.
-        trigger_execution_id: The ID of the trigger execution that triggered
-            the run.
+        trigger_info: The trigger information for the run.
 
     Returns:
         The placeholder run.
@@ -89,7 +89,7 @@ def create_placeholder_run(
         status=ExecutionStatus.INITIALIZING,
         tags=snapshot.pipeline_configuration.tags,
         logs=logs,
-        trigger_execution_id=trigger_execution_id,
+        trigger_info=trigger_info,
     )
     run, _ = Client().zen_store.get_or_create_run(run_request)
     return run

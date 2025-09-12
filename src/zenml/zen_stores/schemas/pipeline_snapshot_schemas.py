@@ -371,10 +371,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
             client_env = "{}"
 
+        name = None
         if isinstance(request.name, str):
             name = request.name
-        elif request.name is False:
-            name = None
 
         return cls(
             name=name,

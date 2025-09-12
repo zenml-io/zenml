@@ -246,7 +246,8 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
-    PipelineRunResponseResources
+    PipelineRunResponseResources,
+    PipelineRunTriggerInfo,
 )
 from zenml.models.v2.core.run_template import (
     RunTemplateRequest,
@@ -706,6 +707,7 @@ __all__ = [
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
+    "PipelineRunTriggerInfo",
     "RunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",

@@ -31,6 +31,7 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
+    PipelineRunTriggeredByType,
     StepRunInputArtifactType,
 )
 from zenml.models import (
@@ -67,7 +68,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
-    from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 
 
 class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -198,15 +198,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="step_runs",
     )
-    trigger_executions: List["TriggerExecutionSchema"] = Relationship(
-        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
-    )
     triggered_runs: List["PipelineRunSchema"] = Relationship(
         sa_relationship_kwargs={
             "viewonly": True,
-            "secondary": "trigger_execution",
-            "primaryjoin": "foreign(TriggerExecutionSchema.step_run_id) == StepRunSchema.id",
-            "secondaryjoin": "PipelineRunSchema.trigger_execution_id == foreign(TriggerExecutionSchema.id)",
+            "primaryjoin": f"and_(foreign(PipelineRunSchema.triggered_by) == StepRunSchema.id, foreign(PipelineRunSchema.triggered_by_type) == '{PipelineRunTriggeredByType.STEP_RUN.value}')",
         },
     )
 

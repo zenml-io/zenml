@@ -16,16 +16,18 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
-from zenml.models.v2.base.scoped import (
-    ProjectScopedFilter,
-    ProjectScopedRequest,
-    ProjectScopedResponse,
-    ProjectScopedResponseBody,
-    ProjectScopedResponseMetadata,
-    ProjectScopedResponseResources,
+from zenml.models import (
+    BaseIdentifiedResponse,
+    BaseRequest,
+    BaseResponseMetadata,
 )
+from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseResponseResources,
+)
+from zenml.models.v2.base.scoped import ProjectScopedFilter
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.trigger import TriggerResponse
@@ -33,29 +35,11 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class TriggerExecutionRequest(ProjectScopedRequest):
+class TriggerExecutionRequest(BaseRequest):
     """Model for creating a new Trigger execution."""
 
-    trigger: Optional[UUID] = None
-    step_run: Optional[UUID] = None
+    trigger: UUID
     event_metadata: Dict[str, Any] = {}
-
-    @model_validator(mode="after")
-    def validate_trigger_or_step_run(self) -> "TriggerExecutionRequest":
-        """Validate that either trigger or step_run is set.
-
-        Raises:
-            ValueError: If either both or none of trigger and step_run are set.
-
-        Returns:
-            The validated request.
-        """
-        if not self.trigger and not self.step_run:
-            raise ValueError("Either trigger or step_run must be set.")
-        if self.trigger and self.step_run:
-            raise ValueError("Only one of trigger or step_run can be set.")
-
-        return self
 
 
 # ------------------ Update Model ------------------
@@ -64,27 +48,26 @@ class TriggerExecutionRequest(ProjectScopedRequest):
 # ------------------ Response Model ------------------
 
 
-class TriggerExecutionResponseBody(ProjectScopedResponseBody):
+class TriggerExecutionResponseBody(BaseDatedResponseBody):
     """Response body for trigger executions."""
 
 
-class TriggerExecutionResponseMetadata(ProjectScopedResponseMetadata):
+class TriggerExecutionResponseMetadata(BaseResponseMetadata):
     """Response metadata for trigger executions."""
 
     event_metadata: Dict[str, Any] = {}
 
 
-class TriggerExecutionResponseResources(ProjectScopedResponseResources):
+class TriggerExecutionResponseResources(BaseResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
-    trigger: Optional["TriggerResponse"] = Field(
-        default=None,
+    trigger: "TriggerResponse" = Field(
         title="The event source that activates this trigger.",
     )
 
 
 class TriggerExecutionResponse(
-    ProjectScopedResponse[
+    BaseIdentifiedResponse[
         TriggerExecutionResponseBody,
         TriggerExecutionResponseMetadata,
         TriggerExecutionResponseResources,
@@ -105,7 +88,7 @@ class TriggerExecutionResponse(
     # Body and metadata properties
 
     @property
-    def trigger(self) -> Optional["TriggerResponse"]:
+    def trigger(self) -> "TriggerResponse":
         """The `trigger` property.
 
         Returns:
@@ -132,10 +115,5 @@ class TriggerExecutionFilter(ProjectScopedFilter):
     trigger_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="ID of the trigger of the execution.",
-        union_mode="left_to_right",
-    )
-    step_run_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="ID of the step run of the execution.",
         union_mode="left_to_right",
     )

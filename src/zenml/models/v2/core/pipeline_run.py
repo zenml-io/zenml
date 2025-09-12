@@ -31,9 +31,9 @@ from pydantic import ConfigDict, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, PipelineRunTriggeredByType
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -73,6 +73,15 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 
 # ------------------ Request Model ------------------
+
+
+class PipelineRunTriggerInfo(BaseZenModel):
+    """Trigger information model."""
+
+    step_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the step run that triggered the pipeline run.",
+    )
 
 
 class PipelineRunRequest(ProjectScopedRequest):
@@ -120,6 +129,10 @@ class PipelineRunRequest(ProjectScopedRequest):
     trigger_execution_id: Optional[UUID] = Field(
         default=None,
         title="ID of the trigger execution that triggered this run.",
+    )
+    trigger_info: Optional[PipelineRunTriggerInfo] = Field(
+        default=None,
+        title="Trigger information for the pipeline run.",
     )
     tags: Optional[List[Union[str, Tag]]] = Field(
         default=None,
@@ -794,7 +807,6 @@ class PipelineRunFilter(
             StackCompositionSchema,
             StackSchema,
             StepRunSchema,
-            TriggerExecutionSchema,
         )
 
         if self.unlisted is not None:
@@ -957,9 +969,9 @@ class PipelineRunFilter(
 
         if self.triggered_by_step_run_id:
             trigger_filter = and_(
-                PipelineRunSchema.trigger_execution_id
-                == TriggerExecutionSchema.id,
-                TriggerExecutionSchema.step_run_id == StepRunSchema.id,
+                PipelineRunSchema.triggered_by == StepRunSchema.id,
+                PipelineRunSchema.triggered_by_type
+                == PipelineRunTriggeredByType.STEP_RUN.value,
                 self.generate_custom_query_conditions_for_column(
                     value=self.triggered_by_step_run_id,
                     table=StepRunSchema,
