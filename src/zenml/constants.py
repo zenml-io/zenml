@@ -215,6 +215,15 @@ ENV_ZENML_RUNNER_POD_TIMEOUT = "ZENML_RUNNER_POD_TIMEOUT"
 ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY = (
     "ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY"
 )
+
+# Runtime-only in-memory artifact/materializer toggle
+# When set to a truthy value AND serving runtime is active, outputs are stored
+# in memory using an in-memory materializer and not persisted to the active
+# artifact store. Inputs are loaded from memory if their materializer is the
+# in-memory one.
+ENV_ZENML_RUNTIME_USE_IN_MEMORY_ARTIFACTS = (
+    "ZENML_RUNTIME_USE_IN_MEMORY_ARTIFACTS"
+)
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 

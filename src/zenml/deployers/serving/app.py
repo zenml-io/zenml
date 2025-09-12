@@ -116,6 +116,7 @@ def _build_invoke_router(service: PipelineServingService) -> APIRouter:
         parameters=(service._params_model, ...),
         run_name=(Optional[str], None),
         timeout=(Optional[int], None),
+        use_in_memory=(Optional[bool], None),
     )
 
     @router.post(
@@ -132,6 +133,7 @@ def _build_invoke_router(service: PipelineServingService) -> APIRouter:
             body.parameters.model_dump(),  # type: ignore[attr-defined]
             body.run_name,  # type: ignore[attr-defined]
             body.timeout,  # type: ignore[attr-defined]
+            body.use_in_memory,  # type: ignore[attr-defined]
         )
 
     return router

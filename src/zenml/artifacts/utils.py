@@ -37,8 +37,10 @@ from zenml.artifacts.preexisting_data_materializer import (
 )
 from zenml.client import Client
 from zenml.constants import (
+    ENV_ZENML_RUNTIME_USE_IN_MEMORY_ARTIFACTS,
     ENV_ZENML_SERVER,
     MODEL_METADATA_YAML_FILE_NAME,
+    handle_bool_env_var,
 )
 from zenml.enums import (
     ArtifactSaveType,
@@ -151,8 +153,55 @@ def _store_artifact_data_and_prepare_request(
     Returns:
         Artifact version request for the artifact data that was stored.
     """
+    # Detect serving runtime + in-memory toggle
+    use_in_memory = False
+    try:
+        from zenml.deployers.serving import runtime
+
+        if runtime.is_active():
+            # Check per-request parameter first
+            request_setting = runtime.get_use_in_memory()
+            if request_setting is not None:
+                use_in_memory = request_setting
+            else:
+                # Fall back to environment variable
+                use_in_memory = handle_bool_env_var(
+                    ENV_ZENML_RUNTIME_USE_IN_MEMORY_ARTIFACTS, False
+                )
+    except Exception:
+        use_in_memory = False
+
     artifact_store = Client().active_stack.artifact_store
-    artifact_store.makedirs(uri)
+    if not use_in_memory:
+        artifact_store.makedirs(uri)
+
+    # If in-memory is requested during serving, force the in-memory materializer and artifact store
+    if use_in_memory:
+        from datetime import datetime
+        from uuid import uuid4
+
+        from zenml.artifact_stores.in_memory_artifact_store import (
+            InMemoryArtifactStore,
+            InMemoryArtifactStoreConfig,
+        )
+        from zenml.enums import StackComponentType
+        from zenml.materializers.in_memory_materializer import (
+            InMemoryMaterializer,
+        )
+
+        materializer_class = InMemoryMaterializer
+        # Use in-memory artifact store instead of the active stack's artifact store
+        artifact_store = InMemoryArtifactStore(
+            name="in_memory_serving",
+            id=uuid4(),
+            config=InMemoryArtifactStoreConfig(),
+            flavor="in_memory",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
+        tags = (tags or []) + ["ephemeral"]
 
     materializer = materializer_class(uri=uri, artifact_store=artifact_store)
     materializer.uri = materializer.uri.replace("\\", "/")
@@ -161,14 +210,16 @@ def _store_artifact_data_and_prepare_request(
     materializer.validate_save_type_compatibility(data_type)
     materializer.save(data)
 
+    # Avoid visualization generation in in-memory mode
+    do_visualizations = store_visualizations and not use_in_memory
     visualizations = (
         _save_artifact_visualizations(data=data, materializer=materializer)
-        if store_visualizations
+        if do_visualizations
         else None
     )
 
     combined_metadata: Dict[str, "MetadataType"] = {}
-    if store_metadata:
+    if store_metadata and not use_in_memory:
         try:
             combined_metadata = materializer.extract_full_metadata(data)
         except Exception as e:
@@ -178,7 +229,9 @@ def _store_artifact_data_and_prepare_request(
         # the materializer
         combined_metadata.update(metadata or {})
 
-    content_hash = materializer.compute_content_hash(data)
+    content_hash = (
+        None if use_in_memory else materializer.compute_content_hash(data)
+    )
 
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,

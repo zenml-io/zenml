@@ -8,9 +8,10 @@ with concurrent requests.
 It also provides parameter override functionality for the orchestrator
 to access serving parameters without tight coupling.
 """
+
 import contextvars
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional, Set
 
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
@@ -26,6 +27,10 @@ class _ServingState:
     pipeline_parameters: Dict[str, Any] = field(default_factory=dict)
     param_overrides: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     outputs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    # Track in-memory artifact URIs created during this request
+    in_memory_uris: Set[str] = field(default_factory=set)
+    # Per-request in-memory mode override
+    use_in_memory: Optional[bool] = None
 
     def reset(self) -> None:
         self.active = False
@@ -34,6 +39,8 @@ class _ServingState:
         self.pipeline_parameters.clear()
         self.param_overrides.clear()
         self.outputs.clear()
+        self.in_memory_uris.clear()
+        self.use_in_memory = None
 
 
 # Use contextvars for thread-safe, request-scoped state
@@ -51,6 +58,7 @@ def start(
     request_id: str,
     deployment: PipelineDeploymentResponse,
     parameters: Dict[str, Any],
+    use_in_memory: Optional[bool] = None,
 ) -> None:
     """Initialize serving state for the current request context."""
     state = _ServingState()
@@ -60,12 +68,30 @@ def start(
     state.pipeline_parameters = dict(parameters or {})
     state.param_overrides = {}  # No longer used, simplified
     state.outputs = {}
+    state.use_in_memory = use_in_memory
     _serving_context.set(state)
 
 
 def stop() -> None:
     """Clear the serving state for the current request context."""
     state = _get_context()
+
+    # Best-effort cleanup of in-memory artifacts associated with this request
+    if state.in_memory_uris:
+        try:
+            # Local import to avoid any import cycles at module import time
+            from zenml.deployers.serving import _in_memory_registry as reg
+
+            for uri in list(state.in_memory_uris):
+                try:
+                    reg.del_object(uri)
+                except Exception:
+                    # Ignore cleanup failures; memory will be reclaimed on process exit
+                    pass
+        except Exception:
+            # If registry module isn't available for some reason, skip cleanup
+            pass
+
     state.reset()
 
 
@@ -119,6 +145,19 @@ def record_step_outputs(step_name: str, outputs: Dict[str, Any]) -> None:
     state.outputs.setdefault(step_name, {}).update(outputs)
 
 
+def note_in_memory_uri(uri: str) -> None:
+    """Record an in-memory artifact URI for cleanup at request end.
+
+    Args:
+        uri: The artifact URI saved to the in-memory registry.
+    """
+    state = _get_context()
+    if not state.active:
+        return
+    if uri:
+        state.in_memory_uris.add(uri)
+
+
 def get_outputs() -> Dict[str, Dict[str, Any]]:
     """Return the outputs for all steps in the current context.
 
@@ -150,3 +189,15 @@ def get_parameter_override(name: str) -> Optional[Any]:
 
     # Direct parameter lookup - pass parameters as-is
     return pipeline_params.get(name)
+
+
+def get_use_in_memory() -> Optional[bool]:
+    """Get the per-request use_in_memory setting.
+
+    Returns:
+        The use_in_memory setting for the current request, or None if not set.
+    """
+    if is_active():
+        state = _get_context()
+        return state.use_in_memory
+    return None

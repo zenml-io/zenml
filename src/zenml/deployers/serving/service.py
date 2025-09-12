@@ -300,6 +300,7 @@ class PipelineServingService:
         parameters: Dict[str, Any],
         run_name: Optional[str] = None,
         timeout: Optional[int] = 300,
+        use_in_memory: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """Execute pipeline by delegating to orchestrator with small helpers."""
         # Note: run_name and timeout are reserved for future implementation
@@ -313,7 +314,9 @@ class PipelineServingService:
 
         try:
             resolved_params = self._resolve_parameters(parameters)
-            run = self._execute_with_orchestrator(resolved_params)
+            run = self._execute_with_orchestrator(
+                resolved_params, use_in_memory
+            )
             mapped_outputs = self._map_outputs(run)
             return self._build_success_response(
                 mapped_outputs=mapped_outputs,
@@ -325,7 +328,9 @@ class PipelineServingService:
             return self._build_error_response(e=e, start_time=start)
 
     def _execute_with_orchestrator(
-        self, resolved_params: Dict[str, Any]
+        self,
+        resolved_params: Dict[str, Any],
+        use_in_memory: Optional[bool] = None,
     ) -> PipelineRunResponse:
         """Run the deployment via the (forced local) orchestrator and return the run."""
         client = Client()
@@ -363,6 +368,7 @@ class PipelineServingService:
             request_id=str(uuid4()),
             deployment=self.deployment,
             parameters=resolved_params,
+            use_in_memory=use_in_memory,
         )
 
         try:
