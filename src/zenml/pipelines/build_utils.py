@@ -709,6 +709,9 @@ def should_upload_code(
         # already be included.
         return False
 
+    if build.contains_code:
+        return False
+
     for step in deployment.step_configurations.values():
         docker_settings = step.config.docker_settings
 

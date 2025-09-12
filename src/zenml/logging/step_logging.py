@@ -18,22 +18,26 @@ import logging
 import os
 import queue
 import re
-import sys
 import threading
 import time
 from contextlib import nullcontext
 from contextvars import ContextVar
+from datetime import datetime
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Type, Union
+from typing import (
+    Any,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    Union,
+)
 from uuid import UUID, uuid4
 
-from zenml import get_step_context
+from pydantic import BaseModel, Field
+
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.artifacts.utils import (
-    _load_artifact_store,
-    _load_file_from_artifact_store,
-    _strip_timestamp_from_multiline_string,
-)
+from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
@@ -44,8 +48,14 @@ from zenml.constants import (
     LOGS_WRITE_INTERVAL_SECONDS,
     handle_bool_env_var,
 )
+from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
-from zenml.logger import get_logger
+from zenml.logger import (
+    get_logger,
+    get_storage_log_level,
+    logging_handlers,
+    step_names_in_console,
+)
 from zenml.models import (
     LogsRequest,
     LogsResponse,
@@ -56,15 +66,169 @@ from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
-# Get the logger
 logger = get_logger(__name__)
 
+# Context variables
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
+
+# Maximum number of log entries to return in a single request
+MAX_ENTRIES_PER_REQUEST = 20000
+# Maximum size of a single log message in bytes (5KB)
+DEFAULT_MESSAGE_SIZE = 5 * 1024
+
+
+class LogEntry(BaseModel):
+    """A structured log entry with parsed information."""
+
+    message: str = Field(description="The log message content")
+    name: Optional[str] = Field(
+        default=None,
+        description="The name of the logger",
+    )
+    level: Optional[LoggingLevels] = Field(
+        default=None,
+        description="The log level",
+    )
+    timestamp: Optional[datetime] = Field(
+        default=None,
+        description="When the log was created",
+    )
+    module: Optional[str] = Field(
+        default=None, description="The module that generated this log entry"
+    )
+    filename: Optional[str] = Field(
+        default=None,
+        description="The name of the file that generated this log entry",
+    )
+    lineno: Optional[int] = Field(
+        default=None, description="The fileno that generated this log entry"
+    )
+    chunk_index: int = Field(
+        default=0,
+        description="The index of the chunk in the log entry",
+    )
+    total_chunks: int = Field(
+        default=1,
+        description="The total number of chunks in the log entry",
+    )
+    id: UUID = Field(
+        default_factory=uuid4,
+        description="The unique identifier of the log entry",
+    )
+
+
+class ArtifactStoreHandler(logging.Handler):
+    """Handler that writes log messages to artifact store storage."""
+
+    def __init__(self, storage: "PipelineLogsStorage"):
+        """Initialize the handler with a storage instance.
+
+        Args:
+            storage: The PipelineLogsStorage instance to write to.
+        """
+        super().__init__()
+        self.storage = storage
+
+        # Get storage log level from environment
+        self.setLevel(get_storage_log_level().value)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit a log record to the storage.
+
+        Args:
+            record: The log record to emit.
+        """
+        try:
+            # Get level enum
+            level = LoggingLevels.__members__.get(record.levelname.upper())
+
+            # Get the message
+            message = self.format(record)
+            message = remove_ansi_escape_codes(message).rstrip()
+
+            # Check if message needs to be chunked
+            message_bytes = message.encode("utf-8")
+            if len(message_bytes) <= DEFAULT_MESSAGE_SIZE:
+                # Message is small enough, emit as-is
+                log_record = LogEntry.model_construct(
+                    message=message,
+                    name=record.name,
+                    level=level,
+                    timestamp=utc_now(),
+                    module=record.module,
+                    filename=record.filename,
+                    lineno=record.lineno,
+                )
+                json_line = log_record.model_dump_json(exclude_none=True)
+                self.storage.write(json_line)
+            else:
+                # Message is too large, split into chunks and emit each one
+                chunks = self._split_to_chunks(message)
+                entry_id = uuid4()
+                for i, chunk in enumerate(chunks):
+                    log_record = LogEntry.model_construct(
+                        message=chunk,
+                        name=record.name,
+                        level=level,
+                        module=record.module,
+                        filename=record.filename,
+                        lineno=record.lineno,
+                        timestamp=utc_now(),
+                        chunk_index=i,
+                        total_chunks=len(chunks),
+                        id=entry_id,
+                    )
+
+                    json_line = log_record.model_dump_json(exclude_none=True)
+                    self.storage.write(json_line)
+        except Exception:
+            pass
+
+    def _split_to_chunks(self, message: str) -> List[str]:
+        """Split a large message into chunks.
+
+        Args:
+            message: The message to split.
+
+        Returns:
+            A list of message chunks.
+        """
+        # Calculate how many chunks we need
+        message_bytes = message.encode("utf-8")
+
+        # Split the message into chunks, handling UTF-8 boundaries
+        chunks = []
+        start = 0
+
+        while start < len(message_bytes):
+            # Calculate the end position for this chunk
+            end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
+
+            # Try to decode the chunk, backing up if we hit a UTF-8 boundary issue
+            while end > start:
+                chunk_bytes = message_bytes[start:end]
+                try:
+                    chunk_text = chunk_bytes.decode("utf-8")
+                    chunks.append(chunk_text)
+                    break
+                except UnicodeDecodeError:
+                    # If we can't decode, try a smaller chunk
+                    end -= 1
+            else:
+                # If we can't decode anything, use replacement characters
+                end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
+                chunks.append(
+                    message_bytes[start:end].decode("utf-8", errors="replace")
+                )
+
+            start = end
+
+        return chunks
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -77,6 +241,43 @@ def remove_ansi_escape_codes(text: str) -> str:
         the version of the input string where the escape codes are removed.
     """
     return ansi_escape.sub("", text)
+
+
+def parse_log_entry(log_line: str) -> Optional[LogEntry]:
+    """Parse a single log entry into a LogEntry object.
+
+    Handles two formats:
+    1. JSON format: {"timestamp": "...", "level": "...", "message": "...", "location": "..."}
+       Uses Pydantic's model_validate_json for automatic parsing and validation.
+    2. Plain text: Any other text (defaults to INFO level)
+
+    Args:
+        log_line: A single log line to parse
+
+    Returns:
+        LogEntry object. For JSON logs, all fields are validated and parsed automatically.
+        For plain text logs, only message is populated with INFO level default.
+        Returns None only for empty lines.
+    """
+    stripped_line = log_line.strip()
+    if not stripped_line:
+        return None
+
+    # Try to parse JSON format first
+    if stripped_line.startswith("{") and stripped_line.endswith("}"):
+        try:
+            return LogEntry.model_validate_json(stripped_line)
+        except Exception:
+            # If JSON parsing or validation fails, treat as plain text
+            pass
+
+    # For any other format (plain text), create LogEntry with defaults
+    return LogEntry(
+        message=stripped_line,
+        name=None,  # No logger name available for plain text logs
+        level=LoggingLevels.INFO,  # Default level for plain text logs
+        timestamp=None,  # No timestamp available for plain text logs
+    )
 
 
 def prepare_logs_uri(
@@ -125,112 +326,81 @@ def prepare_logs_uri(
     return sanitize_remote_path(logs_uri)
 
 
-def fetch_logs(
+def fetch_log_records(
     zen_store: "BaseZenStore",
     artifact_store_id: Union[str, UUID],
     logs_uri: str,
-    offset: int = 0,
-    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
-    strip_timestamp: bool = False,
-) -> str:
-    """Fetches the logs from the artifact store.
+) -> List[LogEntry]:
+    """Fetches log entries.
 
     Args:
         zen_store: The store in which the artifact is stored.
         artifact_store_id: The ID of the artifact store.
-        logs_uri: The URI of the artifact.
-        offset: The offset from which to start reading.
-        length: The amount of bytes that should be read.
-        strip_timestamp: Whether to strip timestamps in logs or not
+        logs_uri: The URI of the artifact (file or directory).
 
     Returns:
-        The logs as a string.
+        List of log entries.
+    """
+    log_entries = []
+
+    for line in _stream_logs_line_by_line(
+        zen_store, artifact_store_id, logs_uri
+    ):
+        if log_entry := parse_log_entry(line):
+            log_entries.append(log_entry)
+
+        if len(log_entries) >= MAX_ENTRIES_PER_REQUEST:
+            break
+
+    return log_entries
+
+
+def _stream_logs_line_by_line(
+    zen_store: "BaseZenStore",
+    artifact_store_id: Union[str, UUID],
+    logs_uri: str,
+) -> Iterator[str]:
+    """Stream logs line by line without loading the entire file into memory.
+
+    This generator yields log lines one by one, handling both single files
+    and directories with multiple log files.
+
+    Args:
+        zen_store: The store in which the artifact is stored.
+        artifact_store_id: The ID of the artifact store.
+        logs_uri: The URI of the log file or directory.
+
+    Yields:
+        Individual log lines as strings.
 
     Raises:
-        DoesNotExistException: If the artifact does not exist in the artifact
-            store.
+        DoesNotExistException: If the artifact does not exist in the artifact store.
     """
-
-    def _read_file(
-        uri: str,
-        offset: int = 0,
-        length: Optional[int] = None,
-        strip_timestamp: bool = False,
-    ) -> str:
-        file_content = str(
-            _load_file_from_artifact_store(
-                uri,
-                artifact_store=artifact_store,
-                mode="rb",
-                offset=offset,
-                length=length,
-            ).decode()
-        )
-        if strip_timestamp:
-            file_content = _strip_timestamp_from_multiline_string(file_content)
-        return file_content
-
     artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+
     try:
         if not artifact_store.isdir(logs_uri):
-            return _read_file(logs_uri, offset, length, strip_timestamp)
+            # Single file case
+            with artifact_store.open(logs_uri, "r") as file:
+                for line in file:
+                    yield line.rstrip("\n\r")
         else:
+            # Directory case - may contain multiple log files
             files = artifact_store.listdir(logs_uri)
-            if len(files) == 1:
-                return _read_file(
-                    os.path.join(logs_uri, str(files[0])),
-                    offset,
-                    length,
-                    strip_timestamp,
+            if not files:
+                raise DoesNotExistException(
+                    f"Folder '{logs_uri}' is empty in artifact store "
+                    f"'{artifact_store.name}'."
                 )
-            else:
-                is_negative_offset = offset < 0
-                files.sort(reverse=is_negative_offset)
 
-                # search for the first file we need to read
-                latest_file_id = 0
-                for i, file in enumerate(files):
-                    file_size: int = artifact_store.size(
-                        os.path.join(logs_uri, str(file))
-                    )  # type: ignore[assignment]
+            # Sort files to read them in order
+            files.sort()
 
-                    if is_negative_offset:
-                        if file_size >= -offset:
-                            latest_file_id = -(i + 1)
-                            break
-                        else:
-                            offset += file_size
-                    else:
-                        if file_size > offset:
-                            latest_file_id = i
-                            break
-                        else:
-                            offset -= file_size
-
-                # read the files according to pre-filtering
-                files.sort()
-                ret = []
-                for file in files[latest_file_id:]:
-                    ret.append(
-                        _read_file(
-                            os.path.join(logs_uri, str(file)),
-                            offset,
-                            length,
-                            strip_timestamp,
-                        )
-                    )
-                    offset = 0
-                    length -= len(ret[-1])
-                    if length <= 0:
-                        # stop further reading, if the whole length is already read
-                        break
-
-                if not ret:
-                    raise DoesNotExistException(
-                        f"Folder '{logs_uri}' is empty in artifact store "
-                        f"'{artifact_store.name}'."
-                    )
-                return "".join(ret)
+            for file in files:
+                file_path = os.path.join(logs_uri, str(file))
+                with artifact_store.open(file_path, "r") as f:
+                    for line in f:
+                        yield line.rstrip("\n\r")
     finally:
         artifact_store.cleanup()
 
@@ -387,26 +557,17 @@ class PipelineLogsStorage:
             return
 
         try:
-            # Format the message with timestamp
-            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = (
-                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
-            )
-            formatted_message = formatted_message.rstrip()
-
             # Send individual message directly to queue
             if not self.shutdown_event.is_set():
                 try:
                     if self.queue_timeout < 0:
                         # Negative timeout = block indefinitely until queue has space
                         # Guarantees no log loss but may hang application
-                        self.log_queue.put(formatted_message)
+                        self.log_queue.put(text)
                     else:
                         # Positive timeout = wait specified time then drop logs
                         # Prevents application hanging but may lose logs
-                        self.log_queue.put(
-                            formatted_message, timeout=self.queue_timeout
-                        )
+                        self.log_queue.put(text, timeout=self.queue_timeout)
                 except queue.Full:
                     # This only happens with positive timeout
                     # Queue is full - just skip this message to avoid blocking
@@ -474,25 +635,7 @@ class PipelineLogsStorage:
         if not buffer_to_write:
             return
 
-        # The configured logging handler uses a lock to ensure that
-        # logs generated by different threads are not interleaved.
-        # Given that most artifact stores are based on fsspec, which
-        # use a separate thread for async operations, it may happen that
-        # the fsspec library itself will log something, which will end
-        # up in a deadlock.
-        # To avoid this, we temporarily disable the lock in the logging
-        # handler while writing to the file.
-        logging_handler = None
-        logging_lock = None
         try:
-            # Only try to access logging handler if it exists
-            root_logger = logging.getLogger()
-            if root_logger.handlers:
-                logging_handler = root_logger.handlers[0]
-                logging_lock = getattr(logging_handler, "lock", None)
-                if logging_lock:
-                    logging_handler.lock = None
-
             # If the artifact store is immutable, write the buffer to a new file
             if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
                 _logs_uri = self._get_timestamped_filename()
@@ -515,10 +658,8 @@ class PipelineLogsStorage:
                     self.logs_uri
                 )
 
-        finally:
-            # Re-enable the logging lock
-            if logging_handler and logging_lock:
-                logging_handler.lock = logging_lock
+        except Exception as e:
+            logger.error("Error in log storage thread: %s", e)
 
     def merge_log_files(self, merge_all_files: bool = False) -> None:
         """Merges all log files into one in the given URI.
@@ -528,6 +669,10 @@ class PipelineLogsStorage:
         Args:
             merge_all_files: whether to merge all files or only raw files
         """
+        from zenml.artifacts.utils import (
+            _load_file_from_artifact_store,
+        )
+
         # If the artifact store is immutable, merge the log files
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
             merged_file_suffix = "_merged"
@@ -579,7 +724,7 @@ class PipelineLogsStorage:
 
 
 class PipelineLogsStorageContext:
-    """Context manager which patches stdout and stderr during pipeline run execution."""
+    """Context manager which collects logs during pipeline run execution."""
 
     def __init__(
         self,
@@ -594,31 +739,60 @@ class PipelineLogsStorageContext:
             artifact_store: Artifact Store from the current pipeline run context.
             prepend_step_name: Whether to prepend the step name to the logs.
         """
+        # Create the storage object
         self.storage = PipelineLogsStorage(
             logs_uri=logs_uri, artifact_store=artifact_store
         )
+
+        # Create the handler object
+        self.artifact_store_handler: ArtifactStoreHandler = (
+            ArtifactStoreHandler(self.storage)
+        )
+
+        # Additional configuration
         self.prepend_step_name = prepend_step_name
-        self._original_methods_saved = False
+        self.original_step_names_in_console: Optional[bool] = None
+        self._original_root_level: Optional[int] = None
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
 
-        Wraps the `write` method of both stderr and stdout, so each incoming
-        message gets stored in the pipeline logs storage.
+        Registers an ArtifactStoreHandler for log storage.
 
         Returns:
             self
         """
-        # Save original write methods (flush methods are not wrapped)
-        self.stdout_write = getattr(sys.stdout, "write")
-        self.stderr_write = getattr(sys.stderr, "write")
-        self._original_methods_saved = True
+        # Add handler to root logger
+        root_logger = logging.getLogger()
+        root_logger.addHandler(self.artifact_store_handler)
 
-        # Wrap stdout/stderr write methods only
-        # Note: We don't wrap flush() as it's unnecessary overhead and the
-        # background thread handles log flushing based on time/buffer size
-        setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
-        setattr(sys.stderr, "write", self._wrap_write(self.stderr_write))
+        # Set root logger level to minimum of all active handlers
+        # This ensures records can reach any handler that needs them
+        self._original_root_level = root_logger.level
+        handler_levels = [handler.level for handler in root_logger.handlers]
+
+        # Set root logger to the minimum level among all handlers
+        min_level = min(handler_levels)
+        if min_level < root_logger.level:
+            root_logger.setLevel(min_level)
+
+        # Add handler to context variables for print() capture
+        logging_handlers.add(self.artifact_store_handler)
+
+        # Save the current step names context variable state
+        self.original_step_names_in_console = step_names_in_console.get()
+
+        # Set the step names context variable
+        step_names_disabled = handle_bool_env_var(
+            ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
+        )
+
+        if step_names_disabled or not self.prepend_step_name:
+            # Step names are disabled through the env or they are disabled in the config
+            step_names_in_console.set(False)
+        else:
+            # Otherwise, set it True (default)
+            step_names_in_console.set(True)
 
         redirected.set(True)
         return self
@@ -636,70 +810,45 @@ class PipelineLogsStorageContext:
             exc_val: The instance of the exception
             exc_tb: The traceback of the exception
 
-        Restores the `write` method of both stderr and stdout.
+        Removes the handler from loggers and context variables.
         """
-        # Step 1: Restore stdout/stderr FIRST to prevent logging during shutdown
-        try:
-            if self._original_methods_saved:
-                setattr(sys.stdout, "write", self.stdout_write)
-                setattr(sys.stderr, "write", self.stderr_write)
-                redirected.set(False)
-        except Exception:
-            pass
+        if exc_type is not None:
+            # Write the exception and its traceback to the logs
+            self.artifact_store_handler.emit(
+                logging.LogRecord(
+                    name="exception",
+                    level=logging.ERROR,
+                    pathname="",
+                    lineno=0,
+                    msg="An exception has occurred.",
+                    args=(),
+                    exc_info=(exc_type, exc_val, exc_tb) if exc_val else None,
+                )
+            )
 
-        # Step 2: Shutdown thread (it will automatically drain queue and merge files)
+        # Remove handler from root logger and restore original level
+        root_logger = logging.getLogger()
+
+        # Check if handler is still in the root logger before removing
+        if self.artifact_store_handler in root_logger.handlers:
+            root_logger.removeHandler(self.artifact_store_handler)
+
+        # Restore original root logger level
+        if self._original_root_level is not None:
+            root_logger.setLevel(self._original_root_level)
+
+        # Remove handler from context variables
+        logging_handlers.remove(self.artifact_store_handler)
+
+        # Shutdown thread (it will automatically drain queue and merge files)
         try:
             self.storage._shutdown_log_storage_thread()
         except Exception:
             pass
 
-    def _wrap_write(self, method: Callable[..., Any]) -> Callable[..., Any]:
-        """Wrapper function that utilizes the storage object to store logs.
-
-        Args:
-            method: the original write method
-
-        Returns:
-            the wrapped write method.
-        """
-
-        def wrapped_write(*args: Any, **kwargs: Any) -> Any:
-            step_names_disabled = (
-                handle_bool_env_var(
-                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
-                )
-                or not self.prepend_step_name
-            )
-
-            if step_names_disabled:
-                output = method(*args, **kwargs)
-            else:
-                message = args[0]
-                # Try to get step context if not available yet
-                step_context = None
-                try:
-                    step_context = get_step_context()
-                except Exception:
-                    pass
-
-                if step_context and args[0] not in ["\n", ""]:
-                    # For progress bar updates (with \r), inject the step name after the \r
-                    if "\r" in message:
-                        message = message.replace(
-                            "\r", f"\r[{step_context.step_name}] "
-                        )
-                    else:
-                        message = f"[{step_context.step_name}] {message}"
-
-                output = method(message, *args[1:], **kwargs)
-
-            # Save the original message without step name prefix to storage
-            if args:
-                self.storage.write(args[0])
-
-            return output
-
-        return wrapped_write
+        # Restore the original step names context variable state
+        if self.original_step_names_in_console is not None:
+            step_names_in_console.set(self.original_step_names_in_console)
 
 
 def setup_orchestrator_logging(

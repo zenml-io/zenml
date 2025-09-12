@@ -20,6 +20,7 @@ from typing_extensions import Annotated
 
 from zenml import ArtifactConfig, pipeline, step
 from zenml.client import Client
+from zenml.enums import ExecutionMode
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 str_namer_standard = "dummy_dynamic_dt_{date}_{time}"
@@ -277,7 +278,7 @@ def test_execution_fails_on_custom_but_not_provided_name(
 ):
     """Test that dynamic naming fails on custom placeholder, if they are not provided."""
 
-    @pipeline(enable_cache=False)
+    @pipeline(enable_cache=False, execution_mode=ExecutionMode.FAIL_FAST)
     def _inner():
         dynamic_single_string_custom_no_default.with_options(
             substitutions={"not_a_funny_name": "it's gonna fail"}
