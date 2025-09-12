@@ -120,7 +120,7 @@ In the dashboard, open the latest run to explore:
 
 Tip: Switch to the [Timeline view](../how-to/dashboard/dashboard-features.md#timeline-view) to compare step durations, spot bottlenecks, and understand parallel execution at a glance.
 
-```
+<figure>
   <img src="../.gitbook/assets/your_first_pipeline_analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
   <figcaption>Document analysis pipeline DAG with step-level artifacts and metadata.</figcaption>
 </figure>
