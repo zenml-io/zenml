@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Initialization of the Sagemaker Step Operator."""
 
-from zenml.integrations.aws.step_operators.sagemaker_step_operator import (  # noqa
+from zenml.integrations.aws.step_operators.sagemaker_step_operator import (  # noqa: F401
     SagemakerStepOperator,
 )
-
-__all__ = ["SagemakerStepOperator"]
+from zenml.integrations.aws.step_operators.batch_step_operator import (  # noqa: F401
+    AWSBatchStepOperator,
+)
+__all__ = ["SagemakerStepOperator","AWSBatchStepOperator"]

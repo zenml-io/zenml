@@ -29,6 +29,10 @@ from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
     SagemakerStepOperatorConfig,
     SagemakerStepOperatorFlavor,
 )
+from zenml.integrations.aws.flavors.batch_step_operator_flavor import (
+    AWSBatchStepOperatorConfig,
+    AWSBatchStepOperatorFlavor
+)
 
 __all__ = [
     "AWSContainerRegistryFlavor",
@@ -39,4 +43,7 @@ __all__ = [
     "SagemakerStepOperatorConfig",
     "SagemakerOrchestratorFlavor",
     "SagemakerOrchestratorConfig",
+    "AWSBatchStepOperatorFlavor",
+    "AWSBatchStepOperatorConfig",
+    
 ]
