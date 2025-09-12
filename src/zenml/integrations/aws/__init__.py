@@ -28,6 +28,7 @@ AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
 AWS_SAGEMAKER_ORCHESTRATOR_FLAVOR = "sagemaker"
+AWS_BATCH_STEP_OPERATOR_FLAVOR = "aws_batch"
 
 # Service connector constants
 AWS_CONNECTOR_TYPE = "aws"
@@ -42,6 +43,7 @@ class AWSIntegration(Integration):
     NAME = AWS
     REQUIREMENTS = [
         "sagemaker>=2.237.3",
+        "boto3>=1.40.30",
         "kubernetes",
         "aws-profile-manager",
     ]
@@ -64,6 +66,7 @@ class AWSIntegration(Integration):
             AWSImageBuilderFlavor,
             SagemakerOrchestratorFlavor,
             SagemakerStepOperatorFlavor,
+            AWSBatchStepOperatorFlavor
         )
 
         return [
@@ -71,4 +74,5 @@ class AWSIntegration(Integration):
             AWSImageBuilderFlavor,
             SagemakerStepOperatorFlavor,
             SagemakerOrchestratorFlavor,
+            AWSBatchStepOperatorFlavor
         ]

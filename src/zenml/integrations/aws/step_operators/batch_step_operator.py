@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
+import time
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -21,8 +22,10 @@ from typing import (
     Tuple,
     Type,
     Union,
+    Literal,
     cast,
 )
+from pydantic import BaseModel
 
 import boto3
 from sagemaker.estimator import Estimator
@@ -32,13 +35,13 @@ from sagemaker.session import Session
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
-from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
-    SagemakerStepOperatorConfig,
-    SagemakerStepOperatorSettings,
+from zenml.integrations.aws.flavors.batch_step_operator_flavor import (
+    AWSBatchStepOperatorConfig,
+    AWSBatchStepOperatorSettings,
 )
-from zenml.integrations.aws.step_operators.sagemaker_step_operator_entrypoint_config import (
-    SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
-    SagemakerEntrypointConfiguration,
+from zenml.integrations.aws.step_operators.batch_step_operator_entrypoint_config import (
+    BATCH_STEP_ENV_VAR_SIZE_LIMIT,
+    AWSBatchEntrypointConfiguration,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -56,11 +59,73 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_step_operator"
+BATCH_DOCKER_IMAGE_KEY = "batch_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 
+class AWSBatchJobDefinitionContainerProperties(BaseModel):
+    image: str
+    command: List[str]
+    jobRoleArn: str
+    executionRoleArn: str
+    environment: List[Dict[str,str]] = [] # keys: 'name','value'
+    instanceType: str
+    resourceRequirements: List[Dict[str,str]] = [] # keys: 'value','type', with type one of 'GPU','VCPU','MEMORY'
+    secrets: List[Dict[str,str]] = [] # keys: 'name','value'
 
-class SagemakerStepOperator(BaseStepOperator):
+class AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(BaseModel):
+    targetNodes: str
+    container: AWSBatchJobDefinitionContainerProperties
+
+class AWSBatchJobDefinitionNodeProperties(BaseModel):
+    # we include this class for completeness sake to make it easier
+    # to add multinode support later
+    # for now, we'll set defaults to intuitively represent the only supported
+    # exeuction type ('container'); in reality AWS Batch will ignore this
+    # config
+    numNodes: int = 1
+    mainNode: int = 0
+    nodeRangeProperties: List[AWSBatchJobDefinitionNodePropertiesNodeRangeProperty] = []
+
+class AWSBatchJobDefinitionRetryStrategy(BaseModel):
+    attempts: int = 2
+    evaluateOnExit: List[Dict[str,str]] = [
+        {
+            "onExitCode": "137",  # out-of-memory killed
+            "action": "RETRY"
+        },
+        {
+            "onReason": "*Host EC2*",
+            "action": "RETRY"
+        },
+        {
+            "onExitCode": "*",  # match everything else
+            "action": "EXIT"
+        }
+    ]
+            # Example:
+            # {
+            #     'onStatusReason': 'string',
+            #     'onReason': 'string',
+            #     'onExitCode': 'string',
+            #     'action': 'RETRY'|'EXIT'
+            # },
+
+class AWSBatchJobDefinition(BaseModel):
+    jobDefinitionName: str
+    type: Literal['container','multinode'] = 'container' # we dont support multinode type in this version
+    parameters: Dict[str,str] = {}
+    schedulingPriority: int = 0 # ignored in FIFO queues
+    containerProperties: AWSBatchJobDefinitionContainerProperties
+    nodeProperties: AWSBatchJobDefinitionNodeProperties = AWSBatchJobDefinitionNodeProperties(
+        numNodes=1,mainNode=0,nodeRangeProperties=[]) # we'll focus on container mode for now - let's add multinode support later, as that will most likely require network configuration support as well 
+    retryStrategy: AWSBatchJobDefinitionRetryStrategy = AWSBatchJobDefinitionRetryStrategy()
+    propagateTags: bool = False
+    timeout: Dict[str,int] = {'attemptDurationSeconds':60} # key 'attemptDurationSeconds'
+    tags: Dict[str,str] = {}
+    platformCapabilities: Literal['EC2','FARGATE'] = "EC2" #-- hardcode this to EC2, so we can use container and multinode interchangeably without worrying too much
+
+
+class AWSBatchStepOperator(BaseStepOperator):
     """Step operator to run a step on Sagemaker.
 
     This class defines code that builds an image with the ZenML entrypoint
@@ -68,13 +133,13 @@ class SagemakerStepOperator(BaseStepOperator):
     """
 
     @property
-    def config(self) -> SagemakerStepOperatorConfig:
+    def config(self) -> AWSBatchStepOperatorConfig:
         """Returns the `SagemakerStepOperatorConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(SagemakerStepOperatorConfig, self._config)
+        return cast(AWSBatchStepOperatorConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -83,7 +148,7 @@ class SagemakerStepOperator(BaseStepOperator):
         Returns:
             The settings class.
         """
-        return SagemakerStepOperatorSettings
+        return AWSBatchStepOperatorSettings
 
     @property
     def entrypoint_config_class(
@@ -94,7 +159,7 @@ class SagemakerStepOperator(BaseStepOperator):
         Returns:
             The entrypoint configuration class for this step operator.
         """
-        return SagemakerEntrypointConfiguration
+        return AWSBatchEntrypointConfiguration
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -108,11 +173,11 @@ class SagemakerStepOperator(BaseStepOperator):
         def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
-                    "The SageMaker step operator runs code remotely and "
+                    "The Batch step operator runs code remotely and "
                     "needs to write files into the artifact store, but the "
                     f"artifact store `{stack.artifact_store.name}` of the "
                     "active stack is local. Please ensure that your stack "
-                    "contains a remote artifact store when using the SageMaker "
+                    "contains a remote artifact store when using the Batch "
                     "step operator."
                 )
 
@@ -138,6 +203,13 @@ class SagemakerStepOperator(BaseStepOperator):
             },
             custom_validation_function=_validate_remote_components,
         )
+    
+
+    def generate_job_definition(self, info: "StepRunInfo", entrypoint_command: List[str], environment: Dict[str,str]) -> AWSBatchJobDefinition:
+        """Utility to map zenml internal configurations to a valid AWS Batch 
+        job definition."""
+        pass
+
 
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBase"
@@ -154,7 +226,7 @@ class SagemakerStepOperator(BaseStepOperator):
         for step_name, step in deployment.step_configurations.items():
             if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
-                    key=SAGEMAKER_DOCKER_IMAGE_KEY,
+                    key=BATCH_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
                     step_name=step_name,
                     entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
@@ -169,7 +241,7 @@ class SagemakerStepOperator(BaseStepOperator):
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launches a step on SageMaker.
+        """Launches a step on AWS Batch.
 
         Args:
             info: Information about the step run.
@@ -184,7 +256,7 @@ class SagemakerStepOperator(BaseStepOperator):
         if not info.config.resource_settings.empty:
             logger.warning(
                 "Specifying custom step resources is not supported for "
-                "the SageMaker step operator. If you want to run this step "
+                "the AWS Batch step operator. If you want to run this step "
                 "operator on specific resources, you can do so by configuring "
                 "a different instance type like this: "
                 "`zenml step-operator update %s "
@@ -192,90 +264,41 @@ class SagemakerStepOperator(BaseStepOperator):
                 self.name,
             )
 
-        settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
+        image_name = info.get_image(key=BATCH_DOCKER_IMAGE_KEY)
 
-        if settings.environment:
-            environment.update(settings.environment)
+        settings = cast(AWSBatchStepOperatorSettings, self.get_settings(info))
 
-        # Sagemaker does not allow environment variables longer than 512
-        # characters to be passed to Estimator steps. If an environment variable
-        # is longer than 512 characters, we split it into multiple environment
-        # variables (chunks) and re-construct it on the other side using the
-        # custom entrypoint configuration.
-        split_environment_variables(
-            env=environment,
-            size_limit=SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
-        )
-
-        image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
-        environment[_ENTRYPOINT_ENV_VARIABLE] = " ".join(entrypoint_command)
-
-        # Get and default fill SageMaker estimator arguments for full ZenML support
-        estimator_args = settings.estimator_args
-
-        # Get authenticated session
-        # Option 1: Service connector
-        boto_session: boto3.Session
-        if connector := self.get_connector():
-            boto_session = connector.connect()
-            if not isinstance(boto_session, boto3.Session):
-                raise RuntimeError(
-                    f"Expected to receive a `boto3.Session` object from the "
-                    f"linked connector, but got type `{type(boto_session)}`."
-                )
-        # Option 2: Implicit configuration
-        else:
-            boto_session = boto3.Session()
-
-        session = Session(
-            boto_session=boto_session, default_bucket=self.config.bucket
-        )
-
-        estimator_args.setdefault(
-            "instance_type", settings.instance_type or "ml.m5.large"
-        )
-
-        # Convert environment to a dict of strings
-        environment = {key: str(value) for key, value in environment.items()}
-
-        estimator_args["environment"] = environment
-        estimator_args["instance_count"] = 1
-        estimator_args["sagemaker_session"] = session
-
-        # Create Estimator
-        estimator = Estimator(image_name, self.config.role, **estimator_args)
-
-        # SageMaker allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
+        batch = boto3.client('batch')
+        
+        # Batch allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
         step_name = Client().get_run_step(info.step_run_id).name
         training_job_name = f"{info.pipeline.name}-{step_name}"[:55]
         suffix = random_str(4)
         unique_training_job_name = f"{training_job_name}-{suffix}"
-
-        # Sagemaker doesn't allow any underscores in job/experiment/trial names
-        sanitized_training_job_name = unique_training_job_name.replace(
-            "_", "-"
-        )
-
-        # Construct training input object, if necessary
-        inputs: Optional[Union[TrainingInput, Dict[str, TrainingInput]]] = None
-
-        if isinstance(settings.input_data_s3_uri, str):
-            inputs = TrainingInput(s3_data=settings.input_data_s3_uri)
-        elif isinstance(settings.input_data_s3_uri, dict):
-            inputs = {}
-            for channel, s3_uri in settings.input_data_s3_uri.items():
-                inputs[channel] = TrainingInput(s3_data=s3_uri)
-
-        experiment_config = {}
-        if settings.experiment_name:
-            experiment_config = {
-                "ExperimentName": settings.experiment_name,
-                "TrialName": sanitized_training_job_name,
+        
+        response = batch.register_job_definition(
+            jobDefinitionName=unique_training_job_name,
+            type='container',
+            containerProperties={
+                'image': image_name ,
+                'command': entrypoint_command,
             }
-        info.force_write_logs()
-        estimator.fit(
-            wait=True,
-            inputs=inputs,
-            experiment_config=experiment_config,
-            job_name=sanitized_training_job_name,
         )
+
+        job_definition = response['jobDefinitionName']
+
+        response = batch.submit_job(
+            jobName=unique_training_job_name,
+            jobQueue=self.config.job_queue_name,
+            jobDefinition=job_definition,
+        )
+
+        job_id = response['jobId']
+
+        while True:
+            response = batch.describe_jobs(jobs=[job_id])
+            status = response['jobs'][0]['status']
+            if status in ['SUCCEEDED', 'FAILED']:
+                break
+            time.sleep(10)
+            logger.info(f'Job completed with status {status}')
