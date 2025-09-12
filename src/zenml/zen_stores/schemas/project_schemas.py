@@ -44,7 +44,6 @@ if TYPE_CHECKING:
         ScheduleSchema,
         ServiceSchema,
         StepRunSchema,
-        TriggerExecutionSchema,
         TriggerSchema,
     )
 
@@ -96,10 +95,6 @@ class ProjectSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     triggers: List["TriggerSchema"] = Relationship(
-        back_populates="project",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    trigger_executions: List["TriggerExecutionSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
