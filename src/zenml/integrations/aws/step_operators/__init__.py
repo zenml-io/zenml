@@ -18,5 +18,6 @@ from zenml.integrations.aws.step_operators.sagemaker_step_operator import (  # n
 )
 from zenml.integrations.aws.step_operators.aws_batch_step_operator import (  # noqa: F401
     AWSBatchStepOperator,
+    get_aws_batch_context
 )
-__all__ = ["SagemakerStepOperator","AWSBatchStepOperator"]
+__all__ = ["SagemakerStepOperator","AWSBatchStepOperator","get_aws_batch_context"]
