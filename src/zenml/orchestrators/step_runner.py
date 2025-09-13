@@ -670,6 +670,7 @@ class StepRunner:
         """
         step_context = get_step_context()
         artifact_requests = []
+        output_order: List[str] = []
 
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
@@ -751,12 +752,13 @@ class StepRunner:
                 metadata=user_metadata,
             )
             artifact_requests.append(artifact_request)
+            output_order.append(output_name)
 
-            # Always save to database to maintain correct lineage and input resolution
-            responses = Client().zen_store.batch_create_artifact_versions(
-                artifact_requests
-            )
-            return dict(zip(output_data.keys(), responses))
+        # Always save to database to maintain correct lineage and input resolution
+        responses = Client().zen_store.batch_create_artifact_versions(
+            artifact_requests
+        )
+        return dict(zip(output_order, responses))
 
     def load_and_run_hook(
         self,

@@ -101,11 +101,10 @@ def prepare_output_artifact_uris(
             step_run=step_run,
             output_name=substituted_output_name,
         )
-        if artifact_store.exists(artifact_uri):
-            raise RuntimeError("Artifact already exists")
-
         # Skip directory creation for memory:// URIs as they don't need filesystem directories
         if not artifact_uri.startswith("memory://"):
+            if artifact_store.exists(artifact_uri):
+                raise RuntimeError("Artifact already exists")
             artifact_store.makedirs(artifact_uri)
         output_artifact_uris[output_name] = artifact_uri
     return output_artifact_uris

@@ -465,16 +465,15 @@ class StepLauncher:
         # Run the step.
         start_time = time.time()
         try:
-            if self._step.config.step_operator:
-                step_operator_name = None
-                if isinstance(self._step.config.step_operator, str):
-                    step_operator_name = self._step.config.step_operator
+            # In serving mode, never use a step operator, even if set
+            try:
+                from zenml.deployers.serving import runtime
 
-                self._run_step_with_step_operator(
-                    step_operator_name=step_operator_name,
-                    step_run_info=step_run_info,
-                )
-            else:
+                serving_active = runtime.is_active()
+            except ImportError:
+                serving_active = False
+
+            if serving_active:
                 self._run_step_without_step_operator(
                     pipeline_run=pipeline_run,
                     step_run=step_run,
@@ -482,6 +481,24 @@ class StepLauncher:
                     input_artifacts=step_run.regular_inputs,
                     output_artifact_uris=output_artifact_uris,
                 )
+            else:
+                if self._step.config.step_operator:
+                    step_operator_name = None
+                    if isinstance(self._step.config.step_operator, str):
+                        step_operator_name = self._step.config.step_operator
+
+                    self._run_step_with_step_operator(
+                        step_operator_name=step_operator_name,
+                        step_run_info=step_run_info,
+                    )
+                else:
+                    self._run_step_without_step_operator(
+                        pipeline_run=pipeline_run,
+                        step_run=step_run,
+                        step_run_info=step_run_info,
+                        input_artifacts=step_run.regular_inputs,
+                        output_artifact_uris=output_artifact_uris,
+                    )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
                 artifact_uris=list(output_artifact_uris.values())

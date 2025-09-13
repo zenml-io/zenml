@@ -12,10 +12,11 @@ to access serving parameters without tight coupling.
 import contextvars
 import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, Optional, Set
+from typing import Any, Dict, Iterable, Optional
 
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
+from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
@@ -27,10 +28,7 @@ class _ServingState:
     request_id: Optional[str] = None
     deployment_id: Optional[str] = None
     pipeline_parameters: Dict[str, Any] = field(default_factory=dict)
-    param_overrides: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     outputs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    # Track in-memory artifact URIs created during this request
-    in_memory_uris: Set[str] = field(default_factory=set)
     # Per-request in-memory mode override
     use_in_memory: Optional[bool] = None
     # In-memory data storage for artifacts
@@ -41,9 +39,7 @@ class _ServingState:
         self.request_id = None
         self.deployment_id = None
         self.pipeline_parameters.clear()
-        self.param_overrides.clear()
         self.outputs.clear()
-        self.in_memory_uris.clear()
         self.use_in_memory = None
         self._in_memory_data.clear()
 
@@ -71,7 +67,6 @@ def start(
     state.request_id = request_id
     state.deployment_id = str(deployment.id)
     state.pipeline_parameters = dict(parameters or {})
-    state.param_overrides = {}  # No longer used, simplified
     state.outputs = {}
     state.use_in_memory = use_in_memory
     _serving_context.set(state)
@@ -81,22 +76,7 @@ def stop() -> None:
     """Clear the serving state for the current request context."""
     state = _get_context()
 
-    # Best-effort cleanup of in-memory artifacts associated with this request
-    if state.in_memory_uris:
-        try:
-            # Local import to avoid any import cycles at module import time
-            from zenml.deployers.serving import _in_memory_registry as reg
-
-            for uri in list(state.in_memory_uris):
-                try:
-                    reg.del_object(uri)
-                except Exception:
-                    # Ignore cleanup failures; memory will be reclaimed on process exit
-                    pass
-        except Exception:
-            # If registry module isn't available for some reason, skip cleanup
-            pass
-
+    # Reset clears all in-memory data and URIs automatically
     state.reset()
 
 
@@ -110,10 +90,8 @@ def get_step_parameters(
 ) -> Dict[str, Any]:
     """Get parameters for a step, optionally filtering by allowed keys.
 
-    This checks for any precomputed overrides for the given step name as a
-    future extension point. If no overrides are present, it falls back to the
-    request's pipeline parameters. When ``allowed_keys`` is provided, the
-    result is filtered to those keys.
+    This returns only the direct pipeline parameters for the request. When
+    ``allowed_keys`` is provided, the result is filtered to those keys.
 
     Args:
         step_name: The step (invocation id) to fetch parameters for.
@@ -125,9 +103,6 @@ def get_step_parameters(
     state = _get_context()
     if allowed_keys is not None:
         allowed = set(allowed_keys)
-        pre = state.param_overrides.get(step_name, {})
-        if pre:
-            return {k: v for k, v in pre.items() if k in allowed}
         return {
             k: v for k, v in state.pipeline_parameters.items() if k in allowed
         }
@@ -150,19 +125,6 @@ def record_step_outputs(step_name: str, outputs: Dict[str, Any]) -> None:
     state.outputs.setdefault(step_name, {}).update(outputs)
 
 
-def note_in_memory_uri(uri: str) -> None:
-    """Record an in-memory artifact URI for cleanup at request end.
-
-    Args:
-        uri: The artifact URI saved to the in-memory registry.
-    """
-    state = _get_context()
-    if not state.active:
-        return
-    if uri:
-        state.in_memory_uris.add(uri)
-
-
 def get_outputs() -> Dict[str, Dict[str, Any]]:
     """Return the outputs for all steps in the current context.
 
@@ -176,7 +138,9 @@ def get_parameter_override(name: str) -> Optional[Any]:
     """Get a parameter override from the current serving context.
 
     This function allows the orchestrator to check for parameter overrides
-    without importing serving-specific modules directly.
+    without importing serving-specific modules directly. Only direct
+    parameters are supported; nested extraction from complex objects is not
+    performed.
 
     Args:
         name: Parameter name to look up
@@ -192,7 +156,7 @@ def get_parameter_override(name: str) -> Optional[Any]:
     if not pipeline_params:
         return None
 
-    # Direct parameter lookup - pass parameters as-is
+    # Check direct parameter only
     return pipeline_params.get(name)
 
 
@@ -208,6 +172,18 @@ def should_use_in_memory() -> bool:
     return False
 
 
+def get_use_in_memory() -> Optional[bool]:
+    """Get the in-memory mode setting for the current request.
+
+    Returns:
+        The in-memory mode setting, or None if no context is active.
+    """
+    if is_active():
+        state = _get_context()
+        return state.use_in_memory
+    return None
+
+
 def put_in_memory_data(uri: str, data: Any) -> None:
     """Store data in memory for the given URI.
 
@@ -217,7 +193,6 @@ def put_in_memory_data(uri: str, data: Any) -> None:
     """
     if is_active():
         state = _get_context()
-        state.in_memory_uris.add(uri)
         state._in_memory_data[uri] = data
 
 
@@ -253,7 +228,7 @@ def has_in_memory_data(uri: str) -> bool:
 
 def process_outputs(
     runtime_outputs: Optional[Dict[str, Dict[str, Any]]],
-    run: Any,  # PipelineRunResponse
+    run: PipelineRunResponse,
     enforce_size_limits: bool = True,
     max_output_size_mb: int = 1,
 ) -> Dict[str, Any]:
@@ -274,7 +249,8 @@ def process_outputs(
         )
 
     logger.debug("Using slow artifact loading fallback")
-    return _load_outputs_from_artifacts(run)
+
+    return _process_artifact_outputs(run)
 
 
 def _process_runtime_outputs(
@@ -309,7 +285,7 @@ def _serialize_output(
                 "data_too_large": True,
                 "size_estimate": f"{len(serialized) // 1024}KB",
                 "max_size_mb": max_size_bytes // (1024 * 1024),
-                "type_name": type(value).__name__,
+                "type": type(value).__name__,
                 "note": "Use artifact loading endpoint for large outputs",
             }
 
@@ -318,9 +294,44 @@ def _serialize_output(
     except Exception:
         return {
             "serialization_failed": True,
-            "type_name": type(value).__name__,
+            "type": type(value).__name__,
             "note": "Use artifact loading endpoint for this output",
         }
+
+
+def _process_artifact_outputs(run: PipelineRunResponse) -> Dict[str, Any]:
+    """Load outputs from artifacts and serialize them safely.
+
+    Args:
+        run: Pipeline run response to iterate step outputs.
+
+    Returns:
+        Mapping from "step.output" to serialized values.
+    """
+    from zenml.artifacts.utils import load_artifact_from_response
+
+    outputs: Dict[str, Any] = {}
+    for step_name, step_run in (run.steps or {}).items():
+        if not step_run or not step_run.outputs:
+            continue
+
+        for output_name, artifacts in step_run.outputs.items():
+            if not artifacts:
+                continue
+            try:
+                value = load_artifact_from_response(artifacts[0])
+                if value is not None:
+                    outputs[f"{step_name}.{output_name}"] = _make_json_safe(
+                        value
+                    )
+            except Exception as e:
+                logger.debug(
+                    "Failed to load artifact for %s.%s: %s",
+                    step_name,
+                    output_name,
+                    e,
+                )
+    return outputs
 
 
 def _make_json_safe(value: Any) -> Any:
@@ -331,35 +342,11 @@ def _make_json_safe(value: Any) -> Any:
         return value
     except (TypeError, ValueError, OverflowError):
         # Fallback to truncated string representation
-        str_value = str(value)
-        return (
-            str_value
-            if len(str_value) <= 1000
-            else f"{str_value[:1000]}... [truncated]"
-        )
-
-
-def _load_outputs_from_artifacts(run: Any) -> Dict[str, Any]:
-    """Load outputs from artifacts (slow fallback path)."""
-    from zenml.artifacts.utils import load_artifact_from_response
-
-    outputs = {}
-
-    for step_name, step_run in (run.steps or {}).items():
-        if not step_run or not step_run.outputs:
-            continue
-
-        for output_name, artifacts in step_run.outputs.items():
-            if not artifacts:
-                continue
-
-            try:
-                value = load_artifact_from_response(artifacts[0])
-                if value is not None:
-                    outputs[f"{step_name}.{output_name}"] = _make_json_safe(
-                        value
-                    )
-            except Exception as e:
-                logger.debug(
-                    f"Failed to load artifact for {step_name}.{output_name}: {e}"
-                )
+        if isinstance(value, str):
+            s = value
+        else:
+            s = str(value)
+        if len(s) <= 1000:
+            return s
+        # Avoid f-string interpolation cost on huge strings by simple concat
+        return s[:1000] + "... [truncated]"

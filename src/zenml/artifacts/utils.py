@@ -153,6 +153,7 @@ def _store_artifact_data_and_prepare_request(
     """
     # Check if serving runtime is requesting in-memory mode
     use_in_memory = False
+    combined_metadata: Dict[str, "MetadataType"] = {}
     try:
         from zenml.deployers.serving import runtime
 
@@ -175,10 +176,8 @@ def _store_artifact_data_and_prepare_request(
         data_type = type(data)
         materializer.validate_save_type_compatibility(data_type)
         # Skip actual save() call - data is already in runtime
-
         # Skip visualizations and metadata extraction for performance
         visualizations = None
-        combined_metadata: Dict[str, "MetadataType"] = {}
         content_hash = None
     else:
         # Normal path - save to artifact store
@@ -203,7 +202,6 @@ def _store_artifact_data_and_prepare_request(
             else None
         )
 
-        combined_metadata: Dict[str, "MetadataType"] = {}
         if store_metadata:
             try:
                 combined_metadata = materializer.extract_full_metadata(data)
@@ -217,6 +215,12 @@ def _store_artifact_data_and_prepare_request(
             combined_metadata.update(metadata or {})
 
         content_hash = materializer.compute_content_hash(data)
+
+    # Add an ephemeral tag for in-memory artifacts to make their nature explicit
+    tags = list(tags or [])
+    if use_in_memory:
+        if "ephemeral:in-memory" not in tags:
+            tags.append("ephemeral:in-memory")
 
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,

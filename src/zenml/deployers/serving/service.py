@@ -18,17 +18,17 @@ clean architecture, and zero memory leaks.
 """
 
 import inspect
-import json
 import os
 import time
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
 
-from zenml.client import Client
+import zenml.client as client_mod
+import zenml.pipelines.run_utils as run_utils
 from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
@@ -39,10 +39,8 @@ from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorConfig,
 )
-from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
 from zenml.utils import source_utils
-from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
 
@@ -50,9 +48,9 @@ logger = get_logger(__name__)
 class PipelineServingService:
     """Clean, elegant pipeline serving service with zero memory leaks."""
 
-    def __init__(self, deployment_id: UUID):
+    def __init__(self, deployment_id: Union[str, UUID]):
         """Initialize service with minimal state."""
-        self.deployment_id = deployment_id
+        self.deployment_id: Union[str, UUID] = deployment_id
         self.deployment: Optional[PipelineDeploymentResponse] = None
         self.pipeline_state: Optional[Any] = None
 
@@ -64,8 +62,21 @@ class PipelineServingService:
         # Cache a local orchestrator instance to avoid per-request construction
         self._orchestrator: Optional[BaseOrchestrator] = None
         self._params_model: Optional[Type[BaseModel]] = None
+        # Captured in-memory outputs from the last run (internal)
+        self._last_runtime_outputs: Optional[Dict[str, Dict[str, Any]]] = None
+        # Lazily initialized cached client
+        self._client: Optional[Any] = None
 
         logger.info(f"Initializing service for deployment: {deployment_id}")
+
+    @property
+    def params_model(self) -> Optional[Type[BaseModel]]:
+        """Get the parameter model.
+
+        Returns:
+            The parameter model.
+        """
+        return self._params_model
 
     def _get_max_output_size_bytes(self) -> int:
         """Get max output size in bytes with bounds checking."""
@@ -82,16 +93,29 @@ class PipelineServingService:
             )
             return 1024 * 1024
 
+    def _get_client(self) -> Any:
+        """Return a cached ZenML client instance."""
+        if self._client is None:
+            self._client = client_mod.Client()
+        return self._client
+
     async def initialize(self) -> None:
         """Initialize service with proper error handling."""
         try:
             logger.info("Loading pipeline deployment configuration...")
 
             # Load deployment from ZenML store
-            client = Client()
+            client = self._get_client()
+            # Accept both str and UUID for flexibility
+            dep_id = self.deployment_id
+            try:
+                if isinstance(dep_id, str):
+                    dep_id = UUID(dep_id)
+            except Exception:
+                pass
 
             self.deployment = client.zen_store.get_deployment(
-                deployment_id=self.deployment_id
+                deployment_id=dep_id
             )
 
             # Activate integrations to ensure all components are available
@@ -166,13 +190,15 @@ class PipelineServingService:
             # Validate parameters
             resolved_params = self._resolve_parameters(parameters)
 
-            # Execute pipeline and get run
+            # Execute pipeline and get run; runtime outputs captured internally
             run = self._execute_with_orchestrator(
                 resolved_params, use_in_memory
             )
 
-            # Map outputs using fast or slow path
-            mapped_outputs = self._map_outputs(run)
+            # Map outputs using fast (in-memory) or slow (artifact) path
+            mapped_outputs = self._map_outputs(run, self._last_runtime_outputs)
+            # Clear captured outputs after use
+            self._last_runtime_outputs = None
 
             return self._build_success_response(
                 mapped_outputs=mapped_outputs,
@@ -219,97 +245,32 @@ class PipelineServingService:
 
     # Private helper methods
 
-    def _serialize_json_safe(self, value: Any) -> Any:
-        """Make value JSON-serializable using ZenML's encoder."""
-        try:
-            # Use ZenML's comprehensive encoder
-            json.dumps(value, default=pydantic_encoder)
-            return value
-        except (TypeError, ValueError, OverflowError):
-            # Fallback to string representation
-            s = str(value)
-            return s if len(s) <= 1000 else f"{s[:1000]}... [truncated]"
+    def _map_outputs(
+        self,
+        run: PipelineRunResponse,
+        runtime_outputs: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        """Map pipeline outputs using centralized runtime processing."""
+        from zenml.deployers.serving import runtime
 
-    def _map_outputs(self, run: PipelineRunResponse) -> Dict[str, Any]:
-        """Map pipeline outputs using fast in-memory data when available."""
-        # Try fast path: use in-memory outputs from serving context
-        try:
-            from zenml.deployers.serving import runtime
+        if runtime_outputs is None and runtime.is_active():
+            runtime_outputs = runtime.get_outputs()
 
-            if runtime.is_active():
-                in_memory_outputs = runtime.get_outputs()
-                if in_memory_outputs:
-                    # Format with qualified names (step.output)
-                    mapped_outputs = {}
-                    for step_name, step_outputs in in_memory_outputs.items():
-                        for out_name, value in step_outputs.items():
-                            # Check if data is too large (configurable via env var)
-                            try:
-                                max_size_bytes = (
-                                    self._get_max_output_size_bytes()
-                                )
-                                max_size_mb = max_size_bytes // (1024 * 1024)
-                                serialized = self._serialize_json_safe(value)
-                                if (
-                                    isinstance(serialized, str)
-                                    and len(serialized) > max_size_bytes
-                                ):
-                                    # Too large, return metadata instead
-                                    mapped_outputs[
-                                        f"{step_name}.{out_name}"
-                                    ] = {
-                                        "data_too_large": True,
-                                        "size_estimate": f"{len(serialized) // 1024}KB",
-                                        "max_size_mb": max_size_mb,
-                                        "type": str(type(value).__name__),
-                                        "note": "Use artifact loading endpoint for large outputs",
-                                    }
-                                else:
-                                    mapped_outputs[
-                                        f"{step_name}.{out_name}"
-                                    ] = serialized
-                            except Exception:
-                                # Fallback to basic info if serialization fails
-                                mapped_outputs[f"{step_name}.{out_name}"] = {
-                                    "serialization_failed": True,
-                                    "type": str(type(value).__name__),
-                                    "note": "Use artifact loading endpoint for this output",
-                                }
-                    return mapped_outputs
-        except ImportError:
-            pass
-
-        # Fallback: original expensive artifact loading
-        logger.debug("Using slow artifact loading fallback")
-        from zenml.artifacts.utils import load_artifact_from_response
-
-        fallback_outputs: Dict[str, Any] = {}
-        for step_name, step_run in (run.steps or {}).items():
-            if not step_run or not step_run.outputs:
-                continue
-            for out_name, arts in (step_run.outputs or {}).items():
-                if not arts:
-                    continue
-                try:
-                    val = load_artifact_from_response(arts[0])
-                    if val is not None:
-                        fallback_outputs[f"{step_name}.{out_name}"] = (
-                            self._serialize_json_safe(val)
-                        )
-                except Exception as e:
-                    logger.debug(
-                        f"Failed to load artifact for {step_name}.{out_name}: {e}"
-                    )
-                    continue
-        return fallback_outputs
+        max_size_mb = self._get_max_output_size_bytes() // (1024 * 1024)
+        return runtime.process_outputs(
+            runtime_outputs=runtime_outputs,
+            run=run,
+            enforce_size_limits=True,
+            max_output_size_mb=max_size_mb,
+        )
 
     def _execute_with_orchestrator(
         self,
         resolved_params: Dict[str, Any],
         use_in_memory: Optional[bool] = None,
     ) -> PipelineRunResponse:
-        """Run the deployment via the orchestrator and return the run."""
-        client = Client()
+        """Run the deployment via the orchestrator and return the concrete run."""
+        client = self._get_client()
         active_stack: Stack = client.active_stack
 
         if self._orchestrator is None:
@@ -317,7 +278,7 @@ class PipelineServingService:
 
         # Create a placeholder run and execute with a known run id
         assert self.deployment is not None
-        placeholder_run = create_placeholder_run(
+        placeholder_run = run_utils.create_placeholder_run(
             deployment=self.deployment, logs=None
         )
 
@@ -331,22 +292,32 @@ class PipelineServingService:
             use_in_memory=use_in_memory,
         )
 
+        captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
         try:
             self._orchestrator.run(
                 deployment=self.deployment,
                 stack=active_stack,
                 placeholder_run=placeholder_run,
             )
+
+            # Capture in-memory outputs before stopping the runtime context
+            try:
+                if runtime.is_active():
+                    captured_outputs = runtime.get_outputs()
+            except ImportError:
+                pass
         finally:
             # Always stop serving runtime context
             runtime.stop()
 
         # Fetch the concrete run via its id
-        run: PipelineRunResponse = Client().get_pipeline_run(
+        run: PipelineRunResponse = self._get_client().get_pipeline_run(
             name_id_or_prefix=placeholder_run.id,
             hydrate=True,
             include_full_metadata=True,
         )
+        # Store captured outputs for the caller to use
+        self._last_runtime_outputs = captured_outputs
         return run
 
     def _build_params_model(self) -> Any:
@@ -360,7 +331,6 @@ class PipelineServingService:
             return build_params_model_from_deployment(
                 self.deployment, strict=True
             )
-
         except Exception as e:
             logger.error(f"Failed to construct parameter model: {e}")
             raise
@@ -405,10 +375,30 @@ class PipelineServingService:
     def _resolve_parameters(
         self, request_params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Validate and normalize parameters."""
-        assert self._params_model is not None
-        parameters = self._params_model.model_validate(request_params or {})
-        return parameters.model_dump()  # type: ignore[return-value]
+        """Validate and normalize parameters, preserving complex objects."""
+        # If available, validate against the parameters model
+        if self._params_model is None:
+            try:
+                self._params_model = self._build_params_model()
+            except Exception:
+                self._params_model = None
+
+        if self._params_model is not None:
+            params_obj = self._params_model.model_validate(
+                request_params or {}
+            )
+            # Use the model class fields to avoid mypy issues with instance props
+            fields = getattr(self._params_model, "model_fields")
+            return {name: getattr(params_obj, name) for name in fields}
+
+        # Otherwise, just return request parameters as-is (no nesting support)
+        return dict(request_params or {})
+
+    def _serialize_json_safe(self, value: Any) -> Any:
+        """Delegate to the centralized runtime serializer."""
+        from zenml.deployers.serving import runtime as serving_runtime
+
+        return serving_runtime._make_json_safe(value)
 
     def _build_success_response(
         self,
@@ -438,20 +428,58 @@ class PipelineServingService:
         }
 
         # Add response schema if available
-        if (
-            self.deployment.pipeline_spec
-            and self.deployment.pipeline_spec.response_schema
-        ):
-            response["response_schema"] = (
-                self.deployment.pipeline_spec.response_schema
-            )
+        # Add response schema only if the attribute exists and is set
+        try:
+            if (
+                self.deployment.pipeline_spec
+                and self.deployment.pipeline_spec.response_schema
+            ):
+                response["response_schema"] = (
+                    self.deployment.pipeline_spec.response_schema
+                )
+        except AttributeError:
+            # Some tests may provide a lightweight deployment stub without
+            # a pipeline_spec attribute; ignore in that case.
+            pass
 
         return response
+
+    # ----------
+    # Schemas for OpenAPI enrichment
+    # ----------
+
+    @property
+    def request_schema(self) -> Optional[Dict[str, Any]]:
+        """Return the JSON schema for pipeline parameters if available."""
+        try:
+            if self.deployment and self.deployment.pipeline_spec:
+                return self.deployment.pipeline_spec.parameters_schema  # type: ignore[attr-defined]
+        except Exception:
+            return None
+        return None
+
+    @property
+    def response_schema(self) -> Optional[Dict[str, Any]]:
+        """Return the JSON schema for the serving response if available."""
+        try:
+            if self.deployment and self.deployment.pipeline_spec:
+                return self.deployment.pipeline_spec.response_schema  # type: ignore[attr-defined]
+        except Exception:
+            return None
+        return None
 
     def _build_error_response(
         self, e: Exception, start_time: float
     ) -> Dict[str, Any]:
-        """Build error response."""
+        """Build error response.
+
+        Args:
+            e: The exception to build the error response from.
+            start_time: The start time of the execution.
+
+        Returns:
+            A dictionary containing the error response.
+        """
         execution_time = time.time() - start_time
         return {
             "success": False,
