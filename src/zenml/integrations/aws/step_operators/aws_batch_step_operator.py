@@ -14,6 +14,7 @@
 """Implementation of the Sagemaker Step Operator."""
 
 import time
+import math
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -21,26 +22,20 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
     Literal,
     cast,
 )
 from pydantic import BaseModel
-
 import boto3
-from sagemaker.estimator import Estimator
-from sagemaker.inputs import TrainingInput
-from sagemaker.session import Session
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
-from zenml.integrations.aws.flavors.batch_step_operator_flavor import (
+from zenml.integrations.aws.flavors.aws_batch_step_operator_flavor import (
     AWSBatchStepOperatorConfig,
     AWSBatchStepOperatorSettings,
 )
-from zenml.integrations.aws.step_operators.batch_step_operator_entrypoint_config import (
-    BATCH_STEP_ENV_VAR_SIZE_LIMIT,
+from zenml.integrations.aws.step_operators.aws_batch_step_operator_entrypoint_config import (
     AWSBatchEntrypointConfiguration,
 )
 from zenml.logger import get_logger
@@ -49,7 +44,6 @@ from zenml.step_operators import BaseStepOperator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
-from zenml.utils.env_utils import split_environment_variables
 from zenml.utils.string_utils import random_str
 
 if TYPE_CHECKING:
@@ -60,7 +54,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-BATCH_DOCKER_IMAGE_KEY = "batch_step_operator"
+BATCH_DOCKER_IMAGE_KEY = "aws_batch_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 
 class AWSBatchJobDefinitionContainerProperties(BaseModel):
@@ -232,11 +226,11 @@ class AWSBatchStepOperator(BaseStepOperator):
         """
 
         return [
-            {"name":k,"value":v} for k,v in environment
+            {"name":k,"value":v} for k,v in environment.items()
         ]
     
     @staticmethod
-    def map_resource_settings(resource_settings: ResourceSettings) -> List[Dict[str,str]]:
+    def map_resource_settings(resource_settings: "ResourceSettings") -> List[Dict[str,str]]:
         """Utility to map the resource_settings to the resource convention used
         in the AWS Batch Job definition spec.
 
@@ -253,9 +247,15 @@ class AWSBatchStepOperator(BaseStepOperator):
         else:
 
             if resource_settings.cpu_count is not None:
+
+                cpu_count_int = math.ceil(resource_settings.cpu_count)
+
+                if cpu_count_int != resource_settings.cpu_count:
+                    logger.info(f"AWS Batch only accepts int type cpu resource requirements. Converted {resource_settings.cpu_count} to {cpu_count_int}")
+
                 mapped_resource_settings.append(
                     {
-                        "value": resource_settings.cpu_count,
+                        "value": str(cpu_count_int),
                         "type": 'VCPU'
                     }
                 )
@@ -263,7 +263,7 @@ class AWSBatchStepOperator(BaseStepOperator):
             if resource_settings.gpu_count is not None:
                 mapped_resource_settings.append(
                     {
-                        "value": resource_settings.gpu_count,
+                        "value": str(resource_settings.gpu_count),
                         "type": 'GPU'
                     }
                 )
@@ -271,7 +271,7 @@ class AWSBatchStepOperator(BaseStepOperator):
             if resource_settings.get_memory() is not None:
                 mapped_resource_settings.append(
                     {
-                        "value": resource_settings.get_memory(),
+                        "value": str(int(resource_settings.get_memory(unit="MiB"))),
                         "type": 'MEMORY'
                     }
                 )

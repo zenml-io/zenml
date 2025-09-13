@@ -16,24 +16,7 @@
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
-from zenml.utils.env_utils import reconstruct_environment_variables
-
-BATCH_STEP_ENV_VAR_SIZE_LIMIT = 512
 
 
 class AWSBatchEntrypointConfiguration(StepOperatorEntrypointConfiguration):
-    """Entrypoint configuration for ZenML Batch step operator.
-
-    The only purpose of this entrypoint configuration is to reconstruct the
-    environment variables that exceed the maximum length of 512 characters
-    allowed for Batch steps from their individual components.
-    """
-
-    def run(self) -> None:
-        """Runs the step."""
-        # Reconstruct the environment variables that exceed the maximum length
-        # of 512 characters from their individual chunks
-        reconstruct_environment_variables()
-
-        # Run the step
-        super().run()
+    """Entrypoint configuration for ZenML Batch step operator."""

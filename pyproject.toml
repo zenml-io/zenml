@@ -250,7 +250,7 @@ dev = [
     "darglint",
     "pytest-randomly",
     "pytest-mock",
-    "pytest-clarity",
+    #"pytest-clarity",
     "pytest-instafail",
     "pytest-rerunfailures",
     "pytest-split",
