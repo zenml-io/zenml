@@ -37,35 +37,43 @@ class AWSBatchStepOperatorSettings(BaseSettings):
     """Settings for the Sagemaker step operator."""
 
     instance_type: Optional[str] = Field(
-        None,
-        description="DEPRECATED: The instance type to use for the step execution. "
-        "Use estimator_args instead. Example: 'ml.m5.xlarge'",
+        'optimal',
+        description="The instance type for AWS Batch to use for the step" \
+        " execution. Example: 'm5.xlarge'",
     )
     environment: Dict[str, str] = Field(
         default_factory=dict,
-        description="Environment variables to pass to the container during execution. "
-        "Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
+        description="Environment variables to pass to the container during " \
+            "execution. Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
     )
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "instance_type"
+    timeout_seconds: int = Field(
+        default=120,
+        description="The number of seconds before AWS Batch times out the job."
     )
-
 
 class AWSBatchStepOperatorConfig(
     BaseStepOperatorConfig, AWSBatchStepOperatorSettings
 ):
-    """Config for the AWS Batch step operator."""
+    """Config for the AWS Batch step operator. 
+    
+    Note: We use ECS as a backend (not EKS), and EC2 as a compute engine (not
+    Fargate). This is because
+     - users can avoid the complexity of setting up an EKS cluster, and
+     - we can AWS Batch multinode type job support later, which requires EC2
+    """
 
     execution_role: str = Field(
         "",
         description="The ECS execution role required to execute the AWS Batch" \
-        " jobs as ECS tasks."
+        " jobs as an ECS tasks."
     )
     job_role: str = Field(
         "",
-        description="The ECS job role required by the container runtime insdide" \
-        "the ECS task implementing the zenml step."
+        description="The ECS job role required by the container runtime inside" \
+        "the ECS task."
+    )
+    job_queue_name: str = Field(
+        description="The AWS Batch job queue to submit AWS Batch jobs to."
     )
 
     @property
