@@ -25,7 +25,8 @@ from typing import (
     Literal,
     cast,
 )
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, PositiveInt, Field
+from pydantic_settings import BaseSettings as PydanticBaseSettings
 import boto3
 
 from zenml.client import Client
@@ -56,6 +57,43 @@ logger = get_logger(__name__)
 
 BATCH_DOCKER_IMAGE_KEY = "aws_batch_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
+
+class AWSBatchContext(PydanticBaseSettings):
+    """A utility to access the AWS Batch job context environment variables."""
+    main_node_index: int = Field(
+        description="This variable is set to the index number of the job's "
+            "main node. Your application code can compare the "
+            "AWS_BATCH_JOB_MAIN_NODE_INDEX to the AWS_BATCH_JOB_NODE_INDEX on "
+            "an individual node to determine if it's the main node.",
+        alias="AWS_BATCH_JOB_MAIN_NODE_INDEX"
+    )
+
+    main_node_address: str = Field(
+        description="This variable is only set in multi-node parallel job "
+            "child nodes. This variable isn't present on the main node. This "
+            "variable is set to the private IPv4 address of the job's main "
+            "node. Your child node's application code can use this address to "
+            "communicate with the main node.",
+        alias="AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS"
+    )
+
+    node_index: int = Field(
+        description="This variable is set to the node index number of the "
+            "node. The node index begins at 0, and each node receives a unique"
+            " index number. For example, a multi-node parallel job with 10 "
+            "children has index values of 0-9.",
+        alias="AWS_BATCH_JOB_NODE_INDEX"
+    )
+
+    num_nodes: int = Field(
+        description="This variable is set to the number of nodes that you have"
+            "requested for your multi-node parallel job.",
+        alias="AWS_BATCH_JOB_NUM_NODES"
+    )
+
+def get_aws_batch_context() -> AWSBatchContext:
+    """Utility to retrieve the AWS Batch runtime context."""
+    return AWSBatchContext()
 
 class AWSBatchJobDefinitionContainerProperties(BaseModel):
     """An AWS Batch job subconfiguration model for a container specification."""

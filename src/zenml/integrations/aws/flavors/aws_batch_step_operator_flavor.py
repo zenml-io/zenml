@@ -46,6 +46,7 @@ class AWSBatchStepOperatorSettings(BaseSettings):
             "execution. Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
     )
     node_count: PositiveInt = Field(
+        default=1,
         description="The number of AWS Batch nodes to run the step on. If > 1," \
         "an AWS Batch multinode job will be run, with the network connectivity" \
         "between the nodes provided by AWS Batch. See https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html" \
