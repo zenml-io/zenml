@@ -29,7 +29,7 @@ from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
     SagemakerStepOperatorConfig,
     SagemakerStepOperatorFlavor,
 )
-from zenml.integrations.aws.flavors.batch_step_operator_flavor import (
+from zenml.integrations.aws.flavors.aws_batch_step_operator_flavor import (
     AWSBatchStepOperatorConfig,
     AWSBatchStepOperatorFlavor
 )

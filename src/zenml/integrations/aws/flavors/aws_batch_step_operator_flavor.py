@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker step operator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Dict, Optional, Type
 
 from pydantic import Field
 
@@ -27,7 +27,6 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.step_operators import AWSBatchStepOperator
@@ -36,13 +35,13 @@ if TYPE_CHECKING:
 class AWSBatchStepOperatorSettings(BaseSettings):
     """Settings for the Sagemaker step operator."""
 
-    instance_type: Optional[str] = Field(
-        'optimal',
+    instance_type: str = Field(
+        default='optimal',
         description="The instance type for AWS Batch to use for the step" \
         " execution. Example: 'm5.xlarge'",
     )
     environment: Dict[str, str] = Field(
-        default_factory=dict,
+        default={},
         description="Environment variables to pass to the container during " \
             "execution. Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
     )
