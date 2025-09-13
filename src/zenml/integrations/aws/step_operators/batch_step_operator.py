@@ -54,6 +54,7 @@ from zenml.utils.string_utils import random_str
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.config import ResourceSettings
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import PipelineDeploymentBase
 
@@ -63,6 +64,7 @@ BATCH_DOCKER_IMAGE_KEY = "batch_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 
 class AWSBatchJobDefinitionContainerProperties(BaseModel):
+    """An AWS Batch job subconfiguration model for a container specification."""
     image: str
     command: List[str]
     jobRoleArn: str
@@ -73,20 +75,31 @@ class AWSBatchJobDefinitionContainerProperties(BaseModel):
     secrets: List[Dict[str,str]] = [] # keys: 'name','value'
 
 class AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(BaseModel):
+    """An AWS Batch job subconfiguration model for a node in a multinode job
+    specifications.
+    
+    Note: We include this class for completeness sake to make it easier to add
+    multinode support later for now.
+    """
     targetNodes: str
     container: AWSBatchJobDefinitionContainerProperties
 
 class AWSBatchJobDefinitionNodeProperties(BaseModel):
-    # we include this class for completeness sake to make it easier
-    # to add multinode support later
-    # for now, we'll set defaults to intuitively represent the only supported
-    # exeuction type ('container'); in reality AWS Batch will ignore this
-    # config
+    """An AWS Batch job subconfiguration model for multinode job specifications.
+    
+    Note: We include this class for completeness sake to make it easier to add
+    multinode support later for now, we'll set defaults to intuitively 
+    represent the only supported exeuction type ('container'); in reality AWS
+     Batch will ignore this config.
+    """
     numNodes: int = 1
     mainNode: int = 0
-    nodeRangeProperties: List[AWSBatchJobDefinitionNodePropertiesNodeRangeProperty] = []
+    nodeRangeProperties: List[
+        AWSBatchJobDefinitionNodePropertiesNodeRangeProperty
+    ] = []
 
 class AWSBatchJobDefinitionRetryStrategy(BaseModel):
+    """An AWS Batch job subconfiguration model for retry specifications."""
     attempts: int = 2
     evaluateOnExit: List[Dict[str,str]] = [
         {
@@ -102,15 +115,15 @@ class AWSBatchJobDefinitionRetryStrategy(BaseModel):
             "action": "EXIT"
         }
     ]
-            # Example:
-            # {
-            #     'onStatusReason': 'string',
-            #     'onReason': 'string',
-            #     'onExitCode': 'string',
-            #     'action': 'RETRY'|'EXIT'
-            # },
 
 class AWSBatchJobDefinition(BaseModel):
+    """A utility to validate AWS Batch job descriptions.
+    
+    Defaults fall into two categories:
+    - reasonable default values
+    - aligning the job description to be a valid 'container' type configuration,
+        as multinode jobs are not supported yet."""
+    
     jobDefinitionName: str
     type: Literal['container','multinode'] = 'container' # we dont support multinode type in this version
     parameters: Dict[str,str] = {}
@@ -126,15 +139,15 @@ class AWSBatchJobDefinition(BaseModel):
 
 
 class AWSBatchStepOperator(BaseStepOperator):
-    """Step operator to run a step on Sagemaker.
+    """Step operator to run a step on AWS Batch.
 
     This class defines code that builds an image with the ZenML entrypoint
-    to run using Sagemaker's Estimator.
+    to run using AWS Batch.
     """
 
     @property
     def config(self) -> AWSBatchStepOperatorConfig:
-        """Returns the `SagemakerStepOperatorConfig` config.
+        """Returns the `AWSBatchStepOperatorConfig` config.
 
         Returns:
             The configuration.
@@ -143,7 +156,7 @@ class AWSBatchStepOperator(BaseStepOperator):
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """Settings class for the SageMaker step operator.
+        """Settings class for the AWS Batch step operator.
 
         Returns:
             The settings class.
@@ -204,11 +217,117 @@ class AWSBatchStepOperator(BaseStepOperator):
             custom_validation_function=_validate_remote_components,
         )
     
+    @staticmethod
+    def map_environment(environment: Dict[str,str]) -> List[Dict[str,str]]:
+        """Utility to map the {name:value} environment to the
+        [{"name":name,"value":value},] convention used in the AWS Batch job
+        definition spec.
+
+        Args:
+            environment (Dict[str,str]): The step's environment variable 
+            specification
+
+        Returns:
+            List[Dict[str,str]]: The mapped environment variable specification
+        """
+
+        return [
+            {"name":k,"value":v} for k,v in environment
+        ]
+    
+    @staticmethod
+    def map_resource_settings(resource_settings: ResourceSettings) -> List[Dict[str,str]]:
+        """Utility to map the resource_settings to the resource convention used
+        in the AWS Batch Job definition spec.
+
+        Args:
+            resource_settings (ResourceSettings): The step's resource settings.
+
+        Returns:
+            List[Dict[str,str]]: The mapped resource settings.
+        """
+        mapped_resource_settings = []
+
+        if resource_settings.empty:
+            return mapped_resource_settings
+        else:
+
+            if resource_settings.cpu_count is not None:
+                mapped_resource_settings.append(
+                    {
+                        "value": resource_settings.cpu_count,
+                        "type": 'VCPU'
+                    }
+                )
+
+            if resource_settings.gpu_count is not None:
+                mapped_resource_settings.append(
+                    {
+                        "value": resource_settings.gpu_count,
+                        "type": 'GPU'
+                    }
+                )
+
+            if resource_settings.get_memory() is not None:
+                mapped_resource_settings.append(
+                    {
+                        "value": resource_settings.get_memory(),
+                        "type": 'MEMORY'
+                    }
+                )
+
+        return mapped_resource_settings
+    
+    @staticmethod
+    def generate_unique_batch_job_name(info: "StepRunInfo") -> str:
+        """Utility to generate a unique AWS Batch job name.
+
+        Args:
+            info (StepRunInfo): The step run information.
+
+        Returns:
+            str: A unique name for the step's AWS Batch job definition
+        """
+
+        # Batch allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
+        step_name = Client().get_run_step(info.step_run_id).name
+        job_name = f"{info.pipeline.name}-{step_name}"[:55]
+        suffix = random_str(4)
+        return f"{job_name}-{suffix}"
 
     def generate_job_definition(self, info: "StepRunInfo", entrypoint_command: List[str], environment: Dict[str,str]) -> AWSBatchJobDefinition:
         """Utility to map zenml internal configurations to a valid AWS Batch 
         job definition."""
-        pass
+        
+        image_name = info.get_image(key=BATCH_DOCKER_IMAGE_KEY)
+
+        resource_settings = info.config.resource_settings
+        step_settings = cast(AWSBatchStepOperatorSettings, self.get_settings(info))
+
+        job_name = self.generate_unique_batch_job_name(info)
+
+        return AWSBatchJobDefinition(
+            jobDefinitionName=job_name,
+            containerProperties=AWSBatchJobDefinitionContainerProperties(
+                executionRoleArn=self.config.execution_role,
+                jobRoleArn=self.config.job_role,
+                image=image_name,
+                command=entrypoint_command,
+                environment=self.map_environment(environment),
+                instanceType=step_settings.instance_type,
+                resourceRequirements=self.map_resource_settings(resource_settings),
+            ),
+            timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
+            # type: Literal['container','multinode'] = 'container' # we dont support multinode type in this version
+            # parameters: Dict[str,str] = {}
+            # schedulingPriority: int = 0 # ignored in FIFO queues
+            # nodeProperties: AWSBatchJobDefinitionNodeProperties = AWSBatchJobDefinitionNodeProperties(
+            #     numNodes=1,mainNode=0,nodeRangeProperties=[]) # we'll focus on container mode for now - let's add multinode support later, as that will most likely require network configuration support as well 
+            # retryStrategy: AWSBatchJobDefinitionRetryStrategy = AWSBatchJobDefinitionRetryStrategy()
+            # propagateTags: bool = False
+            # tags: Dict[str,str] = {}
+            # platformCapabilities: Literal['EC2','FARGATE'] = "EC2"
+        )
 
 
     def get_docker_builds(
@@ -264,33 +383,20 @@ class AWSBatchStepOperator(BaseStepOperator):
                 self.name,
             )
 
-        image_name = info.get_image(key=BATCH_DOCKER_IMAGE_KEY)
-
-        settings = cast(AWSBatchStepOperatorSettings, self.get_settings(info))
+        job_definition = self.generate_job_definition(info, entrypoint_command, environment)
 
         batch = boto3.client('batch')
-        
-        # Batch allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
-        step_name = Client().get_run_step(info.step_run_id).name
-        training_job_name = f"{info.pipeline.name}-{step_name}"[:55]
-        suffix = random_str(4)
-        unique_training_job_name = f"{training_job_name}-{suffix}"
-        
+
         response = batch.register_job_definition(
-            jobDefinitionName=unique_training_job_name,
-            type='container',
-            containerProperties={
-                'image': image_name ,
-                'command': entrypoint_command,
-            }
+            **job_definition.model_dump()
         )
 
-        job_definition = response['jobDefinitionName']
+        job_definition_name = response['jobDefinitionName']
 
         response = batch.submit_job(
-            jobName=unique_training_job_name,
+            jobName=job_definition.jobDefinitionName,
             jobQueue=self.config.job_queue_name,
-            jobDefinition=job_definition,
+            jobDefinition=job_definition_name,
         )
 
         job_id = response['jobId']
