@@ -453,7 +453,7 @@ class PipelineServingService:
         """Return the JSON schema for pipeline parameters if available."""
         try:
             if self.deployment and self.deployment.pipeline_spec:
-                return self.deployment.pipeline_spec.parameters_schema  # type: ignore[attr-defined]
+                return self.deployment.pipeline_spec.parameters_schema
         except Exception:
             return None
         return None
@@ -463,7 +463,7 @@ class PipelineServingService:
         """Return the JSON schema for the serving response if available."""
         try:
             if self.deployment and self.deployment.pipeline_spec:
-                return self.deployment.pipeline_spec.response_schema  # type: ignore[attr-defined]
+                return self.deployment.pipeline_spec.response_schema
         except Exception:
             return None
         return None
