@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker step operator flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type, List, Union
 
-from pydantic import Field
+from pydantic import Field, PositiveInt
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import (
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 class AWSBatchStepOperatorSettings(BaseSettings):
     """Settings for the Sagemaker step operator."""
 
-    instance_type: str = Field(
+    instance_type: Union[str,List[str]] = Field(
         default='optimal',
         description="The instance type for AWS Batch to use for the step" \
         " execution. Example: 'm5.xlarge'",
@@ -45,10 +45,18 @@ class AWSBatchStepOperatorSettings(BaseSettings):
         description="Environment variables to pass to the container during " \
             "execution. Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
     )
-    timeout_seconds: int = Field(
+    node_count: PositiveInt = Field(
+        description="The number of AWS Batch nodes to run the step on. If > 1," \
+        "an AWS Batch multinode job will be run, with the network connectivity" \
+        "between the nodes provided by AWS Batch. See https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html" \
+        "for details."
+    )
+    timeout_seconds: PositiveInt = Field(
         default=120,
         description="The number of seconds before AWS Batch times out the job."
     )
+
+
 
 class AWSBatchStepOperatorConfig(
     BaseStepOperatorConfig, AWSBatchStepOperatorSettings

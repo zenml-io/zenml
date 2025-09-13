@@ -25,7 +25,7 @@ from typing import (
     Literal,
     cast,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, PositiveInt
 import boto3
 
 from zenml.client import Client
@@ -71,22 +71,14 @@ class AWSBatchJobDefinitionContainerProperties(BaseModel):
 class AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(BaseModel):
     """An AWS Batch job subconfiguration model for a node in a multinode job
     specifications.
-    
-    Note: We include this class for completeness sake to make it easier to add
-    multinode support later for now.
     """
     targetNodes: str
     container: AWSBatchJobDefinitionContainerProperties
 
 class AWSBatchJobDefinitionNodeProperties(BaseModel):
     """An AWS Batch job subconfiguration model for multinode job specifications.
-    
-    Note: We include this class for completeness sake to make it easier to add
-    multinode support later for now, we'll set defaults to intuitively 
-    represent the only supported exeuction type ('container'); in reality AWS
-     Batch will ignore this config.
     """
-    numNodes: int = 1
+    numNodes: PositiveInt = 1
     mainNode: int = 0
     nodeRangeProperties: List[
         AWSBatchJobDefinitionNodePropertiesNodeRangeProperty
@@ -94,7 +86,7 @@ class AWSBatchJobDefinitionNodeProperties(BaseModel):
 
 class AWSBatchJobDefinitionRetryStrategy(BaseModel):
     """An AWS Batch job subconfiguration model for retry specifications."""
-    attempts: int = 2
+    attempts: PositiveInt = 2
     evaluateOnExit: List[Dict[str,str]] = [
         {
             "onExitCode": "137",  # out-of-memory killed
@@ -122,9 +114,8 @@ class AWSBatchJobDefinition(BaseModel):
     type: Literal['container','multinode'] = 'container' # we dont support multinode type in this version
     parameters: Dict[str,str] = {}
     schedulingPriority: int = 0 # ignored in FIFO queues
-    containerProperties: AWSBatchJobDefinitionContainerProperties
-    nodeProperties: AWSBatchJobDefinitionNodeProperties = AWSBatchJobDefinitionNodeProperties(
-        numNodes=1,mainNode=0,nodeRangeProperties=[]) # we'll focus on container mode for now - let's add multinode support later, as that will most likely require network configuration support as well 
+    containerProperties: Optional[AWSBatchJobDefinitionContainerProperties] = None
+    nodeProperties: Optional[AWSBatchJobDefinitionNodeProperties] = None
     retryStrategy: AWSBatchJobDefinitionRetryStrategy = AWSBatchJobDefinitionRetryStrategy()
     propagateTags: bool = False
     timeout: Dict[str,int] = {'attemptDurationSeconds':60} # key 'attemptDurationSeconds'
@@ -305,10 +296,7 @@ class AWSBatchStepOperator(BaseStepOperator):
         step_settings = cast(AWSBatchStepOperatorSettings, self.get_settings(info))
 
         job_name = self.generate_unique_batch_job_name(info)
-
-        return AWSBatchJobDefinition(
-            jobDefinitionName=job_name,
-            containerProperties=AWSBatchJobDefinitionContainerProperties(
+        container_properties = AWSBatchJobDefinitionContainerProperties(
                 executionRoleArn=self.config.execution_role,
                 jobRoleArn=self.config.job_role,
                 image=image_name,
@@ -317,8 +305,33 @@ class AWSBatchStepOperator(BaseStepOperator):
                 instanceType=step_settings.instance_type,
                 resourceRequirements=self.map_resource_settings(resource_settings),
             ),
+
+        node_count = step_settings.node_count
+
+        if node_count == 1:
+            kwargs = {
+                'type':'container',
+                'containerProperties':container_properties
+            }
+        else:
+            kwargs = {
+                'type':'multinode',
+                'nodeProperties':AWSBatchJobDefinitionNodeProperties(
+                    numNodes=node_count,
+                    nodeRangeProperties=[
+                        AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(
+                            targetNodes=','.join([str(node_index) for node_index in range(node_count)]),
+                            container=container_properties
+                        )
+                    ]
+                )
+            }           
+
+
+        return AWSBatchJobDefinition(
+            jobDefinitionName=job_name,
             timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
-            # type: Literal['container','multinode'] = 'container' # we dont support multinode type in this version
+            **kwargs
             # parameters: Dict[str,str] = {}
             # schedulingPriority: int = 0 # ignored in FIFO queues
             # nodeProperties: AWSBatchJobDefinitionNodeProperties = AWSBatchJobDefinitionNodeProperties(
