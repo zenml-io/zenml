@@ -221,7 +221,7 @@ def _install_runtime_openapi(
             pass
         return schema
 
-    fastapi_app.openapi = custom_openapi  # type: ignore[assignment]
+    fastapi_app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
 def get_pipeline_service() -> PipelineServingService:
