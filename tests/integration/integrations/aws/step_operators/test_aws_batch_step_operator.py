@@ -16,7 +16,7 @@
 import pytest
 
 from zenml.config.resource_settings import ResourceSettings
-from zenml.integrations.aws.step_operators.aws_batch_step_operator import AWSBatchStepOperator, get_aws_batch_context
+from zenml.integrations.aws.step_operators.aws_batch_step_operator import AWSBatchStepOperator, get_context
 
 def test_aws_batch_context(monkeypatch):
     """Tests the AWSBatchContext class."""
@@ -26,7 +26,7 @@ def test_aws_batch_context(monkeypatch):
     monkeypatch.setenv('AWS_BATCH_JOB_NODE_INDEX',1)
     monkeypatch.setenv('AWS_BATCH_JOB_NUM_NODES',2)
 
-    test_aws_batch_context = get_aws_batch_context()
+    test_aws_batch_context = get_context()
     assert test_aws_batch_context.main_node_index == 0
     assert test_aws_batch_context.main_node_address == 'test-address'
     assert test_aws_batch_context.node_index == 1

@@ -91,7 +91,7 @@ class AWSBatchContext(PydanticBaseSettings):
         alias="AWS_BATCH_JOB_NUM_NODES"
     )
 
-def get_aws_batch_context() -> AWSBatchContext:
+def get_context() -> AWSBatchContext:
     """Utility to retrieve the AWS Batch runtime context."""
     return AWSBatchContext()
 
