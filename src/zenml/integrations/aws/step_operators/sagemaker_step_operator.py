@@ -121,12 +121,12 @@ class SagemakerStepOperator(BaseStepOperator):
 
             if container_registry.config.is_local:
                 return False, (
-                    "The Batch step operator runs code remotely and "
+                    "The SageMaker step operator runs code remotely and "
                     "needs to push/pull Docker images, but the "
                     f"container registry `{container_registry.name}` of the "
                     "active stack is local. Please ensure that your stack "
                     "contains a remote container registry when using the "
-                    "Batch step operator."
+                    "SageMaker step operator."
                 )
 
             return True, ""
