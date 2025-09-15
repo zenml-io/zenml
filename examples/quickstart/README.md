@@ -167,6 +167,91 @@ No matter which of these you choose, you should end up with a running pipeline o
 
 <img src=".assets/CloudDAGs.png" width="100%" alt="Pipeline running on Cloud orchestrator.">
 
+## 🚀 Pipeline Deployment (Serving Mode)
+
+The quickstart includes a separate inference pipeline that can be deployed as a serving endpoint for real-time translation:
+
+### Deploy the Translation Pipeline
+
+```bash
+# Deploy the inference pipeline as an HTTP endpoint
+zenml pipeline deploy pipelines.inference.english_translation_inference
+```
+
+### Test the Deployed Endpoint
+
+```bash
+# Test the translation endpoint
+python test_serving.py --url <your-endpoint-url>
+
+# Or run example translations
+python example_clients.py
+```
+
+### API Usage
+
+Send translation requests to the deployed endpoint:
+
+```json
+{
+  "input": "Ye olde knight rode through the forest"
+}
+```
+
+Response:
+```json
+{
+  "outputs": "The old knight rode through the forest"
+}
+```
+
+### Example Client Integration
+
+```python
+import requests
+
+def translate_text(text: str, endpoint_url: str) -> str:
+    response = requests.post(
+        f"{endpoint_url}/invoke",
+        json={"input": text},
+        headers={"Content-Type": "application/json"}
+    )
+    
+    if response.status_code == 200:
+        return response.json()["outputs"]
+    else:
+        raise Exception(f"Translation failed: {response.text}")
+
+# Usage
+modern_text = translate_text(
+    "Thou art a brave warrior", 
+    "http://your-endpoint-url"
+)
+print(modern_text)  # "You are a brave warrior"
+```
+
+### Deployment Configuration
+
+For production use, create a deployment config (`serving.yaml`):
+
+```yaml
+settings:
+  docker:
+    requirements: requirements.txt
+    environment:
+      WANDB_DISABLED: "true"
+  deployer:
+    generate_auth_key: true
+  resources:
+    memory: "2GB"
+    cpu_count: 2
+```
+
+Deploy with config:
+```bash
+zenml pipeline deploy pipelines.inference.english_translation_inference --config serving.yaml
+```
+
 ## Further exploration
 
 This was just the tip of the iceberg of what ZenML can do; check out the [**docs**](https://docs.zenml.io/) to learn

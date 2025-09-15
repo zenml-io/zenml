@@ -7,3 +7,5 @@ transformers[torch]
 torch
 sentencepiece
 protobuf
+requests>=2.25.0
+click>=7.0

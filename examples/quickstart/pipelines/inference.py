@@ -27,7 +27,10 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@pipeline(on_init=load_models)
+@pipeline(
+    enable_cache=False,
+    on_init=load_models,
+)
 def english_translation_inference(
     input: str = "",
 ):
