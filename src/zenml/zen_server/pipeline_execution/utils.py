@@ -496,6 +496,11 @@ def snapshot_request_from_source_snapshot(
         exclude_unset=True,
         exclude_none=True,
     )
+    if pipeline_secrets := pipeline_update.get("secrets", []):
+        pipeline_update["secrets"] = [
+            zen_store().get_secret_by_name_or_id(secret).id
+            for secret in pipeline_secrets
+        ]
     pipeline_configuration = pydantic_utils.update_model(
         source_snapshot.pipeline_configuration, pipeline_update
     )
@@ -512,6 +517,11 @@ def snapshot_request_from_source_snapshot(
             exclude_unset=True,
             exclude_none=True,
         )
+        if step_secrets := step_update.get("secrets", []):
+            step_update["secrets"] = [
+                zen_store().get_secret_by_name_or_id(secret).id
+                for secret in step_secrets
+            ]
         step_config = pydantic_utils.update_model(
             step.step_config_overrides, step_update
         )

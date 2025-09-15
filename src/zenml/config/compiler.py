@@ -14,6 +14,7 @@
 """Class for compiling ZenML pipelines into a serializable format."""
 
 import copy
+import os
 import string
 from typing import (
     TYPE_CHECKING,
@@ -41,7 +42,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
-from zenml.utils import pydantic_utils, settings_utils
+from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
@@ -49,6 +50,8 @@ if TYPE_CHECKING:
     from zenml.steps.step_invocation import StepInvocation
 
 from zenml.logger import get_logger
+
+ENVIRONMENT_VARIABLE_PREFIX = "__ZENML__"
 
 logger = get_logger(__file__)
 
@@ -104,13 +107,24 @@ class Compiler:
                 pipeline.configuration.substitutions,
             )
 
+        pipeline_environment = finalize_environment_variables(
+            pipeline.configuration.environment
+        )
+        pipeline_secrets = secret_utils.resolve_and_verify_secrets(
+            pipeline.configuration.secrets
+        )
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
             configuration_level=ConfigurationLevel.PIPELINE,
             stack=stack,
         )
         with pipeline.__suppress_configure_warnings__():
-            pipeline.configure(settings=pipeline_settings, merge=False)
+            pipeline.configure(
+                environment=pipeline_environment,
+                secrets=pipeline_secrets,
+                settings=pipeline_settings,
+                merge=False,
+            )
 
         steps = {
             invocation_id: self._compile_step_invocation(
@@ -201,6 +215,8 @@ class Compiler:
                 enable_artifact_metadata=config.enable_artifact_metadata,
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
+                environment=config.environment,
+                secrets=config.secrets,
                 enable_pipeline_logs=config.enable_pipeline_logs,
                 settings=config.settings,
                 tags=config.tags,
@@ -473,12 +489,16 @@ class Compiler:
             step.configuration.settings, stack=stack
         )
         step_spec = self._get_step_spec(invocation=invocation)
+        step_secrets = secret_utils.resolve_and_verify_secrets(
+            step.configuration.secrets
+        )
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
             stack=stack,
         )
         step.configure(
+            secrets=step_secrets,
             settings=step_settings,
             merge=False,
         )
@@ -656,3 +676,37 @@ def convert_component_shortcut_settings_keys(
                 )
 
             settings[key] = component_settings
+
+
+def finalize_environment_variables(
+    environment: Dict[str, Any],
+) -> Dict[str, str]:
+    """Finalize the user environment variables.
+
+    This function adds all __ZENML__ prefixed environment variables from the
+    local client environment to the explicit user-defined variables.
+
+    Args:
+        environment: The explicit user-defined environment variables.
+
+    Returns:
+        The finalized user environment variables.
+    """
+    environment = {key: str(value) for key, value in environment.items()}
+
+    for key, value in os.environ.items():
+        if key.startswith(ENVIRONMENT_VARIABLE_PREFIX):
+            key_without_prefix = key[len(ENVIRONMENT_VARIABLE_PREFIX) :]
+
+            if (
+                key_without_prefix in environment
+                and value != environment[key_without_prefix]
+            ):
+                logger.warning(
+                    "Got multiple values for environment variable `%s`.",
+                    key_without_prefix,
+                )
+            else:
+                environment[key_without_prefix] = value
+
+    return environment

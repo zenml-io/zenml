@@ -397,7 +397,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -410,8 +411,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Args:
             snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
@@ -480,7 +484,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         if self.config.pass_zenml_token_as_secret:
             secret_name = self.get_token_secret_name(snapshot.id)
-            token = environment.pop("ZENML_STORE_API_TOKEN")
+            token = base_environment.pop("ZENML_STORE_API_TOKEN")
             kube_utils.create_or_update_secret(
                 core_api=self._k8s_core_api,
                 namespace=self.config.kubernetes_namespace,
@@ -519,7 +523,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             privileged=False,
             pod_settings=orchestrator_pod_settings,
             service_account_name=service_account_name,
-            env=environment,
+            env=base_environment,
             labels=orchestrator_pod_labels,
             mount_local_stores=self.config.is_local,
             termination_grace_period_seconds=settings.pod_stop_grace_period,

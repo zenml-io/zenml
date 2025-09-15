@@ -181,7 +181,8 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -194,8 +195,11 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         Args:
             snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
@@ -245,7 +249,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                 docker_image=image,
                 command=command,
                 arguments=arguments,
-                environment=environment,
+                environment=step_environments[step_name],
                 operator_source=settings.operator,
                 operator_args=operator_args,
             )

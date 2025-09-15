@@ -178,7 +178,8 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -191,8 +192,11 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
@@ -246,7 +250,7 @@ class BaseOrchestrator(StackComponent, ABC):
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
-        environment = get_config_environment_vars(
+        base_environment = get_config_environment_vars(
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
         )
@@ -277,6 +281,19 @@ class BaseOrchestrator(StackComponent, ABC):
         else:
             logger.debug("Skipping client-side caching.")
 
+        step_environments = {}
+        for invocation_id, step in deployment.step_configurations.items():
+            from zenml.utils.env_utils import get_step_environment
+
+            step_environment = get_step_environment(
+                step_config=step.config,
+                stack=stack,
+            )
+
+            combined_environment = base_environment.copy()
+            combined_environment.update(step_environment)
+            step_environments[invocation_id] = combined_environment
+
         try:
             if (
                 getattr(self.submit_pipeline, "__func__", None)
@@ -293,7 +310,7 @@ class BaseOrchestrator(StackComponent, ABC):
                 if metadata_iterator := self.prepare_or_run_pipeline(
                     deployment=snapshot,
                     stack=stack,
-                    environment=environment,
+                    environment=base_environment,
                     placeholder_run=placeholder_run,
                 ):
                     for metadata_dict in metadata_iterator:
@@ -314,7 +331,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 submission_result = self.submit_pipeline(
                     snapshot=snapshot,
                     stack=stack,
-                    environment=environment,
+                    base_environment=base_environment,
+                    step_environments=step_environments,
                     placeholder_run=placeholder_run,
                 )
                 if placeholder_run:

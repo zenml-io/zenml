@@ -15,10 +15,10 @@
 
 from pydantic import NonNegativeInt, PositiveInt
 
-from zenml.config.strict_base_model import StrictBaseModel
+from zenml.config.frozen_base_model import FrozenBaseModel
 
 
-class StepRetryConfig(StrictBaseModel):
+class StepRetryConfig(FrozenBaseModel):
     """Retry configuration for a step.
 
     Delay is an integer (specified in seconds).

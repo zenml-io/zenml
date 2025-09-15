@@ -335,6 +335,8 @@ class StackComponent:
         user: Optional[UUID],
         created: datetime,
         updated: datetime,
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[List[UUID]] = None,
         labels: Optional[Dict[str, Any]] = None,
         connector_requirements: Optional[ServiceConnectorRequirements] = None,
         connector: Optional[UUID] = None,
@@ -353,6 +355,10 @@ class StackComponent:
             user: The ID of the user who created the component.
             created: The creation time of the component.
             updated: The last update time of the component.
+            environment: Environment variables to set when running on this
+                component.
+            secrets: Secrets to set as environment variables when running on
+                this component.
             labels: The labels of the component.
             connector_requirements: The requirements for the connector.
             connector: The ID of a connector linked to the component.
@@ -379,6 +385,8 @@ class StackComponent:
         self.created = created
         self.updated = updated
         self.labels = labels
+        self.environment = environment or {}
+        self.secrets = secrets or []
         self.connector_requirements = connector_requirements
         self.connector = connector
         self.connector_resource_id = connector_resource_id
@@ -414,6 +422,8 @@ class StackComponent:
                 name=component_model.name,
                 id=component_model.id,
                 config=configuration,
+                environment=component_model.environment,
+                secrets=component_model.secrets,
                 labels=component_model.labels,
                 flavor=component_model.flavor_name,
                 type=component_model.type,

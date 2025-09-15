@@ -72,6 +72,7 @@ from zenml.orchestrators.utils import (
     get_config_environment_vars,
 )
 from zenml.pipelines.run_utils import create_placeholder_run
+from zenml.utils import env_utils
 
 logger = get_logger(__name__)
 
@@ -299,8 +300,8 @@ def main() -> None:
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local
 
-        env = get_config_environment_vars()
-        env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
+        shared_env = get_config_environment_vars()
+        shared_env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
         try:
             owner_references = kube_utils.get_pod_owner_references(
@@ -387,6 +388,13 @@ def main() -> None:
                 STEP_NAME_ANNOTATION_KEY: step_name,
             }
 
+            step_env = shared_env.copy()
+            step_env.update(
+                env_utils.get_step_environment(
+                    step_config=step_config, stack=active_stack
+                )
+            )
+
             image = KubernetesOrchestrator.get_image(
                 snapshot=snapshot, step_name=step_name
             )
@@ -405,7 +413,7 @@ def main() -> None:
             )
 
             if orchestrator.config.pass_zenml_token_as_secret:
-                env.pop("ZENML_STORE_API_TOKEN", None)
+                step_env.pop("ZENML_STORE_API_TOKEN", None)
                 secret_name = orchestrator.get_token_secret_name(snapshot.id)
                 pod_settings.env.append(
                     {
@@ -424,7 +432,7 @@ def main() -> None:
                 image_name=image,
                 command=step_command,
                 args=step_args,
-                env=env,
+                env=step_env,
                 privileged=settings.privileged,
                 pod_settings=pod_settings,
                 service_account_name=settings.step_pod_service_account_name
