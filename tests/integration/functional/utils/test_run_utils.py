@@ -114,7 +114,7 @@ def test_build_dag(clean_client):
 
     steps = {}
     for step_spec in deployment.pipeline_spec.steps:
-        steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
+        steps[step_spec.invocation_id] = step_spec.upstream_steps
 
     # Build the DAG using our function
     dag = build_dag(steps)
@@ -144,7 +144,7 @@ def test_find_all_downstream_steps(clean_client):
 
     steps = {}
     for step_spec in deployment.pipeline_spec.steps:
-        steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
+        steps[step_spec.invocation_id] = step_spec.upstream_steps
 
     # Build the DAG
     dag = build_dag(steps)
@@ -189,7 +189,7 @@ def test_dag_with_failed_step(clean_client):
 
     steps = {}
     for step_spec in deployment.pipeline_spec.steps:
-        steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
+        steps[step_spec.invocation_id] = step_spec.upstream_steps
 
     # Build the DAG
     dag = build_dag(steps)
