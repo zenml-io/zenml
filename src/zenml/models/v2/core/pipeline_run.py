@@ -583,6 +583,15 @@ class PipelineRunResponse(
         return self.get_metadata().is_templatable
 
     @property
+    def snapshot(self) -> Optional["PipelineSnapshotResponse"]:
+        """The `snapshot` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().snapshot
+
+    @property
     def model_version(self) -> Optional[ModelVersionResponse]:
         """The `model_version` property.
 
