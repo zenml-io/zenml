@@ -16,15 +16,15 @@ AUTH_KEY = None  # Set if authentication is enabled
 
 def translate_text(text: str) -> Dict[str, Any]:
     """Translate old English text to modern English.
-    
+
     Args:
         text: The old English text to translate
-        
+
     Returns:
         Translation result from the API
     """
     payload = {"input": text}
-    
+
     return _call_api(payload, "Translation")
 
 
@@ -72,7 +72,7 @@ def print_translation_result(original: str, translation: str) -> None:
     if not translation:
         print("No translation available")
         return
-        
+
     print("\n📝 Translation Result:")
     print("=" * 50)
     print(f"Original:    {original}")
@@ -84,35 +84,35 @@ def main():
     """Example usage scenarios for the translation API."""
     print("🧪 English Translation API - Example Usage")
     print("=" * 60)
-    
+
     # Example translations
     test_cases = [
         {
             "text": "Ye olde knight rode through the forest",
-            "context": "Medieval narrative"
+            "context": "Medieval narrative",
         },
         {
             "text": "Thou art a brave warrior, good sir",
-            "context": "Character dialogue"
+            "context": "Character dialogue",
         },
         {
             "text": "Methinks the weather doth appear fair this day",
-            "context": "Weather observation"
+            "context": "Weather observation",
         },
         {
             "text": "I pray thee, tell me the way to the nearest tavern",
-            "context": "Asking for directions"
-        }
+            "context": "Asking for directions",
+        },
     ]
-    
+
     for i, case in enumerate(test_cases, 1):
         print(f"\n{i}️⃣ Example {i}: {case['context']}")
-        print(f"Input: \"{case['text']}\"")
-        
+        print(f'Input: "{case["text"]}"')
+
         result = translate_text(case["text"])
         translation = extract_translation(result)
         print_translation_result(case["text"], translation)
-    
+
     print("\n🎉 All examples completed!")
     print("\n📋 Integration Tips:")
     print("• Use the translation API for modernizing historical texts")
