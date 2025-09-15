@@ -15,5 +15,4 @@
 # limitations under the License.
 #
 
-from .training import english_translation_training
-from .inference import english_translation_inference
+from .training import english_translation_pipeline
