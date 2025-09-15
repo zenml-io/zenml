@@ -2497,144 +2497,6 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
-    @_fail_for_sql_zen_store
-    def trigger_pipeline(
-        self,
-        pipeline_name_or_id: Union[str, UUID, None] = None,
-        run_configuration: Union[
-            PipelineRunConfiguration, Dict[str, Any], None
-        ] = None,
-        config_path: Optional[str] = None,
-        template_id: Optional[UUID] = None,
-        stack_name_or_id: Union[str, UUID, None] = None,
-        synchronous: bool = False,
-        project: Optional[Union[str, UUID]] = None,
-    ) -> PipelineRunResponse:
-        """DEPRECATED: Trigger a pipeline from the server.
-
-        Args:
-            pipeline_name_or_id: Name or ID of the pipeline. If this is
-                specified, the latest runnable template for this pipeline will
-                be used for the run (Runnable here means that the build
-                associated with the template is for a remote stack without any
-                custom flavor stack components). If not given, a template ID
-                that should be run needs to be specified.
-            run_configuration: Configuration for the run. Either this or a
-                path to a config file can be specified.
-            config_path: Path to a YAML configuration file. This file will be
-                parsed as a `PipelineRunConfiguration` object. Either this or
-                the configuration in code can be specified.
-            template_id: ID of the template to run. Either this or a pipeline
-                can be specified.
-            stack_name_or_id: Name or ID of the stack on which to run the
-                pipeline. If not specified, this method will try to find a
-                runnable template on any stack.
-            synchronous: If `True`, this method will wait until the triggered
-                run is finished.
-            project: The project name/ID to filter by.
-
-        Raises:
-            RuntimeError: If triggering the pipeline failed.
-
-        Returns:
-            Model of the pipeline run.
-        """
-        from zenml.pipelines.run_utils import (
-            validate_run_config_is_runnable_from_server,
-            validate_stack_is_runnable_from_server,
-            wait_for_pipeline_run_to_finish,
-        )
-
-        logger.warning(
-            "The `Client().trigger_pipeline(...)` method is deprecated and "
-            "will be removed in a future version. Please use "
-            "`Client().trigger_snapshot(...)` instead."
-        )
-
-        if Counter([template_id, pipeline_name_or_id])[None] != 1:
-            raise RuntimeError(
-                "You need to specify exactly one of pipeline or template "
-                "to trigger."
-            )
-
-        if run_configuration and config_path:
-            raise RuntimeError(
-                "Only config path or runtime configuration can be specified."
-            )
-
-        if config_path:
-            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
-
-        if isinstance(run_configuration, Dict):
-            run_configuration = PipelineRunConfiguration.model_validate(
-                run_configuration
-            )
-
-        if run_configuration:
-            validate_run_config_is_runnable_from_server(run_configuration)
-
-        if template_id:
-            if stack_name_or_id:
-                logger.warning(
-                    "Template ID and stack specified, ignoring the stack and "
-                    "using stack associated with the template instead."
-                )
-
-            run = self.zen_store.run_template(
-                template_id=template_id,
-                run_configuration=run_configuration,
-            )
-        else:
-            assert pipeline_name_or_id
-            pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
-
-            stack = None
-            if stack_name_or_id:
-                stack = self.get_stack(
-                    stack_name_or_id, allow_name_prefix_match=False
-                )
-                validate_stack_is_runnable_from_server(
-                    zen_store=self.zen_store, stack=stack
-                )
-
-            templates = depaginate(
-                self.list_run_templates,
-                pipeline_id=pipeline.id,
-                stack_id=stack.id if stack else None,
-                project=project or pipeline.project_id,
-            )
-
-            for template in templates:
-                if not template.build:
-                    continue
-
-                stack = template.build.stack
-                if not stack:
-                    continue
-
-                try:
-                    validate_stack_is_runnable_from_server(
-                        zen_store=self.zen_store, stack=stack
-                    )
-                except ValueError:
-                    continue
-
-                run = self.zen_store.run_template(
-                    template_id=template.id,
-                    run_configuration=run_configuration,
-                )
-                break
-            else:
-                raise RuntimeError(
-                    "Unable to find a runnable template for the given stack "
-                    "and pipeline."
-                )
-
-        if synchronous:
-            run = wait_for_pipeline_run_to_finish(run_id=run.id)
-
-        return run
-
     # -------------------------------- Builds ----------------------------------
 
     def get_build(
@@ -3602,9 +3464,10 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_snapshot(snapshot_id=snapshot.id)
 
     @_fail_for_sql_zen_store
-    def trigger_snapshot(
+    def trigger_pipeline(
         self,
         snapshot_id: Optional[UUID] = None,
+        template_id: Optional[UUID] = None,
         pipeline_name_or_id: Union[str, UUID, None] = None,
         name: Optional[str] = None,
         run_configuration: Union[
@@ -3638,6 +3501,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             snapshot_id: ID of the snapshot to trigger. Either this or a
                 pipeline can be specified.
+            template_id: DEPRECATED. Use snapshot_id instead.
             pipeline_name_or_id: Name or ID of the pipeline. If this is
                 specified, the latest runnable snapshot for this pipeline will
                 be used for the run (Runnable here means that the build
@@ -3671,16 +3535,31 @@ class Client(metaclass=ClientMetaClass):
             wait_for_pipeline_run_to_finish,
         )
 
-        if Counter([snapshot_id, pipeline_name_or_id])[None] != 1:
+        if Counter([snapshot_id, template_id, pipeline_name_or_id])[None] != 1:
             raise RuntimeError(
-                "You need to specify exactly one of snapshot or pipeline "
-                "to trigger."
+                "You need to specify exactly one of snapshot, template or "
+                "pipeline to trigger."
             )
 
         if run_configuration and config_path:
             raise RuntimeError(
                 "Only config path or runtime configuration can be specified."
             )
+
+        if template_id:
+            logger.warning(
+                "Triggering a run template is deprecated. Use "
+                "`Client().trigger_pipeline(snapshot_id=...)` instead."
+            )
+            run_template = self.get_run_template(
+                name_id_or_prefix=template_id,
+                project=project,
+            )
+            if not run_template.source_snapshot:
+                raise RuntimeError(
+                    "Run template does not have a source snapshot."
+                )
+            snapshot_id = run_template.source_snapshot.id
 
         if config_path:
             run_configuration = PipelineRunConfiguration.from_yaml(config_path)

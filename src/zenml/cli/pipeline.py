@@ -848,29 +848,7 @@ def create_pipeline_snapshot(
 
 
 @snapshot.command("trigger", help="Trigger a snapshot.")
-@click.option(
-    "--snapshot",
-    "-s",
-    "snapshot_id",
-    type=str,
-    required=False,
-    help="The ID of the snapshot to trigger.",
-)
-@click.option(
-    "--pipeline",
-    "-p",
-    "pipeline_name_or_id",
-    type=str,
-    required=False,
-    help="The name or ID of the pipeline to trigger.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    required=False,
-    help="The version of the snapshot to trigger.",
-)
+@click.argument("snapshot_id")
 @click.option(
     "--config",
     "-c",
@@ -887,27 +865,18 @@ def create_pipeline_snapshot(
     help="Name or ID of the stack for which to find a snapshot.",
 )
 def trigger_snapshot(
-    snapshot_id: Optional[str] = None,
-    pipeline_name_or_id: Optional[str] = None,
-    version: Optional[str] = None,
+    snapshot_id: str,
     config_path: Optional[str] = None,
-    stack_name_or_id: Optional[str] = None,
 ) -> None:
     """Trigger a snapshot.
 
     Args:
         snapshot_id: The ID of the snapshot to trigger.
-        pipeline_name_or_id: The name or ID of the pipeline to trigger.
-        version: The version of the snapshot to trigger.
         config_path: Path to configuration file for the run.
-        stack_name_or_id: Name or ID of the stack for which to find a snapshot.
     """
     run = Client().trigger_snapshot(
-        snapshot_id=UUID(snapshot_id) if snapshot_id else None,
-        pipeline_name_or_id=pipeline_name_or_id,
-        name=version,
+        snapshot_id=UUID(snapshot_id),
         config_path=config_path,
-        stack_name_or_id=stack_name_or_id,
     )
     cli_utils.declare(f"Triggered snapshot run `{run.id}`.")
 
