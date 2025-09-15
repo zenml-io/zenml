@@ -52,6 +52,7 @@
 * [Tags](how-to/tags/tags.md)
 * [Metadata](how-to/metadata/metadata.md)
 * [Models](how-to/models/models.md)
+* [Snapshots](how-to/snapshots/snapshots.md)
 * [Templates](how-to/templates/templates.md)
 * [Dashboard](how-to/dashboard/dashboard-features.md)
 
