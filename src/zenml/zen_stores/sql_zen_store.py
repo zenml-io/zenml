@@ -129,6 +129,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    SecretResourceTypes,
     SecretsStoreType,
     StackComponentType,
     StackDeploymentProvider,
@@ -358,6 +359,7 @@ from zenml.zen_stores.schemas import (
     RunMetadataSchema,
     RunTemplateSchema,
     ScheduleSchema,
+    SecretResourceSchema,
     SecretSchema,
     ServerSettingsSchema,
     ServiceConnectorSchema,
@@ -3743,6 +3745,12 @@ class SqlZenStore(BaseZenStore):
                 request=component, service_connector=service_connector
             )
 
+            self._link_secrets_to_resource(
+                resource=new_component,
+                secrets=component.secrets,
+                session=session,
+            )
+
             session.add(new_component)
             session.commit()
 
@@ -3880,6 +3888,17 @@ class SqlZenStore(BaseZenStore):
             else:
                 existing_component.connector = None
                 existing_component.connector_resource_id = None
+
+            self._link_secrets_to_resource(
+                resource=existing_component,
+                secrets=component_update.add_secrets,
+                session=session,
+            )
+            self._unlink_secrets_from_resource(
+                resource=existing_component,
+                secrets=component_update.remove_secrets,
+                session=session,
+            )
 
             session.add(existing_component)
             session.commit()
@@ -6912,6 +6931,95 @@ class SqlZenStore(BaseZenStore):
         if self.backup_secrets_store:
             self.backup_secrets_store.delete_secret_values(secret_id=secret_id)
 
+    def _link_secrets_to_resource(
+        self,
+        secrets: Optional[Sequence[Union[str, UUID]]],
+        resource: BaseSchema,
+        session: Session,
+    ) -> None:
+        """Links multiple secrets to multiple resources.
+
+        Args:
+            secrets: The list of secrets to link.
+            resource: The resource to link the secrets to.
+            session: The database session to use.
+        """
+        if secrets is None:
+            return
+
+        resource_types = {
+            StackComponentSchema: SecretResourceTypes.STACK_COMPONENT,
+            StackSchema: SecretResourceTypes.STACK,
+        }
+
+        for secret in secrets:
+            if isinstance(secret, str):
+                try:
+                    secret = UUID(secret)
+                except ValueError:
+                    # Not a valid UUID string, proceed normally
+                    pass
+
+            secret_schema = self._get_schema_by_name_or_id(
+                secret, schema_class=SecretSchema, session=session
+            )
+            resource_type = resource_types[type(resource)]
+            secret_resource = SecretResourceSchema(
+                resource_id=resource.id,
+                resource_type=resource_type,
+                secret_id=secret_schema.id,
+            )
+            session.add(secret_resource)
+
+            try:
+                session.commit()
+            except IntegrityError:
+                # The secret resource already exists, so we rollback the session
+                # and do nothing.
+                session.rollback()
+                pass
+
+    def _unlink_secrets_from_resource(
+        self,
+        secrets: Optional[Sequence[Union[str, UUID]]],
+        resource: BaseSchema,
+        session: Session,
+    ) -> None:
+        """Unlinks multiple secrets from a resource.
+
+        Args:
+            secrets: The list of secrets to unlink.
+            resource: The resource to unlink the secrets from.
+            session: The database session to use.
+        """
+        if secrets is None:
+            return
+
+        resource_types = {
+            StackComponentSchema: SecretResourceTypes.STACK_COMPONENT,
+            StackSchema: SecretResourceTypes.STACK,
+        }
+
+        for secret in secrets:
+            if isinstance(secret, str):
+                try:
+                    secret = UUID(secret)
+                except ValueError:
+                    # Not a valid UUID string, proceed normally
+                    pass
+
+            secret_schema = self._get_schema_by_name_or_id(
+                secret, schema_class=SecretSchema, session=session
+            )
+            resource_type = resource_types[type(resource)]
+
+            query = delete(SecretResourceSchema).where(
+                col(SecretResourceSchema.resource_id) == resource.id,
+                col(SecretResourceSchema.resource_type) == resource_type.value,
+                col(SecretResourceSchema.secret_id) == secret_schema.id,
+            )
+            session.execute(query)
+
     def _create_secret_schema(
         self, secret: SecretRequest, session: Session, internal: bool = False
     ) -> SecretSchema:
@@ -7032,6 +7140,36 @@ class SqlZenStore(BaseZenStore):
             )
 
         secret_model.set_secrets(self._get_secret_values(secret_id=secret_id))
+
+        return secret_model
+
+    def get_secret_by_name_or_id(
+        self,
+        secret_name_or_id: Union[str, UUID],
+        include_secret_values: bool = False,
+    ) -> SecretResponse:
+        """Get a secret by name or ID.
+
+        Args:
+            secret_name_or_id: The name or ID of the secret to fetch.
+            include_secret_values: Whether to include the secret values in the
+                response.
+
+        Returns:
+            The secret.
+        """
+        with Session(self.engine) as session:
+            secret_in_db = self._get_schema_by_name_or_id(
+                secret_name_or_id, schema_class=SecretSchema, session=session
+            )
+            secret_model = secret_in_db.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+        if include_secret_values:
+            secret_model.set_secrets(
+                self._get_secret_values(secret_id=secret_in_db.id)
+            )
 
         return secret_model
 
@@ -8622,15 +8760,15 @@ class SqlZenStore(BaseZenStore):
                     select(StackComponentSchema).where(or_(*filters))
                 ).all()
 
-                new_stack_schema = StackSchema(
-                    user_id=stack.user,
-                    stack_spec_path=stack.stack_spec_path,
-                    name=stack.name,
-                    description=stack.description,
+                new_stack_schema = StackSchema.from_request(
+                    request=stack,
                     components=defined_components,
-                    labels=base64.b64encode(
-                        json.dumps(stack.labels).encode("utf-8")
-                    ),
+                )
+
+                self._link_secrets_to_resource(
+                    resource=new_stack_schema,
+                    secrets=stack.secrets,
+                    session=session,
                 )
 
                 session.add(new_stack_schema)
@@ -8781,6 +8919,17 @@ class SqlZenStore(BaseZenStore):
             existing_stack.update(
                 stack_update=stack_update,
                 components=components,
+            )
+
+            self._link_secrets_to_resource(
+                resource=existing_stack,
+                secrets=stack_update.add_secrets,
+                session=session,
+            )
+            self._unlink_secrets_from_resource(
+                resource=existing_stack,
+                secrets=stack_update.remove_secrets,
+                session=session,
             )
 
             session.add(existing_stack)

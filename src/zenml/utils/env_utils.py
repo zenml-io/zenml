@@ -13,12 +13,28 @@
 #  permissions and limitations under the License.
 """Utility functions for handling environment variables."""
 
+import contextlib
 import os
 import re
-from typing import Any, Dict, List, Match, Optional, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Match,
+    Optional,
+    TypeVar,
+    cast,
+)
 
+from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.utils import string_utils
+
+if TYPE_CHECKING:
+    from zenml.config.step_configurations import StepConfiguration
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -152,3 +168,116 @@ def substitute_env_variable_placeholders(
     return string_utils.substitute_string(
         value=value, substitution_func=_substitution_func
     )
+
+
+@contextlib.contextmanager
+def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
+    """Temporarily set environment variables.
+
+    Args:
+        environment: The environment variables to set.
+
+    Yields:
+        Nothing.
+    """
+    try:
+        previous_env = {}
+        for key, value in environment.items():
+            previous_env[key] = os.environ.get(key, None)
+            os.environ[key] = value
+        yield
+    finally:
+        for key, previous_value in previous_env.items():
+            updated_value = environment[key]
+            current_value = os.environ.get(key)
+
+            if current_value != updated_value:
+                # The environment variable got updated while this context
+                # manager was active -> We don't reset it back to the old
+                # value
+                continue
+            else:
+                if previous_value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = previous_value
+
+
+def get_step_environment(
+    step_config: "StepConfiguration", stack: "Stack"
+) -> Dict[str, str]:
+    """Get the environment variables for a step.
+
+    Args:
+        step_config: The step configuration.
+        stack: The stack on which the step will run.
+
+    Returns:
+        A dictionary of environment variables.
+    """
+    environment = {}
+    for component in stack.components.values():
+        environment.update(component.environment)
+
+    environment.update(stack.environment)
+    environment.update(step_config.environment)
+
+    for key, value in environment.items():
+        environment[key] = str(value)
+
+    return environment
+
+
+def get_step_secret_environment(
+    step_config: "StepConfiguration", stack: "Stack"
+) -> Dict[str, str]:
+    """Get the environment variables for a step.
+
+    Args:
+        step_config: The step configuration.
+        stack: The stack on which the step will run.
+
+    Returns:
+        A dictionary of environment variables.
+    """
+    # The step secrets contain the pipeline secrets first, followed by the
+    # actual secrets defined on the step. We reverse the list to make sure the
+    # step secrets override the pipeline secrets.
+    secrets = list(reversed(step_config.secrets))
+    secrets.extend(stack.secrets)
+
+    for component in stack.components.values():
+        secrets.extend(component.secrets)
+
+    # Removes duplicates while preserving order, only the first occurrence of
+    # each secret will be kept. We then reverse the list to make sure the
+    # overrides are applied in the correct order.
+    secrets = list(reversed(dict.fromkeys(secrets)))
+
+    environment = {}
+    for secret_name_or_id in secrets:
+        try:
+            secret = Client().get_secret(secret_name_or_id)
+        except Exception as e:
+            logger.warning(
+                "Failed to get secret `%s` with error: %s. Skipping setting "
+                "environment variables for this secret.",
+                secret_name_or_id,
+                e,
+            )
+            continue
+
+        if not secret.secret_values:
+            logger.warning(
+                "Did not find any secret values for secret `%s`. This might be "
+                "because you do not have permissions to read the secret "
+                "values. Skipping setting environment variables for this "
+                "secret.",
+                secret_name_or_id,
+            )
+            continue
+
+        for key, value in secret.secret_values.items():
+            environment[key] = str(value)
+
+    return environment

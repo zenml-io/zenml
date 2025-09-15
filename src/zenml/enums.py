@@ -415,6 +415,13 @@ class MetadataResourceTypes(StrEnum):
     SCHEDULE = "schedule"
 
 
+class SecretResourceTypes(StrEnum):
+    """All possible resource types for adding secrets."""
+
+    STACK = "stack"
+    STACK_COMPONENT = "stack_component"
+
+
 class DatabaseBackupStrategy(StrEnum):
     """All available database backup strategies."""
 

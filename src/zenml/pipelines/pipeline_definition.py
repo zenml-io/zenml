@@ -28,6 +28,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Set,
     Tuple,
     TypeVar,
@@ -138,6 +139,8 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[Union[UUID, str]]] = None,
         enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -161,6 +164,10 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            environment: Environment variables to set when running this
+                pipeline.
+            secrets: Secrets to set as environment variables when running this
+                pipeline.
             enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
@@ -190,6 +197,8 @@ class Pipeline:
                 enable_artifact_metadata=enable_artifact_metadata,
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
+                environment=environment,
+                secrets=secrets,
                 enable_pipeline_logs=enable_pipeline_logs,
                 settings=settings,
                 tags=tags,
@@ -313,6 +322,8 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Sequence[Union[UUID, str]]] = None,
         enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -322,10 +333,10 @@ class Pipeline:
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         parameters: Optional[Dict[str, Any]] = None,
-        merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
         execution_mode: Optional["ExecutionMode"] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
+        merge: bool = True,
     ) -> Self:
         """Configures the pipeline.
 
@@ -346,6 +357,11 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            environment: Environment variables to set when running this
+                pipeline.
+            secrets: Secrets to set as environment variables when running this
+                pipeline.
+            settings: Settings for this pipeline.
             enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
             settings: settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
@@ -356,17 +372,17 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            merge: If `True`, will merge the given dictionary configurations
-                like `extra` and `settings` with existing
-                configurations. If `False` the given configurations will
-                overwrite all existing ones. See the general description of this
-                method for an example.
             model: configuration of the model version in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
+            merge: If `True`, will merge the given dictionary configurations
+                like `extra` and `settings` with existing
+                configurations. If `False` the given configurations will
+                overwrite all existing ones. See the general description of this
+                method for an example.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -386,12 +402,17 @@ class Pipeline:
             # merges dicts
             tags = self._configuration.tags + tags
 
+        if merge and secrets and self._configuration.secrets:
+            secrets = self._configuration.secrets + list(secrets)
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
+                "environment": environment,
+                "secrets": secrets,
                 "enable_pipeline_logs": enable_pipeline_logs,
                 "settings": settings,
                 "tags": tags,

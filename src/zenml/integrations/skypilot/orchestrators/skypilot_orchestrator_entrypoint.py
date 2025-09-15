@@ -47,6 +47,7 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
 )
 from zenml.orchestrators.utils import get_config_environment_vars
+from zenml.utils import env_utils
 
 logger = get_logger(__name__)
 
@@ -170,6 +171,11 @@ def main() -> None:
 
         logger.info("Fetching pipeline run: %s", run.id)
 
+        shared_env = get_config_environment_vars()
+        shared_env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
+            orchestrator_run_id
+        )
+
         def run_step_on_skypilot_vm(step_name: str) -> None:
             """Run a pipeline step in a separate Skypilot VM.
 
@@ -199,9 +205,11 @@ def main() -> None:
                     SkypilotBaseOrchestratorSettings,
                     orchestrator.get_settings(step),
                 )
-                env = get_config_environment_vars()
-                env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
-                    orchestrator_run_id
+                step_env = shared_env.copy()
+                step_env.update(
+                    env_utils.get_step_environment(
+                        step_config=step.config, stack=active_stack
+                    )
                 )
 
                 # Create the Docker run command
@@ -209,7 +217,7 @@ def main() -> None:
                     image=image,
                     entrypoint_str=entrypoint_str,
                     arguments_str=arguments_str,
-                    environment=env,
+                    environment=step_env,
                     docker_run_args=settings.docker_run_args,
                     use_sudo=False,  # Entrypoint doesn't use sudo
                 )
