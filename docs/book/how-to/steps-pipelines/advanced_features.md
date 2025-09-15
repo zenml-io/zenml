@@ -102,7 +102,7 @@ This is particularly useful for steps with side effects (like data loading or mo
 
 ### Execution Modes
 
-ZenML provides three execution modes that control how your orchestrator behaves when a step fails during pipeline execution. These modes include:
+ZenML provides three execution modes that control how your orchestrator behaves when a step fails during pipeline execution. These modes are:
 
 - `CONTINUE_ON_FAILURE`: The orchestrator continues executing steps that don't depend on any of the failed steps.
 - `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting. 
@@ -117,7 +117,7 @@ from zenml.enums import ExecutionMode
 # Use the decorator
 @pipeline(execution_mode=ExecutionMode.CONTINUE_ON_ERROR)
 def my_pipeline():
-...
+    ...
 
 # Use the `with_options` method
 my_pipeline_with_fail_fast = my_pipeline.with_options(
