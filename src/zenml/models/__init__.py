@@ -228,14 +228,16 @@ from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponseMetadata,
     PipelineBuildResponseResources,
 )
-from zenml.models.v2.core.pipeline_deployment import (
-    PipelineDeploymentBase,
-    PipelineDeploymentRequest,
-    PipelineDeploymentFilter,
-    PipelineDeploymentResponse,
-    PipelineDeploymentResponseBody,
-    PipelineDeploymentResponseMetadata,
-    PipelineDeploymentResponseResources,
+from zenml.models.v2.core.pipeline_snapshot import (
+    PipelineSnapshotBase,
+    PipelineSnapshotRequest,
+    PipelineSnapshotUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotResponse,
+    PipelineSnapshotResponseBody,
+    PipelineSnapshotResponseMetadata,
+    PipelineSnapshotResponseResources,
+    PipelineSnapshotTriggerRequest,
 )
 from zenml.models.v2.core.pipeline_endpoint import (
     PipelineEndpointRequest,
@@ -254,7 +256,8 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
-    PipelineRunResponseResources
+    PipelineRunResponseResources,
+    PipelineRunTriggerInfo,
 )
 from zenml.models.v2.core.run_template import (
     RunTemplateRequest,
@@ -494,14 +497,14 @@ PipelineBuildBase.model_rebuild()
 PipelineBuildResponseBody.model_rebuild()
 PipelineBuildResponseMetadata.model_rebuild()
 PipelineBuildResponseResources.model_rebuild()
-PipelineDeploymentRequest.model_rebuild()
-PipelineDeploymentResponseBody.model_rebuild()
-PipelineDeploymentResponseMetadata.model_rebuild()
-PipelineDeploymentResponseResources.model_rebuild()
 PipelineEndpointRequest.model_rebuild()
 PipelineEndpointResponseBody.model_rebuild()
 PipelineEndpointResponseMetadata.model_rebuild()
 PipelineEndpointResponseResources.model_rebuild()
+PipelineSnapshotRequest.model_rebuild()
+PipelineSnapshotResponseBody.model_rebuild()
+PipelineSnapshotResponseMetadata.model_rebuild()
+PipelineSnapshotResponseResources.model_rebuild()
 PipelineRunRequest.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
@@ -702,13 +705,6 @@ __all__ = [
     "PipelineBuildResponseBody",
     "PipelineBuildResponseMetadata",
     "PipelineBuildResponseResources",
-    "PipelineDeploymentBase",
-    "PipelineDeploymentRequest",
-    "PipelineDeploymentFilter",
-    "PipelineDeploymentResponse",
-    "PipelineDeploymentResponseBody",
-    "PipelineDeploymentResponseMetadata",
-    "PipelineDeploymentResponseResources",
     "PipelineEndpointRequest",
     "PipelineEndpointUpdate",
     "PipelineEndpointFilter",
@@ -717,6 +713,15 @@ __all__ = [
     "PipelineEndpointResponseBody",
     "PipelineEndpointResponseMetadata",
     "PipelineEndpointResponseResources",
+    "PipelineSnapshotBase",
+    "PipelineSnapshotRequest",
+    "PipelineSnapshotUpdate",
+    "PipelineSnapshotFilter",
+    "PipelineSnapshotResponse",
+    "PipelineSnapshotResponseBody",
+    "PipelineSnapshotResponseMetadata",
+    "PipelineSnapshotResponseResources",
+    "PipelineSnapshotTriggerRequest",
     "PipelineRunRequest",
     "PipelineRunUpdate",
     "PipelineRunFilter",
@@ -724,6 +729,7 @@ __all__ = [
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
+    "PipelineRunTriggerInfo",
     "RunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",

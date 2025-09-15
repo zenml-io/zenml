@@ -141,7 +141,7 @@ def test_compiling_pipeline_with_extra_step_config_does_not_fail(
 
 
 def test_step_sorting(empty_step, local_stack):
-    """Tests that the steps in the compiled deployment are sorted correctly."""
+    """Tests that the steps in the compiled snapshot are sorted correctly."""
 
     @pipeline
     def pipeline_instance():
@@ -150,12 +150,12 @@ def test_step_sorting(empty_step, local_stack):
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=PipelineRunConfiguration(),
     )
-    assert list(deployment.step_configurations.keys()) == ["step_1", "step_2"]
+    assert list(snapshot.step_configurations.keys()) == ["step_1", "step_2"]
 
 
 def test_stack_component_settings_merging(
@@ -206,16 +206,14 @@ def test_stack_component_settings_merging(
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
     compiled_pipeline_settings = StubSettings.model_validate(
-        dict(
-            deployment.pipeline_configuration.settings["orchestrator.default"]
-        )
+        dict(snapshot.pipeline_configuration.settings["orchestrator.default"])
     )
     assert compiled_pipeline_settings.component_value == 1
     assert compiled_pipeline_settings.pipeline_value == 2
@@ -223,7 +221,7 @@ def test_stack_component_settings_merging(
 
     compiled_step_settings = StubSettings.model_validate(
         dict(
-            deployment.step_configurations["_empty_step"].config.settings[
+            snapshot.step_configurations["_empty_step"].config.settings[
                 "orchestrator.default"
             ]
         )
@@ -256,14 +254,14 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
     )
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
     compiled_pipeline_settings = ResourceSettings.model_validate(
-        dict(deployment.pipeline_configuration.settings["resources"])
+        dict(snapshot.pipeline_configuration.settings["resources"])
     )
 
     assert compiled_pipeline_settings.cpu_count == 100
@@ -272,7 +270,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
 
     compiled_step_settings = ResourceSettings.model_validate(
         dict(
-            deployment.step_configurations["_empty_step"].config.settings[
+            snapshot.step_configurations["_empty_step"].config.settings[
                 "resources"
             ]
         )
@@ -304,16 +302,16 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
     with pipeline_instance:
         pipeline_instance.entrypoint()
 
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
-    compiled_pipeline_extra = deployment.pipeline_configuration.extra
+    compiled_pipeline_extra = snapshot.pipeline_configuration.extra
     assert compiled_pipeline_extra == {"p1": 0, "p2": 1, "p3": 0, "p4": 0}
 
-    compiled_step_extra = deployment.step_configurations[
+    compiled_step_extra = snapshot.step_configurations[
         "_empty_step"
     ].config.extra
     assert compiled_step_extra == {
@@ -361,25 +359,25 @@ def test_success_hook_merging(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
     compiled_pipeline_success_hook = (
-        deployment.pipeline_configuration.success_hook_source
+        snapshot.pipeline_configuration.success_hook_source
     )
     assert compiled_pipeline_success_hook == resolve_and_validate_hook(
         pipeline_hook
     )
 
-    compiled_step_1_success_hook = deployment.step_configurations[
+    compiled_step_1_success_hook = snapshot.step_configurations[
         "_empty_step"
     ].config.success_hook_source
     assert compiled_step_1_success_hook == resolve_and_validate_hook(step_hook)
 
-    compiled_step_2_success_hook = deployment.step_configurations[
+    compiled_step_2_success_hook = snapshot.step_configurations[
         "_empty_step_2"
     ].config.success_hook_source
     assert compiled_step_2_success_hook == resolve_and_validate_hook(
@@ -412,25 +410,25 @@ def test_failure_hook_merging(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
     compiled_pipeline_failure_hook = (
-        deployment.pipeline_configuration.failure_hook_source
+        snapshot.pipeline_configuration.failure_hook_source
     )
     assert compiled_pipeline_failure_hook == resolve_and_validate_hook(
         pipeline_hook
     )
 
-    compiled_step_1_failure_hook = deployment.step_configurations[
+    compiled_step_1_failure_hook = snapshot.step_configurations[
         "_empty_step"
     ].config.failure_hook_source
     assert compiled_step_1_failure_hook == resolve_and_validate_hook(step_hook)
 
-    compiled_step_2_failure_hook = deployment.step_configurations[
+    compiled_step_2_failure_hook = snapshot.step_configurations[
         "_empty_step_2"
     ].config.failure_hook_source
     assert compiled_step_2_failure_hook == resolve_and_validate_hook(
@@ -457,7 +455,7 @@ def test_stack_component_settings_for_missing_component_are_ignored(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -465,11 +463,11 @@ def test_stack_component_settings_for_missing_component_are_ignored(
 
     assert (
         "orchestrator.not_a_flavor"
-        not in deployment.pipeline_configuration.settings
+        not in snapshot.pipeline_configuration.settings
     )
     assert (
         "orchestrator.not_a_flavor"
-        not in deployment.step_configurations["_empty_step"].config.settings
+        not in snapshot.step_configurations["_empty_step"].config.settings
     )
 
 
@@ -504,20 +502,20 @@ def test_invalid_settings_keys_are_ignored(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
-    compiled_pipeline_settings = deployment.pipeline_configuration.settings[
+    compiled_pipeline_settings = snapshot.pipeline_configuration.settings[
         "orchestrator.default"
     ].model_dump()
     assert "invalid_key" not in compiled_pipeline_settings
     assert compiled_pipeline_settings["valid_key"] == "value"
 
     compiled_step_settings = (
-        deployment.step_configurations["_empty_step"]
+        snapshot.step_configurations["_empty_step"]
         .config.settings["orchestrator.default"]
         .model_dump()
     )
@@ -555,19 +553,18 @@ def test_empty_settings_classes_are_ignored(
 
     with pipeline_instance:
         pipeline_instance.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
     assert (
-        "orchestrator.default"
-        not in deployment.pipeline_configuration.settings
+        "orchestrator.default" not in snapshot.pipeline_configuration.settings
     )
     assert (
         "orchestrator.default"
-        not in deployment.step_configurations["_empty_step"].config.settings
+        not in snapshot.step_configurations["_empty_step"].config.settings
     )
 
 
@@ -659,14 +656,14 @@ def test_stack_component_shortcut_keys(
         pipeline_instance_with_shortcut_settings.entrypoint()
 
     with does_not_raise():
-        deployment = Compiler().compile(
+        snapshot = Compiler().compile(
             pipeline=pipeline_instance_with_shortcut_settings,
             stack=local_stack,
             run_configuration=PipelineRunConfiguration(),
         )
 
-    assert "orchestrator" not in deployment.pipeline_configuration.settings
-    compiled_settings = deployment.pipeline_configuration.settings[
+    assert "orchestrator" not in snapshot.pipeline_configuration.settings
+    compiled_settings = snapshot.pipeline_configuration.settings[
         "orchestrator.default"
     ]
     assert compiled_settings.value == "shortcut"
@@ -684,7 +681,7 @@ def test_stack_component_shortcut_keys(
         pipeline_instance_with_duplicate_settings.entrypoint()
 
     with pytest.raises(ValueError):
-        deployment = Compiler().compile(
+        snapshot = Compiler().compile(
             pipeline=pipeline_instance_with_duplicate_settings,
             stack=local_stack,
             run_configuration=PipelineRunConfiguration(),

@@ -33,9 +33,9 @@ from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
     LogsRequest,
-    PipelineDeploymentResponse,
     PipelineRunRequest,
     PipelineRunResponse,
+    PipelineSnapshotResponse,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
@@ -44,7 +44,7 @@ from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.steps.step_context import StepSharedContext
-from zenml.utils import exception_utils, string_utils
+from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
@@ -105,7 +105,7 @@ class StepLauncher:
 
     def __init__(
         self,
-        deployment: PipelineDeploymentResponse,
+        snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
         run_context: Optional[StepSharedContext] = None,
@@ -113,26 +113,26 @@ class StepLauncher:
         """Initializes the launcher.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
             run_context: The shared run context.
 
         Raises:
-            RuntimeError: If the deployment has no associated stack.
+            RuntimeError: If the snapshot has no associated stack.
         """
-        self._deployment = deployment
+        self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
         self._run_context = run_context
 
-        if not deployment.stack:
+        if not snapshot.stack:
             raise RuntimeError(
-                f"Missing stack for deployment {deployment.id}. This is "
+                f"Missing stack for snapshot {snapshot.id}. This is "
                 "probably because the stack was manually deleted."
             )
 
-        self._stack = Stack.from_model(deployment.stack)
+        self._stack = Stack.from_model(snapshot.stack)
         self._step_name = step.spec.pipeline_parameter_name
 
         # Internal properties and methods
@@ -202,7 +202,7 @@ class StepLauncher:
                 if (
                     pipeline_run.status == ExecutionStatus.FAILED
                     and step_run.status == ExecutionStatus.RUNNING
-                    and self._deployment.pipeline_configuration.execution_mode
+                    and self._snapshot.pipeline_configuration.execution_mode
                     == ExecutionMode.FAIL_FAST
                 ):
                     publish_utils.publish_step_run_status_update(
@@ -266,7 +266,7 @@ class StepLauncher:
         else:
             step_logging_enabled = orchestrator_utils.is_setting_enabled(
                 is_enabled_on_step=self._step.config.enable_step_logs,
-                is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
+                is_enabled_on_pipeline=self._snapshot.pipeline_configuration.enable_step_logs,
             )
 
         logs_context = nullcontext()
@@ -305,7 +305,7 @@ class StepLauncher:
                     )
 
             request_factory = step_run_utils.StepRunRequestFactory(
-                deployment=self._deployment,
+                snapshot=self._snapshot,
                 pipeline_run=pipeline_run,
                 stack=self._stack,
             )
@@ -390,8 +390,8 @@ class StepLauncher:
         # Always create actual pipeline run in DB for proper input/output flow
         start_time = utc_now()
         run_name = string_utils.format_name_template(
-            name_template=self._deployment.run_name_template,
-            substitutions=self._deployment.pipeline_configuration.finalize_substitutions(
+            name_template=self._snapshot.run_name_template,
+            substitutions=self._snapshot.pipeline_configuration.finalize_substitutions(
                 start_time=start_time,
             ),
         )
@@ -403,16 +403,14 @@ class StepLauncher:
             name=run_name,
             orchestrator_run_id=self._orchestrator_run_id,
             project=client.active_project.id,
-            deployment=self._deployment.id,
+            snapshot=self._snapshot.id,
             pipeline=(
-                self._deployment.pipeline.id
-                if self._deployment.pipeline
-                else None
+                self._snapshot.pipeline.id if self._snapshot.pipeline else None
             ),
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
             start_time=start_time,
-            tags=self._deployment.pipeline_configuration.tags,
+            tags=self._snapshot.pipeline_configuration.tags,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 
@@ -453,7 +451,7 @@ class StepLauncher:
         # Prepare step run information with effective config
         step_run_info = StepRunInfo(
             config=effective_step_config,
-            pipeline=self._deployment.pipeline_configuration,
+            pipeline=self._snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
             pipeline_step_name=self._step_name,
             run_id=pipeline_run.id,
@@ -535,7 +533,7 @@ class StepLauncher:
             entrypoint_cfg_class.get_entrypoint_command()
             + entrypoint_cfg_class.get_entrypoint_arguments(
                 step_name=self._step_name,
-                deployment_id=self._deployment.id,
+                snapshot_id=self._snapshot.id,
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
@@ -546,6 +544,12 @@ class StepLauncher:
         # in the step operator environment
         environment.update(secrets)
 
+        environment.update(
+            env_utils.get_step_environment(
+                step_config=step_run_info.config,
+                stack=self._stack,
+            )
+        )
         environment[ENV_ZENML_STEP_OPERATOR] = "True"
         logger.info(
             "Using step operator `%s` to run step `%s`.",

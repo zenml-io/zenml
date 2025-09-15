@@ -15,14 +15,15 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from uuid import UUID
 
 from pydantic import SerializeAsAny, field_validator
 
 from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
+from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
-from zenml.config.strict_base_model import StrictBaseModel
 from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.utils.tag_utils import Tag
@@ -36,13 +37,15 @@ from zenml.config.base_settings import BaseSettings, SettingsOrDict
 DISALLOWED_PIPELINE_NAMES = ["unlisted"]
 
 
-class PipelineConfigurationUpdate(StrictBaseModel):
+class PipelineConfigurationUpdate(FrozenBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
+    environment: Dict[str, Any] = {}
+    secrets: List[Union[str, UUID]] = []
     enable_pipeline_logs: Optional[bool] = None
     execution_mode: Optional[ExecutionMode] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}

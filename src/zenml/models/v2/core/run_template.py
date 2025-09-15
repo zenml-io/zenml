@@ -48,8 +48,8 @@ from zenml.models.v2.core.pipeline import PipelineResponse
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
 )
-from zenml.models.v2.core.pipeline_deployment import (
-    PipelineDeploymentResponse,
+from zenml.models.v2.core.pipeline_snapshot import (
+    PipelineSnapshotResponse,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -76,8 +76,8 @@ class RunTemplateRequest(ProjectScopedRequest):
         title="The description of the run template.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    source_deployment_id: UUID = Field(
-        title="The deployment that should be the base of the created template."
+    source_snapshot_id: UUID = Field(
+        title="The snapshot that should be the base of the created template."
     )
     hidden: bool = Field(
         default=False,
@@ -153,9 +153,9 @@ class RunTemplateResponseMetadata(ProjectScopedResponseMetadata):
 class RunTemplateResponseResources(ProjectScopedResponseResources):
     """All resource models associated with the run template."""
 
-    source_deployment: Optional[PipelineDeploymentResponse] = Field(
+    source_snapshot: Optional[PipelineSnapshotResponse] = Field(
         default=None,
-        title="The deployment that is the source of the template.",
+        title="The snapshot that is the source of the template.",
     )
     pipeline: Optional[PipelineResponse] = Field(
         default=None, title="The pipeline associated with the template."
@@ -281,13 +281,13 @@ class RunTemplateResponse(
         return self.get_metadata().config_schema
 
     @property
-    def source_deployment(self) -> Optional[PipelineDeploymentResponse]:
-        """The `source_deployment` property.
+    def source_snapshot(self) -> Optional[PipelineSnapshotResponse]:
+        """The `source_snapshot` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().source_deployment
+        return self.get_resources().source_snapshot
 
     @property
     def pipeline(self) -> Optional[PipelineResponse]:
@@ -406,8 +406,8 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
-            PipelineDeploymentSchema,
             PipelineSchema,
+            PipelineSnapshotSchema,
             RunTemplateSchema,
             StackSchema,
         )
@@ -419,9 +419,9 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.code_repository_id:
             code_repo_filter = and_(
-                RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.code_reference_id
+                RunTemplateSchema.source_snapshot_id
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.code_reference_id
                 == CodeReferenceSchema.id,
                 CodeReferenceSchema.code_repository_id
                 == self.code_repository_id,
@@ -430,33 +430,33 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.stack_id:
             stack_filter = and_(
-                RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.stack_id == self.stack_id,
+                RunTemplateSchema.source_snapshot_id
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.stack_id == self.stack_id,
             )
             custom_filters.append(stack_filter)
 
         if self.build_id:
             build_filter = and_(
-                RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.build_id == self.build_id,
+                RunTemplateSchema.source_snapshot_id
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.build_id == self.build_id,
             )
             custom_filters.append(build_filter)
 
         if self.pipeline_id:
             pipeline_filter = and_(
-                RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.pipeline_id == self.pipeline_id,
+                RunTemplateSchema.source_snapshot_id
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.pipeline_id == self.pipeline_id,
             )
             custom_filters.append(pipeline_filter)
 
         if self.pipeline:
             pipeline_filter = and_(
-                RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.pipeline_id == PipelineSchema.id,
+                RunTemplateSchema.source_snapshot_id
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.pipeline,
                     table=PipelineSchema,
@@ -466,9 +466,9 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
 
         if self.stack:
             stack_filter = and_(
-                RunTemplateSchema.source_deployment_id
-                == PipelineDeploymentSchema.id,
-                PipelineDeploymentSchema.stack_id == StackSchema.id,
+                RunTemplateSchema.source_snapshot_id
+                == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.stack,
                     table=StackSchema,

@@ -31,6 +31,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
@@ -111,6 +112,8 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -137,7 +140,10 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            secrets: Secrets to set as environment variables when running this
+                step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -203,6 +209,8 @@ class BaseStep:
             step_operator=step_operator,
             output_materializers=output_materializers,
             parameters=parameters,
+            environment=environment,
+            secrets=secrets,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
@@ -613,6 +621,8 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Sequence[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -649,7 +659,10 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            secrets: Secrets to set as environment variables when running this
+                step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -714,6 +727,9 @@ class BaseStep:
             # string of on_success hook function to be used for this step
             success_hook_source, _ = resolve_and_validate_hook(on_success)
 
+        if merge and secrets and self._configuration.secrets:
+            secrets = self._configuration.secrets + list(secrets)
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -723,6 +739,8 @@ class BaseStep:
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
+                "environment": environment,
+                "secrets": secrets,
                 "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
@@ -750,6 +768,8 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -776,7 +796,10 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            secrets: Secrets to set as environment variables when running this
+                step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -807,6 +830,8 @@ class BaseStep:
             step_operator=step_operator,
             parameters=parameters,
             output_materializers=output_materializers,
+            environment=environment,
+            secrets=secrets,
             settings=settings,
             extra=extra,
             on_failure=on_failure,

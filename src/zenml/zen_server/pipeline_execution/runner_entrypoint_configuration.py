@@ -20,7 +20,7 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.pipelines.run_utils import deploy_pipeline
+from zenml.pipelines.run_utils import submit_pipeline
 
 PLACEHOLDER_RUN_ID_OPTION = "placeholder_run_id"
 
@@ -60,20 +60,20 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
     def run(self) -> None:
         """Run the entrypoint configuration.
 
-        This method runs the pipeline defined by the deployment given as input
+        This method runs the pipeline defined by the snapshot given as input
         to the entrypoint configuration.
         """
-        deployment = self.load_deployment()
+        snapshot = self.load_snapshot()
         placeholder_run_id = UUID(
             self.entrypoint_args[PLACEHOLDER_RUN_ID_OPTION]
         )
         placeholder_run = Client().get_pipeline_run(placeholder_run_id)
 
         stack = Client().active_stack
-        assert deployment.stack and stack.id == deployment.stack.id
+        assert snapshot.stack and stack.id == snapshot.stack.id
 
-        deploy_pipeline(
-            deployment=deployment,
+        submit_pipeline(
+            snapshot=snapshot,
             stack=stack,
             placeholder_run=placeholder_run,
         )
