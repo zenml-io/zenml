@@ -117,7 +117,7 @@ from zenml.enums import ExecutionMode
 # Use the decorator
 @pipeline(execution_mode=ExecutionMode.CONTINUE_ON_ERROR)
 def my_pipeline():
-    ...
+...
 
 # Use the `with_options` method
 my_pipeline_with_fail_fast = my_pipeline.with_options(
