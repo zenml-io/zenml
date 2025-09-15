@@ -857,13 +857,6 @@ def create_pipeline_snapshot(
     required=False,
     help="Path to configuration file for the run.",
 )
-@click.option(
-    "--stack",
-    "stack_name_or_id",
-    type=str,
-    required=False,
-    help="Name or ID of the stack for which to find a snapshot.",
-)
 def trigger_snapshot(
     snapshot_id: str,
     config_path: Optional[str] = None,

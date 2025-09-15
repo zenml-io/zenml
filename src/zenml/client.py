@@ -3535,7 +3535,7 @@ class Client(metaclass=ClientMetaClass):
             wait_for_pipeline_run_to_finish,
         )
 
-        if Counter([snapshot_id, template_id, pipeline_name_or_id])[None] != 1:
+        if Counter([snapshot_id, template_id, pipeline_name_or_id])[None] != 2:
             raise RuntimeError(
                 "You need to specify exactly one of snapshot, template or "
                 "pipeline to trigger."
