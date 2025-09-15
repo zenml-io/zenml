@@ -570,6 +570,9 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "named_only",
+        "pipeline",
+        "stack",
+        "runnable",
     ]
     CUSTOM_SORTING_OPTIONS = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -588,12 +591,12 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Whether to only return snapshots with a name.",
     )
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline associated with the snapshot.",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Stack associated with the snapshot.",
         union_mode="left_to_right",
@@ -608,15 +611,14 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         description="Schedule associated with the snapshot.",
         union_mode="left_to_right",
     )
-    template_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Template used as base for the snapshot.",
-        union_mode="left_to_right",
-    )
     source_snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
+    )
+    runnable: Optional[bool] = Field(
+        default=None,
+        description="Whether the snapshot is runnable.",
     )
 
     def get_custom_filters(
@@ -630,10 +632,13 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         Returns:
             A list of custom filters.
         """
-        from sqlmodel import col
+        from sqlmodel import and_, col
 
         from zenml.zen_stores.schemas import (
+            PipelineBuildSchema,
+            PipelineSchema,
             PipelineSnapshotSchema,
+            StackSchema,
         )
 
         custom_filters = super().get_custom_filters(table)
@@ -642,6 +647,38 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             custom_filters.append(
                 col(PipelineSnapshotSchema.name).is_not(None)
             )
+
+        if self.pipeline:
+            pipeline_filter = and_(
+                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.pipeline, table=PipelineSchema
+                ),
+            )
+            custom_filters.append(pipeline_filter)
+
+        if self.stack:
+            stack_filter = and_(
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.stack,
+                    table=StackSchema,
+                ),
+            )
+            custom_filters.append(stack_filter)
+
+        if self.runnable is True:
+            runnable_filter = and_(
+                # The following condition is not perfect as it does not
+                # consider stacks with custom flavor components or local
+                # components, but the best we can do currently with our
+                # table columns.
+                PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
+                col(PipelineBuildSchema.is_local).is_(False),
+                col(PipelineBuildSchema.stack_id).is_not(None),
+            )
+
+            custom_filters.append(runnable_filter)
 
         return custom_filters
 
