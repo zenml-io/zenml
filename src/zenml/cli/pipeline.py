@@ -820,7 +820,7 @@ def create_pipeline_snapshot(
     """
     if not Client().root:
         cli_utils.warning(
-            "You're running the `zenml pipeline snapshot register` command "
+            "You're running the `zenml pipeline snapshot create` command "
             "without a ZenML repository. Your current working directory will "
             "be used as the source root relative to which the registered step "
             "classes will be resolved. To silence this warning, run `zenml "
