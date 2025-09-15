@@ -158,7 +158,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -171,8 +172,11 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The pipeline deployment to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
             placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
@@ -201,7 +205,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         # Set up some variables for configuration
         orchestrator_run_id = str(uuid4())
-        environment[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
+        base_environment[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
             orchestrator_run_id
         )
 
@@ -270,7 +274,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         entrypoint_str = " ".join(command)
         arguments_str = " ".join(args)
 
-        task_envs = environment.copy()
+        task_envs = base_environment.copy()
 
         # Set up credentials
         self.setup_credentials()
