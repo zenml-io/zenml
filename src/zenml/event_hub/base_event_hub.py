@@ -119,9 +119,7 @@ class BaseEventHub(ABC):
             action_callback: The action to trigger.
         """
         request = TriggerExecutionRequest(
-            project=trigger.project_id,
-            trigger=trigger.id,
-            event_metadata=event.model_dump(),
+            trigger=trigger.id, event_metadata=event.model_dump()
         )
 
         action_config = trigger.action.configuration
