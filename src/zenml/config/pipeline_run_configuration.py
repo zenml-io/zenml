@@ -102,6 +102,10 @@ class PipelineRunConfiguration(
         default=None,
         description="The init hook source for the pipeline run.",
     )
+    init_hook_args: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="The init hook args for the pipeline run.",
+    )
     cleanup_hook_source: Optional[SourceWithValidator] = Field(
         default=None,
         description="The cleanup hook source for the pipeline run.",

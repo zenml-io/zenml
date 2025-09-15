@@ -4,7 +4,6 @@ settings:
     requirements: requirements.txt
     environment:
       WANDB_DISABLED: "true"
-    python_package_installer: uv
 
 # Model Control Plane configuration
 model:
@@ -17,3 +16,8 @@ parameters:
 
 # Per step configuration
 steps:
+
+# Init hook configuration
+on_init_kwargs:
+  model_name: model
+  tokenizer_name: tokenizer

@@ -333,6 +333,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
+        on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
@@ -375,6 +376,7 @@ class Pipeline:
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
                 value, it will be stored as the pipeline state.
+            on_init_kwargs: Arguments for the init hook.
             on_cleanup: Callback function to run on cleanup of the pipeline. Can
                 be a function with no arguments, or a source path to such a
                 function with no arguments (e.g. `module.my_function`).
@@ -396,22 +398,38 @@ class Pipeline:
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this pipeline
-            failure_hook_source = resolve_and_validate_hook(on_failure)
+            failure_hook_source, _ = resolve_and_validate_hook(on_failure)
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this pipeline
-            success_hook_source = resolve_and_validate_hook(on_success)
+            success_hook_source, _ = resolve_and_validate_hook(on_success)
 
+        init_hook_kwargs = None
         init_hook_source = None
-        if on_init:
-            # string of on_init hook function to be used for this pipeline
-            init_hook_source = resolve_and_validate_hook(on_init)
+        if on_init or on_init_kwargs:
+            if not on_init and self.configuration.init_hook_source:
+                # load the init hook source from the existing configuration if
+                # not provided; this is needed for partial updates
+                on_init = source_utils.load(
+                    self.configuration.init_hook_source
+                )
+            if not on_init:
+                raise ValueError(
+                    "on_init is not provided and no init hook source is found "
+                    "in the existing configuration"
+                )
+
+            # string of on_init hook function and JSON-able arguments to be used
+            # for this pipeline
+            init_hook_source, init_hook_kwargs = resolve_and_validate_hook(
+                on_init, on_init_kwargs
+            )
 
         cleanup_hook_source = None
         if on_cleanup:
             # string of on_cleanup hook function to be used for this pipeline
-            cleanup_hook_source = resolve_and_validate_hook(on_cleanup)
+            cleanup_hook_source, _ = resolve_and_validate_hook(on_cleanup)
 
         if merge and tags and self._configuration.tags:
             # Merge tags explicitly here as the recursive update later only
@@ -431,6 +449,7 @@ class Pipeline:
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
                 "init_hook_source": init_hook_source,
+                "init_hook_kwargs": init_hook_kwargs,
                 "cleanup_hook_source": cleanup_hook_source,
                 "model": model,
                 "retry": retry,

@@ -17,7 +17,6 @@ This service provides high-performance pipeline serving with proper memory manag
 clean architecture, and zero memory leaks.
 """
 
-import inspect
 import os
 import time
 import traceback
@@ -30,6 +29,7 @@ from pydantic import BaseModel
 import zenml.client as client_mod
 import zenml.pipelines.run_utils as run_utils
 from zenml.enums import StackComponentType
+from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineDeploymentResponse
@@ -40,7 +40,6 @@ from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestratorConfig,
 )
 from zenml.stack import Stack
-from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -139,6 +138,8 @@ class PipelineServingService:
             # Execute init hook
             await self._execute_init_hook()
 
+            self._orchestrator.set_shared_run_state(self.pipeline_state)
+
             # Log success
             self._log_initialization_success()
 
@@ -159,12 +160,7 @@ class PipelineServingService:
 
         logger.info("Executing pipeline's cleanup hook...")
         try:
-            cleanup_hook = source_utils.load(cleanup_hook_source)
-
-            if inspect.iscoroutinefunction(cleanup_hook):
-                await cleanup_hook()
-            else:
-                cleanup_hook()
+            load_and_run_hook(cleanup_hook_source)
         except Exception as e:
             logger.exception(f"Failed to execute cleanup hook: {e}")
             raise
@@ -341,18 +337,20 @@ class PipelineServingService:
             self.deployment
             and self.deployment.pipeline_configuration.init_hook_source
         )
+        init_hook_kwargs = (
+            self.deployment.pipeline_configuration.init_hook_kwargs
+            if self.deployment
+            else None
+        )
 
         if not init_hook_source:
             return
 
         logger.info("Executing pipeline's init hook...")
         try:
-            init_hook = source_utils.load(init_hook_source)
-
-            if inspect.iscoroutinefunction(init_hook):
-                self.pipeline_state = await init_hook()
-            else:
-                self.pipeline_state = init_hook()
+            self.pipeline_state = load_and_run_hook(
+                init_hook_source, init_hook_kwargs
+            )
         except Exception as e:
             logger.exception(f"Failed to execute init hook: {e}")
             raise
