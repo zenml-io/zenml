@@ -49,7 +49,13 @@ class _ServingState:
         Returns:
             A string representation of the serving state.
         """
-        return f"ServingState(active={self.active}, request_id={self.request_id}, deployment_id={self.deployment_id}, pipeline_parameters={self.pipeline_parameters}, outputs={self.outputs}, use_in_memory={self.use_in_memory}, _in_memory_data={self._in_memory_data})"
+        return (
+            f"ServingState(active={self.active}, "
+            f"request_id={self.request_id}, snapshot_id={self.snapshot_id}, "
+            f"pipeline_parameters={self.pipeline_parameters}, "
+            f"outputs={self.outputs}, use_in_memory={self.use_in_memory}, "
+            f"_in_memory_data={self._in_memory_data})"
+        )
 
     def __repr__(self) -> str:
         """Representation of the serving state.
