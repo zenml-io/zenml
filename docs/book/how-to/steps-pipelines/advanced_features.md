@@ -100,6 +100,56 @@ def my_pipeline():
 
 This is particularly useful for steps with side effects (like data loading or model deployment) where the data dependency is not explicit.
 
+### Execution Modes
+
+ZenML provides three execution modes that control how your orchestrator behaves when a step fails during execution. These modes include:
+
+- **CONTINUE_ON_FAILURE**: The orchestrator continues executing steps that don't depend on any of the failed steps.
+- **STOP_ON_FAILURE**: The orchestrator allows the running steps to complete, but prevents new steps from starting. 
+- **FAIL_FAST**: The orchestrator stops the run and any running steps immediately when a failure occurs.
+
+{% hint style="warning"}
+In the current implementation, if you use the execution mode `STOP_ON_FAILURE`, the token that is associated with your pipeline run stays valid until its leeway runs out (defaults to 1 hour). 
+{% endhint %}
+
+You can configure execution modes in several ways:
+
+```python
+from zenml import pipeline
+from zenml.enums import ExecutionMode
+
+# Use the decorator
+@pipeline(execution_mode=ExecutionMode.FAIL_FAST)
+def my_pipeline():
+    ...
+
+# Use the `with_options` method
+my_pipeline_with_fail_fast = my_pipeline.with_options(
+    execution_mode=ExecutionMode.FAIL_FAST
+)
+
+# Use the `configure` method
+my_pipeline.configure(execution_mode=ExecutionMode.STOP_ON_FAILURE)
+```
+
+As an example, you can consider a pipeline with this dependency structure:
+
+```
+         |-- Step 2 --> Step 5 --|
+Step 1 --|-- Step 3 --> Step 6 --|--> Step 8
+         |-- Step 4 --> Step 7 --|
+```
+
+If the vertically aligned steps execute at the same time and step 2 fails:
+
+- **FAIL_FAST**: Step 1 finishes → Steps 2,3,4 start → Step 2 fails → Steps 3, 4 are stopped → No other steps get launched
+- **STOP_ON_FAILURE**: Step 1 finishes → Steps 2,3,4 start → Step 2 fails but Steps 3, 4 complete → Steps 5, 6, 7 are skipped
+- **CONTINUE_ON_FAILURE**: Step 1 finishes → Steps 2,3,4 start → Step 2 fails, Steps 3, 4 complete → Step 5 skipped (depends on failed Step 2), Steps 6, 7 run normally → Step 8 is skiped as well.
+
+{% hint style="warning"}
+Execution modes are currently supported by the **local**, **local_docker**, and **kubernetes** orchestrator flavors. For any other flavor, the default behaviour is `CONTINUE_ON_ERROR`. Check the `supported_execution_modes` property of your orchestrator to see which modes are available.
+{% endhint %}
+
 ## Data & Output Management
 
 ## Type annotations
