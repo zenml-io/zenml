@@ -108,7 +108,7 @@ ZenML provides three execution modes that control how your orchestrator behaves 
 - `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting. 
 - `FAIL_FAST`: The orchestrator stops the run and any running steps immediately when a failure occurs.
 
-You can configure execution modes in several ways:
+You can configure the execution mode of your pipeline in several ways:
 
 ```python
 from zenml import pipeline
@@ -149,7 +149,6 @@ If steps 2, 3, and 4 execute in parallel and step 2 fails:
 {% hint style="info" %}
 All three execution modes are currently only supported by the `local`, `local_docker`, and `kubernetes` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite). 
 {% endhint %}
-
 
 ## Data & Output Management
 
