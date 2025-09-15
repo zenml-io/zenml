@@ -60,7 +60,7 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
-    parser.add_argument("--deployment_id", type=str, required=True)
+    parser.add_argument("--snapshot_id", type=str, required=True)
     return parser.parse_args()
 
 
@@ -90,11 +90,11 @@ def main() -> None:
     run = None
 
     try:
-        deployment = Client().get_deployment(args.deployment_id)
+        snapshot = Client().get_snapshot(args.snapshot_id)
 
         pipeline_dag = {
             step_name: step.spec.upstream_steps
-            for step_name, step in deployment.step_configurations.items()
+            for step_name, step in snapshot.step_configurations.items()
         }
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         entrypoint_str = " ".join(step_command)
@@ -126,7 +126,7 @@ def main() -> None:
         )
 
         unique_resource_configs: Dict[str, str] = {}
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             settings = cast(
                 SkypilotBaseOrchestratorSettings,
                 orchestrator.get_settings(step),
@@ -165,7 +165,7 @@ def main() -> None:
         run = Client().list_pipeline_runs(
             sort_by="asc:created",
             size=1,
-            deployment_id=args.deployment_id,
+            snapshot_id=args.snapshot_id,
             status=ExecutionStatus.INITIALIZING,
         )[0]
 
@@ -190,17 +190,17 @@ def main() -> None:
                 cluster_name = unique_resource_configs[step_name]
 
                 image = SkypilotBaseOrchestrator.get_image(
-                    deployment=deployment, step_name=step_name
+                    snapshot=snapshot, step_name=step_name
                 )
 
                 step_args = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
+                        step_name=step_name, snapshot_id=snapshot.id
                     )
                 )
                 arguments_str = " ".join(step_args)
 
-                step = deployment.step_configurations[step_name]
+                step = snapshot.step_configurations[step_name]
                 settings = cast(
                     SkypilotBaseOrchestratorSettings,
                     orchestrator.get_settings(step),
@@ -222,7 +222,7 @@ def main() -> None:
                     use_sudo=False,  # Entrypoint doesn't use sudo
                 )
 
-                task_name = f"{deployment.id}-{step_name}-{time.time()}"
+                task_name = f"{snapshot.id}-{step_name}-{time.time()}"
 
                 # Create task kwargs
                 task_kwargs = prepare_task_kwargs(

@@ -131,12 +131,14 @@ from zenml.models import (
     Page,
     PipelineBuildFilter,
     PipelineBuildResponse,
-    PipelineDeploymentFilter,
-    PipelineDeploymentResponse,
     PipelineFilter,
     PipelineResponse,
     PipelineRunFilter,
     PipelineRunResponse,
+    PipelineSnapshotFilter,
+    PipelineSnapshotResponse,
+    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotUpdate,
     ProjectFilter,
     ProjectRequest,
     ProjectResponse,
@@ -2495,155 +2497,6 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
-    @_fail_for_sql_zen_store
-    def trigger_pipeline(
-        self,
-        pipeline_name_or_id: Union[str, UUID, None] = None,
-        run_configuration: Union[
-            PipelineRunConfiguration, Dict[str, Any], None
-        ] = None,
-        config_path: Optional[str] = None,
-        template_id: Optional[UUID] = None,
-        stack_name_or_id: Union[str, UUID, None] = None,
-        synchronous: bool = False,
-        project: Optional[Union[str, UUID]] = None,
-    ) -> PipelineRunResponse:
-        """Trigger a pipeline from the server.
-
-        Usage examples:
-        * Run the latest runnable template for a pipeline:
-        ```python
-        Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
-        ```
-        * Run the latest runnable template for a pipeline on a specific stack:
-        ```python
-        Client().trigger_pipeline(
-            pipeline_name_or_id=<NAME>,
-            stack_name_or_id=<STACK_NAME_OR_ID>
-        )
-        ```
-        * Run a specific template:
-        ```python
-        Client().trigger_pipeline(template_id=<ID>)
-        ```
-
-        Args:
-            pipeline_name_or_id: Name or ID of the pipeline. If this is
-                specified, the latest runnable template for this pipeline will
-                be used for the run (Runnable here means that the build
-                associated with the template is for a remote stack without any
-                custom flavor stack components). If not given, a template ID
-                that should be run needs to be specified.
-            run_configuration: Configuration for the run. Either this or a
-                path to a config file can be specified.
-            config_path: Path to a YAML configuration file. This file will be
-                parsed as a `PipelineRunConfiguration` object. Either this or
-                the configuration in code can be specified.
-            template_id: ID of the template to run. Either this or a pipeline
-                can be specified.
-            stack_name_or_id: Name or ID of the stack on which to run the
-                pipeline. If not specified, this method will try to find a
-                runnable template on any stack.
-            synchronous: If `True`, this method will wait until the triggered
-                run is finished.
-            project: The project name/ID to filter by.
-
-        Raises:
-            RuntimeError: If triggering the pipeline failed.
-
-        Returns:
-            Model of the pipeline run.
-        """
-        from zenml.pipelines.run_utils import (
-            validate_run_config_is_runnable_from_server,
-            validate_stack_is_runnable_from_server,
-            wait_for_pipeline_run_to_finish,
-        )
-
-        if Counter([template_id, pipeline_name_or_id])[None] != 1:
-            raise RuntimeError(
-                "You need to specify exactly one of pipeline or template "
-                "to trigger."
-            )
-
-        if run_configuration and config_path:
-            raise RuntimeError(
-                "Only config path or runtime configuration can be specified."
-            )
-
-        if config_path:
-            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
-
-        if isinstance(run_configuration, Dict):
-            run_configuration = PipelineRunConfiguration.model_validate(
-                run_configuration
-            )
-
-        if run_configuration:
-            validate_run_config_is_runnable_from_server(run_configuration)
-
-        if template_id:
-            if stack_name_or_id:
-                logger.warning(
-                    "Template ID and stack specified, ignoring the stack and "
-                    "using stack associated with the template instead."
-                )
-
-            run = self.zen_store.run_template(
-                template_id=template_id,
-                run_configuration=run_configuration,
-            )
-        else:
-            assert pipeline_name_or_id
-            pipeline = self.get_pipeline(name_id_or_prefix=pipeline_name_or_id)
-
-            stack = None
-            if stack_name_or_id:
-                stack = self.get_stack(
-                    stack_name_or_id, allow_name_prefix_match=False
-                )
-                validate_stack_is_runnable_from_server(
-                    zen_store=self.zen_store, stack=stack
-                )
-
-            templates = depaginate(
-                self.list_run_templates,
-                pipeline_id=pipeline.id,
-                stack_id=stack.id if stack else None,
-                project=project or pipeline.project_id,
-            )
-
-            for template in templates:
-                if not template.build:
-                    continue
-
-                stack = template.build.stack
-                if not stack:
-                    continue
-
-                try:
-                    validate_stack_is_runnable_from_server(
-                        zen_store=self.zen_store, stack=stack
-                    )
-                except ValueError:
-                    continue
-
-                run = self.zen_store.run_template(
-                    template_id=template.id,
-                    run_configuration=run_configuration,
-                )
-                break
-            else:
-                raise RuntimeError(
-                    "Unable to find a runnable template for the given stack "
-                    "and pipeline."
-                )
-
-        if synchronous:
-            run = wait_for_pipeline_run_to_finish(run_id=run.id)
-
-        return run
-
     # -------------------------------- Builds ----------------------------------
 
     def get_build(
@@ -3405,29 +3258,29 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_trigger(trigger_id=trigger.id)
         logger.info("Deleted trigger with name '%s'.", trigger.name)
 
-    # ------------------------------ Deployments -------------------------------
+    # ------------------------------ Snapshots -------------------------------
 
-    def get_deployment(
+    def get_snapshot(
         self,
         id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
-    ) -> PipelineDeploymentResponse:
-        """Get a deployment by id or prefix.
+    ) -> PipelineSnapshotResponse:
+        """Get a snapshot by name, id or prefix.
 
         Args:
-            id_or_prefix: The id or id prefix of the deployment.
+            id_or_prefix: The id or prefix of the snapshot.
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
-        Returns:
-            The deployment.
-
         Raises:
-            KeyError: If no deployment was found for the given id or prefix.
-            ZenKeyError: If multiple deployments were found that match the given
+            KeyError: If no snapshot was found for the given id or prefix.
+            ZenKeyError: If multiple snapshots were found that match the given
                 id or prefix.
+
+        Returns:
+            The snapshot.
         """
         from zenml.utils.uuid_utils import is_valid_uuid
 
@@ -3438,9 +3291,10 @@ class Client(metaclass=ClientMetaClass):
                 if isinstance(id_or_prefix, str)
                 else id_or_prefix
             )
-            return self.zen_store.get_deployment(id_, hydrate=hydrate)
+            return self.zen_store.get_snapshot(id_, hydrate=hydrate)
 
         list_kwargs: Dict[str, Any] = dict(
+            named_only=None,
             id=f"startswith:{id_or_prefix}",
             hydrate=hydrate,
         )
@@ -3449,7 +3303,7 @@ class Client(metaclass=ClientMetaClass):
             list_kwargs["project"] = project
             scope = f" in project {project}"
 
-        entity = self.list_deployments(**list_kwargs)
+        entity = self.list_snapshots(**list_kwargs)
 
         # If only a single entity is found, return it.
         if entity.total == 1:
@@ -3458,20 +3312,20 @@ class Client(metaclass=ClientMetaClass):
         # If no entity is found, raise an error.
         if entity.total == 0:
             raise KeyError(
-                f"No deployment have been found that have either an id or "
+                f"No snapshot have been found that have either an id or "
                 f"prefix that matches the provided string '{id_or_prefix}'{scope}."
             )
 
         raise ZenKeyError(
-            f"{entity.total} deployments have been found{scope} that have "
+            f"{entity.total} snapshots have been found{scope} that have "
             f"an ID that matches the provided "
             f"string '{id_or_prefix}':\n"
             f"{[entity.items]}.\n"
             f"Please use the id to uniquely identify "
-            f"only one of the deployments."
+            f"only one of the snapshots."
         )
 
-    def list_deployments(
+    def list_snapshots(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
@@ -3482,13 +3336,19 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
+        name: Optional[str] = None,
+        named_only: Optional[bool] = True,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
         template_id: Optional[Union[str, UUID]] = None,
+        schedule_id: Optional[Union[str, UUID]] = None,
+        source_snapshot_id: Optional[Union[str, UUID]] = None,
+        tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
         hydrate: bool = False,
-    ) -> Page[PipelineDeploymentResponse]:
-        """List all deployments.
+    ) -> Page[PipelineSnapshotResponse]:
+        """List all snapshots.
 
         Args:
             sort_by: The column to sort by
@@ -3500,17 +3360,24 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
+            name: Filter by name.
+            named_only: If `True`, only snapshots with an assigned name
+                will be returned.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
             template_id: The ID of the template to filter by.
+            schedule_id: The ID of the schedule to filter by.
+            source_snapshot_id: The ID of the source snapshot to filter by.
+            tag: Filter by tag.
+            tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A page with deployments fitting the filter description
+            A page with snapshots fitting the filter description
         """
-        deployment_filter_model = PipelineDeploymentFilter(
+        snapshot_filter_model = PipelineSnapshotFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3520,40 +3387,292 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             project=project or self.active_project.id,
             user=user,
+            name=name,
+            named_only=named_only,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
             template_id=template_id,
+            schedule_id=schedule_id,
+            source_snapshot_id=source_snapshot_id,
+            tag=tag,
+            tags=tags,
         )
-        return self.zen_store.list_deployments(
-            deployment_filter_model=deployment_filter_model,
+        return self.zen_store.list_snapshots(
+            snapshot_filter_model=snapshot_filter_model,
             hydrate=hydrate,
         )
 
-    def delete_deployment(
+    def update_snapshot(
         self,
-        id_or_prefix: str,
+        id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
-    ) -> None:
-        """Delete a deployment.
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        replace: Optional[bool] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> PipelineSnapshotResponse:
+        """Update a snapshot.
 
         Args:
-            id_or_prefix: The id or id prefix of the deployment.
+            id_or_prefix: The id or id prefix of the snapshot.
             project: The project name/ID to filter by.
+            name: The new name of the snapshot.
+            description: The new description of the snapshot.
+            replace: Whether to replace the existing snapshot with the same
+                name.
+            add_tags: Tags to add to the snapshot.
+            remove_tags: Tags to remove from the snapshot.
+
+        Returns:
+            The updated snapshot.
         """
-        deployment = self.get_deployment(
+        snapshot = self.get_snapshot(
             id_or_prefix=id_or_prefix,
             project=project,
             hydrate=False,
         )
-        self.zen_store.delete_deployment(deployment_id=deployment.id)
+
+        return self.zen_store.update_snapshot(
+            snapshot_id=snapshot.id,
+            snapshot_update=PipelineSnapshotUpdate(
+                name=name,
+                description=description,
+                replace=replace,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
+            ),
+        )
+
+    def delete_snapshot(
+        self,
+        id_or_prefix: str,
+        project: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Delete a snapshot.
+
+        Args:
+            id_or_prefix: The id or id prefix of the snapshot.
+            project: The project name/ID to filter by.
+        """
+        snapshot = self.get_snapshot(
+            id_or_prefix=id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        self.zen_store.delete_snapshot(snapshot_id=snapshot.id)
+
+    @_fail_for_sql_zen_store
+    def trigger_pipeline(
+        self,
+        snapshot_id: Optional[UUID] = None,
+        template_id: Optional[UUID] = None,
+        pipeline_name_or_id: Union[str, UUID, None] = None,
+        name: Optional[str] = None,
+        run_configuration: Union[
+            PipelineRunConfiguration, Dict[str, Any], None
+        ] = None,
+        config_path: Optional[str] = None,
+        stack_name_or_id: Union[str, UUID, None] = None,
+        synchronous: bool = False,
+        project: Optional[Union[str, UUID]] = None,
+    ) -> PipelineRunResponse:
+        """Trigger a snapshot.
+
+        Usage examples:
+        * Trigger a specific snapshot by ID:
+        ```python
+        Client().trigger_snapshot(snapshot_id=<ID>)
+        ```
+        * Trigger the latest runnable snapshot for a pipeline:
+        ```python
+        Client().trigger_snapshot(pipeline_name_or_id=<NAME>)
+        ```
+        * Trigger the latest runnable snapshot for a pipeline on a specific
+        stack:
+        ```python
+        Client().trigger_snapshot(
+            pipeline_name_or_id=<NAME>,
+            stack_name_or_id=<STACK_NAME_OR_ID>
+        )
+        ```
+
+        Args:
+            snapshot_id: ID of the snapshot to trigger. Either this or a
+                pipeline can be specified.
+            template_id: DEPRECATED. Use snapshot_id instead.
+            pipeline_name_or_id: Name or ID of the pipeline. If this is
+                specified, the latest runnable snapshot for this pipeline will
+                be used for the run (Runnable here means that the build
+                associated with the snapshot is for a remote stack without any
+                custom flavor stack components). If not given, a snapshot ID
+                that should be run needs to be specified.
+            name: Name of the snapshot to trigger. If not given, the
+                latest runnable snapshot for the pipeline will be used.
+            run_configuration: Configuration for the run. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `PipelineRunConfiguration` object. Either this or
+                the configuration in code can be specified.
+            stack_name_or_id: Name or ID of the stack on which to run the
+                pipeline. If not specified, this method will try to find a
+                runnable snapshot on any stack.
+            synchronous: If `True`, this method will wait until the triggered
+                run is finished.
+            project: The project name/ID to filter by.
+
+        Raises:
+            RuntimeError: If triggering the snapshot failed.
+            KeyError: If no snapshot with the given name exists.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        from zenml.pipelines.run_utils import (
+            validate_run_config_is_runnable_from_server,
+            validate_stack_is_runnable_from_server,
+            wait_for_pipeline_run_to_finish,
+        )
+
+        if Counter([snapshot_id, template_id, pipeline_name_or_id])[None] != 2:
+            raise RuntimeError(
+                "You need to specify exactly one of snapshot, template or "
+                "pipeline to trigger."
+            )
+
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if template_id:
+            logger.warning(
+                "Triggering a run template is deprecated. Use "
+                "`Client().trigger_pipeline(snapshot_id=...)` instead."
+            )
+            run_template = self.get_run_template(
+                name_id_or_prefix=template_id,
+                project=project,
+            )
+            if not run_template.source_snapshot:
+                raise RuntimeError(
+                    "Run template does not have a source snapshot."
+                )
+            snapshot_id = run_template.source_snapshot.id
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if isinstance(run_configuration, Dict):
+            run_configuration = PipelineRunConfiguration.model_validate(
+                run_configuration
+            )
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
+        if snapshot_id:
+            if stack_name_or_id:
+                logger.warning(
+                    "Snapshot ID and stack specified, ignoring the stack and "
+                    "using stack associated with the snapshot instead."
+                )
+
+            if name:
+                logger.warning(
+                    "Snapshot ID and name specified, ignoring the name."
+                )
+        else:
+            assert pipeline_name_or_id
+            pipeline = self.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id,
+                project=project,
+            )
+
+            if name:
+                snapshots = self.list_snapshots(
+                    name=f"equals:{name}",
+                    pipeline_id=pipeline.id,
+                    project=pipeline.project_id,
+                )
+
+                if snapshots.total == 0:
+                    raise KeyError(
+                        f"No snapshot found for pipeline {pipeline.id} "
+                        f"with name {name}."
+                    )
+                else:
+                    snapshot_id = snapshots.items[0].id
+            else:
+                # No version or ID specified, find the latest runnable
+                # snapshot for the pipeline (and stack if specified)
+                stack = None
+                if stack_name_or_id:
+                    stack = self.get_stack(
+                        stack_name_or_id, allow_name_prefix_match=False
+                    )
+                    validate_stack_is_runnable_from_server(
+                        zen_store=self.zen_store, stack=stack
+                    )
+
+                all_snapshots = depaginate(
+                    self.list_snapshots,
+                    pipeline_id=pipeline.id,
+                    stack_id=stack.id if stack else None,
+                    project=pipeline.project_id,
+                )
+
+                for snapshot in all_snapshots:
+                    if not snapshot.build:
+                        continue
+
+                    stack = snapshot.build.stack
+                    if not stack:
+                        continue
+
+                    try:
+                        validate_stack_is_runnable_from_server(
+                            zen_store=self.zen_store, stack=stack
+                        )
+                    except ValueError:
+                        continue
+
+                    snapshot_id = snapshot.id
+                    break
+                else:
+                    raise RuntimeError(
+                        "Unable to find a runnable snapshot for the given "
+                        "stack and pipeline."
+                    )
+
+        step_run_id = None
+        try:
+            from zenml.steps.step_context import get_step_context
+
+            step_run_id = get_step_context().step_run.id
+        except RuntimeError:
+            pass
+
+        run = self.zen_store.trigger_snapshot(
+            snapshot_id=snapshot_id,
+            trigger_request=PipelineSnapshotTriggerRequest(
+                run_configuration=run_configuration,
+                step_run=step_run_id,
+            ),
+        )
+
+        if synchronous:
+            run = wait_for_pipeline_run_to_finish(run_id=run.id)
+
+        return run
 
     # ------------------------------ Run templates -----------------------------
 
     def create_run_template(
         self,
         name: str,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
     ) -> RunTemplateResponse:
@@ -3561,7 +3680,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name: The name of the run template.
-            deployment_id: ID of the deployment which this template should be
+            snapshot_id: ID of the snapshot which this template should be
                 based off of.
             description: The description of the run template.
             tags: Tags associated with the run template.
@@ -3573,7 +3692,7 @@ class Client(metaclass=ClientMetaClass):
             template=RunTemplateRequest(
                 name=name,
                 description=description,
-                source_deployment_id=deployment_id,
+                source_snapshot_id=snapshot_id,
                 tags=tags,
                 project=self.active_project.id,
             )
@@ -4014,9 +4133,10 @@ class Client(metaclass=ClientMetaClass):
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
-        deployment_id: Optional[Union[str, UUID]] = None,
+        snapshot_id: Optional[Union[str, UUID]] = None,
         code_repository_id: Optional[Union[str, UUID]] = None,
         template_id: Optional[Union[str, UUID]] = None,
+        source_snapshot_id: Optional[Union[str, UUID]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
@@ -4036,6 +4156,7 @@ class Client(metaclass=ClientMetaClass):
         in_progress: Optional[bool] = None,
         hydrate: bool = False,
         include_full_metadata: bool = False,
+        triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -4054,9 +4175,10 @@ class Client(metaclass=ClientMetaClass):
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
             build_id: The id of the build to filter by.
-            deployment_id: The id of the deployment to filter by.
+            snapshot_id: The id of the snapshot to filter by.
             code_repository_id: The id of the code repository to filter by.
             template_id: The ID of the template to filter by.
+            source_snapshot_id: The ID of the source snapshot to filter by.
             model_version_id: The ID of the model version to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
@@ -4079,6 +4201,8 @@ class Client(metaclass=ClientMetaClass):
                 by including metadata fields in the response.
             include_full_metadata: If True, include metadata of all steps in
                 the response.
+            triggered_by_step_run_id: The ID of the step run that triggered
+                the pipeline run.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -4097,9 +4221,10 @@ class Client(metaclass=ClientMetaClass):
             pipeline_name=pipeline_name,
             schedule_id=schedule_id,
             build_id=build_id,
-            deployment_id=deployment_id,
+            snapshot_id=snapshot_id,
             code_repository_id=code_repository_id,
             template_id=template_id,
+            source_snapshot_id=source_snapshot_id,
             model_version_id=model_version_id,
             orchestrator_run_id=orchestrator_run_id,
             stack_id=stack_id,
@@ -4118,6 +4243,7 @@ class Client(metaclass=ClientMetaClass):
             stack_component=stack_component,
             in_progress=in_progress,
             templatable=templatable,
+            triggered_by_step_run_id=triggered_by_step_run_id,
         )
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,
@@ -4181,7 +4307,7 @@ class Client(metaclass=ClientMetaClass):
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
         pipeline_run_id: Optional[Union[str, UUID]] = None,
-        deployment_id: Optional[Union[str, UUID]] = None,
+        snapshot_id: Optional[Union[str, UUID]] = None,
         original_step_run_id: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -4206,7 +4332,7 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
             pipeline_run_id: The id of the pipeline run to filter by.
-            deployment_id: The id of the deployment to filter by.
+            snapshot_id: The id of the snapshot to filter by.
             original_step_run_id: The id of the original step run to filter by.
             model_version_id: The ID of the model version to filter by.
             model: Filter by model name/ID.
@@ -4231,7 +4357,7 @@ class Client(metaclass=ClientMetaClass):
             cache_key=cache_key,
             code_hash=code_hash,
             pipeline_run_id=pipeline_run_id,
-            deployment_id=deployment_id,
+            snapshot_id=snapshot_id,
             original_step_run_id=original_step_run_id,
             status=status,
             created=created,
@@ -7107,7 +7233,8 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        trigger_id: Optional[UUID] = None,
+        trigger_id: Optional[Union[UUID, str]] = None,
+        step_run_id: Optional[Union[UUID, str]] = None,
         user: Optional[Union[UUID, str]] = None,
         project: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
@@ -7120,6 +7247,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages.
             logical_operator: Which logical operator to use [and, or].
             trigger_id: ID of the trigger to filter by.
+            step_run_id: ID of the step run to filter by.
             user: Filter by user name/ID.
             project: Filter by project name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -7130,6 +7258,7 @@ class Client(metaclass=ClientMetaClass):
         """
         filter_model = TriggerExecutionFilter(
             trigger_id=trigger_id,
+            step_run_id=step_run_id,
             sort_by=sort_by,
             page=page,
             size=size,

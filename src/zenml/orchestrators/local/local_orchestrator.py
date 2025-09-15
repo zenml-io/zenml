@@ -30,7 +30,7 @@ from zenml.utils import string_utils
 from zenml.utils.env_utils import temporary_environment
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
 
 logger = get_logger(__name__)
 
@@ -46,7 +46,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
@@ -60,14 +60,14 @@ class LocalOrchestrator(BaseOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
             step_environments: Environment variables to set when executing
                 specific steps.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
             Optional submission result.
@@ -76,7 +76,7 @@ class LocalOrchestrator(BaseOrchestrator):
             Exception: If the pipeline run fails.
             RuntimeError: If the pipeline run fails.
         """
-        if deployment.schedule:
+        if snapshot.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
@@ -86,13 +86,13 @@ class LocalOrchestrator(BaseOrchestrator):
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()
 
-        execution_mode = deployment.pipeline_configuration.execution_mode
+        execution_mode = snapshot.pipeline_configuration.execution_mode
 
         failed_steps: List[str] = []
         skipped_steps: List[str] = []
 
         # Run each step
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             if (
                 execution_mode == ExecutionMode.STOP_ON_FAILURE
                 and failed_steps

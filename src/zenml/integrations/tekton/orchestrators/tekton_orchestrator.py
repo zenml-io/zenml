@@ -53,7 +53,7 @@ from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 
@@ -457,7 +457,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
@@ -471,14 +471,14 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
             step_environments: Environment variables to set when executing
                 specific steps.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook
@@ -501,7 +501,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         assert stack.container_registry
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
+            pipeline_name=snapshot.pipeline_configuration.name
         ).replace("_", "-")
 
         def _create_dynamic_pipeline() -> Any:
@@ -512,16 +512,16 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             """
             step_name_to_dynamic_component: Dict[str, Any] = {}
 
-            for step_name, step in deployment.step_configurations.items():
+            for step_name, step in snapshot.step_configurations.items():
                 image = self.get_image(
-                    deployment=deployment,
+                    snapshot=snapshot,
                     step_name=step_name,
                 )
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
-                        deployment_id=deployment.id,
+                        snapshot_id=snapshot.id,
                     )
                 )
                 dynamic_component = self._create_dynamic_component(
@@ -571,7 +571,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     step_environment = step_environments[component_name]
                     # for each component, check to see what other steps are
                     # upstream of it
-                    step = deployment.step_configurations[component_name]
+                    step = snapshot.step_configurations[component_name]
                     upstream_step_components = [
                         step_name_to_dynamic_component[upstream_step_name]
                         for upstream_step_name in step.spec.upstream_steps
@@ -617,21 +617,21 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         # using the kfp client uploads the pipeline to Tekton pipelines and
         # runs it there
         return self._upload_and_run_pipeline(
-            deployment=deployment,
+            snapshot=snapshot,
             pipeline_file_path=pipeline_file_path,
             run_name=orchestrator_run_name,
         )
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         pipeline_file_path: str,
         run_name: str,
     ) -> Optional[SubmissionResult]:
         """Tries to upload and run a KFP pipeline.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
             pipeline_file_path: Path to the pipeline definition file.
             run_name: The Tekton run name.
 
@@ -641,9 +641,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         Returns:
             Optional submission result.
         """
-        pipeline_name = deployment.pipeline_configuration.name
+        pipeline_name = snapshot.pipeline_configuration.name
         settings = cast(
-            TektonOrchestratorSettings, self.get_settings(deployment)
+            TektonOrchestratorSettings, self.get_settings(snapshot)
         )
         user_namespace = settings.user_namespace
 
@@ -668,7 +668,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             # upload the pipeline to Tekton and start it
 
             client = self._get_kfp_client(settings=settings)
-            if deployment.schedule:
+            if snapshot.schedule:
                 try:
                     experiment = client.get_experiment(
                         pipeline_name, namespace=user_namespace
@@ -691,8 +691,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 )
 
                 interval_seconds = (
-                    deployment.schedule.interval_second.seconds
-                    if deployment.schedule.interval_second
+                    snapshot.schedule.interval_second.seconds
+                    if snapshot.schedule.interval_second
                     else None
                 )
                 result = client.create_recurring_run(
@@ -700,11 +700,11 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     job_name=run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=False,
-                    cron_expression=deployment.schedule.cron_expression,
-                    start_time=deployment.schedule.utc_start_time,
-                    end_time=deployment.schedule.utc_end_time,
+                    cron_expression=snapshot.schedule.cron_expression,
+                    start_time=snapshot.schedule.utc_start_time,
+                    end_time=snapshot.schedule.utc_end_time,
                     interval_second=interval_seconds,
-                    no_catchup=not deployment.schedule.catchup,
+                    no_catchup=not snapshot.schedule.catchup,
                 )
 
                 logger.info(

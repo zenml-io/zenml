@@ -45,7 +45,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.utils import code_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 
@@ -59,18 +59,18 @@ class LightningOrchestrator(BaseOrchestrator):
 
     def _set_lightning_env_vars(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
     ) -> None:
         """Set up the Lightning client using environment variables.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            snapshot: The pipeline snapshot to prepare or run.
 
         Raises:
             ValueError: If the user id and api key or username and organization
         """
         settings = cast(
-            LightningOrchestratorSettings, self.get_settings(deployment)
+            LightningOrchestratorSettings, self.get_settings(snapshot)
         )
         if not settings.user_id or not settings.api_key:
             raise ValueError(
@@ -158,7 +158,7 @@ class LightningOrchestrator(BaseOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
@@ -172,32 +172,31 @@ class LightningOrchestrator(BaseOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
             step_environments: Environment variables to set when executing
                 specific steps.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
             Optional submission result.
         """
         settings = cast(
-            LightningOrchestratorSettings, self.get_settings(deployment)
+            LightningOrchestratorSettings, self.get_settings(snapshot)
         )
-        if deployment.schedule:
+        if snapshot.schedule:
             logger.warning(
                 "Lightning Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
 
-        # Get deployment id
-        deployment_id = deployment.id
+        snapshot_id = snapshot.id
 
-        pipeline_name = deployment.pipeline_configuration.name
+        pipeline_name = snapshot.pipeline_configuration.name
         orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
 
         code_archive = code_utils.CodeArchive(
@@ -233,7 +232,7 @@ class LightningOrchestrator(BaseOrchestrator):
 
         # Gather the requirements
         pipeline_docker_settings = (
-            deployment.pipeline_configuration.docker_settings
+            snapshot.pipeline_configuration.docker_settings
         )
         pipeline_requirements = gather_requirements(pipeline_docker_settings)
         pipeline_requirements_to_string = " ".join(
@@ -241,18 +240,18 @@ class LightningOrchestrator(BaseOrchestrator):
         )
 
         def _construct_lightning_steps(
-            deployment: "PipelineDeploymentResponse",
+            snapshot: "PipelineSnapshotResponse",
         ) -> Dict[str, Dict[str, Any]]:
             """Construct the steps for the pipeline.
 
             Args:
-                deployment: The pipeline deployment to prepare or run.
+                snapshot: The pipeline snapshot to prepare or run.
 
             Returns:
                 The steps for the pipeline.
             """
             steps = {}
-            for step_name, step in deployment.step_configurations.items():
+            for step_name, step in snapshot.step_configurations.items():
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
                 entrypoint_command = (
@@ -261,7 +260,7 @@ class LightningOrchestrator(BaseOrchestrator):
                 entrypoint_arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
-                        deployment_id=deployment_id,
+                        snapshot_id=snapshot_id,
                     )
                 )
                 entrypoint = entrypoint_command + entrypoint_arguments
@@ -294,12 +293,12 @@ class LightningOrchestrator(BaseOrchestrator):
             entrypoint_command = LightningOrchestratorEntrypointConfiguration.get_entrypoint_command()
             entrypoint_arguments = LightningOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
-                deployment_id=deployment.id,
+                snapshot_id=snapshot.id,
             )
             entrypoint = entrypoint_command + entrypoint_arguments
             entrypoint_string = " ".join(entrypoint)
             logger.info("Setting up Lightning AI client")
-            self._set_lightning_env_vars(deployment)
+            self._set_lightning_env_vars(snapshot)
 
             studio_name = sanitize_studio_name(
                 "zenml_async_orchestrator_studio"
@@ -350,11 +349,11 @@ class LightningOrchestrator(BaseOrchestrator):
             )
         else:
             self._upload_and_run_pipeline(
-                deployment,
+                snapshot,
                 orchestrator_run_id,
                 pipeline_requirements_to_string,
                 settings,
-                _construct_lightning_steps(deployment),
+                _construct_lightning_steps(snapshot),
                 code_path,
                 filename,
                 env_file_path,
@@ -364,7 +363,7 @@ class LightningOrchestrator(BaseOrchestrator):
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         orchestrator_run_id: str,
         requirements: str,
         settings: LightningOrchestratorSettings,
@@ -376,7 +375,7 @@ class LightningOrchestrator(BaseOrchestrator):
         """Upload and run the pipeline on Lightning Studio.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            snapshot: The pipeline snapshot to prepare or run.
             orchestrator_run_id: The orchestrator run id.
             requirements: The requirements for the pipeline.
             settings: The orchestrator settings.
@@ -389,7 +388,7 @@ class LightningOrchestrator(BaseOrchestrator):
             Exception: If an error occurs while running the pipeline.
         """
         logger.info("Setting up Lightning AI client")
-        self._set_lightning_env_vars(deployment)
+        self._set_lightning_env_vars(snapshot)
 
         if settings.main_studio_name:
             studio_name = settings.main_studio_name

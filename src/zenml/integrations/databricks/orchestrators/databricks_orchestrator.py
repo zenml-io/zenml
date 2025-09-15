@@ -60,7 +60,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 
@@ -171,7 +171,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
@@ -185,14 +185,14 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
             step_environments: Environment variables to set when executing
                 specific steps.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
             ValueError: If the schedule is not set or if the cron expression
@@ -202,25 +202,22 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             Optional submission result.
         """
         settings = cast(
-            DatabricksOrchestratorSettings, self.get_settings(deployment)
+            DatabricksOrchestratorSettings, self.get_settings(snapshot)
         )
-        if deployment.schedule:
-            if (
-                deployment.schedule.catchup
-                or deployment.schedule.interval_second
-            ):
+        if snapshot.schedule:
+            if snapshot.schedule.catchup or snapshot.schedule.interval_second:
                 logger.warning(
                     "Databricks orchestrator only uses schedules with the "
                     "`cron_expression` property, with optional `start_time` and/or `end_time`. "
                     "All other properties are ignored."
                 )
-            if deployment.schedule.cron_expression is None:
+            if snapshot.schedule.cron_expression is None:
                 raise ValueError(
                     "Property `cron_expression` must be set when passing "
                     "schedule to a Databricks orchestrator."
                 )
             if (
-                deployment.schedule.cron_expression
+                snapshot.schedule.cron_expression
                 and settings.schedule_timezone is None
             ):
                 raise ValueError(
@@ -229,9 +226,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     "Databricks orchestrator requires a Java Timezone ID to run the pipeline on schedule."
                     "Please refer to https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html for more information."
                 )
-
-        # Get deployment id
-        deployment_id = deployment.id
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_databricks_pipeline(
@@ -254,12 +248,12 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 A list of Databricks tasks.
             """
             tasks = []
-            for step_name, step in deployment.step_configurations.items():
+            for step_name, step in snapshot.step_configurations.items():
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
                 arguments = DatabricksEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
-                    deployment_id=deployment_id,
+                    snapshot_id=snapshot.id,
                     wheel_package=self.package_name,
                     databricks_job_id=DATABRICKS_JOB_ID_PARAMETER_REFERENCE,
                 )
@@ -267,7 +261,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 # Find the upstream container ops of the current step and
                 # configure the current container op to run after them
                 upstream_steps = [
-                    f"{deployment_id}_{upstream_step_name}"
+                    f"{snapshot.id}_{upstream_step_name}"
                     for upstream_step_name in step.spec.upstream_steps
                 ]
 
@@ -293,7 +287,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 requirements = sorted(set(filter(None, requirements)))
 
                 task = convert_step_to_task(
-                    f"{deployment_id}_{step_name}",
+                    f"{snapshot.id}_{step_name}",
                     ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND,
                     arguments,
                     clean_requirements(requirements),
@@ -306,7 +300,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         # Get the orchestrator run name
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
+            pipeline_name=snapshot.pipeline_configuration.name
         )
 
         # Copy the repository to a temporary directory and add a setup.py file
@@ -320,9 +314,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         databricks_client = self._get_databricks_client()
 
         # Create an empty folder in a volume.
-        deployment_name = (
-            deployment.pipeline.name if deployment.pipeline else "default"
-        )
+        deployment_name = snapshot.pipeline.name
         databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{deployment_name}/{orchestrator_run_name}"
         databricks_wheel_path = (
             f"{databricks_directory}/{wheel_path.rsplit('/', 1)[-1]}"
@@ -347,7 +339,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         fileio.rmtree(repository_temp_dir)
 
         # using the databricks client uploads the pipeline to databricks
-        job_cluster_key = self.sanitize_name(f"{deployment_id}")
+        job_cluster_key = self.sanitize_name(str(snapshot.id))
         self._upload_and_run_pipeline(
             pipeline_name=orchestrator_run_name,
             settings=settings,
@@ -356,7 +348,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             ),
             env_vars=env_vars,
             job_cluster_key=job_cluster_key,
-            schedule=deployment.schedule,
+            schedule=snapshot.schedule,
         )
         return None
 

@@ -76,12 +76,12 @@ from zenml.models import (
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
     PipelineFilter,
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunRequest,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
     PipelineUpdate,
     ProjectFilter,
     ProjectRequest,
@@ -681,7 +681,7 @@ class ModelContext:
         self.artifact_versions = []
         self.create_prs = create_prs
         self.prs = []
-        self.deployments = []
+        self.snapshots = []
         self.delete = delete
 
         if create_artifacts > 0:
@@ -711,6 +711,13 @@ class ModelContext:
                     )
                 )
 
+        self.pipeline = client.zen_store.create_pipeline(
+            PipelineRequest(
+                name=sample_name("pipeline"),
+                project=ws.id,
+            )
+        )
+
         for i in range(self.create_artifacts):
             artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
@@ -735,17 +742,18 @@ class ModelContext:
             )
             self.artifact_versions.append(artifact_version)
         for _ in range(self.create_prs):
-            deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequest(
+            snapshot = client.zen_store.create_snapshot(
+                PipelineSnapshotRequest(
                     project=ws.id,
                     stack=stack.id,
+                    pipeline=self.pipeline.id,
                     run_name_template="",
                     pipeline_configuration={"name": "pipeline_name"},
                     client_version="0.12.3",
                     server_version="0.12.3",
                 ),
             )
-            self.deployments.append(deployment)
+            self.snapshots.append(snapshot)
             self.prs.append(
                 client.zen_store.get_or_create_run(
                     PipelineRunRequest(
@@ -753,7 +761,7 @@ class ModelContext:
                         status="running",
                         config=PipelineConfiguration(name="aria_pipeline"),
                         project=ws.id,
-                        deployment=deployment.id,
+                        snapshot=snapshot.id,
                     )
                 )[0]
             )
@@ -784,8 +792,9 @@ class ModelContext:
             client.delete_artifact(artifact.id)
         for run in self.prs:
             client.zen_store.delete_run(run.id)
-        for deployment in self.deployments:
-            client.delete_deployment(str(deployment.id))
+        for snapshot in self.snapshots:
+            client.delete_snapshot(str(snapshot.id))
+        client.zen_store.delete_pipeline(self.pipeline.id)
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
@@ -1268,10 +1277,11 @@ build_crud_test_config = CrudTestConfig(
     entity_name="build",
     conditional_entities={"stack": remote_stack_crud_test_config},
 )
-deployment_crud_test_config = CrudTestConfig(
-    create_model=PipelineDeploymentRequest(
+snapshot_crud_test_config = CrudTestConfig(
+    create_model=PipelineSnapshotRequest(
         project=uuid.uuid4(),
         stack=uuid.uuid4(),
+        pipeline=uuid.uuid4(),
         run_name_template="template",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
@@ -1279,8 +1289,9 @@ deployment_crud_test_config = CrudTestConfig(
         pipeline_version_hash="random_hash",
         pipeline_spec=PipelineSpec(steps=[]),
     ),
-    filter_model=PipelineDeploymentFilter,
-    entity_name="deployment",
+    filter_model=PipelineSnapshotFilter,
+    entity_name="snapshot",
+    conditional_entities={"pipeline": deepcopy(pipeline_crud_test_config)},
 )
 code_repository_crud_test_config = CrudTestConfig(
     create_model=CodeRepositoryRequest(
@@ -1344,11 +1355,12 @@ model_crud_test_config = CrudTestConfig(
     filter_model=ModelFilter,
     entity_name="model",
 )
-remote_deployment_crud_test_config = CrudTestConfig(
-    create_model=PipelineDeploymentRequest(
+remote_snapshot_crud_test_config = CrudTestConfig(
+    create_model=PipelineSnapshotRequest(
         project=uuid.uuid4(),
         stack=uuid.uuid4(),
         build=uuid.uuid4(),  # will be overridden in create()
+        pipeline=uuid.uuid4(),
         run_name_template="template",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
@@ -1356,24 +1368,25 @@ remote_deployment_crud_test_config = CrudTestConfig(
         pipeline_version_hash="random_hash",
         pipeline_spec=PipelineSpec(steps=[]),
     ),
-    filter_model=PipelineDeploymentFilter,
-    entity_name="deployment",
+    filter_model=PipelineSnapshotFilter,
+    entity_name="snapshot",
     conditional_entities={
         "build": deepcopy(build_crud_test_config),
+        "pipeline": deepcopy(pipeline_crud_test_config),
     },
 )
 run_template_test_config = CrudTestConfig(
     create_model=RunTemplateRequest(
         name=sample_name("run_template"),
         description="Test run template.",
-        source_deployment_id=uuid.uuid4(),  # will be overridden in create()
+        source_snapshot_id=uuid.uuid4(),  # will be overridden in create()
         project=uuid.uuid4(),
     ),
     update_model=RunTemplateUpdate(name=sample_name("updated_run_template")),
     filter_model=RunTemplateFilter,
     entity_name="run_template",
     conditional_entities={
-        "source_deployment_id": deepcopy(remote_deployment_crud_test_config),
+        "source_snapshot_id": deepcopy(remote_snapshot_crud_test_config),
     },
 )
 event_source_crud_test_config = CrudTestConfig(
@@ -1397,7 +1410,7 @@ action_crud_test_config = CrudTestConfig(
         name=sample_name("blupus_feeder"),
         description="Feeds blupus when he meows.",
         service_account_id=uuid.uuid4(),  # will be overridden in create()
-        configuration={"template_id": uuid.uuid4()},
+        configuration={"snapshot_id": uuid.uuid4()},
         plugin_subtype=PluginSubType.PIPELINE_RUN,
         flavor="builtin",
         project=uuid.uuid4(),
@@ -1408,7 +1421,9 @@ action_crud_test_config = CrudTestConfig(
     supported_zen_stores=(RestZenStore,),
     conditional_entities={
         "service_account_id": deepcopy(service_account_crud_test_config),
-        "configuration.template_id": deepcopy(run_template_test_config),
+        "configuration.snapshot_id": deepcopy(
+            remote_snapshot_crud_test_config
+        ),
     },
 )
 trigger_crud_test_config = CrudTestConfig(
@@ -1460,7 +1475,7 @@ list_of_entities = [
     artifact_version_crud_test_config,
     secret_crud_test_config,
     build_crud_test_config,
-    deployment_crud_test_config,
+    snapshot_crud_test_config,
     code_repository_crud_test_config,
     service_connector_crud_test_config,
     model_crud_test_config,

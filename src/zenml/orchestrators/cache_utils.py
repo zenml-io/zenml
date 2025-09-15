@@ -28,8 +28,8 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models import (
         ArtifactVersionResponse,
-        PipelineDeploymentResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         StepRunResponse,
     )
     from zenml.stack import Stack
@@ -165,15 +165,15 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     return None
 
 
-def create_cached_step_runs_and_prune_deployment(
-    deployment: "PipelineDeploymentResponse",
+def create_cached_step_runs_and_prune_snapshot(
+    snapshot: "PipelineSnapshotResponse",
     pipeline_run: "PipelineRunResponse",
     stack: "Stack",
 ) -> bool:
-    """Create cached step runs and prune the cached steps from the deployment.
+    """Create cached step runs and prune the cached steps from the snapshot.
 
     Args:
-        deployment: The deployment of the pipeline run.
+        snapshot: The pipeline snapshot.
         pipeline_run: The pipeline run for which to create the step runs.
         stack: The stack on which the pipeline run is happening.
 
@@ -181,22 +181,22 @@ def create_cached_step_runs_and_prune_deployment(
         Whether an actual pipeline run is still required.
     """
     cached_invocations = step_run_utils.create_cached_step_runs(
-        deployment=deployment,
+        snapshot=snapshot,
         pipeline_run=pipeline_run,
         stack=stack,
     )
 
     for invocation_id in cached_invocations:
-        # Remove the cached step invocations from the deployment so
+        # Remove the cached step invocations from the snapshot so
         # the orchestrator does not try to run them
-        deployment.step_configurations.pop(invocation_id)
+        snapshot.step_configurations.pop(invocation_id)
 
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         for invocation_id in cached_invocations:
             if invocation_id in step.spec.upstream_steps:
                 step.spec.upstream_steps.remove(invocation_id)
 
-    if len(deployment.step_configurations) == 0:
+    if len(snapshot.step_configurations) == 0:
         # All steps were cached, we update the pipeline run status and
         # don't actually use the orchestrator to run the pipeline
         logger.info("All steps of the pipeline run were cached.")

@@ -34,6 +34,7 @@ from zenml.constants import (
 from zenml.models import (
     Page,
     PipelineRunResponse,
+    PipelineSnapshotTriggerRequest,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -68,6 +69,7 @@ router = APIRouter(
     prefix=API + VERSION_1 + RUN_TEMPLATES,
     tags=["run_templates"],
     responses={401: error_response, 403: error_response},
+    deprecated=True,
 )
 
 
@@ -251,11 +253,14 @@ if server_config().workload_manager_enabled:
             config: Configuration for the pipeline run.
             auth_context: Authentication context.
 
+        Raises:
+            ValueError: If the template can not be run.
+
         Returns:
             The created pipeline run.
         """
-        from zenml.zen_server.template_execution.utils import (
-            run_template,
+        from zenml.zen_server.pipeline_execution.utils import (
+            trigger_snapshot,
         )
 
         rbac_read_checks = []
@@ -273,7 +278,7 @@ if server_config().workload_manager_enabled:
             }
 
             verify_permission(
-                resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+                resource_type=ResourceType.PIPELINE_SNAPSHOT,
                 action=Action.CREATE,
                 project_id=template.project_id,
             )
@@ -303,8 +308,17 @@ if server_config().workload_manager_enabled:
                     rbac_read_checks, action=Action.READ
                 )
 
-            return run_template(
-                template=template,
+            if not template.source_snapshot:
+                raise ValueError(
+                    "This template can not be run because it has no source "
+                    "snapshot."
+                )
+
+            return trigger_snapshot(
+                snapshot=template.source_snapshot,
                 auth_context=auth_context,
-                run_config=config,
+                trigger_request=PipelineSnapshotTriggerRequest(
+                    run_configuration=config,
+                ),
+                template_id=template_id,
             )

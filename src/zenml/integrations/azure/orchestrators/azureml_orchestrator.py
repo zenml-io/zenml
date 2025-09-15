@@ -68,7 +68,7 @@ from zenml.stack import StackValidator
 from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -199,7 +199,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
@@ -213,14 +213,14 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
             step_environments: Environment variables to set when executing
                 specific steps.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
             RuntimeError: If the creation of the schedule fails.
@@ -237,7 +237,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # Settings
         settings = cast(
             AzureMLOrchestratorSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
         # Client creation
@@ -250,17 +250,17 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         # Create components
         components = {}
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             step_environment = step_environments[step_name]
             # Get the image for each step
-            image = self.get_image(deployment=deployment, step_name=step_name)
+            image = self.get_image(snapshot=snapshot, step_name=step_name)
 
             # Get the command and arguments
             command = AzureMLEntrypointConfiguration.get_entrypoint_command()
             arguments = (
                 AzureMLEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
-                    deployment_id=deployment.id,
+                    snapshot_id=snapshot.id,
                     zenml_env_variables=b64_encode(
                         json.dumps(step_environment)
                     ),
@@ -271,7 +271,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             components[step_name] = self._create_command_component(
                 step=step,
                 step_name=step_name,
-                env_name=deployment.pipeline_configuration.name,
+                env_name=snapshot.pipeline_configuration.name,
                 image=image,
                 command=command,
                 arguments=arguments,
@@ -280,7 +280,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # Pipeline definition
         pipeline_args = dict()
         run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
+            pipeline_name=snapshot.pipeline_configuration.name
         )
         pipeline_args["name"] = run_name
 
@@ -319,7 +319,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             pipeline_job.settings.default_compute = "serverless"
 
         # Scheduling
-        if schedule := deployment.schedule:
+        if schedule := snapshot.schedule:
             try:
                 schedule_trigger: Optional[
                     Union[CronTrigger, RecurrenceTrigger]

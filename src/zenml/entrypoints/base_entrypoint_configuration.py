@@ -34,7 +34,7 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.models import CodeReferenceResponse, PipelineDeploymentResponse
+    from zenml.models import CodeReferenceResponse, PipelineSnapshotResponse
 
 logger = get_logger(__name__)
 DEFAULT_ENTRYPOINT_COMMAND = [
@@ -44,7 +44,7 @@ DEFAULT_ENTRYPOINT_COMMAND = [
 ]
 
 ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
-DEPLOYMENT_ID_OPTION = "deployment_id"
+SNAPSHOT_ID_OPTION = "snapshot_id"
 
 
 class BaseEntrypointConfiguration(ABC):
@@ -93,8 +93,8 @@ class BaseEntrypointConfiguration(ABC):
             # Importable source pointing to the entrypoint configuration class
             # that should be used inside the entrypoint.
             ENTRYPOINT_CONFIG_SOURCE_OPTION,
-            # ID of the pipeline deployment to use in this entrypoint
-            DEPLOYMENT_ID_OPTION,
+            # ID of the pipeline snapshot to use in this entrypoint
+            SNAPSHOT_ID_OPTION,
         }
 
     @classmethod
@@ -117,22 +117,22 @@ class BaseEntrypointConfiguration(ABC):
             A list of strings with the arguments.
 
         Raises:
-            ValueError: If no valid deployment ID is passed.
+            ValueError: If no valid snapshot ID is passed.
         """
-        deployment_id = kwargs.get(DEPLOYMENT_ID_OPTION)
-        if not uuid_utils.is_valid_uuid(deployment_id):
+        snapshot_id = kwargs.get(SNAPSHOT_ID_OPTION)
+        if not uuid_utils.is_valid_uuid(snapshot_id):
             raise ValueError(
-                f"Missing or invalid deployment ID as argument for entrypoint "
+                f"Missing or invalid snapshot ID as argument for entrypoint "
                 f"configuration. Please make sure to pass a valid UUID to "
                 f"`{cls.__name__}.{cls.get_entrypoint_arguments.__name__}"
-                f"({DEPLOYMENT_ID_OPTION}=<UUID>)`."
+                f"({SNAPSHOT_ID_OPTION}=<UUID>)`."
             )
 
         arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
             source_utils.resolve(cls).import_path,
-            f"--{DEPLOYMENT_ID_OPTION}",
-            str(deployment_id),
+            f"--{SNAPSHOT_ID_OPTION}",
+            str(snapshot_id),
         ]
 
         return arguments
@@ -183,24 +183,24 @@ class BaseEntrypointConfiguration(ABC):
         result, _ = parser.parse_known_args(arguments)
         return vars(result)
 
-    def load_deployment(self) -> "PipelineDeploymentResponse":
-        """Loads the deployment.
+    def load_snapshot(self) -> "PipelineSnapshotResponse":
+        """Loads the snapshot.
 
         Returns:
-            The deployment.
+            The snapshot.
         """
-        deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
-        return Client().zen_store.get_deployment(deployment_id=deployment_id)
+        snapshot_id = UUID(self.entrypoint_args[SNAPSHOT_ID_OPTION])
+        return Client().zen_store.get_snapshot(snapshot_id=snapshot_id)
 
     def download_code_if_necessary(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         step_name: Optional[str] = None,
     ) -> None:
         """Downloads user code if necessary.
 
         Args:
-            deployment: The deployment for which to download the code.
+            snapshot: The snapshot for which to download the code.
             step_name: Name of the step to be run. This will be used to
                 determine whether code download is necessary. If not given,
                 the DockerSettings of the pipeline will be used to make that
@@ -210,16 +210,16 @@ class BaseEntrypointConfiguration(ABC):
             CustomFlavorImportError: If the artifact store flavor can't be
                 imported.
             RuntimeError: If the current environment requires code download
-                but the deployment does not have a reference to any code.
+                but the snapshot does not have a reference to any code.
         """
         should_download_code = self._should_download_code(
-            deployment=deployment, step_name=step_name
+            snapshot=snapshot, step_name=step_name
         )
 
         if not should_download_code:
             return
 
-        if code_path := deployment.code_path:
+        if code_path := snapshot.code_path:
             # Load the artifact store not from the active stack but separately.
             # This is required in case the stack has custom flavor components
             # (other than the artifact store) for which the flavor
@@ -241,7 +241,7 @@ class BaseEntrypointConfiguration(ABC):
             code_utils.download_code_from_artifact_store(
                 code_path=code_path, artifact_store=artifact_store
             )
-        elif code_reference := deployment.code_reference:
+        elif code_reference := snapshot.code_reference:
             # TODO: This might fail if the code repository had unpushed changes
             # at the time the pipeline run was started.
             self.download_code_from_code_repository(
@@ -290,13 +290,13 @@ class BaseEntrypointConfiguration(ABC):
 
     def _should_download_code(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         step_name: Optional[str] = None,
     ) -> bool:
         """Checks whether code should be downloaded.
 
         Args:
-            deployment: The deployment to check.
+            snapshot: The snapshot to check.
             step_name: Name of the step to be run. This will be used to
                 determine whether code download is necessary. If not given,
                 the DockerSettings of the pipeline will be used to make that
@@ -306,19 +306,19 @@ class BaseEntrypointConfiguration(ABC):
             Whether code should be downloaded.
         """
         docker_settings = (
-            deployment.step_configurations[step_name].config.docker_settings
+            snapshot.step_configurations[step_name].config.docker_settings
             if step_name
-            else deployment.pipeline_configuration.docker_settings
+            else snapshot.pipeline_configuration.docker_settings
         )
 
         if (
-            deployment.code_reference
+            snapshot.code_reference
             and docker_settings.allow_download_from_code_repository
         ):
             return True
 
         if (
-            deployment.code_path
+            snapshot.code_path
             and docker_settings.allow_download_from_artifact_store
         ):
             return True

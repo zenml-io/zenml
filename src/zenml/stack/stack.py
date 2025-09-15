@@ -65,9 +65,9 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import (
-        PipelineDeploymentBase,
-        PipelineDeploymentResponse,
         PipelineRunResponse,
+        PipelineSnapshotBase,
+        PipelineSnapshotResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.stack import StackComponent
@@ -800,18 +800,18 @@ class Stack:
 
             self._image_builder = image_builder
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeploymentResponse"
+    def prepare_pipeline_submission(
+        self, snapshot: "PipelineSnapshotResponse"
     ) -> None:
-        """Prepares the stack for a pipeline deployment.
+        """Prepares the stack for a pipeline submission.
 
-        This method is called before a pipeline is deployed.
+        This method is called before a pipeline is submitted.
 
         Args:
-            deployment: The pipeline deployment
+            snapshot: The pipeline snapshot
 
         Raises:
-            RuntimeError: If trying to deploy a pipeline that requires a remote
+            RuntimeError: If trying to submit a pipeline that requires a remote
                 ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
@@ -826,42 +826,37 @@ class Stack:
                 "for more information on how to deploy ZenML."
             )
 
-        for component in self.components.values():
-            component.prepare_pipeline_deployment(
-                deployment=deployment, stack=self
-            )
-
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the stack.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
         """
         return list(
             itertools.chain.from_iterable(
-                component.get_docker_builds(deployment=deployment)
+                component.get_docker_builds(snapshot=snapshot)
                 for component in self.components.values()
             )
         )
 
-    def deploy_pipeline(
+    def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
-        """Deploys a pipeline on this stack.
+        """Submits a pipeline on this stack.
 
         Args:
-            deployment: The pipeline deployment.
-            placeholder_run: An optional placeholder run for the deployment.
+            snapshot: The pipeline snapshot.
+            placeholder_run: An optional placeholder run for the snapshot.
         """
         self.orchestrator.run(
-            deployment=deployment, stack=self, placeholder_run=placeholder_run
+            snapshot=snapshot, stack=self, placeholder_run=placeholder_run
         )
 
     def _get_active_components_for_step(

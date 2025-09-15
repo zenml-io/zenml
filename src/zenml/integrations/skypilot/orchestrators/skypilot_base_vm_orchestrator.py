@@ -49,7 +49,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 
@@ -156,7 +156,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
@@ -170,14 +170,14 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
             step_environments: Environment variables to set when executing
                 specific steps.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
             Exception: If the pipeline run fails.
@@ -196,7 +196,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 "and run the code outside of a notebook when using this "
                 "orchestrator."
             )
-        if deployment.schedule:
+        if snapshot.schedule:
             logger.warning(
                 "Skypilot Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
@@ -211,30 +211,30 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         settings = cast(
             SkypilotBaseOrchestratorSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
-        pipeline_name = deployment.pipeline_configuration.name
+        pipeline_name = snapshot.pipeline_configuration.name
         orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
 
         assert stack.container_registry
 
         # Get Docker image for the orchestrator pod
         try:
-            image = self.get_image(deployment=deployment)
+            image = self.get_image(snapshot=snapshot)
         except KeyError:
             # If no generic pipeline image exists (which means all steps have
             # custom builds) we use a random step image as all of them include
             # dependencies for the active stack
-            pipeline_step_name = next(iter(deployment.step_configurations))
+            pipeline_step_name = next(iter(snapshot.step_configurations))
             image = self.get_image(
-                deployment=deployment, step_name=pipeline_step_name
+                snapshot=snapshot, step_name=pipeline_step_name
             )
 
         different_settings_found = False
 
         if not self.config.disable_step_based_settings:
-            for _, step in deployment.step_configurations.items():
+            for _, step in snapshot.step_configurations.items():
                 step_settings = cast(
                     SkypilotBaseOrchestratorSettings,
                     self.get_settings(step),
@@ -262,13 +262,13 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             command = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_command()
             args = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
-                deployment_id=deployment.id,
+                snapshot_id=snapshot.id,
             )
         else:
             # Run the entire pipeline in one VM using PipelineEntrypointConfiguration
             command = PipelineEntrypointConfiguration.get_entrypoint_command()
             args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
-                deployment_id=deployment.id
+                snapshot_id=snapshot.id
             )
 
         entrypoint_str = " ".join(command)

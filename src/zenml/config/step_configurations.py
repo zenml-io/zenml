@@ -61,7 +61,7 @@ class PartialArtifactConfiguration(FrozenBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
     materializer_source: Optional[Tuple[SourceWithValidator, ...]] = None
-    # TODO: This could be moved to the `PipelineDeployment` as it's the same
+    # TODO: This could be moved to the `PipelineSnapshot` as it's the same
     # for all steps/outputs
     default_materializer_source: Optional[SourceWithValidator] = None
     artifact_config: Optional[ArtifactConfig] = None

@@ -40,7 +40,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
-from zenml.models import PipelineDeploymentBase
+from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
@@ -78,7 +78,7 @@ class Compiler:
         pipeline: "Pipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
-    ) -> PipelineDeploymentBase:
+    ) -> PipelineSnapshotBase:
         """Compiles a ZenML pipeline to a serializable representation.
 
         Args:
@@ -87,7 +87,7 @@ class Compiler:
             run_configuration: The run configuration for this pipeline.
 
         Returns:
-            The compiled pipeline deployment.
+            The compiled pipeline snapshot.
         """
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations, so
@@ -151,7 +151,7 @@ class Compiler:
             pipeline=pipeline, step_specs=step_specs
         )
 
-        deployment = PipelineDeploymentBase(
+        snapshot = PipelineSnapshotBase(
             run_name_template=run_name,
             pipeline_configuration=pipeline.configuration,
             step_configurations=steps,
@@ -164,15 +164,15 @@ class Compiler:
             pipeline_spec=pipeline_spec,
         )
 
-        logger.debug("Compiled pipeline deployment: %s", deployment)
+        logger.debug("Compiled pipeline snapshot: %s", snapshot)
 
-        return deployment
+        return snapshot
 
     def compile_spec(self, pipeline: "Pipeline") -> PipelineSpec:
         """Compiles a ZenML pipeline to a pipeline spec.
 
         This method can be used when a pipeline spec is needed but the full
-        deployment including stack information is not required.
+        snapshot including stack information is not required.
 
         Args:
             pipeline: The pipeline to compile.
@@ -424,7 +424,7 @@ class Compiler:
 
             if not settings_instance.model_fields_set:
                 # There are no values defined on the settings instance, don't
-                # include them in the deployment
+                # include them in the snapshot
                 continue
 
             validated_settings[key] = settings_instance

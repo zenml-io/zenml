@@ -78,7 +78,7 @@ from zenml.utils.env_utils import split_environment_variables
 from zenml.utils.time_utils import to_utc_timezone, utc_now_tz_aware
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
@@ -273,7 +273,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         base_environment: Dict[str, str],
         step_environments: Dict[str, Dict[str, str]],
@@ -287,14 +287,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
             base_environment: Base environment shared by all steps. This should
                 be set if your orchestrator for example runs one container that
                 is responsible for starting all the steps.
             step_environments: Environment variables to set when executing
                 specific steps.
-            placeholder_run: An optional placeholder run for the deployment.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
             RuntimeError: If there is an error creating or scheduling the
@@ -308,7 +308,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         # sagemaker requires pipelineName to use alphanum and hyphens only
         unsanitized_orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
+            pipeline_name=snapshot.pipeline_configuration.name
         )
         # replace all non-alphanum and non-hyphens with hyphens
         orchestrator_run_name = re.sub(
@@ -318,7 +318,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         session = self._get_sagemaker_session()
 
         sagemaker_steps = []
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             step_environment = step_environments[step_name]
 
             # Sagemaker does not allow environment variables longer than 256
@@ -331,11 +331,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 env=step_environment,
             )
 
-            image = self.get_image(deployment=deployment, step_name=step_name)
+            image = self.get_image(snapshot=snapshot, step_name=step_name)
             command = SagemakerEntrypointConfiguration.get_entrypoint_command()
             arguments = (
                 SagemakerEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, deployment_id=deployment.id
+                    step_name=step_name, snapshot_id=snapshot.id
                 )
             )
             entrypoint = command + arguments
@@ -573,7 +573,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         settings = cast(
-            SagemakerOrchestratorSettings, self.get_settings(deployment)
+            SagemakerOrchestratorSettings, self.get_settings(snapshot)
         )
 
         pipeline.create(
@@ -587,7 +587,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         # Handle scheduling if specified
-        if deployment.schedule:
+        if snapshot.schedule:
             if settings.synchronous:
                 logger.warning(
                     "The 'synchronous' setting is ignored for scheduled "
@@ -598,15 +598,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             schedule_name = orchestrator_run_name
             next_execution = None
             start_date = (
-                to_utc_timezone(deployment.schedule.start_time)
-                if deployment.schedule.start_time
+                to_utc_timezone(snapshot.schedule.start_time)
+                if snapshot.schedule.start_time
                 else None
             )
 
             # Create PipelineSchedule based on schedule type
-            if deployment.schedule.cron_expression:
+            if snapshot.schedule.cron_expression:
                 cron_exp = self._validate_cron_expression(
-                    deployment.schedule.cron_expression
+                    snapshot.schedule.cron_expression
                 )
                 schedule = PipelineSchedule(
                     name=schedule_name,
@@ -614,7 +614,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     start_date=start_date,
                     enabled=True,
                 )
-            elif deployment.schedule.interval_second:
+            elif snapshot.schedule.interval_second:
                 # This is necessary because SageMaker's PipelineSchedule rate
                 # expressions require minutes as the minimum time unit.
                 # Even if a user specifies an interval of less than 60 seconds,
@@ -622,8 +622,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 minutes = max(
                     1,
                     int(
-                        deployment.schedule.interval_second.total_seconds()
-                        / 60
+                        snapshot.schedule.interval_second.total_seconds() / 60
                     ),
                 )
                 schedule = PipelineSchedule(
@@ -633,13 +632,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     enabled=True,
                 )
                 next_execution = (
-                    deployment.schedule.start_time or utc_now_tz_aware()
-                ) + deployment.schedule.interval_second
+                    snapshot.schedule.start_time or utc_now_tz_aware()
+                ) + snapshot.schedule.interval_second
             else:
                 # One-time schedule
                 execution_time = (
-                    deployment.schedule.run_once_start_time
-                    or deployment.schedule.start_time
+                    snapshot.schedule.run_once_start_time
+                    or snapshot.schedule.start_time
                 )
                 if not execution_time:
                     raise ValueError(
@@ -727,11 +726,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     f"{next_execution.strftime('%Y-%m-%d %H:%M:%S UTC')}"
                     if next_execution
                     else f"Using cron expression: "
-                    f"{deployment.schedule.cron_expression}"
+                    f"{snapshot.schedule.cron_expression}"
                 )
                 + (
                     f" (and every {minutes} minutes after)"
-                    if deployment.schedule.interval_second
+                    if snapshot.schedule.interval_second
                     else ""
                 )
             )
