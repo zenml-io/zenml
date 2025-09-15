@@ -135,9 +135,9 @@ my_pipeline.configure(execution_mode=ExecutionMode.STOP_ON_FAILURE)
 As an example, you can consider a pipeline with this dependency structure:
 
 ```
-         |-- Step 2 --> Step 5 --|
-Step 1 --|-- Step 3 --> Step 6 --|--> Step 8
-         |-- Step 4 --> Step 7 --|
+         ┌─► Step 2 ──► Step 5 ─┐
+Step 1 ──┼─► Step 3 ──► Step 6 ─┼──► Step 8
+         └─► Step 4 ──► Step 7 ─┘
 ```
 
 If the vertically aligned steps execute at the same time and step 2 fails:
