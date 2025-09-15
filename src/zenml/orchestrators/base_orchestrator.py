@@ -215,7 +215,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """DEPRECATED: Prepare or run a pipeline.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The deployment to prepare or run.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
@@ -233,8 +233,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             snapshot: The pipeline snapshot.
             stack: The stack on which to run the pipeline.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
+            placeholder_run: An optional placeholder run for the snapshot.
+                This will be deleted in case the pipeline run failed.
 
         Raises:
             KeyboardInterrupt: If the orchestrator is synchronous and the

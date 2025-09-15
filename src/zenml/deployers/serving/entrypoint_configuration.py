@@ -17,7 +17,7 @@ import os
 from typing import Any, List, Set
 
 from zenml.entrypoints.base_entrypoint_configuration import (
-    DEPLOYMENT_ID_OPTION,
+    SNAPSHOT_ID_OPTION,
     BaseEntrypointConfiguration,
 )
 from zenml.logger import get_logger
@@ -48,7 +48,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
             Set of required option names
         """
         return {
-            DEPLOYMENT_ID_OPTION,
+            SNAPSHOT_ID_OPTION,
             HOST_OPTION,
             PORT_OPTION,
             WORKERS_OPTION,
@@ -70,7 +70,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         Raises:
             ValueError: If required arguments are missing
         """
-        # Get base arguments (deployment_id, etc.)
+        # Get base arguments (snapshot_id, etc.)
         base_args = super().get_entrypoint_arguments(**kwargs)
 
         # Add serving-specific arguments with defaults
@@ -95,12 +95,12 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         """Run the ZenML pipeline serving application.
 
         This method starts the FastAPI server with the configured parameters
-        and the specified pipeline deployment.
+        and the specified pipeline snapshot.
         """
         import uvicorn
 
         # Extract configuration from entrypoint args
-        deployment_id = self.entrypoint_args[DEPLOYMENT_ID_OPTION]
+        snapshot_id = self.entrypoint_args[SNAPSHOT_ID_OPTION]
         host = self.entrypoint_args.get(HOST_OPTION, "0.0.0.0")
         port = int(self.entrypoint_args.get(PORT_OPTION, 8001))
         workers = int(self.entrypoint_args.get(WORKERS_OPTION, 1))
@@ -111,20 +111,20 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         )
         auth_key = self.entrypoint_args.get(AUTH_KEY_OPTION, None)
 
-        deployment = self.load_deployment()
+        snapshot = self.load_snapshot()
 
         # Download code if necessary (for remote execution environments)
-        self.download_code_if_necessary(deployment=deployment)
+        self.download_code_if_necessary(snapshot=snapshot)
 
         # Set environment variables for the serving application
-        os.environ["ZENML_PIPELINE_DEPLOYMENT_ID"] = deployment_id
+        os.environ["ZENML_SNAPSHOT_ID"] = snapshot_id
         if create_runs:
             os.environ["ZENML_SERVING_CREATE_RUNS"] = "true"
         if auth_key:
             os.environ["ZENML_SERVING_AUTH_KEY"] = auth_key
 
         logger.info("🚀 Starting ZenML Pipeline Serving...")
-        logger.info(f"   Deployment ID: {deployment_id}")
+        logger.info(f"   Snapshot ID: {snapshot_id}")
         logger.info(f"   Host: {host}")
         logger.info(f"   Port: {port}")
         logger.info(f"   Workers: {workers}")

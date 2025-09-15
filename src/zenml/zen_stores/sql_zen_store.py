@@ -5188,7 +5188,7 @@ class SqlZenStore(BaseZenStore):
         """
         raise NotImplementedError(
             "Running a snapshot is not possible with a local store."
-        )            
+        )
 
     # -------------------- Pipeline endpoints --------------------
 
@@ -5216,7 +5216,7 @@ class SqlZenStore(BaseZenStore):
             self._get_reference_schema_by_id(
                 resource=pipeline_endpoint,
                 reference_schema=PipelineSnapshotSchema,
-                reference_id=pipeline_endpoint.pipeline_deployment_id,
+                reference_id=pipeline_endpoint.snapshot_id,
                 session=session,
             )
             self._get_reference_schema_by_id(
@@ -5318,7 +5318,7 @@ class SqlZenStore(BaseZenStore):
             self._get_reference_schema_by_id(
                 resource=pipeline_endpoint,
                 reference_schema=PipelineSnapshotSchema,
-                reference_id=endpoint_update.pipeline_deployment_id,
+                reference_id=endpoint_update.snapshot_id,
                 session=session,
             )
 
@@ -5348,7 +5348,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(pipeline_endpoint)
             session.commit()
-
 
     # -------------------- Run templates --------------------
 

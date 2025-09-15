@@ -48,7 +48,7 @@ from zenml.deployers.serving.entrypoint_configuration import (
     ServingEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
-    DEPLOYMENT_ID_OPTION,
+    SNAPSHOT_ID_OPTION,
 )
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.integrations.aws.flavors.aws_deployer_flavor import (
@@ -1319,18 +1319,18 @@ class AWSDeployer(ContainerizedDeployer):
             PipelineEndpointDeploymentError: If the deployment fails.
             DeployerError: If an unexpected error occurs.
         """
-        deployment = endpoint.pipeline_deployment
-        assert deployment, "Pipeline deployment not found"
+        snapshot = endpoint.snapshot
+        assert snapshot, "Pipeline snapshot not found"
 
         environment = environment or {}
         secrets = secrets or {}
 
         settings = cast(
             AWSDeployerSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
-        resource_settings = deployment.pipeline_configuration.resource_settings
+        resource_settings = snapshot.pipeline_configuration.resource_settings
 
         # Convert ResourceSettings to AWS App Runner format with fallbacks
         cpu, memory = self._convert_resource_settings_to_aws_format(
@@ -1350,7 +1350,7 @@ class AWSDeployer(ContainerizedDeployer):
 
         # Check if service already exists and if replacement is needed
         existing_service = self._get_app_runner_service(endpoint)
-        image = self.get_image(deployment)
+        image = self.get_image(snapshot)
         region = self.region
 
         if existing_service and self._requires_service_replacement(
@@ -1375,7 +1375,7 @@ class AWSDeployer(ContainerizedDeployer):
         entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
         arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
             **{
-                DEPLOYMENT_ID_OPTION: deployment.id,
+                SNAPSHOT_ID_OPTION: snapshot.id,
                 PORT_OPTION: settings.port,
                 AUTH_KEY_OPTION: endpoint.auth_key,
             }

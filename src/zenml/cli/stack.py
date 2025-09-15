@@ -706,6 +706,8 @@ def register_stack(
     help="Name of the deployer for this stack.",
     type=str,
     required=False,
+)
+@click.option(
     "--secret",
     "secrets",
     help="Secrets to attach to the stack.",

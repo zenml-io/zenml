@@ -1,7 +1,7 @@
 """add pipeline endpoints [0d69e308846a].
 
 Revision ID: 0d69e308846a
-Revises: 0.85.0
+Revises: 8ad841ad9bfe
 Create Date: 2025-08-26 10:30:52.737833
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "0d69e308846a"
-down_revision = "0.85.0"
+down_revision = "8ad841ad9bfe"
 branch_labels = None
 depends_on = None
 
@@ -40,15 +40,15 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "pipeline_deployment_id",
+            "snapshot_id",
             sqlmodel.sql.sqltypes.GUID(),
             nullable=True,
         ),
         sa.Column("deployer_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.ForeignKeyConstraint(
-            ["pipeline_deployment_id"],
-            ["pipeline_deployment.id"],
-            name="fk_pipeline_endpoint_pipeline_deployment_id_pipeline_deployment",
+            ["snapshot_id"],
+            ["pipeline_snapshot.id"],
+            name="fk_pipeline_endpoint_snapshot_id_pipeline_snapshot",
             ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(

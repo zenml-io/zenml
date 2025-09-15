@@ -58,7 +58,7 @@ from zenml.deployers.serving.entrypoint_configuration import (
     ServingEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
-    DEPLOYMENT_ID_OPTION,
+    SNAPSHOT_ID_OPTION,
 )
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.logger import get_logger
@@ -139,13 +139,6 @@ class DockerPipelineEndpointMetadata(BaseModel):
 
 class DockerDeployer(ContainerizedDeployer):
     """Deployer responsible for serving pipelines locally using Docker."""
-
-    # TODO:
-
-    # * which environment variables go into the container? who provides them?
-    # * how are endpoints authenticated?
-    # * check the health status of the container too
-    # * pipeline inside pipeline
 
     CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
     _docker_client: Optional[DockerClient] = None
@@ -329,8 +322,8 @@ class DockerDeployer(ContainerizedDeployer):
             PipelineEndpointDeploymentError: if the pipeline endpoint deployment
                 fails.
         """
-        deployment = endpoint.pipeline_deployment
-        assert deployment, "Pipeline deployment not found"
+        snapshot = endpoint.snapshot
+        assert snapshot, "Pipeline snapshot not found"
 
         environment = environment or {}
         secrets = secrets or {}
@@ -340,7 +333,7 @@ class DockerDeployer(ContainerizedDeployer):
 
         settings = cast(
             DockerDeployerSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
         existing_metadata = DockerPipelineEndpointMetadata.from_endpoint(
@@ -350,7 +343,7 @@ class DockerDeployer(ContainerizedDeployer):
         entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
 
         entrypoint_kwargs = {
-            DEPLOYMENT_ID_OPTION: deployment.id,
+            SNAPSHOT_ID_OPTION: snapshot.id,
             PORT_OPTION: 8000,
         }
         if endpoint.auth_key:
@@ -394,8 +387,8 @@ class DockerDeployer(ContainerizedDeployer):
             f"Starting container for pipeline endpoint '{endpoint.name}'..."
         )
 
-        assert endpoint.pipeline_deployment, "Pipeline deployment not found"
-        image = self.get_image(endpoint.pipeline_deployment)
+        assert endpoint.snapshot, "Pipeline snapshot not found"
+        image = self.get_image(endpoint.snapshot)
 
         try:
             self.docker_client.images.get(image)

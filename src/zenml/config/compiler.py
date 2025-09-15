@@ -729,7 +729,7 @@ class Compiler:
                                 "run_id": {"type": "string"},
                                 "run_name": {"type": "string"},
                                 "parameters_used": {"type": "object"},
-                                "deployment_id": {"type": "string"},
+                                "snapshot_id": {"type": "string"},
                             },
                         },
                     },

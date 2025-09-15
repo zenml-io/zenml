@@ -144,12 +144,12 @@ def describe_deployment(
 @deployment.command("provision")
 @click.argument("deployment_name_or_id", type=str, required=True)
 @click.option(
-    "--deployment",
-    "-d",
-    "deployment_id",
+    "--snapshot",
+    "-s",
+    "snapshot_id",
     type=str,
     required=False,
-    help="ID of the deployment to use.",
+    help="ID of the snapshot to use.",
 )
 @click.option(
     "--overtake",
@@ -158,7 +158,7 @@ def describe_deployment(
     is_flag=True,
     default=False,
     required=False,
-    help="Provision the pipeline deployment with the given name even if it is "
+    help="Provision the deployment with the given name even if it is "
     "owned by a different user.",
 )
 @click.option(
@@ -173,7 +173,7 @@ def describe_deployment(
 )
 def provision_deployment(
     deployment_name_or_id: str,
-    deployment_id: Optional[str] = None,
+    snapshot_id: Optional[str] = None,
     overtake: bool = False,
     timeout: Optional[int] = None,
 ) -> None:
@@ -181,8 +181,8 @@ def provision_deployment(
 
     Args:
         deployment_name_or_id: The name or ID of the deployment to deploy.
-        deployment_id: The ID of the pipeline deployment to use.
-        overtake: If True, provision the pipeline deployment with the given name
+        snapshot_id: The ID of the pipeline snapshot to use.
+        overtake: If True, provision the deployment with the given name
             even if it is owned by a different user.
         timeout: The maximum time in seconds to wait for the deployment
             to be provisioned.
@@ -214,7 +214,7 @@ def provision_deployment(
         try:
             deployment = Client().provision_pipeline_endpoint(
                 name_id_or_prefix=deployment_name_or_id,
-                deployment_id=deployment_id,
+                snapshot_id=snapshot_id,
                 timeout=timeout,
             )
         except KeyError as e:

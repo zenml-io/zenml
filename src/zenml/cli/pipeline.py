@@ -315,7 +315,10 @@ def run_pipeline(
     "deployment_name",
     type=str,
     required=False,
-    help="Name of the deployment resulted from serving the pipeline.",
+    help="The name of the deployment resulted from serving the pipeline. If "
+    "not provided, the name of the pipeline will be used. If an existing "
+    "deployment with the same name already exists, an error will be raised, "
+    "unless the --update or --overtake flag is used.",
 )
 @click.option(
     "--config",
@@ -355,8 +358,7 @@ def run_pipeline(
     is_flag=True,
     default=False,
     required=False,
-    help="Update the pipeline deployment with the same name if it already "
-    "exists.",
+    help="Update the deployment with the same name if it already exists.",
 )
 @click.option(
     "--overtake",
@@ -365,7 +367,7 @@ def run_pipeline(
     is_flag=True,
     default=False,
     required=False,
-    help="Update the pipeline deployment with the same name if it already "
+    help="Update the deployment with the same name if it already "
     "exists, even if it is owned by a different user.",
 )
 @click.option(
@@ -410,9 +412,9 @@ def deploy_pipeline(
             deployment.
         prevent_build_reuse: If True, prevents automatic reusing of previous
             builds.
-        update: If True, update the pipeline deployment with the same name if it
+        update: If True, update the deployment with the same name if it
             already exists.
-        overtake: If True, update the pipeline deployment with the same name if
+        overtake: If True, update the deployment with the same name if
             it already exists, even if it is owned by a different user.
         attach: If True, attach to the pipeline endpoint logs.
         timeout: The maximum time in seconds to wait for the pipeline to be
@@ -480,7 +482,7 @@ def deploy_pipeline(
                     cli_utils.declare("Deployment canceled.")
                     return
 
-        deployment = pipeline_instance.serve(endpoint_name=deployment_name)
+        deployment = pipeline_instance.deploy(endpoint_name=deployment_name)
 
         cli_utils.pretty_print_deployment(deployment, show_secret=False)
 

@@ -14,7 +14,7 @@
 """Shared utilities to construct and validate pipeline parameter models.
 
 This module centralizes the logic to:
-- Build a Pydantic model for pipeline parameters from a deployment
+- Build a Pydantic model for pipeline parameters from a snapshot
 - Validate and normalize request parameters using that model
 
 It is intentionally independent of FastAPI or serving internals so that
@@ -26,15 +26,15 @@ from typing import Any, Dict, Optional, Type
 from pydantic import BaseModel
 
 from zenml.logger import get_logger
-from zenml.models import PipelineDeploymentResponse
+from zenml.models import PipelineSnapshotResponse
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
 
-def build_params_model_from_deployment(
-    deployment: PipelineDeploymentResponse,
+def build_params_model_from_snapshot(
+    snapshot: PipelineSnapshotResponse,
     *,
     strict: bool = True,
 ) -> Optional[Type[BaseModel]]:
@@ -45,7 +45,7 @@ def build_params_model_from_deployment(
     (extra='forbid') to use for parameter validation.
 
     Args:
-        deployment: The deployment to derive the model from.
+        snapshot: The snapshot to derive the model from.
         strict: Whether to raise an error if the model cannot be constructed.
 
     Returns:
@@ -55,9 +55,9 @@ def build_params_model_from_deployment(
     Raises:
         RuntimeError: If the model cannot be constructed and `strict` is True.
     """
-    if not deployment.pipeline_spec or not deployment.pipeline_spec.source:
+    if not snapshot.pipeline_spec or not snapshot.pipeline_spec.source:
         msg = (
-            f"Deployment `{deployment.id}` is missing pipeline_spec.source; "
+            f"Snapshot `{snapshot.id}` is missing pipeline_spec.source; "
             "cannot build parameter model."
         )
         if strict:
@@ -66,10 +66,10 @@ def build_params_model_from_deployment(
 
     try:
         pipeline_class: Pipeline = source_utils.load(
-            deployment.pipeline_spec.source
+            snapshot.pipeline_spec.source
         )
     except Exception as e:
-        logger.debug(f"Failed to load pipeline class from deployment: {e}")
+        logger.debug(f"Failed to load pipeline class from snapshot: {e}")
         if strict:
             raise
         return None
@@ -78,7 +78,7 @@ def build_params_model_from_deployment(
     if not model:
         message = (
             f"Failed to construct parameters model from pipeline "
-            f"`{deployment.pipeline_configuration.name}`."
+            f"`{snapshot.pipeline_configuration.name}`."
         )
         if strict:
             raise RuntimeError(message)
@@ -90,17 +90,17 @@ def build_params_model_from_deployment(
 
 def validate_and_normalize_parameters(
     parameters: Dict[str, Any],
-    deployment: PipelineDeploymentResponse,
+    snapshot: PipelineSnapshotResponse,
     *,
     strict: bool = True,
 ) -> Dict[str, Any]:
     """Validate and normalize parameters using a Pydantic params model.
 
-    If model construction fails, falls back to merging with deployment defaults.
+    If model construction fails, falls back to merging with snapshot defaults.
 
     Args:
         parameters: Request parameters.
-        deployment: Deployment used to derive defaults and the model.
+        snapshot: Snapshot used to derive defaults and the model.
         strict: Whether to raise an error if the model cannot be constructed.
 
     Returns:
@@ -110,17 +110,17 @@ def validate_and_normalize_parameters(
         ValueError: If validation fails against the constructed model.
     """
     defaults = (
-        (deployment.pipeline_spec.parameters or {})
-        if deployment.pipeline_spec
+        (snapshot.pipeline_spec.parameters or {})
+        if snapshot.pipeline_spec
         else {}
     )
     merged = {**defaults, **(parameters or {})}
 
-    model = build_params_model_from_deployment(deployment, strict=strict)
+    model = build_params_model_from_snapshot(snapshot, strict=strict)
     if not model:
         if strict:
             raise RuntimeError(
-                "Failed to construct parameters model from deployment."
+                "Failed to construct parameters model from snapshot."
             )
         return merged
 

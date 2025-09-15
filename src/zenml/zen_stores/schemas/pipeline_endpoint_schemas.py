@@ -36,8 +36,8 @@ from zenml.models.v2.core.pipeline_endpoint import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
-from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-    PipelineDeploymentSchema,
+from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
+    PipelineSnapshotSchema,
 )
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -99,15 +99,15 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             nullable=False,
         ),
     )
-    pipeline_deployment_id: Optional[UUID] = build_foreign_key_field(
+    snapshot_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target="pipeline_deployment",
-        source_column="pipeline_deployment_id",
+        target=PipelineSnapshotSchema.__tablename__,
+        source_column="snapshot_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
     )
-    pipeline_deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+    snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
         back_populates="pipeline_endpoints",
     )
 
@@ -146,9 +146,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(PipelineEndpointSchema.user)),
-                    joinedload(
-                        jl_arg(PipelineEndpointSchema.pipeline_deployment)
-                    ),
+                    joinedload(jl_arg(PipelineEndpointSchema.snapshot)),
                     joinedload(jl_arg(PipelineEndpointSchema.deployer)),
                 ]
             )
@@ -183,7 +181,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = PipelineEndpointResponseMetadata(
-                pipeline_deployment_id=self.pipeline_deployment_id,
+                snapshot_id=self.snapshot_id,
                 deployer_id=self.deployer_id,
                 endpoint_metadata=json.loads(self.endpoint_metadata),
                 auth_key=self.auth_key,
@@ -193,9 +191,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         if include_resources:
             resources = PipelineEndpointResponseResources(
                 user=self.user.to_model() if self.user else None,
-                pipeline_deployment=self.pipeline_deployment.to_model()
-                if self.pipeline_deployment
-                else None,
+                snapshot=self.snapshot.to_model() if self.snapshot else None,
                 deployer=self.deployer.to_model() if self.deployer else None,
             )
 
@@ -247,7 +243,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             project_id=request.project,
             user_id=request.user,
             status=PipelineEndpointStatus.UNKNOWN.value,
-            pipeline_deployment_id=request.pipeline_deployment_id,
+            snapshot_id=request.snapshot_id,
             deployer_id=request.deployer_id,
             auth_key=request.auth_key,
         )

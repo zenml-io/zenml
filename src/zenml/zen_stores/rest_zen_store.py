@@ -81,12 +81,8 @@ from zenml.constants import (
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
-<<<<<<< HEAD
-    PIPELINE_DEPLOYMENTS,
     PIPELINE_ENDPOINTS,
-=======
     PIPELINE_SNAPSHOTS,
->>>>>>> origin/develop
     PIPELINES,
     PROJECTS,
     RUN_METADATA,
@@ -201,16 +197,10 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-<<<<<<< HEAD
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
     PipelineEndpointFilter,
     PipelineEndpointRequest,
     PipelineEndpointResponse,
     PipelineEndpointUpdate,
-=======
->>>>>>> origin/develop
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1745,7 +1735,35 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_SNAPSHOTS,
         )
 
-<<<<<<< HEAD
+    def trigger_snapshot(
+        self,
+        snapshot_id: UUID,
+        trigger_request: PipelineSnapshotTriggerRequest,
+    ) -> PipelineRunResponse:
+        """Trigger a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to trigger.
+            trigger_request: Configuration for the trigger.
+
+        Raises:
+            RuntimeError: If the server does not support running a snapshot.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        try:
+            response_body = self.post(
+                f"{PIPELINE_SNAPSHOTS}/{snapshot_id}/runs",
+                body=trigger_request,
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a snapshot is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
+
     # -------------------- Pipeline endpoints --------------------
 
     def create_pipeline_endpoint(
@@ -1837,36 +1855,6 @@ class RestZenStore(BaseZenStore):
             resource_id=endpoint_id,
             route=PIPELINE_ENDPOINTS,
         )
-=======
-    def trigger_snapshot(
-        self,
-        snapshot_id: UUID,
-        trigger_request: PipelineSnapshotTriggerRequest,
-    ) -> PipelineRunResponse:
-        """Trigger a snapshot.
-
-        Args:
-            snapshot_id: The ID of the snapshot to trigger.
-            trigger_request: Configuration for the trigger.
-
-        Raises:
-            RuntimeError: If the server does not support running a snapshot.
-
-        Returns:
-            Model of the pipeline run.
-        """
-        try:
-            response_body = self.post(
-                f"{PIPELINE_SNAPSHOTS}/{snapshot_id}/runs",
-                body=trigger_request,
-            )
-        except MethodNotAllowedError as e:
-            raise RuntimeError(
-                "Running a snapshot is not supported for this server."
-            ) from e
-
-        return PipelineRunResponse.model_validate(response_body)
->>>>>>> origin/develop
 
     # -------------------- Run templates --------------------
 

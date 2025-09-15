@@ -50,7 +50,7 @@ from zenml.deployers.serving.entrypoint_configuration import (
     ServingEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
-    DEPLOYMENT_ID_OPTION,
+    SNAPSHOT_ID_OPTION,
 )
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.integrations.gcp.flavors.gcp_deployer_flavor import (
@@ -1075,18 +1075,18 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             PipelineEndpointDeploymentError: If the deployment fails.
             DeployerError: If an unexpected error occurs.
         """
-        deployment = endpoint.pipeline_deployment
-        assert deployment, "Pipeline deployment not found"
+        snapshot = endpoint.snapshot
+        assert snapshot, "Pipeline snapshot not found"
 
         environment = environment or {}
         secrets = secrets or {}
 
         settings = cast(
             GCPDeployerSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
-        resource_settings = deployment.pipeline_configuration.resource_settings
+        resource_settings = snapshot.pipeline_configuration.resource_settings
 
         # Convert ResourceSettings to GCP Cloud Run format with fallbacks
         cpu, memory = self._convert_resource_settings_to_gcp_format(
@@ -1143,13 +1143,13 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                     )
 
         # Get the container image
-        image = self.get_image(deployment)
+        image = self.get_image(snapshot)
 
         # Prepare entrypoint and arguments
         entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
         arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
             **{
-                DEPLOYMENT_ID_OPTION: deployment.id,
+                SNAPSHOT_ID_OPTION: snapshot.id,
                 PORT_OPTION: settings.port,
                 AUTH_KEY_OPTION: endpoint.auth_key,
             }
@@ -1374,12 +1374,12 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
             service_name = existing_metadata.service_name
             if not service_name:
-                assert endpoint.pipeline_deployment, (
-                    "Pipeline deployment not set for endpoint"
+                assert endpoint.snapshot, (
+                    "Pipeline snapshot not set for endpoint"
                 )
                 settings = cast(
                     GCPDeployerSettings,
-                    self.get_settings(endpoint.pipeline_deployment),
+                    self.get_settings(endpoint.snapshot),
                 )
                 # We rely on the running service name, if a service is currently
                 # active. If not, we fall back to the service name generated

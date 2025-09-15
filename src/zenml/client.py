@@ -3709,7 +3709,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        pipeline_deployment_id: Optional[Union[str, UUID]] = None,
+        snapshot_id: Optional[Union[str, UUID]] = None,
         deployer_id: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
         status: Optional[PipelineEndpointStatus] = None,
@@ -3729,7 +3729,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering.
             name: The name of the endpoint to filter by.
             project: The project name/ID to filter by.
-            pipeline_deployment_id: The id of the deployment to filter by.
+            snapshot_id: The id of the snapshot to filter by.
             deployer_id: The id of the deployer to filter by.
             status: The status of the endpoint to filter by.
             url: The url of the endpoint to filter by.
@@ -3752,7 +3752,7 @@ class Client(metaclass=ClientMetaClass):
                 project=project or self.active_project.id,
                 user=user,
                 name=name,
-                pipeline_deployment_id=pipeline_deployment_id,
+                snapshot_id=snapshot_id,
                 deployer_id=deployer_id,
                 status=status,
                 url=url,
@@ -3764,7 +3764,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
-        deployment_id: Optional[Union[str, UUID]] = None,
+        snapshot_id: Optional[Union[str, UUID]] = None,
         timeout: Optional[int] = None,
     ) -> PipelineEndpointResponse:
         """Provision a pipeline endpoint.
@@ -3772,8 +3772,8 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: Name/ID/ID prefix of the endpoint to provision.
             project: The project name/ID to filter by.
-            deployment_id: The ID of the deployment to use. If not provided,
-                the previous deployment configured for the endpoint will be
+            snapshot_id: The ID of the snapshot to use. If not provided,
+                the previous snapshot configured for the endpoint will be
                 used.
             timeout: The maximum time in seconds to wait for the pipeline
                 endpoint to be provisioned.
@@ -3783,8 +3783,9 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             NotImplementedError: If the deployer cannot be instantiated.
-            ValueError: If the pipeline endpoint has no associated deployment.
-            KeyError: If the pipeline endpoint is not found and no deployment
+            ValueError: If the existing pipeline endpoint has no associated
+                snapshot.
+            KeyError: If the pipeline endpoint is not found and no snapshot
                 ID was provided.
         """
         from zenml.deployers.base_deployer import (
@@ -3809,25 +3810,25 @@ class Client(metaclass=ClientMetaClass):
         stack = Client().active_stack
         deployer: Optional[BaseDeployer] = None
 
-        if deployment_id:
-            deployment = self.get_deployment(
-                id_or_prefix=deployment_id,
+        if snapshot_id:
+            snapshot = self.get_snapshot(
+                id_or_prefix=snapshot_id,
                 project=project,
                 hydrate=True,
             )
         elif not endpoint:
             raise KeyError(
                 f"Pipeline endpoint with name '{name_id_or_prefix}' was not "
-                "found and no deployment ID was provided."
+                "found and no snapshot ID was provided."
             )
         else:
-            # Use the current deployment
-            if not endpoint.pipeline_deployment:
+            # Use the current snapshot
+            if not endpoint.snapshot:
                 raise ValueError(
                     f"Pipeline endpoint '{endpoint.name}' has no associated "
-                    "deployment."
+                    "snapshot."
                 )
-            deployment = endpoint.pipeline_deployment
+            snapshot = endpoint.snapshot
 
             if endpoint.deployer:
                 try:
@@ -3838,15 +3839,15 @@ class Client(metaclass=ClientMetaClass):
                 except ImportError:
                     raise NotImplementedError(
                         f"Deployer '{endpoint.deployer.name}' could "
-                        f"not be instantiated. This is likely because the pipeline "
-                        f"server's dependencies are not installed."
+                        f"not be instantiated. This is likely because the "
+                        f"deployer's dependencies are not installed."
                     )
 
-        if deployment.stack and deployment.stack.id != stack.id:
+        if snapshot.stack and snapshot.stack.id != stack.id:
             # We really need to use the original stack for which the deployment
             # was created for to provision the endpoint, otherwise the endpoint
             # might not have the correct dependencies installed.
-            stack = Stack.from_model(deployment.stack)
+            stack = Stack.from_model(snapshot.stack)
 
         if not deployer:
             if stack.deployer:
@@ -3861,7 +3862,7 @@ class Client(metaclass=ClientMetaClass):
 
         # Provision the endpoint through the deployer
         endpoint = deployer.provision_pipeline_endpoint(
-            deployment=deployment,
+            snapshot=snapshot,
             stack=stack,
             endpoint_name_or_id=endpoint_name_or_id,
             replace=True,
@@ -3912,8 +3913,8 @@ class Client(metaclass=ClientMetaClass):
             except ImportError:
                 raise NotImplementedError(
                     f"Deployer '{endpoint.deployer.name}' could "
-                    f"not be instantiated. This is likely because the pipeline "
-                    f"server's dependencies are not installed."
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed."
                 )
             deployer.deprovision_pipeline_endpoint(
                 endpoint_name_or_id=endpoint.id,
@@ -3972,8 +3973,8 @@ class Client(metaclass=ClientMetaClass):
             except ImportError as e:
                 msg = (
                     f"Deployer '{endpoint.deployer.name}' could "
-                    f"not be instantiated. This is likely because the pipeline "
-                    f"server's dependencies are not installed: {e}"
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed: {e}"
                 )
                 if force:
                     logger.warning(msg + " Forcing deletion.")
@@ -4041,8 +4042,8 @@ class Client(metaclass=ClientMetaClass):
             except ImportError:
                 raise NotImplementedError(
                     f"Deployer '{endpoint.deployer.name}' could "
-                    f"not be instantiated. This is likely because the pipeline "
-                    f"server's dependencies are not installed."
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed."
                 )
             return deployer.refresh_pipeline_endpoint(
                 endpoint_name_or_id=endpoint.id
@@ -4064,7 +4065,8 @@ class Client(metaclass=ClientMetaClass):
         """Get the logs of a pipeline endpoint.
 
         Args:
-            name_id_or_prefix: Name/ID/ID prefix of the endpoint to get the logs of.
+            name_id_or_prefix: Name/ID/ID prefix of the endpoint to get the logs
+                of.
             project: The project name/ID to filter by.
             follow: If True, follow the logs.
             tail: The number of lines to show from the end of the logs.
@@ -4095,8 +4097,8 @@ class Client(metaclass=ClientMetaClass):
             except ImportError:
                 raise NotImplementedError(
                     f"Deployer '{endpoint.deployer.name}' could "
-                    f"not be instantiated. This is likely because the pipeline "
-                    f"server's dependencies are not installed."
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed."
                 )
             yield from deployer.get_pipeline_endpoint_logs(
                 endpoint_name_or_id=endpoint.id,

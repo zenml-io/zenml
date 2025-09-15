@@ -46,24 +46,22 @@ def get_pipeline_endpoint_invocation_example(
     Returns:
         A dictionary containing the example invocation parameters.
     """
-    if not endpoint.pipeline_deployment:
+    if not endpoint.snapshot:
         raise PipelineEndpointSchemaNotFoundError(
-            f"Pipeline endpoint {endpoint.name} has no deployment."
+            f"Pipeline endpoint {endpoint.name} has no snapshot."
         )
 
-    if not endpoint.pipeline_deployment.pipeline_spec:
+    if not endpoint.snapshot.pipeline_spec:
         raise PipelineEndpointSchemaNotFoundError(
             f"Pipeline endpoint {endpoint.name} has no pipeline spec."
         )
 
-    if not endpoint.pipeline_deployment.pipeline_spec.parameters_schema:
+    if not endpoint.snapshot.pipeline_spec.parameters_schema:
         raise PipelineEndpointSchemaNotFoundError(
             f"Pipeline endpoint {endpoint.name} has no parameters schema."
         )
 
-    parameters_schema = (
-        endpoint.pipeline_deployment.pipeline_spec.parameters_schema
-    )
+    parameters_schema = endpoint.snapshot.pipeline_spec.parameters_schema
 
     example_generator = JSF(parameters_schema, allow_none_optionals=0)
     example = example_generator.generate(
@@ -127,13 +125,8 @@ def call_pipeline_endpoint(
         )
 
     parameters_schema = None
-    if (
-        endpoint.pipeline_deployment
-        and endpoint.pipeline_deployment.pipeline_spec
-    ):
-        parameters_schema = (
-            endpoint.pipeline_deployment.pipeline_spec.parameters_schema
-        )
+    if endpoint.snapshot and endpoint.snapshot.pipeline_spec:
+        parameters_schema = endpoint.snapshot.pipeline_spec.parameters_schema
 
     if parameters_schema:
         v = Draft202012Validator(

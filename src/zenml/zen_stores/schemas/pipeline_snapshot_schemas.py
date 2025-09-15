@@ -200,7 +200,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         }
     )
     pipeline_endpoints: List["PipelineEndpointSchema"] = Relationship(
-        back_populates="pipeline_deployment"
+        back_populates="snapshot"
     )
     step_count: int
     tags: List["TagSchema"] = Relationship(

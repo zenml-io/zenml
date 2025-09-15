@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, Optional
 
 from zenml.logger import get_logger
-from zenml.models import PipelineDeploymentResponse
+from zenml.models import PipelineSnapshotResponse
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 from zenml.utils.json_utils import pydantic_encoder
 
@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 class _ServingState:
     active: bool = False
     request_id: Optional[str] = None
-    deployment_id: Optional[str] = None
+    snapshot_id: Optional[str] = None
     pipeline_parameters: Dict[str, Any] = field(default_factory=dict)
     outputs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     # Per-request in-memory mode override
@@ -37,7 +37,7 @@ class _ServingState:
     def reset(self) -> None:
         self.active = False
         self.request_id = None
-        self.deployment_id = None
+        self.snapshot_id = None
         self.pipeline_parameters.clear()
         self.outputs.clear()
         self.use_in_memory = None
@@ -57,7 +57,7 @@ def _get_context() -> _ServingState:
 
 def start(
     request_id: str,
-    deployment: PipelineDeploymentResponse,
+    snapshot: PipelineSnapshotResponse,
     parameters: Dict[str, Any],
     use_in_memory: Optional[bool] = None,
 ) -> None:
@@ -65,7 +65,7 @@ def start(
     state = _ServingState()
     state.active = True
     state.request_id = request_id
-    state.deployment_id = str(deployment.id)
+    state.snapshot_id = str(snapshot.id)
     state.pipeline_parameters = dict(parameters or {})
     state.outputs = {}
     state.use_in_memory = use_in_memory

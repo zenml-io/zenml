@@ -881,13 +881,13 @@ class Stack:
             snapshot=snapshot, stack=self, placeholder_run=placeholder_run
         )
 
-    def serve_pipeline(
+    def deploy_pipeline(
         self,
         snapshot: "PipelineSnapshotResponse",
         endpoint_name: str,
         timeout: Optional[int] = None,
     ) -> "PipelineEndpointResponse":
-        """Serves a pipeline on this stack.
+        """Deploys a pipeline on this stack.
 
         Args:
             snapshot: The pipeline snapshot.
@@ -908,7 +908,7 @@ class Stack:
             )
 
         return self.deployer.provision_pipeline_endpoint(
-            deployment=snapshot,
+            snapshot=snapshot,
             stack=self,
             endpoint_name_or_id=endpoint_name,
             timeout=timeout,

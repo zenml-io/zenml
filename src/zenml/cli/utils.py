@@ -2371,25 +2371,22 @@ def print_deployment_table(
         else:
             user_name = "-"
 
-        if (
-            deployment.pipeline_deployment is None
-            or deployment.pipeline_deployment.pipeline is None
-        ):
+        if deployment.snapshot is None or deployment.snapshot.pipeline is None:
             pipeline_name = "unlisted"
         else:
-            pipeline_name = deployment.pipeline_deployment.pipeline.name
-        if (
-            deployment.pipeline_deployment is None
-            or deployment.pipeline_deployment.stack is None
-        ):
+            pipeline_name = deployment.snapshot.pipeline.name
+        if deployment.snapshot is None or deployment.snapshot.stack is None:
             stack_name = "[DELETED]"
         else:
-            stack_name = deployment.pipeline_deployment.stack.name
+            stack_name = deployment.snapshot.stack.name
         status = deployment.status or PipelineEndpointStatus.UNKNOWN.value
         status_emoji = get_pipeline_endpoint_status_emoji(status)
         run_dict = {
             "NAME": deployment.name,
             "PIPELINE": pipeline_name,
+            "SNAPSHOT": deployment.snapshot.name or ""
+            if deployment.snapshot
+            else "N/A",
             "URL": deployment.url or "N/A",
             "STATUS": f"{status_emoji} {status.upper()}",
             "STACK": stack_name,
@@ -2419,21 +2416,18 @@ def pretty_print_deployment(
     declare(
         f"\n🚀 Deployment: [bold cyan]{deployment.name}[/bold cyan] is: {status} {status_emoji}"
     )
-    if (
-        deployment.pipeline_deployment is None
-        or deployment.pipeline_deployment.pipeline is None
-    ):
-        pipeline_name = "unlisted"
+    if deployment.snapshot is None:
+        pipeline_name = "N/A"
+        snapshot_name = "N/A"
     else:
-        pipeline_name = deployment.pipeline_deployment.pipeline.name
-    if (
-        deployment.pipeline_deployment is None
-        or deployment.pipeline_deployment.stack is None
-    ):
+        pipeline_name = deployment.snapshot.pipeline.name
+        snapshot_name = deployment.snapshot.name or str(deployment.snapshot.id)
+    if deployment.snapshot is None or deployment.snapshot.stack is None:
         stack_name = "[DELETED]"
     else:
-        stack_name = deployment.pipeline_deployment.stack.name
+        stack_name = deployment.snapshot.stack.name
     declare(f"\n[bold]Pipeline:[/bold] [bold cyan]{pipeline_name}[/bold cyan]")
+    declare(f"[bold]Snapshot:[/bold] [bold cyan]{snapshot_name}[/bold cyan]")
     declare(f"[bold]Stack:[/bold] [bold cyan]{stack_name}[/bold cyan]")
 
     # Connection section

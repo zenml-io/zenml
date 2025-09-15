@@ -43,19 +43,19 @@ from zenml.deployers.exceptions import (
     PipelineEndpointAlreadyExistsError,
     PipelineEndpointDeployerMismatchError,
     PipelineEndpointDeploymentError,
-    PipelineEndpointDeploymentMismatchError,
     PipelineEndpointDeploymentTimeoutError,
     PipelineEndpointDeprovisionError,
     PipelineEndpointNotFoundError,
+    PipelineEndpointSnapshotMismatchError,
 )
 from zenml.enums import PipelineEndpointStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineDeploymentResponse,
     PipelineEndpointOperationalState,
     PipelineEndpointRequest,
     PipelineEndpointResponse,
     PipelineEndpointUpdate,
+    PipelineSnapshotResponse,
 )
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import StackComponent
@@ -186,30 +186,30 @@ class BaseDeployer(StackComponent, ABC):
                 f"'{self.name}' and try again or use a different endpoint name."
             )
 
-    def _check_pipeline_endpoint_deployment(
-        self, deployment: Optional[PipelineDeploymentResponse] = None
+    def _check_pipeline_endpoint_snapshot(
+        self, snapshot: Optional[PipelineSnapshotResponse] = None
     ) -> None:
-        """Check if the deployment was created for this deployer.
+        """Check if the snapshot was created for this deployer.
 
         Args:
-            deployment: The pipeline deployment to check.
+            snapshot: The pipeline snapshot to check.
 
         Raises:
-            PipelineEndpointDeployerMismatchError: if the pipeline deployment is
+            PipelineEndpointSnapshotMismatchError: if the pipeline snapshot is
                 not built for this deployer.
         """
-        if not deployment:
+        if not snapshot:
             return
 
-        if deployment.stack and deployment.stack.components.get(
+        if snapshot.stack and snapshot.stack.components.get(
             StackComponentType.DEPLOYER
         ):
-            deployer = deployment.stack.components[
-                StackComponentType.DEPLOYER
-            ][0]
+            deployer = snapshot.stack.components[StackComponentType.DEPLOYER][
+                0
+            ]
             if deployer.id != self.id:
-                raise PipelineEndpointDeployerMismatchError(
-                    f"The pipeline deployment with ID '{deployment.id}' "
+                raise PipelineEndpointSnapshotMismatchError(
+                    f"The pipeline snapshot with ID '{snapshot.id}' "
                     f"was not created for the deployer {self.name}. This will "
                     "lead to unexpected behavior and is not allowed."
                 )
@@ -311,7 +311,7 @@ class BaseDeployer(StackComponent, ABC):
         Returns:
             the metadata about the pipeline endpoint
         """
-        deployment = endpoint.pipeline_deployment
+        snapshot = endpoint.snapshot
         stack_metadata = {}
         if stack:
             stack_metadata = {
@@ -323,9 +323,7 @@ class BaseDeployer(StackComponent, ABC):
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "endpoint_id": str(endpoint.id),
-            "pipeline_deployment_id": str(deployment.id)
-            if deployment
-            else None,
+            "snapshot_id": str(snapshot.id) if snapshot else None,
             "deployer_id": str(self.id),
             "deployer_flavor": self.flavor,
             "endpoint_status": endpoint.status,
@@ -333,7 +331,7 @@ class BaseDeployer(StackComponent, ABC):
 
     def provision_pipeline_endpoint(
         self,
-        deployment: PipelineDeploymentResponse,
+        snapshot: PipelineSnapshotResponse,
         stack: "Stack",
         endpoint_name_or_id: Union[str, UUID],
         replace: bool = True,
@@ -343,13 +341,13 @@ class BaseDeployer(StackComponent, ABC):
 
         The provision_pipeline_endpoint method is the main entry point for
         provisioning pipeline endpoints using the deployer. It is used to serve
-        a pipeline deployment as an HTTP endpoint, or update an existing
+        a pipeline snapshot as an HTTP endpoint, or update an existing
         pipeline endpoint instance with the same name. The method returns a
         PipelineEndpointResponse object that is a representation of the
         external pipeline endpoint instance.
 
         Args:
-            deployment: The pipeline deployment to serve as an HTTP endpoint.
+            snapshot: The pipeline snapshot to serve as an HTTP endpoint.
             stack: The stack the pipeline will be served on.
             endpoint_name_or_id: Unique name or ID for the pipeline endpoint.
                 This name must be unique at the project level.
@@ -364,8 +362,8 @@ class BaseDeployer(StackComponent, ABC):
         Raises:
             PipelineEndpointAlreadyExistsError: if the pipeline endpoint already
                 exists and replace is False.
-            PipelineEndpointDeploymentError: if the pipeline deployment fails.
-            PipelineEndpointDeploymentMismatchError: if the pipeline deployment
+            PipelineEndpointDeploymentError: if the deployment fails.
+            PipelineEndpointSnapshotMismatchError: if the pipeline snapshot
                 was not created for this deployer.
             PipelineEndpointNotFoundError: if the pipeline endpoint with the
                 given ID is not found.
@@ -379,7 +377,7 @@ class BaseDeployer(StackComponent, ABC):
 
         settings = cast(
             BaseDeployerSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
         timeout = timeout or settings.lcm_timeout
@@ -387,24 +385,24 @@ class BaseDeployer(StackComponent, ABC):
         if not auth_key and settings.generate_auth_key:
             auth_key = self._generate_auth_key()
 
-        if deployment.stack and deployment.stack.id != stack.id:
-            # When a different stack is used then the one the deployment was
+        if snapshot.stack and snapshot.stack.id != stack.id:
+            # When a different stack is used then the one the snapshot was
             # created for, the container image may not have the correct
             # dependencies installed, which leads to unexpected errors during
             # deployment. To avoid this, we raise an error here.
-            raise PipelineEndpointDeploymentMismatchError(
-                f"The pipeline deployment with ID '{deployment.id}' "
+            raise PipelineEndpointSnapshotMismatchError(
+                f"The pipeline snapshot with ID '{snapshot.id}' "
                 f"was not created for the stack {stack.name} and might not "
                 "have the correct dependencies installed. This may "
                 "lead to unexpected behavior during deployment. Please switch "
-                f"to the correct active stack '{deployment.stack.name}' or use "
-                "a different deployment."
+                f"to the correct active stack '{snapshot.stack.name}' or use "
+                "a different snapshot."
             )
 
         try:
             # Get the existing pipeline endpoint
             endpoint = client.get_pipeline_endpoint(
-                endpoint_name_or_id, project=deployment.project_id
+                endpoint_name_or_id, project=snapshot.project_id
             )
 
             logger.debug(
@@ -419,14 +417,14 @@ class BaseDeployer(StackComponent, ABC):
 
             logger.debug(
                 f"Creating new pipeline endpoint {endpoint_name_or_id} with "
-                f"deployment ID: {deployment.id}"
+                f"snapshot ID: {snapshot.id}"
             )
 
             # Create the pipeline endpoint request
             endpoint_request = PipelineEndpointRequest(
                 name=endpoint_name_or_id,
-                project=deployment.project_id,
-                pipeline_deployment_id=deployment.id,
+                project=snapshot.project_id,
+                snapshot_id=snapshot.id,
                 deployer_id=self.id,  # This deployer's ID
                 auth_key=auth_key,
             )
@@ -446,10 +444,10 @@ class BaseDeployer(StackComponent, ABC):
                 )
 
             self._check_pipeline_endpoint_deployer(endpoint)
-            self._check_pipeline_endpoint_deployment(deployment)
+            self._check_pipeline_endpoint_snapshot(snapshot)
 
             endpoint_update = PipelineEndpointUpdate(
-                pipeline_deployment_id=deployment.id,
+                snapshot_id=snapshot.id,
             )
             if (
                 endpoint.auth_key
@@ -473,7 +471,7 @@ class BaseDeployer(StackComponent, ABC):
 
         logger.info(
             f"Deploying pipeline endpoint {endpoint.name} with "
-            f"deployment ID: {deployment.id}"
+            f"snapshot ID: {snapshot.id}"
         )
 
         environment, secrets = get_config_environment_vars(
@@ -481,10 +479,10 @@ class BaseDeployer(StackComponent, ABC):
         )
 
         # Make sure to use the correct active stack/project which correspond
-        # to the supplied stack and deployment, which may be different from the
+        # to the supplied stack and snapshot, which may be different from the
         # active stack/project
         environment[ENV_ZENML_ACTIVE_STACK_ID] = str(stack.id)
-        environment[ENV_ZENML_ACTIVE_PROJECT_ID] = str(deployment.project_id)
+        environment[ENV_ZENML_ACTIVE_PROJECT_ID] = str(snapshot.project_id)
 
         start_time = time.time()
         endpoint_state = PipelineEndpointOperationalState(
@@ -524,7 +522,7 @@ class BaseDeployer(StackComponent, ABC):
 
             logger.info(
                 f"Deployed pipeline endpoint {endpoint.name} with "
-                f"deployment ID: {deployment.id}. Operational state is: "
+                f"snapshot ID: {snapshot.id}. Operational state is: "
                 f"{endpoint_state.status}"
             )
 
@@ -654,10 +652,10 @@ class BaseDeployer(StackComponent, ABC):
 
         self._check_pipeline_endpoint_deployer(endpoint)
 
-        if not timeout and endpoint.pipeline_deployment:
+        if not timeout and endpoint.snapshot:
             settings = cast(
                 BaseDeployerSettings,
-                self.get_settings(endpoint.pipeline_deployment),
+                self.get_settings(endpoint.snapshot),
             )
 
             timeout = settings.lcm_timeout
@@ -839,7 +837,7 @@ class BaseDeployer(StackComponent, ABC):
         - Create the actual pipeline endpoint infrastructure (e.g.,
         FastAPI server, Kubernetes deployment, cloud function, etc.) based on
         the information in the pipeline endpoint response, particularly the
-        pipeline deployment. When determining how to name the external
+        pipeline snapshot. When determining how to name the external
         resources, do not rely on the endpoint name as being immutable
         or unique.
 

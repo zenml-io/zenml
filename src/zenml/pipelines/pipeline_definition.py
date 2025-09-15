@@ -685,7 +685,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 code_repository=code_repository,
             )
 
-    def serve(
+    def deploy(
         self,
         endpoint_name: str,
         timeout: Optional[int] = None,
@@ -710,7 +710,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         stack = Client().active_stack
 
         stack.prepare_pipeline_submission(snapshot=snapshot)
-        return stack.serve_pipeline(
+        return stack.deploy_pipeline(
             snapshot=snapshot,
             endpoint_name=endpoint_name,
             timeout=timeout,

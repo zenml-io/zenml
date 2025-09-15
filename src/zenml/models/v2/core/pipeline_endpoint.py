@@ -38,8 +38,8 @@ from zenml.models.v2.base.scoped import (
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.component import ComponentResponse
-    from zenml.models.v2.core.pipeline_deployment import (
-        PipelineDeploymentResponse,
+    from zenml.models.v2.core.pipeline_snapshot import (
+        PipelineSnapshotResponse,
     )
 
 
@@ -64,9 +64,9 @@ class PipelineEndpointRequest(ProjectScopedRequest):
         description="A unique name for the pipeline endpoint within the project.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    pipeline_deployment_id: UUID = Field(
-        title="The pipeline deployment ID.",
-        description="The ID of the pipeline deployment being served by this endpoint.",
+    snapshot_id: UUID = Field(
+        title="The pipeline snapshot ID.",
+        description="The ID of the pipeline snapshot being served by this endpoint.",
     )
     deployer_id: UUID = Field(
         title="The deployer ID.",
@@ -90,9 +90,9 @@ class PipelineEndpointUpdate(BaseUpdate):
         title="The new name of the pipeline endpoint.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    pipeline_deployment_id: Optional[UUID] = Field(
+    snapshot_id: Optional[UUID] = Field(
         default=None,
-        title="New pipeline deployment ID.",
+        title="New pipeline snapshot ID.",
     )
     url: Optional[str] = Field(
         default=None,
@@ -151,10 +151,10 @@ class PipelineEndpointResponseBody(ProjectScopedResponseBody):
 class PipelineEndpointResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline endpoints."""
 
-    pipeline_deployment_id: Optional[UUID] = Field(
+    snapshot_id: Optional[UUID] = Field(
         default=None,
-        title="The pipeline deployment ID.",
-        description="The ID of the pipeline deployment being served by this endpoint.",
+        title="The pipeline snapshot ID.",
+        description="The ID of the pipeline snapshot being served by this endpoint.",
     )
     deployer_id: Optional[UUID] = Field(
         default=None,
@@ -174,10 +174,10 @@ class PipelineEndpointResponseMetadata(ProjectScopedResponseMetadata):
 class PipelineEndpointResponseResources(ProjectScopedResponseResources):
     """Response resources for pipeline endpoints."""
 
-    pipeline_deployment: Optional["PipelineDeploymentResponse"] = Field(
+    snapshot: Optional["PipelineSnapshotResponse"] = Field(
         default=None,
-        title="The pipeline deployment.",
-        description="The pipeline deployment being served by this endpoint.",
+        title="The pipeline snapshot.",
+        description="The pipeline snapshot being served by this endpoint.",
     )
     deployer: Optional["ComponentResponse"] = Field(
         default=None,
@@ -232,13 +232,13 @@ class PipelineEndpointResponse(
         return self.get_body().status
 
     @property
-    def pipeline_deployment_id(self) -> Optional[UUID]:
-        """The pipeline deployment ID.
+    def snapshot_id(self) -> Optional[UUID]:
+        """The pipeline snapshot ID.
 
         Returns:
-            The pipeline deployment ID.
+            The pipeline snapshot ID.
         """
-        return self.get_metadata().pipeline_deployment_id
+        return self.get_metadata().snapshot_id
 
     @property
     def deployer_id(self) -> Optional[UUID]:
@@ -268,13 +268,13 @@ class PipelineEndpointResponse(
         return self.get_metadata().auth_key
 
     @property
-    def pipeline_deployment(self) -> Optional["PipelineDeploymentResponse"]:
-        """The pipeline deployment.
+    def snapshot(self) -> Optional["PipelineSnapshotResponse"]:
+        """The pipeline snapshot.
 
         Returns:
-            The pipeline deployment.
+            The pipeline snapshot.
         """
-        return self.get_resources().pipeline_deployment
+        return self.get_resources().snapshot
 
     @property
     def deployer(self) -> Optional["ComponentResponse"]:
@@ -304,9 +304,9 @@ class PipelineEndpointFilter(ProjectScopedFilter):
         default=None,
         description="Status of the pipeline endpoint.",
     )
-    pipeline_deployment_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Pipeline deployment ID associated with the endpoint.",
+        description="Pipeline snapshot ID associated with the endpoint.",
         union_mode="left_to_right",
     )
     deployer_id: Optional[Union[UUID, str]] = Field(

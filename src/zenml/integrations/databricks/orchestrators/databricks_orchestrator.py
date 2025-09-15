@@ -314,8 +314,8 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         databricks_client = self._get_databricks_client()
 
         # Create an empty folder in a volume.
-        deployment_name = snapshot.pipeline.name
-        databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{deployment_name}/{orchestrator_run_name}"
+        snapshot_name = snapshot.pipeline.name
+        databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{snapshot_name}/{orchestrator_run_name}"
         databricks_wheel_path = (
             f"{databricks_directory}/{wheel_path.rsplit('/', 1)[-1]}"
         )
