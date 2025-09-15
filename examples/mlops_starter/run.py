@@ -56,6 +56,10 @@ Examples:
   # Run the inference pipeline
     python run.py --inference-pipeline
 
+  \b
+  # Deploy the serving pipeline
+    python run.py --deploy-serving
+
 """
 )
 @click.option(
@@ -103,6 +107,12 @@ Examples:
     help="Whether to run the pipeline that performs inference.",
 )
 @click.option(
+    "--deploy-serving",
+    is_flag=True,
+    default=False,
+    help="Whether to deploy the serving pipeline as an HTTP endpoint.",
+)
+@click.option(
     "--no-cache",
     is_flag=True,
     default=False,
@@ -116,6 +126,7 @@ def main(
     feature_pipeline: bool = False,
     training_pipeline: bool = False,
     inference_pipeline: bool = False,
+    deploy_serving: bool = False,
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
@@ -137,6 +148,7 @@ def main(
         feature_pipeline: Whether to run the pipeline that creates the dataset.
         training_pipeline: Whether to run the pipeline that trains the model.
         inference_pipeline: Whether to run the pipeline that performs inference.
+        deploy_serving: Whether to deploy the serving pipeline as an HTTP endpoint.
         no_cache: If `True` cache will be disabled.
     """
     client = Client()
@@ -247,6 +259,27 @@ def main(
         # Run the pipeline
         inference_configured(**run_args_inference)
         logger.info("Inference pipeline finished successfully!")
+
+    # Deploy Serving Pipeline
+    if deploy_serving:
+        logger.info(
+            "🚀 Ready to deploy inference pipeline as serving endpoint!"
+        )
+        logger.info("")
+        logger.info(
+            "To deploy the inference pipeline as an HTTP endpoint, run:"
+        )
+        logger.info(
+            "   zenml pipeline deploy pipelines.inference --config configs/inference.yaml"
+        )
+        logger.info("")
+        logger.info("Once deployed, you can test the endpoint with:")
+        logger.info("   python test_serving.py --url <your-endpoint-url>")
+        logger.info("")
+        logger.info("The endpoint will accept POST requests to /invoke with:")
+        logger.info(
+            '   {"input_data": [[feature1, feature2, ..., feature30], ...], "random_state": 42, "target": "target"}'
+        )
 
 
 if __name__ == "__main__":

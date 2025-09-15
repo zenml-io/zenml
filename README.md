@@ -47,6 +47,15 @@
 
 ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's one platform to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
 
+With ZenML you can build and evaluate pipelines — and deploy them as always‑warm HTTP endpoints with health, metrics, and OpenAPI — all from a single CLI command.
+
+## 🚀 What’s New
+
+- Pipeline Deployment (Always‑Warm HTTP Endpoints): Deploy your pipeline behind a FastAPI app with validated parameters, health, metrics, and OpenAPI.
+
+- Quickstart (train → evaluate → deploy): https://docs.zenml.io/getting-started/quickstart
+- MLOps Starter (end‑to‑end batch + deployment): https://github.com/zenml-io/zenml-projects
+
 
 ## 🚨 The Problem: MLOps Works for Models, But What About AI?
 
@@ -63,6 +72,8 @@ You're an ML engineer. You've perfected deploying `scikit-learn` models and wran
 ## 💡 The Solution: One Framework for your Entire AI Stack
 
 Stop maintaining two separate worlds. ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It’s one platform to develop, evaluate, and deploy your entire AI portfolio.
+
+With built‑in pipeline deployment, you can expose pipelines as always‑warm HTTP endpoints (with health checks, metrics, and OpenAPI) using a single CLI command.
 
 ```python
 # Morning: Your sklearn pipeline is still versioned and reproducible.
@@ -86,11 +97,6 @@ https://github.com/user-attachments/assets/edeb314c-fe07-41ba-b083-cd9ab11db4a7
 from zenml import pipeline, step
 from zenml.types import HTMLString
 import pandas as pd
-
-@step
-def load_real_conversations() -> pd.DataFrame:
-    """Load customer service queries for testing."""
-    return load_customer_queries()
 
 @step
 def train_intent_classifier(queries: pd.DataFrame):
@@ -126,16 +132,18 @@ def evaluate_and_decide(queries: pd.DataFrame, results: dict) -> HTMLString:
     return create_styled_comparison_report(results)
 
 @pipeline
-def compare_agent_architectures():
+def compare_agent_architectures(queries: pd.DataFrame):
     """Data-driven agent architecture decisions with full MLOps tracking."""
-    queries = load_real_conversations()
     prompts = load_prompts()  # Prompts as versioned artifacts
     classifier = train_intent_classifier(queries)
     results, viz = run_architecture_comparison(queries, classifier, prompts)
     report = evaluate_and_decide(queries, results)
 
 if __name__ == "__main__":
-    compare_agent_architectures()
+    # Pass your queries as a pipeline parameter
+    # Example: load from CSV, DB, or a dataframe constructed in code
+    queries_df = pd.read_csv("customer_queries.csv")
+    compare_agent_architectures(queries=queries_df)
     # 🎯 Rich visualizations automatically appear in ZenML dashboard
 ```
 
@@ -145,6 +153,12 @@ Prefer a smaller end-to-end template? Check out the [Minimal Agent Production](e
 **The Result:** A clear winner is selected based on data, not opinions. You have full lineage from the test data and agent versions to the final report and deployment decision.
 
 ![Development lifecycle](docs/book/.gitbook/assets/readme_development_lifecycle.png)
+
+Next step: deploy your chosen production pipeline as an HTTP endpoint:
+
+```bash
+zenml pipeline deploy compare_agent_architectures --port 8001
+```
 
 ## 🚀 Get Started (5 minutes)
 
@@ -249,6 +263,18 @@ export OPENAI_API_KEY="your-api-key-here"
 python simple_pipeline.py
 ```
 
+Deploy it (HTTP endpoint):
+
+```bash
+zenml pipeline deploy simple_ml_pipeline --port 8001
+
+curl -s -X POST localhost:8001/invoke \
+  -H 'Content-Type: application/json' \
+  -d '{"parameters": {}}'
+```
+
+Open the interactive docs at http://localhost:8001/docs, check health at /health, and view metrics at /metrics.
+
 ## 🗣️ Chat With Your Pipelines: ZenML MCP Server
 
 Stop clicking through dashboards to understand your ML workflows. The **[ZenML MCP Server](https://github.com/zenml-io/mcp-zenml)** lets you query your pipelines, analyze runs, and trigger deployments using natural language through Claude Desktop, Cursor, or any MCP-compatible client.
@@ -292,6 +318,11 @@ For visual learners, start with this 11-minute introduction:
 6. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
 
 ### 🏢 Deployment Options
+
+Pipeline deployment exposes a FastAPI service for your pipeline on your chosen compute. Start local, then scale to Docker or Kubernetes as needed.
+
+For pipeline deployment (HTTP endpoints), start with the Quickstart:
+- https://docs.zenml.io/getting-started/quickstart
 
 **For Teams:**
 - **[Self-hosted](https://docs.zenml.io/getting-started/deploying-zenml)** - Deploy on your infrastructure with Helm/Docker
