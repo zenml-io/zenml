@@ -43,6 +43,22 @@ class _ServingState:
         self.use_in_memory = None
         self._in_memory_data.clear()
 
+    def __str__(self) -> str:
+        """String representation of the serving state.
+
+        Returns:
+            A string representation of the serving state.
+        """
+        return f"ServingState(active={self.active}, request_id={self.request_id}, deployment_id={self.deployment_id}, pipeline_parameters={self.pipeline_parameters}, outputs={self.outputs}, use_in_memory={self.use_in_memory}, _in_memory_data={self._in_memory_data})"
+
+    def __repr__(self) -> str:
+        """Representation of the serving state.
+
+        Returns:
+            A string representation of the serving state.
+        """
+        return self.__str__()
+
 
 # Use contextvars for thread-safe, request-scoped state
 _serving_context: contextvars.ContextVar[_ServingState] = (
