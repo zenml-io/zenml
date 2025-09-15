@@ -874,7 +874,7 @@ def trigger_snapshot(
         snapshot_id: The ID of the snapshot to trigger.
         config_path: Path to configuration file for the run.
     """
-    run = Client().trigger_snapshot(
+    run = Client().trigger_pipeline(
         snapshot_id=UUID(snapshot_id),
         config_path=config_path,
     )
