@@ -240,7 +240,10 @@ def get_step_secret_environment(
     Returns:
         A dictionary of environment variables.
     """
-    secrets = step_config.secrets
+    # The step secrets contain the pipeline secrets first, followed by the
+    # actual secrets defined on the step. We reverse the list to make sure the
+    # step secrets override the pipeline secrets.
+    secrets = list(reversed(step_config.secrets))
     secrets.extend(stack.secrets)
 
     for component in stack.components.values():

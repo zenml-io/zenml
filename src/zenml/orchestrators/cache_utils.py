@@ -132,11 +132,8 @@ def generate_cache_key(
         hash_.update(str(value).encode())
 
     # User-defined secrets
-    for secret_name_or_id in sorted(step.config.secrets):
-        if isinstance(secret_name_or_id, UUID):
-            hash_.update(secret_name_or_id.bytes)
-        else:
-            hash_.update(secret_name_or_id.encode())
+    for secret_name_or_id in sorted([str(s) for s in step.config.secrets]):
+        hash_.update(secret_name_or_id.encode())
 
     return hash_.hexdigest()
 
