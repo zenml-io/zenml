@@ -1,15 +1,14 @@
 # :running: MLOps 101 with ZenML
 
-Build your first production-ready MLOps pipelines with ZenML.
+Build your first MLOps pipelines with ZenML.
 
 ## :earth_americas: Overview
 
-This repository is a comprehensive MLOps project that demonstrates the complete ML lifecycle from training to production deployment. It features: 
+This repository is a minimalistic MLOps project intended as a starting point to learn how to put ML workflows in production. It features: 
 
 - A feature engineering pipeline that loads data and prepares it for training.
 - A training pipeline that loads the preprocessed dataset and trains a model.
 - A batch inference pipeline that runs predictions on the trained model with new data.
-- **🆕 A deployment pipeline that deploys your model as an always-warm HTTP endpoint for real-time predictions.**
 
 This is a representation of how it will all come together: 
 
@@ -20,7 +19,6 @@ Along the way we will also show you how to:
 - Structure your code into MLOps pipelines.
 - Automatically version, track, and cache data, models, and other artifacts.
 - Transition your ML models from development to production.
-- **🆕 Deploy pipelines as HTTP endpoints for real-time inference.**
 
 ## 🏃 Run on Colab
 
@@ -72,9 +70,6 @@ python run.py --training-pipeline --train-dataset-version-name=1 --test-dataset-
 
 # Run the inference pipeline
 python run.py --inference-pipeline
-
-# Deploy directly with ZenML CLI
-zenml pipeline deploy pipelines.inference --config configs/inference.yaml
 ```
 
 ## 🌵 Learning MLOps with ZenML
@@ -195,77 +190,13 @@ You can also see all predictions ever created as a complete history in the dashb
 
 </details>
 
-<details>
-  <summary>🚀 Step 5: Deploy Model as HTTP Endpoint (NEW!)</summary>
-
-Now that we have a production model, we can deploy it as an always-warm HTTP endpoint for real-time predictions. This transforms our batch inference pipeline into a deploying endpoint that can handle live requests.
-
-The deploying deployment uses the same inference pipeline but with a twist: it can accept input data directly as parameters instead of loading from sklearn. This makes it perfect for real-time deploying while maintaining the exact same preprocessing and prediction logic.
-
-```bash
-# Deploy the inference pipeline as a deploying endpoint
-zenml pipeline deploy pipelines.inference --config configs/inference.yaml
-```
-
-Once deployed, you can test the endpoint:
-
-```bash
-# Test the deployed endpoint
-python test_deploying.py --url http://your-endpoint-url
-```
-
-The endpoint accepts POST requests to `/invoke` with breast cancer feature data:
-
-```json
-{
-  "input_data": [
-    [17.99, 10.38, 122.8, ..., 0.1189],
-    [20.57, 17.77, 132.9, ..., 0.08902]
-  ],
-  "random_state": 42,
-  "target": "target"
-}
-```
-
-And returns predictions with metadata:
-
-```json
-{
-  "success": true,
-  "outputs": {
-    "predictions": [0, 1]
-  },
-  "execution_time": 0.123,
-  "metadata": {
-    "pipeline_name": "inference",
-    "run_id": "...",
-    "parameters_used": {...}
-  }
-}
-```
-
-**Key deploying features:**
-- **Model Preloading**: The model and preprocessor are loaded once at startup using init hooks, ensuring fast response times
-- **Real-time Inference**: Same pipeline logic as batch inference but optimized for deploying
-- **API Documentation**: Automatic OpenAPI/Swagger docs at `/docs`
-- **Health Monitoring**: Built-in health checks at `/health`
-- **Input Validation**: Pydantic model validation for robust request handling
-
-This completes the full MLOps loop: from data ingestion and training to production deploying with real-time inference capabilities.
-
-</details>
-
 ## :bulb: Learn More
 
-You're a legit MLOps engineer now! You've completed the full ML lifecycle:
-
-🎯 **Training**: Trained and compared multiple models (SGD vs Random Forest)  
-📊 **Evaluation**: Evaluated models against test data and metrics  
-🏆 **Promotion**: Registered the best model to the production stage  
-📦 **Batch Inference**: Made predictions on new data using batch pipelines  
-🚀 **Real-time deploying**: Deployed your model as an always-warm HTTP endpoint  
-
-You also learned how to iterate on your models and data by using ZenML's powerful abstractions for versioning, caching, and lineage tracking. You saw how to view your artifacts and stacks via the client as well as the ZenML Dashboard.
+You're a legit MLOps engineer now! You trained two models, evaluated them against
+a test set, registered the best one with the ZenML model control plane,
+and served some predictions. You also learned how to iterate on your models and
+data by using some of the ZenML utility abstractions. You saw how to view your
+artifacts and stacks via the client as well as the ZenML Dashboard.
 
 If you want to learn more about ZenML as a tool, then the
 [:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) are the perfect place

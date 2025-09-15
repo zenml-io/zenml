@@ -15,10 +15,6 @@
 # limitations under the License.
 #
 
-"""Data loader step for both batch and serving use cases."""
-
-from typing import List, Optional
-
 import pandas as pd
 from sklearn.datasets import load_breast_cancer
 from typing_extensions import Annotated
@@ -31,48 +27,31 @@ logger = get_logger(__name__)
 
 @step
 def data_loader(
-    random_state: int,
-    is_inference: bool = False,
-    target: str = "target",
-    input_data: Optional[List[List[float]]] = None,
+    random_state: int, is_inference: bool = False, target: str = "target"
 ) -> Annotated[pd.DataFrame, "dataset"]:
     """Dataset reader step.
 
-    This step can either load data from sklearn breast cancer dataset or
-    accept input data directly for serving purposes.
+    This is an example of a dataset reader step that load Breast Cancer dataset.
+
+    This step is parameterized, which allows you to configure the step
+    independently of the step code, before running it in a pipeline.
+    In this example, the step can be configured with number of rows and logic
+    to drop target column or not. See the documentation for more information:
+
+        https://docs.zenml.io/how-to/build-pipelines/use-pipeline-step-parameters
 
     Args:
-        random_state: Random state for sampling when loading from sklearn.
+        random_state: Random state for sampling
         is_inference: If `True` subset will be returned and target column
             will be removed from dataset.
         target: Name of target columns in dataset.
-        input_data: Optional input data as list of feature vectors. If provided,
-            this data will be used instead of loading from sklearn.
 
     Returns:
-        The dataset artifact as Pandas DataFrame.
+        The dataset artifact as Pandas DataFrame and name of target column.
     """
-    # Check if input data is provided directly
-    if input_data is not None:
-        # Use provided input data
-        logger.info(
-            f"Using provided input data with {len(input_data)} samples"
-        )
-
-        # Create DataFrame from input data
-        # Breast cancer dataset has 30 features
-        feature_names = [f"feature_{i}" for i in range(len(input_data[0]))]
-        dataset = pd.DataFrame(input_data, columns=feature_names)
-
-        logger.info(
-            f"Dataset with {len(dataset)} records created from input data!"
-        )
-        return dataset
-
-    # Load from sklearn dataset (original behavior)
-    sklearn_dataset = load_breast_cancer(as_frame=True)
-    inference_size = int(len(sklearn_dataset.target) * 0.05)
-    dataset: pd.DataFrame = sklearn_dataset.frame
+    dataset = load_breast_cancer(as_frame=True)
+    inference_size = int(len(dataset.target) * 0.05)
+    dataset: pd.DataFrame = dataset.frame
     inference_subset = dataset.sample(
         inference_size, random_state=random_state
     )
@@ -82,5 +61,5 @@ def data_loader(
     else:
         dataset.drop(inference_subset.index, inplace=True)
     dataset.reset_index(drop=True, inplace=True)
-    logger.info(f"Dataset with {len(dataset)} records loaded from sklearn!")
+    logger.info(f"Dataset with {len(dataset)} records loaded!")
     return dataset

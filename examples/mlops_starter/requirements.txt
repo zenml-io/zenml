@@ -3,7 +3,3 @@ notebook
 scikit-learn
 pyarrow
 pandas
-fastapi
-uvicorn
-requests
-click
