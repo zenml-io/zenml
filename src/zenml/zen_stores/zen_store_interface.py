@@ -49,6 +49,10 @@ from zenml.models import (
     ComponentResponse,
     ComponentUpdate,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -79,10 +83,6 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineEndpointFilter,
-    PipelineEndpointRequest,
-    PipelineEndpointResponse,
-    PipelineEndpointUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1387,87 +1387,87 @@ class ZenStoreInterface(ABC):
             Model of the pipeline run.
         """
 
-    # -------------------- Pipeline endpoints --------------------
+    # -------------------- Deployments --------------------
 
     @abstractmethod
-    def create_pipeline_endpoint(
-        self, pipeline_endpoint: PipelineEndpointRequest
-    ) -> PipelineEndpointResponse:
-        """Create a new pipeline endpoint.
+    def create_deployment(
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
 
         Args:
-            pipeline_endpoint: The pipeline endpoint to create.
+            deployment: The deployment to create.
 
         Returns:
-            The newly created pipeline endpoint.
+            The newly created deployment.
 
         Raises:
-            EntityExistsError: If a pipeline endpoint with the same name already
+            EntityExistsError: If a deployment with the same name already
                 exists in the same project.
         """
 
     @abstractmethod
-    def get_pipeline_endpoint(
-        self, endpoint_id: UUID, hydrate: bool = True
-    ) -> PipelineEndpointResponse:
-        """Get a pipeline endpoint with a given ID.
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
+        """Get a deployment with a given ID.
 
         Args:
-            endpoint_id: ID of the pipeline endpoint.
+            deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            The pipeline endpoint.
+            The deployment.
 
         Raises:
-            KeyError: If the pipeline endpoint does not exist.
+            KeyError: If the deployment does not exist.
         """
 
     @abstractmethod
-    def list_pipeline_endpoints(
+    def list_deployments(
         self,
-        endpoint_filter_model: PipelineEndpointFilter,
+        deployment_filter_model: DeploymentFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineEndpointResponse]:
-        """List all pipeline endpoints matching the given filter criteria.
+    ) -> Page[DeploymentResponse]:
+        """List all deployments matching the given filter criteria.
 
         Args:
-            endpoint_filter_model: All filter parameters including pagination
+            deployment_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A list of all pipeline endpoints matching the filter criteria.
+            A list of all deployments matching the filter criteria.
         """
 
     @abstractmethod
-    def update_pipeline_endpoint(
-        self, endpoint_id: UUID, endpoint_update: PipelineEndpointUpdate
-    ) -> PipelineEndpointResponse:
-        """Update a pipeline endpoint.
+    def update_deployment(
+        self, deployment_id: UUID, deployment_update: DeploymentUpdate
+    ) -> DeploymentResponse:
+        """Update a deployment.
 
         Args:
-            endpoint_id: The ID of the pipeline endpoint to update.
-            endpoint_update: The update to apply.
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
 
         Returns:
-            The updated pipeline endpoint.
+            The updated deployment.
 
         Raises:
-            KeyError: If the pipeline endpoint does not exist.
+            KeyError: If the deployment does not exist.
         """
 
     @abstractmethod
-    def delete_pipeline_endpoint(self, endpoint_id: UUID) -> None:
-        """Delete a pipeline endpoint.
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Delete a deployment.
 
         Args:
-            endpoint_id: The ID of the pipeline endpoint to delete.
+            deployment_id: The ID of the deployment to delete.
 
         Raises:
-            KeyError: If the pipeline endpoint does not exist.
+            KeyError: If the deployment does not exist.
         """
 
     # -------------------- Run templates --------------------

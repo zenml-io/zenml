@@ -25,9 +25,9 @@ for real-time, on-demand execution instead of traditional batch processing.
 
 When present in a stack, the deployer also acts as a registry for pipeline
 endpoints that are served with ZenML. You can use the deployer to list all
-pipeline endpoints that are currently deployed for online execution or filtered
+deployments that are currently deployed for online execution or filtered
 according to a particular snapshot or configuration, or to delete an external
-pipeline endpoint managed through ZenML.
+deployment managed through ZenML.
 """
 
 from zenml.deployers.base_deployer import (

@@ -633,7 +633,7 @@ def api_token(
     if deployment_id:
         # The deployment must exist
         try:
-            deployment = zen_store().get_pipeline_endpoint(
+            deployment = zen_store().get_deployment(
                 deployment_id, hydrate=False
             )
         except KeyError:

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing Pipeline Endpoints."""
+"""Models representing Pipeline Deployments."""
 
 from typing import (
     TYPE_CHECKING,
@@ -25,7 +25,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import PipelineEndpointStatus
+from zenml.enums import DeploymentStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -43,12 +43,10 @@ if TYPE_CHECKING:
     )
 
 
-class PipelineEndpointOperationalState(BaseModel):
-    """Operational state of a pipeline endpoint."""
+class DeploymentOperationalState(BaseModel):
+    """Operational state of a deployment."""
 
-    status: PipelineEndpointStatus = Field(
-        default=PipelineEndpointStatus.UNKNOWN
-    )
+    status: DeploymentStatus = Field(default=DeploymentStatus.UNKNOWN)
     url: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -56,38 +54,39 @@ class PipelineEndpointOperationalState(BaseModel):
 # ------------------ Request Model ------------------
 
 
-class PipelineEndpointRequest(ProjectScopedRequest):
-    """Request model for pipeline endpoints."""
+class DeploymentRequest(ProjectScopedRequest):
+    """Request model for deployments."""
 
     name: str = Field(
-        title="The name of the pipeline endpoint.",
-        description="A unique name for the pipeline endpoint within the project.",
+        title="The name of the deployment.",
+        description="A unique name for the deployment within the project.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     snapshot_id: UUID = Field(
         title="The pipeline snapshot ID.",
-        description="The ID of the pipeline snapshot being served by this endpoint.",
+        description="The ID of the pipeline snapshot associated with the "
+        "deployment.",
     )
     deployer_id: UUID = Field(
         title="The deployer ID.",
-        description="The ID of the deployer component managing this endpoint.",
+        description="The ID of the deployer component managing this deployment.",
     )
     auth_key: Optional[str] = Field(
         default=None,
-        title="The auth key of the pipeline endpoint.",
-        description="The auth key of the pipeline endpoint.",
+        title="The auth key of the deployment.",
+        description="The auth key of the deployment.",
     )
 
 
 # ------------------ Update Model ------------------
 
 
-class PipelineEndpointUpdate(BaseUpdate):
-    """Update model for pipeline endpoints."""
+class DeploymentUpdate(BaseUpdate):
+    """Update model for deployments."""
 
     name: Optional[str] = Field(
         default=None,
-        title="The new name of the pipeline endpoint.",
+        title="The new name of the deployment.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     snapshot_id: Optional[UUID] = Field(
@@ -96,25 +95,25 @@ class PipelineEndpointUpdate(BaseUpdate):
     )
     url: Optional[str] = Field(
         default=None,
-        title="The new URL of the pipeline endpoint.",
+        title="The new URL of the deployment.",
     )
     status: Optional[str] = Field(
         default=None,
-        title="The new status of the pipeline endpoint.",
+        title="The new status of the deployment.",
     )
-    endpoint_metadata: Optional[Dict[str, Any]] = Field(
+    deployment_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
-        title="The new metadata of the pipeline endpoint.",
+        title="The new metadata of the deployment.",
     )
     auth_key: Optional[str] = Field(
         default=None,
-        title="The new auth key of the pipeline endpoint.",
+        title="The new auth key of the deployment.",
     )
 
     @classmethod
     def from_operational_state(
-        cls, operational_state: PipelineEndpointOperationalState
-    ) -> "PipelineEndpointUpdate":
+        cls, operational_state: DeploymentOperationalState
+    ) -> "DeploymentUpdate":
         """Create an update from an operational state.
 
         Args:
@@ -126,82 +125,82 @@ class PipelineEndpointUpdate(BaseUpdate):
         return cls(
             status=operational_state.status,
             url=operational_state.url,
-            endpoint_metadata=operational_state.metadata,
+            deployment_metadata=operational_state.metadata,
         )
 
 
 # ------------------ Response Model ------------------
 
 
-class PipelineEndpointResponseBody(ProjectScopedResponseBody):
-    """Response body for pipeline endpoints."""
+class DeploymentResponseBody(ProjectScopedResponseBody):
+    """Response body for deployments."""
 
     url: Optional[str] = Field(
         default=None,
-        title="The URL of the pipeline endpoint.",
-        description="The HTTP URL where the pipeline endpoint can be accessed.",
+        title="The URL of the deployment.",
+        description="The HTTP URL where the deployment can be accessed.",
     )
     status: Optional[str] = Field(
         default=None,
-        title="The status of the pipeline endpoint.",
-        description="Current operational status of the pipeline endpoint.",
+        title="The status of the deployment.",
+        description="Current operational status of the deployment.",
     )
 
 
-class PipelineEndpointResponseMetadata(ProjectScopedResponseMetadata):
-    """Response metadata for pipeline endpoints."""
+class DeploymentResponseMetadata(ProjectScopedResponseMetadata):
+    """Response metadata for deployments."""
 
     snapshot_id: Optional[UUID] = Field(
         default=None,
         title="The pipeline snapshot ID.",
-        description="The ID of the pipeline snapshot being served by this endpoint.",
+        description="The ID of the pipeline snapshot being deployed.",
     )
     deployer_id: Optional[UUID] = Field(
         default=None,
         title="The deployer ID.",
-        description="The ID of the deployer component managing this endpoint.",
+        description="The ID of the deployer component managing this deployment.",
     )
-    endpoint_metadata: Dict[str, Any] = Field(
-        title="The metadata of the pipeline endpoint.",
+    deployment_metadata: Dict[str, Any] = Field(
+        title="The metadata of the deployment.",
     )
     auth_key: Optional[str] = Field(
         default=None,
-        title="The auth key of the pipeline endpoint.",
-        description="The auth key of the pipeline endpoint.",
+        title="The auth key of the deployment.",
+        description="The auth key of the deployment.",
     )
 
 
-class PipelineEndpointResponseResources(ProjectScopedResponseResources):
-    """Response resources for pipeline endpoints."""
+class DeploymentResponseResources(ProjectScopedResponseResources):
+    """Response resources for deployments."""
 
     snapshot: Optional["PipelineSnapshotResponse"] = Field(
         default=None,
         title="The pipeline snapshot.",
-        description="The pipeline snapshot being served by this endpoint.",
+        description="The pipeline snapshot being deployed.",
     )
     deployer: Optional["ComponentResponse"] = Field(
         default=None,
         title="The deployer.",
-        description="The deployer component managing this endpoint.",
+        description="The deployer component managing this deployment.",
     )
 
 
-class PipelineEndpointResponse(
+class DeploymentResponse(
     ProjectScopedResponse[
-        PipelineEndpointResponseBody,
-        PipelineEndpointResponseMetadata,
-        PipelineEndpointResponseResources,
+        DeploymentResponseBody,
+        DeploymentResponseMetadata,
+        DeploymentResponseResources,
     ]
 ):
-    """Response model for pipeline endpoints."""
+    """Response model for deployments."""
 
     name: str = Field(
-        title="The name of the pipeline endpoint.",
+        title="The name of the deployment.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    def get_hydrated_version(self) -> "PipelineEndpointResponse":
-        """Get the hydrated version of this pipeline endpoint.
+    def get_hydrated_version(self) -> "DeploymentResponse":
+        """Get the hydrated version of this deployment.
 
         Returns:
             an instance of the same entity with the metadata and resources fields
@@ -210,24 +209,24 @@ class PipelineEndpointResponse(
         from zenml.client import Client
 
         client = Client()
-        return client.get_pipeline_endpoint(self.id)
+        return client.get_deployment(self.id)
 
     # Helper properties
     @property
     def url(self) -> Optional[str]:
-        """The URL of the pipeline endpoint.
+        """The URL of the deployment.
 
         Returns:
-            The URL of the pipeline endpoint.
+            The URL of the deployment.
         """
         return self.get_body().url
 
     @property
     def status(self) -> Optional[str]:
-        """The status of the pipeline endpoint.
+        """The status of the deployment.
 
         Returns:
-            The status of the pipeline endpoint.
+            The status of the deployment.
         """
         return self.get_body().status
 
@@ -250,20 +249,20 @@ class PipelineEndpointResponse(
         return self.get_metadata().deployer_id
 
     @property
-    def endpoint_metadata(self) -> Dict[str, Any]:
-        """The metadata of the pipeline endpoint.
+    def deployment_metadata(self) -> Dict[str, Any]:
+        """The metadata of the deployment.
 
         Returns:
-            The metadata of the pipeline endpoint.
+            The metadata of the deployment.
         """
-        return self.get_metadata().endpoint_metadata
+        return self.get_metadata().deployment_metadata
 
     @property
     def auth_key(self) -> Optional[str]:
-        """The auth key of the pipeline endpoint.
+        """The auth key of the deployment.
 
         Returns:
-            The auth key of the pipeline endpoint.
+            The auth key of the deployment.
         """
         return self.get_metadata().auth_key
 
@@ -289,28 +288,28 @@ class PipelineEndpointResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineEndpointFilter(ProjectScopedFilter):
-    """Model to enable advanced filtering of pipeline endpoints."""
+class DeploymentFilter(ProjectScopedFilter):
+    """Model to enable advanced filtering of deployments."""
 
     name: Optional[str] = Field(
         default=None,
-        description="Name of the pipeline endpoint.",
+        description="Name of the deployment.",
     )
     url: Optional[str] = Field(
         default=None,
-        description="URL of the pipeline endpoint.",
+        description="URL of the deployment.",
     )
     status: Optional[str] = Field(
         default=None,
-        description="Status of the pipeline endpoint.",
+        description="Status of the deployment.",
     )
     snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Pipeline snapshot ID associated with the endpoint.",
+        description="Pipeline snapshot ID associated with the deployment.",
         union_mode="left_to_right",
     )
     deployer_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Deployer ID managing the endpoint.",
+        description="Deployer ID managing the deployment.",
         union_mode="left_to_right",
     )

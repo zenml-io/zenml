@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQLModel implementation of pipeline endpoint table."""
+"""SQLModel implementation of pipeline deployments table."""
 
 import json
 from typing import Any, Optional, Sequence
@@ -24,14 +24,14 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, String
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.enums import PipelineEndpointStatus
-from zenml.models.v2.core.pipeline_endpoint import (
-    PipelineEndpointRequest,
-    PipelineEndpointResponse,
-    PipelineEndpointResponseBody,
-    PipelineEndpointResponseMetadata,
-    PipelineEndpointResponseResources,
-    PipelineEndpointUpdate,
+from zenml.enums import DeploymentStatus
+from zenml.models.v2.core.deployment import (
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentResponseBody,
+    DeploymentResponseMetadata,
+    DeploymentResponseResources,
+    DeploymentUpdate,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -45,15 +45,15 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 
-class PipelineEndpointSchema(NamedSchema, table=True):
-    """SQL Model for pipeline endpoint."""
+class DeploymentSchema(NamedSchema, table=True):
+    """SQL Model for pipeline deployment."""
 
-    __tablename__ = "pipeline_endpoint"
+    __tablename__ = "deployment"
     __table_args__ = (
         UniqueConstraint(
             "name",
             "project_id",
-            name="unique_pipeline_endpoint_name_in_project",
+            name="unique_deployment_name_in_project",
         ),
     )
 
@@ -65,9 +65,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(
-        back_populates="pipeline_endpoints"
-    )
+    project: "ProjectSchema" = Relationship(back_populates="deployments")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -77,9 +75,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: Optional["UserSchema"] = Relationship(
-        back_populates="pipeline_endpoints"
-    )
+    user: Optional["UserSchema"] = Relationship(back_populates="deployments")
 
     status: str
     url: Optional[str] = Field(
@@ -90,7 +86,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         default=None,
         sa_column=Column(TEXT, nullable=True),
     )
-    endpoint_metadata: str = Field(
+    deployment_metadata: str = Field(
         default="{}",
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -108,7 +104,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         nullable=True,
     )
     snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
-        back_populates="pipeline_endpoints",
+        back_populates="deployments",
     )
 
     deployer_id: Optional[UUID] = build_foreign_key_field(
@@ -145,9 +141,9 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(PipelineEndpointSchema.user)),
-                    joinedload(jl_arg(PipelineEndpointSchema.snapshot)),
-                    joinedload(jl_arg(PipelineEndpointSchema.deployer)),
+                    joinedload(jl_arg(DeploymentSchema.user)),
+                    joinedload(jl_arg(DeploymentSchema.snapshot)),
+                    joinedload(jl_arg(DeploymentSchema.deployer)),
                 ]
             )
 
@@ -158,8 +154,8 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> PipelineEndpointResponse:
-        """Convert a `PipelineEndpointSchema` to a `PipelineEndpointResponse`.
+    ) -> DeploymentResponse:
+        """Convert a `DeploymentSchema` to a `DeploymentResponse`.
 
         Args:
             include_metadata: Whether to include metadata in the response.
@@ -167,9 +163,9 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             kwargs: Additional keyword arguments.
 
         Returns:
-            The created `PipelineEndpointResponse`.
+            The created `DeploymentResponse`.
         """
-        body = PipelineEndpointResponseBody(
+        body = DeploymentResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
@@ -180,22 +176,22 @@ class PipelineEndpointSchema(NamedSchema, table=True):
 
         metadata = None
         if include_metadata:
-            metadata = PipelineEndpointResponseMetadata(
+            metadata = DeploymentResponseMetadata(
                 snapshot_id=self.snapshot_id,
                 deployer_id=self.deployer_id,
-                endpoint_metadata=json.loads(self.endpoint_metadata),
+                deployment_metadata=json.loads(self.deployment_metadata),
                 auth_key=self.auth_key,
             )
 
         resources = None
         if include_resources:
-            resources = PipelineEndpointResponseResources(
+            resources = DeploymentResponseResources(
                 user=self.user.to_model() if self.user else None,
                 snapshot=self.snapshot.to_model() if self.snapshot else None,
                 deployer=self.deployer.to_model() if self.deployer else None,
             )
 
-        return PipelineEndpointResponse(
+        return DeploymentResponse(
             id=self.id,
             name=self.name,
             body=body,
@@ -205,15 +201,15 @@ class PipelineEndpointSchema(NamedSchema, table=True):
 
     def update(
         self,
-        update: PipelineEndpointUpdate,
-    ) -> "PipelineEndpointSchema":
-        """Updates a `PipelineEndpointSchema` from a `PipelineEndpointUpdate`.
+        update: DeploymentUpdate,
+    ) -> "DeploymentSchema":
+        """Updates a `DeploymentSchema` from a `DeploymentUpdate`.
 
         Args:
-            update: The `PipelineEndpointUpdate` to update from.
+            update: The `DeploymentUpdate` to update from.
 
         Returns:
-            The updated `PipelineEndpointSchema`.
+            The updated `DeploymentSchema`.
         """
         for field, value in update.model_dump(
             exclude_unset=True, exclude_none=True
@@ -227,10 +223,8 @@ class PipelineEndpointSchema(NamedSchema, table=True):
         return self
 
     @classmethod
-    def from_request(
-        cls, request: PipelineEndpointRequest
-    ) -> "PipelineEndpointSchema":
-        """Convert a `PipelineEndpointRequest` to a `PipelineEndpointSchema`.
+    def from_request(cls, request: DeploymentRequest) -> "DeploymentSchema":
+        """Convert a `DeploymentRequest` to a `DeploymentSchema`.
 
         Args:
             request: The request model to convert.
@@ -242,7 +236,7 @@ class PipelineEndpointSchema(NamedSchema, table=True):
             name=request.name,
             project_id=request.project,
             user_id=request.user,
-            status=PipelineEndpointStatus.UNKNOWN.value,
+            status=DeploymentStatus.UNKNOWN.value,
             snapshot_id=request.snapshot_id,
             deployer_id=request.deployer_id,
             auth_key=request.auth_key,

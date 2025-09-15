@@ -190,6 +190,10 @@ from zenml.models import (
     DefaultComponentRequest,
     DefaultStackRequest,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -223,10 +227,6 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineEndpointFilter,
-    PipelineEndpointRequest,
-    PipelineEndpointResponse,
-    PipelineEndpointUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -348,6 +348,7 @@ from zenml.zen_stores.schemas import (
     BaseSchema,
     CodeReferenceSchema,
     CodeRepositorySchema,
+    DeploymentSchema,
     EventSourceSchema,
     FlavorSchema,
     ModelSchema,
@@ -357,7 +358,6 @@ from zenml.zen_stores.schemas import (
     NamedSchema,
     OAuthDeviceSchema,
     PipelineBuildSchema,
-    PipelineEndpointSchema,
     PipelineRunSchema,
     PipelineSchema,
     PipelineSnapshotSchema,
@@ -5190,163 +5190,161 @@ class SqlZenStore(BaseZenStore):
             "Running a snapshot is not possible with a local store."
         )
 
-    # -------------------- Pipeline endpoints --------------------
+    # -------------------- Deployments --------------------
 
     @track_decorator(AnalyticsEvent.CREATE_DEPLOYMENT)
-    def create_pipeline_endpoint(
-        self, pipeline_endpoint: PipelineEndpointRequest
-    ) -> PipelineEndpointResponse:
-        """Create a new pipeline endpoint.
+    def create_deployment(
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
 
         Args:
-            pipeline_endpoint: The pipeline endpoint to create.
+            deployment: The deployment to create.
 
         Returns:
-            The newly created pipeline endpoint.
+            The newly created deployment.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
-                request_model=pipeline_endpoint, session=session
+                request_model=deployment, session=session
             )
             self._verify_name_uniqueness(
-                resource=pipeline_endpoint,
-                schema=PipelineEndpointSchema,
+                resource=deployment,
+                schema=DeploymentSchema,
                 session=session,
             )
             self._get_reference_schema_by_id(
-                resource=pipeline_endpoint,
+                resource=deployment,
                 reference_schema=PipelineSnapshotSchema,
-                reference_id=pipeline_endpoint.snapshot_id,
+                reference_id=deployment.snapshot_id,
                 session=session,
             )
             self._get_reference_schema_by_id(
-                resource=pipeline_endpoint,
+                resource=deployment,
                 reference_schema=StackComponentSchema,
-                reference_id=pipeline_endpoint.deployer_id,
+                reference_id=deployment.deployer_id,
                 session=session,
                 reference_type="deployer",
             )
-            pipeline_endpoint_schema = PipelineEndpointSchema.from_request(
-                pipeline_endpoint
-            )
-            session.add(pipeline_endpoint_schema)
+            deployment_schema = DeploymentSchema.from_request(deployment)
+            session.add(deployment_schema)
             session.commit()
-            session.refresh(pipeline_endpoint_schema)
-            return pipeline_endpoint_schema.to_model(
+            session.refresh(deployment_schema)
+            return deployment_schema.to_model(
                 include_metadata=True, include_resources=True
             )
 
-    def get_pipeline_endpoint(
-        self, endpoint_id: UUID, hydrate: bool = True
-    ) -> PipelineEndpointResponse:
-        """Get a pipeline endpoint with a given ID.
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
+        """Get a deployment with a given ID.
 
         Args:
-            endpoint_id: ID of the pipeline endpoint.
+            deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            The pipeline endpoint.
+            The deployment.
         """
         with Session(self.engine) as session:
-            pipeline_endpoint = self._get_schema_by_id(
-                resource_id=endpoint_id,
-                schema_class=PipelineEndpointSchema,
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=DeploymentSchema,
                 session=session,
             )
-            return pipeline_endpoint.to_model(
+            return deployment.to_model(
                 include_metadata=hydrate, include_resources=True
             )
 
-    def list_pipeline_endpoints(
+    def list_deployments(
         self,
-        endpoint_filter_model: PipelineEndpointFilter,
+        deployment_filter_model: DeploymentFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineEndpointResponse]:
-        """List all pipeline endpoints matching the given filter criteria.
+    ) -> Page[DeploymentResponse]:
+        """List all deployments matching the given filter criteria.
 
         Args:
-            endpoint_filter_model: All filter parameters including pagination
+            deployment_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A page of all pipeline endpoints matching the filter criteria.
+            A page of all deployments matching the filter criteria.
         """
         with Session(self.engine) as session:
             self._set_filter_project_id(
-                filter_model=endpoint_filter_model,
+                filter_model=deployment_filter_model,
                 session=session,
             )
-            query = select(PipelineEndpointSchema)
+            query = select(DeploymentSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=PipelineEndpointSchema,
-                filter_model=endpoint_filter_model,
+                table=DeploymentSchema,
+                filter_model=deployment_filter_model,
                 hydrate=hydrate,
             )
 
-    def update_pipeline_endpoint(
+    def update_deployment(
         self,
-        endpoint_id: UUID,
-        endpoint_update: PipelineEndpointUpdate,
-    ) -> PipelineEndpointResponse:
-        """Update a pipeline endpoint.
+        deployment_id: UUID,
+        deployment_update: DeploymentUpdate,
+    ) -> DeploymentResponse:
+        """Update a deployment.
 
         Args:
-            endpoint_id: The ID of the pipeline endpoint to update.
-            endpoint_update: The update to apply.
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
 
         Returns:
-            The updated pipeline endpoint.
+            The updated deployment.
         """
         with Session(self.engine) as session:
-            pipeline_endpoint = self._get_schema_by_id(
-                resource_id=endpoint_id,
-                schema_class=PipelineEndpointSchema,
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=DeploymentSchema,
                 session=session,
             )
 
             self._verify_name_uniqueness(
-                resource=endpoint_update,
-                schema=pipeline_endpoint,
+                resource=deployment_update,
+                schema=deployment,
                 session=session,
             )
             self._get_reference_schema_by_id(
-                resource=pipeline_endpoint,
+                resource=deployment,
                 reference_schema=PipelineSnapshotSchema,
-                reference_id=endpoint_update.snapshot_id,
+                reference_id=deployment_update.snapshot_id,
                 session=session,
             )
 
-            pipeline_endpoint.update(endpoint_update)
-            session.add(pipeline_endpoint)
+            deployment.update(deployment_update)
+            session.add(deployment)
             session.commit()
 
-            session.refresh(pipeline_endpoint)
+            session.refresh(deployment)
 
-            return pipeline_endpoint.to_model(
+            return deployment.to_model(
                 include_metadata=True, include_resources=True
             )
 
     @track_decorator(AnalyticsEvent.DELETE_DEPLOYMENT)
-    def delete_pipeline_endpoint(self, endpoint_id: UUID) -> None:
-        """Delete a pipeline endpoint.
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Delete a deployment.
 
         Args:
-            endpoint_id: The ID of the pipeline endpoint to delete.
+            deployment_id: The ID of the deployment to delete.
         """
         with Session(self.engine) as session:
-            pipeline_endpoint = self._get_schema_by_id(
-                resource_id=endpoint_id,
-                schema_class=PipelineEndpointSchema,
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=DeploymentSchema,
                 session=session,
             )
 
-            session.delete(pipeline_endpoint)
+            session.delete(deployment)
             session.commit()
 
     # -------------------- Run templates --------------------

@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import (
-        PipelineEndpointResponse,
+        DeploymentResponse,
         PipelineRunResponse,
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
@@ -886,7 +886,7 @@ class Stack:
         snapshot: "PipelineSnapshotResponse",
         endpoint_name: str,
         timeout: Optional[int] = None,
-    ) -> "PipelineEndpointResponse":
+    ) -> "DeploymentResponse":
         """Deploys a pipeline on this stack.
 
         Args:
@@ -896,7 +896,7 @@ class Stack:
                 deployed.
 
         Returns:
-            The pipeline endpoint response.
+            The deployment response.
 
         Raises:
             RuntimeError: If the stack does not have a deployer.
@@ -907,10 +907,10 @@ class Stack:
                 "deployer to the stack in order to serve a pipeline."
             )
 
-        return self.deployer.provision_pipeline_endpoint(
+        return self.deployer.provision_deployment(
             snapshot=snapshot,
             stack=self,
-            endpoint_name_or_id=endpoint_name,
+            deployment_name_or_id=endpoint_name,
             timeout=timeout,
         )
 

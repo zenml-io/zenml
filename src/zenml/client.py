@@ -62,10 +62,10 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     ColorVariants,
+    DeploymentStatus,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
-    PipelineEndpointStatus,
     PluginSubType,
     PluginType,
     ServiceState,
@@ -109,6 +109,8 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeploymentFilter,
+    DeploymentResponse,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -133,8 +135,6 @@ from zenml.models import (
     Page,
     PipelineBuildFilter,
     PipelineBuildResponse,
-    PipelineEndpointFilter,
-    PipelineEndpointResponse,
     PipelineFilter,
     PipelineResponse,
     PipelineRunFilter,
@@ -3671,35 +3671,35 @@ class Client(metaclass=ClientMetaClass):
 
         return run
 
-    # ------------------------------ Pipeline endpoints -----------------------------
+    # ------------------------------ Deployments -----------------------------
 
-    def get_pipeline_endpoint(
+    def get_deployment(
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
-    ) -> PipelineEndpointResponse:
-        """Get a pipeline endpoint.
+    ) -> DeploymentResponse:
+        """Get a deployment.
 
         Args:
-            name_id_or_prefix: Name/ID/ID prefix of the endpoint to get.
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to get.
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            The pipeline endpoint.
+            The deployment.
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_pipeline_endpoint,
-            list_method=self.list_pipeline_endpoints,
+            get_method=self.zen_store.get_deployment,
+            list_method=self.list_deployments,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
             project=project,
             hydrate=hydrate,
         )
 
-    def list_pipeline_endpoints(
+    def list_deployments(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
@@ -3712,36 +3712,36 @@ class Client(metaclass=ClientMetaClass):
         snapshot_id: Optional[Union[str, UUID]] = None,
         deployer_id: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
-        status: Optional[PipelineEndpointStatus] = None,
+        status: Optional[DeploymentStatus] = None,
         url: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
-    ) -> Page[PipelineEndpointResponse]:
-        """List pipeline endpoints.
+    ) -> Page[DeploymentResponse]:
+        """List deployments.
 
         Args:
             sort_by: The column to sort by.
             page: The page of items.
             size: The maximum size of all pages.
             logical_operator: Which logical operator to use [and, or].
-            id: Use the id of endpoints to filter by.
+            id: Use the id of deployments to filter by.
             created: Use to filter by time of creation.
             updated: Use the last updated date for filtering.
-            name: The name of the endpoint to filter by.
+            name: The name of the deployment to filter by.
             project: The project name/ID to filter by.
             snapshot_id: The id of the snapshot to filter by.
             deployer_id: The id of the deployer to filter by.
-            status: The status of the endpoint to filter by.
-            url: The url of the endpoint to filter by.
+            status: The status of the deployment to filter by.
+            url: The url of the deployment to filter by.
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A page of pipeline endpoints.
+            A page of deployments.
         """
-        return self.zen_store.list_pipeline_endpoints(
-            endpoint_filter_model=PipelineEndpointFilter(
+        return self.zen_store.list_deployments(
+            deployment_filter_model=DeploymentFilter(
                 sort_by=sort_by,
                 page=page,
                 size=size,
@@ -3760,32 +3760,32 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
-    def provision_pipeline_endpoint(
+    def provision_deployment(
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         snapshot_id: Optional[Union[str, UUID]] = None,
         timeout: Optional[int] = None,
-    ) -> PipelineEndpointResponse:
-        """Provision a pipeline endpoint.
+    ) -> DeploymentResponse:
+        """Provision a deployment.
 
         Args:
-            name_id_or_prefix: Name/ID/ID prefix of the endpoint to provision.
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to provision.
             project: The project name/ID to filter by.
             snapshot_id: The ID of the snapshot to use. If not provided,
-                the previous snapshot configured for the endpoint will be
+                the previous snapshot configured for the deployment will be
                 used.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be provisioned.
+                deployment to be provisioned.
 
         Returns:
-            The provisioned pipeline endpoint.
+            The provisioned deployment.
 
         Raises:
             NotImplementedError: If the deployer cannot be instantiated.
-            ValueError: If the existing pipeline endpoint has no associated
+            ValueError: If the existing deployment has no associated
                 snapshot.
-            KeyError: If the pipeline endpoint is not found and no snapshot
+            KeyError: If the deployment is not found and no snapshot
                 ID was provided.
         """
         from zenml.deployers.base_deployer import (
@@ -3794,15 +3794,15 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack.stack import Stack
         from zenml.stack.stack_component import StackComponent
 
-        endpoint: Optional[PipelineEndpointResponse] = None
-        endpoint_name_or_id = name_id_or_prefix
+        deployment: Optional[DeploymentResponse] = None
+        deployment_name_or_id = name_id_or_prefix
         try:
-            endpoint = self.get_pipeline_endpoint(
+            deployment = self.get_deployment(
                 name_id_or_prefix=name_id_or_prefix,
                 project=project,
                 hydrate=True,
             )
-            endpoint_name_or_id = endpoint.id
+            deployment_name_or_id = deployment.id
         except KeyError:
             if isinstance(name_id_or_prefix, UUID):
                 raise
@@ -3816,36 +3816,36 @@ class Client(metaclass=ClientMetaClass):
                 project=project,
                 hydrate=True,
             )
-        elif not endpoint:
+        elif not deployment:
             raise KeyError(
-                f"Pipeline endpoint with name '{name_id_or_prefix}' was not "
+                f"Deployment with name '{name_id_or_prefix}' was not "
                 "found and no snapshot ID was provided."
             )
         else:
             # Use the current snapshot
-            if not endpoint.snapshot:
+            if not deployment.snapshot:
                 raise ValueError(
-                    f"Pipeline endpoint '{endpoint.name}' has no associated "
+                    f"Deployment '{deployment.name}' has no associated "
                     "snapshot."
                 )
-            snapshot = endpoint.snapshot
+            snapshot = deployment.snapshot
 
-            if endpoint.deployer:
+            if deployment.deployer:
                 try:
                     deployer = cast(
                         BaseDeployer,
-                        StackComponent.from_model(endpoint.deployer),
+                        StackComponent.from_model(deployment.deployer),
                     )
                 except ImportError:
                     raise NotImplementedError(
-                        f"Deployer '{endpoint.deployer.name}' could "
+                        f"Deployer '{deployment.deployer.name}' could "
                         f"not be instantiated. This is likely because the "
                         f"deployer's dependencies are not installed."
                     )
 
         if snapshot.stack and snapshot.stack.id != stack.id:
             # We really need to use the original stack for which the deployment
-            # was created for to provision the endpoint, otherwise the endpoint
+            # was created for to provision the deployment, otherwise the deployment
             # might not have the correct dependencies installed.
             stack = Stack.from_model(snapshot.stack)
 
@@ -3856,37 +3856,37 @@ class Client(metaclass=ClientMetaClass):
                 raise ValueError(
                     f"No deployer was found in the deployment's stack "
                     f"'{stack.name}' or in your active stack. Please add a "
-                    "deployer to your stack to be able to provision a pipeline "
-                    "endpoint."
+                    "deployer to your stack to be able to provision a "
+                    "deployment."
                 )
 
         # Provision the endpoint through the deployer
-        endpoint = deployer.provision_pipeline_endpoint(
+        deployment = deployer.provision_deployment(
             snapshot=snapshot,
             stack=stack,
-            endpoint_name_or_id=endpoint_name_or_id,
+            deployment_name_or_id=deployment_name_or_id,
             replace=True,
             timeout=timeout,
         )
         logger.info(
-            f"Provisioned pipeline endpoint with name '{endpoint.name}'.",
+            f"Provisioned deployment with name '{deployment.name}'.",
         )
 
-        return endpoint
+        return deployment
 
-    def deprovision_pipeline_endpoint(
+    def deprovision_deployment(
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         timeout: Optional[int] = None,
     ) -> None:
-        """Deprovision a pipeline endpoint.
+        """Deprovision a deployment.
 
         Args:
-            name_id_or_prefix: Name/ID/ID prefix of the endpoint to deprovision.
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to deprovision.
             project: The project name/ID to filter by.
-            timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be deprovisioned.
+            timeout: The maximum time in seconds to wait for the deployment to
+                be deprovisioned.
 
         Raises:
             NotImplementedError: If the deployer cannot be instantiated.
@@ -3896,57 +3896,57 @@ class Client(metaclass=ClientMetaClass):
         )
         from zenml.stack.stack_component import StackComponent
 
-        endpoint = self.get_pipeline_endpoint(
+        deployment = self.get_deployment(
             name_id_or_prefix=name_id_or_prefix,
             project=project,
             hydrate=False,
         )
-        if endpoint.deployer:
-            # Instantiate and deprovision the endpoint through the pipeline
+        if deployment.deployer:
+            # Instantiate and deprovision the deployment through the pipeline
             # server
 
             try:
                 deployer = cast(
                     BaseDeployer,
-                    StackComponent.from_model(endpoint.deployer),
+                    StackComponent.from_model(deployment.deployer),
                 )
             except ImportError:
                 raise NotImplementedError(
-                    f"Deployer '{endpoint.deployer.name}' could "
+                    f"Deployer '{deployment.deployer.name}' could "
                     f"not be instantiated. This is likely because the "
                     f"deployer's dependencies are not installed."
                 )
-            deployer.deprovision_pipeline_endpoint(
-                endpoint_name_or_id=endpoint.id,
+            deployer.deprovision_deployment(
+                deployment_name_or_id=deployment.id,
                 timeout=timeout,
             )
             logger.info(
-                "Deprovisioned pipeline endpoint with name '%s'.",
-                endpoint.name,
+                "Deprovisioned deployment with name '%s'.",
+                deployment.name,
             )
         else:
             logger.info(
-                f"Pipeline endpoint with name '{endpoint.name}' is no longer "
+                f"Deployment with name '{deployment.name}' is no longer "
                 "managed by a deployer. This is likely because the deployer "
-                "was deleted. Please delete the pipeline endpoint instead.",
+                "was deleted. Please delete the deployment instead.",
             )
 
-    def delete_pipeline_endpoint(
+    def delete_deployment(
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         force: bool = False,
         timeout: Optional[int] = None,
     ) -> None:
-        """Deprovision and delete a pipeline endpoint.
+        """Deprovision and delete a deployment.
 
         Args:
-            name_id_or_prefix: Name/ID/ID prefix of the endpoint to delete.
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to delete.
             project: The project name/ID to filter by.
-            force: If True, force the deletion even if the endpoint cannot be
+            force: If True, force the deletion even if the deployment cannot be
                 deprovisioned.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be deprovisioned.
+                deployment to be deprovisioned.
 
         Raises:
             NotImplementedError: If the deployer cannot be instantiated.
@@ -3956,160 +3956,160 @@ class Client(metaclass=ClientMetaClass):
         )
         from zenml.stack.stack_component import StackComponent
 
-        endpoint = self.get_pipeline_endpoint(
+        deployment = self.get_deployment(
             name_id_or_prefix=name_id_or_prefix,
             project=project,
             hydrate=False,
         )
-        if endpoint.deployer:
-            # Instantiate and deprovision the endpoint through the pipeline
+        if deployment.deployer:
+            # Instantiate and deprovision the deployment through the pipeline
             # server
 
             try:
                 deployer = cast(
                     BaseDeployer,
-                    StackComponent.from_model(endpoint.deployer),
+                    StackComponent.from_model(deployment.deployer),
                 )
             except ImportError as e:
                 msg = (
-                    f"Deployer '{endpoint.deployer.name}' could "
+                    f"Deployer '{deployment.deployer.name}' could "
                     f"not be instantiated. This is likely because the "
                     f"deployer's dependencies are not installed: {e}"
                 )
                 if force:
                     logger.warning(msg + " Forcing deletion.")
-                    self.zen_store.delete_pipeline_endpoint(
-                        endpoint_id=endpoint.id
+                    self.zen_store.delete_deployment(
+                        deployment_id=deployment.id
                     )
                 else:
                     raise NotImplementedError(msg)
             except Exception as e:
                 msg = (
-                    f"Failed to instantiate deployer '{endpoint.deployer.name}'."
+                    f"Failed to instantiate deployer '{deployment.deployer.name}'."
                     f"Error: {e}"
                 )
                 if force:
                     logger.warning(msg + " Forcing deletion.")
-                    self.zen_store.delete_pipeline_endpoint(
-                        endpoint_id=endpoint.id
+                    self.zen_store.delete_deployment(
+                        deployment_id=deployment.id
                     )
                 else:
                     raise NotImplementedError(msg)
             else:
-                deployer.delete_pipeline_endpoint(
-                    endpoint_name_or_id=endpoint.id,
+                deployer.delete_deployment(
+                    deployment_name_or_id=deployment.id,
                     force=force,
                     timeout=timeout,
                 )
         else:
-            self.zen_store.delete_pipeline_endpoint(endpoint_id=endpoint.id)
-        logger.info("Deleted pipeline endpoint with name '%s'.", endpoint.name)
+            self.zen_store.delete_deployment(deployment_id=deployment.id)
+        logger.info("Deleted deployment with name '%s'.", deployment.name)
 
-    def refresh_pipeline_endpoint(
+    def refresh_deployment(
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
-    ) -> PipelineEndpointResponse:
-        """Refresh the status of a pipeline endpoint.
+    ) -> DeploymentResponse:
+        """Refresh the status of a deployment.
 
         Args:
-            name_id_or_prefix: Name/ID/ID prefix of the endpoint to refresh.
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to refresh.
             project: The project name/ID to filter by.
 
         Returns:
-            The refreshed pipeline endpoint.
+            The refreshed deployment.
 
         Raises:
             NotImplementedError: If the deployer cannot be instantiated or if
-                the pipeline endpoint is no longer managed by a deployer.
+                the deployment is no longer managed by a deployer.
         """
         from zenml.deployers.base_deployer import (
             BaseDeployer,
         )
         from zenml.stack.stack_component import StackComponent
 
-        endpoint = self.get_pipeline_endpoint(
+        deployment = self.get_deployment(
             name_id_or_prefix=name_id_or_prefix,
             project=project,
             hydrate=False,
         )
-        if endpoint.deployer:
+        if deployment.deployer:
             try:
                 deployer = cast(
                     BaseDeployer,
-                    StackComponent.from_model(endpoint.deployer),
+                    StackComponent.from_model(deployment.deployer),
                 )
             except ImportError:
                 raise NotImplementedError(
-                    f"Deployer '{endpoint.deployer.name}' could "
+                    f"Deployer '{deployment.deployer.name}' could "
                     f"not be instantiated. This is likely because the "
                     f"deployer's dependencies are not installed."
                 )
-            return deployer.refresh_pipeline_endpoint(
-                endpoint_name_or_id=endpoint.id
+            return deployer.refresh_deployment(
+                deployment_name_or_id=deployment.id
             )
         else:
             raise NotImplementedError(
-                f"Pipeline endpoint '{endpoint.name}' is no longer managed by "
+                f"Deployment '{deployment.name}' is no longer managed by "
                 "a deployer. This is likely because the deployer "
-                "was deleted. Please delete the pipeline endpoint instead."
+                "was deleted. Please delete the deployment instead."
             )
 
-    def get_pipeline_endpoint_logs(
+    def get_deployment_logs(
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
-        """Get the logs of a pipeline endpoint.
+        """Get the logs of a deployment.
 
         Args:
-            name_id_or_prefix: Name/ID/ID prefix of the endpoint to get the logs
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to get the logs
                 of.
             project: The project name/ID to filter by.
             follow: If True, follow the logs.
             tail: The number of lines to show from the end of the logs.
 
         Yields:
-            The logs of the pipeline endpoint.
+            The logs of the deployment.
 
         Raises:
             NotImplementedError: If the deployer cannot be instantiated or if
-                the pipeline endpoint is no longer managed by a deployer.
+                the deployment is no longer managed by a deployer.
         """
         from zenml.deployers.base_deployer import (
             BaseDeployer,
         )
         from zenml.stack.stack_component import StackComponent
 
-        endpoint = self.get_pipeline_endpoint(
+        deployment = self.get_deployment(
             name_id_or_prefix=name_id_or_prefix,
             project=project,
             hydrate=False,
         )
-        if endpoint.deployer:
+        if deployment.deployer:
             try:
                 deployer = cast(
                     BaseDeployer,
-                    StackComponent.from_model(endpoint.deployer),
+                    StackComponent.from_model(deployment.deployer),
                 )
             except ImportError:
                 raise NotImplementedError(
-                    f"Deployer '{endpoint.deployer.name}' could "
+                    f"Deployer '{deployment.deployer.name}' could "
                     f"not be instantiated. This is likely because the "
                     f"deployer's dependencies are not installed."
                 )
-            yield from deployer.get_pipeline_endpoint_logs(
-                endpoint_name_or_id=endpoint.id,
+            yield from deployer.get_deployment_logs(
+                deployment_name_or_id=deployment.id,
                 follow=follow,
                 tail=tail,
             )
         else:
             raise NotImplementedError(
-                f"Pipeline endpoint '{endpoint.name}' is no longer managed by "
+                f"Deployment '{deployment.name}' is no longer managed by "
                 "a deployer. This is likely because the deployer "
-                "was deleted. Please delete the pipeline endpoint instead."
+                "was deleted. Please delete the deployment instead."
             )
 
     # ------------------------------ Run templates -----------------------------

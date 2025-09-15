@@ -494,8 +494,8 @@ class ServiceState(StrEnum):
     SCALED_TO_ZERO = "scaled_to_zero"
 
 
-class PipelineEndpointStatus(StrEnum):
-    """Status of a pipeline endpoint."""
+class DeploymentStatus(StrEnum):
+    """Status of a deployment."""
 
     UNKNOWN = "unknown"
     PENDING = "pending"

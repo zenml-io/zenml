@@ -64,10 +64,10 @@ from zenml.logging.step_logging import (
 )
 from zenml.models import (
     CodeReferenceRequest,
+    DeploymentResponse,
     LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
-    PipelineEndpointResponse,
     PipelineRequest,
     PipelineResponse,
     PipelineRunResponse,
@@ -691,7 +691,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         timeout: Optional[int] = None,
         *args: Any,
         **kwargs: Any,
-    ) -> PipelineEndpointResponse:
+    ) -> DeploymentResponse:
         """Deploy the pipeline for online inference.
 
         Args:
@@ -702,7 +702,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             **kwargs: Pipeline entrypoint input keyword arguments.
 
         Returns:
-            The pipeline endpoint response.
+            The deployment response.
         """
         self.prepare(*args, **kwargs)
         snapshot = self._create_snapshot(**self._run_args)

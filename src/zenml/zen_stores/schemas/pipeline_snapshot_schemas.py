@@ -53,8 +53,8 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.pipeline_endpoint_schemas import (
-        PipelineEndpointSchema,
+    from zenml.zen_stores.schemas.deployment_schemas import (
+        DeploymentSchema,
     )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
@@ -199,7 +199,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             "order_by": "asc(StepConfigurationSchema.index)",
         }
     )
-    pipeline_endpoints: List["PipelineEndpointSchema"] = Relationship(
+    deployments: List["DeploymentSchema"] = Relationship(
         back_populates="snapshot"
     )
     step_count: int

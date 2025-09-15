@@ -60,10 +60,10 @@ from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
 )
-from zenml.deployers.utils import get_pipeline_endpoint_invocation_example
+from zenml.deployers.utils import get_deployment_invocation_example
 from zenml.enums import (
+    DeploymentStatus,
     GenericFilterOps,
-    PipelineEndpointStatus,
     ServiceState,
     StackComponentType,
 )
@@ -103,8 +103,8 @@ if TYPE_CHECKING:
     from zenml.models import (
         AuthenticationMethodModel,
         ComponentResponse,
+        DeploymentResponse,
         FlavorResponse,
-        PipelineEndpointResponse,
         PipelineRunResponse,
         ResourceTypeModel,
         ServiceConnectorRequest,
@@ -2312,24 +2312,24 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def get_pipeline_endpoint_status_emoji(
+def get_deployment_status_emoji(
     status: Optional[str],
 ) -> str:
-    """Returns an emoji representing the given pipeline endpoint status.
+    """Returns an emoji representing the given deployment status.
 
     Args:
-        status: The pipeline endpoint status to get the emoji for.
+        status: The deployment status to get the emoji for.
 
     Returns:
-        An emoji representing the given pipeline endpoint status.
+        An emoji representing the given deployment status.
     """
-    if status == PipelineEndpointStatus.PENDING:
+    if status == DeploymentStatus.PENDING:
         return ":hourglass_flowing_sand:"
-    if status == PipelineEndpointStatus.ERROR:
+    if status == DeploymentStatus.ERROR:
         return ":x:"
-    if status == PipelineEndpointStatus.RUNNING:
+    if status == DeploymentStatus.RUNNING:
         return ":gear:"
-    if status == PipelineEndpointStatus.ABSENT:
+    if status == DeploymentStatus.ABSENT:
         return ":stop_sign:"
 
     return ":question:"
@@ -2344,20 +2344,20 @@ def format_deployment_status(status: Optional[str]) -> str:
     Returns:
         Formatted status string.
     """
-    if status == PipelineEndpointStatus.RUNNING:
+    if status == DeploymentStatus.RUNNING:
         return "[green]RUNNING[/green]"
-    elif status == PipelineEndpointStatus.PENDING:
+    elif status == DeploymentStatus.PENDING:
         return "[yellow]PENDING[/yellow]"
-    elif status == PipelineEndpointStatus.ERROR:
+    elif status == DeploymentStatus.ERROR:
         return "[red]ERROR[/red]"
-    elif status == PipelineEndpointStatus.ABSENT:
+    elif status == DeploymentStatus.ABSENT:
         return "[dim]ABSENT[/dim]"
 
     return "[dim]UNKNOWN[/dim]"
 
 
 def print_deployment_table(
-    deployments: Sequence["PipelineEndpointResponse"],
+    deployments: Sequence["DeploymentResponse"],
 ) -> None:
     """Print a prettified list of all deployments supplied to this method.
 
@@ -2379,8 +2379,8 @@ def print_deployment_table(
             stack_name = "[DELETED]"
         else:
             stack_name = deployment.snapshot.stack.name
-        status = deployment.status or PipelineEndpointStatus.UNKNOWN.value
-        status_emoji = get_pipeline_endpoint_status_emoji(status)
+        status = deployment.status or DeploymentStatus.UNKNOWN.value
+        status_emoji = get_deployment_status_emoji(status)
         run_dict = {
             "NAME": deployment.name,
             "PIPELINE": pipeline_name,
@@ -2397,7 +2397,7 @@ def print_deployment_table(
 
 
 def pretty_print_deployment(
-    deployment: "PipelineEndpointResponse",
+    deployment: "DeploymentResponse",
     show_secret: bool = False,
     show_metadata: bool = False,
     no_truncate: bool = False,
@@ -2412,7 +2412,7 @@ def pretty_print_deployment(
     """
     # Header section
     status = format_deployment_status(deployment.status)
-    status_emoji = get_pipeline_endpoint_status_emoji(deployment.status)
+    status_emoji = get_deployment_status_emoji(deployment.status)
     declare(
         f"\n🚀 Deployment: [bold cyan]{deployment.name}[/bold cyan] is: {status} {status_emoji}"
     )
@@ -2454,7 +2454,7 @@ def pretty_print_deployment(
                     "--show-secret`[/green] to reveal)[/dim]"
                 )
 
-        example = get_pipeline_endpoint_invocation_example(deployment)
+        example = get_deployment_invocation_example(deployment)
 
         # CLI invoke command
         cli_args = " ".join(
@@ -2493,7 +2493,7 @@ def pretty_print_deployment(
         declare("\n📋 [bold]Deployment Metadata[/bold]")
 
         # Get the metadata - it could be from endpoint_metadata property or metadata
-        metadata = deployment.endpoint_metadata
+        metadata = deployment.deployment_metadata
 
         if metadata:
             # Recursively format nested dictionaries and lists

@@ -377,7 +377,7 @@ def run_pipeline(
     is_flag=True,
     default=False,
     required=False,
-    help="Attach to the pipeline endpoint logs.",
+    help="Attach to the deployment logs.",
 )
 @click.option(
     "--timeout",
@@ -416,7 +416,7 @@ def deploy_pipeline(
             already exists.
         overtake: If True, update the deployment with the same name if
             it already exists, even if it is owned by a different user.
-        attach: If True, attach to the pipeline endpoint logs.
+        attach: If True, attach to the deployment logs.
         timeout: The maximum time in seconds to wait for the pipeline to be
             deployed.
     """
@@ -453,7 +453,7 @@ def deploy_pipeline(
             deployment_name = pipeline_instance.name
         client = Client()
         try:
-            deployment = client.get_pipeline_endpoint(deployment_name)
+            deployment = client.get_deployment(deployment_name)
         except KeyError:
             pass
         else:
@@ -488,8 +488,8 @@ def deploy_pipeline(
 
         if attach:
             deployer = BaseDeployer.get_active_deployer()
-            for log in deployer.get_pipeline_endpoint_logs(
-                endpoint_name_or_id=deployment.id,
+            for log in deployer.get_deployment_logs(
+                deployment_name_or_id=deployment.id,
                 follow=True,
             ):
                 print(log)

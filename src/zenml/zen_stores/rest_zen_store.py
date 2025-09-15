@@ -68,6 +68,7 @@ from zenml.constants import (
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
+    DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -81,7 +82,6 @@ from zenml.constants import (
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
-    PIPELINE_ENDPOINTS,
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
@@ -166,6 +166,10 @@ from zenml.models import (
     ComponentResponse,
     ComponentUpdate,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -197,10 +201,6 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineEndpointFilter,
-    PipelineEndpointRequest,
-    PipelineEndpointResponse,
-    PipelineEndpointUpdate,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -1764,96 +1764,96 @@ class RestZenStore(BaseZenStore):
 
         return PipelineRunResponse.model_validate(response_body)
 
-    # -------------------- Pipeline endpoints --------------------
+    # -------------------- Deployments --------------------
 
-    def create_pipeline_endpoint(
-        self, pipeline_endpoint: PipelineEndpointRequest
-    ) -> PipelineEndpointResponse:
-        """Create a new pipeline endpoint.
+    def create_deployment(
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
 
         Args:
-            pipeline_endpoint: The pipeline endpoint to create.
+            deployment: The deployment to create.
 
         Returns:
-            The newly created pipeline endpoint.
+            The newly created deployment.
         """
         return self._create_resource(
-            resource=pipeline_endpoint,
-            route=PIPELINE_ENDPOINTS,
-            response_model=PipelineEndpointResponse,
+            resource=deployment,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
         )
 
-    def get_pipeline_endpoint(
-        self, endpoint_id: UUID, hydrate: bool = True
-    ) -> PipelineEndpointResponse:
-        """Get a pipeline endpoint with a given ID.
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
+        """Get a deployment with a given ID.
 
         Args:
-            endpoint_id: ID of the pipeline endpoint.
+            deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            The pipeline endpoint.
+            The deployment.
         """
         return self._get_resource(
-            resource_id=endpoint_id,
-            route=PIPELINE_ENDPOINTS,
-            response_model=PipelineEndpointResponse,
+            resource_id=deployment_id,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
             params={"hydrate": hydrate},
         )
 
-    def list_pipeline_endpoints(
+    def list_deployments(
         self,
-        endpoint_filter_model: PipelineEndpointFilter,
+        deployment_filter_model: DeploymentFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineEndpointResponse]:
-        """List all pipeline endpoints matching the given filter criteria.
+    ) -> Page[DeploymentResponse]:
+        """List all deployments matching the given filter criteria.
 
         Args:
-            endpoint_filter_model: All filter parameters including pagination
+            deployment_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A page of all pipeline endpoints matching the filter criteria.
+            A page of all deployments matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=PIPELINE_ENDPOINTS,
-            response_model=PipelineEndpointResponse,
-            filter_model=endpoint_filter_model,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+            filter_model=deployment_filter_model,
             params={"hydrate": hydrate},
         )
 
-    def update_pipeline_endpoint(
-        self, endpoint_id: UUID, endpoint_update: PipelineEndpointUpdate
-    ) -> PipelineEndpointResponse:
-        """Update a pipeline endpoint.
+    def update_deployment(
+        self, deployment_id: UUID, deployment_update: DeploymentUpdate
+    ) -> DeploymentResponse:
+        """Update a deployment.
 
         Args:
-            endpoint_id: The ID of the pipeline endpoint to update.
-            endpoint_update: The update to apply.
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
 
         Returns:
-            The updated pipeline endpoint.
+            The updated deployment.
         """
         return self._update_resource(
-            resource_id=endpoint_id,
-            resource_update=endpoint_update,
-            route=PIPELINE_ENDPOINTS,
-            response_model=PipelineEndpointResponse,
+            resource_id=deployment_id,
+            resource_update=deployment_update,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
         )
 
-    def delete_pipeline_endpoint(self, endpoint_id: UUID) -> None:
-        """Delete a pipeline endpoint.
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Delete a deployment.
 
         Args:
-            endpoint_id: The ID of the pipeline endpoint to delete.
+            deployment_id: The ID of the deployment to delete.
         """
         self._delete_resource(
-            resource_id=endpoint_id,
-            route=PIPELINE_ENDPOINTS,
+            resource_id=deployment_id,
+            route=DEPLOYMENTS,
         )
 
     # -------------------- Run templates --------------------

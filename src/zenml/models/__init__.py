@@ -154,6 +154,16 @@ from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponseMetadata,
     EventSourceFlavorResponseResources,
 )
+from zenml.models.v2.core.deployment import (
+    DeploymentRequest,
+    DeploymentUpdate,
+    DeploymentFilter,
+    DeploymentOperationalState,
+    DeploymentResponse,
+    DeploymentResponseBody,
+    DeploymentResponseMetadata,
+    DeploymentResponseResources,
+)
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
     OAuthDeviceFilter,
@@ -238,16 +248,6 @@ from zenml.models.v2.core.pipeline_snapshot import (
     PipelineSnapshotResponseMetadata,
     PipelineSnapshotResponseResources,
     PipelineSnapshotTriggerRequest,
-)
-from zenml.models.v2.core.pipeline_endpoint import (
-    PipelineEndpointRequest,
-    PipelineEndpointUpdate,
-    PipelineEndpointFilter,
-    PipelineEndpointOperationalState,
-    PipelineEndpointResponse,
-    PipelineEndpointResponseBody,
-    PipelineEndpointResponseMetadata,
-    PipelineEndpointResponseResources,
 )
 from zenml.models.v2.core.pipeline_run import (
     PipelineRunRequest,
@@ -474,6 +474,10 @@ CodeRepositoryResponseResources.model_rebuild()
 ComponentResponseBody.model_rebuild()
 ComponentResponseMetadata.model_rebuild()
 ComponentResponseResources.model_rebuild()
+DeploymentRequest.model_rebuild()
+DeploymentResponseBody.model_rebuild()
+DeploymentResponseMetadata.model_rebuild()
+DeploymentResponseResources.model_rebuild()
 EventSourceResponseBody.model_rebuild()
 EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
@@ -497,10 +501,6 @@ PipelineBuildBase.model_rebuild()
 PipelineBuildResponseBody.model_rebuild()
 PipelineBuildResponseMetadata.model_rebuild()
 PipelineBuildResponseResources.model_rebuild()
-PipelineEndpointRequest.model_rebuild()
-PipelineEndpointResponseBody.model_rebuild()
-PipelineEndpointResponseMetadata.model_rebuild()
-PipelineEndpointResponseResources.model_rebuild()
 PipelineSnapshotRequest.model_rebuild()
 PipelineSnapshotResponseBody.model_rebuild()
 PipelineSnapshotResponseMetadata.model_rebuild()
@@ -645,6 +645,14 @@ __all__ = [
     "ComponentResponseResources",
     "DefaultComponentRequest",
     "DefaultStackRequest",
+    "DeploymentRequest",
+    "DeploymentUpdate",
+    "DeploymentFilter",
+    "DeploymentOperationalState",
+    "DeploymentResponse",
+    "DeploymentResponseBody",
+    "DeploymentResponseMetadata",
+    "DeploymentResponseResources",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
@@ -705,14 +713,6 @@ __all__ = [
     "PipelineBuildResponseBody",
     "PipelineBuildResponseMetadata",
     "PipelineBuildResponseResources",
-    "PipelineEndpointRequest",
-    "PipelineEndpointUpdate",
-    "PipelineEndpointFilter",
-    "PipelineEndpointOperationalState",
-    "PipelineEndpointResponse",
-    "PipelineEndpointResponseBody",
-    "PipelineEndpointResponseMetadata",
-    "PipelineEndpointResponseResources",
     "PipelineSnapshotBase",
     "PipelineSnapshotRequest",
     "PipelineSnapshotUpdate",

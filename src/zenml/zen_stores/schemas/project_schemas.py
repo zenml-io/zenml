@@ -33,11 +33,11 @@ if TYPE_CHECKING:
         ActionSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        DeploymentSchema,
         EventSourceSchema,
         ModelSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
-        PipelineEndpointSchema,
         PipelineRunSchema,
         PipelineSchema,
         PipelineSnapshotSchema,
@@ -123,7 +123,7 @@ class ProjectSchema(NamedSchema, table=True):
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    pipeline_endpoints: List["PipelineEndpointSchema"] = Relationship(
+    deployments: List["DeploymentSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )

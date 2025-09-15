@@ -44,13 +44,13 @@ if TYPE_CHECKING:
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        DeploymentSchema,
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
         OAuthDeviceSchema,
         PipelineBuildSchema,
-        PipelineEndpointSchema,
         PipelineRunSchema,
         PipelineSchema,
         PipelineSnapshotSchema,
@@ -170,7 +170,7 @@ class UserSchema(NamedSchema, table=True):
         back_populates="service_account",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    pipeline_endpoints: List["PipelineEndpointSchema"] = Relationship(
+    deployments: List["DeploymentSchema"] = Relationship(
         back_populates="user",
     )
     tags: List["TagSchema"] = Relationship(
