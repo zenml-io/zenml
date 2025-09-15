@@ -92,6 +92,10 @@ def main(
         inference_pipeline: Whether to run the inference pipeline.
         no_cache: If `True` cache will be disabled.
     """
+    if not training and not inference:
+        print("No pipeline specified, running training pipeline by default.")
+        training = True
+
     client = Client()
 
     orchf = client.active_stack.orchestrator.flavor
@@ -133,8 +137,11 @@ def main(
     if inference:
         # Prompt for the data input
         data_input = input("Enter sentence to translate: ")
+        # Default configuration
+        config_path = "configs/inference_default.yaml"
+        pipeline_args["config_path"] = config_path
         run = english_translation_inference.with_options(**pipeline_args)(
-            data_input=data_input,
+            input=data_input,
         )
         # Load and print the output of the last step of the last run
         run = client.get_pipeline_run(run.id)

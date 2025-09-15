@@ -40,6 +40,7 @@ from zenml.constants import (
 )
 from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
+from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -55,7 +56,11 @@ from zenml.orchestrators.publish_utils import (
 from zenml.orchestrators.utils import (
     is_setting_enabled,
 )
-from zenml.steps.step_context import StepContext, get_step_context
+from zenml.steps.step_context import (
+    StepContext,
+    StepSharedContext,
+    get_step_context,
+)
 from zenml.steps.utils import (
     OutputSignature,
     parse_return_type_annotations,
@@ -72,7 +77,6 @@ from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
         ArtifactVersionResponse,
@@ -89,15 +93,22 @@ logger = get_logger(__name__)
 class StepRunner:
     """Class to run steps."""
 
-    def __init__(self, step: "Step", stack: "Stack"):
+    def __init__(
+        self,
+        step: "Step",
+        stack: "Stack",
+        run_context: Optional[StepSharedContext] = None,
+    ):
         """Initializes the step runner.
 
         Args:
             step: The step to run.
             stack: The stack on which the step should run.
+            run_context: Optional run context shared by all steps.
         """
         self._step = step
         self._stack = stack
+        self._run_context = run_context
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -188,6 +199,9 @@ class StepRunner:
                 output_artifact_configs={
                     k: v.artifact_config for k, v in output_annotations.items()
                 },
+                pipeline_state=self._run_context.state
+                if self._run_context
+                else None,
             )
 
             # Parse the inputs for the entrypoint function.
@@ -199,6 +213,20 @@ class StepRunner:
 
             step_failed = False
             try:
+                # We run the init hook at step level if we're not in an
+                # environment that supports a shared run context
+                if not self._run_context:
+                    if (
+                        init_hook_source
+                        := pipeline_run.config.init_hook_source
+                    ):
+                        logger.info("Executing the pipeline's init hook...")
+                        step_context.pipeline_state = load_and_run_hook(
+                            init_hook_source,
+                            hook_parameters=pipeline_run.config.init_hook_kwargs,
+                            raise_on_error=True,
+                        )
+
                 return_values = step_instance.call_entrypoint(
                     **function_params
                 )
@@ -228,7 +256,7 @@ class StepRunner:
                         := self.configuration.failure_hook_source
                     ):
                         logger.info("Detected failure hook. Running...")
-                        self.load_and_run_hook(
+                        load_and_run_hook(
                             failure_hook_source,
                             step_exception=step_exception,
                         )
@@ -251,7 +279,7 @@ class StepRunner:
                             := self.configuration.success_hook_source
                         ):
                             logger.info("Detected success hook. Running...")
-                            self.load_and_run_hook(
+                            load_and_run_hook(
                                 success_hook_source,
                                 step_exception=None,
                             )
@@ -317,6 +345,21 @@ class StepRunner:
                                 },
                                 model_version=model_version,
                             )
+
+                    # We run the cleanup hook at step level if we're not in an
+                    # environment that supports a shared run context
+                    if not self._run_context:
+                        if (
+                            cleanup_hook_source
+                            := pipeline_run.config.cleanup_hook_source
+                        ):
+                            logger.info(
+                                "Executing the pipeline's cleanup hook..."
+                            )
+                            step_context.pipeline_state = load_and_run_hook(
+                                cleanup_hook_source,
+                            )
+
                 finally:
                     step_context._cleanup_registry.execute_callbacks(
                         raise_on_exception=False
@@ -459,45 +502,6 @@ class StepRunner:
             else:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
-                )
-
-        return function_params
-
-    def _parse_hook_inputs(
-        self,
-        args: List[str],
-        annotations: Dict[str, Any],
-        step_exception: Optional[BaseException],
-    ) -> Dict[str, Any]:
-        """Parses the inputs for a hook function.
-
-        Args:
-            args: The arguments of the hook function.
-            annotations: The annotations of the hook function.
-            step_exception: The exception of the original step.
-
-        Returns:
-            The parsed inputs for the hook function.
-
-        Raises:
-            TypeError: If hook function is passed a wrong parameter type.
-        """
-        function_params: Dict[str, Any] = {}
-
-        if args and args[0] == "self":
-            args.pop(0)
-
-        for arg in args:
-            arg_type = annotations.get(arg, None)
-            arg_type = resolve_type_annotation(arg_type)
-
-            if issubclass(arg_type, BaseException):
-                function_params[arg] = step_exception
-            else:
-                # It should not be of any other type
-                raise TypeError(
-                    "Hook functions can only take arguments of type "
-                    f"`BaseException`, not {arg_type}"
                 )
 
         return function_params
@@ -759,31 +763,3 @@ class StepRunner:
             artifact_requests
         )
         return dict(zip(output_order, responses))
-
-    def load_and_run_hook(
-        self,
-        hook_source: "Source",
-        step_exception: Optional[BaseException],
-    ) -> None:
-        """Loads hook source and runs the hook.
-
-        Args:
-            hook_source: The source of the hook function.
-            step_exception: The exception of the original step.
-        """
-        try:
-            hook = source_utils.load(hook_source)
-            hook_spec = inspect.getfullargspec(inspect.unwrap(hook))
-
-            function_params = self._parse_hook_inputs(
-                args=hook_spec.args,
-                annotations=hook_spec.annotations,
-                step_exception=step_exception,
-            )
-            logger.debug(f"Running hook {hook} with params: {function_params}")
-            hook(**function_params)
-        except Exception as e:
-            logger.error(
-                f"Failed to load hook source with exception: '{hook_source}': "
-                f"{e}"
-            )

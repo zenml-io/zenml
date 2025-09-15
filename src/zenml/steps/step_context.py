@@ -61,6 +61,30 @@ def get_step_context() -> "StepContext":
     )
 
 
+class StepSharedContext:
+    """Provides context shared between all steps in a pipeline run."""
+
+    def __init__(
+        self,
+        state: Optional[Any] = None,
+    ):
+        """Initialize the shared context.
+
+        Args:
+            state: Optional pipeline state for the pipeline run
+        """
+        self._state = state
+
+    @property
+    def state(self) -> Optional[Any]:
+        """Returns the pipeline state.
+
+        Returns:
+            The pipeline state or None.
+        """
+        return self._state
+
+
 class StepContext(metaclass=SingletonMetaClass):
     """Provides additional context inside a step function.
 

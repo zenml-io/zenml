@@ -31,14 +31,16 @@ from .data_loader import PROMPT
 logger = get_logger(__name__)
 
 
-def load_models() -> Tuple[T5ForConditionalGeneration, T5Tokenizer]:
+def load_models(
+    model_name: str = "model", tokenizer_name: str = "tokenizer"
+) -> Tuple[T5ForConditionalGeneration, T5Tokenizer]:
     """Load the model from the pipeline."""
     from zenml.client import Client
 
     client = Client()
 
     model: Optional[T5ForConditionalGeneration] = client.get_artifact_version(
-        "model"
+        model_name
     ).load()
     if model is None:
         raise ValueError("Model artifact not found")
@@ -46,7 +48,7 @@ def load_models() -> Tuple[T5ForConditionalGeneration, T5Tokenizer]:
     model.eval()  # Set the model to evaluation mode
 
     tokenizer: Optional[T5Tokenizer] = client.get_artifact_version(
-        "tokenizer"
+        tokenizer_name
     ).load()
     if tokenizer is None:
         raise ValueError("Tokenizer artifact not found")
@@ -83,9 +85,9 @@ def tokenize_inference_data(
     pipeline_state = step_context.pipeline_state
 
     if pipeline_state is None:
-        _, tokenizer = load_models()
-    else:
-        tokenizer: T5Tokenizer = pipeline_state[1]
+        raise RuntimeError("Pipeline state is not set")
+
+    tokenizer: T5Tokenizer = pipeline_state[1]
 
     def tokenize_function(examples):
         model_inputs = tokenizer(
@@ -117,10 +119,10 @@ def call_model(
     step_context = get_step_context()
     pipeline_state = step_context.pipeline_state
     if pipeline_state is None:
-        model, tokenizer = load_models()
-    else:
-        model: T5ForConditionalGeneration = pipeline_state[0]
-        tokenizer: T5Tokenizer = pipeline_state[1]
+        raise RuntimeError("Pipeline state is not set")
+
+    model: T5ForConditionalGeneration = pipeline_state[0]
+    tokenizer: T5Tokenizer = pipeline_state[1]
 
     test_collection = {}
 

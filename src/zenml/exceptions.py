@@ -244,3 +244,7 @@ class RunMonitoringError(ZenMLBaseException):
                 monitoring the pipeline run.
         """
         self.original_exception = original_exception
+
+
+class HookValidationException(ZenMLBaseException):
+    """Exception raised when hook validation fails."""
