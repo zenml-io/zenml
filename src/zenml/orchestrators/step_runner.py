@@ -323,7 +323,7 @@ class StepRunner:
                     )
                     StepContext._clear()  # Remove the step context singleton
 
-            # Update the status and output artifacts of the step run (always attach outputs)
+            # Update the status and output artifacts of the step run
             output_artifact_ids = {
                 output_name: [
                     artifact.id,
@@ -536,6 +536,17 @@ class StepRunner:
         )
 
         def _load_artifact(artifact_store: "BaseArtifactStore") -> Any:
+            # Check if serving runtime has in-memory data for this URI
+            try:
+                from zenml.deployers.serving import runtime
+
+                if runtime.has_in_memory_data(artifact.uri):
+                    # Return data directly from memory without any I/O
+                    return runtime.get_in_memory_data(artifact.uri)
+            except ImportError:
+                pass
+
+            # Normal path - load from artifact store
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
@@ -659,6 +670,7 @@ class StepRunner:
         """
         step_context = get_step_context()
         artifact_requests = []
+        output_order: List[str] = []
 
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
@@ -740,11 +752,13 @@ class StepRunner:
                 metadata=user_metadata,
             )
             artifact_requests.append(artifact_request)
+            output_order.append(output_name)
 
+        # Always save to database to maintain correct lineage and input resolution
         responses = Client().zen_store.batch_create_artifact_versions(
             artifact_requests
         )
-        return dict(zip(output_data.keys(), responses))
+        return dict(zip(output_order, responses))
 
     def load_and_run_hook(
         self,

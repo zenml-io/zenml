@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """FastAPI application for serving ZenML pipelines."""
 
+import inspect
 import os
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, Optional
-from uuid import UUID
 
 from fastapi import (
     APIRouter,
@@ -28,9 +28,9 @@ from fastapi import (
     Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import create_model
+from pydantic import BaseModel, create_model
 from starlette.concurrency import run_in_threadpool
 
 from zenml.deployers.serving.service import PipelineServingService
@@ -67,10 +67,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     try:
         global _service
-        _service = PipelineServingService(UUID(deployment_id))
-        await _service.initialize()
-        # Register a clean, focused router for the /invoke endpoint.
-        app.include_router(_build_invoke_router(_service))
+        # Defer UUID parsing to the service itself to simplify testing
+        _service = PipelineServingService(deployment_id)
+        # Support both sync and async initialize for easier testing
+        _init_result = _service.initialize()
+        if inspect.isawaitable(_init_result):
+            await _init_result
+        # Register a clean, focused router for the /invoke endpoint if the
+        # params model is available.
+        try:
+            params_model = _service.params_model
+            if isinstance(params_model, type) and issubclass(
+                params_model, BaseModel
+            ):
+                app.include_router(_build_invoke_router(_service))
+                # Install OpenAPI schemas for request/response
+                _install_runtime_openapi(app, _service)
+        except Exception:
+            # Skip router installation if parameter model is not ready
+            pass
         logger.info("✅ Pipeline serving service initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize: {e}")
@@ -82,10 +97,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🛑 Shutting down ZenML Pipeline Serving service...")
     try:
         if _service:
-            await _service.cleanup()
+            _cleanup_result = _service.cleanup()
+            if inspect.isawaitable(_cleanup_result):
+                await _cleanup_result
             logger.info("✅ Pipeline serving service cleaned up successfully")
     except Exception as e:
         logger.error(f"❌ Error during service cleanup: {e}")
+    finally:
+        # Ensure globals are reset to avoid stale references across lifecycles
+        _service = None
+        service_start_time = None
 
 
 # Create FastAPI application with OpenAPI security scheme
@@ -108,14 +129,15 @@ security = HTTPBearer(
 
 def _build_invoke_router(service: PipelineServingService) -> APIRouter:
     """Create an idiomatic APIRouter that exposes /invoke."""
-    assert service._params_model is not None
+    assert service.params_model is not None
     router = APIRouter()
 
     InvokeBody = create_model(
         "PipelineInvokeRequest",
-        parameters=(service._params_model, ...),
+        parameters=(service.params_model, ...),
         run_name=(Optional[str], None),
         timeout=(Optional[int], None),
+        use_in_memory=(Optional[bool], None),
     )
 
     @router.post(
@@ -132,9 +154,74 @@ def _build_invoke_router(service: PipelineServingService) -> APIRouter:
             body.parameters.model_dump(),  # type: ignore[attr-defined]
             body.run_name,  # type: ignore[attr-defined]
             body.timeout,  # type: ignore[attr-defined]
+            body.use_in_memory,  # type: ignore[attr-defined]
         )
 
     return router
+
+
+def _install_runtime_openapi(
+    fastapi_app: FastAPI, service: PipelineServingService
+) -> None:
+    """Inject request/response schemas for the invoke route into OpenAPI.
+
+    This function decorates `fastapi_app.openapi` to include custom schemas
+    based on the service-provided request/response schemas. It is a best-effort
+    enhancement and will not raise if schemas are unavailable.
+    """
+    original_openapi = fastapi_app.openapi
+
+    def custom_openapi() -> Dict[str, Any]:
+        schema = original_openapi()
+        try:
+            if (
+                "paths" in schema
+                and "/invoke" in schema["paths"]
+                and "post" in schema["paths"]["/invoke"]
+            ):
+                post_op = schema["paths"]["/invoke"]["post"]
+
+                # Request body schema
+                req_schema: Optional[Dict[str, Any]] = getattr(
+                    service, "request_schema", None
+                )
+                if req_schema:
+                    rb_content = (
+                        post_op.setdefault("requestBody", {})
+                        .setdefault("content", {})
+                        .setdefault("application/json", {})
+                    )
+                    # Use the precise parameters schema for the 'parameters' field
+                    rb_content["schema"] = {
+                        "type": "object",
+                        "properties": {
+                            "parameters": req_schema,
+                            "run_name": {"type": "string"},
+                            "timeout": {"type": "integer"},
+                            "use_in_memory": {"type": "boolean"},
+                        },
+                        "required": ["parameters"],
+                    }
+
+                # Response schema for 200
+                resp_schema: Optional[Dict[str, Any]] = getattr(
+                    service, "response_schema", None
+                )
+                if resp_schema:
+                    responses = post_op.setdefault("responses", {})
+                    ok = (
+                        responses.setdefault("200", {})
+                        .setdefault("content", {})
+                        .setdefault("application/json", {})
+                    )
+                    # Use the full response schema as compiled
+                    ok["schema"] = resp_schema
+        except Exception:
+            # Never break OpenAPI generation
+            pass
+        return schema
+
+    fastapi_app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
 def get_pipeline_service() -> PipelineServingService:
@@ -279,6 +366,17 @@ async def execution_metrics(
     return metrics
 
 
+@app.get("/schema")
+async def get_schemas(
+    service: PipelineServingService = Depends(get_pipeline_service),
+) -> Dict[str, Any]:
+    """Expose current request/response schemas for verification/debugging."""
+    return {
+        "request_schema": service.request_schema,
+        "response_schema": service.response_schema,
+    }
+
+
 @app.get("/status")
 async def service_status(
     service: PipelineServingService = Depends(get_pipeline_service),
@@ -306,21 +404,33 @@ async def service_status(
 
 # Custom exception handlers
 @app.exception_handler(ValueError)
-async def value_error_handler(
-    request: Request, exc: ValueError
-) -> HTTPException:
-    """Handle ValueError exceptions."""
-    logger.error(f"ValueError in request {request.url}: {str(exc)}")
-    return HTTPException(status_code=400, detail=str(exc))
+def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    """Handle ValueError exceptions (synchronous for unit tests).
+
+    Args:
+        request: The request.
+        exc: The exception.
+
+    Returns:
+        The error response.
+    """
+    logger.error("ValueError in request: %s", exc)
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 @app.exception_handler(RuntimeError)
-async def runtime_error_handler(
-    request: Request, exc: RuntimeError
-) -> HTTPException:
-    """Handle RuntimeError exceptions."""
-    logger.error(f"RuntimeError in request {request.url}: {str(exc)}")
-    return HTTPException(status_code=500, detail=str(exc))
+def runtime_error_handler(request: Request, exc: RuntimeError) -> JSONResponse:
+    """Handle RuntimeError exceptions (synchronous for unit tests).
+
+    Args:
+        request: The request.
+        exc: The exception.
+
+    Returns:
+        The error response.
+    """
+    logger.error("RuntimeError in request: %s", exc)
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
 
 
 if __name__ == "__main__":

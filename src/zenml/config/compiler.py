@@ -640,7 +640,7 @@ class Compiler:
                 pipeline_parameters_model.model_json_schema()
             )
 
-        # Best-effort: build a response schema snapshot for terminal steps (tooling).
+        # Best-effort: build a response schema snapshot for step outputs (tooling).
         try:
             # Map invocation id -> StepSpec for quick lookup
             name_to_spec: Dict[str, StepSpec] = {
@@ -653,13 +653,14 @@ class Compiler:
                 for up in s.upstream_steps:
                     if up in downstream:
                         downstream[up].add(s.pipeline_parameter_name)
-            # Terminal steps: no downstream consumers
-            terminal = [n for n in all_names if not downstream.get(n)]
-
+            # NOTE: The serving response uses flat keys in the form
+            # "{step}.{output}". We therefore build a flat outputs schema
+            # instead of a nested per-step structure.
             outputs_properties: Dict[str, Any] = {}
             all_defs: Dict[str, Any] = {}
 
-            for name in terminal:
+            # Include all steps to reflect actual serving outputs
+            for name in all_names:
                 spec = name_to_spec[name]
                 step_instance = BaseStep.load_from_source(spec.source)
                 out_sigs = parse_return_type_annotations(
@@ -667,8 +668,6 @@ class Compiler:
                 )
                 if not out_sigs:
                     continue
-                step_props: Dict[str, Any] = {}
-                required: List[str] = []
                 for out_name, sig in out_sigs.items():
                     try:
                         ta = TypeAdapter(sig.resolved_annotation)
@@ -678,25 +677,48 @@ class Compiler:
                             schema = {
                                 k: v for k, v in schema.items() if k != "$defs"
                             }
-                        step_props[out_name] = schema
-                        required.append(out_name)
+                        # Improve UI example for generic object schemas to avoid
+                        # the 'additionalProp1' placeholder in Swagger UI.
+                        if (
+                            isinstance(schema, dict)
+                            and schema.get("type") == "object"
+                            and "properties" not in schema
+                        ):
+                            schema.setdefault("example", {})
+                        # Flat key matches serving response shape
+                        outputs_properties[f"{name}.{out_name}"] = schema
                     except Exception:
-                        step_props[out_name] = {"type": "object"}
-                outputs_properties[name] = {
-                    "type": "object",
-                    "properties": step_props,
-                    "required": required,
-                }
+                        outputs_properties[f"{name}.{out_name}"] = {
+                            "type": "object"
+                        }
 
             if outputs_properties:
                 response_schema: Dict[str, Any] = {
                     "type": "object",
                     "properties": {
+                        "success": {"type": "boolean"},
                         "outputs": {
                             "type": "object",
                             "properties": outputs_properties,
-                        }
+                        },
+                        "execution_time": {"type": "number"},
+                        "metadata": {
+                            "type": "object",
+                            "properties": {
+                                "pipeline_name": {"type": "string"},
+                                "run_id": {"type": "string"},
+                                "run_name": {"type": "string"},
+                                "parameters_used": {"type": "object"},
+                                "deployment_id": {"type": "string"},
+                            },
+                        },
                     },
+                    "required": [
+                        "success",
+                        "outputs",
+                        "execution_time",
+                        "metadata",
+                    ],
                 }
                 if all_defs:
                     response_schema["$defs"] = all_defs

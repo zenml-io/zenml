@@ -70,8 +70,8 @@ class TestParameterResolution:
         assert filtered == {"country": "Germany", "temperature": 20}
         assert "active" not in filtered
 
-    def test_get_parameter_override_extraction(self):
-        """Test parameter extraction from complex objects."""
+    def test_get_parameter_override_direct_only(self):
+        """Test that only direct parameters are returned (no nested extraction)."""
         # Set up serving state with WeatherRequest
         request_obj = WeatherRequest(
             city="munich",
@@ -91,46 +91,14 @@ class TestParameterResolution:
             },
         )
 
-        # Test parameter extraction from Pydantic object
-        assert runtime.get_parameter_override("city") == "munich"
-        assert runtime.get_parameter_override("activities") == [
-            "sightseeing",
-            "eating",
-        ]
-        assert runtime.get_parameter_override("extra") == {"budget": 500}
-
-        # Test direct parameter still works
+        # Direct parameter only
         assert runtime.get_parameter_override("country") == "Germany"
+        # Nested attributes are not extracted automatically
+        assert runtime.get_parameter_override("city") is None
+        assert runtime.get_parameter_override("activities") is None
+        assert runtime.get_parameter_override("extra") is None
 
-        # Test missing parameter
-        assert runtime.get_parameter_override("missing") is None
-
-    def test_parameter_precedence(self):
-        """Test that direct parameters take precedence over extracted ones."""
-
-        # Create a WeatherRequest that has a 'country' attribute
-        class ExtendedWeatherRequest(WeatherRequest):
-            country: str = "UK"
-
-        request_obj = ExtendedWeatherRequest(
-            city="london", activities=["museums"], country="UK"
-        )
-
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
-
-        runtime.start(
-            request_id="test-request",
-            deployment=deployment,
-            parameters={
-                "request": request_obj,
-                "country": "Germany",  # Direct parameter should win
-            },
-        )
-
-        # Direct parameter should take precedence
-        assert runtime.get_parameter_override("country") == "Germany"
-        assert runtime.get_parameter_override("city") == "london"
+    # Removed precedence test: nested extraction no longer supported
 
     def test_inactive_serving_context(self):
         """Test parameter resolution when serving is not active."""
@@ -149,39 +117,7 @@ class TestParameterResolution:
         # Should return None when no parameters are available
         assert runtime.get_parameter_override("city") is None
 
-    def test_multiple_complex_objects(self):
-        """Test parameter extraction from multiple complex objects."""
-
-        class UserPreferences(BaseModel):
-            language: str
-            currency: str
-
-        class Location(BaseModel):
-            city: str
-            region: str
-
-        user_prefs = UserPreferences(language="german", currency="EUR")
-        location = Location(city="berlin", region="brandenburg")
-
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
-
-        runtime.start(
-            request_id="test-request",
-            deployment=deployment,
-            parameters={
-                "user": user_prefs,
-                "location": location,
-                "timeout": 300,
-            },
-        )
-
-        # Should extract from the first object that has the attribute
-        assert runtime.get_parameter_override("city") == "berlin"
-        assert runtime.get_parameter_override("language") == "german"
-        assert runtime.get_parameter_override("currency") == "EUR"
-        assert runtime.get_parameter_override("region") == "brandenburg"
-        assert runtime.get_parameter_override("timeout") == 300
+    # Removed complex object extraction test: not supported
 
 
 class TestCompleteParameterFlow:
@@ -229,13 +165,28 @@ class TestCompleteParameterFlow:
         }
         return deployment
 
+    @patch(
+        "zenml.deployers.serving.parameters.build_params_model_from_deployment"
+    )
     @patch("zenml.utils.source_utils.load")
     def test_complete_parameter_resolution_flow(
-        self, mock_load, mock_deployment, mock_pipeline_class
+        self,
+        mock_load,
+        mock_build_params,
+        mock_deployment,
+        mock_pipeline_class,
     ):
         """Test the complete parameter resolution flow from request to step execution."""
         # Set up mocks
         mock_load.return_value = mock_pipeline_class
+        # Provide a real params model for validation
+        from pydantic import BaseModel
+
+        class _Params(BaseModel):
+            request: WeatherRequest
+            country: str = "UK"
+
+        mock_build_params.return_value = _Params
 
         # Create service
         service = PipelineServingService("test-deployment-id")
@@ -249,13 +200,11 @@ class TestCompleteParameterFlow:
 
         resolved_params = service._resolve_parameters(request_params)
 
-        # Verify parameter resolution
+        # Verify parameter resolution (no automatic merging of nested defaults)
         assert isinstance(resolved_params["request"], WeatherRequest)
         assert resolved_params["request"].city == "munich"
         assert resolved_params["request"].activities == ["whatever"]
-        assert resolved_params["request"].extra == {
-            "temperature": 20
-        }  # Preserved
+        assert resolved_params["request"].extra is None
         assert resolved_params["country"] == "Germany"
 
         # Test 2: Runtime state setup
@@ -265,39 +214,53 @@ class TestCompleteParameterFlow:
             parameters=resolved_params,
         )
 
-        # Test 3: Step parameter resolution
-        city_param = runtime.get_parameter_override("city")
+        # Test 3: Step parameter resolution (direct only)
+        request_param = runtime.get_parameter_override("request")
         country_param = runtime.get_parameter_override("country")
-        activities_param = runtime.get_parameter_override("activities")
 
-        # Verify step parameter extraction
-        assert city_param == "munich"  # From request.city
-        assert country_param == "Germany"  # Direct parameter
-        assert activities_param == ["whatever"]  # From request.activities
+        # Verify only direct parameters are resolved
+        assert isinstance(request_param, WeatherRequest)
+        assert request_param.city == "munich"
+        assert request_param.activities == ["whatever"]
+        assert country_param == "Germany"
 
+    @patch(
+        "zenml.deployers.serving.parameters.build_params_model_from_deployment"
+    )
     @patch("zenml.utils.source_utils.load")
     def test_partial_update_with_complex_nesting(
-        self, mock_load, mock_deployment, mock_pipeline_class
+        self,
+        mock_load,
+        mock_build_params,
+        mock_deployment,
+        mock_pipeline_class,
     ):
         """Test partial updates with complex nested structures."""
         mock_load.return_value = mock_pipeline_class
         # Note: mock_pipeline_class used via mock_load.return_value
+        from pydantic import BaseModel
+
+        class _Params(BaseModel):
+            request: WeatherRequest
+            country: str = "UK"
+
+        mock_build_params.return_value = _Params
 
         service = PipelineServingService("test-deployment-id")
         service.deployment = mock_deployment
 
-        # Test partial update with only city
-        request_params = {"request": {"city": "paris"}}
+        # Test update with required fields provided
+        request_params = {"request": {"city": "paris", "activities": []}}
 
         resolved_params = service._resolve_parameters(request_params)
 
-        # Verify partial update preserves all defaults
+        # Verify partial update does not merge nested defaults automatically
         request_obj = resolved_params["request"]
         assert isinstance(request_obj, WeatherRequest)
         assert request_obj.city == "paris"  # Updated
-        assert request_obj.activities == ["walking", "reading"]  # Preserved
-        assert request_obj.extra == {"temperature": 20}  # Preserved
-        assert resolved_params["country"] == "UK"  # Preserved
+        assert request_obj.activities == []
+        assert request_obj.extra is None
+        # country remains the default provided by the model if any; otherwise absent
 
     @patch("zenml.utils.source_utils.load")
     def test_error_handling_in_parameter_flow(
@@ -345,12 +308,12 @@ class TestCompleteParameterFlow:
         )
 
         # Simulate the get_weather step trying to resolve its parameters
-        city_param = runtime.get_parameter_override("city")
+        request_param = runtime.get_parameter_override("request")
         country_param = runtime.get_parameter_override("country")
 
         # These should be the values that get passed to get_weather()
-        assert city_param == "munich"  # Extracted from request.city
-        assert country_param == "Germany"  # Direct parameter
+        assert request_param.city == "munich"
+        assert country_param == "Germany"
 
         # This is exactly what should happen in the serving pipeline:
         # get_weather(city="munich", country="Germany")
