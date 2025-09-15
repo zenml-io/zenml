@@ -2,6 +2,7 @@ zenml[server]
 fastapi>=0.110
 uvicorn>=0.23
 pydantic>=2.6
+requests>=2.25.0
 
 # Optional LLM support via LiteLLM (auto-used if API keys available)
 litellm>=1.40.0

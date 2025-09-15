@@ -2,16 +2,19 @@
 
 This pipeline orchestrates the complete document analysis workflow,
 from ingestion through analysis to report generation, with full
-logging and error handling.
+logging and error handling. Now supports serving deployment.
 """
 
+from typing import Annotated, Optional
+
+from models import DocumentAnalysis
 from steps import (
     analyze_document_step,
     ingest_document_step,
     render_analysis_report_step,
 )
 
-from zenml import Model, pipeline
+from zenml import ArtifactConfig, Model, pipeline
 from zenml.config import DockerSettings
 from zenml.logger import get_logger
 
@@ -29,36 +32,50 @@ docker_settings = DockerSettings(
 @pipeline(
     settings={"docker": docker_settings},
     model=Model(name="document_analysis_agent", version="production"),
+    enable_cache=False,  # Disable caching for serving
 )
 def document_analysis_pipeline(
-    filename: str,
-    content: str,
+    content: Optional[str] = None,
+    url: Optional[str] = None,
+    path: Optional[str] = None,
+    filename: Optional[str] = None,
     document_type: str = "text",
     analysis_type: str = "full",
-) -> None:
+) -> Annotated[
+    DocumentAnalysis,
+    ArtifactConfig(name="document_analysis", tags=["analysis", "serving"]),
+]:
     """Complete document analysis pipeline with logging and error handling.
 
     This pipeline performs end-to-end document analysis including:
-    1. Document ingestion and validation
+    1. Document ingestion from content/URL/path
     2. Content analysis (LLM-based or deterministic fallback)
     3. HTML report generation
+    4. Returns analysis for serving deployment
 
     Args:
-        filename: Name of the document being processed
-        content: Raw document content to analyze
+        content: Direct text content (optional)
+        url: URL to download content from (optional)
+        path: Path to file in artifact store or local filesystem (optional)
+        filename: Name for the document (auto-generated if not provided)
         document_type: Type of document (text, markdown, report, article)
         analysis_type: Analysis depth (full, summary_only, etc.)
+
+    Returns:
+        DocumentAnalysis: Complete analysis results tagged for serving
     """
     logger.info(
-        f"Starting document analysis pipeline for: {filename} "
+        f"Starting document analysis pipeline "
         f"(type: {document_type}, analysis: {analysis_type})"
     )
 
-    # Step 1: Ingest and validate document
+    # Step 1: Ingest and validate document from various sources
     logger.info("Step 1/3: Ingesting document")
     document = ingest_document_step(
-        filename=filename,
         content=content,
+        url=url,
+        path=path,
+        filename=filename,
         document_type=document_type,
         analysis_type=analysis_type,
     )
@@ -67,10 +84,13 @@ def document_analysis_pipeline(
     logger.info("Step 2/3: Analyzing document content")
     analysis = analyze_document_step(document)
 
-    # Step 3: Generate HTML report
+    # Step 3: Generate HTML report (optional for serving)
     logger.info("Step 3/3: Rendering analysis report")
     render_analysis_report_step(analysis)
 
     logger.info(
-        f"Document analysis pipeline completed successfully for: {filename}"
+        f"Document analysis pipeline completed successfully for: {document.filename}"
     )
+
+    # Return analysis for serving deployment
+    return analysis

@@ -92,6 +92,93 @@ The endpoint triggers a ZenML pipeline run that analyzes the document and stores
 
 ![Analysis results](static/images/app_result.png)
 
+## 🚀 Pipeline Deployment (Serving Mode)
+
+For production use cases or when you need always-warm endpoints, deploy the pipeline as a serving endpoint:
+
+### Deploy the Pipeline
+
+```bash
+# Deploy the document analysis pipeline as an HTTP endpoint
+zenml pipeline deploy pipelines.production.document_analysis_pipeline
+```
+
+### Test the Deployed Endpoint
+
+```bash
+# Test with different input methods
+python test_serving.py --url <your-endpoint-url>
+
+# Or run example scenarios
+python example_clients.py
+```
+
+### API Modes
+
+The deployed endpoint supports three input methods:
+
+**1. Direct Content Analysis**
+```json
+{
+  "content": "Your document content here...",
+  "filename": "document.txt",
+  "document_type": "text",
+  "analysis_type": "full"
+}
+```
+
+**2. URL-based Analysis**
+```json
+{
+  "url": "https://example.com/document.txt",
+  "document_type": "text", 
+  "analysis_type": "full"
+}
+```
+
+**3. Path-based Analysis**
+```json
+{
+  "path": "documents/report.md",
+  "document_type": "markdown",
+  "analysis_type": "full"  
+}
+```
+
+### Deployment Configuration
+
+For production deployments, create a config file (`production.yaml`):
+
+```yaml
+settings:
+  docker:
+    requirements: requirements.txt
+    python_package_installer: uv
+  resources:
+    memory: "2GB"
+    cpu_count: 2
+    min_replicas: 1
+    max_replicas: 5
+    max_concurrency: 10
+  deployer:
+    generate_auth_key: true
+```
+
+Then deploy with:
+```bash
+zenml pipeline deploy pipelines.production.document_analysis_pipeline --config production.yaml
+```
+
+### Monitoring Deployed Services
+
+```bash
+# List recent analysis artifacts (automatically tagged)
+zenml artifact list --name document_analysis --tag analysis
+
+# View specific analysis
+zenml artifact show <artifact_id>
+```
+
 ### Evaluate quality
 
 ```bash
@@ -157,6 +244,7 @@ examples/minimal_agent_production/
 ├── models.py                    # Pydantic models for DocumentRequest/Analysis/Eval
 ├── run_production.py            # CLI way to run the document analysis pipeline
 ├── run_evaluation.py            # CLI way to run the evaluation pipeline
+├── example_clients.py           # Example client implementations
 ├── requirements.txt             # Dependencies
 └── README.md                    # This file
 ```
