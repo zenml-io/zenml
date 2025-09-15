@@ -108,8 +108,8 @@ ZenML provides three execution modes that control how your orchestrator behaves 
 - `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting. 
 - `FAIL_FAST`: The orchestrator stops the run and any running steps immediately when a failure occurs.
 
-{% hint style="warning" %}
-In the current implementation, if you use the execution mode `STOP_ON_FAILURE`, the token that is associated with your pipeline run stays valid until its leeway runs out (defaults to 1 hour).
+{% hint style="info" %}
+Execution modes are currently supported by the **local**, **local_docker**, and **kubernetes** orchestrator flavors. For any other flavor, the default behaviour is `CONTINUE_ON_ERROR`. Check the `supported_execution_modes` property of your orchestrator to see which modes are available.
 {% endhint %}
 
 You can configure execution modes in several ways:
@@ -146,8 +146,8 @@ If the vertically aligned steps execute at the same time and step 2 fails:
 - With `STOP_ON_FAILURE`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails but Steps 3, 4 complete → Steps 5, 6, 7 are skipped
 - With `CONTINUE_ON_FAILURE`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails, Steps 3, 4 complete → Step 5 skipped (depends on failed Step 2), Steps 6, 7 run normally → Step 8 is skiped as well.
 
-{% hint style="warning"}
-Execution modes are currently supported by the **local**, **local_docker**, and **kubernetes** orchestrator flavors. For any other flavor, the default behaviour is `CONTINUE_ON_ERROR`. Check the `supported_execution_modes` property of your orchestrator to see which modes are available.
+{% hint style="warning" %}
+In the current implementation, if you use the execution mode `STOP_ON_FAILURE`, the token that is associated with your pipeline run stays valid until its leeway runs out (defaults to 1 hour).
 {% endhint %}
 
 ## Data & Output Management
