@@ -18,7 +18,8 @@ from typing import Optional
 
 import click
 from pipelines import (
-    english_translation_pipeline,
+    english_translation_inference,
+    english_translation_training,
 )
 
 from zenml.client import Client
@@ -56,9 +57,23 @@ Examples:
     "--config_path",
     help="Choose the configuration file.",
 )
+@click.option(
+    "--training",
+    is_flag=True,
+    default=False,
+    help="Whether to run the training pipeline.",
+)
+@click.option(
+    "--inference",
+    is_flag=True,
+    default=False,
+    help="Whether to run the inference pipeline.",
+)
 def main(
     model_type: str,
     config_path: Optional[str],
+    training: bool = False,
+    inference: bool = False,
     no_cache: bool = False,
 ):
     """Main entry point for the pipeline execution.
@@ -73,10 +88,11 @@ def main(
     Args:
         model_type: Type of model to use
         config_path: Configuration file to use
+        training_pipeline: Whether to run the training pipeline.
+        inference_pipeline: Whether to run the inference pipeline.
         no_cache: If `True` cache will be disabled.
     """
     client = Client()
-    run_args_train = {}
 
     orchf = client.active_stack.orchestrator.flavor
 
@@ -88,30 +104,42 @@ def main(
     if no_cache:
         pipeline_args["enable_cache"] = False
 
-    if not config_path:
-        # Default configuration
-        config_path = "configs/training_default.yaml"
-        #
-        if orchf == "sagemaker" or sof == "sagemaker":
-            config_path = "configs/training_aws.yaml"
-        elif orchf == "vertex" or sof == "vertex":
-            config_path = "configs/training_gcp.yaml"
-        elif orchf == "azureml" or sof == "azureml":
-            config_path = "configs/training_azure.yaml"
+    if training:
+        if not config_path:
+            # Default configuration
+            config_path = "configs/training_default.yaml"
+            #
+            if orchf == "sagemaker" or sof == "sagemaker":
+                config_path = "configs/training_aws.yaml"
+            elif orchf == "vertex" or sof == "vertex":
+                config_path = "configs/training_gcp.yaml"
+            elif orchf == "azureml" or sof == "azureml":
+                config_path = "configs/training_azure.yaml"
 
-        print(f"Using {config_path} to configure the pipeline run.")
-    else:
-        print(
-            f"You specified {config_path}. Please be aware of the contents of this "
-            f"file as some settings might be very specific to a certain orchestration "
-            f"environment. Also you might need to set `skip_build` to False in case "
-            f"of missing requirements in the execution environment."
+            print(f"Using {config_path} to configure the pipeline run.")
+        else:
+            print(
+                f"You specified {config_path}. Please be aware of the contents of this "
+                f"file as some settings might be very specific to a certain orchestration "
+                f"environment. Also you might need to set `skip_build` to False in case "
+                f"of missing requirements in the execution environment."
+            )
+
+        pipeline_args["config_path"] = config_path
+        english_translation_training.with_options(**pipeline_args)(
+            model_type=model_type,
         )
 
-    pipeline_args["config_path"] = config_path
-    english_translation_pipeline.with_options(**pipeline_args)(
-        model_type=model_type, **run_args_train
-    )
+    if inference:
+        # Prompt for the data input
+        data_input = input("Enter sentence to translate: ")
+        run = english_translation_inference.with_options(**pipeline_args)(
+            data_input=data_input,
+        )
+        # Load and print the output of the last step of the last run
+        run = client.get_pipeline_run(run.id)
+        result = run.steps["call_model"].output.load()
+        print(result)
 
 
 if __name__ == "__main__":

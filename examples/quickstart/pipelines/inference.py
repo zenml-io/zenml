@@ -14,6 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from steps.model_inference import (
+    call_model,
+    load_inference_data,
+    load_models,
+    tokenize_inference_data,
+)
 
-from .training import english_translation_training
-from .inference import english_translation_inference
+from zenml import pipeline
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+@pipeline(on_init=load_models)
+def english_translation_inference(
+    input: str = "",
+):
+    """Define a pipeline that connects the steps."""
+    inference_dataset = load_inference_data(input=input)
+    tokenized_dataset = tokenize_inference_data(
+        dataset=inference_dataset,
+    )
+    return call_model(
+        tokenized_dataset=tokenized_dataset,
+    )

@@ -21,6 +21,8 @@ from transformers import T5Tokenizer
 
 from steps.model_trainer import T5_Model
 from zenml import step
+from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -31,7 +33,10 @@ def tokenize_data(
     dataset: Dataset, model_type: T5_Model
 ) -> Tuple[
     Annotated[Dataset, "tokenized_dataset"],
-    Annotated[T5Tokenizer, "tokenizer"],
+    Annotated[
+        T5Tokenizer,
+        ArtifactConfig(name="tokenizer", artifact_type=ArtifactType.MODEL),
+    ],
 ]:
     """Tokenize the dataset."""
     tokenizer = T5Tokenizer.from_pretrained(model_type)
@@ -43,13 +48,14 @@ def tokenize_data(
             truncation=True,
             padding="max_length",
         )
-        labels = tokenizer(
-            examples["target"],
-            max_length=128,
-            truncation=True,
-            padding="max_length",
-        )
-        model_inputs["labels"] = labels["input_ids"]
+        if "target" in examples:
+            labels = tokenizer(
+                examples["target"],
+                max_length=128,
+                truncation=True,
+                padding="max_length",
+            )
+            model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
     return dataset.map(tokenize_function, batched=True), tokenizer
