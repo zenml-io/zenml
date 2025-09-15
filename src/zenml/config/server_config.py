@@ -456,6 +456,18 @@ class ServerConfiguration(BaseModel):
                 )
                 data["secure_headers_csp"] = merged_csp_str
 
+        if max_concurrent_template_runs := data.get(
+            "max_concurrent_template_runs"
+        ):
+            logger.warning(
+                "The `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` environment "
+                "variable is deprecated. Use "
+                "`ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS` instead."
+            )
+            data.setdefault(
+                "max_concurrent_snapshot_runs", max_concurrent_template_runs
+            )
+
         return data
 
     @field_validator("reportable_resources", mode="before")
