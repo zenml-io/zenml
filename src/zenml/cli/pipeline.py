@@ -843,7 +843,7 @@ def create_pipeline_snapshot(
     cli_utils.declare(
         f"Created pipeline snapshot `{snapshot.id}`. You can now trigger "
         f"this snapshot from the dashboard or by calling `zenml pipeline "
-        f"trigger-snapshot --snapshot {snapshot.id}`"
+        f"snapshot trigger {snapshot.id}`"
     )
 
 
@@ -874,6 +874,9 @@ def trigger_snapshot(
         snapshot_id: The ID of the snapshot to trigger.
         config_path: Path to configuration file for the run.
     """
+    if not uuid_utils.is_valid_uuid(snapshot_id):
+        cli_utils.error(f"Invalid snapshot ID: {snapshot_id}")
+
     run = Client().trigger_pipeline(
         snapshot_id=UUID(snapshot_id),
         config_path=config_path,
