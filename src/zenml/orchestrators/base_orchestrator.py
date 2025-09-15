@@ -282,7 +282,7 @@ class BaseOrchestrator(StackComponent, ABC):
             logger.debug("Skipping client-side caching.")
 
         step_environments = {}
-        for invocation_id, step in deployment.step_configurations.items():
+        for invocation_id, step in snapshot.step_configurations.items():
             from zenml.utils.env_utils import get_step_environment
 
             step_environment = get_step_environment(
