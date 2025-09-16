@@ -41,7 +41,7 @@ class AWSBatchStepOperatorSettings(BaseSettings):
         " execution. Example: 'm5.xlarge'",
     )
     environment: Dict[str, str] = Field(
-        default={},
+        default_factory=dict,
         description="Environment variables to pass to the container during " \
             "execution. Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
     )
